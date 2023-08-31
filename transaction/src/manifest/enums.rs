@@ -9,7 +9,6 @@ macro_rules! known_enum {
     };
 }
 
-// FIXME: we need a final sanity check before mainnet launch!
 lazy_static! {
     pub static ref KNOWN_ENUM_DISCRIMINATORS: NonIterMap<&'static str, u8> = {
         let mut m = NonIterMap::new();
@@ -106,7 +105,7 @@ lazy_static! {
                 Main = 0;
                 Metadata = 1;
                 Royalty = 2;
-                AccessRules = 3;
+                RoleAssignment = 3;
             }
         );
 
@@ -122,7 +121,7 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccountDefaultDepositRule {
+            enum DefaultDepositRule {
                 Accept = 0;
                 Reject = 1;
                 AllowExisting = 2;
@@ -131,10 +130,9 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum ResourceDepositRule {
-                Neither = 0;
-                Allowed = 1;
-                Disallowed = 2;
+            enum ResourcePreference {
+                Allowed = 0;
+                Disallowed = 1;
             }
         );
 

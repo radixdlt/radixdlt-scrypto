@@ -227,18 +227,18 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
 mod tests {
     use super::*;
 
+    use crate::constants::*;
     use crate::data::scrypto::model::NonFungibleLocalId;
     use crate::data::scrypto::{well_known_scrypto_custom_types, ScryptoValue};
     use crate::data::scrypto::{ScryptoCustomSchema, ScryptoDescribe};
     use crate::math::{Decimal, PreciseDecimal};
-    use crate::native_addresses::*;
     use crate::types::{PackageAddress, ResourceAddress};
 
     pub struct Bucket;
 
     impl Describe<ScryptoCustomTypeKind> for Bucket {
         const TYPE_ID: GlobalTypeId =
-            GlobalTypeId::WellKnown([well_known_scrypto_custom_types::OWN_BUCKET_ID]);
+            GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_BUCKET_TYPE);
 
         fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
             well_known_scrypto_custom_types::own_bucket_type_data()
@@ -249,7 +249,7 @@ mod tests {
 
     impl Describe<ScryptoCustomTypeKind> for Proof {
         const TYPE_ID: GlobalTypeId =
-            GlobalTypeId::WellKnown([well_known_scrypto_custom_types::OWN_PROOF_ID]);
+            GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_PROOF_TYPE);
 
         fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
             well_known_scrypto_custom_types::own_proof_type_data()
@@ -288,10 +288,12 @@ mod tests {
                 value: ManifestCustomValue::Proof(ManifestProof(0)),
             },
             ManifestValue::Custom {
-                value: ManifestCustomValue::Decimal(ManifestDecimal([0; 32])),
+                value: ManifestCustomValue::Decimal(ManifestDecimal([0; DECIMAL_SIZE])),
             },
             ManifestValue::Custom {
-                value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal([0; 64])),
+                value: ManifestCustomValue::PreciseDecimal(ManifestPreciseDecimal(
+                    [0; PRECISE_DECIMAL_SIZE],
+                )),
             },
             ManifestValue::Custom {
                 value: ManifestCustomValue::NonFungibleLocalId(ManifestNonFungibleLocalId::String(
@@ -312,9 +314,10 @@ mod tests {
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
         );
 
         result.expect("Validation check failed");
@@ -385,9 +388,10 @@ mod tests {
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
         );
 
         result.expect("Expected validation to succeed");
@@ -399,9 +403,10 @@ mod tests {
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
         );
 
         matches!(

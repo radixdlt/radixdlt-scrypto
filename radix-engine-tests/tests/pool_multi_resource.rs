@@ -6,8 +6,10 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::pool::*;
-use scrypto_unit::{is_auth_error, TestRunner};
+use scrypto::prelude::Pow;
+use scrypto_unit::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 
 #[test]
@@ -161,11 +163,10 @@ fn contributing_provides_expected_amount_of_pool_units1() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -217,11 +218,10 @@ fn contributing_provides_expected_amount_of_pool_units2() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -273,11 +273,10 @@ fn contributing_provides_expected_amount_of_pool_units3() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -329,11 +328,10 @@ fn contributing_provides_expected_amount_of_pool_units4() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -406,7 +404,7 @@ fn contributing_tokens_that_do_not_belong_to_pool_fails() {
 #[test]
 fn creating_a_pool_with_non_fungible_resources_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
@@ -421,6 +419,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
                 resource_addresses: [non_fungible_resource].into(),
                 pool_manager_rule: rule!(allow_all),
                 owner_role: OwnerRole::None,
+                address_reservation: None,
             },
         )
         .build();
@@ -464,11 +463,10 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
     let receipt = test_runner.redeem(dec!("1.11111111111111"), true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     for (resource_address, amount) in expected_change.iter() {
         assert_eq!(
             account_balance_changes.get(resource_address).cloned(),
@@ -505,11 +503,10 @@ fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
     let receipt = test_runner.contribute(contributions, true);
 
     // Assert
-    let pool_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.pool_component_address))
-        .unwrap();
+    let pool_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.pool_component_address.as_node_id(),
+    );
     assert_eq!(
         pool_balance_changes
             .get(&test_runner.pool_resources[0])
@@ -610,7 +607,9 @@ fn deposits_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "DepositEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "DepositEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -646,7 +645,9 @@ fn withdraws_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -682,7 +683,9 @@ fn withdraws_with_rounding_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -743,8 +746,78 @@ fn cant_withdraw_without_proper_signature() {
     receipt.expect_specific_failure(is_auth_error)
 }
 
+#[test]
+fn contribution_of_large_values_should_not_cause_panic() {
+    // Arrange
+    let max_mint_amount = Decimal(I192::from(2).pow(152));
+    let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
+
+    // Act
+    let receipt = test_runner.contribute(
+        btreemap!(
+            test_runner.pool_resources[0] => max_mint_amount,
+            test_runner.pool_resources[1] => max_mint_amount,
+            test_runner.pool_resources[2] => max_mint_amount,
+        ),
+        true,
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MultiResourcePoolError(
+                MultiResourcePoolError::DecimalOverflowError
+            ))
+        )
+    });
+}
+
+#[test]
+fn get_redemption_value_should_not_panic_on_large_values() {
+    // Arrange
+    let mint_amount = Decimal(I192::from(2).pow(40));
+    let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
+    let receipt = test_runner.contribute(
+        btreemap!(
+            test_runner.pool_resources[0] => mint_amount,
+            test_runner.pool_resources[1] => mint_amount,
+            test_runner.pool_resources[2] => mint_amount,
+        ),
+        true,
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.call_get_redemption_value(Decimal::MAX, true);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MultiResourcePoolError(
+                MultiResourcePoolError::InvalidGetRedemptionAmount
+            ))
+        )
+    });
+}
+
+fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
+    match event_type_identifier.0 {
+        Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type() {
+            Some(
+                EntityType::GlobalOneResourcePool
+                | EntityType::GlobalTwoResourcePool
+                | EntityType::GlobalMultiResourcePool,
+            ) => true,
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
 struct TestEnvironment<const N: usize> {
-    test_runner: TestRunner,
+    test_runner: DefaultTestRunner,
 
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -761,7 +834,7 @@ impl<const N: usize> TestEnvironment<N> {
     }
 
     pub fn new_with_owner(divisibility: [u8; N], owner_role: OwnerRole) -> Self {
-        let mut test_runner = TestRunner::builder().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
@@ -784,6 +857,7 @@ impl<const N: usize> TestEnvironment<N> {
                         resource_addresses: resource_addresses.clone().into(),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                         owner_role,
+                        address_reservation: None,
                     },
                 )
                 .build();
@@ -791,16 +865,8 @@ impl<const N: usize> TestEnvironment<N> {
             let commit_result = receipt.expect_commit_success();
 
             (
-                commit_result
-                    .new_component_addresses()
-                    .get(0)
-                    .unwrap()
-                    .clone(),
-                commit_result
-                    .new_resource_addresses()
-                    .get(0)
-                    .unwrap()
-                    .clone(),
+                commit_result.new_component_addresses()[0],
+                commit_result.new_resource_addresses()[0],
             )
         };
 
@@ -829,7 +895,7 @@ impl<const N: usize> TestEnvironment<N> {
                 MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_entire_worktop_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -851,7 +917,7 @@ impl<const N: usize> TestEnvironment<N> {
                     },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_entire_worktop_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -894,7 +960,7 @@ impl<const N: usize> TestEnvironment<N> {
                     withdraw_strategy,
                 },
             )
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_entire_worktop_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -937,6 +1003,15 @@ impl<const N: usize> TestEnvironment<N> {
         amount_of_pool_units: D,
         sign: bool,
     ) -> MultiResourcePoolGetRedemptionValueOutput {
+        let receipt = self.call_get_redemption_value(amount_of_pool_units, sign);
+        receipt.expect_commit_success().output(1)
+    }
+
+    fn call_get_redemption_value<D: Into<Decimal>>(
+        &mut self,
+        amount_of_pool_units: D,
+        sign: bool,
+    ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
@@ -946,8 +1021,7 @@ impl<const N: usize> TestEnvironment<N> {
                 },
             )
             .build();
-        let receipt = self.execute_manifest(manifest, sign);
-        receipt.expect_commit_success().output(1)
+        self.execute_manifest(manifest, sign)
     }
 }
 

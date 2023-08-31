@@ -18,7 +18,7 @@ mod vault_test {
                     }
                 })
                 .mint_initial_supply([(1u64.into(), Data {})]);
-            Vault::with_bucket(bucket)
+            Vault::with_bucket(bucket.into())
         }
 
         fn create_non_fungible_vault() -> Vault {
@@ -29,7 +29,7 @@ mod vault_test {
                     }
                 })
                 .mint_initial_supply([(1u64.into(), Data {}), (2u64.into(), Data {})]);
-            Vault::with_bucket(bucket)
+            Vault::with_bucket(bucket.into())
         }
 
         pub fn new_non_fungible_vault() -> Global<NonFungibleVault> {
@@ -91,7 +91,7 @@ mod vault_test {
 
         pub fn new_vault_with_get_non_fungible_local_ids() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
-            let _ids = vault.as_non_fungible().non_fungible_local_ids();
+            let _ids = vault.as_non_fungible().non_fungible_local_ids(100);
             Self { vault }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)

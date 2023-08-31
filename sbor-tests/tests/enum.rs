@@ -100,9 +100,10 @@ fn check_encode_decode_schema<T: BasicEncode + BasicDecode + BasicDescribe + Eq 
     let (type_index, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
     validate_payload_against_schema::<NoCustomExtension, ()>(
         &basic_encode(value).unwrap(),
-        &schema,
+        schema.v1(),
         type_index,
         &(),
+        64,
     )
     .unwrap();
 }

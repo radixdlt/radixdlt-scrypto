@@ -6,7 +6,7 @@ use scrypto_unit::*;
 #[test]
 fn advancing_round_changes_app_facing_minute_resolution_clock() {
     // Arrange
-    let mut test_runner = TestRunner::builder()
+    let mut test_runner = TestRunnerBuilder::new()
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
@@ -38,7 +38,7 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
 #[test]
 fn advancing_round_changes_internal_milli_timestamp() {
     // Arrange
-    let mut test_runner = TestRunner::builder()
+    let mut test_runner = TestRunnerBuilder::new()
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),

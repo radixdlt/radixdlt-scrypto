@@ -4,7 +4,7 @@ use scrypto_unit::*;
 #[test]
 fn setting_single_epoch_succeeds() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let epoch = Epoch::of(12);
 
     // Act
@@ -17,7 +17,7 @@ fn setting_single_epoch_succeeds() {
 #[test]
 fn setting_multiple_epochs_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let epochs = vec![0, 100, 12, 19, 128, 4]
         .into_iter()
         .map(Epoch::of)

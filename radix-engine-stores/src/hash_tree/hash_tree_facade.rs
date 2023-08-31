@@ -4,7 +4,7 @@ use sbor::rust::vec::Vec;
 use crate::hash_tree::types::LeafKey;
 
 use super::tree_store::{
-    Payload, ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
+    ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
 };
 use super::types::{
     Child, InternalNode, LeafNode, Nibble, NibblePath, Node, NodeKey, NodeType, StorageError,
@@ -26,22 +26,21 @@ impl TreeInternalNode {
     }
 }
 
-impl<P: Clone> TreeLeafNode<P> {
-    fn from(key: &NodeKey, leaf_node: &LeafNode<P>) -> Self {
+impl TreeLeafNode {
+    fn from(key: &NodeKey, leaf_node: &LeafNode<()>) -> Self {
         TreeLeafNode {
             key_suffix: NibblePath::from_iter(
                 NibblePath::new_even(leaf_node.leaf_key().bytes.clone())
                     .nibbles()
                     .skip(key.nibble_path().num_nibbles()),
             ),
-            payload: leaf_node.payload().clone(),
             value_hash: leaf_node.value_hash(),
         }
     }
 }
 
-impl<P: Clone> TreeNode<P> {
-    pub fn from(key: &NodeKey, node: &Node<P>) -> Self {
+impl TreeNode {
+    pub fn from(key: &NodeKey, node: &Node<()>) -> Self {
         match node {
             Node::Internal(internal_node) => {
                 TreeNode::Internal(TreeInternalNode::from(internal_node))
@@ -77,8 +76,8 @@ impl InternalNode {
     }
 }
 
-impl<P: Clone> Node<P> {
-    fn from(key: &NodeKey, tree_node: &TreeNode<P>) -> Self {
+impl Node<()> {
+    fn from(key: &NodeKey, tree_node: &TreeNode) -> Self {
         match tree_node {
             TreeNode::Internal(internal_node) => Node::Internal(InternalNode::from(internal_node)),
             TreeNode::Leaf(leaf_node) => Node::Leaf(LeafNode::from(key, leaf_node)),
@@ -87,8 +86,8 @@ impl<P: Clone> Node<P> {
     }
 }
 
-impl<P: Clone> LeafNode<P> {
-    fn from(key: &NodeKey, leaf_node: &TreeLeafNode<P>) -> Self {
+impl LeafNode<()> {
+    fn from(key: &NodeKey, leaf_node: &TreeLeafNode) -> Self {
         let full_key = NibblePath::from_iter(
             key.nibble_path()
                 .nibbles()
@@ -97,14 +96,14 @@ impl<P: Clone> LeafNode<P> {
         LeafNode::new(
             LeafKey::new(full_key.bytes()),
             leaf_node.value_hash,
-            leaf_node.payload.clone(),
+            (),
             key.version(),
         )
     }
 }
 
-impl<R: ReadableTreeStore<P>, P: Payload> TreeReader<P> for R {
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<P>>, StorageError> {
+impl<R: ReadableTreeStore> TreeReader<()> for R {
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<()>>, StorageError> {
         Ok(self
             .get_node(node_key)
             .map(|tree_node| Node::from(node_key, &tree_node)))

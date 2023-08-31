@@ -1,11 +1,10 @@
 [package]
 name = "radix-engine"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
-radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
 radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
@@ -17,23 +16,20 @@ hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 bitflags = { version = "1.3" }
 lru = { version = "0.8.1", default-features = false, optional = true}
-moka = { version = "0.9.4", features = ["sync"], default-features = false, optional = true }
+moka = { version = "0.9.9", features = ["sync"], default-features = false, optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 perfcnt = { version = "0.8.0", optional = true }
 radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"] }
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 paste = { version = "1.0.13" }
-
-# WASM de-/serialization
-parity-wasm = { version = "0.42.2", features = ["sign_ext"] }
+radix-engine-macros = { path = "../radix-engine-macros" }
 
 # WASM validation
-# Currently wasmparser does not support 'no_std` - https://github.com/bytecodealliance/wasmtime/issues/3495
-# Thus using a wasmparser fork with 'no_std' support: https://crates.io/crates/wasmparser-nostd
-wasmparser = { version = "0.100.1", package = "wasmparser-nostd", default-features = false }
+wasmparser = { version = "0.107.0", default-features = false }
+syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 
 # WASM instrumentation
-wasm-instrument = { version = "0.1.0", features = ["sign_ext"] }
+wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "radix-master", default-features = false,  features = ["ignore_custom_section"]}
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
@@ -49,11 +45,20 @@ lazy_static = { version = "1.4.0" }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }
+criterion = { version = "0.3", features = ["html_reports"] }
+wasm-benchmarks-lib = { path = "./wasm-benchmarks-lib", default-features = false }
+
+wasmer = { version = "2.2.1"}
+wasmer-compiler-singlepass = { version = "2.2.1" }
+
+[[bench]]
+name = "wasm_benchmarks"
+harness = false
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std", "wasmparser/std"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std", "wasm-instrument/std" ]
 alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
@@ -70,6 +75,9 @@ lru = ["dep:lru"]
 
 resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine-common/resource_tracker"]
 
+# System/Application Database Checker
+db_checker = []
+
 # This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi/wasmer
 # to prevent non-determinism when fuzzing
 radix_engine_fuzzing = []
@@ -77,6 +85,8 @@ radix_engine_fuzzing = []
 # This flag enables code parts used only for testing. Using "test" config option is not enough in cases,
 # when external crate is used for tests (eg. radix-engine-tests)
 radix_engine_tests = []
+
+full_wasm_benchmarks = []
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

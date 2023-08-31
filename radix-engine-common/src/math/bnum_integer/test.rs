@@ -7,42 +7,63 @@ use num_bigint::{BigInt, Sign};
 
 use radix_engine_common::*;
 
-test_impl! {BnumI256, BnumI384, BnumI512, BnumI768, BnumU256, BnumU384, BnumU512, BnumU768}
+test_impl! {I192, I256, I320, I384, I448, I512, I768}
+test_impl! {U192, U256, U320, U384, U448, U512, U768}
 
 test_add_all! {
-    (BnumI256, BnumI384, BnumI512, BnumI768, BnumU256, BnumU384, BnumU512, BnumU768),
-    (BnumI256, BnumI384, BnumI512, BnumI768, BnumU256, BnumU384, BnumU512, BnumU768)
+    (I192, I256, I320, I384, I448, I512, I768,
+     U192, U256, U320, U384, U448, U512, U768),
+    (I192, I256, I320, I384, I448, I512, I768,
+     U192, U256, U320, U384, U448, U512, U768)
 }
 
-test_signed! { BnumI256, BnumI384, BnumI512, BnumI768 }
-test_unsigned! { BnumU256, BnumU384, BnumU512, BnumU768 }
+test_signed! { I192, I256, I320, I384, I448, I512, I768 }
+test_unsigned! { U192, U256, U320, U384, U448, U512, U768 }
 
-test_from_all_types_safe_builtin! {BnumI256, (i8, i16, i32, i64, i128)}
-test_from_all_types_safe_builtin! {BnumI256, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {I192, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I192, (u8, u16, u32, u64, u128)}
 
-test_from_all_types_safe_builtin! {BnumI384, (i8, i16, i32, i64, i128)}
-test_from_all_types_safe_builtin! {BnumI384, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {I256, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I256, (u8, u16, u32, u64, u128)}
 
-test_from_all_types_safe_builtin! {BnumI512, (i8, i16, i32, i64, i128)}
-test_from_all_types_safe_builtin! {BnumI512, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {I320, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I320, (u8, u16, u32, u64, u128)}
 
-test_from_all_types_safe_builtin! {BnumI768, (i8, i16, i32, i64, i128)}
-test_from_all_types_safe_builtin! {BnumI768, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {I384, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I384, (u8, u16, u32, u64, u128)}
 
-test_from_all_types_safe_builtin! {BnumU256, (u8, u16, u32, u64, u128)}
-test_from_all_types_safe_builtin! {BnumU384, (u8, u16, u32, u64, u128)}
-test_from_all_types_safe_builtin! {BnumU512, (u8, u16, u32, u64, u128)}
-test_from_all_types_safe_builtin! {BnumU768, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {I448, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I448, (u8, u16, u32, u64, u128)}
 
-test_from_all_types_safe_safe! {BnumI256, (BnumI384, BnumI512, BnumI768)}
-test_from_all_types_safe_safe! {BnumI384, (BnumI256, BnumI512, BnumI768)}
-test_from_all_types_safe_safe! {BnumI512, (BnumI256, BnumI384, BnumI768)}
-test_from_all_types_safe_safe! {BnumI768, (BnumI256, BnumI384, BnumI512)}
+test_from_all_types_safe_builtin! {I512, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I512, (u8, u16, u32, u64, u128)}
 
-test_from_all_types_safe_safe! {BnumU256, (BnumU384, BnumU512, BnumU768)}
-test_from_all_types_safe_safe! {BnumU384, (BnumU256, BnumU512, BnumU768)}
-test_from_all_types_safe_safe! {BnumU512, (BnumU256, BnumU384, BnumU768)}
-test_from_all_types_safe_safe! {BnumU768, (BnumU256, BnumU384, BnumU512)}
+test_from_all_types_safe_builtin! {I768, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I768, (u8, u16, u32, u64, u128)}
+
+test_from_all_types_safe_builtin! {U192, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {U256, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {U320, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {U384, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {U448, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {U512, (u8, u16, u32, u64, u128)}
+test_from_all_types_safe_builtin! {U768, (u8, u16, u32, u64, u128)}
+
+test_from_all_types_safe_safe! {I192, (I256, I320, I384, I448, I512, I768)}
+test_from_all_types_safe_safe! {I256, (I192, I320, I384, I448, I512, I768)}
+test_from_all_types_safe_safe! {I320, (I192, I256, I384, I448, I512, I768)}
+test_from_all_types_safe_safe! {I384, (I192, I256, I320, I448, I512, I768)}
+test_from_all_types_safe_safe! {I448, (I192, I256, I320, I384, I512, I768)}
+test_from_all_types_safe_safe! {I512, (I192, I256, I320, I384, I448, I768)}
+test_from_all_types_safe_safe! {I768, (I192, I256, I320, I384, I448, I512)}
+
+test_from_all_types_safe_safe! {U192, (U256, U320, U384, U448, U512, U768)}
+test_from_all_types_safe_safe! {U256, (U192, U320, U384, U448, U512, U768)}
+test_from_all_types_safe_safe! {U320, (U192, U256, U384, U448, U512, U768)}
+test_from_all_types_safe_safe! {U384, (U192, U256, U320, U448, U512, U768)}
+test_from_all_types_safe_safe! {U448, (U192, U256, U320, U384, U512, U768)}
+test_from_all_types_safe_safe! {U512, (U192, U256, U320, U384, U448, U768)}
+test_from_all_types_safe_safe! {U768, (U192, U256, U320, U384, U448, U512)}
 
 #[cfg(test)]
 macro_rules! assert_int_size {
@@ -56,14 +77,20 @@ macro_rules! assert_int_size {
 #[test]
 fn test_int_size() {
     assert_int_size! {
-        256 BnumI256,
-        384 BnumI384,
-        512 BnumI512,
-        768 BnumI768,
-        256 BnumU256,
-        384 BnumU384,
-        512 BnumU512,
-        768 BnumU768
+        192 I192,
+        256 I256,
+        320 I320,
+        384 I384,
+        448 I448,
+        512 I512,
+        768 I768,
+        192 U192,
+        256 U256,
+        320 U320,
+        384 U384,
+        448 U448,
+        512 U512,
+        768 U768
     }
 }
 
@@ -150,18 +177,24 @@ macro_rules! test_bnums {
                         <$t>::from_str("49411565790213547262766437937260727785410401").unwrap()
                     );
                     assert_eq!(
-                        <$t>::from(153_u32).pow(30),
-                        <$t>::from_str("347330502405572936124071262363392351825462559418275421545603605649").unwrap()
+                        <$t>::from(153_u32).pow(25),
+                        <$t>::from_str("4142721807044360524568533828494071080154747151557663193").unwrap()
                     );
                 }
 
                 #[test]
                 #[should_panic(expected = "Overflow")]
                 fn [< test_ $t:lower _pow_overflow_panic_1 >]() {
-                    if <$t>::BITS == 256 {
+                    if <$t>::BITS == 192 {
                         let _ = <$t>::from(153_u32).pow(40);
+                    } else if <$t>::BITS == 256 {
+                        let _ = <$t>::from(153_u32).pow(40);
+                    } else if <$t>::BITS == 320 {
+                        let _ = <$t>::from(153_u32).pow(60);
                     } else if <$t>::BITS == 384 {
                         let _ = <$t>::from(153_u32).pow(60);
+                    } else if <$t>::BITS == 448 {
+                        let _ = <$t>::from(153_u32).pow(70);
                     } else if <$t>::BITS == 512 {
                         let _ = <$t>::from(153_u32).pow(80);
                     } else if <$t>::BITS == 768 {
@@ -255,8 +288,11 @@ macro_rules! test_bnums {
         }
     }
 }
+
 #[cfg(test)]
-test_bnums! { BnumI256, BnumI384, BnumI512, BnumI768, BnumU256, BnumU384, BnumU512, BnumU768 }
+test_bnums! { I192, I256, I320, I384, I448, I512, I768 }
+#[cfg(test)]
+test_bnums! { U192, U256, U320, U384, U448, U512, U768 }
 
 #[cfg(test)]
 macro_rules! test_bnums_signed {
@@ -275,14 +311,14 @@ macro_rules! test_bnums_signed {
     }
 }
 #[cfg(test)]
-test_bnums_signed! { BnumI256, BnumI384, BnumI512, BnumI768 }
+test_bnums_signed! { I192, I256, I320, I384, I448, I512, I768 }
 
 #[test]
 #[should_panic(expected = "Err")]
 fn test_string_to_bnum_panic_2() {
     assert_eq!(
-        BnumI256::MAX,
-        BnumI256::from_str(
+        I256::MAX,
+        I256::from_str(
             "578960446186580977117854925043439539266349923328202820197287920039565648199670"
         )
         .unwrap()
@@ -341,79 +377,88 @@ macro_rules! test_to_from_bigint {
         }
     }
 }
-test_to_from_bigint! { BnumI256, BnumI384, BnumI512, BnumI768, BnumU256, BnumU384, BnumU512, BnumU768 }
+test_to_from_bigint! { I192, I256, I320, I384, I448, I512, I768 }
+test_to_from_bigint! { U192, U256, U320, U384, U448, U512, U768 }
 
 #[test]
 fn test_bnum_to_bnum() {
-    let a = BnumI256::from(1);
-    let b = BnumU256::try_from(a).unwrap();
-    assert_eq!(b, BnumU256::ONE);
+    let a = I192::from(1);
+    let b = U192::try_from(a).unwrap();
+    assert_eq!(b, U192::ONE);
 
-    let a = BnumI256::from(-123);
-    let b = BnumI512::from(a);
+    let a = I256::from(1);
+    let b = U256::try_from(a).unwrap();
+    assert_eq!(b, U256::ONE);
+
+    let a = I256::from(-123);
+    let b = I512::from(a);
     assert_eq!(a.to_string(), b.to_string());
 
-    let a = BnumI256::MAX;
-    let b = BnumU256::try_from(a).unwrap();
+    let a = I256::MAX;
+    let b = U256::try_from(a).unwrap();
     assert_eq!(a.to_string(), b.to_string());
 
-    let a = BnumI256::MIN;
-    let b = BnumI512::from(a);
+    let a = I256::MIN;
+    let b = I512::from(a);
     assert_eq!(a.to_string(), b.to_string());
 
-    let a = BnumU256::MAX;
-    let b = BnumI512::from(a);
+    let a = U256::MAX;
+    let b = I512::from(a);
     assert_eq!(a.to_string(), b.to_string());
 
-    let a = BnumU256::MAX;
-    let b = BnumI384::from(a);
+    let a = U256::MAX;
+    let b = I384::from(a);
     assert_eq!(a.to_string(), b.to_string());
 }
 
 #[test]
 fn test_bnum_to_bnum_errors() {
-    let i512 = BnumI512::MIN;
-    let err = BnumI256::try_from(i512).unwrap_err();
-    assert_eq!(err, ParseBnumI256Error::Overflow);
+    let i512 = I512::MIN;
+    let err = I192::try_from(i512).unwrap_err();
+    assert_eq!(err, ParseI192Error::Overflow);
+
+    let i512 = I512::MIN;
+    let err = I256::try_from(i512).unwrap_err();
+    assert_eq!(err, ParseI256Error::Overflow);
 
     // I256::MAX + 1
-    let i256_str = BnumI256::MAX.to_string();
-    let i512 = BnumI512::from_str(&i256_str).unwrap() + BnumI512::ONE;
-    let err = BnumI256::try_from(i512).unwrap_err();
-    assert_eq!(err, ParseBnumI256Error::Overflow);
+    let i256_str = I256::MAX.to_string();
+    let i512 = I512::from_str(&i256_str).unwrap() + I512::ONE;
+    let err = I256::try_from(i512).unwrap_err();
+    assert_eq!(err, ParseI256Error::Overflow);
 
     // I256::MIN - 1
-    let i256_str = BnumI256::MIN.to_string();
-    let i512 = BnumI512::from_str(&i256_str).unwrap() - BnumI512::ONE;
-    let err = BnumI256::try_from(i512).unwrap_err();
-    assert_eq!(err, ParseBnumI256Error::Overflow);
+    let i256_str = I256::MIN.to_string();
+    let i512 = I512::from_str(&i256_str).unwrap() - I512::ONE;
+    let err = I256::try_from(i512).unwrap_err();
+    assert_eq!(err, ParseI256Error::Overflow);
 
-    let u256 = BnumU256::MAX;
-    let err = BnumI256::try_from(u256).unwrap_err();
-    assert_eq!(err, ParseBnumI256Error::Overflow);
+    let u256 = U256::MAX;
+    let err = I256::try_from(u256).unwrap_err();
+    assert_eq!(err, ParseI256Error::Overflow);
 
-    let i512_str = BnumI512::MAX.to_string();
-    let u512 = BnumU512::from_str(&i512_str).unwrap() + BnumU512::ONE;
-    let err = BnumU256::try_from(u512).unwrap_err();
-    assert_eq!(err, ParseBnumU256Error::Overflow);
+    let i512_str = I512::MAX.to_string();
+    let u512 = U512::from_str(&i512_str).unwrap() + U512::ONE;
+    let err = U256::try_from(u512).unwrap_err();
+    assert_eq!(err, ParseU256Error::Overflow);
 
-    let u512 = BnumU512::MAX;
-    let err = BnumI256::try_from(u512).unwrap_err();
-    assert_eq!(err, ParseBnumI256Error::Overflow);
+    let u512 = U512::MAX;
+    let err = I256::try_from(u512).unwrap_err();
+    assert_eq!(err, ParseI256Error::Overflow);
 
-    let a = BnumU256::MAX;
-    let b = BnumI256::try_from(a).unwrap_err();
-    assert_eq!(b, ParseBnumI256Error::Overflow);
+    let a = U256::MAX;
+    let b = I256::try_from(a).unwrap_err();
+    assert_eq!(b, ParseI256Error::Overflow);
 
-    let i512 = -BnumI512::ONE;
-    let err = BnumU256::try_from(i512).unwrap_err();
-    assert_eq!(err, ParseBnumU256Error::NegativeToUnsigned);
+    let i512 = -I512::ONE;
+    let err = U256::try_from(i512).unwrap_err();
+    assert_eq!(err, ParseU256Error::NegativeToUnsigned);
 
-    let i256 = BnumI256::from(-123);
-    let err = BnumU512::try_from(i256).unwrap_err();
-    assert_eq!(err, ParseBnumU512Error::NegativeToUnsigned);
+    let i256 = I256::from(-123);
+    let err = U512::try_from(i256).unwrap_err();
+    assert_eq!(err, ParseU512Error::NegativeToUnsigned);
 
-    let i384 = BnumI384::MAX;
-    let err = BnumU256::try_from(i384).unwrap_err();
-    assert_eq!(err, ParseBnumU256Error::Overflow);
+    let i384 = I384::MAX;
+    let err = U256::try_from(i384).unwrap_err();
+    assert_eq!(err, ParseU256Error::Overflow);
 }

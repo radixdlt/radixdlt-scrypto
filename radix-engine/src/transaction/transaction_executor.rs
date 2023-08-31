@@ -1,59 +1,97 @@
-use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
+use crate::blueprints::consensus_manager::{
+    ConsensusManagerField, ConsensusManagerStateFieldPayload,
+    ConsensusManagerValidatorRewardsFieldPayload,
+};
+use crate::blueprints::models::FieldPayload;
+use crate::blueprints::resource::{
+    BurnFungibleResourceEvent, DepositEvent, FungibleVaultBalanceFieldPayload,
+    FungibleVaultBalanceFieldSubstate, FungibleVaultField, PayFeeEvent,
+};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
+use crate::blueprints::transaction_tracker::{
+    TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate,
+};
 use crate::errors::*;
+use crate::internal_prelude::KeyValueEntrySubstateV1;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
-use crate::track::interface::SubstateStore;
+use crate::system::system_substates::KeyValueEntrySubstate;
+use crate::system::system_substates::{FieldSubstate, SubstateMutability};
+use crate::track::interface::CommitableSubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
-use crate::vm::wasm::*;
-use crate::vm::{ScryptoVm, Vm};
-use radix_engine_constants::*;
-use radix_engine_interface::api::LockFlags;
+use radix_engine_common::constants::*;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
 
-#[derive(Debug, Clone)]
-pub struct FeeReserveConfig {
-    pub cost_unit_price: Decimal,
+/// Protocol-defined costing parameters
+#[derive(Debug, Copy, Clone, ScryptoSbor)]
+pub struct CostingParameters {
+    /// The price of execution cost unit in XRD.
+    pub execution_cost_unit_price: Decimal,
+    /// The max number execution cost units to consume.
+    pub execution_cost_unit_limit: u32,
+    /// The number of execution cost units loaned from system.
+    pub execution_cost_unit_loan: u32,
+
+    /// The price of finalization cost unit in XRD.
+    pub finalization_cost_unit_price: Decimal,
+    /// The max number finalization cost units to consume.
+    pub finalization_cost_unit_limit: u32,
+
+    /// The price of USD in xrd
     pub usd_price: Decimal,
-    pub state_expansion_price: Decimal,
-    pub system_loan: u32,
+    /// The price of state storage in xrd
+    pub state_storage_price: Decimal,
+    /// The price of archive storage in xrd
+    pub archive_storage_price: Decimal,
 }
 
-impl Default for FeeReserveConfig {
+impl Default for CostingParameters {
     fn default() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
-            usd_price: DEFAULT_USD_PRICE_IN_XRD.try_into().unwrap(),
-            state_expansion_price: DEFAULT_STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
-            system_loan: DEFAULT_SYSTEM_LOAN,
+            execution_cost_unit_price: EXECUTION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            execution_cost_unit_limit: EXECUTION_COST_UNIT_LIMIT,
+            execution_cost_unit_loan: EXECUTION_COST_UNIT_LOAN,
+            finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
+            usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
+            state_storage_price: STATE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
+            archive_storage_price: ARCHIVE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
         }
+    }
+}
+
+impl CostingParameters {
+    pub fn with_execution_cost_unit_limit(mut self, execution_cost_unit_limit: u32) -> Self {
+        self.execution_cost_unit_limit = execution_cost_unit_limit;
+        self
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
+    pub network_definition: NetworkDefinition,
     pub enabled_modules: EnabledModules,
+    pub abort_when_loan_repaid: bool,
+    pub enable_cost_breakdown: bool,
     pub max_execution_trace_depth: usize,
     pub max_call_depth: usize,
-    pub cost_unit_limit: u32,
-    pub abort_when_loan_repaid: bool,
-    pub max_number_of_substates_in_track: usize,
-    pub max_number_of_substates_in_heap: usize,
-    pub max_substate_size: usize,
+    pub max_heap_substate_total_bytes: usize,
+    pub max_track_substate_total_bytes: usize,
+    pub max_substate_key_size: usize,
+    pub max_substate_value_size: usize,
     pub max_invoke_input_size: usize,
-    pub enable_cost_breakdown: bool,
     pub max_event_size: usize,
     pub max_log_size: usize,
     pub max_panic_message_size: usize,
@@ -65,51 +103,50 @@ pub struct ExecutionConfig {
 impl ExecutionConfig {
     /// Creates an `ExecutionConfig` using default configurations.
     /// This is internal. Clients should use `for_xxx` constructors instead.
-    fn default() -> Self {
+    fn default(network_definition: NetworkDefinition) -> Self {
         Self {
+            network_definition,
             enabled_modules: EnabledModules::for_notarized_transaction(),
-            max_execution_trace_depth: DEFAULT_MAX_EXECUTION_TRACE_DEPTH,
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
-            max_number_of_substates_in_track: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
-            max_number_of_substates_in_heap: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
-            max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
-            max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
             enable_cost_breakdown: false,
-            max_event_size: DEFAULT_MAX_EVENT_SIZE,
-            max_log_size: DEFAULT_MAX_LOG_SIZE,
-            max_panic_message_size: DEFAULT_MAX_PANIC_MESSAGE_SIZE,
-            max_number_of_logs: DEFAULT_MAX_NUMBER_OF_LOGS,
-            max_number_of_events: DEFAULT_MAX_NUMBER_OF_EVENTS,
-            max_per_function_royalty_in_xrd: Decimal::try_from(
-                DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-            )
-            .unwrap(),
+            max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
+            max_call_depth: MAX_CALL_DEPTH,
+            max_heap_substate_total_bytes: MAX_HEAP_SUBSTATE_TOTAL_BYTES,
+            max_track_substate_total_bytes: MAX_TRACK_SUBSTATE_TOTAL_BYTES,
+            max_substate_key_size: MAX_SUBSTATE_KEY_SIZE,
+            max_substate_value_size: MAX_SUBSTATE_VALUE_SIZE,
+            max_invoke_input_size: MAX_INVOKE_PAYLOAD_SIZE,
+            max_event_size: MAX_EVENT_SIZE,
+            max_log_size: MAX_LOG_SIZE,
+            max_panic_message_size: MAX_PANIC_MESSAGE_SIZE,
+            max_number_of_logs: MAX_NUMBER_OF_LOGS,
+            max_number_of_events: MAX_NUMBER_OF_EVENTS,
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                .unwrap(),
         }
     }
 
-    pub fn for_genesis_transaction() -> Self {
+    pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
-            max_number_of_substates_in_track: 50_000,
-            max_number_of_substates_in_heap: 50_000,
-            max_number_of_events: 1_000_000,
-            ..Self::default()
+            max_heap_substate_total_bytes: 512 * 1024 * 1024,
+            max_track_substate_total_bytes: 512 * 1024 * 1024,
+            max_number_of_events: 1024 * 1024,
+            ..Self::default(network_definition)
         }
     }
 
-    pub fn for_system_transaction() -> Self {
+    pub fn for_system_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_system_transaction(),
-            ..Self::default()
+            ..Self::default(network_definition)
         }
     }
 
-    pub fn for_notarized_transaction() -> Self {
+    pub fn for_notarized_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
-            ..Self::default()
+            ..Self::default(network_definition)
         }
     }
 
@@ -117,15 +154,15 @@ impl ExecutionConfig {
         Self {
             enabled_modules: EnabledModules::for_test_transaction(),
             enable_cost_breakdown: true,
-            ..Self::default()
+            ..Self::default(NetworkDefinition::simulator())
         }
     }
 
-    pub fn for_preview() -> Self {
+    pub fn for_preview(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_preview(),
             enable_cost_breakdown: true,
-            ..Self::default()
+            ..Self::default(network_definition)
         }
     }
 
@@ -143,11 +180,6 @@ impl ExecutionConfig {
         self
     }
 
-    pub fn with_cost_unit_limit(mut self, cost_unit_limit: u32) -> Self {
-        self.cost_unit_limit = cost_unit_limit;
-        self
-    }
-
     pub fn up_to_loan_repayment(mut self, enabled: bool) -> Self {
         self.abort_when_loan_repaid = enabled;
         self
@@ -157,45 +189,34 @@ impl ExecutionConfig {
 /// An executor that runs transactions.
 /// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
 /// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
-struct TransactionExecutor<'s, 'w, S, W>
+struct TransactionExecutor<'s, S, V: SystemCallbackObject + Clone>
 where
     S: SubstateDatabase,
-    W: WasmEngine,
 {
     substate_db: &'s S,
-    scrypto_vm: &'w ScryptoVm<W>,
+    vm: V,
 }
 
-impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
+impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 {
-    pub fn new(substate_db: &'s S, scrypto_vm: &'w ScryptoVm<W>) -> Self {
-        Self {
-            substate_db,
-            scrypto_vm,
-        }
+    pub fn new(substate_db: &'s S, vm: V) -> Self {
+        Self { substate_db, vm }
     }
 
     pub fn execute(
         &mut self,
         executable: &Executable,
-        fee_reserve_config: &FeeReserveConfig,
+        costing_parameters: &CostingParameters,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let free_credit = executable.fee_payment().free_credit_in_xrd;
-        let tip_percentage = executable.fee_payment().tip_percentage;
         let fee_reserve = SystemLoanFeeReserve::new(
-            fee_reserve_config.cost_unit_price,
-            fee_reserve_config.usd_price,
-            fee_reserve_config.state_expansion_price,
-            tip_percentage,
-            execution_config.cost_unit_limit,
-            fee_reserve_config.system_loan,
+            costing_parameters,
+            executable.costing_parameters(),
             execution_config.abort_when_loan_repaid,
-        )
-        .with_free_credit(free_credit);
+        );
         let fee_table = FeeTable::new();
 
         // Dump executable
@@ -241,7 +262,7 @@ where
         };
 
         // Run manifest
-        let result = match validation_result {
+        let (fee_summary, fee_details, result) = match validation_result {
             Ok(()) => {
                 let (
                     interpretation_result,
@@ -259,8 +280,38 @@ where
                     .enabled_modules
                     .contains(EnabledModules::KERNEL_TRACE)
                 {
-                    println!("{:-^100}", "Interpretation Results");
+                    println!("{:-^120}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
+                }
+
+                let fee_details = if execution_config.enable_cost_breakdown {
+                    let execution_cost_breakdown = costing_module
+                        .execution_cost_breakdown
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect();
+                    let finalization_cost_breakdown = costing_module
+                        .finalization_cost_breakdown
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect();
+                    Some(TransactionFeeDetails {
+                        execution_cost_breakdown,
+                        finalization_cost_breakdown,
+                    })
+                } else {
+                    None
+                };
+
+                // Abort the process if an error has occurred in the system layer or below. The
+                // following code is only enabled when compiling with the standard library. It's
+                // impossible for us to come across a `SystemError::SystemPanic` in no_std since
+                // we can't catch those panics in no_std.
+                #[cfg(feature = "std")]
+                if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) =
+                    interpretation_result
+                {
+                    std::process::abort()
                 }
 
                 let result_type = Self::determine_result_type(
@@ -278,18 +329,21 @@ where
                         }
 
                         // Distribute fees
-                        let (mut fee_summary, fee_payments) = Self::finalize_fees(
-                            &mut track,
-                            costing_module.fee_reserve,
-                            is_success,
-                            free_credit,
-                        );
-                        fee_summary.execution_cost_breakdown = costing_module
-                            .costing_traces
-                            .into_iter()
-                            .map(|(k, v)| (k.to_string(), v))
-                            .collect();
-                        fee_summary.fee_payments = fee_payments.clone();
+                        let (fee_reserve_finalization, paying_vaults, finalization_events) =
+                            Self::finalize_fees(
+                                &mut track,
+                                costing_module.fee_reserve,
+                                is_success,
+                                executable.costing_parameters().free_credit_in_xrd,
+                            );
+                        let fee_destination = FeeDestination {
+                            to_proposer: fee_reserve_finalization.to_proposer_amount(),
+                            to_validator_set: fee_reserve_finalization.to_validator_set_amount(),
+                            to_burn: fee_reserve_finalization.to_burn_amount(),
+                            to_royalty_recipients: fee_reserve_finalization
+                                .royalty_cost_breakdown
+                                .clone(),
+                        };
 
                         // Update intent hash status
                         if let Some(next_epoch) = Self::read_epoch(&mut track) {
@@ -301,12 +355,24 @@ where
                             );
                         }
 
-                        // Finalize everything
-                        let (application_events, application_logs) =
+                        // Finalize events and logs
+                        let (mut application_events, application_logs) =
                             runtime_module.finalize(is_success);
+                        application_events.extend(finalization_events);
+
+                        // Finalize execution trace
                         let execution_trace =
-                            execution_trace_module.finalize(&fee_payments, is_success);
+                            execution_trace_module.finalize(&paying_vaults, is_success);
+
+                        // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
+
+                        let system_structure = SystemStructure::resolve(
+                            self.substate_db,
+                            &tracked_nodes,
+                            &application_events,
+                        );
+
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
                         let state_updates = to_state_updates::<SpreadPrefixKeyMapper>(
@@ -314,41 +380,71 @@ where
                             deleted_partitions,
                         );
 
-                        TransactionResult::Commit(CommitResult {
-                            state_updates,
-                            state_update_summary,
-                            outcome: match outcome {
-                                Ok(o) => TransactionOutcome::Success(o),
-                                Err(e) => TransactionOutcome::Failure(e),
-                            },
-                            fee_summary,
-                            application_events,
-                            application_logs,
-                            execution_trace,
-                        })
+                        (
+                            fee_reserve_finalization.into(),
+                            fee_details,
+                            TransactionResult::Commit(CommitResult {
+                                state_updates,
+                                state_update_summary,
+                                fee_source: FeeSource { paying_vaults },
+                                fee_destination,
+                                outcome: match outcome {
+                                    Ok(o) => TransactionOutcome::Success(o),
+                                    Err(e) => TransactionOutcome::Failure(e),
+                                },
+                                application_events,
+                                application_logs,
+                                system_structure,
+                                execution_trace: if execution_config
+                                    .enabled_modules
+                                    .contains(EnabledModules::EXECUTION_TRACE)
+                                {
+                                    Some(execution_trace)
+                                } else {
+                                    None
+                                },
+                            }),
+                        )
                     }
-                    TransactionResultType::Reject(error) => {
-                        TransactionResult::Reject(RejectResult { error })
-                    }
-                    TransactionResultType::Abort(error) => {
-                        TransactionResult::Abort(AbortResult { reason: error })
-                    }
+                    TransactionResultType::Reject(reason) => (
+                        costing_module.fee_reserve.finalize().into(),
+                        fee_details,
+                        TransactionResult::Reject(RejectResult { reason }),
+                    ),
+                    TransactionResultType::Abort(reason) => (
+                        costing_module.fee_reserve.finalize().into(),
+                        fee_details,
+                        TransactionResult::Abort(AbortResult { reason }),
+                    ),
                 }
             }
-            Err(error) => TransactionResult::Reject(RejectResult { error }),
+            Err(reason) => (
+                // No execution is done, so add empty fee summary and details
+                TransactionFeeSummary::default(),
+                if execution_config.enable_cost_breakdown {
+                    Some(TransactionFeeDetails::default())
+                } else {
+                    None
+                },
+                TransactionResult::Reject(RejectResult { reason }),
+            ),
         };
 
         // Stop hardware resource usage tracker
         let resources_usage = match () {
             #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
-            () => ResourcesUsage::default(),
+            () => None,
             #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-            () => resources_tracker.end_measurement(),
+            () => Some(resources_tracker.end_measurement()),
         };
 
         // Produce final receipt
         let receipt = TransactionReceipt {
-            transaction_result: result,
+            costing_parameters: costing_parameters.clone(),
+            transaction_costing_parameters: executable.costing_parameters().clone(),
+            fee_summary,
+            fee_details,
+            result,
             resources_usage,
         };
 
@@ -367,36 +463,33 @@ where
     fn read_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
-        let handle = match track.acquire_lock(
+        match track.read_substate(
             CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
-            &ConsensusManagerField::ConsensusManager.into(),
-            LockFlags::read_only(),
+            &ConsensusManagerField::State.into(),
         ) {
-            Ok(x) => x.0,
-            Err(_) => {
-                return None;
+            Some(x) => {
+                let substate: FieldSubstate<ConsensusManagerStateFieldPayload> =
+                    x.as_typed().unwrap();
+                Some(substate.into_payload().into_latest().epoch)
             }
-        };
-        let substate: FieldSubstate<ConsensusManagerSubstate> =
-            track.read_substate(handle).0.as_typed().unwrap();
-        track.close_substate(handle);
-        Some(substate.value.0.epoch)
+            None => None,
+        }
     }
 
     fn validate_epoch_range(
         current_epoch: Epoch,
         start_epoch_inclusive: Epoch,
         end_epoch_exclusive: Epoch,
-    ) -> Result<(), RejectionError> {
+    ) -> Result<(), RejectionReason> {
         if current_epoch < start_epoch_inclusive {
-            return Err(RejectionError::TransactionEpochNotYetValid {
+            return Err(RejectionReason::TransactionEpochNotYetValid {
                 valid_from: start_epoch_inclusive,
                 current_epoch,
             });
         }
         if current_epoch >= end_epoch_exclusive {
-            return Err(RejectionError::TransactionEpochNoLongerValid {
+            return Err(RejectionReason::TransactionEpochNoLongerValid {
                 valid_until: end_epoch_exclusive.previous(),
                 current_epoch,
             });
@@ -409,54 +502,45 @@ where
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         intent_hash: Hash,
         expiry_epoch: Epoch,
-    ) -> Result<(), RejectionError> {
-        let handle = track
-            .acquire_lock(
+    ) -> Result<(), RejectionReason> {
+        let substate: FieldSubstate<TransactionTrackerSubstate> = track
+            .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
-                LockFlags::read_only(),
             )
             .unwrap()
-            .0;
-        let substate: FieldSubstate<TransactionTrackerSubstate> =
-            track.read_substate(handle).0.as_typed().unwrap();
-        track.close_substate(handle);
+            .as_typed()
+            .unwrap();
 
         let partition_number = substate
-            .value
-            .0
+            .into_payload()
+            .v1()
             .partition_for_expiry_epoch(expiry_epoch)
             .expect("Transaction tracker should cover all valid epoch ranges");
 
-        let handle = track
-            .acquire_lock_virtualize(
-                TRANSACTION_TRACKER.as_node_id(),
-                PartitionNumber(partition_number),
-                &SubstateKey::Map(intent_hash.to_vec()),
-                LockFlags::read_only(),
-                || {
-                    Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                        value: Option::<TransactionStatus>::None,
-                        mutability: SubstateMutability::Mutable,
-                    }))
-                },
-            )
-            .unwrap()
-            .0;
-        let substate: KeyValueEntrySubstate<TransactionStatus> =
-            track.read_substate(handle).0.as_typed().unwrap();
-        track.close_substate(handle);
+        let substate = track.read_substate(
+            TRANSACTION_TRACKER.as_node_id(),
+            PartitionNumber(partition_number),
+            &SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
+        );
 
-        match substate.value {
-            Some(status) => match status {
-                TransactionStatus::CommittedSuccess | TransactionStatus::CommittedFailure => {
-                    return Err(RejectionError::IntentHashPreviouslyCommitted);
+        match substate {
+            Some(value) => {
+                let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
+                match substate.into_value() {
+                    Some(status) => match status.into_v1() {
+                        TransactionStatusV1::CommittedSuccess
+                        | TransactionStatusV1::CommittedFailure => {
+                            return Err(RejectionReason::IntentHashPreviouslyCommitted);
+                        }
+                        TransactionStatusV1::Cancelled => {
+                            return Err(RejectionReason::IntentHashPreviouslyCancelled);
+                        }
+                    },
+                    None => {}
                 }
-                TransactionStatus::Cancelled => {
-                    return Err(RejectionError::IntentHashPreviouslyCancelled);
-                }
-            },
+            }
             None => {}
         }
 
@@ -483,17 +567,16 @@ where
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
-            callback_obj: Vm {
-                scrypto_vm: self.scrypto_vm,
-            },
+            callback_obj: self.vm.clone(),
             modules: SystemModuleMixer::new(
                 execution_config.enabled_modules,
+                execution_config.network_definition.clone(),
                 executable.intent_hash().to_hash(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
                 executable.payload_size(),
-                executable.auth_zone_params().initial_proofs.len(),
+                executable.num_of_signature_validations(),
                 execution_config,
             ),
         };
@@ -512,18 +595,36 @@ where
                 executable.blobs(),
             )
             .and_then(|x| {
+                // Note that if a transactions fails during this phase, the costing is
+                // done as if it would succeed.
+
+                /* finalization costs: computation on Node side */
                 let info = track.get_commit_info();
-                for commit in &info {
-                    if let Err(e) = system.modules.apply_execution_cost(CostingEntry::Commit {
-                        store_commit: commit,
-                    }) {
-                        return Err(e);
-                    }
+                for store_commit in &info {
+                    system.modules.apply_finalization_cost(
+                        FinalizationCostingEntry::CommitStateUpdates { store_commit },
+                    )?;
                 }
-                for commit in &info {
-                    if let Err(e) = system.modules.apply_state_expansion_cost(commit) {
-                        return Err(e);
-                    }
+                system
+                    .modules
+                    .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
+                        events: &system.modules.events().clone(),
+                    })?;
+                system
+                    .modules
+                    .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
+                        logs: &system.modules.logs().clone(),
+                    })?;
+
+                /* storage costs */
+                system
+                    .modules
+                    .apply_storage_cost(StorageType::Archive, executable.payload_size())?;
+                for store_commit in &info {
+                    system.modules.apply_storage_cost(
+                        StorageType::State,
+                        store_commit.logical_size_increase(),
+                    )?;
                 }
 
                 Ok(x)
@@ -563,7 +664,7 @@ where
                     current_epoch,
                 } => {
                     return TransactionResultType::Reject(
-                        RejectionError::TransactionEpochNotYetValid {
+                        RejectionReason::TransactionEpochNotYetValid {
                             valid_from: *valid_from,
                             current_epoch: *current_epoch,
                         },
@@ -574,7 +675,7 @@ where
                     current_epoch,
                 } => {
                     return TransactionResultType::Reject(
-                        RejectionError::TransactionEpochNoLongerValid {
+                        RejectionReason::TransactionEpochNoLongerValid {
                             valid_until: *valid_until,
                             current_epoch: *current_epoch,
                         },
@@ -593,9 +694,11 @@ where
         // Check for errors before loan is repaid - in which case, we also reject
         if !fee_reserve.fully_repaid() {
             return match interpretation_result {
-                Ok(..) => TransactionResultType::Reject(RejectionError::SuccessButFeeLoanNotRepaid),
+                Ok(..) => {
+                    TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
+                }
                 Err(error) => {
-                    TransactionResultType::Reject(RejectionError::ErrorBeforeFeeLoanRepaid(error))
+                    TransactionResultType::Reject(RejectionReason::ErrorBeforeFeeLoanRepaid(error))
                 }
             };
         }
@@ -608,36 +711,54 @@ where
         fee_reserve: SystemLoanFeeReserve,
         is_success: bool,
         free_credit: Decimal,
-    ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {
+    ) -> (
+        FeeReserveFinalizationSummary,
+        IndexMap<NodeId, Decimal>,
+        Vec<(EventTypeIdentifier, Vec<u8>)>,
+    ) {
+        let mut events = Vec::<(EventTypeIdentifier, Vec<u8>)>::new();
+
         // Distribute royalty
-        for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
-            let node_id = recipient_vault_id;
-            let substate_key = FungibleVaultField::LiquidFungible.into();
-            let (handle, _store_access) = track
-                .acquire_lock(
-                    &node_id,
+        for (recipient, amount) in fee_reserve.royalty_cost_breakdown() {
+            let node_id = recipient.vault_id();
+            let substate_key = FungibleVaultField::Balance.into();
+            let mut vault_balance = track
+                .read_substate(&node_id, MAIN_BASE_PARTITION, &substate_key)
+                .unwrap()
+                .as_typed::<FungibleVaultBalanceFieldSubstate>()
+                .unwrap()
+                .into_payload()
+                .into_latest();
+            vault_balance.put(LiquidFungibleResource::new(amount));
+            let updated_substate_content =
+                FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
+                    .into_mutable_substate();
+            track
+                .set_substate(
+                    node_id,
                     MAIN_BASE_PARTITION,
-                    &substate_key,
-                    LockFlags::MUTABLE,
+                    substate_key,
+                    IndexedScryptoValue::from_typed(&updated_substate_content),
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
-            let (substate_value, _store_access) = track.read_substate(handle);
-            let mut substate: FieldSubstate<LiquidFungibleResource> =
-                substate_value.as_typed().unwrap();
-            substate.value.0.put(LiquidFungibleResource::new(amount));
-            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.close_substate(handle);
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(node_id, ObjectModuleId::Main),
+                    DepositEvent::event_name().to_string(),
+                ),
+                scrypto_encode(&DepositEvent { amount }).unwrap(),
+            ));
         }
 
         // Take fee payments
-        let fee_summary = fee_reserve.finalize();
+        let fee_reserve_finalization = fee_reserve.finalize();
         let mut fee_payments: IndexMap<NodeId, Decimal> = index_map_new();
-        let mut required = fee_summary.total_execution_cost_xrd
-            + fee_summary.total_tipping_cost_xrd
-            + fee_summary.total_state_expansion_cost_xrd
-            + fee_summary.total_royalty_cost_xrd;
+        let mut required = fee_reserve_finalization.total_cost();
         let mut collected_fees = LiquidFungibleResource::new(Decimal::ZERO);
-        for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
+        for (vault_id, mut locked, contingent) in
+            fee_reserve_finalization.locked_fees.iter().cloned().rev()
+        {
             let amount = if contingent {
                 if is_success {
                     Decimal::min(locked.amount(), required)
@@ -648,132 +769,183 @@ where
                 Decimal::min(locked.amount(), required)
             };
 
+            // NOTE: Decimal arithmetic operation safe unwrap.
+            // No chance to overflow considering current costing parameters
+
             // Take fees
             collected_fees.put(locked.take_by_amount(amount).unwrap());
-            required -= amount;
+            required = required.safe_sub(amount).unwrap();
 
             // Refund overpayment
-            let (handle, _store_access) = track
-                .acquire_lock(
+            let mut vault_balance = track
+                .read_substate(
                     &vault_id,
                     MAIN_BASE_PARTITION,
-                    &FungibleVaultField::LiquidFungible.into(),
-                    LockFlags::MUTABLE,
+                    &FungibleVaultField::Balance.into(),
+                )
+                .unwrap()
+                .as_typed::<FungibleVaultBalanceFieldSubstate>()
+                .unwrap()
+                .into_payload()
+                .into_latest();
+            vault_balance.put(locked);
+            let updated_substate_content =
+                FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
+                    .into_mutable_substate();
+            track
+                .set_substate(
+                    vault_id,
+                    MAIN_BASE_PARTITION,
+                    FungibleVaultField::Balance.into(),
+                    IndexedScryptoValue::from_typed(&updated_substate_content),
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
-            let (substate_value, _store_access) = track.read_substate(handle);
-            let mut substate: FieldSubstate<LiquidFungibleResource> =
-                substate_value.as_typed().unwrap();
-            substate.value.0.put(locked);
-            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.close_substate(handle);
 
             // Record final payments
-            *fee_payments.entry(vault_id).or_default() += amount;
+            let entry = fee_payments.entry(vault_id).or_default();
+            *entry = entry.safe_add(amount).unwrap();
+
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(vault_id, ObjectModuleId::Main),
+                    PayFeeEvent::event_name().to_string(),
+                ),
+                scrypto_encode(&PayFeeEvent { amount }).unwrap(),
+            ));
         }
         // Free credit is locked first and thus used last
         if free_credit.is_positive() {
             let amount = Decimal::min(free_credit, required);
             collected_fees.put(LiquidFungibleResource::new(amount));
-            required -= amount;
+            required = required.safe_sub(amount).unwrap();
         }
 
-        let tips_to_distribute = fee_summary.tips_to_distribute();
-        let fees_to_distribute = fee_summary.fees_to_distribute();
+        let to_proposer = fee_reserve_finalization.to_proposer_amount();
+        let to_validator_set = fee_reserve_finalization.to_validator_set_amount();
+        let to_burn = fee_reserve_finalization.to_burn_amount();
 
         // Sanity checks
         assert!(
-            fee_summary.total_bad_debt_xrd == Decimal::ZERO,
+            fee_reserve_finalization.total_bad_debt_in_xrd == Decimal::ZERO,
             "Bad debt is non-zero: {}",
-            fee_summary.total_bad_debt_xrd
+            fee_reserve_finalization.total_bad_debt_in_xrd
         );
         assert!(
             required == Decimal::ZERO,
             "Locked fee does not cover transaction cost: {} required",
             required
         );
-        let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */;
-        let to_distribute = tips_to_distribute + fees_to_distribute;
+        let remaining_collected_fees = collected_fees.amount().safe_sub(fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */).unwrap();
+        let to_distribute = to_proposer
+            .safe_add(to_validator_set)
+            .unwrap()
+            .safe_add(to_burn)
+            .unwrap();
         assert!(
-            to_distribute == remaining_collected_fees,
-            "Remaining collected fee isn't equal to amount to distribute: {} != {}",
+            remaining_collected_fees  == to_distribute,
+            "Remaining collected fee isn't equal to amount to distribute (proposer/validator set/burn): {} != {}",
             remaining_collected_fees,
             to_distribute,
         );
 
-        if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
+        if !to_proposer.is_zero() || !to_validator_set.is_zero() {
             // Fetch current leader
             // TODO: maybe we should move current leader into validator rewards?
-            let handle = track
-                .acquire_lock(
+            let substate: FieldSubstate<ConsensusManagerStateFieldPayload> = track
+                .read_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
-                    &ConsensusManagerField::ConsensusManager.into(),
-                    LockFlags::read_only(),
+                    &ConsensusManagerField::State.into(),
                 )
                 .unwrap()
-                .0;
-            let substate: FieldSubstate<ConsensusManagerSubstate> =
-                track.read_substate(handle).0.as_typed().unwrap();
-            let current_leader = substate.value.0.current_leader;
-            track.close_substate(handle);
+                .as_typed()
+                .unwrap();
+            let current_leader = substate.into_payload().into_latest().current_leader;
 
             // Update validator rewards
-            let handle = track
-                .acquire_lock(
+            let substate: FieldSubstate<ConsensusManagerValidatorRewardsFieldPayload> = track
+                .read_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ValidatorRewards.into(),
-                    LockFlags::MUTABLE,
                 )
                 .unwrap()
-                .0;
-            let mut substate: FieldSubstate<ValidatorRewardsSubstate> =
-                track.read_substate(handle).0.as_typed().unwrap();
-            let proposer_rewards = if let Some(current_leader) = current_leader {
-                let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
-                    + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
-                substate
-                    .value
-                    .0
-                    .proposer_rewards
-                    .entry(current_leader)
-                    .or_default()
-                    .add_assign(rewards);
-                rewards
+                .as_typed()
+                .unwrap();
+
+            let mut rewards = substate.into_payload().into_latest();
+
+            if let Some(current_leader) = current_leader {
+                let entry = rewards.proposer_rewards.entry(current_leader).or_default();
+                *entry = entry.safe_add(to_proposer).unwrap()
             } else {
-                Decimal::ZERO
+                // If there is no current leader, the rewards go to the pool
             };
-            let validator_set_rewards = {
-                tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-                    + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-            };
-            let vault_node_id = substate.value.0.rewards_vault.0 .0;
-            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.close_substate(handle);
+            let vault_node_id = rewards.rewards_vault.0 .0;
+
+            track
+                .set_substate(
+                    CONSENSUS_MANAGER.into_node_id(),
+                    MAIN_BASE_PARTITION,
+                    ConsensusManagerField::ValidatorRewards.into(),
+                    IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
+                        ConsensusManagerValidatorRewardsFieldPayload::from_content_source(rewards),
+                    )),
+                    &mut |_| -> Result<(), ()> { Ok(()) },
+                )
+                .unwrap();
 
             // Put validator rewards into the vault
-            let handle = track
-                .acquire_lock(
+            let total_amount = to_proposer.safe_add(to_validator_set).unwrap();
+            let mut vault_balance = track
+                .read_substate(
                     &vault_node_id,
                     MAIN_BASE_PARTITION,
-                    &FungibleVaultField::LiquidFungible.into(),
-                    LockFlags::MUTABLE,
+                    &FungibleVaultField::Balance.into(),
                 )
                 .unwrap()
-                .0;
-            let mut substate: FieldSubstate<LiquidFungibleResource> =
-                track.read_substate(handle).0.as_typed().unwrap();
-            substate.value.0.put(
-                collected_fees
-                    .take_by_amount(proposer_rewards + validator_set_rewards)
-                    .unwrap(),
-            );
-            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.close_substate(handle);
+                .as_typed::<FungibleVaultBalanceFieldSubstate>()
+                .unwrap()
+                .into_payload()
+                .into_latest();
+            vault_balance.put(collected_fees.take_by_amount(total_amount).unwrap());
+            let updated_substate_content =
+                FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
+                    .into_mutable_substate();
+            track
+                .set_substate(
+                    vault_node_id,
+                    MAIN_BASE_PARTITION,
+                    FungibleVaultField::Balance.into(),
+                    IndexedScryptoValue::from_typed(&updated_substate_content),
+                    &mut |_| -> Result<(), ()> { Ok(()) },
+                )
+                .unwrap();
+
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(vault_node_id, ObjectModuleId::Main),
+                    DepositEvent::event_name().to_string(),
+                ),
+                scrypto_encode(&DepositEvent {
+                    amount: total_amount,
+                })
+                .unwrap(),
+            ));
         }
 
-        (fee_summary, fee_payments)
+        if to_burn.is_positive() {
+            events.push((
+                EventTypeIdentifier(
+                    Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                    "BurnFungibleResourceEvent".to_string(),
+                ),
+                scrypto_encode(&BurnFungibleResourceEvent { amount: to_burn }).unwrap(),
+            ));
+        }
+
+        (fee_reserve_finalization, fee_payments, events)
     }
 
     fn update_transaction_tracker(
@@ -783,17 +955,18 @@ where
         is_success: bool,
     ) {
         // Read the intent hash store
-        let handle = track
-            .acquire_lock(
+        let transaction_tracker = track
+            .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
-                LockFlags::MUTABLE,
             )
             .unwrap()
-            .0;
-        let mut transaction_tracker: FieldSubstate<TransactionTrackerSubstate> =
-            track.read_substate(handle).0.as_typed().unwrap();
+            .as_typed::<FieldSubstate<TransactionTrackerSubstate>>()
+            .unwrap()
+            .into_payload();
+
+        let mut transaction_tracker = transaction_tracker.into_v1();
 
         // Update the status of the intent hash
         if let TransactionIntentHash::ToCheck {
@@ -801,39 +974,28 @@ where
             intent_hash,
         } = intent_hash
         {
-            if let Some(partition_number) = transaction_tracker
-                .value
-                .0
-                .partition_for_expiry_epoch(*expiry_epoch)
+            if let Some(partition_number) =
+                transaction_tracker.partition_for_expiry_epoch(*expiry_epoch)
             {
-                let handle = track
-                    .acquire_lock_virtualize(
-                        TRANSACTION_TRACKER.as_node_id(),
+                track
+                    .set_substate(
+                        TRANSACTION_TRACKER.into_node_id(),
                         PartitionNumber(partition_number),
-                        &SubstateKey::Map(intent_hash.to_vec()),
-                        LockFlags::MUTABLE,
-                        || {
-                            Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                                value: Option::<TransactionStatus>::None,
+                        SubstateKey::Map(scrypto_encode(intent_hash).unwrap()),
+                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
+                            KeyValueEntrySubstateV1 {
+                                value: Some(if is_success {
+                                    TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
+                                } else {
+                                    TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
+                                }),
+                                // TODO: maybe make it immutable, but how does this affect partition deletion?
                                 mutability: SubstateMutability::Mutable,
-                            }))
-                        },
+                            },
+                        )),
+                        &mut |_| -> Result<(), ()> { Ok(()) },
                     )
-                    .unwrap()
-                    .0;
-                track.update_substate(
-                    handle,
-                    IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                        value: Some(if is_success {
-                            TransactionStatus::CommittedSuccess
-                        } else {
-                            TransactionStatus::CommittedFailure
-                        }),
-                        // TODO: maybe make it immutable, but how does this affect partition deletion?
-                        mutability: SubstateMutability::Mutable,
-                    }),
-                );
-                track.close_substate(handle);
+                    .unwrap();
             } else {
                 panic!("No partition for an expiry epoch")
             }
@@ -847,28 +1009,36 @@ where
         //
         // Also, we need to make sure epoch doesn't jump by a large distance.
         if next_epoch.number()
-            >= transaction_tracker.value.0.start_epoch
-                + transaction_tracker.value.0.epochs_per_partition
+            >= transaction_tracker.start_epoch + transaction_tracker.epochs_per_partition
         {
-            let discarded_partition = transaction_tracker.value.0.advance();
+            let discarded_partition = transaction_tracker.advance();
             track.delete_partition(
                 TRANSACTION_TRACKER.as_node_id(),
                 PartitionNumber(discarded_partition),
             );
         }
-        track.update_substate(
-            handle,
-            IndexedScryptoValue::from_typed(&FieldSubstate::new_field(transaction_tracker.value.0)),
-        );
-        track.close_substate(handle);
+        track
+            .set_substate(
+                TRANSACTION_TRACKER.into_node_id(),
+                MAIN_BASE_PARTITION,
+                TransactionTrackerField::TransactionTracker.into(),
+                IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
+                    TransactionTrackerSubstate::V1(transaction_tracker),
+                )),
+                &mut |_| -> Result<(), ()> { Ok(()) },
+            )
+            .unwrap();
     }
 
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
-        println!("{:-^100}", "Executable");
+        println!("{:-^120}", "Executable");
         println!("Intent hash: {}", executable.intent_hash().as_hash());
         println!("Payload size: {}", executable.payload_size());
-        println!("Fee payment: {:?}", executable.fee_payment());
+        println!(
+            "Transaction costing parameters: {:?}",
+            executable.costing_parameters()
+        );
         println!(
             "Pre-allocated addresses: {:?}",
             executable.pre_allocated_addresses()
@@ -879,56 +1049,74 @@ where
 
     #[cfg(not(feature = "alloc"))]
     fn print_execution_summary(receipt: &TransactionReceipt) {
-        match &receipt.transaction_result {
+        // NB - we use "to_string" to ensure they align correctly
+
+        if let Some(fee_details) = &receipt.fee_details {
+            println!("{:-^120}", "Execution Cost Breakdown");
+            for (k, v) in &fee_details.execution_cost_breakdown {
+                println!("{:<75}: {:>25}", k, v.to_string());
+            }
+
+            println!("{:-^120}", "Finalization Cost Breakdown");
+            for (k, v) in &fee_details.finalization_cost_breakdown {
+                println!("{:<75}: {:>25}", k, v.to_string());
+            }
+        }
+
+        println!("{:-^120}", "Fee Summary");
+        println!(
+            "{:<40}: {:>25}",
+            "Execution Cost Units Consumed",
+            receipt
+                .fee_summary
+                .total_execution_cost_units_consumed
+                .to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Finalization Cost Units Consumed",
+            receipt
+                .fee_summary
+                .total_finalization_cost_units_consumed
+                .to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Execution Cost in XRD",
+            receipt.fee_summary.total_execution_cost_in_xrd.to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Finalization Cost in XRD",
+            receipt
+                .fee_summary
+                .total_finalization_cost_in_xrd
+                .to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Tipping Cost in XRD",
+            receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Storage Cost in XRD",
+            receipt.fee_summary.total_storage_cost_in_xrd.to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Royalty Costs in XRD",
+            receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
+        );
+
+        match &receipt.result {
             TransactionResult::Commit(commit) => {
-                // NB - we use "to_string" to ensure they align correctly
-
-                println!("{:-^100}", "Cost Breakdown");
-                for (k, v) in &commit.fee_summary.execution_cost_breakdown {
-                    println!("{:<75}: {:>15}", k, v.to_string());
-                }
-
-                println!("{:-^100}", "Cost Totals");
-                println!(
-                    "{:<30}: {:>15}",
-                    "Cost Unit Limit",
-                    commit.fee_summary.cost_unit_limit.to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "Cost Units Consumed",
-                    commit.fee_summary.execution_cost_sum.to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "Execution Costs in XRD",
-                    commit.fee_summary.total_execution_cost_xrd.to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "Tipping Costs in XRD",
-                    commit.fee_summary.total_tipping_cost_xrd.to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "State Expansion Costs in XRD",
-                    commit
-                        .fee_summary
-                        .total_state_expansion_cost_xrd
-                        .to_string()
-                );
-                println!(
-                    "{:<30}: {:>15}",
-                    "Royalty Costs in XRD",
-                    commit.fee_summary.total_royalty_cost_xrd.to_string()
-                );
-
-                println!("{:-^100}", "Application Logs");
+                println!("{:-^120}", "Application Logs");
                 for (level, message) in &commit.application_logs {
                     println!("[{}] {}", level, message);
                 }
 
-                println!("{:-^100}", "Outcome");
+                println!("{:-^120}", "Outcome");
                 println!(
                     "{}",
                     match &commit.outcome {
@@ -938,57 +1126,57 @@ where
                 );
             }
             TransactionResult::Reject(e) => {
-                println!("{:-^100}", "Transaction Rejected");
-                println!("{:?}", e.error);
+                println!("{:-^120}", "Transaction Rejected");
+                println!("{:?}", e.reason);
             }
             TransactionResult::Abort(e) => {
-                println!("{:-^100}", "Transaction Aborted");
+                println!("{:-^120}", "Transaction Aborted");
                 println!("{:?}", e);
             }
         }
-        println!("{:-^100}", "Finish");
+        println!("{:-^120}", "Finish");
     }
 }
 
 pub fn execute_and_commit_transaction<
     S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 >(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoVm<W>,
-    fee_reserve_config: &FeeReserveConfig,
+    vm: V,
+    costing_parameters: &CostingParameters,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
     let receipt = execute_transaction(
         substate_db,
-        scrypto_interpreter,
-        fee_reserve_config,
+        vm,
+        costing_parameters,
         execution_config,
         transaction,
     );
-    if let TransactionResult::Commit(commit) = &receipt.transaction_result {
+    if let TransactionResult::Commit(commit) = &receipt.result {
         substate_db.commit(&commit.state_updates.database_updates);
     }
     receipt
 }
 
-pub fn execute_transaction<S: SubstateDatabase, W: WasmEngine>(
+pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
     substate_db: &S,
-    scrypto_interpreter: &ScryptoVm<W>,
-    fee_reserve_config: &FeeReserveConfig,
+    vm: V,
+    costing_parameters: &CostingParameters,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_db, scrypto_interpreter).execute(
+    TransactionExecutor::new(substate_db, vm).execute(
         transaction,
-        fee_reserve_config,
+        costing_parameters,
         execution_config,
     )
 }
 
 enum TransactionResultType {
     Commit(Result<Vec<InstructionOutput>, RuntimeError>),
-    Reject(RejectionError),
+    Reject(RejectionReason),
     Abort(AbortReason),
 }

@@ -98,7 +98,7 @@ mod tests {
         };
         let expected_header_hash = hash_manifest_encoded_without_prefix_byte(&header_v1);
 
-        let instructions = vec![InstructionV1::ClearAuthZone];
+        let instructions = vec![InstructionV1::DropAuthZoneProofs];
         let expected_instructions_hash = hash_manifest_encoded_without_prefix_byte(&instructions);
         let instructions_v1 = InstructionsV1(instructions);
 
@@ -306,7 +306,7 @@ mod tests {
     /// A system transaction can be embedded into the node's LedgerTransaction structure, eg as part of Genesis
     #[test]
     pub fn v1_system_transaction_structure() {
-        let instructions = vec![InstructionV1::ClearAuthZone];
+        let instructions = vec![InstructionV1::DropAuthZoneProofs];
         let expected_instructions_hash = hash_manifest_encoded_without_prefix_byte(&instructions);
         let instructions_v1 = InstructionsV1(instructions);
 

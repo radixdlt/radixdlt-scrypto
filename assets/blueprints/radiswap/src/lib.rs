@@ -13,7 +13,7 @@ mod radiswap {
             resource_address2: ResourceAddress,
         ) -> Global<Radiswap> {
             let (address_reservation, component_address) =
-                Runtime::allocate_component_address(Runtime::blueprint_id());
+                Runtime::allocate_component_address(Radiswap::blueprint_id());
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(component_address);
 
@@ -24,6 +24,7 @@ mod radiswap {
                 owner_role.clone(),
                 rule!(require(global_component_caller_badge)),
                 (resource_address1, resource_address2),
+                None,
             );
 
             Self { pool_component }
@@ -62,7 +63,11 @@ mod radiswap {
                 .expect("Resource does not belong to the pool");
             let (output_resource_address, output_reserves) = reserves.into_iter().next().unwrap();
 
-            let output_amount = (input_amount * output_reserves) / (input_reserves + input_amount);
+            let output_amount = input_amount
+                .safe_mul(output_reserves)
+                .unwrap()
+                .safe_div(input_reserves.safe_add(input_amount).unwrap())
+                .unwrap();
 
             // NOTE: It's the responsibility of the user of the pool to do the appropriate rounding
             // before calling the withdraw method.

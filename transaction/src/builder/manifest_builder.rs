@@ -32,7 +32,7 @@ use radix_engine_interface::blueprints::resource::*;
 ///     .lock_fee_from_faucet()
 ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
 ///     .take_from_worktop(XRD, dec!(1), "xrd")
-///     .try_deposit_or_abort(to_account_address, "xrd")
+///     .try_deposit_or_abort(to_account_address, None, "xrd")
 ///     .build();
 /// ```
 ///
@@ -76,7 +76,7 @@ use radix_engine_interface::blueprints::resource::*;
 ///     let bucket_name = builder.generate_bucket_name("transfer");
 ///     builder = builder
 ///         .take_from_worktop(XRD, "0.001", &bucket_name)
-///         .try_deposit_or_abort(to_account_address, bucket_name);
+///         .try_deposit_or_abort(to_account_address, None, bucket_name);
 /// }
 /// let manifest = builder.build();
 /// ```
@@ -301,13 +301,13 @@ impl ManifestBuilder {
     pub fn take_non_fungibles_from_worktop(
         self,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
         new_bucket: impl NewManifestBucket,
     ) -> Self {
         let resource_address = resource_address.resolve_static(&self.registrar);
         new_bucket.register(&self.registrar);
         self.add_instruction(InstructionV1::TakeNonFungiblesFromWorktop {
-            ids: ids.iter().cloned().collect(),
+            ids: ids.into_iter().collect(),
             resource_address,
         })
     }
@@ -345,11 +345,11 @@ impl ManifestBuilder {
     pub fn assert_worktop_contains_non_fungibles(
         self,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let resource_address = resource_address.resolve_static(&self.registrar);
         self.add_instruction(InstructionV1::AssertWorktopContainsNonFungibles {
-            ids: ids.clone().into_iter().collect(),
+            ids: ids.into_iter().collect(),
             resource_address,
         })
     }
@@ -364,11 +364,6 @@ impl ManifestBuilder {
     pub fn push_to_auth_zone(self, proof: impl ExistingManifestProof) -> Self {
         let proof = proof.mark_consumed(&self.registrar);
         self.add_instruction(InstructionV1::PushToAuthZone { proof_id: proof })
-    }
-
-    /// Clears the auth zone.
-    pub fn clear_auth_zone(self) -> Self {
-        self.add_instruction(InstructionV1::ClearAuthZone)
     }
 
     /// Creates proof from the auth zone by amount.
@@ -391,13 +386,13 @@ impl ManifestBuilder {
     pub fn create_proof_from_auth_zone_of_non_fungibles(
         self,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
         new_proof: impl NewManifestProof,
     ) -> Self {
         let resource_address = resource_address.resolve_static(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_instruction(InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
-            ids: ids.iter().cloned().collect(),
+            ids: ids.into_iter().collect(),
             resource_address,
         })
     }
@@ -433,14 +428,14 @@ impl ManifestBuilder {
     pub fn create_proof_from_bucket_of_non_fungibles(
         self,
         bucket: impl ExistingManifestBucket,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
         new_proof: impl NewManifestProof,
     ) -> Self {
         let bucket = bucket.resolve(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_instruction(InstructionV1::CreateProofFromBucketOfNonFungibles {
             bucket_id: bucket,
-            ids: ids.iter().cloned().collect(),
+            ids: ids.into_iter().collect(),
         })
     }
 
@@ -501,9 +496,25 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::DropAllProofs)
     }
 
-    /// Drops all virtual proofs.
-    pub fn clear_signature_proofs(self) -> Self {
-        self.add_instruction(InstructionV1::ClearSignatureProofs)
+    /// Drops named proofs.
+    pub fn drop_named_proofs(self) -> Self {
+        self.registrar.consume_all_proofs();
+        self.add_instruction(InstructionV1::DropNamedProofs)
+    }
+
+    /// Drops auth zone signature proofs.
+    pub fn drop_auth_zone_signature_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneSignatureProofs)
+    }
+
+    /// Drops auth zone regular proofs.
+    pub fn drop_auth_zone_regular_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneRegularProofs)
+    }
+
+    /// Drop auth zone proofs.
+    pub fn drop_auth_zone_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneProofs)
     }
 
     /// Creates a fungible resource
@@ -667,6 +678,26 @@ impl ManifestBuilder {
         };
 
         self.add_instruction(instruction)
+    }
+
+    pub fn update_non_fungible_data(
+        self,
+        resource_address: impl ResolvableResourceAddress,
+        id: NonFungibleLocalId,
+        field_name: impl Into<String>,
+        data: impl ManifestEncode,
+    ) -> Self {
+        let address = resource_address.resolve(&self.registrar);
+        let data = manifest_decode(&manifest_encode(&data).unwrap()).unwrap();
+        self.call_method(
+            address,
+            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
+            NonFungibleResourceManagerUpdateDataManifestInput {
+                id,
+                field_name: field_name.into(),
+                data,
+            },
+        )
     }
 
     pub fn create_identity_advanced(self, owner_role: OwnerRole) -> Self {
@@ -880,12 +911,140 @@ impl ManifestBuilder {
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
-        let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
+        self.call_module_method(address, ObjectModuleId::Main, method_name, arguments)
+    }
+
+    pub fn call_metadata_method(
+        self,
+        address: impl ResolvableGlobalAddress,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        self.call_module_method(address, ObjectModuleId::Metadata, method_name, arguments)
+    }
+
+    pub fn call_royalty_method(
+        self,
+        address: impl ResolvableGlobalAddress,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        self.call_module_method(address, ObjectModuleId::Royalty, method_name, arguments)
+    }
+
+    pub fn set_owner_role(
+        self,
+        address: impl ResolvableGlobalAddress,
+        rule: impl Into<AccessRule>,
+    ) -> Self {
+        self.call_module_method(
             address,
-            method_name: method_name.into(),
-            args: arguments.resolve(),
-        })
+            ObjectModuleId::RoleAssignment,
+            ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+            RoleAssignmentSetOwnerInput { rule: rule.into() },
+        )
+    }
+
+    pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
+        self.call_module_method(
+            address,
+            ObjectModuleId::RoleAssignment,
+            ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,
+            RoleAssignmentLockOwnerInput {},
+        )
+    }
+
+    pub fn set_main_role(
+        self,
+        address: impl ResolvableGlobalAddress,
+        role_key: impl Into<RoleKey>,
+        rule: impl Into<AccessRule>,
+    ) -> Self {
+        self.set_role(address, ObjectModuleId::Main, role_key, rule)
+    }
+
+    pub fn set_role(
+        self,
+        address: impl ResolvableGlobalAddress,
+        role_module: ObjectModuleId,
+        role_key: impl Into<RoleKey>,
+        rule: impl Into<AccessRule>,
+    ) -> Self {
+        self.call_module_method(
+            address,
+            ObjectModuleId::RoleAssignment,
+            ROLE_ASSIGNMENT_SET_IDENT,
+            RoleAssignmentSetInput {
+                module: role_module,
+                role_key: role_key.into(),
+                rule: rule.into(),
+            },
+        )
+    }
+
+    pub fn get_role(
+        self,
+        address: impl ResolvableGlobalAddress,
+        role_module: ObjectModuleId,
+        role_key: RoleKey,
+    ) -> Self {
+        self.call_module_method(
+            address,
+            ObjectModuleId::RoleAssignment,
+            ROLE_ASSIGNMENT_GET_IDENT,
+            RoleAssignmentGetInput {
+                module: role_module,
+                role_key: role_key.into(),
+            },
+        )
+    }
+
+    pub fn call_role_assignment_method(
+        self,
+        address: impl ResolvableGlobalAddress,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        self.call_module_method(
+            address,
+            ObjectModuleId::RoleAssignment,
+            method_name,
+            arguments,
+        )
+    }
+
+    pub fn call_module_method(
+        self,
+        address: impl ResolvableGlobalAddress,
+        module_id: ObjectModuleId,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        let address = address.resolve(&self.registrar);
+        match module_id {
+            ObjectModuleId::Main => self.add_instruction(InstructionV1::CallMethod {
+                address,
+                method_name: method_name.into(),
+                args: arguments.resolve(),
+            }),
+            ObjectModuleId::Metadata => self.add_instruction(InstructionV1::CallMetadataMethod {
+                address,
+                method_name: method_name.into(),
+                args: arguments.resolve(),
+            }),
+            ObjectModuleId::Royalty => self.add_instruction(InstructionV1::CallRoyaltyMethod {
+                address,
+                method_name: method_name.into(),
+                args: arguments.resolve(),
+            }),
+            ObjectModuleId::RoleAssignment => {
+                self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
+                    address,
+                    method_name: method_name.into(),
+                    args: arguments.resolve(),
+                })
+            }
+        }
     }
 
     /// Calls a scrypto method where the arguments are a raw ManifestValue.
@@ -975,7 +1134,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentSetRoyaltyInput {
+            args: to_manifest_value_and_unwrap!(&ComponentRoyaltySetInput {
                 method: method.into(),
                 amount,
             }),
@@ -991,7 +1150,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentLockRoyaltyInput {
+            args: to_manifest_value_and_unwrap!(&ComponentRoyaltyLockInput {
                 method: method.into(),
             }),
         })
@@ -1006,57 +1165,6 @@ impl ManifestBuilder {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&ComponentClaimRoyaltiesInput {}),
-        })
-    }
-
-    pub fn set_owner_role(self, address: impl ResolvableGlobalAddress, rule: AccessRule) -> Self {
-        let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
-            address: address.into(),
-            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesSetOwnerRoleInput { rule }),
-        })
-    }
-
-    pub fn update_role(
-        self,
-        address: impl ResolvableGlobalAddress,
-        module: ObjectModuleId,
-        role_key: RoleKey,
-        rule: AccessRule,
-    ) -> Self {
-        let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
-            address: address.into(),
-            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesSetRoleInput {
-                module,
-                role_key,
-                rule,
-            }),
-        })
-    }
-
-    pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
-        let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
-            address: address.into(),
-            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesLockOwnerRoleInput {}),
-        })
-    }
-
-    pub fn get_role(
-        self,
-        address: impl ResolvableGlobalAddress,
-        module: ObjectModuleId,
-        role_key: RoleKey,
-    ) -> Self {
-        let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
-            address: address.into(),
-            method_name: ACCESS_RULES_GET_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesGetRoleInput { module, role_key }),
         })
     }
 
@@ -1301,11 +1409,10 @@ impl ManifestBuilder {
         self,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Self {
-        let ids = btreeset!(non_fungible_global_id.local_id().clone());
-        let resource_address = non_fungible_global_id.resource_address().clone();
+        let (resource_address, local_id) = non_fungible_global_id.into_parts();
         let bucket = self.generate_bucket_name("to_burn");
 
-        self.take_non_fungibles_from_worktop(resource_address, &ids, &bucket)
+        self.take_non_fungibles_from_worktop(resource_address, [local_id], &bucket)
             .burn_resource(bucket)
     }
 
@@ -1377,10 +1484,10 @@ impl ManifestBuilder {
     pub fn recall_non_fungibles(
         self,
         vault_address: InternalAddress,
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let args = to_manifest_value_and_unwrap!(&NonFungibleVaultRecallNonFungiblesInput {
-            non_fungible_local_ids: non_fungible_local_ids.clone(),
+            non_fungible_local_ids: non_fungible_local_ids.into_iter().collect(),
         });
 
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
@@ -1451,12 +1558,27 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(self, owner_role: OwnerRole) -> Self {
+    pub fn new_account_advanced(
+        self,
+        owner_role: OwnerRole,
+        address_reservation: Option<String>,
+    ) -> Self {
+        let address_reservation = if let Some(reservation_name) = address_reservation {
+            let reservation = self.name_lookup().address_reservation(reservation_name);
+            self.registrar.consume_address_reservation(reservation);
+            Some(reservation)
+        } else {
+            None
+        };
+
         self.add_instruction(InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccountCreateAdvancedInput { owner_role }),
+            args: to_manifest_value_and_unwrap!(&AccountCreateAdvancedManifestInput {
+                owner_role,
+                address_reservation
+            }),
         })
     }
 
@@ -1499,7 +1621,7 @@ impl ManifestBuilder {
         account_address: impl ResolvableComponentAddress,
         amount_to_lock: impl ResolvableDecimal,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let amount_to_lock = amount_to_lock.resolve();
@@ -1508,7 +1630,7 @@ impl ManifestBuilder {
         let args = to_manifest_value_and_unwrap!(&AccountLockFeeAndWithdrawNonFungiblesInput {
             amount_to_lock,
             resource_address,
-            ids: ids.iter().cloned().collect(),
+            ids: ids.into_iter().collect(),
         });
 
         self.add_instruction(InstructionV1::CallMethod {
@@ -1589,18 +1711,28 @@ impl ManifestBuilder {
         })
     }
 
-    /// Withdraws resource from an account.
+    /// Withdraws a single non-fungible from an account.
+    pub fn withdraw_non_fungible_from_account(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Self {
+        let (resource_address, local_id) = non_fungible_global_id.into_parts();
+        self.withdraw_non_fungibles_from_account(account_address, resource_address, [local_id])
+    }
+
+    /// Withdraws non-fungibles from an account.
     pub fn withdraw_non_fungibles_from_account(
         self,
         account_address: impl ResolvableComponentAddress,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let resource_address = resource_address.resolve_static(&self.registrar);
 
         let args = to_manifest_value_and_unwrap!(&AccountWithdrawNonFungiblesInput {
-            ids: ids.clone(),
+            ids: ids.into_iter().collect(),
             resource_address,
         });
 
@@ -1633,6 +1765,36 @@ impl ManifestBuilder {
         })
     }
 
+    /// Burns a single non-fungible from an account.
+    pub fn burn_non_fungible_in_account(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Self {
+        let (resource_address, local_id) = non_fungible_global_id.into_parts();
+        self.burn_non_fungibles_in_account(account_address, resource_address, [local_id])
+    }
+
+    /// Burns non-fungibles from an account.
+    pub fn burn_non_fungibles_in_account(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        resource_address: impl ResolvableResourceAddress,
+        local_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+    ) -> Self {
+        let account_address = account_address.resolve(&self.registrar);
+        let resource_address = resource_address.resolve_static(&self.registrar);
+
+        self.call_method(
+            account_address,
+            ACCOUNT_BURN_NON_FUNGIBLES_IDENT,
+            AccountBurnNonFungiblesInput {
+                resource_address,
+                ids: local_ids.into_iter().collect(),
+            },
+        )
+    }
+
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_of_amount(
         self,
@@ -1656,18 +1818,32 @@ impl ManifestBuilder {
     }
 
     /// Creates resource proof from an account.
+    pub fn create_proof_from_account_of_non_fungible(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        non_fungible_global_id: NonFungibleGlobalId,
+    ) -> Self {
+        let (resource_address, local_id) = non_fungible_global_id.into_parts();
+        self.create_proof_from_account_of_non_fungibles(
+            account_address,
+            resource_address,
+            [local_id],
+        )
+    }
+
+    /// Creates resource proof from an account.
     pub fn create_proof_from_account_of_non_fungibles(
         self,
         account_address: impl ResolvableComponentAddress,
         resource_address: impl ResolvableResourceAddress,
-        ids: &BTreeSet<NonFungibleLocalId>,
+        local_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let resource_address = resource_address.resolve_static(&self.registrar);
 
         let args = to_manifest_value_and_unwrap!(&AccountCreateProofOfNonFungiblesInput {
             resource_address,
-            ids: ids.clone(),
+            ids: local_ids.into_iter().collect(),
         });
 
         self.add_instruction(InstructionV1::CallMethod {
@@ -1704,6 +1880,7 @@ impl ManifestBuilder {
     pub fn try_deposit_or_abort(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -1713,28 +1890,48 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-            manifest_args!(bucket),
+            manifest_args!(bucket, authorized_depositor_badge),
         )
     }
 
+    /// Note - the batch should either be:
+    /// * `ManifestExpression::EntireWorktop`,
+    /// * An array, vec, or btreeset of bucket names or ManifestBuckets, eg `["my_bucket_1", "my_bucket_2"]`
+    /// * An empty, explicitly typed array of strings, eg `Vec::<String>::new()`
     pub fn try_deposit_batch_or_abort(
         self,
         account_address: impl ResolvableComponentAddress,
+        batch: impl ResolvableBucketBatch,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
+        let batch = batch.resolve(&self.registrar);
 
         self.registrar.consume_all_buckets();
 
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            manifest_args!(batch, authorized_depositor_badge),
+        )
+    }
+
+    pub fn try_deposit_entire_worktop_or_abort(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
+    ) -> Self {
+        self.try_deposit_batch_or_abort(
+            account_address,
+            ManifestExpression::EntireWorktop,
+            authorized_depositor_badge,
         )
     }
 
     pub fn try_deposit_or_refund(
         self,
         account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -1744,22 +1941,41 @@ impl ManifestBuilder {
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
-            manifest_args!(bucket),
+            manifest_args!(bucket, authorized_depositor_badge),
         )
     }
 
+    /// Note - the batch should either be:
+    /// * `ManifestExpression::EntireWorktop`,
+    /// * An array, vec, or btreeset of bucket names or ManifestBuckets, eg `["my_bucket_1", "my_bucket_2"]`
+    /// * An empty, explicitly typed array of strings, eg `Vec::<String>::new()`
     pub fn try_deposit_batch_or_refund(
         self,
         account_address: impl ResolvableComponentAddress,
+        batch: impl ResolvableBucketBatch,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
+        let batch = batch.resolve(&self.registrar);
 
         self.registrar.consume_all_buckets();
 
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            manifest_args!(batch, authorized_depositor_badge),
+        )
+    }
+
+    pub fn try_deposit_entire_worktop_or_refund(
+        self,
+        account_address: impl ResolvableComponentAddress,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
+    ) -> Self {
+        self.try_deposit_batch_or_refund(
+            account_address,
+            ManifestExpression::EntireWorktop,
+            authorized_depositor_badge,
         )
     }
 
@@ -1775,7 +1991,7 @@ impl ManifestBuilder {
         self.call_function(
             ACCESS_CONTROLLER_PACKAGE,
             ACCESS_CONTROLLER_BLUEPRINT,
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+            ACCESS_CONTROLLER_CREATE_IDENT,
             (
                 controlled_asset,
                 RuleSet {
@@ -1784,6 +2000,7 @@ impl ManifestBuilder {
                     confirmation_role,
                 },
                 timed_recovery_delay_in_minutes,
+                Option::<()>::None,
             ),
         )
     }
@@ -1810,5 +2027,11 @@ impl ManifestBuilder {
         network_definition: &NetworkDefinition,
     ) -> Result<String, DecompileError> {
         decompile_with_known_naming(&self.instructions, network_definition, self.object_names())
+    }
+}
+
+impl Default for ManifestBuilder {
+    fn default() -> Self {
+        ManifestBuilder::new()
     }
 }

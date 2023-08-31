@@ -3,12 +3,6 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
-pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
-pub const VAULT_FREEZE_FEATURE: &str = "vault_freeze";
-pub const VAULT_RECALL_FEATURE: &str = "vault_recall";
-pub const MINT_FEATURE: &str = "mint";
-pub const BURN_FEATURE: &str = "burn";
-
 // Main roles
 pub const MINTER_ROLE: &str = "minter";
 pub const MINTER_UPDATER_ROLE: &str = "minter_updater";

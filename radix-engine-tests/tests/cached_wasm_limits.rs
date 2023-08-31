@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine::vm::wasm::DEFAULT_WASM_ENGINE_CACHE_SIZE;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -9,7 +8,7 @@ use transaction::prelude::*;
 #[ignore]
 fn publishing_many_packages_should_not_cause_system_failure() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let code = wat2wasm(&format!(
         r#"
                 (module
@@ -34,11 +33,11 @@ fn publishing_many_packages_should_not_cause_system_failure() {
                     (export "Test_f" (func $Test_f))
                 )
             "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 1024)
+        "i".repeat(MAX_INVOKE_PAYLOAD_SIZE - 1024)
     ));
 
     // Act
-    for _ in 0..(DEFAULT_WASM_ENGINE_CACHE_SIZE + 200) {
+    for _ in 0..(WASM_ENGINE_CACHE_SIZE + 200) {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_advanced(

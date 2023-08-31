@@ -4,7 +4,6 @@ use crate::internal_prelude::*;
 pub struct ScryptoCustomExtension {}
 
 impl CustomExtension for ScryptoCustomExtension {
-    const MAX_DEPTH: usize = SCRYPTO_SBOR_V1_MAX_DEPTH;
     const PAYLOAD_PREFIX: u8 = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 
     type CustomValueKind = ScryptoCustomValueKind;

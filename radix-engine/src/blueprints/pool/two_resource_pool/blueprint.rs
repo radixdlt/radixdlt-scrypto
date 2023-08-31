@@ -1,9 +1,14 @@
 use crate::blueprints::pool::two_resource_pool::*;
 use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
+use crate::internal_prelude::declare_native_blueprint_state;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::*;
-use native_sdk::modules::access_rules::*;
+use crate::prelude::BlueprintSchemaInit;
+use crate::types::{ReceiverInfo, TypeRef};
+use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::*;
+use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
@@ -12,19 +17,208 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::package::{
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+};
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::prelude::{
+    BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintStateSchemaInit, FunctionSchemaInit,
+};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 
 pub const TWO_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "TwoResourcePool";
 
+declare_native_blueprint_state! {
+    blueprint_ident: TwoResourcePool,
+    blueprint_snake_case: two_resource_pool,
+    features: {
+    },
+    fields: {
+        state:  {
+            ident: State,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::Always,
+        }
+    },
+    collections: {
+    }
+}
+
+pub type TwoResourcePoolStateV1 = TwoResourcePoolSubstate;
+
 pub struct TwoResourcePoolBlueprint;
 impl TwoResourcePoolBlueprint {
+    pub fn definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let feature_set = TwoResourcePoolFeatureSet::all_features();
+        let state = TwoResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
+
+        let mut functions = BTreeMap::new();
+
+        functions.insert(
+            TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolInstantiateInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolInstantiateOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolContributeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolContributeOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_REDEEM_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolRedeemInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TwoResourcePoolRedeemOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedDepositOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolProtectedWithdrawOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetRedemptionValueOutput>(
+                        ),
+                ),
+                export: TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<TwoResourcePoolGetVaultAmountsOutput>(),
+                ),
+                export: TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                ContributionEvent,
+                RedemptionEvent,
+                WithdrawEvent,
+                DepositEvent
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::default(),
+            is_transient: false,
+            dependencies: btreeset!(),
+            feature_set,
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state,
+                events: event_schema,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
+                    roles {
+                        POOL_MANAGER_ROLE;
+                    },
+                    methods {
+                        // Main Module rules
+                        TWO_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
+                        TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
+                        TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodAccessibility::Public;
+                        TWO_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                        TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                    }
+                }),
+            },
+        }
+    }
+
     pub fn instantiate<Y>(
         (resource_address1, resource_address2): (ResourceAddress, ResourceAddress),
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<TwoResourcePoolInstantiateOutput, RuntimeError>
     where
@@ -32,7 +226,7 @@ impl TwoResourcePoolBlueprint {
     {
         // A pool can't be created between the same resources - error out if it's
         if resource_address1 == resource_address2 {
-            return Err(TwoResourcePoolError::ContributionOfEmptyBucketError.into());
+            return Err(TwoResourcePoolError::PoolCreationWithSameResource.into());
         }
 
         // A pool can't be created where one of the resources is non-fungible - error out if any of
@@ -49,10 +243,17 @@ impl TwoResourcePoolBlueprint {
 
         // Allocating the address of the pool - this is going to be needed for the metadata of the
         // pool unit resource.
-        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
-            package_address: POOL_PACKAGE,
-            blueprint_name: TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
-        })?;
+        let (address_reservation, address) = {
+            if let Some(address_reservation) = address_reservation {
+                let address = api.get_reservation_address(address_reservation.0.as_node_id())?;
+                (address_reservation, address)
+            } else {
+                api.allocate_global_address(BlueprintId {
+                    package_address: POOL_PACKAGE,
+                    blueprint_name: TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
+                })?
+            }
+        };
 
         // Creating the pool unit resource
         let pool_unit_resource_manager = {
@@ -81,7 +282,7 @@ impl TwoResourcePoolBlueprint {
         };
 
         // Creating the pool nodes
-        let access_rules = AccessRules::create(
+        let role_assignment = RoleAssignment::create(
             owner_role,
             btreemap! {
                 ObjectModuleId::Main => roles_init! {
@@ -114,16 +315,18 @@ impl TwoResourcePoolBlueprint {
             };
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![FieldValue::immutable(&substate)],
+                btreemap! {
+                    TwoResourcePoolField::State.field_index() => FieldValue::immutable(&TwoResourcePoolStateFieldPayload::from_content_source(substate)),
+                },
             )?
         };
 
         api.globalize(
+            object_id,
             btreemap!(
-                ObjectModuleId::Main => object_id,
-                ObjectModuleId::AccessRules => access_rules.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
+                ModuleId::RoleAssignment => role_assignment.0,
+                ModuleId::Metadata => metadata.0,
+                ModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;
@@ -231,48 +434,107 @@ impl TwoResourcePoolBlueprint {
                 reserves2 > Decimal::ZERO,
             ) {
                 (false, false, false) => Ok((
-                    (contribution1 * contribution2).sqrt().unwrap(),
+                    /*
+                    This is doing the following:
+                    dec(
+                        round(
+                            sqrt(pdec(c1)) * sqrt(pdec(c2)),
+                            19
+                        )
+                    )
+                     */
+                    PreciseDecimal::from(contribution1)
+                        .sqrt()
+                        .and_then(|c1_sqrt| {
+                            PreciseDecimal::from(contribution2)
+                                .sqrt()
+                                .and_then(|c2_sqrt| c1_sqrt.safe_mul(c2_sqrt))
+                        })
+                        .and_then(|d| d.safe_round(19, RoundingMode::ToPositiveInfinity))
+                        .and_then(|d| Decimal::try_from(d).ok())
+                        .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
                     contribution1,
                     contribution2,
                 )),
                 (false, _, _) => Ok((
-                    ((contribution1 + reserves1) * (contribution2 + reserves2))
-                        .sqrt()
-                        .unwrap(),
+                    /*
+                    This is doing the following:
+                    dec(
+                        round(
+                            sqrt(pdec(c1) + pdec(r1)) * sqrt(pdec(c2) + pdec(r2)),
+                            19
+                        )
+                    )
+                     */
+                    PreciseDecimal::from(contribution1)
+                        .safe_add(PreciseDecimal::from(reserves1))
+                        .and_then(|d| d.sqrt())
+                        .and_then(|sqrt_cr1| {
+                            PreciseDecimal::from(contribution2)
+                                .safe_add(PreciseDecimal::from(reserves2))
+                                .and_then(|d| d.sqrt())
+                                .and_then(|sqrt_cr2| sqrt_cr1.safe_mul(sqrt_cr2))
+                        })
+                        .and_then(|d| d.safe_round(19, RoundingMode::ToPositiveInfinity))
+                        .and_then(|d| Decimal::try_from(d).ok())
+                        .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
                     contribution1,
                     contribution2,
                 )),
                 (true, true, true) => {
-                    // Calculating everything in terms of m, n, dm, and dn where they're defined as
-                    // follows:
-                    // m:  the reserves of the first resource.
-                    // n:  the reserves of the second resource.
-                    // dm: the change of m or the amount in the bucket of m being contributed.
-                    // dn: the change of n or the amount in the bucket of n being contributed.
-
-                    let m = reserves1;
-                    let n = reserves2;
-                    let dm = contribution1;
-                    let dn = contribution2;
-
-                    let (mut amount1, mut amount2) = if (m / n) == (dm / dn) {
-                        (dm, dn)
-                    } else if (m / n) < (dm / dn) {
-                        (dn * m / n, dn)
-                    } else {
-                        (dm, dm * n / m)
-                    };
-
-                    if divisibility1 != 18 {
-                        amount1 = amount1.round(divisibility1, RoundingMode::ToNegativeInfinity)
-                    }
-                    if divisibility2 != 18 {
-                        amount2 = amount2.round(divisibility2, RoundingMode::ToNegativeInfinity)
-                    }
-
-                    let pool_units_to_mint = amount1 / reserves1 * pool_unit_total_supply;
-
-                    Ok((pool_units_to_mint, amount1, amount2))
+                    // We need to determine how much of the resources given for contribution can
+                    // actually be contributed to keep the ratio of resources in the pool the same.
+                    //
+                    // The logic to do this follows a simple algorithm:
+                    // For contribution1 we calculated the required_contribution2. We do the same
+                    // for contribution2 we calculated the required_contribution1. We collect them
+                    // into an array of tuples of:
+                    // [
+                    //     (contribution1, required_contribution2),
+                    //     (required_contribution1, contribution2)
+                    // ]
+                    // We filter out entries in this array where the amounts contributed is less
+                    // than the amounts required.
+                    //
+                    // If both of the entries remain in the array, we calculate the pool units that
+                    // can be minted for both of them and then take the one which yield the largest
+                    // amount of pool units.
+                    [
+                        contribution1
+                            .safe_div(reserves1)
+                            .and_then(|d| d.safe_mul(reserves2))
+                            .map(|contribution2_required| (contribution1, contribution2_required)),
+                        contribution2
+                            .safe_div(reserves2)
+                            .and_then(|d| d.safe_mul(reserves1))
+                            .map(|contribution1_required| (contribution1_required, contribution2)),
+                    ]
+                    .into_iter()
+                    .filter_map(|item| match item {
+                        v @ Some((c1, c2)) if c1 <= contribution1 && c2 <= contribution2 => v,
+                        _ => None,
+                    })
+                    .map(|(c1, c2)| -> Result<(Decimal, Decimal), RuntimeError> {
+                        Ok((
+                            c1.safe_round(divisibility1, RoundingMode::ToNegativeInfinity)
+                                .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
+                            c2.safe_round(divisibility2, RoundingMode::ToNegativeInfinity)
+                                .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
+                        ))
+                    })
+                    .filter_map(Result::ok)
+                    .map(
+                        |(c1, c2)| -> Result<(Decimal, Decimal, Decimal), RuntimeError> {
+                            let pool_units_to_mint = c1
+                                .safe_div(reserves1)
+                                .and_then(|d| d.safe_mul(pool_unit_total_supply))
+                                .ok_or(TwoResourcePoolError::DecimalOverflowError)?;
+                            Ok((pool_units_to_mint, c1, c2))
+                        },
+                    )
+                    .filter_map(Result::ok)
+                    .max_by(|(mint1, _, _), (mint2, _, _)| mint1.cmp(mint2))
+                    .ok_or(TwoResourcePoolError::DecimalOverflowError)
                 }
                 (true, _, _) => Err(TwoResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves),
             }
@@ -281,8 +543,8 @@ impl TwoResourcePoolBlueprint {
         // Construct the event - this will be emitted once the resources are contributed to the pool
         let event = ContributionEvent {
             contributed_resources: btreemap! {
-                bucket1.resource_address(api)? => bucket1.amount(api)?,
-                bucket2.resource_address(api)? => bucket2.amount(api)?,
+                bucket1.resource_address(api)? => amount1,
+                bucket2.resource_address(api)? => amount2,
             },
             pool_units_minted: pool_units_to_mint,
         };
@@ -367,7 +629,7 @@ impl TwoResourcePoolBlueprint {
         }
 
         let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
 
         let event = RedemptionEvent {
             redeemed_resources: amounts_owed.clone(),
@@ -462,6 +724,14 @@ impl TwoResourcePoolBlueprint {
             .pool_unit_resource_manager
             .total_supply(api)?
             .expect("Total supply is always enabled for pool unit resource.");
+
+        if amount_of_pool_units.is_negative()
+            || amount_of_pool_units.is_zero()
+            || amount_of_pool_units > pool_units_total_supply
+        {
+            return Err(TwoResourcePoolError::InvalidGetRedemptionAmount.into());
+        }
+
         let mut reserves = BTreeMap::new();
         for (resource_address, vault) in substate.vaults.into_iter() {
             let amount = vault.amount(api)?;
@@ -484,7 +754,7 @@ impl TwoResourcePoolBlueprint {
         }
 
         let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
 
         api.field_close(handle)?;
 
@@ -518,13 +788,19 @@ impl TwoResourcePoolBlueprint {
     fn lock_and_read<Y>(
         api: &mut Y,
         lock_flags: LockFlags,
-    ) -> Result<(TwoResourcePoolSubstate, LockHandle), RuntimeError>
+    ) -> Result<(TwoResourcePoolSubstate, SubstateHandle), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = TwoResourcePoolField::TwoResourcePool.into();
-        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
-        let two_resource_pool_substate = api.field_read_typed::<TwoResourcePoolSubstate>(handle)?;
+        let substate_key = TwoResourcePoolField::State.into();
+        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
+        let two_resource_pool_substate =
+            api.field_read_typed::<VersionedTwoResourcePoolState>(handle)?;
+        let two_resource_pool_substate = match two_resource_pool_substate {
+            VersionedTwoResourcePoolState::V1(two_resource_pool_substate) => {
+                two_resource_pool_substate
+            }
+        };
 
         Ok((two_resource_pool_substate, handle))
     }
@@ -533,7 +809,7 @@ impl TwoResourcePoolBlueprint {
         pool_units_to_redeem: Decimal,
         pool_units_total_supply: Decimal,
         reserves: BTreeMap<ResourceAddress, ReserveResourceInformation>,
-    ) -> BTreeMap<ResourceAddress, Decimal> {
+    ) -> Result<BTreeMap<ResourceAddress, Decimal>, RuntimeError> {
         reserves
             .into_iter()
             .map(
@@ -544,15 +820,20 @@ impl TwoResourcePoolBlueprint {
                         reserves,
                     },
                 )| {
-                    let amount_owed = (pool_units_to_redeem / pool_units_total_supply) * reserves;
+                    let amount_owed = pool_units_to_redeem
+                        .safe_div(pool_units_total_supply)
+                        .and_then(|d| d.safe_mul(reserves))
+                        .ok_or(TwoResourcePoolError::DecimalOverflowError)?;
 
                     let amount_owed = if divisibility == 18 {
                         amount_owed
                     } else {
-                        amount_owed.round(divisibility, RoundingMode::ToNegativeInfinity)
+                        amount_owed
+                            .safe_round(divisibility, RoundingMode::ToNegativeInfinity)
+                            .ok_or(TwoResourcePoolError::DecimalOverflowError)?
                     };
 
-                    (resource_address, amount_owed)
+                    Ok((resource_address, amount_owed))
                 },
             )
             .collect()

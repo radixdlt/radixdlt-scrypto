@@ -2,7 +2,7 @@ use crate::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_
 use crate::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
 use crate::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine_common::types::EntityType;
-use radix_engine_common::{native_addresses::*, ScryptoSbor};
+use radix_engine_common::{constants::*, ScryptoSbor};
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -62,7 +62,6 @@ pub fn get_internal_entity_type(blueprint_id: &BlueprintId) -> EntityType {
     ) {
         (RESOURCE_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => EntityType::InternalFungibleVault,
         (RESOURCE_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => EntityType::InternalNonFungibleVault,
-        (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
         _ => EntityType::InternalGenericComponent,
     }
 }

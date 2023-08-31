@@ -3,6 +3,7 @@
 //=============
 
 pub use crate::component::*;
+pub use crate::engine::scrypto_env::ScryptoVmV1Api;
 pub use crate::engine::*;
 pub use crate::modules::*;
 pub use crate::resource::*;
@@ -50,3 +51,11 @@ pub use sbor::{Categorize, Decode, DecodeError, Encode, Sbor};
 
 // Needed for macros
 pub use radix_engine_interface::radix_engine_common;
+
+/// We should always `UncheckedUrl` in Scrypto, as the validation logic is heavy.
+/// Thus, this type alias is added.
+pub type Url = UncheckedUrl;
+
+/// We should always `UncheckedOrigin` in Scrypto, as the validation logic is heavy.
+/// Thus, this type alias is added.
+pub type Origin = UncheckedOrigin;

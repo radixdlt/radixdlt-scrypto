@@ -27,7 +27,6 @@ pub const ALL_RESOURCE_AUTH_KEYS: [TestResourceAction; 7] = [
 ];
 
 impl TestResourceAction {
-    // FIXME: Clean out ObjectModuleId
     pub fn action_role_key(&self) -> RoleKey {
         match self {
             Self::Mint => RoleKey::new(MINTER_ROLE),
@@ -62,7 +61,7 @@ fn test_locked_resource_auth_cannot_be_updated() {
 
 pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     // Arrange 1
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let token_address =
         test_runner.create_everything_allowed_non_fungible_resource(OwnerRole::None);
@@ -77,15 +76,15 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    [NonFungibleLocalId::integer(1)],
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     updater_role_key,
@@ -105,15 +104,15 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    [NonFungibleLocalId::integer(1)],
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     updater_role_key,
@@ -133,9 +132,9 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         admin_auth,
-                        &btreeset!(NonFungibleLocalId::integer(1)),
+                        [NonFungibleLocalId::integer(1)],
                     )
-                    .update_role(
+                    .set_role(
                         token_address,
                         ObjectModuleId::Main,
                         role_key,
@@ -155,9 +154,9 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    [NonFungibleLocalId::integer(1)],
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     role_key,
@@ -175,9 +174,9 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    [NonFungibleLocalId::integer(1)],
                 )
-                .update_role(
+                .set_role(
                     token_address,
                     ObjectModuleId::Main,
                     role_key,

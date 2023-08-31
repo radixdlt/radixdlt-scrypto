@@ -4,7 +4,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_queries::typed_substate_layout::AccountError;
-use scrypto_unit::TestRunner;
+use scrypto_unit::{DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
@@ -82,7 +82,7 @@ fn account_try_deposit_method_is_callable_with_out_owner_signature() {
 }
 
 #[test]
-fn account_try_deposit_batch_or_refund_method_is_callable_with_out_owner_signature() {
+fn account_try_deposit_batch_or_refund_method_is_callable_without_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
@@ -97,7 +97,31 @@ fn account_try_deposit_batch_or_refund_method_is_callable_with_out_owner_signatu
 }
 
 #[test]
-fn account_try_deposit_or_abort_method_is_callable_with_out_owner_signature() {
+fn account_try_deposit_batch_or_refund_method_is_callable_with_array_of_resources() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account_address) = test_runner.new_account(true);
+
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        ManifestBuilder::new()
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "xrd_1a")
+            .take_all_from_worktop(XRD, "xrd_1b")
+            .try_deposit_batch_or_refund(account_address, ["xrd_1a", "xrd_1b"], None)
+            .try_deposit_batch_or_refund(account_address, Vec::<String>::new(), None)
+            .take_all_from_worktop(XRD, "xrd_2a")
+            .take_all_from_worktop(XRD, "xrd_2b")
+            .try_deposit_batch_or_abort(account_address, ["xrd_2a", "xrd_2b"], None)
+            .try_deposit_batch_or_abort(account_address, Vec::<String>::new(), None)
+            .build(),
+        [],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn account_try_deposit_or_abort_method_is_callable_without_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
@@ -112,7 +136,7 @@ fn account_try_deposit_or_abort_method_is_callable_with_out_owner_signature() {
 }
 
 #[test]
-fn account_try_deposit_batch_or_abort_method_is_callable_with_out_owner_signature() {
+fn account_try_deposit_batch_or_abort_method_is_callable_without_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
@@ -127,16 +151,14 @@ fn account_try_deposit_batch_or_abort_method_is_callable_with_out_owner_signatur
 }
 
 #[test]
-fn changing_account_default_deposit_rule_is_callable_with_owner_signature() {
+fn changing_default_deposit_rule_is_callable_with_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
 
         // Act
-        let receipt = test_runner.transition_account_default_deposit_rule(
-            AccountDefaultDepositRule::AllowExisting,
-            true,
-        );
+        let receipt =
+            test_runner.transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true);
 
         // Assert
         receipt.expect_commit_success();
@@ -144,16 +166,14 @@ fn changing_account_default_deposit_rule_is_callable_with_owner_signature() {
 }
 
 #[test]
-fn changing_account_default_deposit_rule_is_not_callable_with_out_owner_signature() {
+fn changing_default_deposit_rule_is_not_callable_with_out_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
 
         // Act
-        let receipt = test_runner.transition_account_default_deposit_rule(
-            AccountDefaultDepositRule::AllowExisting,
-            false,
-        );
+        let receipt =
+            test_runner.transition_default_deposit_rule(DefaultDepositRule::AllowExisting, false);
 
         // Assert
         receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -227,7 +247,7 @@ fn resource_in_deny_list_could_be_removed_from_there() {
             .add_to_deny_list(resource_address, true)
             .expect_commit_success();
         test_runner
-            .remove_from_deny_list(resource_address, true)
+            .remove_resource_preference(resource_address, true)
             .expect_commit_success();
 
         // Act
@@ -245,7 +265,7 @@ fn allow_existing_disallows_deposit_of_resources_on_deny_list() {
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
         test_runner
             .add_to_deny_list(XRD, true)
@@ -266,7 +286,7 @@ fn allow_existing_allows_deposit_of_xrd_if_not_on_deny_list() {
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
 
         // Act
@@ -290,7 +310,7 @@ fn allow_existing_allows_deposit_of_an_existing_resource() {
             .expect_commit_success();
 
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
 
         // Act
@@ -315,7 +335,7 @@ fn allow_existing_allows_deposit_of_an_existing_resource_even_if_account_has_non
         test_runner.burn(resource_address);
 
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
 
         // Act
@@ -334,7 +354,7 @@ fn allow_existing_allows_deposit_of_a_resource_account_does_not_have_if_it_is_on
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         let resource_address = test_runner.freely_mintable_resource();
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
         test_runner
             .add_to_allow_list(resource_address, true)
@@ -356,13 +376,13 @@ fn removing_an_address_from_the_allow_list_removes_it() {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         let resource_address = test_runner.freely_mintable_resource();
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
         test_runner
             .add_to_allow_list(resource_address, true)
             .expect_commit_success();
         test_runner
-            .remove_from_allow_list(resource_address, true)
+            .remove_resource_preference(resource_address, true)
             .expect_commit_success();
 
         // Act
@@ -381,7 +401,7 @@ fn transitioning_an_address_to_deny_list_works_as_expected() {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         let resource_address = test_runner.freely_mintable_resource();
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
+            .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
         test_runner
             .add_to_allow_list(resource_address, true)
@@ -405,7 +425,7 @@ fn disallow_all_does_not_permit_deposit_of_any_resource() {
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::Reject, true)
+            .transition_default_deposit_rule(DefaultDepositRule::Reject, true)
             .expect_commit_success();
 
         // Act
@@ -424,7 +444,7 @@ fn disallow_all_permits_deposit_of_resource_in_allow_list() {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
         let resource_address = test_runner.freely_mintable_resource();
         test_runner
-            .transition_account_default_deposit_rule(AccountDefaultDepositRule::Reject, true)
+            .transition_default_deposit_rule(DefaultDepositRule::Reject, true)
             .expect_commit_success();
         test_runner
             .add_to_allow_list(resource_address, true)
@@ -440,14 +460,14 @@ fn disallow_all_permits_deposit_of_resource_in_allow_list() {
 }
 
 struct AccountDepositModesTestRunner {
-    test_runner: TestRunner,
+    test_runner: DefaultTestRunner,
     public_key: PublicKey,
     component_address: ComponentAddress,
 }
 
 impl AccountDepositModesTestRunner {
     pub fn new(virtual_account: bool) -> Self {
-        let mut test_runner = TestRunner::builder().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, component_address) = test_runner.new_account(virtual_account);
 
         Self {
@@ -463,30 +483,11 @@ impl AccountDepositModesTestRunner {
         deposit_method: DepositMethod,
         sign: bool,
     ) -> TransactionReceipt {
-        let (method, is_vec) = match deposit_method {
-            DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false),
-            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false),
-            DepositMethod::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false),
-            DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true),
-            DepositMethod::TryDepositBatchOrRefund => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true)
-            }
-            DepositMethod::TryDepositBatchOrAbort => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true)
-            }
-        };
-
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 1)
             .take_all_from_worktop(resource_address, "bucket")
-            .with_name_lookup(|builder, lookup| {
-                let bucket = lookup.bucket("bucket");
-                let args = if is_vec {
-                    manifest_args!(vec![bucket])
-                } else {
-                    manifest_args!(bucket)
-                };
-                builder.call_method(self.component_address, method, args)
+            .with_bucket("bucket", |builder, bucket| {
+                deposit_method.call(builder, self.component_address, bucket)
             })
             .build();
         self.execute_manifest(manifest, sign)
@@ -497,69 +498,60 @@ impl AccountDepositModesTestRunner {
         deposit_method: DepositMethod,
         sign: bool,
     ) -> TransactionReceipt {
-        let (method, is_vec) = match deposit_method {
-            DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false),
-            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false),
-            DepositMethod::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false),
-            DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true),
-            DepositMethod::TryDepositBatchOrRefund => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true)
-            }
-            DepositMethod::TryDepositBatchOrAbort => {
-                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true)
-            }
-        };
-
         let manifest = ManifestBuilder::new()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_tokens")
-            .then(|builder| {
-                let bucket = builder.bucket("free_tokens");
-                builder.call_method(
-                    self.component_address,
-                    method,
-                    if is_vec {
-                        manifest_args!(vec![bucket])
-                    } else {
-                        manifest_args!(bucket)
-                    },
-                )
+            .with_bucket("free_tokens", |builder, bucket| {
+                deposit_method.call(builder, self.component_address, bucket)
             })
             .build();
         self.execute_manifest(manifest, sign)
     }
 
-    pub fn transition_account_default_deposit_rule(
+    pub fn transition_default_deposit_rule(
         &mut self,
-        default_deposit_rule: AccountDefaultDepositRule,
+        default: DefaultDepositRule,
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.component_address,
-                ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
-                AccountChangeDefaultDepositRuleInput {
-                    default_deposit_rule,
+                ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                AccountSetDefaultDepositRuleInput { default },
+            )
+            .build();
+        self.execute_manifest(manifest, sign)
+    }
+
+    fn set_resource_preference(
+        &mut self,
+        resource_address: ResourceAddress,
+        resource_preference: ResourcePreference,
+        sign: bool,
+    ) -> TransactionReceipt {
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                self.component_address,
+                ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
+                AccountSetResourcePreferenceInput {
+                    resource_address,
+                    resource_preference,
                 },
             )
             .build();
         self.execute_manifest(manifest, sign)
     }
 
-    fn configure_resource_deposit_rule(
+    fn remove_resource_preference(
         &mut self,
         resource_address: ResourceAddress,
-        resource_deposit_configuration: ResourceDepositRule,
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.component_address,
-                ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
-                AccountConfigureResourceDepositRuleInput {
-                    resource_address,
-                    resource_deposit_configuration,
-                },
+                ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT,
+                AccountRemoveResourcePreferenceInput { resource_address },
             )
             .build();
         self.execute_manifest(manifest, sign)
@@ -570,7 +562,7 @@ impl AccountDepositModesTestRunner {
         resource_address: ResourceAddress,
         sign: bool,
     ) -> TransactionReceipt {
-        self.configure_resource_deposit_rule(resource_address, ResourceDepositRule::Allowed, sign)
+        self.set_resource_preference(resource_address, ResourcePreference::Allowed, sign)
     }
 
     pub fn add_to_deny_list(
@@ -578,27 +570,7 @@ impl AccountDepositModesTestRunner {
         resource_address: ResourceAddress,
         sign: bool,
     ) -> TransactionReceipt {
-        self.configure_resource_deposit_rule(
-            resource_address,
-            ResourceDepositRule::Disallowed,
-            sign,
-        )
-    }
-
-    pub fn remove_from_allow_list(
-        &mut self,
-        resource_address: ResourceAddress,
-        sign: bool,
-    ) -> TransactionReceipt {
-        self.configure_resource_deposit_rule(resource_address, ResourceDepositRule::Neither, sign)
-    }
-
-    pub fn remove_from_deny_list(
-        &mut self,
-        resource_address: ResourceAddress,
-        sign: bool,
-    ) -> TransactionReceipt {
-        self.configure_resource_deposit_rule(resource_address, ResourceDepositRule::Neither, sign)
+        self.set_resource_preference(resource_address, ResourcePreference::Disallowed, sign)
     }
 
     pub fn virtual_signature_badge(&self) -> NonFungibleGlobalId {
@@ -622,10 +594,10 @@ impl AccountDepositModesTestRunner {
 
         let balance = self
             .test_runner
-            .account_balance(self.component_address, resource_address);
+            .get_component_balance(self.component_address, resource_address);
         let manifest = ManifestBuilder::new()
-            .withdraw_from_account(self.component_address, resource_address, balance.unwrap())
-            .try_deposit_batch_or_refund(virtual_account)
+            .withdraw_from_account(self.component_address, resource_address, balance)
+            .try_deposit_entire_worktop_or_refund(virtual_account, None)
             .build();
 
         self.execute_manifest(manifest, true)
@@ -656,6 +628,37 @@ enum DepositMethod {
     DepositBatch,
     TryDepositBatchOrRefund,
     TryDepositBatchOrAbort,
+}
+
+impl DepositMethod {
+    pub fn call(
+        &self,
+        manifest_builder: ManifestBuilder,
+        account: ComponentAddress,
+        bucket: ManifestBucket,
+    ) -> ManifestBuilder {
+        let (method, is_vec, insert_badge) = match self {
+            Self::Deposit => (ACCOUNT_DEPOSIT_IDENT, false, false),
+            Self::TryDeposit => (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, false, true),
+            Self::TryDepositOrAbort => (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false, true),
+            Self::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true, false),
+            Self::TryDepositBatchOrRefund => {
+                (ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT, true, true)
+            }
+            Self::TryDepositBatchOrAbort => (ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, true, true),
+        };
+
+        let args = match (is_vec, insert_badge) {
+            (true, true) => {
+                manifest_args!(vec![bucket], Option::<ResourceOrNonFungible>::None)
+            }
+            (true, false) => manifest_args!(vec![bucket]),
+            (false, true) => manifest_args!(bucket, Option::<ResourceOrNonFungible>::None),
+            (false, false) => manifest_args!(bucket),
+        };
+
+        manifest_builder.call_method(account, method, args)
+    }
 }
 
 fn is_auth_unauthorized_error(runtime_error: &RuntimeError) -> bool {

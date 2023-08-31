@@ -33,6 +33,7 @@ mod foo {
                         name: "Altima".to_string(),
                     },
                 ])
+                .into()
         }
     }
 }

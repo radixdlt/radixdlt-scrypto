@@ -57,7 +57,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                     metadata!(),
                                     Some(dec!("100000")),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_entire_worktop_or_abort(
+                                    config.user_account_1.address,
+                                    None,
+                                )
                         },
                         vec![],
                     )
@@ -78,7 +81,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                 state.max_divisibility_fungible_resource.unwrap(),
                                 dec!("100"),
                             )
-                            .try_deposit_batch_or_abort(config.user_account_1.address)
+                            .try_deposit_entire_worktop_or_abort(
+                                config.user_account_1.address,
+                                None,
+                            )
                     },
                     vec![],
                 )
@@ -117,9 +123,12 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                     dec!("0.001"),
                                     &bucket,
                                 )
-                                .try_deposit_or_abort(config.user_account_2.address, bucket);
+                                .try_deposit_or_abort(config.user_account_2.address, None, bucket);
                         }
-                        builder.try_deposit_batch_or_abort(config.user_account_1.address)
+                        builder.try_deposit_entire_worktop_or_abort(
+                            config.user_account_1.address,
+                            None,
+                        )
                     },
                     vec![&config.user_account_1.key],
                 )
@@ -151,7 +160,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     |builder| {
                         builder
                             .recall(state.vault1.unwrap(), dec!("1"))
-                            .try_deposit_batch_or_abort(config.user_account_2.address)
+                            .try_deposit_entire_worktop_or_abort(
+                                config.user_account_2.address,
+                                None,
+                            )
                     },
                     vec![&config.user_account_1.key],
                 )
@@ -183,7 +195,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     |builder| {
                         builder
                             .recall(state.vault1.unwrap(), dec!("2"))
-                            .try_deposit_batch_or_abort(config.user_account_1.address)
+                            .try_deposit_entire_worktop_or_abort(
+                                config.user_account_1.address,
+                                None,
+                            )
                     },
                     vec![&config.user_account_1.key],
                 )
@@ -209,7 +224,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                     metadata!(),
                                     Some(dec!("100000")),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_entire_worktop_or_abort(
+                                    config.user_account_1.address,
+                                    None,
+                                )
                         },
                         vec![],
                     )
@@ -231,7 +249,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                 state.min_divisibility_fungible_resource.unwrap(),
                                 dec!("166"),
                             )
-                            .try_deposit_batch_or_abort(config.user_account_1.address)
+                            .try_deposit_entire_worktop_or_abort(
+                                config.user_account_1.address,
+                                None,
+                            )
                     },
                     vec![],
                 )
@@ -246,7 +267,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                     state.min_divisibility_fungible_resource.unwrap(),
                                     dec!("1.1"),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_entire_worktop_or_abort(
+                                    config.user_account_1.address,
+                                    None,
+                                )
                         },
                         vec![],
                     )
@@ -263,7 +287,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                 state.min_divisibility_fungible_resource.unwrap(),
                                 dec!("234"),
                             )
-                            .try_deposit_batch_or_abort(config.user_account_2.address)
+                            .try_deposit_entire_worktop_or_abort(
+                                config.user_account_2.address,
+                                None,
+                            )
                     },
                     vec![&config.user_account_1.key],
                 )
@@ -279,7 +306,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                     state.min_divisibility_fungible_resource.unwrap(),
                                     dec!("0.0001"),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_2.address)
+                                .try_deposit_entire_worktop_or_abort(
+                                    config.user_account_2.address,
+                                    None,
+                                )
                         },
                         vec![&config.user_account_1.key],
                     )
@@ -321,7 +351,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     |builder| {
                         builder
                             .recall(state.vault2.unwrap(), dec!("2"))
-                            .try_deposit_batch_or_abort(config.user_account_1.address)
+                            .try_deposit_entire_worktop_or_abort(
+                                config.user_account_1.address,
+                                None,
+                            )
                     },
                     vec![&config.user_account_1.key],
                 )
@@ -333,7 +366,10 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         |builder| {
                             builder
                                 .recall(state.vault2.unwrap(), dec!("123.12321"))
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_entire_worktop_or_abort(
+                                    config.user_account_1.address,
+                                    None,
+                                )
                         },
                         vec![&config.user_account_1.key],
                     )

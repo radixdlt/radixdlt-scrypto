@@ -11,7 +11,7 @@ mod auth_list_component {
         pub fn create_component(
             count: u8,
             auth: Vec<NonFungibleGlobalId>,
-            roles: RolesInit,
+            roles: RoleAssignmentInit,
         ) -> Global<AuthListComponent> {
             Self { count, auth }
                 .instantiate()

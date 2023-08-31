@@ -1,6 +1,7 @@
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use sbor::rust::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PayloadValidationError<E: CustomExtension> {
@@ -73,11 +74,11 @@ pub struct LocatedValidationError<'s, E: CustomExtension> {
 impl<'s, E: CustomExtension> LocatedValidationError<'s, E> {
     pub fn error_message(&self, schema: &Schema<E::CustomSchema>) -> String {
         format!(
-            "{:?} occurred at byte offset {}-{} and value path {}",
-            self.error,
+            "[ERROR] byte offset: {}-{}, value path: {}, cause: {}",
             self.location.start_offset,
             self.location.end_offset,
-            self.location.path_to_string(schema)
+            self.location.path_to_string(schema),
+            self.error
         )
     }
 }
@@ -108,8 +109,9 @@ pub fn validate_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
     schema: &'s Schema<E::CustomSchema>,
     index: LocalTypeIndex,
     context: &T,
+    depth_limit: usize,
 ) -> Result<(), LocatedValidationError<'s, E>> {
-    let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index);
+    let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index, depth_limit);
     loop {
         let typed_event = traverser.next_event();
         if validate_event_with_type::<E, T>(&schema, &typed_event.event, context).map_err(
@@ -294,6 +296,16 @@ pub fn validate_terminal_value_batch<'de, E: CustomExtension>(
     Ok(())
 }
 
+impl<E: CustomExtension> fmt::Display for PayloadValidationError<E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PayloadValidationError::TraversalError(e) => write!(f, "{}", e),
+            PayloadValidationError::ValidationError(e) => write!(f, "{:?}", e),
+            PayloadValidationError::SchemaInconsistency => write!(f, "SchemaInconsistency"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::LocatedValidationError;
@@ -320,9 +332,10 @@ mod tests {
 
         let result = validate_payload_against_schema::<NoCustomExtension, ()>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &mut (),
+            64,
         );
         assert!(result.is_ok())
     }
@@ -338,9 +351,10 @@ mod tests {
 
         let result = validate_payload_against_schema::<NoCustomExtension, ()>(
             &payload,
-            &schema,
+            schema.v1(),
             type_index,
             &mut (),
+            64,
         );
         assert!(matches!(
             result,
@@ -421,9 +435,10 @@ mod tests {
             generate_full_schema_from_single_type::<SimpleStruct, NoCustomSchema>();
         let result = validate_payload_against_schema::<NoCustomExtension, _>(
             &bytes,
-            &schema,
+            schema.v1(),
             type_index,
             &mut (),
+            64,
         );
         assert!(result.is_ok())
     }
@@ -459,7 +474,8 @@ mod tests {
                 &basic_encode(&vec![5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
-                &mut ()
+                &mut (),
+                64
             ),
             Ok(())
         );
@@ -469,7 +485,8 @@ mod tests {
                 &basic_encode(&vec![8u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
-                &mut ()
+                &mut (),
+                64
             )
             .map_err(|e| e.error),
             Err(PayloadValidationError::ValidationError(
@@ -488,7 +505,8 @@ mod tests {
                 &basic_encode(&vec![5u8, 5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
-                &mut ()
+                &mut (),
+                64
             )
             .map_err(|e| e.error),
             Err(PayloadValidationError::ValidationError(
@@ -551,53 +569,153 @@ mod tests {
 
         let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &cut_off_payload,
-            &schema,
+            schema.v1(),
             type_index,
-            &mut ()
+            &mut (),
+            64
         ) else {
             panic!("Validation did not error with too short a payload");
         };
-        let path_message = error.location.path_to_string(&schema);
-
+        let path_message = error.location.path_to_string(schema.v1());
         assert_eq!(
             path_message,
-            "MyStruct.[0|hello]->MyEnum::{1|Option2}.[0|inner]->MyEnum::{0|Option1}.[0]->Map[0].Value->Array[0]->Tuple.[0]->Enum::{6}.[0]->Tuple.[1]->Map[0].Key->[ERROR] DecodeError(BufferUnderflow { required: 1, remaining: 0 })"
+            "MyStruct.[0|hello]->MyEnum::{1|Option2}.[0|inner]->MyEnum::{0|Option1}.[0]->Map.[0].Value->Array.[0]->Tuple.[0]->Enum::{6}.[0]->Tuple.[1]->Map.[0].Key"
         );
     }
 
     #[derive(BasicSbor)]
     struct MyStruct2 {
-        field1: u8,
-        field2: u16,
+        field1: u16,
+        field2: MyStruct2Inner,
+    }
+
+    #[derive(BasicSbor)]
+    struct MyStruct2Inner {
+        inner1: u16,
+        inner2: u16,
+    }
+
+    fn check_location_path<T: BasicDescribe>(
+        payload: Vec<u8>,
+        expected_path: &str,
+        expected_cause: &str,
+    ) {
+        let (type_index, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
+
+        let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
+            &payload,
+            schema.v1(),
+            type_index,
+            &mut (),
+            64
+        ) else {
+            panic!("Validation did not error with too short a payload");
+        };
+        assert_eq!(error.location.path_to_string(schema.v1()), expected_path);
+        assert_eq!(error.error.to_string(), expected_cause);
     }
 
     #[test]
     pub fn mismatched_type_full_location_path_is_readable() {
-        let value = BasicValue::Tuple {
+        check_location_path::<MyStruct2>(
+            basic_encode(&BasicValue::Tuple {
+                fields: vec![
+                    BasicValue::U8 { value: 1 },
+                    BasicValue::Tuple {
+                        fields: vec![BasicValue::U16 { value: 2 }, BasicValue::U16 { value: 3 }],
+                    },
+                ],
+            })
+            .unwrap(),
+            "MyStruct2.[0|field1]",
+            "{ expected_type: U16, found: U8 }",
+        );
+        check_location_path::<MyStruct2>(
+            basic_encode(&BasicValue::Tuple {
+                fields: vec![
+                    BasicValue::U16 { value: 1 },
+                    BasicValue::Tuple {
+                        fields: vec![BasicValue::U8 { value: 2 }, BasicValue::U16 { value: 3 }],
+                    },
+                ],
+            })
+            .unwrap(),
+            "MyStruct2.[1|field2]->MyStruct2Inner.[0|inner1]",
+            "{ expected_type: U16, found: U8 }",
+        );
+        check_location_path::<MyStruct2>(
+            basic_encode(&BasicValue::Tuple {
+                fields: vec![
+                    BasicValue::U16 { value: 1 },
+                    BasicValue::Tuple {
+                        fields: vec![BasicValue::U16 { value: 2 }, BasicValue::U8 { value: 3 }],
+                    },
+                ],
+            })
+            .unwrap(),
+            "MyStruct2.[1|field2]->MyStruct2Inner.[1|inner2]",
+            "{ expected_type: U16, found: U8 }",
+        );
+    }
+
+    #[test]
+    pub fn invalid_payload_full_location_path_is_readable() {
+        let mut payload = basic_encode(&BasicValue::Tuple {
             fields: vec![
-                // EG got these around the wrong way
-                BasicValue::U16 { value: 2 },
-                BasicValue::U8 { value: 1 },
+                BasicValue::U16 { value: 1 },
+                BasicValue::Tuple {
+                    fields: vec![BasicValue::U16 { value: 2 }, BasicValue::U16 { value: 3 }],
+                },
             ],
-        };
-        let payload = basic_encode(&value).unwrap();
+        })
+        .unwrap();
+        payload.pop(); // remove last byte
+        check_location_path::<MyStruct2>(
+            payload,
+            "MyStruct2.[1|field2]->MyStruct2Inner.[1|inner2]",
+            "DecodeError(BufferUnderflow { required: 2, remaining: 1 })",
+        );
 
-        let (type_index, schema) =
-            generate_full_schema_from_single_type::<MyStruct2, NoCustomSchema>();
+        let mut payload = basic_encode(&BasicValue::Tuple {
+            fields: vec![
+                BasicValue::U16 { value: 1 },
+                BasicValue::Tuple {
+                    fields: vec![BasicValue::U16 { value: 2 }, BasicValue::U16 { value: 3 }],
+                },
+            ],
+        })
+        .unwrap();
+        let index = payload.len() - 3;
+        payload[index] = 0xff; // replace U16 value kind with something invalid
+        check_location_path::<MyStruct2>(
+            payload,
+            "MyStruct2.[1|field2]->MyStruct2Inner.[1|inner2]",
+            "DecodeError(UnknownValueKind(255))",
+        );
 
-        let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
-            &payload,
-            &schema,
-            type_index,
-            &mut()
-        ) else {
-            panic!("Validation did not error with too short a payload");
-        };
-        let path_message = error.location.path_to_string(&schema);
+        let mut payload = basic_encode(&vec![1u8, 2u8, 3u8]).unwrap();
+        payload.pop(); // remove last byte
+        check_location_path::<Vec<u8>>(
+            payload,
+            "Array",
+            "DecodeError(BufferUnderflow { required: 3, remaining: 2 })",
+        );
 
-        assert_eq!(
-            path_message,
-            "MyStruct2.[0|field1]->[ERROR] { expected_type: U8, found: U16 }"
+        let payload = vec![
+            BASIC_SBOR_V1_PAYLOAD_PREFIX,
+            VALUE_KIND_ARRAY,
+            VALUE_KIND_U8,
+            0xff, // invalid size
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+        ];
+        check_location_path::<Vec<u8>>(
+            payload,
+            "", // container state not established due to failing to read size
+            "DecodeError(InvalidSize)",
         );
     }
 
@@ -614,22 +732,10 @@ mod tests {
         };
         let payload = basic_encode(&value).unwrap();
 
-        let (type_index, schema) =
-            generate_full_schema_from_single_type::<(MyEnum,), NoCustomSchema>();
-
-        let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
-            &payload,
-            &schema,
-            type_index,
-            &mut()
-        ) else {
-            panic!("Validation did not error with too short a payload");
-        };
-        let path_message = error.location.path_to_string(&schema);
-
-        assert_eq!(
-            path_message,
-            "Tuple.[0]->MyEnum::{2}[ERROR] { unknown_variant_id: 2 }"
+        check_location_path::<(MyEnum,)>(
+            payload,
+            "Tuple.[0]->MyEnum::{2}",
+            "{ unknown_variant_id: 2 }",
         );
     }
 }

@@ -1,6 +1,5 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::system::system_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
@@ -10,7 +9,7 @@ use transaction::prelude::*;
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -28,7 +27,7 @@ fn can_create_clone_and_drop_bucket_proof() {
                 manifest_args!(lookup.bucket("bucket"), dec!(1)),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -46,7 +45,7 @@ fn can_create_clone_and_drop_bucket_proof() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -91,7 +90,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_ids() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -137,7 +136,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
 #[test]
 fn can_use_bucket_for_authorization() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
@@ -160,7 +159,7 @@ fn can_use_bucket_for_authorization() {
                 manifest_args!(auth_bucket, burnable_bucket),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -174,7 +173,7 @@ fn can_use_bucket_for_authorization() {
 #[test]
 fn can_use_vault_for_authorization() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
@@ -222,7 +221,7 @@ fn can_use_vault_for_authorization() {
 #[test]
 fn can_create_proof_from_account_and_pass_on() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -253,9 +252,9 @@ fn can_create_proof_from_account_and_pass_on() {
 }
 
 #[test]
-fn cant_move_restricted_proof() {
+fn cant_move_restricted_proof_to_auth_zone() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
@@ -281,20 +280,91 @@ fn cant_move_restricted_proof() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemModuleError(SystemModuleError::NodeMoveError(
-                NodeMoveError::CantMoveDownstream(..)
-            ))
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
+            if e.eq("Moving restricted proof downstream") =>
+        {
+            true
+        }
+        _ => false,
     });
+}
+
+#[test]
+fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource_address =
+        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, resource_address, 1)
+        .pop_from_auth_zone("proof")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "VaultProof",
+                "receive_proof_and_pass_to_scrypto_function",
+                manifest_args!(lookup.proof("proof")),
+            )
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
+            if e.eq("Moving restricted proof downstream") =>
+        {
+            true
+        }
+        _ => false,
+    });
+}
+
+#[test]
+fn can_move_restricted_proof_to_proof_function_aka_non_barrier() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource_address =
+        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, resource_address, 1)
+        .pop_from_auth_zone("proof")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "VaultProof",
+                "receive_proof_and_drop",
+                manifest_args!(lookup.proof("proof")),
+            )
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn can_move_restricted_proofs_internally() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let (public_key, _, account) = test_runner.new_allocated_account();
     let component_address = {
@@ -307,7 +377,7 @@ fn can_move_restricted_proofs_internally() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(1))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .create_proof_from_auth_zone_of_all(XRD, "proof")
         .with_name_lookup(|builder, lookup| {
             builder.call_method(
@@ -329,7 +399,7 @@ fn can_move_restricted_proofs_internally() {
 #[test]
 fn can_move_locked_bucket() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
@@ -348,7 +418,7 @@ fn can_move_locked_bucket() {
                 manifest_args!(lookup.bucket("bucket")),
             )
         })
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -362,7 +432,7 @@ fn can_move_locked_bucket() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
@@ -409,7 +479,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_ids() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -420,7 +490,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 .withdraw_non_fungibles_from_account(
                     account,
                     resource_address,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    [NonFungibleLocalId::integer(1)],
                 )
                 .take_all_from_worktop(resource_address, "bucket")
                 .with_name_lookup(|builder, lookup| {
@@ -440,17 +510,17 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         .withdraw_non_fungibles_from_account(
             account,
             resource_address,
-            &BTreeSet::from([
+            [
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
-            ]),
+            ],
         )
         .take_non_fungibles_from_worktop(
             resource_address,
-            &BTreeSet::from([
+            [
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
-            ]),
+            ],
             "bucket",
         )
         .with_name_lookup(|builder, lookup| {
@@ -479,7 +549,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 #[test]
 fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -490,22 +560,22 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
         .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
-            &BTreeSet::from([
+            [
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2),
-            ]),
+            ],
         )
         .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
-            &BTreeSet::from([NonFungibleLocalId::integer(3)]),
+            [NonFungibleLocalId::integer(3)],
         )
         .create_proof_from_auth_zone_of_non_fungibles(
             resource_address,
-            &BTreeSet::from([
+            [
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
-            ]),
+            ],
             "proof",
         )
         .with_name_lookup(|builder, lookup| {
@@ -515,10 +585,10 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 "assert_ids",
                 manifest_args!(
                     lookup.proof("proof"),
-                    BTreeSet::from([
+                    [
                         NonFungibleLocalId::integer(2),
                         NonFungibleLocalId::integer(3)
-                    ]),
+                    ],
                     resource_address
                 ),
             )
@@ -536,7 +606,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
 #[test]
 fn can_not_call_vault_lock_fungible_amount_directly() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
@@ -570,7 +640,7 @@ fn can_not_call_vault_lock_fungible_amount_directly() {
 #[test]
 fn can_not_call_vault_unlock_fungible_amount_directly() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
@@ -604,7 +674,7 @@ fn can_not_call_vault_unlock_fungible_amount_directly() {
 #[test]
 fn can_not_call_vault_lock_non_fungibles_directly() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
@@ -638,7 +708,7 @@ fn can_not_call_vault_lock_non_fungibles_directly() {
 #[test]
 fn can_not_call_vault_unlock_non_fungibles_directly() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
@@ -672,7 +742,7 @@ fn can_not_call_vault_unlock_non_fungibles_directly() {
 #[test]
 fn can_not_call_bucket_lock_fungible_amount_directly() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
@@ -699,7 +769,7 @@ fn can_not_call_bucket_lock_fungible_amount_directly() {
 #[test]
 fn can_not_call_bucket_unlock_fungible_amount_directly() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
@@ -726,7 +796,7 @@ fn can_not_call_bucket_unlock_fungible_amount_directly() {
 #[test]
 fn can_not_call_bucket_lock_non_fungibles_directly() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
@@ -753,7 +823,7 @@ fn can_not_call_bucket_lock_non_fungibles_directly() {
 #[test]
 fn can_not_call_bucket_unlock_non_fungibles_directly() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
@@ -780,7 +850,7 @@ fn can_not_call_bucket_unlock_non_fungibles_directly() {
 #[test]
 fn test_proof_check() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(dec!(100), 0, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -806,7 +876,7 @@ fn test_proof_check() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::Panic(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5dc78a43cf2b06c67b71f68ab81aa004a8ea8a08ef73ceceba02e33059d7)") => true,
+        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5dc78a43cf2b06c67b71f68ab81aa004a8ea8a08ef73ceceba02e33059d7)") => true,
         _ => false,
     });
 }
@@ -814,7 +884,7 @@ fn test_proof_check() {
 #[test]
 fn test_proof_check_with_message() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(dec!(100), 0, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
@@ -840,7 +910,11 @@ fn test_proof_check_with_message() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::Panic(e)) if e.eq("Not XRD proof") => true,
+        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
+            if e.eq("Not XRD proof") =>
+        {
+            true
+        }
         _ => false,
     });
 }

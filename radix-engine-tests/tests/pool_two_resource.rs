@@ -3,7 +3,10 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemMo
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::pool::*;
+use radix_engine_queries::typed_substate_layout::FungibleResourceManagerError;
+use scrypto::prelude::Pow;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -151,11 +154,10 @@ pub fn contribution_provides_expected_pool_unit_resources1() {
     let receipt = test_runner.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
 
     assert_eq!(
         account_balance_changes
@@ -210,11 +212,10 @@ pub fn contribution_provides_expected_pool_unit_resources2() {
     let receipt = test_runner.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
 
     assert_eq!(
         account_balance_changes
@@ -268,11 +269,10 @@ pub fn contribution_provides_expected_pool_unit_resources3() {
     let receipt = test_runner.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
 
     assert_eq!(
         account_balance_changes
@@ -326,11 +326,10 @@ pub fn contribution_provides_expected_pool_unit_resources4() {
     let receipt = test_runner.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
 
     assert_eq!(
         account_balance_changes
@@ -387,11 +386,10 @@ pub fn contribution_provides_expected_pool_unit_resources5() {
     let receipt = test_runner.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
 
     assert_eq!(
         account_balance_changes
@@ -448,7 +446,7 @@ fn contributing_tokens_that_do_not_belong_to_the_pool_fails() {
 #[test]
 fn creating_a_pool_with_non_fungible_resources_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
@@ -463,6 +461,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
                 resource_addresses: (non_fungible_resource, XRD),
                 pool_manager_rule: rule!(allow_all),
                 owner_role: OwnerRole::None,
+                address_reservation: None,
             },
         )
         .build();
@@ -498,11 +497,10 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
     let receipt = test_runner.redeem(dec!("1.11111111111111"), true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
 
     assert_eq!(
         account_balance_changes
@@ -537,11 +535,10 @@ fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
     );
 
     // Assert
-    let pool_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.pool_component_address))
-        .unwrap();
+    let pool_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.pool_component_address.as_node_id(),
+    );
     assert_eq!(
         pool_balance_changes
             .get(&test_runner.pool_resource1)
@@ -577,7 +574,9 @@ fn contribution_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "ContributionEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "ContributionEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -618,7 +617,9 @@ fn redemption_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "RedemptionEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "RedemptionEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -652,7 +653,9 @@ fn deposits_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "DepositEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "DepositEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -688,7 +691,9 @@ fn withdraw_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -724,7 +729,9 @@ fn withdraw_with_rounding_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent"
+                && is_pool_emitter(event_type_identifier)
+            {
                 Some(scrypto_decode(event_data).unwrap())
             } else {
                 None
@@ -755,11 +762,10 @@ fn redemption_after_protected_deposit_redeems_expected_amount() {
     let receipt = test_runner.redeem(100, true);
 
     // Assert
-    let account_balance_changes = receipt
-        .expect_commit_success()
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.account_component_address))
-        .unwrap();
+    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        receipt.expect_commit_success(),
+        test_runner.account_component_address.as_node_id(),
+    );
     assert_eq!(
         account_balance_changes
             .get(&test_runner.pool_resource1)
@@ -787,17 +793,16 @@ pub fn test_complete_interactions() {
         );
 
         // Assert
-        let account_balance_changes = receipt
-            .expect_commit_success()
-            .balance_changes()
-            .get(&GlobalAddress::from(test_runner.account_component_address))
-            .unwrap();
+        let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+            receipt.expect_commit_success(),
+            test_runner.account_component_address.as_node_id(),
+        );
         assert_eq!(
             account_balance_changes
                 .get(&test_runner.pool_unit_resource_address)
                 .cloned(),
             Some(BalanceChange::Fungible(
-                (dec!("500") * dec!("200")).sqrt().unwrap()
+                (dec!("500").safe_mul(dec!("200")).unwrap()).sqrt().unwrap()
             ))
         );
         assert_eq!(
@@ -823,11 +828,10 @@ pub fn test_complete_interactions() {
         );
 
         // Assert
-        let account_balance_changes = receipt
-            .expect_commit_success()
-            .balance_changes()
-            .get(&GlobalAddress::from(test_runner.account_component_address))
-            .unwrap();
+        let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+            receipt.expect_commit_success(),
+            test_runner.account_component_address.as_node_id(),
+        );
         assert_eq!(
             account_balance_changes
                 .get(&test_runner.pool_unit_resource_address)
@@ -897,8 +901,135 @@ pub fn contribute_fails_without_proper_authority_present() {
     receipt.expect_specific_failure(is_auth_error)
 }
 
+#[test]
+fn contribution_of_large_values_should_not_cause_panic() {
+    // Arrange
+    let max_mint_amount = Decimal(I192::from(2).pow(152));
+    let mut test_runner = TestEnvironment::new((18, 18));
+
+    let manifest = ManifestBuilder::new()
+        .mint_fungible(test_runner.pool_resource1, max_mint_amount)
+        .mint_fungible(test_runner.pool_resource1, max_mint_amount)
+        .mint_fungible(test_runner.pool_resource2, max_mint_amount)
+        .mint_fungible(test_runner.pool_resource2, max_mint_amount)
+        .take_all_from_worktop(test_runner.pool_resource1, "resource_1")
+        .take_all_from_worktop(test_runner.pool_resource2, "resource_2")
+        .with_name_lookup(|builder, lookup| {
+            let bucket1 = lookup.bucket("resource_1");
+            let bucket2 = lookup.bucket("resource_2");
+            builder.call_method(
+                test_runner.pool_component_address,
+                TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
+                TwoResourcePoolContributeManifestInput {
+                    buckets: (bucket1, bucket2),
+                },
+            )
+        })
+        .try_deposit_entire_worktop_or_abort(test_runner.account_component_address, None)
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest(manifest, true);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
+                FungibleResourceManagerError::MaxMintAmountExceeded
+            ))
+        )
+    });
+}
+
+#[test]
+fn get_redemption_value_should_not_panic_on_large_values() {
+    // Arrange
+    let mint_amount = Decimal(I192::from(2).pow(60));
+    let mut test_runner = TestEnvironment::new((18, 18));
+    let receipt = test_runner.contribute(
+        (test_runner.pool_resource1, mint_amount),
+        (test_runner.pool_resource2, mint_amount),
+        true,
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.call_get_redemption_value(Decimal::MAX, true);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::TwoResourcePoolError(
+                TwoResourcePoolError::InvalidGetRedemptionAmount
+            ))
+        )
+    })
+}
+
+#[test]
+fn contributing_to_a_pool_with_very_large_difference_in_reserves_succeeds() {
+    // Arrange
+    let max_mint_amount = Decimal(I192::from(2).pow(152));
+    let mut test_runner = TestEnvironment::new((18, 18));
+
+    let manifest = {
+        let mut manifest_builder = ManifestBuilder::new();
+        for _ in 0..10 {
+            manifest_builder =
+                manifest_builder.mint_fungible(test_runner.pool_resource1, max_mint_amount)
+        }
+
+        manifest_builder
+            .mint_fungible(test_runner.pool_resource2, dec!("0.000000000000000001"))
+            .take_all_from_worktop(test_runner.pool_resource1, "resource_1")
+            .take_all_from_worktop(test_runner.pool_resource2, "resource_2")
+            .with_name_lookup(|builder, lookup| {
+                let bucket1 = lookup.bucket("resource_1");
+                let bucket2 = lookup.bucket("resource_2");
+                builder.call_method(
+                    test_runner.pool_component_address,
+                    TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
+                    TwoResourcePoolContributeManifestInput {
+                        buckets: (bucket1, bucket2),
+                    },
+                )
+            })
+            .try_deposit_entire_worktop_or_abort(test_runner.account_component_address, None)
+            .build()
+    };
+    test_runner
+        .execute_manifest(manifest, true)
+        .expect_commit_success();
+
+    // Act
+    let receipt = test_runner.contribute(
+        (test_runner.pool_resource1, dec!("1")),
+        (test_runner.pool_resource2, dec!("1")),
+        true,
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
+    match event_type_identifier.0 {
+        Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type() {
+            Some(
+                EntityType::GlobalOneResourcePool
+                | EntityType::GlobalTwoResourcePool
+                | EntityType::GlobalMultiResourcePool,
+            ) => true,
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
 struct TestEnvironment {
-    test_runner: TestRunner,
+    test_runner: DefaultTestRunner,
 
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -916,7 +1047,7 @@ impl TestEnvironment {
     }
 
     pub fn new_with_owner((divisibility1, divisibility2): (u8, u8), owner_role: OwnerRole) -> Self {
-        let mut test_runner = TestRunner::builder().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
@@ -943,6 +1074,7 @@ impl TestEnvironment {
                         resource_addresses: (pool_resource1, pool_resource2),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                         owner_role,
+                        address_reservation: None,
                     },
                 )
                 .build();
@@ -950,16 +1082,8 @@ impl TestEnvironment {
             let commit_result = receipt.expect_commit_success();
 
             (
-                commit_result
-                    .new_component_addresses()
-                    .get(0)
-                    .unwrap()
-                    .clone(),
-                commit_result
-                    .new_resource_addresses()
-                    .get(0)
-                    .unwrap()
-                    .clone(),
+                commit_result.new_component_addresses()[0],
+                commit_result.new_resource_addresses()[0],
             )
         };
 
@@ -1000,7 +1124,7 @@ impl TestEnvironment {
                     },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_entire_worktop_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1021,7 +1145,7 @@ impl TestEnvironment {
                     TwoResourcePoolRedeemManifestInput { bucket },
                 )
             })
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_entire_worktop_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1065,7 +1189,7 @@ impl TestEnvironment {
                     withdraw_strategy,
                 },
             )
-            .try_deposit_batch_or_abort(self.account_component_address)
+            .try_deposit_entire_worktop_or_abort(self.account_component_address, None)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1096,6 +1220,15 @@ impl TestEnvironment {
         amount_of_pool_units: D,
         sign: bool,
     ) -> TwoResourcePoolGetRedemptionValueOutput {
+        let receipt = self.call_get_redemption_value(amount_of_pool_units, sign);
+        receipt.expect_commit_success().output(1)
+    }
+
+    fn call_get_redemption_value<D: Into<Decimal>>(
+        &mut self,
+        amount_of_pool_units: D,
+        sign: bool,
+    ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
@@ -1105,8 +1238,7 @@ impl TestEnvironment {
                 },
             )
             .build();
-        let receipt = self.execute_manifest(manifest, sign);
-        receipt.expect_commit_success().output(1)
+        self.execute_manifest(manifest, sign)
     }
 }
 

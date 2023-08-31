@@ -1,6 +1,4 @@
 mod auth_zone;
-mod auth_zone_composition;
-mod auth_zone_substates;
 mod bucket_common;
 mod events;
 mod fungible;
@@ -12,8 +10,6 @@ mod vault_common;
 mod worktop;
 
 pub use auth_zone::*;
-pub use auth_zone_composition::*;
-pub use auth_zone_substates::*;
 pub use bucket_common::*;
 pub use events::*;
 pub use fungible::*;

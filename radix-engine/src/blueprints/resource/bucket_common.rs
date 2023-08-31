@@ -1,5 +1,5 @@
 use crate::blueprints::resource::*;
-use crate::errors::{KernelError, RuntimeError};
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::heap::{DroppedFungibleBucket, DroppedNonFungibleBucket};
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
@@ -9,8 +9,16 @@ use radix_engine_interface::blueprints::resource::*;
 pub enum BucketError {
     ResourceError(ResourceError),
     ProofError(ProofError),
+    Locked(NodeId),
     MismatchingResource,
     InvalidAmount,
+    DecimalOverflow,
+}
+
+impl From<BucketError> for RuntimeError {
+    fn from(bucket_error: BucketError) -> Self {
+        RuntimeError::ApplicationError(ApplicationError::BucketError(bucket_error))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -28,9 +36,9 @@ where
     let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
-        return Err(RuntimeError::KernelError(KernelError::NodeOrphaned(
-            bucket_node_id.clone(),
-        )));
+        return Err(RuntimeError::ApplicationError(
+            ApplicationError::BucketError(BucketError::Locked(bucket_node_id.clone())),
+        ));
     }
 
     Ok(bucket)
@@ -46,9 +54,9 @@ where
     let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedNonFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
-        return Err(RuntimeError::KernelError(KernelError::NodeOrphaned(
-            bucket_node_id.clone(),
-        )));
+        return Err(RuntimeError::ApplicationError(
+            ApplicationError::BucketError(BucketError::Locked(bucket_node_id.clone())),
+        ));
     }
 
     Ok(bucket)

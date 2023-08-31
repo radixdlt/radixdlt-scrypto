@@ -18,8 +18,9 @@ pub struct ExecutionContext {
     pub epoch_range: Option<EpochRange>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
+    pub num_of_signature_validations: usize,
     pub auth_zone_params: AuthZoneParams,
-    pub fee_payment: FeePayment,
+    pub costing_parameters: TransactionCostingParameters,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -61,10 +62,19 @@ impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct FeePayment {
+pub struct TransactionCostingParameters {
     pub tip_percentage: u16,
     /// Free credit for execution, for preview only!
     pub free_credit_in_xrd: Decimal,
+}
+
+impl Default for TransactionCostingParameters {
+    fn default() -> Self {
+        Self {
+            tip_percentage: DEFAULT_TIP_PERCENTAGE,
+            free_credit_in_xrd: Default::default(),
+        }
+    }
 }
 
 /// Executable form of transaction, post stateless validation.
@@ -130,8 +140,8 @@ impl<'a> Executable<'a> {
         self.context.epoch_range = None;
     }
 
-    pub fn fee_payment(&self) -> &FeePayment {
-        &self.context.fee_payment
+    pub fn costing_parameters(&self) -> &TransactionCostingParameters {
+        &self.context.costing_parameters
     }
 
     pub fn blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
@@ -156,5 +166,9 @@ impl<'a> Executable<'a> {
 
     pub fn payload_size(&self) -> usize {
         self.context.payload_size
+    }
+
+    pub fn num_of_signature_validations(&self) -> usize {
+        self.context.num_of_signature_validations
     }
 }

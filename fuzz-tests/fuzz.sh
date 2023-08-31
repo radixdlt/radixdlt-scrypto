@@ -15,7 +15,10 @@ DFLT_TARGET=transaction
 DFLT_TIMEOUT=1000
 
 function usage() {
-    echo "$0 [FUZZER/COMMAND] [SUBCOMMAND] [COMMAND-ARGS]"
+    echo "$0 [FUZZER/COMMAND] [SUBCOMMAND] [FUZZ-TARGET] [COMMAND-ARGS]"
+    echo "Available targets:"
+    echo "    transaction"
+    echo "    wasm_instrument"
     echo "Available fuzzers"
     echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"
@@ -44,19 +47,21 @@ function usage() {
     echo "        minimize    - Minimize the input data"
     echo "  Args:"
     echo "        timeout     - timeout in ms"
+    echo "Available fuzz targets"
+    echo "    transaction"
     echo "Examples:"
     echo "  - build AFL fuzz tests"
-    echo "    $0 afl build"
+    echo "    $0 afl build transaction"
     echo "  - run AFL tests for 1h"
-    echo "    $0 afl run -V 3600"
+    echo "    $0 afl run transaction -V 3600"
     echo "  - run LibFuzzer for 1h"
-    echo "    $0 libfuzzer run -max_total_time=3600"
+    echo "    $0 libfuzzer run transaction -max_total_time=3600"
     echo "  - run simple-fuzzer for 1h"
-    echo "    $0 simple run --duration 3600"
+    echo "    $0 simple run transaction --duration 3600"
     echo "  - reproduce some crash discovered by 'libfuzzer'"
-    echo "    $0 libfuzzer run ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
+    echo "    $0 libfuzzer run transaction ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
     echo "  - reproduce some crash discovered by 'libfuzzer' using 'simple-fuzzer'"
-    echo "    RUST_BACKTRACE=1 $0 simple run ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
+    echo "    RUST_BACKTRACE=1 $0 simple run transaction ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
 }
 
 function error() {
@@ -67,8 +72,16 @@ function error() {
 }
 
 function fuzzer_libfuzzer() {
-    local cmd=${1:-$DFLT_SUBCOMMAND}
-    shift
+    local cmd=$DFLT_SUBCOMMAND
+    if [ $# -ge 1 ] ; then
+        cmd=$1
+        shift
+    fi
+    local target=$DFLT_TARGET
+    if [ $# -ge 1 ] ; then
+        target=$1
+        shift
+    fi
     local run_args=""
     if [ "$cmd" = "run" ] ; then
         run_args="$@"
@@ -101,14 +114,21 @@ function fuzzer_libfuzzer() {
 }
 
 function fuzzer_afl() {
-    local cmd=${1:-$DFLT_SUBCOMMAND}
-    local run_args="-T $target "
-    local run_cmd_arg=
-    shift
+    local cmd=$DFLT_SUBCOMMAND
+    if [ $# -ge 1 ] ; then
+        cmd=$1
+        shift
+    fi
+    local target=$DFLT_TARGET
+    if [ $# -ge 1 ] ; then
+        target=$1
+        shift
+    fi
 
     if [ $cmd = "build" ] ; then
         set -x
         cargo afl build --release \
+            --bin $target \
             --no-default-features --features std,afl \
             --target-dir target-afl
     elif [ $cmd = "run" ] ; then
@@ -135,10 +155,16 @@ function fuzzer_afl() {
 }
 
 function fuzzer_simple() {
-    local cmd=${1:-$DFLT_SUBCOMMAND}
-    local run_args=""
-    local run_cmd_arg=
-    shift
+    local cmd=$DFLT_SUBCOMMAND
+    if [ $# -ge 1 ] ; then
+        cmd=$1
+        shift
+    fi
+    local target=$DFLT_TARGET
+    if [ $# -ge 1 ] ; then
+        target=$1
+        shift
+    fi
 
     set -x
     cargo $cmd --release \
@@ -148,35 +174,38 @@ function fuzzer_simple() {
 }
 
 function generate_input() {
+    local target=$DFLT_TARGET
+    if [ $# -ge 1 ] ; then
+        target=$1
+        shift
+    fi
     # available modes: raw, unique, minimize
     local mode=${1:-minimize}
     local timeout=${2:-$DFLT_TIMEOUT}
+    local curr_path=$(pwd)
+    local cmin_dir=fuzz_input/${target}_cmin
+    local raw_dir=fuzz_input/${target}_raw
+    local final_dir=fuzz_input/${target}
 
-    if [ $target = "transaction" ] ; then
+    if [ $target = "transaction" -o $target = "wasm_instrument" ] ; then
         if [ ! -f target-afl/release/${target} ] ; then
             echo "target binary 'target-afl/release/${target}' not built. Call below command to build it"
             echo "$THIS_SCRIPT afl build"
             exit 1
         fi
-        local curr_path=$(pwd)
-        local cmin_dir=fuzz_input/${target}_cmin
-        local raw_dir=fuzz_input/${target}_raw
-        local final_dir=fuzz_input/${target}
 
         mkdir -p $raw_dir $cmin_dir $final_dir
-
-        pushd ..
         if [ "$(ls -A ${curr_path}/${raw_dir})" ] ; then
             echo "raw dir is not empty, skipping generation"
-            popd
             if [ $mode = "raw" ] ; then
                 find ${curr_path}/${raw_dir} -type f -name "*" | xargs  -I {} mv {} ${curr_path}/${final_dir}
                 return
             fi
+        fi
 
-        else
+
+        if [ $target = "transaction" ] ; then
             # Collect input data
-            popd
 
             cargo nextest run test_generate_fuzz_input_data  --release
 
@@ -189,9 +218,18 @@ function generate_input() {
             #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
             mv manifest_*.raw ${curr_path}/${raw_dir}
 
-            # do not minimize big files, move them directly to input
-            find ${curr_path}/${raw_dir} -type f -size +100k | xargs -I {} mv "{}" ${curr_path}/${final_dir}
+        elif [ $target = "wasm_instrument" ] ; then
+            # TODO generate more wasm inputs. and maybe smaller
+            if [ $mode = "raw" ] ; then
+                find .. -name   "*.wasm" | while read f ; do cp $f $final_dir ; done
+                return
+            else
+                find .. -name   "*.wasm" | while read f ; do cp $f $raw_dir ; done
+            fi
         fi
+
+        # do not minimize big files, move them directly to input
+        find ${curr_path}/${raw_dir} -type f -size +100k | xargs -I {} mv "{}" ${curr_path}/${final_dir}
 
         # Make the input corpus unique
         cargo afl cmin -t $timeout -i $raw_dir -o $cmin_dir -- target-afl/release/${target} 2>&1 | tee afl_cmin.log
@@ -222,10 +260,17 @@ function generate_input() {
     fi
 }
 
-target=$DFLT_TARGET
-# available fuzzers/commands: libfuzzer, afl, simple, generate-input
-cmd=${1:-$DFLT_COMMAND}
-shift
+if [ $# -ge 1 ] ; then
+    # available fuzzers/commands: libfuzzer, afl, simple, generate-input
+    cmd=$1
+    shift
+else
+    cmd=$DFLT_COMMAND
+fi
+
+if [ $# -eq 0 ] ; then
+    usage
+fi
 
 if [ $cmd = "libfuzzer" ] ; then
     fuzzer_libfuzzer $@

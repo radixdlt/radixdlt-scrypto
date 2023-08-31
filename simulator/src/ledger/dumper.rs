@@ -2,12 +2,12 @@
 use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
@@ -31,11 +31,9 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
     let (_, substate) = substate_db
-        .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<PackageOriginalCodeSubstate>, MapKey>(
+        .list_mapped::<SpreadPrefixKeyMapper, PackageCodeOriginalCodeEntrySubstate, MapKey>(
             package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
-                .unwrap(),
+            PackagePartitionOffset::CodeOriginalCodeKeyValue.as_main_partition(),
         )
         .next()
         .ok_or(EntityDumpError::PackageNotFound)?;
@@ -43,15 +41,22 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     writeln!(
         output,
         "{}: {}",
-        "Package".green().bold(),
+        "Package Address".green().bold(),
         package_address.display(&address_bech32_encoder)
     );
     writeln!(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        substate.value.unwrap().code.len()
+        substate.into_value().unwrap().into_latest().code.len()
     );
+
+    let metadata = get_entity_metadata(package_address.as_node_id(), substate_db);
+    writeln!(output, "{}: {}", "Metadata".green().bold(), metadata.len());
+    for (last, (key, value)) in metadata.iter().identify_last() {
+        writeln!(output, "{} {}: {:?}", list_item_prefix(last), key, value);
+    }
+
     Ok(())
 }
 
@@ -63,31 +68,21 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
 
+    let reader = SystemDatabaseReader::new(substate_db);
+
     let (package_address, blueprint_name, resources) = {
-        let type_info = substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                component_address.as_node_id(),
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-            )
-            .ok_or(EntityDumpError::ComponentNotFound)?;
-        let blueprint = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
-                blueprint_id: blueprint,
-                ..
-            }) => blueprint,
-            _ => {
-                panic!("Unexpected")
-            }
-        };
+        let object_info = reader
+            .get_object_info(component_address)
+            .map_err(|_| EntityDumpError::ComponentNotFound)?;
+        let blueprint_id = object_info.blueprint_info.blueprint_id;
 
         let mut accounter = ResourceAccounter::new(substate_db);
         accounter.traverse(component_address.as_node_id().clone());
         let resources = accounter.close();
 
         (
-            blueprint.package_address,
-            blueprint.blueprint_name,
+            blueprint_id.package_address,
+            blueprint_id.blueprint_name,
             resources,
         )
     };
@@ -95,40 +90,71 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     writeln!(
         output,
         "{}: {}",
-        "Component".green().bold(),
+        "Component Address".green().bold(),
         component_address.display(&address_bech32_encoder),
     );
 
     writeln!(
         output,
         "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
-        "Blueprint".green().bold(),
+        "Blueprint ID".green().bold(),
         package_address.display(&address_bech32_encoder),
         blueprint_name
     );
 
-    writeln!(output, "{}", "Fungible Resources".green().bold());
-    for (last, (component_address, amount)) in resources.balances.iter().identify_last() {
+    writeln!(
+        output,
+        "{}: {}",
+        "Owned Fungible Resources".green().bold(),
+        resources.balances.len()
+    );
+    for (last, (resource_address, amount)) in resources.balances.iter().identify_last() {
+        let metadata = get_entity_metadata(resource_address.as_node_id(), substate_db);
+        let symbol = if let Some(MetadataValue::String(symbol)) = metadata.get("symbol") {
+            symbol.as_str()
+        } else {
+            "?"
+        };
         writeln!(
             output,
-            "{} {}: {}",
+            "{} {}: {} {}",
             list_item_prefix(last),
-            component_address.display(&address_bech32_encoder),
-            amount
+            resource_address.display(&address_bech32_encoder),
+            amount,
+            symbol,
         );
     }
 
-    writeln!(output, "{}", "Non-fungibles Resources".green().bold());
-    for (last, (component_address, ids)) in resources.non_fungibles.iter().identify_last() {
+    writeln!(
+        output,
+        "{}: {}",
+        "Owned Non-fungibles Resources".green().bold(),
+        resources.non_fungibles.len()
+    );
+    for (last, (resource_address, ids)) in resources.non_fungibles.iter().identify_last() {
+        let metadata = get_entity_metadata(resource_address.as_node_id(), substate_db);
+        let symbol = if let Some(MetadataValue::String(symbol)) = metadata.get("symbol") {
+            symbol.as_str()
+        } else {
+            "?"
+        };
         writeln!(
             output,
-            "{} {}",
+            "{} {}: {} {}",
             list_item_prefix(last),
-            component_address.display(&address_bech32_encoder)
+            resource_address.display(&address_bech32_encoder),
+            ids.len(),
+            symbol,
         );
         for (last, id) in ids.iter().identify_last() {
             writeln!(output, "   {} {}", list_item_prefix(last), id);
         }
+    }
+
+    let metadata = get_entity_metadata(component_address.as_node_id(), substate_db);
+    writeln!(output, "{}: {}", "Metadata".green().bold(), metadata.len());
+    for (last, (key, value)) in metadata.iter().identify_last() {
+        writeln!(output, "{} {}: {:?}", list_item_prefix(last), key, value);
     }
 
     Ok(())
@@ -140,43 +166,33 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     substate_db: &T,
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
-    let type_info = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-            resource_address.as_node_id(),
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        )
-        .ok_or(EntityDumpError::ResourceManagerNotFound)?;
+    let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
 
-    let info = match type_info {
-        TypeInfoSubstate::Object(info)
-            if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) =>
-        {
-            info
-        }
-        _ => {
-            return Err(EntityDumpError::InvalidStore(
-                "Expected Resource Manager".to_string(),
-            ))
-        }
-    };
+    writeln!(
+        output,
+        "{}: {}",
+        "Resource Address".green().bold(),
+        resource_address.display(&address_bech32_encoder)
+    );
+
+    let reader = SystemDatabaseReader::new(substate_db);
+    let info = reader
+        .get_object_info(resource_address)
+        .map_err(|_| EntityDumpError::ResourceManagerNotFound)?;
 
     if info
+        .blueprint_info
         .blueprint_id
         .blueprint_name
         .eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
     {
-        let id_type = substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<NonFungibleIdType>>(
+        let id_type: VersionedNonFungibleResourceManagerIdType = reader
+            .read_typed_object_field(
                 resource_address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &NonFungibleResourceManagerField::IdType.into(),
+                ObjectModuleId::Main,
+                NonFungibleResourceManagerField::IdType.into(),
             )
-            .ok_or(EntityDumpError::InvalidStore(
-                "Missing NonFungible IdType".to_string(),
-            ))?
-            .value
-            .0;
+            .map_err(|_| EntityDumpError::InvalidStore("Missing NonFungible IdType".to_string()))?;
 
         writeln!(
             output,
@@ -186,18 +202,19 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         );
         writeln!(output, "{}: {:?}", "ID Type".green().bold(), id_type);
 
-        if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
-            let total_supply = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<Decimal>>(
+        if info
+            .get_features()
+            .contains(NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name())
+        {
+            let total_supply = reader
+                .read_typed_object_field::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
                     resource_address.as_node_id(),
-                    MAIN_BASE_PARTITION,
-                    &NonFungibleResourceManagerField::TotalSupply.into(),
+                    ObjectModuleId::Main,
+                    NonFungibleResourceManagerField::TotalSupply.into(),
                 )
-                .ok_or(EntityDumpError::InvalidStore(
-                    "Missing Total Supply".to_string(),
-                ))?
-                .value
-                .0;
+                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
+                .into_latest();
+
             writeln!(
                 output,
                 "{}: {}",
@@ -206,15 +223,15 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             );
         }
     } else {
-        let divisibility = substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerDivisibilitySubstate>>(
+        let divisibility = reader
+            .read_typed_object_field::<FungibleResourceManagerDivisibilityFieldPayload>(
                 resource_address.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &FungibleResourceManagerField::Divisibility.into(),
+                ObjectModuleId::Main,
+                FungibleResourceManagerField::Divisibility.into(),
             )
-            .ok_or(EntityDumpError::InvalidStore(
-                "Missing Divisibility".to_string(),
-            ))?.value.0;
+            .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?
+            .into_latest();
+
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
             output,
@@ -223,16 +240,19 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             divisibility
         );
 
-        if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
-            let total_supply = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>(
+        if info
+            .get_features()
+            .contains(FungibleResourceManagerFeature::TrackTotalSupply.feature_name())
+        {
+            let total_supply = reader
+                .read_typed_object_field::<FungibleResourceManagerTotalSupplyFieldPayload>(
                     resource_address.as_node_id(),
-                    MAIN_BASE_PARTITION,
-                    &FungibleResourceManagerField::TotalSupply.into(),
+                    ObjectModuleId::Main,
+                    FungibleResourceManagerField::TotalSupply.into(),
                 )
-                .ok_or(EntityDumpError::InvalidStore(
-                    "Missing Total Supply".to_string(),
-                ))?.value.0;
+                .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
+                .into_latest();
+
             writeln!(
                 output,
                 "{}: {}",
@@ -241,5 +261,33 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             );
         }
     }
+
+    let metadata = get_entity_metadata(resource_address.as_node_id(), substate_db);
+    writeln!(output, "{}: {}", "Metadata".green().bold(), metadata.len());
+    for (last, (key, value)) in metadata.iter().identify_last() {
+        writeln!(output, "{} {}: {:?}", list_item_prefix(last), key, value);
+    }
+
     Ok(())
+}
+
+fn get_entity_metadata<T: SubstateDatabase>(
+    entity_node_id: &NodeId,
+    substate_db: &T,
+) -> IndexMap<String, MetadataValue> {
+    let reader = SystemDatabaseReader::new(substate_db);
+    reader
+        .collection_iter(
+            entity_node_id,
+            ObjectModuleId::Metadata,
+            MetadataCollection::EntryKeyValue.collection_index(),
+        )
+        .unwrap()
+        .map(|(key, value)| {
+            let map_key = key.into_map();
+            let key = scrypto_decode::<String>(&map_key).unwrap();
+            let value = scrypto_decode::<MetadataEntryEntryPayload>(&value).unwrap();
+            (key, value.into_latest())
+        })
+        .collect()
 }

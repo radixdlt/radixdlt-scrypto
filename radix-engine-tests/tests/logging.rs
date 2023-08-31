@@ -8,7 +8,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/logger");
 
     let manifest = ManifestBuilder::new()
@@ -59,7 +59,7 @@ fn test_rust_panic() {
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => {
+            RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) => {
                 e.eq("Hey @ logger/src/lib.rs:15:13")
             }
             _ => false,
@@ -82,7 +82,7 @@ fn test_scrypto_panic() {
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq(message),
+            RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) => e.eq(message),
             _ => false,
         })
     }
@@ -103,7 +103,7 @@ fn test_assert_length_5() {
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::Panic(e)) => e.eq("assertion failed: `(left == right)`\n  left: `2`,\n right: `5` @ logger/src/lib.rs:23:13"),
+            RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) => e.eq("assertion failed: `(left == right)`\n  left: `2`,\n right: `5` @ logger/src/lib.rs:23:13"),
             _ => false,
         })
     }

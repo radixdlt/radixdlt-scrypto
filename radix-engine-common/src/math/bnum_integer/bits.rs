@@ -203,47 +203,53 @@ macro_rules! impl_bits {
                     }
                 }
 
-                impl Shl for $t {
+                impl Shl<u32> for $t {
                     type Output = Self;
 
                     #[inline]
-                    fn shl(self, other: Self) -> Self {
-                        Self(self.0 << other.0)
+                    fn shl(self, other: u32) -> Self {
+                        Self(self.0.checked_shl(other).expect("Overflow"))
                     }
                 }
 
 
-                impl ShlAssign for $t {
+                impl ShlAssign<u32> for $t {
                     #[inline]
-                    fn shl_assign(&mut self, other: Self) {
-                        self.0 <<= other.0;
+                    fn shl_assign(&mut self, other: u32) {
+                        self.0 = self.0.checked_shl(other).expect("Overflow");
                     }
                 }
 
-                impl Shr for $t {
+                impl Shr<u32> for $t {
                     type Output = Self;
 
                     #[inline]
-                    fn shr(self, other: Self) -> $t {
-                        Self(self.0 >> other.0)
+                    fn shr(self, other: u32) -> $t {
+                        Self(self.0.checked_shr(other).expect("Overflow"))
                     }
                 }
 
-                impl ShrAssign for $t {
+                impl ShrAssign<u32> for $t {
                     #[inline]
-                    fn shr_assign(&mut self, other: Self) {
-                        self.0 >>= other.0;
+                    fn shr_assign(&mut self, other: u32) {
+                        self.0 = self.0.checked_shr(other).expect("Overflow");
                     }
                 }
             }
         )*
     }
 }
-impl_bits! { BnumI256, BInt::<4> }
-impl_bits! { BnumI384, BInt::<6> }
-impl_bits! { BnumI512, BInt::<8> }
-impl_bits! { BnumI768, BInt::<12> }
-impl_bits! { BnumU256, BUint::<4> }
-impl_bits! { BnumU384, BUint::<6> }
-impl_bits! { BnumU512, BUint::<8> }
-impl_bits! { BnumU768, BUint::<12> }
+impl_bits! { I192, BInt::<3> }
+impl_bits! { I256, BInt::<4> }
+impl_bits! { I320, BInt::<5> }
+impl_bits! { I384, BInt::<6> }
+impl_bits! { I448, BInt::<7> }
+impl_bits! { I512, BInt::<8> }
+impl_bits! { I768, BInt::<12> }
+impl_bits! { U192, BUint::<3> }
+impl_bits! { U256, BUint::<4> }
+impl_bits! { U320, BUint::<5> }
+impl_bits! { U384, BUint::<6> }
+impl_bits! { U448, BUint::<7> }
+impl_bits! { U512, BUint::<8> }
+impl_bits! { U768, BUint::<12> }

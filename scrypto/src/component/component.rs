@@ -1,23 +1,24 @@
-use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{AccessRules, Attachable, HasMetadata, Royalty};
-use crate::prelude::{scrypto_encode, HasAccessRules, ObjectStub, ObjectStubHandle};
+use crate::engine::scrypto_env::ScryptoVmV1Api;
+use crate::modules::{Attachable, HasMetadata, RoleAssignment, Royalty};
+use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
-    component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID, OWN_ID,
+    component_address_type_data, own_type_data, COMPONENT_ADDRESS_TYPE, OWN_TYPE,
 };
 use radix_engine_common::prelude::{
     scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
+use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
+    MetadataConversionError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
     METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi, FieldValue};
+use radix_engine_interface::api::{FieldValue, ModuleId};
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, Bucket, MethodAccessibility, OwnerRole, RolesInit,
+    AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
 };
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -38,6 +39,11 @@ pub trait HasTypeInfo {
     const BLUEPRINT_NAME: &'static str;
     const OWNED_TYPE_NAME: &'static str;
     const GLOBAL_TYPE_NAME: &'static str;
+
+    fn blueprint_id() -> BlueprintId {
+        let package_address = Self::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
+        BlueprintId::new(&package_address, Self::BLUEPRINT_NAME)
+    }
 }
 
 pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
@@ -46,22 +52,19 @@ impl<C: HasTypeInfo> Blueprint<C> {
     pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: A) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
 
-        let output = ScryptoEnv
-            .call_function(
-                package_address,
-                C::BLUEPRINT_NAME,
-                function_name,
-                scrypto_encode(&args).unwrap(),
-            )
-            .unwrap();
+        let output = ScryptoVmV1Api::blueprint_call(
+            package_address,
+            C::BLUEPRINT_NAME,
+            function_name,
+            scrypto_encode(&args).unwrap(),
+        );
         scrypto_decode(&output).unwrap()
     }
 
     pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
-        let output = ScryptoEnv
-            .call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
-            .unwrap();
+        let output =
+            ScryptoVmV1Api::blueprint_call(package_address, C::BLUEPRINT_NAME, function_name, args);
         scrypto_decode(&output).unwrap()
     }
 }
@@ -79,9 +82,10 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
     fn instantiate(self) -> Owned<Self> {
-        let node_id = ScryptoEnv
-            .new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)])
-            .unwrap();
+        let node_id = ScryptoVmV1Api::object_new(
+            Self::BLUEPRINT_NAME,
+            btreemap![0u8 => FieldValue::new(&self)],
+        );
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
         Owned(stub)
@@ -186,7 +190,7 @@ impl<C: HasStub + HasMethods> Owned<C> {
             owner_role,
             metadata_config: None,
             royalty_config: None,
-            roles: RolesInit::new(),
+            roles: RoleAssignmentInit::new(),
             address_reservation: None,
         }
     }
@@ -238,7 +242,7 @@ pub struct Globalizing<C: HasStub> {
     pub royalty_config: Option<ModuleConfig<ComponentRoyaltyConfig>>,
     pub address_reservation: Option<GlobalAddressReservation>,
 
-    pub roles: RolesInit,
+    pub roles: RoleAssignmentInit,
 }
 
 impl<C: HasStub> Deref for Globalizing<C> {
@@ -250,7 +254,7 @@ impl<C: HasStub> Deref for Globalizing<C> {
 }
 
 impl<C: HasStub + HasMethods> Globalizing<C> {
-    pub fn roles(mut self, roles: RolesInit) -> Self {
+    pub fn roles(mut self, roles: RoleAssignmentInit) -> Self {
         self.roles = roles;
         self
     }
@@ -261,14 +265,17 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn enable_component_royalties(mut self, royalties: (C::Royalties, RolesInit)) -> Self {
+    pub fn enable_component_royalties(
+        mut self,
+        royalties: (C::Royalties, RoleAssignmentInit),
+    ) -> Self {
         let mut royalty_amounts = BTreeMap::new();
         for (method, (royalty, updatable)) in royalties.0.to_mapping() {
             royalty_amounts.insert(method, (royalty, !updatable));
         }
 
         let royalty_config = ModuleConfig {
-            init: ComponentRoyaltyConfig::Enabled(royalty_amounts),
+            init: ComponentRoyaltyConfig { royalty_amounts },
             roles: royalties.1,
         };
 
@@ -283,46 +290,47 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn globalize(mut self) -> Global<C> {
-        let (metadata, metadata_roles) = {
+        let mut modules = BTreeMap::new();
+        let mut roles = BTreeMap::new();
+
+        // Main
+        {
+            roles.insert(ObjectModuleId::Main, self.roles);
+        }
+
+        // Metadata
+        {
             let metadata_config = self
                 .metadata_config
                 .take()
                 .unwrap_or_else(|| Default::default());
 
-            (
-                Metadata::new_with_data(metadata_config.init),
-                metadata_config.roles,
-            )
+            let metadata = Metadata::new_with_data(metadata_config.init);
+            modules.insert(ModuleId::Metadata, metadata.handle().as_node_id().clone());
+            roles.insert(ObjectModuleId::Metadata, metadata_config.roles);
         };
 
-        let (royalty, royalty_roles) = {
-            let royalty_config = self
-                .royalty_config
-                .take()
-                .unwrap_or_else(|| Default::default());
+        // Royalties
+        if let Some(royalty_config) = self.royalty_config {
+            roles.insert(ObjectModuleId::Royalty, royalty_config.roles);
+            let royalty = Royalty::new(royalty_config.init);
+            modules.insert(ModuleId::Royalty, royalty.handle().as_node_id().clone());
+        }
 
-            (Royalty::new(royalty_config.init), royalty_config.roles)
-        };
+        // Role Assignment
+        {
+            let role_assignment = RoleAssignment::new(self.owner_role, roles);
+            modules.insert(
+                ModuleId::RoleAssignment,
+                role_assignment.handle().as_node_id().clone(),
+            );
+        }
 
-        let access_rules = AccessRules::new(
-            self.owner_role,
-            btreemap!(
-                ObjectModuleId::Main => self.roles,
-                ObjectModuleId::Metadata => metadata_roles,
-                ObjectModuleId::Royalty => royalty_roles,
-            ),
+        let address = ScryptoVmV1Api::object_globalize(
+            self.stub.handle().as_node_id().clone(),
+            modules,
+            self.address_reservation,
         );
-
-        let modules = btreemap!(
-            ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),
-            ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
-            ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
-            ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
-        );
-
-        let address = ScryptoEnv
-            .globalize(modules, self.address_reservation)
-            .unwrap();
 
         Global(C::Stub::new(ObjectStubHandle::Global(address)))
     }
@@ -370,10 +378,10 @@ impl<O: HasStub> Global<O> {
         Attached(metadata, PhantomData::default())
     }
 
-    fn access_rules(&self) -> Attached<AccessRules> {
+    fn role_assignment(&self) -> Attached<RoleAssignment> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
-        let access_rules = AccessRules::attached(address);
-        Attached(access_rules, PhantomData::default())
+        let role_assignment = RoleAssignment::attached(address);
+        Attached(role_assignment, PhantomData::default())
     }
 }
 
@@ -394,7 +402,10 @@ impl<O: HasStub> HasMetadata for Global<O> {
         self.metadata().set(name, value);
     }
 
-    fn get_metadata<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError> {
+    fn get_metadata<K: ToString, V: MetadataVal>(
+        &self,
+        name: K,
+    ) -> Result<Option<V>, MetadataConversionError> {
         self.metadata().get(name)
     }
 
@@ -403,29 +414,30 @@ impl<O: HasStub> HasMetadata for Global<O> {
     }
 }
 
-impl<O: HasStub> HasAccessRules for Global<O> {
+impl<O: HasStub> HasRoleAssignment for Global<O> {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A) {
-        self.access_rules().set_owner_role(rule)
+        self.role_assignment().set_owner_role(rule)
     }
 
     fn lock_owner_role<A: Into<AccessRule>>(&self) {
-        self.access_rules().lock_owner_role()
+        self.role_assignment().lock_owner_role()
     }
 
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_role(name, rule);
+        self.role_assignment().set_role(name, rule);
     }
 
     fn get_role(&self, name: &str) -> Option<AccessRule> {
-        self.access_rules().get_role(name)
+        self.role_assignment().get_role(name)
     }
 
     fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_metadata_role(name, rule);
+        self.role_assignment().set_metadata_role(name, rule);
     }
 
     fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_component_royalties_role(name, rule);
+        self.role_assignment()
+            .set_component_royalties_role(name, rule);
     }
 }
 
@@ -447,14 +459,42 @@ where
     }
 }
 
-impl<O: HasStub> From<ComponentAddress> for Global<O> {
-    fn from(value: ComponentAddress) -> Self {
-        Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
+trait TypeCheckable {
+    fn check(node_id: &NodeId) -> Result<(), ComponentCastError>;
+}
+
+impl<O: HasTypeInfo> TypeCheckable for O {
+    fn check(node_id: &NodeId) -> Result<(), ComponentCastError> {
+        let blueprint_id = ScryptoVmV1Api::object_get_blueprint_id(node_id);
+        let to = O::blueprint_id();
+        if !blueprint_id.eq(&to) {
+            return Err(ComponentCastError::CannotCast {
+                actual: blueprint_id,
+                to,
+            });
+        }
+
+        Ok(())
     }
 }
 
-impl<O: HasStub> From<PackageAddress> for Global<O> {
-    fn from(value: PackageAddress) -> Self {
+impl TypeCheckable for AnyComponent {
+    fn check(_node_id: &NodeId) -> Result<(), ComponentCastError> {
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
+pub enum ComponentCastError {
+    CannotCast {
+        to: BlueprintId,
+        actual: BlueprintId,
+    },
+}
+
+impl<O: HasStub + TypeCheckable> From<ComponentAddress> for Global<O> {
+    fn from(value: ComponentAddress) -> Self {
+        O::check(value.as_node_id()).unwrap();
         Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
     }
 }
@@ -520,7 +560,7 @@ impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Global<T> {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([COMPONENT_ADDRESS_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(COMPONENT_ADDRESS_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         component_address_type_data()
@@ -530,7 +570,7 @@ impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Owned<AnyComponent> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(OWN_TYPE);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         own_type_data()

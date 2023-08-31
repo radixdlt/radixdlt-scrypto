@@ -87,7 +87,7 @@ pub fn create_proof_from_account<'a>(
             .create_proof_from_account_of_non_fungibles(
                 account,
                 resource_address,
-                &non_fungible_local_ids,
+                non_fungible_local_ids,
             ),
     };
     Ok(builder)
@@ -96,13 +96,13 @@ pub fn create_proof_from_account<'a>(
 pub fn build_call_arguments<'a>(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
-    schema: &ScryptoSchema,
+    schema: &VersionedScryptoSchema,
     type_index: LocalTypeIndex,
     args: Vec<String>,
     account: Option<ComponentAddress>,
 ) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentsError> {
     let mut built_args = Vec::<ManifestValue>::new();
-    match schema.resolve_type_kind(type_index) {
+    match schema.v1().resolve_type_kind(type_index) {
         Some(TypeKind::Tuple { field_types }) => {
             if args.len() != field_types.len() {
                 return Err(BuildCallArgumentsError::WrongNumberOfArguments(
@@ -115,8 +115,12 @@ pub fn build_call_arguments<'a>(
                 let (returned_builder, value) = build_call_argument(
                     builder,
                     address_bech32_decoder,
-                    schema.resolve_type_kind(*f).expect("Inconsistent schema"),
                     schema
+                        .v1()
+                        .resolve_type_kind(*f)
+                        .expect("Inconsistent schema"),
+                    schema
+                        .v1()
                         .resolve_type_validation(*f)
                         .expect("Inconsistent schema"),
                     args[i].clone(),
@@ -269,10 +273,10 @@ fn build_call_argument<'a>(
                         builder = builder.withdraw_non_fungibles_from_account(
                             account,
                             resource_address,
-                            &ids,
+                            ids.clone(),
                         );
                     }
-                    builder.take_non_fungibles_from_worktop(resource_address, &ids, &bucket_name)
+                    builder.take_non_fungibles_from_worktop(resource_address, ids, &bucket_name)
                 }
             };
             let bucket = builder.bucket(bucket_name);
@@ -308,7 +312,7 @@ fn build_call_argument<'a>(
                             .create_proof_from_account_of_non_fungibles(
                                 account,
                                 resource_address,
-                                &ids,
+                                ids,
                             )
                             .pop_from_auth_zone(&proof_name)
                     } else {

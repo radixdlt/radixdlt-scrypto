@@ -6,6 +6,7 @@ pub struct ValidatedNotarizedTransactionV1 {
     pub prepared: PreparedNotarizedTransactionV1,
     pub encoded_instructions: Vec<u8>,
     pub signer_keys: Vec<PublicKey>,
+    pub num_of_signature_validations: usize,
 }
 
 impl HasIntentHash for ValidatedNotarizedTransactionV1 {
@@ -27,7 +28,10 @@ impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV1 {
 }
 
 impl ValidatedNotarizedTransactionV1 {
-    pub fn get_executable<'a>(&'a self) -> Executable<'a> {
+    pub fn get_executable_with_free_credit<'a>(
+        &'a self,
+        free_credit_in_xrd: Decimal,
+    ) -> Executable<'a> {
         let intent = &self.prepared.signed_intent.intent;
         let header = &intent.header.inner;
         let intent_hash = intent.intent_hash();
@@ -47,16 +51,21 @@ impl ValidatedNotarizedTransactionV1 {
                     end_epoch_exclusive: header.end_epoch_exclusive,
                 }),
                 payload_size: summary.effective_length,
+                num_of_signature_validations: self.num_of_signature_validations,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
                     virtual_resources: BTreeSet::new(),
                 },
-                fee_payment: FeePayment {
+                costing_parameters: TransactionCostingParameters {
                     tip_percentage: intent.header.inner.tip_percentage,
-                    free_credit_in_xrd: Decimal::ZERO,
+                    free_credit_in_xrd,
                 },
                 pre_allocated_addresses: vec![],
             },
         )
+    }
+
+    pub fn get_executable<'a>(&'a self) -> Executable<'a> {
+        self.get_executable_with_free_credit(Decimal::ZERO)
     }
 }

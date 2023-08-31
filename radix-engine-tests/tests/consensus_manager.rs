@@ -4,6 +4,7 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
+use radix_engine::transaction::CostingParameters;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -85,7 +86,7 @@ fn genesis_epoch_has_correct_initial_validators() {
     };
 
     // Act
-    let (_, validator_set) = TestRunner::builder()
+    let (_, validator_set) = TestRunnerBuilder::new()
         .with_custom_genesis(genesis)
         .build_and_get_epoch();
 
@@ -125,7 +126,7 @@ fn genesis_epoch_has_correct_initial_validators() {
 #[test]
 fn get_epoch_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/consensus_manager");
 
     // Act
@@ -148,7 +149,7 @@ fn get_epoch_should_succeed() {
 #[test]
 fn next_round_without_supervisor_auth_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/consensus_manager");
 
     // Act
@@ -194,7 +195,9 @@ fn next_round_with_validator_auth_succeeds() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
@@ -221,7 +224,9 @@ fn next_round_causes_epoch_change_on_reaching_max_rounds() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt = test_runner
@@ -250,7 +255,9 @@ fn next_round_fails_if_time_moves_backward() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act 1 - a small jump in timestamp should be fine
     let next_round = Round::of(1);
@@ -298,7 +305,9 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Prepare for first epoch
     let current_epoch = initial_epoch;
@@ -402,7 +411,9 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt =
@@ -415,7 +426,7 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
 
 fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_success: bool) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -425,7 +436,7 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
             .withdraw_from_account(account, XRD, amount)
             .take_all_from_worktop(XRD, "creation_fee")
             .create_validator(public_key, Decimal::ONE, "creation_fee")
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -448,7 +459,7 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
 #[test]
 fn create_validator_with_not_enough_payment_should_fail() {
     create_validator_with_low_payment_amount_should_fail(
-        *DEFAULT_VALIDATOR_XRD_COST - dec!(1),
+        DEFAULT_VALIDATOR_XRD_COST.safe_sub(dec!(1)).unwrap(),
         false,
     )
 }
@@ -456,7 +467,7 @@ fn create_validator_with_not_enough_payment_should_fail() {
 #[test]
 fn create_validator_with_too_much_payment_should_succeed() {
     create_validator_with_low_payment_amount_should_fail(
-        *DEFAULT_VALIDATOR_XRD_COST + dec!(1),
+        DEFAULT_VALIDATOR_XRD_COST.safe_add(dec!(1)).unwrap(),
         true,
     )
 }
@@ -464,10 +475,10 @@ fn create_validator_with_too_much_payment_should_succeed() {
 #[test]
 fn create_validator_with_wrong_resource_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(*DEFAULT_VALIDATOR_XRD_COST, 0u8, account);
+        test_runner.create_fungible_resource(*DEFAULT_VALIDATOR_XRD_COST, 18u8, account);
 
     // Act
     let receipt = test_runner.execute_manifest(
@@ -504,7 +515,9 @@ fn register_validator_with_auth_succeeds() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -513,7 +526,7 @@ fn register_validator_with_auth_succeeds() {
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -539,7 +552,9 @@ fn register_validator_without_auth_fails() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -571,7 +586,9 @@ fn unregister_validator_with_auth_succeeds() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -580,7 +597,7 @@ fn unregister_validator_with_auth_succeeds() {
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .unregister_validator(validator_address)
         .build();
@@ -606,7 +623,9 @@ fn unregister_validator_without_auth_fails() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -637,14 +656,16 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -665,7 +686,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         builder = builder.create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         );
     }
 
@@ -680,7 +701,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
                 builder.call_method(validator_address, "stake", manifest_args!(bucket))
             }
         })
-        .try_deposit_batch_or_abort(validator_account_address)
+        .try_deposit_entire_worktop_or_abort(validator_account_address, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -728,7 +749,9 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
@@ -736,7 +759,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
         .create_proof_from_account_of_non_fungibles(
             account_address,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -767,7 +790,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let epoch_emissions_xrd = dec!("0.1");
     let a_initial_stake = dec!("2.5");
     let b_initial_stake = dec!("7.5");
-    let both_initial_stake = a_initial_stake + b_initial_stake;
+    let both_initial_stake = a_initial_stake.safe_add(b_initial_stake).unwrap();
 
     let a_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let b_key = Secp256k1PrivateKey::from_u64(2).unwrap().public_key();
@@ -815,7 +838,9 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     };
 
     // Act
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let receipt = test_runner.advance_to_round(Round::of(1));
 
     // Assert
@@ -823,15 +848,29 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let a_new_stake = test_runner
         .inspect_vault_balance(a_substate.stake_xrd_vault_id.0)
         .unwrap();
-    let a_stake_added = epoch_emissions_xrd * a_initial_stake / both_initial_stake;
-    assert_eq!(a_new_stake, a_initial_stake + a_stake_added);
+    let a_stake_added = epoch_emissions_xrd
+        .safe_mul(a_initial_stake)
+        .unwrap()
+        .safe_div(both_initial_stake)
+        .unwrap();
+    assert_eq!(
+        a_new_stake,
+        a_initial_stake.safe_add(a_stake_added).unwrap()
+    );
 
     let b_substate = test_runner.get_active_validator_info_by_key(&b_key);
     let b_new_stake = test_runner
         .inspect_vault_balance(b_substate.stake_xrd_vault_id.0)
         .unwrap();
-    let b_stake_added = epoch_emissions_xrd * b_initial_stake / both_initial_stake;
-    assert_eq!(b_new_stake, b_initial_stake + b_stake_added);
+    let b_stake_added = epoch_emissions_xrd
+        .safe_mul(b_initial_stake)
+        .unwrap()
+        .safe_div(both_initial_stake)
+        .unwrap();
+    assert_eq!(
+        b_new_stake,
+        b_initial_stake.safe_add(b_stake_added).unwrap()
+    );
 
     let result = receipt.expect_commit_success();
     let next_epoch_validators = result
@@ -931,7 +970,9 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     );
 
     // Act
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert: stake vault balance increased by the given emission * reliability factor
@@ -939,13 +980,19 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     let validator_new_stake = test_runner
         .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
         .unwrap();
-    let actual_reliability = Decimal::one() / Decimal::from(rounds_per_epoch);
-    let tolerated_range = Decimal::one() - min_required_reliability;
-    let reliability_factor = (actual_reliability - min_required_reliability) / tolerated_range;
-    let validator_stake_added = epoch_emissions_xrd * reliability_factor;
+    let actual_reliability = Decimal::one().safe_div(rounds_per_epoch).unwrap();
+    let tolerated_range = Decimal::one().safe_sub(min_required_reliability).unwrap();
+    let reliability_factor = actual_reliability
+        .safe_sub(min_required_reliability)
+        .unwrap()
+        .safe_div(tolerated_range)
+        .unwrap();
+    let validator_stake_added = epoch_emissions_xrd.safe_mul(reliability_factor).unwrap();
     assert_eq!(
         validator_new_stake,
-        validator_initial_stake + validator_stake_added
+        validator_initial_stake
+            .safe_add(validator_stake_added)
+            .unwrap()
     );
 
     // Assert: owner stake vault balance increased by that same number (because of default `fee_factor = 1.0`)
@@ -1013,7 +1060,9 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     );
 
     // Act
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
@@ -1055,7 +1104,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
 
 macro_rules! assert_close_to {
     ($a:expr, $b:expr) => {
-        if ($a - $b).abs() > dec!("0.0001") {
+        if Decimal::from($a.safe_sub($b).unwrap()).safe_abs().unwrap() > dec!("0.0001") {
             panic!("{} is not close to {}", $a, $b);
         }
     };
@@ -1084,7 +1133,9 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
 
     // Act: request the fee decrease
@@ -1093,7 +1144,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -1105,7 +1156,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
-    let result1 = receipt1.expect_commit_success();
+    receipt1.expect_commit_success();
 
     // Act: change epoch
     let receipt2 = test_runner.advance_to_round(Round::of(1));
@@ -1124,14 +1175,17 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             proposals_missed: 0,
         },]
     );
-    let emission_and_tx1_rewards =
-        emission_xrd_per_epoch + result1.fee_summary.expected_reward_if_single_validator();
+    let emission_and_tx1_rewards = emission_xrd_per_epoch
+        .safe_add(receipt1.fee_summary.expected_reward_if_single_validator())
+        .unwrap();
     let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
     assert_close_to!(
         test_runner
             .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
             .unwrap(),
-        initial_stake_amount + emission_and_tx1_rewards
+        initial_stake_amount
+            .safe_add(emission_and_tx1_rewards)
+            .unwrap()
     );
     assert_close_to!(
         test_runner
@@ -1145,9 +1199,13 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
 
     // Assert: during that next epoch, the `next_epoch_fee_factor` was already effective
     let result3 = receipt3.expect_commit_success();
-    let next_epoch_start_stake_xrd = initial_stake_amount + emission_and_tx1_rewards;
-    let next_epoch_fee_xrd = emission_xrd_per_epoch * next_epoch_fee_factor;
-    let next_epoch_net_emission_xrd = emission_xrd_per_epoch - next_epoch_fee_xrd;
+    let next_epoch_start_stake_xrd = initial_stake_amount
+        .safe_add(emission_and_tx1_rewards)
+        .unwrap();
+    let next_epoch_fee_xrd = emission_xrd_per_epoch
+        .safe_mul(next_epoch_fee_factor)
+        .unwrap();
+    let next_epoch_net_emission_xrd = emission_xrd_per_epoch.safe_sub(next_epoch_fee_xrd).unwrap();
     let event = test_runner
         .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result3)
         .pop()
@@ -1166,20 +1224,41 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
             .unwrap(),
         initial_stake_amount
-            + result1.fee_summary.expected_reward_if_single_validator()
-            + result2.fee_summary.expected_reward_if_single_validator()
-            + dec!("2") * emission_xrd_per_epoch // everything still goes into stake, by various means
+            .safe_add(receipt1.fee_summary.expected_reward_if_single_validator())
+            .unwrap()
+            .safe_add(receipt2.fee_summary.expected_reward_if_single_validator())
+            .unwrap()
+            .safe_add(emission_xrd_per_epoch.safe_mul(2).unwrap()) // everything still goes into stake, by various means
+            .unwrap()
     );
     // the new fee goes into internal owner's vault (as stake units)
-    let stake_unit_exchange_rate = event.starting_stake_pool_xrd
-        / (event.starting_stake_pool_xrd + next_epoch_net_emission_xrd);
+    let stake_unit_exchange_rate = event
+        .starting_stake_pool_xrd
+        .safe_div(
+            event
+                .starting_stake_pool_xrd
+                .safe_add(next_epoch_net_emission_xrd)
+                .unwrap(),
+        )
+        .unwrap();
+
     assert_close_to!(
         test_runner
             .inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0)
             .unwrap(),
         emission_and_tx1_rewards
-            + (result2.fee_summary.expected_reward_if_single_validator() + next_epoch_fee_xrd)
-                * stake_unit_exchange_rate
+            .safe_add(
+                stake_unit_exchange_rate
+                    .safe_mul(
+                        receipt2
+                            .fee_summary
+                            .expected_reward_if_single_validator()
+                            .safe_add(next_epoch_fee_xrd)
+                            .unwrap()
+                    )
+                    .unwrap()
+            )
+            .unwrap()
     );
 }
 
@@ -1208,7 +1287,9 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_xrd_vault_id = test_runner
         .get_validator_info(validator_address)
@@ -1219,65 +1300,56 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let mut total_rewards = Decimal::ZERO;
     let mut last_reward;
 
-    last_reward =
-        test_runner
-            .execute_manifest(
-                ManifestBuilder::new()
-                    .lock_fee_from_faucet()
-                    .create_proof_from_account_of_non_fungibles(
-                        validator_account,
-                        VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
-                    )
-                    .call_method(
-                        validator_address,
-                        VALIDATOR_UPDATE_FEE_IDENT,
-                        manifest_args!(Decimal::zero()),
-                    )
-                    .build(),
-                vec![NonFungibleGlobalId::from_public_key(&validator_key)],
-            )
-            .expect_commit_success()
-            .fee_summary
-            .expected_reward_if_single_validator();
-    total_rewards += last_reward;
+    last_reward = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .create_proof_from_account_of_non_fungibles(
+                    validator_account,
+                    VALIDATOR_OWNER_BADGE,
+                    [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+                )
+                .call_method(
+                    validator_address,
+                    VALIDATOR_UPDATE_FEE_IDENT,
+                    manifest_args!(Decimal::zero()),
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .fee_summary
+        .expected_reward_if_single_validator();
+    total_rewards = total_rewards.safe_add(last_reward).unwrap();
 
     // ... and wait 1 epoch to make it effective
     last_reward = test_runner
         .advance_to_round(Round::of(1))
-        .expect_commit_success()
         .fee_summary
         .expected_reward_if_single_validator();
-    total_rewards += last_reward;
+    total_rewards = total_rewards.safe_add(last_reward).unwrap();
     let current_epoch = initial_epoch.next();
 
     // Act: request the fee increase
-    last_reward =
-        test_runner
-            .execute_manifest(
-                ManifestBuilder::new()
-                    .lock_fee_from_faucet()
-                    .create_proof_from_account_of_non_fungibles(
-                        validator_account,
-                        VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
-                    )
-                    .call_method(
-                        validator_address,
-                        VALIDATOR_UPDATE_FEE_IDENT,
-                        manifest_args!(increased_fee_factor),
-                    )
-                    .build(),
-                vec![NonFungibleGlobalId::from_public_key(&validator_key)],
-            )
-            .expect_commit_success()
-            .fee_summary
-            .expected_reward_if_single_validator();
-    total_rewards += last_reward;
+    last_reward = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .create_proof_from_account_of_non_fungibles(
+                    validator_account,
+                    VALIDATOR_OWNER_BADGE,
+                    [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+                )
+                .call_method(
+                    validator_address,
+                    VALIDATOR_UPDATE_FEE_IDENT,
+                    manifest_args!(increased_fee_factor),
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .fee_summary
+        .expected_reward_if_single_validator();
+    total_rewards = total_rewards.safe_add(last_reward).unwrap();
     let increase_effective_at_epoch = current_epoch.after(fee_increase_delay_epochs);
 
     // advance a few epochs (just 1 short of the increase being effective)
@@ -1285,10 +1357,9 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     for _ in current_epoch.number()..increase_effective_at_epoch.number() {
         last_reward = test_runner
             .advance_to_round(Round::of(1))
-            .expect_commit_success()
             .fee_summary
             .expected_reward_if_single_validator();
-        total_rewards += last_reward;
+        total_rewards = total_rewards.safe_add(last_reward).unwrap();
     }
 
     // Assert: no change yet (the default `fee_factor = 1.0` was effective during all these epochs)
@@ -1298,8 +1369,17 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         .unwrap();
     assert_close_to!(
         starting_stake_pool,
-        initial_stake_amount + total_rewards - last_reward
-            + Decimal::from(num_epochs_with_default_fee) * emission_xrd_per_epoch
+        initial_stake_amount
+            .safe_add(total_rewards)
+            .unwrap()
+            .safe_sub(last_reward)
+            .unwrap()
+            .safe_add(
+                num_epochs_with_default_fee
+                    .safe_mul(emission_xrd_per_epoch)
+                    .unwrap()
+            )
+            .unwrap()
     );
 
     // Act: advance one more epoch
@@ -1307,8 +1387,6 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
 
     // Assert: during that next epoch, the `increased_fee_factor` was already effective
     let result = receipt.expect_commit_success();
-    last_reward = result.fee_summary.expected_reward_if_single_validator();
-    total_rewards += last_reward;
     let event = test_runner
         .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result)
         .remove(0);
@@ -1316,11 +1394,15 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     assert_close_to!(event.starting_stake_pool_xrd, starting_stake_pool);
     assert_close_to!(
         event.stake_pool_added_xrd,
-        emission_xrd_per_epoch * (Decimal::one() - increased_fee_factor)
+        emission_xrd_per_epoch
+            .safe_mul(Decimal::one().safe_sub(increased_fee_factor).unwrap())
+            .unwrap()
     );
     assert_close_to!(
         event.validator_fee_xrd,
-        emission_xrd_per_epoch * increased_fee_factor
+        emission_xrd_per_epoch
+            .safe_mul(increased_fee_factor)
+            .unwrap()
     );
     assert_eq!(event.proposals_made, 1);
     assert_eq!(event.proposals_missed, 0);
@@ -1435,15 +1517,13 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .register_validator(validator_address)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
-                    .try_deposit_batch_or_abort(account_address)
+                    .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
                 vec![manifest]
             }
@@ -1453,15 +1533,13 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
                     .register_validator(validator_address)
-                    .try_deposit_batch_or_abort(account_address)
+                    .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
                 vec![manifest]
             }
@@ -1471,9 +1549,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .register_validator(validator_address)
                     .build();
@@ -1483,14 +1559,12 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
-                    .try_deposit_batch_or_abort(account_address)
+                    .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
 
                 vec![register_manifest, stake_manifest]
@@ -1501,9 +1575,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .register_validator(validator_address)
                     .build();
@@ -1513,14 +1585,12 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        &btreeset!(
-                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
-                        ),
+                        [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
-                    .try_deposit_batch_or_abort(account_address)
+                    .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
 
                 vec![stake_manifest, register_manifest]
@@ -1534,7 +1604,7 @@ fn register_and_stake_new_validator(
     pub_key: Secp256k1PublicKey,
     account_address: ComponentAddress,
     stake_amount: Decimal,
-    test_runner: &mut TestRunner,
+    test_runner: &mut DefaultTestRunner,
 ) -> ComponentAddress {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
 
@@ -1579,7 +1649,9 @@ fn registered_validator_test(
         1,
     );
     let (pub_key, account_address) = accounts[0];
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = register_and_stake_new_validator(
         register_and_stake_txn_type,
         pub_key,
@@ -1692,7 +1764,9 @@ fn test_registering_and_staking_many_validators() {
     );
     let mut rng = ChaCha8Rng::seed_from_u64(1234);
 
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let mut all_manifests = Vec::new();
     for (pub_key, account_address) in accounts {
         let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
@@ -1753,14 +1827,16 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .unregister_validator(validator_address)
         .build();
@@ -1805,7 +1881,9 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let next_validator_pub_key = Secp256k1PrivateKey::from_u64(3u64).unwrap().public_key();
     let manifest = ManifestBuilder::new()
@@ -1813,7 +1891,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -1859,7 +1937,9 @@ fn cannot_claim_unstake_immediately() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
@@ -1869,9 +1949,9 @@ fn cannot_claim_unstake_immediately() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .take_all_from_worktop(validator_substate.unstake_nft, "unstake_nft")
+        .take_all_from_worktop(validator_substate.claim_nft, "unstake_nft")
         .claim_xrd(validator_address, "unstake_nft")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1905,7 +1985,9 @@ fn can_claim_unstake_after_epochs() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
@@ -1913,7 +1995,7 @@ fn can_claim_unstake_after_epochs() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1925,10 +2007,10 @@ fn can_claim_unstake_after_epochs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account_with_su, validator_substate.unstake_nft, 1)
-        .take_all_from_worktop(validator_substate.unstake_nft, "unstake_receipt")
+        .withdraw_from_account(account_with_su, validator_substate.claim_nft, 1)
+        .take_all_from_worktop(validator_substate.claim_nft, "unstake_receipt")
         .claim_xrd(validator_address, "unstake_receipt")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1953,7 +2035,9 @@ fn owner_can_lock_stake_units() {
         Epoch::of(5),
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
@@ -1963,7 +2047,7 @@ fn owner_can_lock_stake_units() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -1991,8 +2075,11 @@ fn owner_can_lock_stake_units() {
         Some(stake_units_to_lock_amount)
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, validator_substate.stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount)
+        test_runner
+            .get_component_balance(validator_account, validator_substate.stake_unit_resource),
+        total_stake_amount
+            .safe_sub(stake_units_to_lock_amount)
+            .unwrap()
     )
 }
 
@@ -2015,7 +2102,9 @@ fn owner_can_start_unlocking_stake_units() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2027,7 +2116,7 @@ fn owner_can_start_unlocking_stake_units() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2056,7 +2145,7 @@ fn owner_can_start_unlocking_stake_units() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2074,7 +2163,11 @@ fn owner_can_start_unlocking_stake_units() {
     let substate = test_runner.get_validator_info(validator_address);
     assert_eq!(
         test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
-        Some(stake_units_to_lock_amount - stake_units_to_unlock_amount) // subtracted from the locked vault
+        Some(
+            stake_units_to_lock_amount
+                .safe_sub(stake_units_to_unlock_amount)
+                .unwrap() // subtracted from the locked vault
+        )
     );
     assert_eq!(
         test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
@@ -2085,9 +2178,94 @@ fn owner_can_start_unlocking_stake_units() {
         btreemap!(initial_epoch.after(unlock_epochs_delay) => stake_units_to_unlock_amount)
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount) // NOT in the external vault yet
+        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        total_stake_amount
+            .safe_sub(stake_units_to_lock_amount)
+            .unwrap() // NOT in the external vault yet
     )
+}
+
+#[test]
+fn owner_can_start_unlock_of_max_should_not_panic() {
+    // Arrange
+    let genesis_epoch = Epoch::of(7);
+    let unlock_epochs_delay = 2;
+    let total_stake_amount = dec!("10.5");
+    let stake_units_to_lock_amount = dec!("2.2");
+    let stake_units_to_unlock_amount = dec!("0.1");
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        total_stake_amount,
+        validator_account,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
+    let stake_unit_resource = test_runner
+        .get_validator_info(validator_address)
+        .stake_unit_resource;
+
+    // Lock
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+        )
+        .withdraw_from_account(
+            validator_account,
+            stake_unit_resource,
+            stake_units_to_lock_amount,
+        )
+        .take_all_from_worktop(stake_unit_resource, "stake_units")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_method(
+                validator_address,
+                VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(lookup.bucket("stake_units")),
+            )
+        })
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Act (start unlock)
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+        )
+        .call_method(
+            validator_address,
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(stake_units_to_unlock_amount),
+        )
+        .call_method(
+            validator_address,
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(Decimal::MAX),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+    );
+
+    // Assert
+    receipt.expect_failure();
 }
 
 #[test]
@@ -2109,7 +2287,9 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2121,7 +2301,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2145,14 +2325,20 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         .expect_commit_success();
 
     // Act (start unlock multiple times in a single epoch)
-    let stake_units_to_unlock_total_amount = stake_units_to_unlock_amounts.iter().cloned().sum();
+    let stake_units_to_unlock_total_amount = {
+        let mut sum = Decimal::ZERO;
+        for v in stake_units_to_unlock_amounts.iter() {
+            sum = sum.safe_add(*v).unwrap();
+        }
+        sum
+    };
     for stake_units_to_unlock_amount in stake_units_to_unlock_amounts {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_proof_from_account_of_non_fungibles(
                 validator_account,
                 VALIDATOR_OWNER_BADGE,
-                &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+                [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
             )
             .call_method(
                 validator_address,
@@ -2172,7 +2358,11 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     let substate = test_runner.get_validator_info(validator_address);
     assert_eq!(
         test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
-        Some(stake_units_to_lock_amount - stake_units_to_unlock_total_amount) // subtracted from the locked vault
+        Some(
+            stake_units_to_lock_amount
+                .safe_sub(stake_units_to_unlock_total_amount)
+                .unwrap() // subtracted from the locked vault
+        )
     );
     assert_eq!(
         test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
@@ -2183,8 +2373,10 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         btreemap!(initial_epoch.after(unlock_epochs_delay) => stake_units_to_unlock_total_amount)
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount) // NOT in the external vault yet
+        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        total_stake_amount
+            .safe_sub(stake_units_to_lock_amount)
+            .unwrap() // NOT in the external vault yet
     )
 }
 
@@ -2198,7 +2390,9 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     let stake_units_to_lock_amount = dec!("1.0");
     let stake_units_to_unlock_amount = dec!("0.2");
     let stake_units_to_unlock_next_amount = dec!("0.03");
-    let total_to_unlock_amount = stake_units_to_unlock_amount + stake_units_to_unlock_next_amount;
+    let total_to_unlock_amount = stake_units_to_unlock_amount
+        .safe_add(stake_units_to_unlock_next_amount)
+        .unwrap();
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
@@ -2209,7 +2403,9 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2221,7 +2417,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2250,7 +2446,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2272,7 +2468,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2290,7 +2486,11 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     let substate = test_runner.get_validator_info(validator_address);
     assert_eq!(
         test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
-        Some(stake_units_to_lock_amount - total_to_unlock_amount) // both amounts started unlocking
+        Some(
+            stake_units_to_lock_amount
+                .safe_sub(total_to_unlock_amount)
+                .unwrap() // both amounts started unlocking
+        )
     );
     assert_eq!(
         test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
@@ -2325,7 +2525,9 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2337,7 +2539,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2366,7 +2568,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2388,7 +2590,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2418,8 +2620,12 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         btreemap!() // removed from the pending tracker
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount + stake_units_to_unlock_amount)
+        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        total_stake_amount
+            .safe_sub(stake_units_to_lock_amount)
+            .unwrap()
+            .safe_add(stake_units_to_unlock_amount)
+            .unwrap()
     )
 }
 
@@ -2442,7 +2648,9 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2454,7 +2662,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(
             validator_account,
@@ -2483,7 +2691,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2505,7 +2713,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .create_proof_from_account_of_non_fungibles(
             validator_account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -2530,8 +2738,10 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         btreemap!(initial_epoch.after(unlock_epochs_delay) => stake_units_to_unlock_amount)
     );
     assert_eq!(
-        test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount) // still NOT in the external vault
+        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        total_stake_amount
+            .safe_sub(stake_units_to_lock_amount)
+            .unwrap() // still NOT in the external vault
     )
 }
 
@@ -2558,7 +2768,9 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
@@ -2566,13 +2778,13 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt1 = test_runner.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
-    let result1 = receipt1.expect_commit_success();
+    receipt1.expect_commit_success();
 
     // Act
     let receipt2 = test_runner.advance_to_round(Round::of(rounds_per_epoch));
@@ -2589,17 +2801,18 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             .unwrap()
             .stake,
         // The validator isn't eligible for the validator set rewards because it's `reliability_factor` is zero.
-        Decimal::from(9)
-            + result1
-                .fee_summary
-                .expected_reward_as_proposer_if_single_validator()
+        receipt1
+            .fee_summary
+            .expected_reward_as_proposer_if_single_validator()
+            .safe_add(9)
+            .unwrap()
     );
 }
 
 #[test]
 fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let mut pre_allocated_addresses = vec![];
@@ -2648,7 +2861,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
 #[test]
 fn consensus_manager_create_should_succeed_with_system_privilege() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let mut pre_allocated_addresses = vec![];
@@ -2690,7 +2903,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
 
 fn extract_emitter_node_id(event_type_id: &EventTypeIdentifier) -> NodeId {
     match &event_type_id.0 {
-        Emitter::Function(node_id, _, _) => node_id,
+        Emitter::Function(blueprint_id) => blueprint_id.package_address.as_node_id(),
         Emitter::Method(node_id, _) => node_id,
     }
     .clone()
@@ -2717,12 +2930,16 @@ fn test_tips_and_fee_distribution_single_validator() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Do some transaction
-    let receipt1 = test_runner
-        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
-    let result1 = receipt1.expect_commit_success();
+    let receipt1 = test_runner.execute_manifest_ignoring_fee(
+        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+        vec![],
+    );
+    receipt1.expect_commit_success();
 
     // Advance epoch
     let receipt2 = test_runner.advance_to_round(Round::of(1));
@@ -2746,7 +2963,7 @@ fn test_tips_and_fee_distribution_single_validator() {
     assert_eq!(event.epoch, initial_epoch);
     assert_close_to!(
         event.amount,
-        result1.fee_summary.expected_reward_if_single_validator()
+        receipt1.fee_summary.expected_reward_if_single_validator()
     );
 }
 
@@ -2761,10 +2978,11 @@ fn test_tips_and_fee_distribution_two_validators() {
     let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
     let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
     let staker_account = ComponentAddress::virtual_account_from_public_key(&staker_key);
-    let genesis = CustomGenesis::two_validators_and_single_staker(
-        validator1_key,
-        validator2_key,
-        (initial_stake_amount1, initial_stake_amount2),
+    let genesis = CustomGenesis::validators_and_single_staker(
+        vec![
+            (validator1_key, initial_stake_amount1),
+            (validator2_key, initial_stake_amount2),
+        ],
         staker_account,
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
@@ -2775,11 +2993,15 @@ fn test_tips_and_fee_distribution_two_validators() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Do some transaction
-    let receipt1 = test_runner
-        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
+    let receipt1 = test_runner.execute_manifest_ignoring_fee(
+        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+        vec![],
+    );
     let result1 = receipt1.expect_commit_success();
 
     // Advance epoch
@@ -2791,15 +3013,153 @@ fn test_tips_and_fee_distribution_two_validators() {
     assert_eq!(events[0].epoch, initial_epoch);
     assert_close_to!(
         events[0].amount,
-        result1.fee_summary.tips_to_distribute()
-            + result1.fee_summary.fees_to_distribute() * dec!("0.25")
-            + result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount1
-                / (initial_stake_amount1 + initial_stake_amount2)
+        result1
+            .fee_destination
+            .to_proposer
+            .safe_add(
+                result1
+                    .fee_destination
+                    .to_validator_set
+                    .safe_mul(initial_stake_amount1)
+                    .unwrap()
+                    .safe_div(
+                        initial_stake_amount1
+                            .safe_add(initial_stake_amount2)
+                            .unwrap()
+                    )
+                    .unwrap()
+            )
+            .unwrap()
     );
     assert_eq!(events[1].epoch, initial_epoch);
     assert_close_to!(
         events[1].amount,
-        result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount2
-            / (initial_stake_amount1 + initial_stake_amount2)
+        result1
+            .fee_destination
+            .to_validator_set
+            .safe_mul(initial_stake_amount2)
+            .unwrap()
+            .safe_div(
+                initial_stake_amount1
+                    .safe_add(initial_stake_amount2)
+                    .unwrap()
+            )
+            .unwrap()
+    );
+}
+
+#[test]
+fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
+    // Arrange
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
+    let rounds_per_epoch = 2;
+    let validators_keys: Vec<Secp256k1PublicKey> = (0..4)
+        .map(|n| {
+            Secp256k1PrivateKey::from_u64(2u64 + n)
+                .unwrap()
+                .public_key()
+        })
+        .collect();
+    let validators_owner_badge_holders: Vec<ComponentAddress> = validators_keys
+        .iter()
+        .map(|key| {
+            // Validator owner defaults to a virtual account
+            // corresponding to its public key
+            ComponentAddress::virtual_account_from_public_key(key)
+        })
+        .collect();
+    let staker_key = Secp256k1PrivateKey::from_u64(10u64).unwrap().public_key();
+    let genesis = CustomGenesis::validators_and_single_staker(
+        vec![
+            (validators_keys[0], dec!("10")),
+            (validators_keys[1], dec!("10")),
+            (validators_keys[2], dec!("10")),
+            (validators_keys[3], dec!("3")), // 3/33 == just below 10% stake
+        ],
+        ComponentAddress::virtual_account_from_public_key(&staker_key),
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_total_emission_xrd_per_epoch(Decimal::zero())
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            }),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .without_trace()
+        .build();
+
+    let validators_addresses: Vec<ComponentAddress> = validators_keys
+        .iter()
+        .map(|key| test_runner.get_active_validator_with_key(key))
+        .collect();
+
+    let manifest = ManifestBuilder::new()
+        // Validators 0 and 1 (10 units of stake each) signal the readiness for protocol update "a...aa"
+        .create_proof_from_account_of_non_fungibles(
+            validators_owner_badge_holders[0],
+            VALIDATOR_OWNER_BADGE,
+            [NonFungibleLocalId::bytes(validators_addresses[0].as_node_id().0).unwrap()],
+        )
+        .signal_protocol_update_readiness(validators_addresses[0], "a".repeat(32).as_str())
+        .create_proof_from_account_of_non_fungibles(
+            validators_owner_badge_holders[1],
+            VALIDATOR_OWNER_BADGE,
+            [NonFungibleLocalId::bytes(validators_addresses[1].as_node_id().0).unwrap()],
+        )
+        .signal_protocol_update_readiness(validators_addresses[1], "a".repeat(32).as_str())
+        // Validator 2 (10 units of stake) signals the readiness for protocol update "b..bb"
+        .create_proof_from_account_of_non_fungibles(
+            validators_owner_badge_holders[2],
+            VALIDATOR_OWNER_BADGE,
+            [NonFungibleLocalId::bytes(validators_addresses[2].as_node_id().0).unwrap()],
+        )
+        .signal_protocol_update_readiness(validators_addresses[2], "b".repeat(32).as_str())
+        // Validator 3 (3 units of stake) signals the readiness for protocol update "c..cc"
+        .create_proof_from_account_of_non_fungibles(
+            validators_owner_badge_holders[3],
+            VALIDATOR_OWNER_BADGE,
+            [NonFungibleLocalId::bytes(validators_addresses[3].as_node_id().0).unwrap()],
+        )
+        .signal_protocol_update_readiness(validators_addresses[3], "c".repeat(32).as_str())
+        .build();
+
+    // Disable fees for easier stake calculation
+    let mut costing_params = CostingParameters::default();
+    costing_params.execution_cost_unit_price = Decimal::zero();
+    costing_params.finalization_cost_unit_price = Decimal::zero();
+    costing_params.state_storage_price = Decimal::zero();
+    costing_params.archive_storage_price = Decimal::zero();
+
+    let receipt = test_runner.execute_manifest_with_costing_params(
+        manifest,
+        validators_keys
+            .iter()
+            .map(|key| NonFungibleGlobalId::from_public_key(key)),
+        costing_params,
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
+    assert_eq!(next_epoch.epoch, initial_epoch.next());
+    let significant_readiness = next_epoch.significant_protocol_update_readiness;
+    // Expecting just two entries (readiness signal for protocol update c..cc is below the
+    // threshold).
+    assert_eq!(significant_readiness.len(), 2);
+    assert_eq!(
+        significant_readiness["a".repeat(32).as_str()],
+        Decimal::from(20)
+    );
+    assert_eq!(
+        significant_readiness["b".repeat(32).as_str()],
+        Decimal::from(10)
     );
 }

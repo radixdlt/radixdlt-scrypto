@@ -1,6 +1,6 @@
 use radix_engine::system::system_modules::costing::FeeTable;
+use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
-use radix_engine::transaction::FeeReserveConfig;
 use radix_engine::types::*;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
@@ -11,11 +11,11 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 #[test]
 fn test_transaction_preview_cost_estimate() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .clear_auth_zone()
+        .drop_auth_zone_proofs()
         .build();
     let preview_flags = PreviewFlags {
         use_free_credit: true,
@@ -34,32 +34,53 @@ fn test_transaction_preview_cost_estimate() {
     // Act & Assert: Execute the preview, followed by a normal execution.
     // Ensure that both succeed and that the preview result provides an accurate cost estimate
     let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
-    let preview_result = preview_receipt.expect_commit_success();
+    preview_receipt.expect_commit_success();
     let actual_receipt = test_runner.execute_transaction(
         validate(&network, &notarized_transaction).get_executable(),
-        FeeReserveConfig::default(),
-        ExecutionConfig::for_notarized_transaction()
+        CostingParameters::default(),
+        ExecutionConfig::for_notarized_transaction(network.clone())
             .with_kernel_trace(true)
             .with_cost_breakdown(true),
     );
-    let actual_result = actual_receipt.expect_commit_success();
+    actual_receipt.expect_commit(true);
     assert_eq!(
         // TODO: better preview payload size estimate?
-        preview_result.fee_summary.total_cost()
-            + FeeReserveConfig::default().cost_unit_price
-                * FeeTable::new().tx_payload_cost(size_diff),
-        actual_result.fee_summary.total_cost(),
+        preview_receipt
+            .fee_summary
+            .total_cost()
+            .safe_add(
+                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD)
+                    .unwrap()
+                    .safe_mul(FeeTable::new().validate_tx_payload_cost(size_diff))
+                    .unwrap()
+            )
+            .unwrap()
+            .safe_add(
+                Decimal::try_from(ARCHIVE_STORAGE_PRICE_IN_XRD)
+                    .unwrap()
+                    .safe_mul(size_diff)
+                    .unwrap()
+            )
+            .unwrap()
+            .safe_add(
+                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD)
+                    .unwrap()
+                    .safe_mul(FeeTable::new().verify_tx_signatures_cost(2))
+                    .unwrap()
+            )
+            .unwrap(),
+        actual_receipt.fee_summary.total_cost(),
     );
 }
 
 #[test]
 fn test_transaction_preview_without_locking_fee() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
         // Explicitly don't lock fee from faucet
-        .clear_auth_zone()
+        .drop_auth_zone_proofs()
         .build();
     let preview_flags = PreviewFlags {
         use_free_credit: true,
@@ -75,20 +96,19 @@ fn test_transaction_preview_without_locking_fee() {
 
     // Act
     let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
-    let fee_summary = &preview_receipt.expect_commit_success().fee_summary;
+    let fee_summary = &preview_receipt.fee_summary;
     println!("{:?}", preview_receipt);
-    assert_eq!(fee_summary.total_execution_cost_xrd, dec!("0.01669206"));
-    assert_eq!(fee_summary.total_tipping_cost_xrd, dec!("0"));
-    assert_eq!(fee_summary.total_state_expansion_cost_xrd, dec!("0.00009"));
-    assert_eq!(fee_summary.total_royalty_cost_xrd, dec!("0"));
-    assert_eq!(fee_summary.total_payments(), dec!("0")); // no one is paying the fees; wallets should fill the gap.
+    assert!(fee_summary.total_execution_cost_in_xrd.is_positive());
+    assert_eq!(fee_summary.total_tipping_cost_in_xrd, dec!("0"));
+    assert!(fee_summary.total_storage_cost_in_xrd.is_positive()); // payload cost
+    assert_eq!(fee_summary.total_royalty_cost_in_xrd, dec!("0"));
 }
 
 #[test]
 fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Arrange
     // Create an account component that requires a key auth for withdrawal
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
 
     let public_key = Secp256k1PrivateKey::from_u64(99).unwrap().public_key();
@@ -106,7 +126,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 500)
         .withdraw_from_account(account, XRD, 1)
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
 
     let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(
@@ -124,7 +144,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 }
 
 fn prepare_matching_test_tx_and_preview_intent(
-    test_runner: &mut TestRunner,
+    test_runner: &mut DefaultTestRunner,
     network: &NetworkDefinition,
     manifest: TransactionManifestV1,
     flags: &PreviewFlags,

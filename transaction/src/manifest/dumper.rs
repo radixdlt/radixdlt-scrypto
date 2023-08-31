@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 use super::decompiler::{decompile_with_known_naming, ManifestObjectNames};
 
 pub fn dump_manifest_to_file_system<P>(
-    manifest: &TransactionManifestV1,
     naming: ManifestObjectNames,
+    manifest: &TransactionManifestV1,
     directory_path: P,
     name: Option<&str>,
     network_definition: &NetworkDefinition,

@@ -1,5 +1,4 @@
-use crate::engine::scrypto_env::ScryptoEnv;
-use crate::radix_engine_interface::api::ClientBlueprintApi;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
@@ -474,23 +473,21 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                ScryptoEnv
-                    .call_function(
-                        RESOURCE_PACKAGE,
-                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                        scrypto_encode(&FungibleResourceManagerCreateInput {
-                            owner_role,
-                            divisibility,
-                            track_total_supply: true,
-                            metadata,
-                            resource_roles,
-                            address_reservation,
-                        })
-                        .unwrap(),
-                    )
-                    .map(|bytes| scrypto_decode(&bytes).unwrap())
-                    .unwrap()
+                let bytes = ScryptoVmV1Api::blueprint_call(
+                    RESOURCE_PACKAGE,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                    scrypto_encode(&FungibleResourceManagerCreateInput {
+                        owner_role,
+                        divisibility,
+                        track_total_supply: true,
+                        metadata,
+                        resource_roles,
+                        address_reservation,
+                    })
+                    .unwrap(),
+                );
+                scrypto_decode(&bytes).unwrap()
             }
             private::CreateWithNoSupply::NonFungible {
                 owner_role,
@@ -502,24 +499,22 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
-                ScryptoEnv
-                    .call_function(
-                        RESOURCE_PACKAGE,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                        scrypto_encode(&NonFungibleResourceManagerCreateInput {
-                            owner_role,
-                            id_type,
-                            track_total_supply: true,
-                            non_fungible_schema,
-                            resource_roles,
-                            metadata,
-                            address_reservation,
-                        })
-                        .unwrap(),
-                    )
-                    .map(|bytes| scrypto_decode(&bytes).unwrap())
-                    .unwrap()
+                let bytes = ScryptoVmV1Api::blueprint_call(
+                    RESOURCE_PACKAGE,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                    scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                        owner_role,
+                        id_type,
+                        track_total_supply: true,
+                        non_fungible_schema,
+                        resource_roles,
+                        metadata,
+                        address_reservation,
+                    })
+                    .unwrap(),
+                );
+                scrypto_decode(&bytes).unwrap()
             }
         }
     }
@@ -559,37 +554,34 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
-    /// let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+    /// let bucket: FungibleBucket = ResourceBuilder::new_fungible(OwnerRole::None)
     ///     .mint_initial_supply(5);
     /// ```
-    pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
+    pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> FungibleBucket {
         let metadata = self
             .metadata_config
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
-            .call_function(
-                RESOURCE_PACKAGE,
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: self.owner_role,
-                    track_total_supply: true,
-                    divisibility: self.resource_type.divisibility,
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    initial_supply: amount.into(),
-                    address_reservation: self.address_reservation,
-                })
-                .unwrap(),
-            )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role: self.owner_role,
+                track_total_supply: true,
+                divisibility: self.resource_type.divisibility,
+                resource_roles: self.resource_roles,
+                metadata,
+                initial_supply: amount.into(),
+                address_reservation: self.address_reservation,
             })
+            .unwrap(),
+        );
+
+        scrypto_decode::<(ResourceAddress, FungibleBucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
@@ -609,13 +601,13 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         ("One".try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
     {
@@ -627,29 +619,25 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
-            .call_function(
-                RESOURCE_PACKAGE,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: self.owner_role,
-                    track_total_supply: true,
-                    id_type: StringNonFungibleLocalId::id_type(),
-                    non_fungible_schema,
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: map_entries(entries),
-                    address_reservation: self.address_reservation,
-                })
-                .unwrap(),
-            )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role: self.owner_role,
+                track_total_supply: true,
+                id_type: StringNonFungibleLocalId::id_type(),
+                non_fungible_schema,
+                resource_roles: self.resource_roles,
+                metadata,
+                entries: map_entries(entries),
+                address_reservation: self.address_reservation,
             })
+            .unwrap(),
+        );
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
@@ -669,13 +657,13 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (1u64.into(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
     {
@@ -687,29 +675,25 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
-            .call_function(
-                RESOURCE_PACKAGE,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: self.owner_role,
-                    track_total_supply: true,
-                    id_type: IntegerNonFungibleLocalId::id_type(),
-                    non_fungible_schema,
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: map_entries(entries),
-                    address_reservation: self.address_reservation,
-                })
-                .unwrap(),
-            )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role: self.owner_role,
+                track_total_supply: true,
+                id_type: IntegerNonFungibleLocalId::id_type(),
+                non_fungible_schema,
+                resource_roles: self.resource_roles,
+                metadata,
+                entries: map_entries(entries),
+                address_reservation: self.address_reservation,
             })
+            .unwrap(),
+        );
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
@@ -729,13 +713,13 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (vec![1u8].try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
@@ -747,29 +731,25 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
-            .call_function(
-                RESOURCE_PACKAGE,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: self.owner_role,
-                    id_type: BytesNonFungibleLocalId::id_type(),
-                    track_total_supply: true,
-                    non_fungible_schema,
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: map_entries(entries),
-                    address_reservation: self.address_reservation,
-                })
-                .unwrap(),
-            )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role: self.owner_role,
+                id_type: BytesNonFungibleLocalId::id_type(),
+                track_total_supply: true,
+                non_fungible_schema,
+                resource_roles: self.resource_roles,
+                metadata,
+                entries: map_entries(entries),
+                address_reservation: self.address_reservation,
             })
+            .unwrap(),
+        );
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
@@ -792,13 +772,13 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (NFData { name: "NF One".to_owned(), flag: true }),
     ///         (NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = D>,
     {
@@ -810,37 +790,33 @@ impl<D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        ScryptoEnv
-            .call_function(
-                RESOURCE_PACKAGE,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(
-                    &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
-                        owner_role: self.owner_role,
-                        non_fungible_schema,
-                        track_total_supply: true,
-                        resource_roles: self.resource_roles,
-                        metadata,
-                        entries: entries
-                            .into_iter()
-                            .map(|data| {
-                                let value: ScryptoValue =
-                                    scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
-                                (value,)
-                            })
-                            .collect(),
-                        address_reservation: self.address_reservation,
-                    },
-                )
-                .unwrap(),
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(
+                &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+                    owner_role: self.owner_role,
+                    non_fungible_schema,
+                    track_total_supply: true,
+                    resource_roles: self.resource_roles,
+                    metadata,
+                    entries: entries
+                        .into_iter()
+                        .map(|data| {
+                            let value: ScryptoValue =
+                                scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
+                            (value,)
+                        })
+                        .collect(),
+                    address_reservation: self.address_reservation,
+                },
             )
-            .map(|bytes| {
-                scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-                    .unwrap()
-                    .1
-            })
+            .unwrap(),
+        );
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
             .unwrap()
+            .1
     }
 }
 
@@ -940,12 +916,12 @@ mod private {
     pub trait CanAddAuth: Sized {
         type OutputBuilder;
 
-        fn add_roles(self, role_init: RolesInit) -> Self::OutputBuilder;
+        fn add_roles(self, role_init: RoleAssignmentInit) -> Self::OutputBuilder;
 
         fn add_action_and_roles(
             self,
             method: ResourceFeature,
-            role_init: RolesInit,
+            role_init: RoleAssignmentInit,
         ) -> Self::OutputBuilder;
     }
 

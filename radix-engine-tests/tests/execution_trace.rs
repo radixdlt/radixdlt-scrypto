@@ -9,7 +9,7 @@ use transaction::prelude::*;
 #[test]
 fn test_trace_resource_transfers() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
     let transfer_amount = 10u8;
@@ -45,6 +45,8 @@ fn test_trace_resource_transfers() {
         receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .resource_changes
     );
     assert_eq!(
@@ -52,6 +54,8 @@ fn test_trace_resource_transfers() {
         receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .resource_changes
             .len()
     ); // Two instructions
@@ -60,6 +64,8 @@ fn test_trace_resource_transfers() {
         receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .resource_changes
             .get(&0)
             .unwrap()
@@ -70,30 +76,35 @@ fn test_trace_resource_transfers() {
         receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .resource_changes
             .get(&1)
             .unwrap()
             .len()
     ); // One resource change in the first instruction (lock fee)
 
-    let fee_summary = receipt.expect_commit(true).fee_summary.clone();
+    let fee_summary = receipt.fee_summary.clone();
     let total_fee_paid = fee_summary.total_cost();
 
     // Source vault withdrawal
     assert!(receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(
-            |r| r.node_id == source_component.into() && r.amount == -Decimal::from(transfer_amount)
-        ));
+        .any(|r| r.node_id == source_component.into()
+            && r.amount == Decimal::from(transfer_amount).safe_neg().unwrap()));
 
     // Target vault deposit
     assert!(receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
@@ -105,16 +116,19 @@ fn test_trace_resource_transfers() {
     assert!(receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == account.into() && r.amount == -Decimal::from(total_fee_paid)));
+        .any(|r| r.node_id == account.into()
+            && r.amount == Decimal::from(total_fee_paid).safe_neg().unwrap()));
 }
 
 #[test]
 fn test_trace_fee_payments() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     // Prepare the component that will pay the fee
@@ -127,7 +141,7 @@ fn test_trace_fee_payments() {
             "create_and_fund_a_component",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
-        .clear_auth_zone()
+        .drop_auth_zone_proofs()
         .build();
 
     let funded_component = test_runner
@@ -147,7 +161,7 @@ fn test_trace_fee_payments() {
             "test_lock_contingent_fee",
             manifest_args!(),
         )
-        .clear_auth_zone()
+        .drop_auth_zone_proofs()
         .build();
 
     let receipt = test_runner.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
@@ -156,21 +170,24 @@ fn test_trace_fee_payments() {
     let resource_changes = &receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .resource_changes;
-    let fee_summary = receipt.expect_commit(true).fee_summary.clone();
+    let fee_summary = receipt.fee_summary.clone();
     let total_fee_paid = fee_summary.total_cost();
 
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes
         .into_iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == funded_component.into() && r.amount == -total_fee_paid));
+        .any(|r| r.node_id == funded_component.into()
+            && r.amount == total_fee_paid.safe_neg().unwrap()));
 }
 
 #[test]
 fn test_instruction_traces() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manifest = ManifestBuilder::new()
@@ -193,6 +210,8 @@ fn test_instruction_traces() {
     let mut traces: Vec<ExecutionTrace> = receipt
         .expect_commit_success()
         .execution_trace
+        .as_ref()
+        .unwrap()
         .execution_traces
         .clone();
 
@@ -237,8 +256,7 @@ fn test_instruction_traces() {
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                 ident: WORKTOP_PUT_IDENT.to_string(),
             }),
             worktop_put_trace.origin
@@ -249,10 +267,6 @@ fn test_instruction_traces() {
         let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
-
-        // We're tracking up to depth "1" (default), so no more child traces
-        assert!(free_trace.children.is_empty());
-        assert!(worktop_put_trace.children.is_empty());
     }
 
     {
@@ -264,8 +278,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                 ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
             }),
             trace.origin
@@ -287,8 +300,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: FUNGIBLE_BUCKET_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT),
                 ident: BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
             }),
             trace.origin
@@ -310,8 +322,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: FUNGIBLE_PROOF_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                 ident: PROOF_DROP_IDENT.to_string()
             }),
             trace.origin
@@ -333,8 +344,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                 ident: WORKTOP_PUT_IDENT.to_string(),
             }),
             trace.origin
@@ -357,8 +367,7 @@ fn test_instruction_traces() {
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                 ident: WORKTOP_DRAIN_IDENT.to_string(),
             }),
             take_trace.origin
@@ -386,7 +395,7 @@ fn test_instruction_traces() {
 #[test]
 fn test_worktop_changes() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
 
     let fungible_resource = test_runner.create_fungible_resource(100.into(), 18, account);
@@ -399,12 +408,11 @@ fn test_worktop_changes() {
         .withdraw_non_fungibles_from_account(
             account,
             non_fungible_resource,
-            &[
+            [
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
-            ]
-            .into(),
+            ],
         )
         .take_all_from_worktop(fungible_resource, "bucket1")
         .return_to_worktop("bucket1")
@@ -416,15 +424,14 @@ fn test_worktop_changes() {
         .return_to_worktop("bucket4")
         .take_non_fungibles_from_worktop(
             non_fungible_resource,
-            &[
+            [
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(3),
-            ]
-            .into(),
+            ],
             "bucket5",
         )
         .return_to_worktop("bucket5")
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,
@@ -440,6 +447,8 @@ fn test_worktop_changes() {
         let worktop_changes = receipt
             .expect_commit_success()
             .execution_trace
+            .as_ref()
+            .unwrap()
             .worktop_changes();
 
         // Lock fee

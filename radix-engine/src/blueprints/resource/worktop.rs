@@ -1,12 +1,12 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::system::FieldSubstate;
 use crate::system::system_callback::SystemLockData;
+use crate::system::system_substates::FieldSubstate;
 use crate::types::*;
 use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManager};
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, ScryptoSbor)]
@@ -56,13 +56,15 @@ impl WorktopBlueprint {
             LockFlags::MUTABLE,
             SystemLockData::Default,
         )?;
-        let mut worktop_substate: FieldSubstate<WorktopSubstate> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let resources =
-            core::mem::replace(&mut worktop_substate.value.0.resources, BTreeMap::new());
+        let mut worktop = api
+            .kernel_read_substate(handle)?
+            .as_typed::<FieldSubstate<WorktopSubstate>>()
+            .unwrap()
+            .into_payload();
+        let resources = core::mem::replace(&mut worktop.resources, BTreeMap::new());
         api.kernel_write_substate(
             handle,
-            IndexedScryptoValue::from_typed(&FieldSubstate::new_field(worktop_substate)),
+            IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(worktop)),
         )?;
         api.kernel_close_substate(handle)?;
 
@@ -97,7 +99,7 @@ impl WorktopBlueprint {
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
             let worktop_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 WorktopField::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -132,7 +134,7 @@ impl WorktopBlueprint {
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
             let worktop_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 WorktopField::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -181,7 +183,7 @@ impl WorktopBlueprint {
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
             let worktop_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 WorktopField::Worktop.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -224,7 +226,7 @@ impl WorktopBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::MUTABLE,
         )?;
@@ -253,7 +255,7 @@ impl WorktopBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::read_only(),
         )?;
@@ -284,7 +286,7 @@ impl WorktopBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::read_only(),
         )?;
@@ -315,7 +317,7 @@ impl WorktopBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::read_only(),
         )?;
@@ -347,7 +349,7 @@ impl WorktopBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::MUTABLE,
         )?;

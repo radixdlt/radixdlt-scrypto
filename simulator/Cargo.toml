@@ -3,7 +3,7 @@
 
 [package]
 name = "simulator"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 
 [dependencies]
@@ -12,7 +12,6 @@ radix-engine = { path = "../radix-engine" }
 radix-engine-store-interface = { path = "../radix-engine-store-interface" }
 radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] }
 radix-engine-queries = { path = "../radix-engine-queries" }
-radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 transaction = { path = "../transaction" }
 utils = { path = "../utils" }
@@ -26,6 +25,7 @@ cargo_toml = { version = "0.11.5" }
 rand = { version = "0.8.5" }
 regex = { version = "1.5.5" }
 temp-env = { version = "0.2.0" }
+wasm-opt = { version = "0.114.1" }
 
 [[bin]]
 name = "resim"

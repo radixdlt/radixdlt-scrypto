@@ -62,7 +62,7 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Own,
     Type::Own,
     NodeId::LENGTH,
-    OWN_ID,
+    OWN_TYPE,
     own_type_data
 );
 

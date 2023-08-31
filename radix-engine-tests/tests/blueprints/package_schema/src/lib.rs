@@ -186,10 +186,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
-        functions: BlueprintFunctionsSchemaInit {
-            functions,
-            virtual_lazy_load_functions: BTreeMap::default(),
-        },
+        functions: BlueprintFunctionsSchemaInit { functions },
+        hooks: BlueprintHooksInit::default(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(
@@ -213,6 +211,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+        is_transient: false,
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema,

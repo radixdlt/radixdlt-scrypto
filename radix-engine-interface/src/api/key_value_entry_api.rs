@@ -5,6 +5,9 @@ use sbor::rust::prelude::*;
 
 pub type KeyValueEntryHandle = u32;
 
+pub trait KeyValueKeyPayloadMarker {}
+pub trait KeyValueEntryPayloadMarker {}
+
 pub trait ClientKeyValueEntryApi<E> {
     fn key_value_entry_get(&mut self, handle: KeyValueEntryHandle) -> Result<Vec<u8>, E>;
 

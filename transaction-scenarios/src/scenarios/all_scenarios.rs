@@ -28,6 +28,11 @@ impl Iterator for AllScenariosIterator {
             5 => Some(Box::new(|core| {
                 non_fungible_resource::NonFungibleResourceScenarioCreator::create(core)
             })),
+            6 => {
+                Some(Box::new(|core| {
+                    account_authorized_depositors::AccountAuthorizedDepositorsScenarioCreator::create(core)
+                }))
+            }
             _ => None,
         }
     }

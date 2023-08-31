@@ -1,15 +1,24 @@
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::types::*;
+use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 
 #[derive(Debug, Clone)]
+pub struct Event {
+    pub type_identifier: EventTypeIdentifier,
+    pub payload: Vec<u8>,
+    pub flags: EventFlags,
+}
+
+#[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {
+    pub network_definition: NetworkDefinition,
     pub tx_hash: Hash,
     pub next_id: u32,
     pub logs: Vec<(Level, String)>,
-    pub events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+    pub events: Vec<Event>,
     pub replacements: IndexMap<(NodeId, ObjectModuleId), (NodeId, ObjectModuleId)>,
 }
 
@@ -32,8 +41,8 @@ impl TransactionRuntimeModule {
         self.logs.push((level, message))
     }
 
-    pub fn add_event(&mut self, identifier: EventTypeIdentifier, data: Vec<u8>) {
-        self.events.push((identifier, data))
+    pub fn add_event(&mut self, event: Event) {
+        self.events.push(event)
     }
 
     pub fn add_replacement(
@@ -53,28 +62,37 @@ impl TransactionRuntimeModule {
         self,
         is_success: bool,
     ) -> (Vec<(EventTypeIdentifier, Vec<u8>)>, Vec<(Level, String)>) {
-        if !is_success {
-            return (Vec::new(), self.logs);
-        }
+        let mut results = Vec::new();
 
-        let mut events = self.events;
-        for (event_identifier, _) in events.iter_mut() {
-            // Apply replacements
-            let (node_id, module_id) = match event_identifier {
-                EventTypeIdentifier(Emitter::Method(node_id, module_id), _) => (node_id, module_id),
-                EventTypeIdentifier(Emitter::Function(node_id, module_id, _), _) => {
-                    (node_id, module_id)
-                }
-            };
-            if let Some((new_node_id, new_module_id)) =
-                self.replacements.get(&(*node_id, *module_id))
-            {
-                *node_id = *new_node_id;
-                *module_id = *new_module_id;
+        for Event {
+            mut type_identifier,
+            payload,
+            flags,
+        } in self.events.into_iter()
+        {
+            // Revert if failure
+            if !flags.contains(EventFlags::FORCE_WRITE) && !is_success {
+                continue;
             }
+
+            // Apply replacements
+            match &mut type_identifier {
+                EventTypeIdentifier(Emitter::Method(node_id, module_id), _) => {
+                    if let Some((new_node_id, new_module_id)) =
+                        self.replacements.get(&(*node_id, *module_id))
+                    {
+                        *node_id = *new_node_id;
+                        *module_id = *new_module_id;
+                    }
+                }
+                _ => {}
+            };
+
+            // Add to results
+            results.push((type_identifier, payload))
         }
 
-        (events, self.logs)
+        (results, self.logs)
     }
 }
 
@@ -87,6 +105,7 @@ mod tests {
     #[test]
     fn test_ruid_gen() {
         let mut id = TransactionRuntimeModule {
+            network_definition: NetworkDefinition::simulator(),
             tx_hash: Hash::from_str(
                 "71f26aab5eec6679f67c71211aba9a3486cc8d24194d339385ee91ee5ca7b30d",
             )
@@ -102,6 +121,7 @@ mod tests {
         );
 
         let mut id = TransactionRuntimeModule {
+            network_definition: NetworkDefinition::simulator(),
             tx_hash: Hash([0u8; 32]),
             next_id: 5,
             logs: Vec::new(),
@@ -114,6 +134,7 @@ mod tests {
         );
 
         let mut id = TransactionRuntimeModule {
+            network_definition: NetworkDefinition::simulator(),
             tx_hash: Hash([255u8; 32]),
             next_id: 5,
             logs: Vec::new(),

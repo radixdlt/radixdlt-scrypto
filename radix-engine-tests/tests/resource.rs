@@ -12,7 +12,7 @@ use transaction::prelude::*;
 #[ignore]
 fn cannot_get_total_supply_of_xrd() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -34,7 +34,7 @@ fn cannot_get_total_supply_of_xrd() {
 #[test]
 fn test_set_mintable_with_self_resource_address() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -60,7 +60,7 @@ fn test_set_mintable_with_self_resource_address() {
 #[test]
 fn test_resource_manager() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -81,7 +81,7 @@ fn test_resource_manager() {
             "update_resource_metadata",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -95,7 +95,7 @@ fn test_resource_manager() {
 #[test]
 fn mint_with_bad_granularity_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -108,7 +108,7 @@ fn mint_with_bad_granularity_should_fail() {
             "create_fungible_and_mint",
             manifest_args!(0u8, dec!("0.1")),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -131,7 +131,7 @@ fn mint_with_bad_granularity_should_fail() {
 #[test]
 fn create_fungible_too_high_granularity_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let _package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -168,7 +168,7 @@ fn create_fungible_too_high_granularity_should_fail() {
 #[test]
 fn mint_too_much_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -185,7 +185,7 @@ fn mint_too_much_should_fail() {
                 dec!("1461501637330902918203684832717")
             ),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -206,7 +206,7 @@ fn mint_too_much_should_fail() {
 #[test]
 fn can_mint_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
@@ -223,10 +223,10 @@ fn can_mint_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &btreeset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
         )
         .mint_fungible(resource, 1)
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -240,7 +240,7 @@ fn can_mint_with_proof_in_root() {
 #[test]
 fn cannot_mint_in_component_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
@@ -257,10 +257,10 @@ fn cannot_mint_in_component_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &btreeset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
         )
         .call_method(component, "mint", manifest_args!(resource))
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -281,7 +281,7 @@ fn cannot_mint_in_component_with_proof_in_root() {
 #[test]
 fn can_burn_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
@@ -298,7 +298,7 @@ fn can_burn_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &btreeset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
         )
         .mint_fungible(resource, 1)
         .burn_all_from_worktop(resource)
@@ -315,7 +315,7 @@ fn can_burn_with_proof_in_root() {
 #[test]
 fn cannot_burn_in_component_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
@@ -332,7 +332,7 @@ fn cannot_burn_in_component_with_proof_in_root() {
         .create_proof_from_account_of_non_fungibles(
             account,
             admin_token,
-            &btreeset!(NonFungibleLocalId::integer(1)),
+            [NonFungibleLocalId::integer(1)],
         )
         .mint_fungible(resource, 1)
         .take_all_from_worktop(resource, "to_burn")
@@ -359,7 +359,7 @@ fn cannot_burn_in_component_with_proof_in_root() {
 #[test]
 fn test_fungible_resource_amount_for_withdrawal() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -372,7 +372,7 @@ fn test_fungible_resource_amount_for_withdrawal() {
             "fungible_resource_amount_for_withdrawal",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -383,7 +383,7 @@ fn test_fungible_resource_amount_for_withdrawal() {
 #[test]
 fn test_non_fungible_resource_amount_for_withdrawal() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -396,7 +396,7 @@ fn test_non_fungible_resource_amount_for_withdrawal() {
             "non_fungible_resource_amount_for_withdrawal",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -407,7 +407,7 @@ fn test_non_fungible_resource_amount_for_withdrawal() {
 #[test]
 fn test_fungible_resource_take_advanced() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -420,7 +420,7 @@ fn test_fungible_resource_take_advanced() {
             "fungible_resource_take_advanced",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -429,9 +429,97 @@ fn test_fungible_resource_take_advanced() {
 }
 
 #[test]
+fn fungible_bucket_take_advanced_max_should_not_panic() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoundingTest",
+            "fungible_bucket_take_advanced_max",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_failure();
+}
+
+#[test]
+fn fungible_vault_take_advanced_max_should_not_panic() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoundingTest",
+            "fungible_vault_take_advanced_max",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_failure();
+}
+
+#[test]
+fn non_fungible_bucket_take_advanced_max_should_not_panic() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoundingTest",
+            "non_fungible_bucket_take_advanced_max",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_failure();
+}
+
+#[test]
+fn non_fungible_vault_take_advanced_max_should_not_panic() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoundingTest",
+            "non_fungible_vault_take_advanced_max",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_failure();
+}
+
+#[test]
 fn test_non_fungible_resource_take_advanced() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -444,7 +532,7 @@ fn test_non_fungible_resource_take_advanced() {
             "non_fungible_resource_take_advanced",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -455,7 +543,7 @@ fn test_non_fungible_resource_take_advanced() {
 #[test]
 fn can_use_fungible_types_in_interface() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -468,7 +556,7 @@ fn can_use_fungible_types_in_interface() {
             "test_fungible_types",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -479,7 +567,7 @@ fn can_use_fungible_types_in_interface() {
 #[test]
 fn can_use_non_fungible_types_in_interface() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -492,7 +580,7 @@ fn can_use_non_fungible_types_in_interface() {
             "test_non_fungible_types",
             manifest_args!(),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

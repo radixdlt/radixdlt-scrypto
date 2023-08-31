@@ -20,7 +20,7 @@ const PACKAGE_ADDRESS_PLACE_HOLDER: [u8; NodeId::LENGTH] = [
 #[test]
 fn test_static_package_address() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address1 =
         test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
 
@@ -58,7 +58,7 @@ fn test_static_package_address() {
 #[test]
 fn test_static_component_address() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
     let (key, _priv, account) = test_runner.new_account(false);
 
@@ -90,7 +90,7 @@ const PRE_ALLOCATED_PACKAGE: [u8; NodeId::LENGTH] = [
 #[test]
 fn static_component_should_be_callable() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE);
     test_runner
         .compile_and_publish_at_address("./tests/blueprints/static_dependencies", package_address);
@@ -139,7 +139,7 @@ const PRE_ALLOCATED_RESOURCE: [u8; NodeId::LENGTH] = [
 #[test]
 fn static_resource_should_be_callable() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(false);
     let receipt = test_runner.execute_system_transaction_with_preallocated_addresses(
         vec![
@@ -203,7 +203,7 @@ fn static_resource_should_be_callable() {
 #[test]
 fn static_package_should_be_callable() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     test_runner.compile_and_publish_at_address(
         "./tests/blueprints/static_dependencies",
         PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE),

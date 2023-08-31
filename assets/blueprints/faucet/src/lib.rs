@@ -29,7 +29,7 @@ mod faucet {
             .globalize()
         }
 
-        /// Gives away tokens.
+        /// Gives away tokens
         pub fn free(&mut self) -> Bucket {
             let transaction_hash = Runtime::transaction_hash();
             let epoch = Runtime::current_epoch();
@@ -38,10 +38,8 @@ mod faucet {
             self.vault.take(10000)
         }
 
-        /// Locks fees.
+        /// Locks fee
         pub fn lock_fee(&mut self, amount: Decimal) {
-            // There is MAX_COST_UNIT_LIMIT and COST_UNIT_PRICE which limit how much fee can be spent
-            // per transaction, thus no further limitation is applied.
             self.vault.as_fungible().lock_fee(amount);
         }
     }

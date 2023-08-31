@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, LockFlags, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 
@@ -18,11 +18,15 @@ impl FungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_open_field(
-            OBJECT_HANDLE_OUTER_OBJECT,
+            ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
-        let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
+        let divisibility: u8 = api
+            .field_read_typed::<FungibleResourceManagerDivisibilityFieldPayload>(
+                divisibility_handle,
+            )?
+            .into_latest();
         api.field_close(divisibility_handle)?;
         Ok(divisibility)
     }
@@ -42,9 +46,40 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        // Take
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            FungibleBucketField::Liquid.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut liquid: LiquidFungibleResource = api.field_read_typed(handle)?;
+
+        // Early exit if input amount is obviously wrong
+        // This is to prevent for_withdrawal from overflowing in case a bad amount is sent in
+        {
+            if amount.is_negative() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::InvalidAmount),
+                ));
+            }
+            let bucket_amount_plus_one = liquid
+                .amount()
+                .safe_add(Decimal::ONE)
+                .ok_or_else(|| BucketError::DecimalOverflow)?;
+            if amount > bucket_amount_plus_one {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::ResourceError(
+                        ResourceError::InsufficientBalance,
+                    )),
+                ));
+            }
+        }
+
         // Apply withdraw strategy
         let divisibility = Self::get_divisibility(api)?;
-        let amount = amount.for_withdrawal(divisibility, withdraw_strategy);
+        let amount = amount
+            .for_withdrawal(divisibility, withdraw_strategy)
+            .ok_or(BucketError::DecimalOverflow)?;
 
         // Check amount
         if !(check_fungible_amount(&amount, divisibility)) {
@@ -53,19 +88,12 @@ impl FungibleBucketBlueprint {
             ));
         }
 
-        // Take
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            FungibleBucketField::Liquid.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut substate: LiquidFungibleResource = api.field_read_typed(handle)?;
-        let taken = substate.take_by_amount(amount).map_err(|e| {
+        let taken = liquid.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
         })?;
-        api.field_write_typed(handle, &substate)?;
+        api.field_write_typed(handle, &liquid)?;
         api.field_close(handle)?;
 
         // Create node
@@ -84,7 +112,7 @@ impl FungibleBucketBlueprint {
 
         // Put
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
@@ -100,15 +128,19 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        Ok(Self::liquid_amount(api)? + Self::locked_amount(api)?)
+        Self::liquid_amount(api)?
+            .safe_add(Self::locked_amount(api)?)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::DecimalOverflow),
+            ))
     }
 
     pub fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
+            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
 
         Ok(resource_address)
     }
@@ -144,10 +176,10 @@ impl FungibleBucketBlueprint {
         })?;
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof_evidence),
-            ],
+            btreemap! {
+                0u8 => FieldValue::new(&proof_info),
+                1u8 => FieldValue::new(&proof_evidence),
+            },
         )?;
 
         Ok(Proof(Own(proof_id)))
@@ -169,7 +201,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
@@ -178,7 +210,11 @@ impl FungibleBucketBlueprint {
 
         // Take from liquid if needed
         if amount > max_locked {
-            let delta = amount - max_locked;
+            let delta = amount
+                .safe_sub(max_locked)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::DecimalOverflow),
+                ))?;
             Self::internal_take(delta, api)?;
         }
 
@@ -196,7 +232,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
@@ -213,7 +249,11 @@ impl FungibleBucketBlueprint {
 
         api.field_write_typed(handle, &locked)?;
 
-        let delta = max_locked - locked.amount();
+        let delta = max_locked
+            .safe_sub(locked.amount())
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::DecimalOverflow),
+            ))?;
         Self::internal_put(LiquidFungibleResource::new(delta), api)
     }
 
@@ -226,7 +266,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
         )?;
@@ -241,7 +281,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::read_only(),
         )?;
@@ -259,7 +299,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
@@ -283,7 +323,7 @@ impl FungibleBucketBlueprint {
         }
 
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;

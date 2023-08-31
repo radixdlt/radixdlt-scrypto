@@ -1,19 +1,18 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::type_info::TypeInfoBlueprint;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::FieldSubstate;
+use crate::system::type_info::TypeInfoBlueprint;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::NativeFungibleBucket;
 use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
 use native_sdk::runtime::LocalAuthZone;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
@@ -59,12 +58,13 @@ pub enum TransactionProcessorError {
     InvalidPackageSchema(DecodeError),
     NotPackageAddress(NodeId),
     NotGlobalAddress(NodeId),
+    AuthZoneIsEmpty,
 }
 
 pub struct TransactionProcessorBlueprint;
 
 macro_rules! handle_call_method {
-    ($module_id:expr, $node_id:expr, $direct_access:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
+    ($node_id:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
         let mut processor_with_api = TransactionProcessorWithApi {
             worktop: $worktop,
             processor: $processor,
@@ -73,9 +73,50 @@ macro_rules! handle_call_method {
         let scrypto_value = transform($args, &mut processor_with_api)?;
         $processor = processor_with_api.processor;
 
-        let rtn = $api.call_method_advanced(
+        let rtn = $api.call_method(
             $node_id,
-            $direct_access,
+            &$method_name,
+            scrypto_encode(&scrypto_value).unwrap(),
+        )?;
+        let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+        $processor.handle_call_return_data(&result, &$worktop, $api)?;
+        InstructionOutput::CallReturn(result.into())
+    }};
+}
+
+macro_rules! handle_call_direct_method {
+    ($node_id:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
+        let mut processor_with_api = TransactionProcessorWithApi {
+            worktop: $worktop,
+            processor: $processor,
+            api: $api,
+        };
+        let scrypto_value = transform($args, &mut processor_with_api)?;
+        $processor = processor_with_api.processor;
+
+        let rtn = $api.call_direct_access_method(
+            $node_id,
+            &$method_name,
+            scrypto_encode(&scrypto_value).unwrap(),
+        )?;
+        let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+        $processor.handle_call_return_data(&result, &$worktop, $api)?;
+        InstructionOutput::CallReturn(result.into())
+    }};
+}
+
+macro_rules! handle_call_module_method {
+    ($module_id:expr, $node_id:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
+        let mut processor_with_api = TransactionProcessorWithApi {
+            worktop: $worktop,
+            processor: $processor,
+            api: $api,
+        };
+        let scrypto_value = transform($args, &mut processor_with_api)?;
+        $processor = processor_with_api.processor;
+
+        let rtn = $api.call_module_method(
+            $node_id,
             $module_id,
             &$method_name,
             scrypto_encode(&scrypto_value).unwrap(),
@@ -103,22 +144,24 @@ impl TransactionProcessorBlueprint {
             worktop_node_id,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
-                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(WorktopSubstate::new()))
+                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(WorktopSubstate::new()))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
-                        global: false,
-
-                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
-                        version: BlueprintVersion::default(),
-
-                        instance_schema: None,
-                        blueprint_info: ObjectBlueprintInfo::default(),
-                        features: btreeset!(),
+                        blueprint_info: BlueprintInfo {
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                            blueprint_version: BlueprintVersion::default(),
+                            generic_substitutions: Vec::new(),
+                            outer_obj_info: OuterObjectInfo::default(),
+                            features: btreeset!(),
+                        },
+                        object_type: ObjectType::Owned,
                     })
                 )
             ),
         )?;
+        api.kernel_pin_node(worktop_node_id)?;
+
         let worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)
             .map_err(|e| {
@@ -186,16 +229,12 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 InstructionV1::PopFromAuthZone {} => {
-                    let proof = LocalAuthZone::pop(api)?;
+                    let proof = LocalAuthZone::pop(api)?.ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::AuthZoneIsEmpty,
+                        ),
+                    ))?;
                     processor.create_manifest_proof(proof)?;
-                    InstructionOutput::None
-                }
-                InstructionV1::ClearAuthZone => {
-                    LocalAuthZone::clear(api)?;
-                    InstructionOutput::None
-                }
-                InstructionV1::ClearSignatureProofs => {
-                    LocalAuthZone::clear_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::PushToAuthZone { proof_id } => {
@@ -246,6 +285,18 @@ impl TransactionProcessorBlueprint {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof_of_all(api)?;
                     processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneProofs => {
+                    LocalAuthZone::drop_proofs(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneRegularProofs => {
+                    LocalAuthZone::drop_regular_proofs(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneSignatureProofs => {
+                    LocalAuthZone::drop_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::BurnResource { bucket_id } => {
@@ -300,9 +351,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
-                        ObjectModuleId::Main,
                         address.as_node_id(),
-                        false,
                         method_name,
                         args,
                         worktop,
@@ -316,10 +365,9 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_method!(
-                        ObjectModuleId::Royalty,
+                    handle_call_module_method!(
+                        ModuleId::Royalty,
                         address.as_node_id(),
-                        false,
                         method_name,
                         args,
                         worktop,
@@ -333,10 +381,9 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_method!(
-                        ObjectModuleId::Metadata,
+                    handle_call_module_method!(
+                        ModuleId::Metadata,
                         address.as_node_id(),
-                        false,
                         method_name,
                         args,
                         worktop,
@@ -344,16 +391,15 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                InstructionV1::CallAccessRulesMethod {
+                InstructionV1::CallRoleAssignmentMethod {
                     address,
                     method_name,
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_method!(
-                        ObjectModuleId::AccessRules,
+                    handle_call_module_method!(
+                        ModuleId::RoleAssignment,
                         address.as_node_id(),
-                        false,
                         method_name,
                         args,
                         worktop,
@@ -366,10 +412,8 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    handle_call_method!(
-                        ObjectModuleId::Main,
+                    handle_call_direct_method!(
                         address.as_node_id(),
-                        true,
                         method_name,
                         args,
                         worktop,
@@ -377,15 +421,19 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                InstructionV1::DropAllProofs => {
-                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
-                    // the former will drop all named proofs before clearing the auth zone.
-
+                InstructionV1::DropNamedProofs => {
                     for (_, real_id) in processor.proof_mapping.drain(..) {
                         let proof = Proof(Own(real_id));
                         proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
-                    LocalAuthZone::clear(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAllProofs => {
+                    for (_, real_id) in processor.proof_mapping.drain(..) {
+                        let proof = Proof(Own(real_id));
+                        proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
+                    }
+                    LocalAuthZone::drop_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::AllocateGlobalAddress {
@@ -607,8 +655,8 @@ impl TransactionProcessor {
             let info = TypeInfoBlueprint::get_type(node_id, api)?;
             match info {
                 TypeInfoSubstate::Object(info) => match (
-                    info.blueprint_id.package_address,
-                    info.blueprint_id.blueprint_name.as_str(),
+                    info.blueprint_info.blueprint_id.package_address,
+                    info.blueprint_info.blueprint_id.blueprint_name.as_str(),
                 ) {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                     | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {

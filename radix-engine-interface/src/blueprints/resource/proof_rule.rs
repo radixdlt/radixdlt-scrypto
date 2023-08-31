@@ -166,3 +166,41 @@ impl From<AccessRuleNode> for AccessRule {
         AccessRule::Protected(value)
     }
 }
+
+pub trait AccessRuleVisitor {
+    type Error;
+    fn visit(&mut self, node: &AccessRuleNode, depth: usize) -> Result<(), Self::Error>;
+}
+
+impl AccessRule {
+    pub fn dfs_traverse_nodes<V: AccessRuleVisitor>(
+        &self,
+        visitor: &mut V,
+    ) -> Result<(), V::Error> {
+        match self {
+            AccessRule::Protected(node) => node.dfs_traverse_recursive(visitor, 0),
+            _ => Ok(()),
+        }
+    }
+}
+
+impl AccessRuleNode {
+    fn dfs_traverse_recursive<V: AccessRuleVisitor>(
+        &self,
+        visitor: &mut V,
+        depth: usize,
+    ) -> Result<(), V::Error> {
+        visitor.visit(self, depth)?;
+
+        match self {
+            AccessRuleNode::ProofRule(..) => {}
+            AccessRuleNode::AnyOf(nodes) | AccessRuleNode::AllOf(nodes) => {
+                for node in nodes {
+                    node.dfs_traverse_recursive(visitor, depth + 1)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+}

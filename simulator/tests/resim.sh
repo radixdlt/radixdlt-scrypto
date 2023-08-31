@@ -39,16 +39,11 @@ if [[ ${ledger_state} != *"2023-01-27T13:01:00Z"* ]];then
 fi
 
 # Test - show account
-# TODO: renable after showing resource metadata in component dump
-# account_dump=`$resim show $account`
-# if [[ ${account_dump} != *"XRD"* ]];then
-#     echo "XRD not present!"
-#     exit 1
-# fi
-# if [[ ${account_dump} != *"Owner Badge"* ]];then
-#     echo "Owner badge not present!"
-#     exit 1
-# fi
+account_dump=`$resim show $account`
+if [[ ${account_dump} != *"XRD"* ]];then
+    echo "XRD not present!"
+    exit 1
+fi
 
 # Test - create fixed supply badge
 minter_badge=`$resim new-badge-fixed 1 --name 'MinterBadge' | awk '/Resource:/ {print $NF}'`
@@ -59,11 +54,11 @@ token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print 
 # Test - transfer non fungible
 non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
 non_fungible_global_id=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
-$resim call-method $account2 try_deposit_or_abort "$non_fungible_global_id"
+$resim transfer "$non_fungible_global_id" $account2
 
 # Test - mint and transfer (Mintable that requires a `ResourceAddress`)
 $resim mint 777 $token_address --proofs $minter_badge:1
-$resim transfer 111 $token_address $account2
+$resim transfer $token_address:111 $account2
 
 # Test - publish, call-function and call-method and non-fungibles
 owner_badge=`$resim new-simple-badge --name 'OwnerBadge' | awk '/NonFungibleGlobalId:/ {print $NF}'`
@@ -113,7 +108,7 @@ superadmin_badge=`echo $resources | cut -d " " -f3`
 token=`echo $resources | cut -d " " -f4`
 
 $resim call-method $component organizational_authenticated_method --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
-$resim transfer 2 $token $account2 --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
+$resim transfer $token:2 $account2 --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
 $resim mint 100000 $token --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
 
 # Test - math types and numbers

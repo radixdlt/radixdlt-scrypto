@@ -1,4 +1,3 @@
-use radix_engine::transaction::CommitResult;
 use radix_engine::{transaction::BalanceChange, types::*};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -7,7 +6,7 @@ use transaction::prelude::*;
 #[test]
 fn test_balance_changes_when_success() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -54,36 +53,45 @@ fn test_balance_changes_when_success() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let result = receipt.expect_commit(true);
+    let result = receipt.expect_commit_success();
 
-    assert_eq!(result.balance_changes().len(), 5usize);
     assert_eq!(
-        result.balance_changes(),
-        &indexmap!(
-            test_runner.faucet_component().into() => indexmap!(
-                XRD => BalanceChange::Fungible(-(result.fee_summary.total_cost()))
-            ),
-            account.into() => indexmap!(
-                XRD => BalanceChange::Fungible(dec!("-1"))
-            ),
-            component_address.into() => indexmap!(
-                XRD => BalanceChange::Fungible(dec!("2")) // 1 for put another 1 for component royalties
-            ),
-            package_address.into() => indexmap!(
-                XRD => BalanceChange::Fungible(dec!("2"))
-            ),
-            CONSENSUS_MANAGER.into() => indexmap!(
-                XRD => BalanceChange::Fungible(result.fee_summary.expected_reward_if_single_validator())
-            )
+        test_runner
+            .sum_descendant_balance_changes(result, test_runner.faucet_component().as_node_id()),
+        indexmap!(
+            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap())
         )
     );
-    assert!(result.direct_vault_updates().is_empty());
+    assert_eq!(
+        test_runner.sum_descendant_balance_changes(result, account.as_node_id()),
+        indexmap!(
+            XRD => BalanceChange::Fungible(dec!("-1"))
+        )
+    );
+    assert_eq!(
+        test_runner.sum_descendant_balance_changes(result, component_address.as_node_id()),
+        indexmap!(
+            XRD => BalanceChange::Fungible(dec!("2")) // 1 for put another 1 for component royalties
+        )
+    );
+    assert_eq!(
+        test_runner.sum_descendant_balance_changes(result, package_address.as_node_id()),
+        indexmap!(
+            XRD => BalanceChange::Fungible(dec!("2"))
+        )
+    );
+    assert_eq!(
+        test_runner.sum_descendant_balance_changes(result, CONSENSUS_MANAGER.as_node_id()),
+        indexmap!(
+            XRD => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
+        )
+    );
 }
 
 #[test]
 fn test_balance_changes_when_failure() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -130,25 +138,27 @@ fn test_balance_changes_when_failure() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let result = receipt.expect_commit(false);
-    assert!(result.direct_vault_updates().is_empty());
+    let result = receipt.expect_commit_failure();
+
     assert_eq!(
-        result.balance_changes(),
-        &indexmap!(
-            test_runner.faucet_component().into() => indexmap!(
-                XRD => BalanceChange::Fungible(-(result.fee_summary.total_cost()))
-            ),
-            CONSENSUS_MANAGER.into() => indexmap!(
-                XRD => BalanceChange::Fungible(result.fee_summary.expected_reward_if_single_validator())
-            )
+        test_runner
+            .sum_descendant_balance_changes(result, test_runner.faucet_component().as_node_id(),),
+        indexmap!(
+            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap() )
         )
-    )
+    );
+    assert_eq!(
+        test_runner.sum_descendant_balance_changes(result, CONSENSUS_MANAGER.as_node_id()),
+        indexmap!(
+            XRD => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
+        )
+    );
 }
 
 #[test]
 fn test_balance_changes_when_recall() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 
@@ -163,40 +173,44 @@ fn test_balance_changes_when_recall() {
             InternalAddress::new_or_panic(vault_id.into()),
             Decimal::one(),
         )
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let result = receipt.expect_commit(true);
+    let result = receipt.expect_commit_success();
+
     assert_eq!(
-        result.balance_changes(),
-        &indexmap!(
-            test_runner.faucet_component().into() => indexmap!(
-                XRD => BalanceChange::Fungible(-(result.fee_summary.total_cost()))
-            ),
-            other_account.into() => indexmap!(
-                recallable_token => BalanceChange::Fungible(dec!(1))
-            ),
-            CONSENSUS_MANAGER.into() => indexmap!(
-                XRD => BalanceChange::Fungible(result.fee_summary.expected_reward_if_single_validator())
-            )
+        test_runner
+            .sum_descendant_balance_changes(result, test_runner.faucet_component().as_node_id()),
+        indexmap!(
+            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap() )
         )
     );
     assert_eq!(
-        result.direct_vault_updates(),
-        &indexmap!(
-            vault_id => indexmap!(
-                recallable_token => BalanceChange::Fungible(dec!("-1"))
-            )
+        test_runner.sum_descendant_balance_changes(result, other_account.as_node_id()),
+        indexmap!(
+            recallable_token => BalanceChange::Fungible(dec!(1))
         )
-    )
+    );
+    assert_eq!(
+        test_runner.sum_descendant_balance_changes(result, CONSENSUS_MANAGER.as_node_id()),
+        indexmap!(
+            XRD => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
+        )
+    );
+    assert_eq!(
+        test_runner.sum_descendant_balance_changes(result, account.as_node_id()),
+        indexmap!(
+            recallable_token => BalanceChange::Fungible(dec!("-1"))
+        )
+    );
 }
 
 #[test]
 fn test_balance_changes_when_transferring_non_fungibles() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 
@@ -206,69 +220,50 @@ fn test_balance_changes_when_transferring_non_fungibles() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, dec!("1.0"))
-        .try_deposit_batch_or_abort(other_account)
+        .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
-    let result = receipt.expect_commit(true);
+    let result = receipt.expect_commit_success();
 
-    assert_eq!(
-        result
-            .balance_changes()
-            .keys()
-            .cloned()
-            .collect::<HashSet<GlobalAddress>>(),
-        hashset![
-            account.into(),
-            other_account.into(),
-            test_runner.faucet_component().into(),
-            CONSENSUS_MANAGER.into(),
-        ]
-    );
-
-    let (account_added, account_removed) =
-        get_non_fungible_changes(result, &account, &resource_address);
+    let BalanceChange::NonFungible {
+        added: account_added,
+        removed: account_removed,
+    } = test_runner
+        .sum_descendant_balance_changes(result, account.as_node_id())
+        .get(&resource_address)
+        .unwrap()
+        .clone()
+    else {
+        panic!("must be non-fungible")
+    };
     assert_eq!(account_added, BTreeSet::new());
     assert_eq!(account_removed.len(), 1);
     let transferred_non_fungible = account_removed.first().unwrap().clone();
 
-    let (other_account_added, other_account_removed) =
-        get_non_fungible_changes(result, &other_account, &resource_address);
+    let BalanceChange::NonFungible {
+        added: other_account_added,
+        removed: other_account_removed,
+    } = test_runner
+        .sum_descendant_balance_changes(result, other_account.as_node_id())
+        .get(&resource_address)
+        .unwrap()
+        .clone()
+    else {
+        panic!("must be non-fungible")
+    };
     assert_eq!(other_account_added, btreeset!(transferred_non_fungible));
     assert_eq!(other_account_removed, BTreeSet::new());
 
-    let faucet_changes = result
-        .balance_changes()
-        .get(&GlobalAddress::from(test_runner.faucet_component()))
-        .unwrap();
-    let total_cost_xrd = result.fee_summary.total_cost();
+    let faucet_changes = test_runner
+        .sum_descendant_balance_changes(result, test_runner.faucet_component().as_node_id());
+    let total_cost_in_xrd = receipt.fee_summary.total_cost();
     assert_eq!(
         faucet_changes,
-        &indexmap!(
-            XRD => BalanceChange::Fungible(-total_cost_xrd),
+        indexmap!(
+            XRD => BalanceChange::Fungible(total_cost_in_xrd.safe_neg().unwrap()),
         ),
     );
-
-    assert!(result.direct_vault_updates().is_empty())
-}
-
-fn get_non_fungible_changes(
-    result: &CommitResult,
-    account: &ComponentAddress,
-    resource_address: &ResourceAddress,
-) -> (BTreeSet<NonFungibleLocalId>, BTreeSet<NonFungibleLocalId>) {
-    let balance_change = result
-        .balance_changes()
-        .get(&GlobalAddress::from(account.clone()))
-        .unwrap()
-        .get(resource_address)
-        .unwrap();
-    let account_changes = if let BalanceChange::NonFungible { added, removed } = balance_change {
-        Some((added.clone(), removed.clone()))
-    } else {
-        None
-    };
-    account_changes.unwrap()
 }

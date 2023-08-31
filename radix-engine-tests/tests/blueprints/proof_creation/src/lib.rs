@@ -164,7 +164,7 @@ mod pc {
                 LocalAuthZone::create_proof_of_amount(2, bucket.resource_address()).skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            LocalAuthZone::clear();
+            LocalAuthZone::drop_proofs();
             bucket.burn();
         }
         pub fn create_proof_from_fungible_auth_zone_of_non_fungibles() {
@@ -179,7 +179,7 @@ mod pc {
             .skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            LocalAuthZone::clear();
+            LocalAuthZone::drop_proofs();
             bucket.burn();
         }
         pub fn create_proof_from_fungible_auth_zone_of_all() {
@@ -188,7 +188,7 @@ mod pc {
                 LocalAuthZone::create_proof_of_all(bucket.resource_address()).skip_checking();
             assert_eq!(proof.amount(), dec!(100));
             proof.drop();
-            LocalAuthZone::clear();
+            LocalAuthZone::drop_proofs();
             bucket.burn();
         }
 
@@ -198,7 +198,7 @@ mod pc {
                 LocalAuthZone::create_proof_of_all(bucket.resource_address()).skip_checking();
             assert_eq!(proof.amount(), dec!(1));
             proof.drop();
-            LocalAuthZone::clear();
+            LocalAuthZone::drop_proofs();
             bucket.burn();
         }
         pub fn create_proof_from_non_fungible_auth_zone_of_amount() {
@@ -207,7 +207,7 @@ mod pc {
                 LocalAuthZone::create_proof_of_amount(2, bucket.resource_address()).skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            LocalAuthZone::clear();
+            LocalAuthZone::drop_proofs();
             bucket.burn();
         }
         pub fn create_proof_from_non_fungible_auth_zone_of_non_fungibles() {
@@ -222,7 +222,7 @@ mod pc {
             .skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            LocalAuthZone::clear();
+            LocalAuthZone::drop_proofs();
             bucket.burn();
         }
         pub fn create_proof_from_non_fungible_auth_zone_of_all() {
@@ -231,7 +231,7 @@ mod pc {
                 LocalAuthZone::create_proof_of_all(bucket.resource_address()).skip_checking();
             assert_eq!(proof.amount(), dec!(3));
             proof.drop();
-            LocalAuthZone::clear();
+            LocalAuthZone::drop_proofs();
             bucket.burn();
         }
 
@@ -246,6 +246,7 @@ mod pc {
                     burner_updater => AccessRule::DenyAll;
                 })
                 .mint_initial_supply(100)
+                .into()
         }
 
         pub fn create_non_fungible_bucket() -> Bucket {
@@ -274,6 +275,7 @@ mod pc {
                         },
                     ),
                 ])
+                .into()
         }
 
         pub fn create_fungible_vault() -> Vault {

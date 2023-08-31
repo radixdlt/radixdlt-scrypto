@@ -1,17 +1,25 @@
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::actor::Actor;
+use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
+use crate::kernel::kernel_callback_api::{
+    CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent, OpenSubstateEvent,
+    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
+    SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::{NodeSubstates, StoreAccess, StoreAccessInfo};
+use crate::track::interface::IOAccess;
 use crate::types::*;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {
+    MaxSubstateKeySizeExceeded(usize),
     MaxSubstateSizeExceeded(usize),
     MaxInvokePayloadSizeExceeded(usize),
     MaxCallDepthLimitReached,
-    TooManyEntriesInTrack,
+    TrackSubstateSizeExceeded { actual: usize, max: usize },
+    HeapSubstateSizeExceeded { actual: usize, max: usize },
     LogSizeTooLarge { actual: usize, max: usize },
     EventSizeTooLarge { actual: usize, max: usize },
     PanicMessageSizeTooLarge { actual: usize, max: usize },
@@ -20,9 +28,10 @@ pub enum TransactionLimitsError {
 }
 
 pub struct TransactionLimitsConfig {
-    pub max_number_of_substates_in_track: usize,
-    pub max_number_of_substates_in_heap: usize, // FIXME: enforce this limits in heap!
-    pub max_substate_size: usize,
+    pub max_heap_substate_total_bytes: usize,
+    pub max_track_substate_total_bytes: usize,
+    pub max_substate_key_size: usize,
+    pub max_substate_value_size: usize,
     pub max_invoke_payload_size: usize,
     pub max_event_size: usize,
     pub max_log_size: usize,
@@ -33,20 +42,20 @@ pub struct TransactionLimitsConfig {
 
 /// Tracks and verifies transaction limits during transactino execution,
 /// if exceeded breaks execution with appropriate error.
-/// Default limits values are defined in radix-engine-constants lib.
+/// Default limits values are defined in radix-engine-common/constants.
 /// Stores boundary values of the limits and returns them in transaction receipt.
 pub struct LimitsModule {
     config: TransactionLimitsConfig,
-    number_of_substates_in_track: usize,
-    _number_of_substates_in_heap: usize,
+    heap_substate_total_bytes: usize,
+    track_substate_total_bytes: usize,
 }
 
 impl LimitsModule {
     pub fn new(limits_config: TransactionLimitsConfig) -> Self {
         LimitsModule {
             config: limits_config,
-            number_of_substates_in_track: 0,
-            _number_of_substates_in_heap: 0,
+            heap_substate_total_bytes: 0,
+            track_substate_total_bytes: 0,
         }
     }
 
@@ -54,35 +63,90 @@ impl LimitsModule {
         &self.config
     }
 
-    pub fn process_store_access(
-        &mut self,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        for access in store_access {
-            match access {
-                StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
-                StoreAccess::NewEntryInTrack => {
-                    self.number_of_substates_in_track += 1;
+    pub fn process_substate_key(&mut self, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
+        let len = match substate_key {
+            SubstateKey::Map(map_key) => map_key.len(),
+            SubstateKey::Sorted((_sort_key, map_key)) => map_key.len() + 2,
+            SubstateKey::Field(_field_key) => 1,
+        };
+
+        if len > self.config.max_substate_key_size {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxSubstateKeySizeExceeded(len),
+                ),
+            ));
+        }
+
+        Ok(())
+    }
+
+    pub fn process_io_access(&mut self, io_access: &IOAccess) -> Result<(), RuntimeError> {
+        match io_access {
+            IOAccess::ReadFromDb(..) | IOAccess::ReadFromDbNotFound(..) => {}
+
+            IOAccess::HeapSubstateUpdated {
+                canonical_substate_key,
+                old_size,
+                new_size,
+            } => {
+                if old_size.is_none() {
+                    self.heap_substate_total_bytes += canonical_substate_key.logical_size();
                 }
+                if new_size.is_none() {
+                    self.heap_substate_total_bytes -= canonical_substate_key.logical_size();
+                }
+
+                self.heap_substate_total_bytes += new_size.unwrap_or_default();
+                self.heap_substate_total_bytes -= old_size.unwrap_or_default();
+            }
+            IOAccess::TrackSubstateUpdated {
+                canonical_substate_key,
+                old_size,
+                new_size,
+            } => {
+                if old_size.is_none() {
+                    self.track_substate_total_bytes += canonical_substate_key.logical_size();
+                }
+                if new_size.is_none() {
+                    self.track_substate_total_bytes -= canonical_substate_key.logical_size();
+                }
+
+                self.track_substate_total_bytes += new_size.unwrap_or_default();
+                self.track_substate_total_bytes -= old_size.unwrap_or_default();
             }
         }
 
-        if self.number_of_substates_in_track > self.config.max_number_of_substates_in_track {
-            Err(RuntimeError::SystemModuleError(
+        if self.heap_substate_total_bytes > self.config.max_heap_substate_total_bytes {
+            return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::TooManyEntriesInTrack,
+                    TransactionLimitsError::HeapSubstateSizeExceeded {
+                        actual: self.heap_substate_total_bytes,
+                        max: self.config.max_heap_substate_total_bytes,
+                    },
                 ),
-            ))
-        } else {
-            Ok(())
+            ));
         }
+
+        if self.track_substate_total_bytes > self.config.max_track_substate_total_bytes {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
+                    TransactionLimitsError::TrackSubstateSizeExceeded {
+                        actual: self.track_substate_total_bytes,
+                        max: self.config.max_track_substate_total_bytes,
+                    },
+                ),
+            ));
+        }
+
+        Ok(())
     }
 }
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation,
+        invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         // Check depth
         let current_depth = api.kernel_get_current_depth();
@@ -108,16 +172,125 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        _node_id: &NodeId,
-        node_substates: &NodeSubstates,
+        event: &CreateNodeEvent,
+    ) -> Result<(), RuntimeError> {
+        let limits = &mut api.kernel_get_system().modules.limits;
+
+        match event {
+            CreateNodeEvent::Start(_node_id, node_substates) => {
+                let max_substate_value_size = limits.config.max_substate_value_size;
+                for partitions in node_substates.values() {
+                    for (key, value) in partitions {
+                        if value.len() > max_substate_value_size {
+                            return Err(RuntimeError::SystemModuleError(
+                                SystemModuleError::TransactionLimitsError(
+                                    TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
+                                ),
+                            ));
+                        }
+
+                        limits.process_substate_key(key)?;
+                    }
+                }
+            }
+            CreateNodeEvent::IOAccess(io_access) => {
+                limits.process_io_access(io_access)?;
+            }
+            CreateNodeEvent::End(..) => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &DropNodeEvent,
+    ) -> Result<(), RuntimeError> {
+        let limits = &mut api.kernel_get_system().modules.limits;
+
+        match event {
+            DropNodeEvent::IOAccess(io_access) => {
+                limits.process_io_access(io_access)?;
+            }
+            DropNodeEvent::Start(..) | DropNodeEvent::End(..) => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_move_module<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &MoveModuleEvent,
+    ) -> Result<(), RuntimeError> {
+        match event {
+            MoveModuleEvent::IOAccess(io_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_io_access(io_access)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &OpenSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        match event {
+            OpenSubstateEvent::Start { substate_key, .. } => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_substate_key(substate_key)?;
+            }
+            OpenSubstateEvent::IOAccess(io_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_io_access(io_access)?;
+            }
+            OpenSubstateEvent::End { .. } => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &ReadSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        match event {
+            ReadSubstateEvent::IOAccess(io_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_io_access(io_access)?;
+            }
+            ReadSubstateEvent::OnRead { .. } => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
         let limits = &mut api.kernel_get_system().modules.limits.config;
 
-        for partitions in node_substates.values() {
-            for (_, value) in partitions {
-                if value.len() > limits.max_substate_size {
+        match event {
+            WriteSubstateEvent::IOAccess(io_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_io_access(io_access)?;
+            }
+            WriteSubstateEvent::Start { value, .. } => {
+                if value.len() > limits.max_substate_value_size {
                     return Err(RuntimeError::SystemModuleError(
                         SystemModuleError::TransactionLimitsError(
                             TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
@@ -130,117 +303,77 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _node_id: &NodeId,
-        _total_substate_size: usize,
-        store_access: &StoreAccessInfo,
+    fn on_set_substate(
+        system: &mut SystemConfig<V>,
+        event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    #[inline(always)]
-    fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _src_node_id: &NodeId,
-        _dest_node_id: &NodeId,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _handle: LockHandle,
-        _node_id: &NodeId,
-        store_access: &StoreAccessInfo,
-        _value_size: usize,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _lock_handle: LockHandle,
-        _value_size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _lock_handle: LockHandle,
-        value_size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        let limits = &mut api.kernel_get_system().modules.limits.config;
-
-        if value_size > limits.max_substate_size {
-            return Err(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxSubstateSizeExceeded(value_size),
-                ),
-            ));
+        match event {
+            SetSubstateEvent::Start(_node_id, _partition_num, substate_key, ..) => {
+                system.modules.limits.process_substate_key(substate_key)?;
+            }
+            SetSubstateEvent::IOAccess(io_access) => {
+                system.modules.limits.process_io_access(io_access)?;
+            }
         }
 
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
+        Ok(())
     }
 
-    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
+    fn on_remove_substate(
+        system: &mut SystemConfig<V>,
+        event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
+        match event {
+            RemoveSubstateEvent::Start(_node_id, _partition_num, substate_key) => {
+                system.modules.limits.process_substate_key(substate_key)?;
+            }
+            RemoveSubstateEvent::IOAccess(io_access) => {
+                system.modules.limits.process_io_access(io_access)?;
+            }
+        }
+
+        Ok(())
     }
 
-    fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
+    fn on_scan_keys(
+        system: &mut SystemConfig<V>,
+        event: &ScanKeysEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
+        match event {
+            ScanKeysEvent::IOAccess(io_access) => {
+                system.modules.limits.process_io_access(io_access)?;
+            }
+            ScanKeysEvent::Start => {}
+        }
+
+        Ok(())
     }
 
-    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _value_size: usize,
-        store_access: &StoreAccessInfo,
+    fn on_drain_substates(
+        system: &mut SystemConfig<V>,
+        event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
+        match event {
+            DrainSubstatesEvent::IOAccess(io_access) => {
+                system.modules.limits.process_io_access(io_access)?;
+            }
+            DrainSubstatesEvent::Start(_) => {}
+        }
+
+        Ok(())
     }
 
-    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
+    fn on_scan_sorted_substates(
+        system: &mut SystemConfig<V>,
+        event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
+        match event {
+            ScanSortedSubstatesEvent::IOAccess(io_access) => {
+                system.modules.limits.process_io_access(io_access)?;
+            }
+            ScanSortedSubstatesEvent::Start => {}
+        }
+
+        Ok(())
     }
 }

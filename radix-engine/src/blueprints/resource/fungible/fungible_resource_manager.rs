@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use lazy_static::lazy_static;
@@ -9,17 +10,62 @@ use num_traits::pow::Pow;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::FungibleResourceManagerField;
 use radix_engine_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
 lazy_static! {
-    static ref MAX_MINT_AMOUNT: Decimal = Decimal(BnumI256::from(2).pow(160)); // 2^160 subunits
+    static ref MAX_MINT_AMOUNT: Decimal = Decimal(I192::from(2).pow(152)); // 2^152 subunits
 }
+
+declare_native_blueprint_state! {
+    blueprint_ident: FungibleResourceManager,
+    blueprint_snake_case: fungible_resource_manager,
+    features: {
+        track_total_supply: {
+            ident: TrackTotalSupply,
+            description: "Enables total supply tracking of the resource",
+        },
+        vault_freeze: {
+            ident: VaultFreeze,
+            description: "Enabled if the resource can ever support freezing",
+        },
+        vault_recall: {
+            ident: VaultRecall,
+            description: "Enabled if the resource can ever support recall",
+        },
+        mint: {
+            ident: Mint,
+            description: "Enabled if the resource can ever support minting",
+        },
+        burn: {
+            ident: Burn,
+            description: "Enabled if the resource can ever support burning",
+        },
+    },
+    fields: {
+        divisibility: {
+            ident: Divisibility,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+        },
+        total_supply: {
+            ident: TotalSupply,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::if_feature(FungibleResourceManagerFeature::TrackTotalSupply),
+        },
+    },
+    collections: {}
+}
+
+pub type FungibleResourceManagerDivisibilityV1 = u8;
+pub type FungibleResourceManagerTotalSupplyV1 = Decimal;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -31,10 +77,8 @@ pub enum FungibleResourceManagerError {
     DropNonEmptyBucket,
     NotMintable,
     NotBurnable,
+    UnexpectedDecimalComputationError,
 }
-
-pub type FungibleResourceManagerDivisibilitySubstate = u8;
-pub type FungibleResourceManagerTotalSupplySubstate = Decimal;
 
 pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
     if divisibility > DIVISIBILITY_MAXIMUM {
@@ -68,9 +112,285 @@ fn check_mint_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeErr
     Ok(())
 }
 
+fn to_features_and_roles(
+    role_init: FungibleResourceRoles,
+) -> (FungibleResourceManagerFeatureSet, RoleAssignmentInit) {
+    let mut roles = RoleAssignmentInit::new();
+
+    let features = FungibleResourceManagerFeatureSet {
+        track_total_supply: false, // Will be set later
+        vault_freeze: role_init.freeze_roles.is_some(),
+        vault_recall: role_init.recall_roles.is_some(),
+        mint: role_init.mint_roles.is_some(),
+        burn: role_init.burn_roles.is_some(),
+    };
+
+    roles
+        .data
+        .extend(role_init.mint_roles.unwrap_or_default().to_role_init().data);
+    roles
+        .data
+        .extend(role_init.burn_roles.unwrap_or_default().to_role_init().data);
+    roles.data.extend(
+        role_init
+            .recall_roles
+            .unwrap_or_default()
+            .to_role_init()
+            .data,
+    );
+    roles.data.extend(
+        role_init
+            .freeze_roles
+            .unwrap_or_default()
+            .to_role_init()
+            .data,
+    );
+    roles.data.extend(
+        role_init
+            .deposit_roles
+            .unwrap_or_default()
+            .to_role_init()
+            .data,
+    );
+    roles.data.extend(
+        role_init
+            .withdraw_roles
+            .unwrap_or_default()
+            .to_role_init()
+            .data,
+    );
+
+    (features, roles)
+}
+
 pub struct FungibleResourceManagerBlueprint;
 
 impl FungibleResourceManagerBlueprint {
+    pub fn get_definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let state = FungibleResourceManagerStateSchemaInit::create_schema_init(&mut aggregator);
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateOutput>(),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyOutput>()),
+                export: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<FungibleResourceManagerMintInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<FungibleResourceManagerMintOutput>(),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_BURN_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_PACKAGE_BURN_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ResourceManagerPackageBurnInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ResourceManagerPackageBurnOutput>(),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultOutput>(),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketOutput>(),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME.to_string(),
+            },
+        );
+
+        functions.insert(
+            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalOutput>(
+                        ),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketOutput>(),
+                ),
+                export: FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                VaultCreationEvent,
+                MintFungibleResourceEvent,
+                BurnFungibleResourceEvent
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::Outer,
+            is_transient: false,
+            feature_set: FungibleResourceManagerFeatureSet::all_features(),
+            dependencies: btreeset!(),
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state,
+                events: event_schema,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
+                    roles {
+                        MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                        MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                        BURNER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                        BURNER_UPDATER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                        WITHDRAWER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                        WITHDRAWER_UPDATER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                        DEPOSITOR_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                        DEPOSITOR_UPDATER_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                        RECALLER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                        RECALLER_UPDATER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                        FREEZER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
+                        FREEZER_UPDATER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
+                    },
+                    methods {
+                        FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINTER_ROLE];
+                        RESOURCE_MANAGER_BURN_IDENT => [BURNER_ROLE];
+                        RESOURCE_MANAGER_PACKAGE_BURN_IDENT => MethodAccessibility::OwnPackageOnly;
+                        RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                        RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
+                    }
+                }),
+            },
+        }
+    }
+
     pub(crate) fn create<Y>(
         owner_role: OwnerRole,
         track_total_supply: bool,
@@ -96,23 +416,43 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
-        let (mut features, roles) = resource_roles.to_features_and_roles();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
+        let mut fields = btreemap! {
+            FungibleResourceManagerField::Divisibility.into() => FieldValue::immutable(
+                    &FungibleResourceManagerDivisibilityFieldPayload::from_content_source(
+                        divisibility,
+                    ),
+                )
+        };
 
-        let total_supply_field =
-            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
-                FieldValue::new(&Decimal::zero())
+        let (mut features, roles) = to_features_and_roles(resource_roles);
+        features.track_total_supply = track_total_supply;
+
+        if track_total_supply {
+            let total_supply_field = if features.mint || features.burn {
+                FieldValue::new(
+                    &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
+                        Decimal::zero(),
+                    ),
+                )
             } else {
-                FieldValue::immutable(&Decimal::zero())
+                FieldValue::immutable(
+                    &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
+                        Decimal::zero(),
+                    ),
+                )
             };
+
+            fields.insert(
+                FungibleResourceManagerField::TotalSupply.into(),
+                total_supply_field,
+            );
+        }
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features,
-            None,
-            vec![FieldValue::immutable(&divisibility), total_supply_field],
+            features.feature_names_str(),
+            GenericArgs::default(),
+            fields,
             btreemap!(),
         )?;
 
@@ -154,23 +494,43 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
-        let (mut features, roles) = resource_roles.to_features_and_roles();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
+        let mut fields = btreemap! {
+            FungibleResourceManagerField::Divisibility.into() => FieldValue::immutable(
+                    &FungibleResourceManagerDivisibilityFieldPayload::from_content_source(
+                        divisibility,
+                    ),
+                )
+        };
 
-        let total_supply_field =
-            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
-                FieldValue::new(&initial_supply)
+        let (mut features, roles) = to_features_and_roles(resource_roles);
+        features.track_total_supply = track_total_supply;
+
+        if track_total_supply {
+            let total_supply_field = if features.mint || features.burn {
+                FieldValue::new(
+                    &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
+                        initial_supply,
+                    ),
+                )
             } else {
-                FieldValue::immutable(&initial_supply)
+                FieldValue::immutable(
+                    &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
+                        initial_supply,
+                    ),
+                )
             };
+
+            fields.insert(
+                FungibleResourceManagerField::TotalSupply.into(),
+                total_supply_field,
+            );
+        }
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features,
-            None,
-            vec![FieldValue::immutable(&divisibility), total_supply_field],
+            features.feature_names_str(),
+            GenericArgs::default(),
+            fields,
             btreemap!(),
         )?;
 
@@ -197,12 +557,13 @@ impl FungibleResourceManagerBlueprint {
 
         let divisibility = {
             let divisibility_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 FungibleResourceManagerField::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
-            let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
-            divisibility
+            let divisibility: FungibleResourceManagerDivisibilityFieldPayload =
+                api.field_read_typed(divisibility_handle)?;
+            divisibility.into_latest()
         };
 
         // check amount
@@ -214,15 +575,31 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
+        if api.actor_is_feature_enabled(
+            ACTOR_STATE_SELF,
+            FungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
+        )? {
             let total_supply_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply += amount;
-            api.field_write_typed(total_supply_handle, &total_supply)?;
+            let mut total_supply = api
+                .field_read_typed::<FungibleResourceManagerTotalSupplyFieldPayload>(
+                    total_supply_handle,
+                )?
+                .into_latest();
+            total_supply = total_supply
+                .safe_add(amount)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::FungibleResourceManagerError(
+                        FungibleResourceManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
+            api.field_write_typed(
+                total_supply_handle,
+                &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(total_supply),
+            )?;
             api.field_close(total_supply_handle)?;
         }
 
@@ -263,15 +640,29 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
+        if api.actor_is_feature_enabled(
+            ACTOR_STATE_SELF,
+            FungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
+        )? {
             let total_supply_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
-            total_supply -= other_bucket.liquid.amount();
-            api.field_write_typed(total_supply_handle, &total_supply)?;
+            let mut total_supply = api
+                .field_read_typed::<FungibleResourceManagerTotalSupplyFieldPayload>(
+                    total_supply_handle,
+                )?
+                .into_latest();
+            total_supply = total_supply.safe_sub(other_bucket.liquid.amount()).ok_or(
+                RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
+                    FungibleResourceManagerError::UnexpectedDecimalComputationError,
+                )),
+            )?;
+            api.field_write_typed(
+                total_supply_handle,
+                &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(total_supply),
+            )?;
             api.field_close(total_supply_handle)?;
         }
 
@@ -308,10 +699,10 @@ impl FungibleResourceManagerBlueprint {
     {
         let bucket_id = api.new_simple_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
-            vec![
-                FieldValue::new(&LiquidFungibleResource::new(amount)),
-                FieldValue::new(&LockedFungibleResource::default()),
-            ],
+            btreemap! {
+                FungibleBucketField::Liquid.into() => FieldValue::new(&LiquidFungibleResource::new(amount)),
+                FungibleBucketField::Locked.into() => FieldValue::new(&LockedFungibleResource::default()),
+            },
         )?;
 
         Ok(Bucket(Own(bucket_id)))
@@ -321,14 +712,26 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let vault_id = api.new_simple_object(
-            FUNGIBLE_VAULT_BLUEPRINT,
-            vec![
-                FieldValue::new(&LiquidFungibleResource::default()),
-                FieldValue::new(&LockedFungibleResource::default()),
-                FieldValue::new(&VaultFrozenFlag::default()),
-            ],
-        )?;
+        let mut fields: BTreeMap<FieldIndex, FieldValue> = btreemap! {
+            FungibleVaultField::Balance.into() => FieldValue::new(&FungibleVaultBalanceFieldPayload::from_content_source(
+                    LiquidFungibleResource::default(),
+                )),
+            FungibleVaultField::LockedBalance.into() => FieldValue::new(&FungibleVaultLockedBalanceFieldPayload::from_content_source(LockedFungibleResource::default())),
+        };
+
+        if api.actor_is_feature_enabled(
+            ACTOR_STATE_SELF,
+            FungibleResourceManagerFeature::VaultFreeze.feature_name(),
+        )? {
+            fields.insert(
+                FungibleVaultField::FreezeStatus.into(),
+                FieldValue::new(&FungibleVaultFreezeStatusFieldPayload::from_content_source(
+                    VaultFrozenFlag::default(),
+                )),
+            );
+        }
+
+        let vault_id = api.new_simple_object(FUNGIBLE_VAULT_BLUEPRINT, fields)?;
 
         Runtime::emit_event(api, VaultCreationEvent { vault_id })?;
 
@@ -340,12 +743,16 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
 
-        let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
+        let divisibility = api
+            .field_read_typed::<FungibleResourceManagerDivisibilityFieldPayload>(
+                divisibility_handle,
+            )?
+            .into_latest();
         let resource_type = ResourceType::Fungible { divisibility };
 
         Ok(resource_type)
@@ -355,13 +762,20 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
+        if api.actor_is_feature_enabled(
+            ACTOR_STATE_SELF,
+            FungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
+        )? {
             let total_supply_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
+                ACTOR_STATE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::read_only(),
             )?;
-            let total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
+            let total_supply = api
+                .field_read_typed::<FungibleResourceManagerTotalSupplyFieldPayload>(
+                    total_supply_handle,
+                )?
+                .into_latest();
             Ok(Some(total_supply))
         } else {
             Ok(None)
@@ -377,21 +791,34 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
+            ACTOR_STATE_SELF,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
 
-        let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
+        let divisibility = api
+            .field_read_typed::<FungibleResourceManagerDivisibilityFieldPayload>(
+                divisibility_handle,
+            )?
+            .into_latest();
 
-        Ok(amount.for_withdrawal(divisibility, withdraw_strategy))
+        Ok(amount
+            .for_withdrawal(divisibility, withdraw_strategy)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::FungibleResourceManagerError(
+                    FungibleResourceManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?)
     }
 
     fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, MINT_FEATURE)? {
+        if !api.actor_is_feature_enabled(
+            ACTOR_STATE_SELF,
+            FungibleResourceManagerFeature::Mint.feature_name(),
+        )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::FungibleResourceManagerError(
                     FungibleResourceManagerError::NotMintable,
@@ -406,7 +833,10 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, BURN_FEATURE)? {
+        if !api.actor_is_feature_enabled(
+            ACTOR_STATE_SELF,
+            FungibleResourceManagerFeature::Burn.feature_name(),
+        )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::FungibleResourceManagerError(
                     FungibleResourceManagerError::NotBurnable,

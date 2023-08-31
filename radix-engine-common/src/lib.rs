@@ -8,14 +8,14 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// RE bech32 address library.
 pub mod address;
+/// RE protocol constants
+pub mod constants;
 /// RE crypto library
 pub mod crypto;
 /// RE scrypto data model.
 pub mod data;
 /// RE math library.
 pub mod math;
-/// Fixed native addresses
-pub mod native_addresses;
 /// RE network identifier model.
 pub mod network;
 /// RE time library.
@@ -49,7 +49,6 @@ pub extern crate self as radix_engine_common;
 /// This makes refactors easier, and makes integration into the node less painful.
 pub mod prelude {
     // Exports from upstream libaries
-    pub use radix_engine_constants::*;
     pub use radix_engine_derive::{
         ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
         ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
@@ -59,12 +58,12 @@ pub mod prelude {
 
     // Exports from this crate
     pub use super::address::*;
+    pub use super::constants::*;
     pub use super::crypto::*;
     pub use super::data::manifest::prelude::*;
     pub use super::data::scrypto::prelude::*;
     pub use super::macros::*;
     pub use super::math::*;
-    pub use super::native_addresses::*;
     pub use super::network::*;
     pub use super::time::*;
     pub use super::types::*;

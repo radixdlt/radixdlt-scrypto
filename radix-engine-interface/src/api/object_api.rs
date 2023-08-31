@@ -1,19 +1,21 @@
-use crate::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use crate::api::node_modules::auth::ROLE_ASSIGNMENT_BLUEPRINT;
 use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
+use crate::api::CollectionIndex;
 use crate::constants::{
-    ACCESS_RULES_MODULE_PACKAGE, METADATA_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
+    METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
 };
+use crate::internal_prelude::*;
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode};
+use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, VersionedScryptoSchema};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::FieldIndex;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
-use scrypto_schema::InstanceSchema;
 
 #[repr(u8)]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -35,24 +37,37 @@ pub enum ObjectModuleId {
     Main,
     Metadata,
     Royalty,
-    AccessRules,
+    RoleAssignment,
+}
+
+impl From<Option<ModuleId>> for ObjectModuleId {
+    fn from(value: Option<ModuleId>) -> Self {
+        match value {
+            None => ObjectModuleId::Main,
+            Some(ModuleId::Metadata) => ObjectModuleId::Metadata,
+            Some(ModuleId::Royalty) => ObjectModuleId::Royalty,
+            Some(ModuleId::RoleAssignment) => ObjectModuleId::RoleAssignment,
+        }
+    }
+}
+
+impl Into<Option<ModuleId>> for ObjectModuleId {
+    fn into(self) -> Option<ModuleId> {
+        match self {
+            ObjectModuleId::Main => None,
+            ObjectModuleId::Metadata => Some(ModuleId::Metadata),
+            ObjectModuleId::Royalty => Some(ModuleId::Royalty),
+            ObjectModuleId::RoleAssignment => Some(ModuleId::RoleAssignment),
+        }
+    }
 }
 
 impl ObjectModuleId {
-    pub fn to_u8(&self) -> u8 {
-        match self {
-            ObjectModuleId::Main => 0u8,
-            ObjectModuleId::Metadata => 1u8,
-            ObjectModuleId::Royalty => 2u8,
-            ObjectModuleId::AccessRules => 3u8,
-        }
-    }
-
     pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
-            ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
+            ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
             ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
-            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_PARTITION,
+            ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
             ObjectModuleId::Main => MAIN_BASE_PARTITION,
         }
     }
@@ -67,11 +82,57 @@ impl ObjectModuleId {
                 &ROYALTY_MODULE_PACKAGE,
                 COMPONENT_ROYALTY_BLUEPRINT,
             )),
-            ObjectModuleId::AccessRules => Some(BlueprintId::new(
-                &ACCESS_RULES_MODULE_PACKAGE,
-                ACCESS_RULES_BLUEPRINT,
+            ObjectModuleId::RoleAssignment => Some(BlueprintId::new(
+                &ROLE_ASSIGNMENT_MODULE_PACKAGE,
+                ROLE_ASSIGNMENT_BLUEPRINT,
             )),
             ObjectModuleId::Main => None,
+        }
+    }
+}
+
+#[repr(u8)]
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoSbor,
+    ManifestSbor,
+    FromRepr,
+    EnumIter,
+)]
+pub enum ModuleId {
+    Metadata = 1,
+    Royalty = 2,
+    RoleAssignment = 3,
+}
+
+impl ModuleId {
+    pub fn static_blueprint(&self) -> BlueprintId {
+        match self {
+            ModuleId::Metadata => BlueprintId::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT),
+            ModuleId::Royalty => {
+                BlueprintId::new(&ROYALTY_MODULE_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
+            }
+            ModuleId::RoleAssignment => {
+                BlueprintId::new(&ROLE_ASSIGNMENT_MODULE_PACKAGE, ROLE_ASSIGNMENT_BLUEPRINT)
+            }
+        }
+    }
+}
+
+impl Into<ObjectModuleId> for ModuleId {
+    fn into(self) -> ObjectModuleId {
+        match self {
+            ModuleId::Metadata => ObjectModuleId::Metadata,
+            ModuleId::Royalty => ObjectModuleId::Royalty,
+            ModuleId::RoleAssignment => ObjectModuleId::RoleAssignment,
         }
     }
 }
@@ -99,6 +160,12 @@ impl FieldValue {
     }
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct GenericArgs {
+    pub additional_schema: Option<VersionedScryptoSchema>,
+    pub generic_substitutions: Vec<GenericSubstitution>,
+}
+
 pub struct KVEntry {
     pub value: Option<Vec<u8>>,
     pub locked: bool,
@@ -110,9 +177,15 @@ pub trait ClientObjectApi<E> {
     fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
-        fields: Vec<FieldValue>,
+        fields: BTreeMap<FieldIndex, FieldValue>,
     ) -> Result<NodeId, E> {
-        self.new_object(blueprint_ident, vec![], None, fields, btreemap![])
+        self.new_object(
+            blueprint_ident,
+            vec![],
+            GenericArgs::default(),
+            fields,
+            btreemap![],
+        )
     }
 
     /// Creates a new object of a given blueprint type
@@ -120,18 +193,19 @@ pub trait ClientObjectApi<E> {
         &mut self,
         blueprint_ident: &str,
         features: Vec<&str>,
-        schema: Option<InstanceSchema>,
-        fields: Vec<FieldValue>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+        generic_args: GenericArgs,
+        fields: BTreeMap<FieldIndex, FieldValue>,
+        kv_entries: BTreeMap<CollectionIndex, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
 
-    /// Drops an object, returns the fields of the object
+    /// Drops an owned object, returns the fields of the object
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, E>;
 
-    /// Get info regarding a visible object
-    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
+    /// Get the blueprint id of a visible object
+    fn get_blueprint_id(&mut self, node_id: &NodeId) -> Result<BlueprintId, E>;
 
-    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
+    /// Get the outer object of a visible object
+    fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
     /// Pre-allocates a global address, for a future globalization.
     fn allocate_global_address(
@@ -145,20 +219,26 @@ pub trait ClientObjectApi<E> {
         global_address: GlobalAddress,
     ) -> Result<GlobalAddressReservation, E>;
 
+    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
+
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all with the provided global address.
     fn globalize(
         &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
+        node_id: NodeId,
+        modules: BTreeMap<ModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, E>;
 
-    fn globalize_with_address_and_create_inner_object(
+    fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
-        modules: BTreeMap<ObjectModuleId, NodeId>,
+        node_id: NodeId,
+        modules: BTreeMap<ModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
-        inner_object_fields: Vec<FieldValue>,
+        inner_object_fields: BTreeMap<u8, FieldValue>,
+        event_name: String,
+        event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), E>;
 
     /// Calls a method on an object
@@ -167,25 +247,20 @@ pub trait ClientObjectApi<E> {
         receiver: &NodeId,
         method_name: &str,
         args: Vec<u8>,
-    ) -> Result<Vec<u8>, E> {
-        self.call_method_advanced(receiver, false, ObjectModuleId::Main, method_name, args)
-    }
+    ) -> Result<Vec<u8>, E>;
 
     fn call_direct_access_method(
         &mut self,
         receiver: &NodeId,
         method_name: &str,
         args: Vec<u8>,
-    ) -> Result<Vec<u8>, E> {
-        self.call_method_advanced(receiver, true, ObjectModuleId::Main, method_name, args)
-    }
+    ) -> Result<Vec<u8>, E>;
 
     /// Calls a method on an object module
-    fn call_method_advanced(
+    fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        direct_access: bool, // May change to enum for other types of reference in future
-        module_id: ObjectModuleId,
+        module_id: ModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;

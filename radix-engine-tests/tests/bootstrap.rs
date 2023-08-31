@@ -1,26 +1,25 @@
-use radix_engine::blueprints::consensus_manager::ProposerMinuteTimestampSubstate;
-use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::bootstrap::{
-    Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
-    GenesisStakeAllocation,
-};
-use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
+use radix_engine::system::bootstrap::*;
+use radix_engine::system::system_db_checker::SystemDatabaseChecker;
+use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::transaction::BalanceChange;
+use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
+use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::{CustomGenesis, TestRunner};
+use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
@@ -39,7 +38,8 @@ fn test_bootstrap_receipt_should_match_constants() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -87,10 +87,99 @@ fn test_bootstrap_receipt_should_match_constants() {
         .expect("There should be a new epoch.");
 
     assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next());
+
+    let checker = SystemDatabaseChecker::new();
+    let results = checker
+        .check_db(&substate_db)
+        .expect("Database should be consistent");
+    println!("{:?}", results);
+}
+
+#[test]
+fn test_bootstrap_receipts_should_have_complete_system_structure() {
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    let validator_key = Secp256k1PublicKey([0; 33]);
+    let staker_address = ComponentAddress::virtual_account_from_public_key(
+        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+    );
+    let genesis_epoch = Epoch::of(1);
+    let stake = GenesisStakeAllocation {
+        account_index: 0,
+        xrd_amount: Decimal::one(),
+    };
+    let genesis_data_chunks = vec![
+        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Stakes {
+            accounts: vec![staker_address],
+            allocations: vec![(validator_key, vec![stake])],
+        },
+    ];
+
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+
+    let GenesisReceipts {
+        system_bootstrap_receipt,
+        data_ingestion_receipts,
+        wrap_up_receipt,
+    } = bootstrapper
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            genesis_epoch,
+            CustomGenesis::default_consensus_manager_config(),
+            1,
+            Some(0),
+            Decimal::zero(),
+        )
+        .unwrap();
+
+    assert_complete_system_structure(system_bootstrap_receipt.expect_commit_success());
+    for data_ingestion_receipt in data_ingestion_receipts {
+        assert_complete_system_structure(data_ingestion_receipt.expect_commit_success());
+    }
+    assert_complete_system_structure(wrap_up_receipt.expect_commit_success());
+}
+
+// TODO(after RCnet-V3): this assertion could be re-used for other tests of non-standard receipts.
+fn assert_complete_system_structure(result: &CommitResult) {
+    let SystemStructure {
+        substate_system_structures,
+        event_system_structures,
+    } = &result.system_structure;
+
+    for ((node_id, partition_num), by_substate_key) in &result.state_updates.system_updates {
+        for substate_key in by_substate_key.keys() {
+            let structure = substate_system_structures
+                .get(node_id)
+                .and_then(|partition_structures| partition_structures.get(partition_num))
+                .and_then(|substate_structures| substate_structures.get(substate_key));
+            assert!(
+                structure.is_some(),
+                "missing system structure for {:?}:{:?}:{:?}",
+                node_id,
+                partition_num,
+                substate_key
+            );
+        }
+    }
+
+    for (event_type_id, _data) in &result.application_events {
+        let structure = event_system_structures.get(event_type_id);
+        assert!(
+            structure.is_some(),
+            "missing system structure for {:?}",
+            event_type_id
+        );
+    }
 }
 
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let token_holder = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
@@ -130,7 +219,8 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -147,23 +237,28 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         .unwrap();
 
     let total_supply = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>(
+        .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
             &resource_address.as_node_id(),
             MAIN_BASE_PARTITION,
             &FungibleResourceManagerField::TotalSupply.into(),
         )
-        .unwrap().value.0;
+        .unwrap()
+        .into_payload()
+        .into_latest();
     assert_eq!(total_supply, allocation_amount);
 
-    let key = scrypto_encode("symbol").unwrap();
-    let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
-            &resource_address.as_node_id(),
-            METADATA_KV_STORE_PARTITION,
-            &SubstateKey::Map(key),
+    let reader = SystemDatabaseReader::new(&substate_db);
+    let entry = reader
+        .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
+            resource_address.as_node_id(),
+            ObjectModuleId::Metadata,
+            ObjectCollectionKey::KeyValue(
+                MetadataCollection::EntryKeyValue.collection_index(),
+                &"symbol".to_string(),
+            ),
         )
         .unwrap()
-        .value;
+        .map(|v| v.into_latest());
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
@@ -175,38 +270,33 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let resource_creation_receipt = data_ingestion_receipts.pop().unwrap();
 
     println!("{:?}", resource_creation_receipt);
+    let resource_creation_commit = resource_creation_receipt.expect_commit_success();
 
     if owned_resource {
-        let created_owner_badge = resource_creation_receipt
-            .expect_commit_success()
-            .new_resource_addresses()[1];
+        let created_owner_badge = resource_creation_commit.new_resource_addresses()[1];
+        let owner_badge_vault = resource_creation_commit.new_vault_addresses()[0];
 
         assert_eq!(
-            resource_creation_receipt
-                .expect_commit_success()
+            resource_creation_commit
                 .state_update_summary
-                .balance_changes
-                .get(&GlobalAddress::from(resource_owner))
-                .unwrap()
-                .get(&created_owner_badge)
+                .vault_balance_changes
+                .get(owner_badge_vault.as_node_id())
                 .unwrap(),
-            &BalanceChange::Fungible(1.into())
+            &(created_owner_badge, BalanceChange::Fungible(1.into()))
         );
     }
 
-    let created_resource = resource_creation_receipt
-        .expect_commit_success()
-        .new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
+    let created_resource = resource_creation_commit.new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
+    let allocation_commit = allocation_receipt.expect_commit_success();
+    let created_vault = allocation_commit.new_vault_addresses()[0];
+
     assert_eq!(
-        allocation_receipt
-            .expect_commit_success()
+        allocation_commit
             .state_update_summary
-            .balance_changes
-            .get(&GlobalAddress::from(token_holder))
-            .unwrap()
-            .get(&created_resource)
+            .vault_balance_changes
+            .get(created_vault.as_node_id())
             .unwrap(),
-        &BalanceChange::Fungible(allocation_amount)
+        &(created_resource, BalanceChange::Fungible(allocation_amount))
     );
 }
 
@@ -223,6 +313,8 @@ fn test_genesis_resource_with_initial_unowned_allocation() {
 #[test]
 fn test_genesis_stake_allocation() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     // There are two genesis validators
@@ -264,7 +356,8 @@ fn test_genesis_stake_allocation() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -282,30 +375,14 @@ fn test_genesis_stake_allocation() {
 
     let allocate_stakes_receipt = data_ingestion_receipts.pop().unwrap();
 
-    // Staker 0 should have one liquidity balance entry
-    {
-        let address: GlobalAddress = staker_0.into();
-        let balances = allocate_stakes_receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&address)
-            .unwrap();
-        assert_eq!(balances.len(), 1);
-        assert!(balances
-            .values()
-            .any(|bal| *bal == BalanceChange::Fungible(dec!("10"))));
-    }
+    let commit = allocate_stakes_receipt.expect_commit_success();
+    let descendant_vaults = SubtreeVaults::new(&substate_db);
 
     // Staker 1 should have two liquidity balance entries
     {
         let address: GlobalAddress = staker_1.into();
-        let balances = allocate_stakes_receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&address)
-            .unwrap();
+        let balances = descendant_vaults
+            .sum_balance_changes(address.as_node_id(), commit.vault_balance_changes());
         assert_eq!(balances.len(), 2);
         assert!(balances
             .values()
@@ -326,21 +403,27 @@ fn test_genesis_stake_allocation() {
             .cloned()
             .collect();
 
+        let reader = SystemDatabaseReader::new(&substate_db);
+
         for (index, validator_key) in vec![validator_0_key, validator_1_key]
             .into_iter()
             .enumerate()
         {
-            let validator_url_entry = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
+            let validator_url_entry = reader
+                .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                     &new_validators[index].as_node_id(),
-                    METADATA_KV_STORE_PARTITION,
-                    &SubstateKey::Map(scrypto_encode("url").unwrap()),
+                    ObjectModuleId::Metadata,
+                    ObjectCollectionKey::KeyValue(
+                        MetadataCollection::EntryKeyValue.collection_index(),
+                        &"url".to_string(),
+                    ),
                 )
-                .unwrap();
-            if let Some(MetadataValue::Url(url)) = validator_url_entry.value {
+                .unwrap()
+                .map(|v| v.into_latest());
+            if let Some(MetadataValue::Url(url)) = validator_url_entry {
                 assert_eq!(
                     url,
-                    Url(format!("http://test.local?validator={:?}", validator_key))
+                    UncheckedUrl::of(format!("http://test.local?validator={:?}", validator_key))
                 );
             } else {
                 panic!("Validator url was not a Url");
@@ -352,9 +435,12 @@ fn test_genesis_stake_allocation() {
 #[test]
 fn test_genesis_time() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, false);
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
 
     let _ = bootstrapper
         .bootstrap_with_genesis_data(
@@ -367,23 +453,23 @@ fn test_genesis_time() {
         )
         .unwrap();
 
-    let proposer_minute_timestamp = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ProposerMinuteTimestampSubstate>>(
+    let reader = SystemDatabaseReader::new(&mut substate_db);
+    let timestamp = reader
+        .read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
             CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+            ObjectModuleId::Main,
+            ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
         )
         .unwrap()
-        .value
-        .0;
+        .into_latest();
 
-    assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
+    assert_eq!(timestamp.epoch_minute, 123);
 }
 
 #[test]
 fn should_not_be_able_to_create_genesis_helper() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -411,7 +497,7 @@ fn should_not_be_able_to_create_genesis_helper() {
 #[test]
 fn should_not_be_able_to_call_genesis_helper() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -429,4 +515,119 @@ fn should_not_be_able_to_call_genesis_helper() {
             )))
         )
     });
+}
+
+#[test]
+fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx() {
+    // Arrange
+    // Data migrated from Olympia
+    let validator_0_key = Secp256k1PrivateKey::from_u64(10).unwrap().public_key();
+    let validator_1_key = Secp256k1PrivateKey::from_u64(11).unwrap().public_key();
+    let staker_0 = ComponentAddress::virtual_account_from_public_key(
+        &Secp256k1PrivateKey::from_u64(4).unwrap().public_key(),
+    );
+    let staker_1 = ComponentAddress::virtual_account_from_public_key(
+        &Secp256k1PrivateKey::from_u64(5).unwrap().public_key(),
+    );
+    let validator_0_allocations = vec![
+        GenesisStakeAllocation {
+            account_index: 0,
+            xrd_amount: dec!("10"),
+        },
+        GenesisStakeAllocation {
+            account_index: 1,
+            xrd_amount: dec!("100"),
+        },
+    ];
+    let validator_1_allocations = vec![GenesisStakeAllocation {
+        account_index: 1,
+        xrd_amount: dec!(2),
+    }];
+    let genesis_data_chunks = vec![
+        GenesisDataChunk::Validators(vec![
+            validator_0_key.clone().into(),
+            validator_1_key.clone().into(),
+        ]),
+        GenesisDataChunk::Stakes {
+            accounts: vec![staker_0, staker_1],
+            allocations: vec![
+                (validator_0_key, validator_0_allocations),
+                (validator_1_key, validator_1_allocations),
+            ],
+        },
+        GenesisDataChunk::XrdBalances(vec![(staker_0, dec!(200)), (staker_1, dec!(300))]),
+    ];
+
+    // Bootstrap
+    let mut test_runner = TestRunnerBuilder::new()
+        .collect_events()
+        .with_custom_genesis(CustomGenesis {
+            genesis_data_chunks: genesis_data_chunks,
+            genesis_epoch: Epoch::of(1),
+            initial_config: CustomGenesis::default_consensus_manager_config(),
+            initial_time_ms: 0,
+            initial_current_leader: Some(0),
+            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
+        })
+        .build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .drop_auth_zone_proofs()
+        .build();
+    test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    println!("Staker 0: {:?}", staker_0);
+    println!("Staker 1: {:?}", staker_1);
+    let components = test_runner.find_all_components();
+    let mut total_xrd_supply = Decimal::ZERO;
+    for component in components {
+        let xrd_balance = test_runner.get_component_balance(component, XRD);
+        total_xrd_supply = total_xrd_supply.safe_add(xrd_balance).unwrap();
+        println!("{:?}, {}", component, xrd_balance);
+    }
+
+    let mut total_mint_amount = Decimal::ZERO;
+    let mut total_burn_amount = Decimal::ZERO;
+    for tx_events in test_runner.collected_events() {
+        for event in tx_events {
+            match &event.0 .0 {
+                Emitter::Method(x, _) if x.eq(XRD.as_node_id()) => {}
+                _ => {
+                    continue;
+                }
+            }
+            let actual_type_name = test_runner.event_name(&event.0);
+            match actual_type_name.as_str() {
+                "MintFungibleResourceEvent" => {
+                    total_mint_amount = total_mint_amount
+                        .safe_add(
+                            scrypto_decode::<MintFungibleResourceEvent>(&event.1)
+                                .unwrap()
+                                .amount,
+                        )
+                        .unwrap();
+                }
+                "BurnFungibleResourceEvent" => {
+                    total_burn_amount = total_burn_amount
+                        .safe_add(
+                            scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
+                                .unwrap()
+                                .amount,
+                        )
+                        .unwrap();
+                }
+                _ => {}
+            }
+        }
+    }
+    println!("Total XRD supply: {}", total_xrd_supply);
+    println!("Total mint amount: {}", total_mint_amount);
+    println!("Total burn amount: {}", total_burn_amount);
+    assert_eq!(
+        total_xrd_supply,
+        total_mint_amount.safe_sub(total_burn_amount).unwrap()
+    );
 }

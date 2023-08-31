@@ -8,10 +8,12 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<1u8>()
     true
     Tuple(
-        Tuple(
-            Array<Enum>(),
-            Array<Tuple>(),
-            Array<Enum>()
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(),
+                Array<Tuple>(),
+                Array<Enum>()
+            )
         ),
         Enum<0u8>(
             66u8
@@ -80,6 +82,7 @@ CALL_METHOD
     Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
 ;
 SET_METADATA
     Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")

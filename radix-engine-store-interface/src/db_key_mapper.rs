@@ -4,18 +4,18 @@ use crate::interface::{
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_common::types::{FieldKey, MapKey, PartitionNumber, SortedU16Key};
+use radix_engine_common::types::{FieldKey, MapKey, PartitionNumber, SortedKey};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::types::{NodeId, SubstateKey};
 use sbor::rust::prelude::*;
 use utils::copy_u8_array;
 
-/// A mapper between the business RE Node / Module / Substate IDs and database keys.
+/// A mapper between the business ReNode / Partition / Substate IDs and database keys.
 pub trait DatabaseKeyMapper {
-    /// Converts the given RE Node and Module ID to the database partition's key.
+    /// Converts the given ReNode ID and Partition number to the database partition's key.
     fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey;
 
-    /// Converts database partition's key back to RE Node and Module ID.
+    /// Converts database partition's key back to ReNode ID and Partition number.
     fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber);
 
     /// Converts the given [`SubstateKey`] to the database's sort key.
@@ -32,7 +32,7 @@ pub trait DatabaseKeyMapper {
     /// Converts the given database's sort key to a [`SubstateKey`].
     /// This is a convenience method, which simply wraps the type-specific result of an appropriate
     /// `*_from_db_sort_key()` method into a [`SubstateKey`].
-    fn from_db_sort_key<K: SubstateKeyContent>(db_sort_key: &DbSortKey) -> SubstateKey {
+    fn from_db_sort_key<K: SubstateKeyContent + 'static>(db_sort_key: &DbSortKey) -> SubstateKey {
         match K::get_type() {
             SubstateKeyTypeContentType::Tuple => {
                 SubstateKey::Field(Self::field_from_db_sort_key(db_sort_key))
@@ -54,8 +54,8 @@ pub trait DatabaseKeyMapper {
     fn map_to_db_sort_key(map_key: &MapKey) -> DbSortKey;
     fn map_from_db_sort_key(db_sort_key: &DbSortKey) -> MapKey;
 
-    fn sorted_to_db_sort_key(sorted_key: &SortedU16Key) -> DbSortKey;
-    fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedU16Key;
+    fn sorted_to_db_sort_key(sorted_key: &SortedKey) -> DbSortKey;
+    fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedKey;
 }
 
 /// A [`DatabaseKeyMapper`] tailored for databases which cannot tolerate long common prefixes
@@ -67,25 +67,24 @@ pub trait DatabaseKeyMapper {
 ///
 /// This implementation achieves the prefix-spreading by adding a hash prefix (shortened hash for
 /// performance reasons, but still hard to crack) to:
-/// - the PartitionKey (namely a RE Node and Module ID)
-/// - the SubstateKey
+/// - the ReNode part of DB Partition key
+/// - the Map key and Sorted key flavors of SubstateKey
 pub struct SpreadPrefixKeyMapper;
 
 impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
     fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey {
-        let mut buffer = Vec::new();
-        buffer.extend(node_id.as_ref());
-        buffer.push(partition_num.0);
-        DbPartitionKey(SpreadPrefixKeyMapper::to_hash_prefixed(&buffer[..]))
+        DbPartitionKey {
+            node_key: SpreadPrefixKeyMapper::to_hash_prefixed(node_id.as_bytes()),
+            partition_num: partition_num.0,
+        }
     }
 
     fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
-        let buffer = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.0);
-        let mut bytes = [0u8; NodeId::LENGTH];
-        bytes.copy_from_slice(&buffer[..buffer.len() - 1]);
-        let partition_num = PartitionNumber(*buffer.last().unwrap());
-
-        (NodeId(bytes), partition_num)
+        let node_id_bytes = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.node_key);
+        (
+            NodeId(copy_u8_array(node_id_bytes)),
+            PartitionNumber(partition_key.partition_num),
+        )
     }
 
     fn field_to_db_sort_key(fields_key: &FieldKey) -> DbSortKey {
@@ -104,19 +103,19 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         SpreadPrefixKeyMapper::from_hash_prefixed(&db_sort_key.0).to_vec()
     }
 
-    fn sorted_to_db_sort_key(sorted_key: &SortedU16Key) -> DbSortKey {
+    fn sorted_to_db_sort_key(sorted_key: &SortedKey) -> DbSortKey {
         DbSortKey(
             [
-                sorted_key.0.to_be_bytes().as_slice(),
+                sorted_key.0.as_slice(),
                 &SpreadPrefixKeyMapper::to_hash_prefixed(&sorted_key.1),
             ]
             .concat(),
         )
     }
 
-    fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedU16Key {
+    fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedKey {
         (
-            u16::from_be_bytes(copy_u8_array(&db_sort_key.0[..2])),
+            copy_u8_array(&db_sort_key.0[..2]),
             SpreadPrefixKeyMapper::from_hash_prefixed(&db_sort_key.0[2..]).to_vec(),
         )
     }
@@ -132,7 +131,7 @@ impl SpreadPrefixKeyMapper {
     /// not create the risk of long common prefixes).
     const HASHED_PREFIX_LENGTH: usize = 20;
 
-    /// Returns the given bytes prefixed by their known-length hash (see [`HASHED_PREFIX_LENGTH`]).
+    /// Returns the given bytes prefixed by their known-length hash (see [`Self::HASHED_PREFIX_LENGTH`]).
     fn to_hash_prefixed(plain_bytes: &[u8]) -> Vec<u8> {
         let hashed_prefix = &hash(plain_bytes).0[..Self::HASHED_PREFIX_LENGTH];
         [hashed_prefix, plain_bytes].concat()
@@ -156,7 +155,7 @@ pub trait MappedSubstateDatabase {
 
     /// Lists fully-mapped entries (i.e. business substate keys and scrypto-decoded values) of the
     /// given node partition.
-    fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SubstateKeyContent>(
+    fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SubstateKeyContent + 'static>(
         &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -177,7 +176,7 @@ impl<S: SubstateDatabase> MappedSubstateDatabase for S {
         .map(|buf| scrypto_decode(&buf).unwrap())
     }
 
-    fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SubstateKeyContent>(
+    fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SubstateKeyContent + 'static>(
         &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -249,7 +248,7 @@ impl SubstateKeyContent for FieldKey {
     }
 }
 
-impl SubstateKeyContent for SortedU16Key {
+impl SubstateKeyContent for SortedKey {
     fn get_type() -> SubstateKeyTypeContentType {
         SubstateKeyTypeContentType::Sorted
     }

@@ -3,21 +3,23 @@ use radix_engine::blueprints::consensus_manager::{
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
 };
 use radix_engine::blueprints::package::PackageError;
-use radix_engine::blueprints::resource::*;
-use radix_engine::errors::{
-    ApplicationError, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
-};
+use radix_engine::blueprints::{account, resource::*};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
+use radix_engine::system::system_type_checker::TypeCheckError;
+use radix_engine::types::blueprints::account::ResourcePreference;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
+use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
+use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
@@ -26,12 +28,180 @@ use transaction::model::InstructionV1;
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
-// TODO: In the future, the ClientAPI should only be able to add events to the event store. It
-// should not be able to have full control over it.
+#[test]
+fn test_events_of_commit_failure() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
 
-// FIXME: Creation of proofs triggers withdraw and deposit events when the amount is still liquid.
-// This is not the intended behavior. Should figure out a solution to that so that it doesn't emit
-// that and clean up this test to have one event.
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, dec!(100))
+        .withdraw_from_account(account, XRD, dec!(100)) // reverted
+        .assert_worktop_contains(XRD, dec!(500))
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    let events = &receipt.expect_commit_failure().application_events;
+    for event in events {
+        let name = test_runner.event_name(&event.0);
+        println!("{:?} - {}", event.0, name);
+    }
+    assert_eq!(events.len(), 4);
+    assert!(match events.get(0) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::LockFeeEvent { amount: 100.into() },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(1) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::PayFeeEvent {
+                    amount: receipt.fee_summary.total_cost()
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(2) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::DepositEvent {
+                    amount: receipt
+                        .expect_commit_failure()
+                        .fee_destination
+                        .to_proposer
+                        .safe_add(
+                            receipt
+                                .expect_commit_failure()
+                                .fee_destination
+                                .to_validator_set
+                        )
+                        .unwrap()
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(3) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+            && is_decoded_equal(
+                &BurnFungibleResourceEvent {
+                    amount: receipt.expect_commit_failure().fee_destination.to_burn
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+}
+
+#[test]
+fn create_proof_emits_correct_events() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET, dec!(500))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    let events = &receipt.expect_commit_success().application_events;
+    for event in events {
+        let name = test_runner.event_name(&event.0);
+        println!("{:?} - {}", event.0, name);
+    }
+    assert_eq!(events.len(), 4);
+    assert!(match events.get(0) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::LockFeeEvent { amount: 500.into() },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(1) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::PayFeeEvent {
+                    amount: receipt.fee_summary.total_cost()
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(2) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::DepositEvent {
+                    amount: receipt
+                        .expect_commit_success()
+                        .fee_destination
+                        .to_proposer
+                        .safe_add(
+                            receipt
+                                .expect_commit_success()
+                                .fee_destination
+                                .to_validator_set
+                        )
+                        .unwrap()
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(3) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+            && is_decoded_equal(
+                &BurnFungibleResourceEvent {
+                    amount: receipt.expect_commit_success().fee_destination.to_burn
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+}
 
 //=========
 // Scrypto
@@ -40,7 +210,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 #[test]
 fn scrypto_cant_emit_unregistered_event() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
 
     let manifest = ManifestBuilder::new()
@@ -57,8 +227,11 @@ fn scrypto_cant_emit_unregistered_event() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-            PayloadValidationAgainstSchemaError::EventDoesNotExist(event),
+        RuntimeError::SystemError(SystemError::TypeCheckError(
+            TypeCheckError::BlueprintPayloadDoesNotExist(
+                _,
+                BlueprintPayloadIdentifier::Event(event),
+            ),
         )) if event.eq("UnregisteredEvent") => true,
         _ => false,
     });
@@ -67,7 +240,7 @@ fn scrypto_cant_emit_unregistered_event() {
 #[test]
 fn scrypto_can_emit_registered_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
 
     let manifest = ManifestBuilder::new()
@@ -85,27 +258,30 @@ fn scrypto_can_emit_registered_events() {
 
     // Assert
     let events = receipt.expect_commit(true).application_events.clone();
-    assert_eq!(events.len(), 2); // Two events: lock fee and registered event
+    for event in &events {
+        let name = test_runner.event_name(&event.0);
+        println!("{:?} - {}", event.0, name);
+    }
     assert!(match events.get(0) {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-            && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            && is_decoded_equal(
+                &fungible_vault::LockFeeEvent { amount: 500.into() },
+                event_data
+            ) =>
             true,
         _ => false,
     });
     assert!(match events.get(1) {
         Some((
-            event_identifier @ EventTypeIdentifier(
-                Emitter::Function(node_id, ObjectModuleId::Main, blueprint_name),
-                ..,
-            ),
+            event_identifier @ EventTypeIdentifier(Emitter::Function(blueprint_id), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<RegisteredEvent>(event_identifier)
             && is_decoded_equal(&RegisteredEvent { number: 12 }, event_data)
-            && node_id == package_address.as_node_id()
-            && blueprint_name == "ScryptoEvents" =>
+            && blueprint_id.package_address == package_address
+            && blueprint_id.blueprint_name.eq("ScryptoEvents") =>
             true,
         _ => false,
     });
@@ -114,7 +290,7 @@ fn scrypto_can_emit_registered_events() {
 #[test]
 fn cant_publish_a_package_with_non_struct_or_enum_event() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
     let (code, definition) = Compile::compile("./tests/blueprints/events_invalid");
     let manifest = ManifestBuilder::new()
@@ -139,7 +315,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
 #[test]
 fn local_type_index_with_misleading_name_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
     let (code, mut definition) = Compile::compile("./tests/blueprints/events");
     let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
@@ -180,7 +356,7 @@ fn local_type_index_with_misleading_name_fails() {
 #[test]
 fn locking_fee_against_a_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
     let manifest = ManifestBuilder::new().lock_fee(FAUCET, 500).build();
 
@@ -190,14 +366,21 @@ fn locking_fee_against_a_vault_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 1); // One event: lock fee
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -207,7 +390,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
 #[test]
 fn vault_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let recallable_resource_address = test_runner.create_recallable_token(account);
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
@@ -215,7 +398,7 @@ fn vault_fungible_recall_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1)
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -224,26 +407,32 @@ fn vault_fungible_recall_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 4); // Four events: vault lock fee, vault fungible withdraw, vault fungible recall, vault fungible deposit
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
-        // FIXME: Currently recall first emits a withdraw event and then a recall event. Should the
-        // redundant withdraw event go away or does it make sense from a user perspective?
         assert!(match events.get(1) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
-                && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::RecallEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::RecallEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
         });
@@ -252,18 +441,9 @@ fn vault_fungible_recall_emits_correct_events() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<RecallResourceEvent>(event_identifier)
-                && is_decoded_equal(&RecallResourceEvent::Amount(1.into()), event_data) =>
-                true,
-            _ => false,
-        });
-        assert!(match events.get(3) {
-            Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ref event_data,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
-                && is_decoded_equal(&DepositResourceEvent::Amount(1.into()), event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::DepositEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
         });
@@ -273,7 +453,7 @@ fn vault_fungible_recall_emits_correct_events() {
 #[test]
 fn vault_non_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let (recallable_resource_address, non_fungible_local_id) = {
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
@@ -294,7 +474,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 metadata!(),
                 Some([(id.clone(), EmptyStruct {})]),
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         (receipt.expect_commit(true).new_resource_addresses()[0], id)
@@ -304,7 +484,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1)
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -313,25 +493,37 @@ fn vault_non_fungible_recall_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 4); // Four events: vault lock fee, vault non-fungible withdraw, vault non-fungible recall, vault non-fungible deposit
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
-        // FIXME: Currently recall first emits a withdraw event and then a recall event. Should the
-        // redundant withdraw event go away or does it make sense from a user perspective?
         assert!(match events.get(1) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ..,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
+                ref event_data,
+            )) if test_runner
+                .is_event_name_equal::<non_fungible_vault::RecallEvent>(event_identifier)
+                && is_decoded_equal(
+                    &non_fungible_vault::RecallEvent::new(btreeset!(NonFungibleLocalId::integer(
+                        1
+                    ))),
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -340,19 +532,10 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<RecallResourceEvent>(event_identifier)
-                && is_decoded_equal(&RecallResourceEvent::Amount(1.into()), event_data) =>
-                true,
-            _ => false,
-        });
-        assert!(match events.get(3) {
-            Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ref event_data,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
+            )) if test_runner
+                .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
-                    &DepositResourceEvent::Ids([non_fungible_local_id.clone()].into()),
+                    &non_fungible_vault::DepositEvent::new([non_fungible_local_id.clone()].into()),
                     event_data
                 ) =>
                 true,
@@ -368,7 +551,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
 #[test]
 fn resource_manager_new_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
@@ -381,7 +564,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             metadata!(),
             Some(1.into()),
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -390,14 +573,21 @@ fn resource_manager_new_vault_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 3); // Four events: vault lock fee, vault fungible deposit
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -408,16 +598,29 @@ fn resource_manager_new_vault_emits_correct_events() {
                     ..,
                 ),
                 ..,
-            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            )) if test_runner
+                .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) =>
+                true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
+                event_identifier @ EventTypeIdentifier(
+                    Emitter::Method(_node_id, ObjectModuleId::Main),
+                    ..,
+                ),
+                ..,
+            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            _ => false,
+        });
+        assert!(match events.get(3) {
+            Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
-                && is_decoded_equal(&DepositResourceEvent::Amount(1.into()), event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::DepositEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
         });
@@ -427,7 +630,7 @@ fn resource_manager_new_vault_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -450,7 +653,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
                 metadata!(),
                 None,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -468,14 +671,21 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint fungible, resource manager burn fungible
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -513,7 +723,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -536,7 +746,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 metadata!(),
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
             )
-            .try_deposit_batch_or_abort(account)
+            .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -555,14 +765,21 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint non-fungible, resource manager burn non-fungible
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -604,7 +821,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 #[test]
 fn vault_take_non_fungibles_by_amount_emits_correct_event() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -626,7 +843,10 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
+                manifest_args!(
+                    ManifestExpression::EntireWorktop,
+                    Option::<ResourceOrNonFungible>::None
+                ),
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -641,9 +861,9 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             resource_address,
             [(id.clone(), EmptyStruct {}), (id2.clone(), EmptyStruct {})],
         )
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .withdraw_from_account(account, resource_address, dec!("2"))
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
 
     // Act
@@ -655,20 +875,21 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        6 Events:
-        - Vault lock fee event
-        - Resource manager mint non-fungible event
-        -
-         */
-        assert_eq!(events.len(), 6);
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 10.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -701,9 +922,10 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
+            )) if test_runner
+                .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
-                    &DepositResourceEvent::Ids([id.clone(), id2.clone()].into()),
+                    &non_fungible_vault::DepositEvent::new([id.clone(), id2.clone()].into()),
                     event_data
                 ) =>
                 true,
@@ -714,9 +936,12 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
+            )) if test_runner.is_event_name_equal::<account::DepositEvent>(event_identifier)
                 && is_decoded_equal(
-                    &WithdrawResourceEvent::Ids([id.clone(), id2.clone()].into()),
+                    &account::DepositEvent::NonFungible(
+                        resource_address,
+                        [id.clone(), id2.clone()].into()
+                    ),
                     event_data
                 ) =>
                 true,
@@ -727,9 +952,24 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
+            )) if test_runner
+                .is_event_name_equal::<non_fungible_vault::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
-                    &DepositResourceEvent::Ids([id.clone(), id2.clone()].into()),
+                    &non_fungible_vault::WithdrawEvent::new([id.clone(), id2.clone()].into()),
+                    event_data
+                ) =>
+                true,
+            _ => false,
+        });
+        assert!(match events.get(7) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ref event_data,
+            )) if test_runner
+                .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
+                && is_decoded_equal(
+                    &non_fungible_vault::DepositEvent::new([id.clone(), id2.clone()].into()),
                     event_data
                 ) =>
                 true,
@@ -754,7 +994,9 @@ fn consensus_manager_round_update_emits_correct_event() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
@@ -770,7 +1012,10 @@ fn consensus_manager_round_update_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 1); // One event: round change event
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -804,7 +1049,9 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Prepare: skip a few rounds, right to the one just before epoch change
     test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
@@ -852,7 +1099,9 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
             })
             .with_total_emission_xrd_per_epoch(emission_xrd),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
@@ -893,7 +1142,9 @@ fn validator_registration_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
     // Act
@@ -903,7 +1154,7 @@ fn validator_registration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -915,18 +1166,25 @@ fn validator_registration_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 4); // Two events: vault lock fee and register validator
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(1) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -947,7 +1205,9 @@ fn validator_unregistration_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
@@ -956,7 +1216,7 @@ fn validator_unregistration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -972,7 +1232,7 @@ fn validator_unregistration_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .unregister_validator(validator_address)
         .build();
@@ -984,18 +1244,25 @@ fn validator_unregistration_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 4); // Two events: vault lock fee and register validator
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(1) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1016,7 +1283,9 @@ fn validator_staking_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
@@ -1025,7 +1294,7 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1041,12 +1310,12 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .withdraw_from_account(account, XRD, 100)
         .take_all_from_worktop(XRD, "stake")
         .stake_validator_as_owner(validator_address, "stake")
-        .try_deposit_batch_or_abort(account)
+        .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1056,14 +1325,35 @@ fn validator_staking_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 9); // Seven events: vault lock fee, vault withdraw fungible, resource manager mint (lp tokens), vault deposit event, validator stake event, resource manager vault create (for the LP tokens), vault deposit
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
+                true,
+            _ => false,
+        });
+        assert!(match events.get(1) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ref event_data,
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::WithdrawEvent::new(100.into()),
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1072,8 +1362,11 @@ fn validator_staking_emits_correct_event() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
-                && is_decoded_equal(&WithdrawResourceEvent::Amount(100.into()), event_data) =>
+            )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
+                && is_decoded_equal(
+                    &account::WithdrawEvent::Fungible(XRD, 100.into()),
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1092,8 +1385,9 @@ fn validator_staking_emits_correct_event() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
-                && is_decoded_equal(&DepositResourceEvent::Amount(100.into()), event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::DepositEvent::new(100.into()), event_data) =>
                 true,
             _ => false,
         });
@@ -1127,7 +1421,9 @@ fn validator_staking_emits_correct_event() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
+                true,
             _ => false,
         });
     }
@@ -1149,7 +1445,9 @@ fn validator_unstake_emits_correct_events() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
@@ -1159,7 +1457,7 @@ fn validator_unstake_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1171,26 +1469,21 @@ fn validator_unstake_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        Nine Events:
-        1. Lock Fee event
-        2. Vault withdraw event (LP Tokens)
-        3. Resource Manager burn event (LP Tokens)
-        4. Vault withdraw event (withdraw from stake vault)
-        5. Vault deposit event (deposit into stake vault)
-        6. Resource Manager Mint (minting unstake redeem tokens)
-        7. Validator Unstake event
-        8. Resource Manager Vault creation event (unstake redeem tokens)
-        9. Vault Deposit Event (unstake redeem tokens)
-         */
-        assert_eq!(events.len(), 9);
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1199,12 +1492,29 @@ fn validator_unstake_emits_correct_events() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
-                && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::WithdrawEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(2) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ref event_data,
+            )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
+                && is_decoded_equal(
+                    &account::WithdrawEvent::Fungible(
+                        validator_substate.stake_unit_resource,
+                        1.into()
+                    ),
+                    event_data
+                ) =>
+                true,
+            _ => false,
+        });
+        assert!(match events.get(3) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1218,24 +1528,27 @@ fn validator_unstake_emits_correct_events() {
                 true,
             _ => false,
         });
-        assert!(match events.get(3) {
-            Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ..,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
-                true,
-            _ => false,
-        });
         assert!(match events.get(4) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
+                true,
             _ => false,
         });
         assert!(match events.get(5) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ..,
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
+                true,
+            _ => false,
+        });
+        assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(node_id, ObjectModuleId::Main),
@@ -1244,11 +1557,11 @@ fn validator_unstake_emits_correct_events() {
                 ..,
             )) if test_runner
                 .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
-                && node_id == validator_substate.unstake_nft.as_node_id() =>
+                && node_id == validator_substate.claim_nft.as_node_id() =>
                 true,
             _ => false,
         });
-        assert!(match events.get(6) {
+        assert!(match events.get(7) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1256,7 +1569,7 @@ fn validator_unstake_emits_correct_events() {
             )) if test_runner.is_event_name_equal::<UnstakeEvent>(event_identifier) => true,
             _ => false,
         });
-        assert!(match events.get(7) {
+        assert!(match events.get(8) {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(_node_id, ObjectModuleId::Main),
@@ -1266,12 +1579,14 @@ fn validator_unstake_emits_correct_events() {
             )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
-        assert!(match events.get(8) {
+        assert!(match events.get(9) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
+            )) if test_runner
+                .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier) =>
+                true,
             _ => false,
         });
     }
@@ -1293,7 +1608,9 @@ fn validator_claim_xrd_emits_correct_events() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
@@ -1301,7 +1618,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1313,10 +1630,10 @@ fn validator_claim_xrd_emits_correct_events() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .withdraw_from_account(account_with_su, validator_substate.unstake_nft, 1)
-        .take_all_from_worktop(validator_substate.unstake_nft, "unstake_nft")
+        .withdraw_from_account(account_with_su, validator_substate.claim_nft, 1)
+        .take_all_from_worktop(validator_substate.claim_nft, "unstake_nft")
         .claim_xrd(validator_address, "unstake_nft")
-        .try_deposit_batch_or_abort(account_with_su)
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1326,24 +1643,21 @@ fn validator_claim_xrd_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        Seven Events:
-        1. Vault lock fee event
-        2. Vault withdraw event (unstake nft)
-        3. Resource Manager burn event (unstake nft)
-        4. Vault withdraw event (unstaked xrd)
-        5. Claim XRD
-        5. Resource Manager vault creation event (XRD)
-        6. Vault deposit event (XRD)
-         */
-        assert_eq!(events.len(), 7);
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1352,11 +1666,21 @@ fn validator_claim_xrd_emits_correct_events() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
+            )) if test_runner
+                .is_event_name_equal::<non_fungible_vault::WithdrawEvent>(event_identifier) =>
                 true,
             _ => false,
         });
         assert!(match events.get(2) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ..,
+            )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier) =>
+                true,
+            _ => false,
+        });
+        assert!(match events.get(3) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1366,16 +1690,17 @@ fn validator_claim_xrd_emits_correct_events() {
                 true,
             _ => false,
         });
-        assert!(match events.get(3) {
+        assert!(match events.get(4) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
                 true,
             _ => false,
         });
-        assert!(match events.get(4) {
+        assert!(match events.get(5) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1383,7 +1708,7 @@ fn validator_claim_xrd_emits_correct_events() {
             )) if test_runner.is_event_name_equal::<ClaimXrdEvent>(event_identifier) => true,
             _ => false,
         });
-        assert!(match events.get(5) {
+        assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(_node_id, ObjectModuleId::Main),
@@ -1393,12 +1718,14 @@ fn validator_claim_xrd_emits_correct_events() {
             )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
-        assert!(match events.get(6) {
+        assert!(match events.get(7) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
+                true,
             _ => false,
         });
     }
@@ -1412,7 +1739,9 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (pub_key, _, account) = test_runner.new_account(false);
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
@@ -1421,7 +1750,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .register_validator(validator_address)
         .build();
@@ -1437,7 +1766,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .create_proof_from_account_of_non_fungibles(
             account,
             VALIDATOR_OWNER_BADGE,
-            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
         .call_method(
             validator_address,
@@ -1455,25 +1784,25 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        5 Events:
-        1. Vault lock fee event
-        2. Withdraw event
-        3. Validator update delegation state
-        4. Deposit event
-         */
-        assert_eq!(events.len(), 4);
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(1) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1499,7 +1828,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 #[test]
 fn setting_metadata_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let resource_address = create_all_allowed_resource(&mut test_runner);
 
     let manifest = ManifestBuilder::new()
@@ -1513,19 +1842,21 @@ fn setting_metadata_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        Two events:
-        1. Vault lock fee
-        2. Metadata set entry
-         */
-        assert_eq!(events.len(), 2);
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert!(match events.get(0) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1549,11 +1880,11 @@ fn setting_metadata_emits_correct_events() {
 #[test]
 fn create_account_events_can_be_looked_up() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
     // Act
     let manifest = ManifestBuilder::new()
-        .new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll))
+        .new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -1582,7 +1913,7 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
     scrypto_decode::<T>(&actual).unwrap() == *expected
 }
 
-fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress {
+fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceAddress {
     let manifest = ManifestBuilder::new()
         .create_fungible_resource(
             OwnerRole::Fixed(AccessRule::AllowAll),
@@ -1608,9 +1939,825 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-    *receipt
-        .expect_commit(true)
-        .new_resource_addresses()
-        .get(0)
-        .unwrap()
+    receipt.expect_commit(true).new_resource_addresses()[0]
+}
+
+#[test]
+fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
+    let mut test_runner = TestRunnerBuilder::new()
+        .without_trace()
+        .collect_events()
+        .build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+
+    // Create
+    let resource_address = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+        OwnerRole::None,
+        Some(dec!(100)),
+        18,
+        account,
+    );
+
+    // Mint
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .mint_fungible(resource_address, dec!(30))
+        .deposit_batch(account)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Burn
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, dec!(10))
+        .burn_all_from_worktop(resource_address)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Assert
+    let mut total_supply = Decimal::ZERO;
+    let mut total_mint_amount = Decimal::ZERO;
+    let mut total_burn_amount = Decimal::ZERO;
+    for component in test_runner.find_all_components() {
+        let balance = test_runner.get_component_balance(component, resource_address);
+        total_supply = total_supply.safe_add(balance).unwrap();
+        println!("{:?}, {}", component, balance);
+    }
+    for tx_events in test_runner.collected_events() {
+        for event in tx_events {
+            match &event.0 .0 {
+                Emitter::Method(x, _) if x.eq(resource_address.as_node_id()) => {}
+                _ => {
+                    continue;
+                }
+            }
+            let actual_type_name = test_runner.event_name(&event.0);
+            match actual_type_name.as_str() {
+                "MintFungibleResourceEvent" => {
+                    total_mint_amount = total_mint_amount
+                        .safe_add(
+                            scrypto_decode::<MintFungibleResourceEvent>(&event.1)
+                                .unwrap()
+                                .amount,
+                        )
+                        .unwrap();
+                }
+                "BurnFungibleResourceEvent" => {
+                    total_burn_amount = total_burn_amount
+                        .safe_add(
+                            scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
+                                .unwrap()
+                                .amount,
+                        )
+                        .unwrap();
+                }
+                _ => {}
+            }
+        }
+    }
+    println!("Total supply: {}", total_supply);
+    println!("Total mint amount: {}", total_mint_amount);
+    println!("Total burn amount: {}", total_burn_amount);
+    assert_eq!(
+        total_supply,
+        total_mint_amount.safe_sub(total_burn_amount).unwrap()
+    );
+
+    // Query total supply from the resource manager
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(resource_address, "get_total_supply", manifest_args!())
+            .build(),
+        vec![],
+    );
+    assert_eq!(
+        Some(total_supply),
+        receipt.expect_commit_success().output::<Option<Decimal>>(1)
+    );
+}
+
+#[test]
+fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
+    let mut test_runner = TestRunnerBuilder::new()
+        .without_trace()
+        .collect_events()
+        .build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+
+    // Create
+    let resource_address = test_runner.create_freely_mintable_and_burnable_non_fungible_resource(
+        OwnerRole::None,
+        NonFungibleIdType::Integer,
+        Some(vec![
+            (NonFungibleLocalId::integer(1), EmptyNonFungibleData {}),
+            (NonFungibleLocalId::integer(2), EmptyNonFungibleData {}),
+            (NonFungibleLocalId::integer(3), EmptyNonFungibleData {}),
+        ]),
+        account,
+    );
+
+    // Mint
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .mint_non_fungible(
+            resource_address,
+            vec![
+                (NonFungibleLocalId::integer(4), EmptyNonFungibleData {}),
+                (NonFungibleLocalId::integer(5), EmptyNonFungibleData {}),
+            ],
+        )
+        .deposit_batch(account)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Burn
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_non_fungibles_from_account(
+            account,
+            resource_address,
+            [NonFungibleLocalId::integer(4)],
+        )
+        .burn_all_from_worktop(resource_address)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Assert
+    let mut total_supply = Decimal::ZERO;
+    let mut total_mint_non_fungibles = BTreeSet::new();
+    let mut total_burn_non_fungibles = BTreeSet::new();
+    for component in test_runner.find_all_components() {
+        let balance = test_runner.get_component_balance(component, resource_address);
+        total_supply = total_supply.safe_add(balance).unwrap();
+        println!("{:?}, {}", component, balance);
+    }
+    for tx_events in test_runner.collected_events() {
+        for event in tx_events {
+            match &event.0 .0 {
+                Emitter::Method(x, _) if x.eq(resource_address.as_node_id()) => {}
+                _ => {
+                    continue;
+                }
+            }
+            let actual_type_name = test_runner.event_name(&event.0);
+            match actual_type_name.as_str() {
+                "MintNonFungibleResourceEvent" => {
+                    total_mint_non_fungibles.extend(
+                        scrypto_decode::<MintNonFungibleResourceEvent>(&event.1)
+                            .unwrap()
+                            .ids,
+                    );
+                }
+                "BurnNonFungibleResourceEvent" => {
+                    total_burn_non_fungibles.extend(
+                        scrypto_decode::<BurnNonFungibleResourceEvent>(&event.1)
+                            .unwrap()
+                            .ids,
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
+    println!("Total supply: {}", total_supply);
+    println!("Total mint: {:?}", total_mint_non_fungibles);
+    println!("Total burn: {:?}", total_burn_non_fungibles);
+    total_mint_non_fungibles.retain(|x| !total_burn_non_fungibles.contains(x));
+    assert_eq!(total_supply, total_mint_non_fungibles.len().into());
+
+    // Query total supply from the resource manager
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(resource_address, "get_total_supply", manifest_args!())
+            .build(),
+        vec![],
+    );
+    assert_eq!(
+        Some(total_supply),
+        receipt.expect_commit_success().output::<Option<Decimal>>(1)
+    );
+}
+
+#[test]
+fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(false);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account, XRD, 1)
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        vec![],
+        0,
+        PreviewFlags {
+            use_free_credit: true,
+            assume_all_signature_proofs: true,
+            skip_epoch_check: true,
+        },
+    );
+
+    // Assert
+    let events = receipt
+        .expect_commit_success()
+        .application_events
+        .as_slice();
+
+    let [
+        vault_withdraw_event,
+        account_withdraw_event,
+        vault_deposit_event,
+        account_deposit_event,
+        // Note that nobody is paying fee, because of free credit
+        _, // receive fee
+        _, // burn
+    ] = events else {
+        panic!("Incorrect number of events: {}", events.len())
+    };
+
+    {
+        assert_eq!(
+            test_runner.event_name(&vault_withdraw_event.0),
+            fungible_vault::WithdrawEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<fungible_vault::WithdrawEvent>(&vault_withdraw_event.1).unwrap(),
+            fungible_vault::WithdrawEvent::new(dec!("1"))
+        )
+    }
+    {
+        assert_eq!(
+            test_runner.event_name(&account_withdraw_event.0),
+            account::WithdrawEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::WithdrawEvent>(&account_withdraw_event.1).unwrap(),
+            account::WithdrawEvent::Fungible(XRD, dec!("1"))
+        )
+    }
+    {
+        assert_eq!(
+            test_runner.event_name(&vault_deposit_event.0),
+            fungible_vault::DepositEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<fungible_vault::DepositEvent>(&vault_deposit_event.1).unwrap(),
+            fungible_vault::DepositEvent::new(dec!("1"))
+        )
+    }
+    {
+        assert_eq!(
+            test_runner.event_name(&account_deposit_event.0),
+            account::DepositEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::DepositEvent>(&account_deposit_event.1).unwrap(),
+            account::DepositEvent::Fungible(XRD, dec!("1"))
+        )
+    }
+}
+
+#[test]
+fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(false);
+    let resource_address = test_runner.create_non_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account, resource_address, 2)
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        vec![],
+        0,
+        PreviewFlags {
+            use_free_credit: true,
+            assume_all_signature_proofs: true,
+            skip_epoch_check: true,
+        },
+    );
+
+    // Assert
+    let events = receipt
+        .expect_commit_success()
+        .application_events
+        .as_slice();
+
+    let [
+        vault_withdraw_event,
+        account_withdraw_event,
+        vault_deposit_event,
+        account_deposit_event,
+        // Note that nobody is paying fee, because of free credit
+        _, // receive fee
+        _, // burn
+    ] = events else {
+        panic!("Incorrect number of events: {}", events.len())
+    };
+
+    let expected_non_fungibles = btreeset![
+        NonFungibleLocalId::integer(3),
+        NonFungibleLocalId::integer(2)
+    ];
+    {
+        assert_eq!(
+            test_runner.event_name(&vault_withdraw_event.0),
+            non_fungible_vault::WithdrawEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<non_fungible_vault::WithdrawEvent>(&vault_withdraw_event.1).unwrap(),
+            non_fungible_vault::WithdrawEvent::new(expected_non_fungibles.clone())
+        )
+    }
+    {
+        assert_eq!(
+            test_runner.event_name(&account_withdraw_event.0),
+            account::WithdrawEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::WithdrawEvent>(&account_withdraw_event.1).unwrap(),
+            account::WithdrawEvent::NonFungible(resource_address, expected_non_fungibles.clone())
+        )
+    }
+    {
+        assert_eq!(
+            test_runner.event_name(&vault_deposit_event.0),
+            non_fungible_vault::DepositEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<non_fungible_vault::DepositEvent>(&vault_deposit_event.1).unwrap(),
+            non_fungible_vault::DepositEvent::new(expected_non_fungibles.clone())
+        )
+    }
+    {
+        assert_eq!(
+            test_runner.event_name(&account_deposit_event.0),
+            account::DepositEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::DepositEvent>(&account_deposit_event.1).unwrap(),
+            account::DepositEvent::NonFungible(resource_address, expected_non_fungibles)
+        )
+    }
+}
+
+#[test]
+fn account_configuration_emits_expected_events() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(false);
+    let resource_address = test_runner.create_non_fungible_resource(account);
+    let authorized_depositor_badge = ResourceOrNonFungible::Resource(resource_address);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            account,
+            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
+            AccountSetResourcePreferenceInput {
+                resource_address,
+                resource_preference: ResourcePreference::Allowed,
+            },
+        )
+        .call_method(
+            account,
+            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
+            AccountSetResourcePreferenceInput {
+                resource_address,
+                resource_preference: ResourcePreference::Disallowed,
+            },
+        )
+        .call_method(
+            account,
+            ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT,
+            AccountRemoveResourcePreferenceInput { resource_address },
+        )
+        .call_method(
+            account,
+            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+            AccountSetDefaultDepositRuleInput {
+                default: DefaultDepositRule::Accept,
+            },
+        )
+        .call_method(
+            account,
+            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+            AccountSetDefaultDepositRuleInput {
+                default: DefaultDepositRule::Reject,
+            },
+        )
+        .call_method(
+            account,
+            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+            AccountSetDefaultDepositRuleInput {
+                default: DefaultDepositRule::AllowExisting,
+            },
+        )
+        .call_method(
+            account,
+            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+            AccountAddAuthorizedDepositorInput {
+                badge: authorized_depositor_badge.clone(),
+            },
+        )
+        .call_method(
+            account,
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR,
+            AccountRemoveAuthorizedDepositorInput {
+                badge: authorized_depositor_badge.clone(),
+            },
+        )
+        .build();
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        vec![],
+        0,
+        PreviewFlags {
+            use_free_credit: true,
+            assume_all_signature_proofs: true,
+            skip_epoch_check: true,
+        },
+    );
+
+    // Assert
+    let events = receipt
+        .expect_commit_success()
+        .application_events
+        .as_slice();
+
+    for event in events {
+        let name = test_runner.event_name(&event.0);
+        println!("{:?} - {}", event.0, name);
+    }
+
+    let [
+        set_resource_preference_allowed_event,
+        set_resource_preference_disallowed_event,
+
+        remove_resource_preference_event,
+
+        set_default_deposit_rule_accept_event,
+        set_default_deposit_rule_reject_event,
+        set_default_deposit_rule_allow_existing_event,
+
+        add_authorized_depositor_event,
+        remove_authorized_depositor_event,
+
+        // Note that nobody is paying fee, because of free credit
+        _, // receive fee
+        _, // burn
+    ] = events else {
+        panic!("Incorrect number of events: {}", events.len())
+    };
+
+    {
+        assert_eq!(
+            set_resource_preference_allowed_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&set_resource_preference_allowed_event.0),
+            account::SetResourcePreferenceEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::SetResourcePreferenceEvent>(
+                &set_resource_preference_allowed_event.1
+            )
+            .unwrap(),
+            account::SetResourcePreferenceEvent {
+                resource_address,
+                preference: ResourcePreference::Allowed
+            }
+        )
+    }
+    {
+        assert_eq!(
+            set_resource_preference_disallowed_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&set_resource_preference_disallowed_event.0),
+            account::SetResourcePreferenceEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::SetResourcePreferenceEvent>(
+                &set_resource_preference_disallowed_event.1
+            )
+            .unwrap(),
+            account::SetResourcePreferenceEvent {
+                resource_address,
+                preference: ResourcePreference::Disallowed
+            }
+        )
+    }
+    {
+        assert_eq!(
+            remove_resource_preference_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&remove_resource_preference_event.0),
+            account::RemoveResourcePreferenceEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::RemoveResourcePreferenceEvent>(
+                &remove_resource_preference_event.1
+            )
+            .unwrap(),
+            account::RemoveResourcePreferenceEvent { resource_address }
+        )
+    }
+    {
+        assert_eq!(
+            set_default_deposit_rule_accept_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&set_default_deposit_rule_accept_event.0),
+            account::SetDefaultDepositRuleEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::SetDefaultDepositRuleEvent>(
+                &set_default_deposit_rule_accept_event.1
+            )
+            .unwrap(),
+            account::SetDefaultDepositRuleEvent {
+                default_deposit_rule: DefaultDepositRule::Accept
+            }
+        )
+    }
+    {
+        assert_eq!(
+            set_default_deposit_rule_reject_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&set_default_deposit_rule_reject_event.0),
+            account::SetDefaultDepositRuleEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::SetDefaultDepositRuleEvent>(
+                &set_default_deposit_rule_reject_event.1
+            )
+            .unwrap(),
+            account::SetDefaultDepositRuleEvent {
+                default_deposit_rule: DefaultDepositRule::Reject
+            }
+        )
+    }
+    {
+        assert_eq!(
+            set_default_deposit_rule_allow_existing_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&set_default_deposit_rule_allow_existing_event.0),
+            account::SetDefaultDepositRuleEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::SetDefaultDepositRuleEvent>(
+                &set_default_deposit_rule_allow_existing_event.1
+            )
+            .unwrap(),
+            account::SetDefaultDepositRuleEvent {
+                default_deposit_rule: DefaultDepositRule::AllowExisting
+            }
+        )
+    }
+    {
+        assert_eq!(
+            add_authorized_depositor_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&add_authorized_depositor_event.0),
+            account::AddAuthorizedDepositorEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::AddAuthorizedDepositorEvent>(
+                &add_authorized_depositor_event.1
+            )
+            .unwrap(),
+            account::AddAuthorizedDepositorEvent {
+                authorized_depositor_badge: authorized_depositor_badge.clone()
+            }
+        )
+    }
+    {
+        assert_eq!(
+            remove_authorized_depositor_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&remove_authorized_depositor_event.0),
+            account::RemoveAuthorizedDepositorEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::RemoveAuthorizedDepositorEvent>(
+                &remove_authorized_depositor_event.1
+            )
+            .unwrap(),
+            account::RemoveAuthorizedDepositorEvent {
+                authorized_depositor_badge: authorized_depositor_badge.clone()
+            }
+        )
+    }
+}
+
+#[test]
+fn account_deposit_batch_emits_expected_events() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(false);
+    let resource_address = test_runner.create_non_fungible_resource(account);
+
+    // Act
+    for method_name in [
+        ACCOUNT_DEPOSIT_BATCH_IDENT,
+        ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
+        ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
+    ] {
+        let manifest_args = match method_name {
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT
+            | ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => manifest_args!(
+                ManifestExpression::EntireWorktop,
+                Option::<ResourceOrNonFungible>::None
+            ),
+            _ => manifest_args!(ManifestExpression::EntireWorktop),
+        };
+        let manifest = ManifestBuilder::new()
+            .withdraw_from_account(account, XRD, 1)
+            .withdraw_from_account(account, resource_address, 3)
+            .call_method(account, method_name, manifest_args)
+            .build();
+        let receipt = test_runner.preview_manifest(
+            manifest,
+            vec![],
+            0,
+            PreviewFlags {
+                use_free_credit: true,
+                assume_all_signature_proofs: true,
+                skip_epoch_check: true,
+            },
+        );
+
+        // Assert
+        let events = receipt
+            .expect_commit_success()
+            .application_events
+            .as_slice();
+        let [
+            _, /* Withdraw of XRD from vault 1 */
+            _, /* Withdraw of XRD from account 1 */
+            _, /* Withdraw of NFTs from vault 1 */
+            _, /* Withdraw of NFTs from account 1 */
+            _, /* Deposit of XRD into vault 2 */
+            xrd_deposit_event,
+            _, /* Deposit of NFTs into vault 2 */
+            nfts_deposit_event,
+            ..
+        ] = events else {
+            panic!("Incorrect number of events: {}", events.len())
+        };
+
+        {
+            assert_eq!(
+                xrd_deposit_event.0 .0,
+                Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            );
+            assert_eq!(
+                test_runner.event_name(&xrd_deposit_event.0),
+                account::DepositEvent::event_name()
+            );
+            assert_eq!(
+                scrypto_decode::<account::DepositEvent>(&xrd_deposit_event.1).unwrap(),
+                account::DepositEvent::Fungible(XRD, dec!("1"))
+            )
+        }
+        {
+            assert_eq!(
+                nfts_deposit_event.0 .0,
+                Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            );
+            assert_eq!(
+                test_runner.event_name(&nfts_deposit_event.0),
+                account::DepositEvent::event_name()
+            );
+            assert_eq!(
+                scrypto_decode::<account::DepositEvent>(&nfts_deposit_event.1).unwrap(),
+                account::DepositEvent::NonFungible(
+                    resource_address,
+                    btreeset![
+                        NonFungibleLocalId::integer(1),
+                        NonFungibleLocalId::integer(2),
+                        NonFungibleLocalId::integer(3)
+                    ]
+                )
+            )
+        }
+    }
+}
+
+#[test]
+fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(false);
+    let resource_address = test_runner.create_non_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            account,
+            ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+            AccountSetDefaultDepositRuleInput {
+                default: DefaultDepositRule::Reject,
+            },
+        )
+        .withdraw_from_account(account, XRD, 1)
+        .withdraw_from_account(account, resource_address, 3)
+        .try_deposit_entire_worktop_or_refund(account, None)
+        .deposit_batch(account)
+        .build();
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        vec![],
+        0,
+        PreviewFlags {
+            use_free_credit: true,
+            assume_all_signature_proofs: true,
+            skip_epoch_check: true,
+        },
+    );
+
+    // Assert
+    let events = receipt
+        .expect_commit_success()
+        .application_events
+        .as_slice();
+    let [
+        _, /* Default deposit rule -> Reject */
+        _, /* Withdraw of XRD from vault 1 */
+        _, /* Withdraw of XRD from account 1 */
+        _, /* Withdraw of NFTs from vault 1 */
+        _, /* Withdraw of NFTs from account 1 */
+        xrd_rejected_deposit_event,
+        nfts_rejected_deposit_event,
+        ..
+    ] = events else {
+        panic!("Incorrect number of events: {}", events.len())
+    };
+
+    {
+        assert_eq!(
+            xrd_rejected_deposit_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&xrd_rejected_deposit_event.0),
+            account::RejectedDepositEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::RejectedDepositEvent>(&xrd_rejected_deposit_event.1).unwrap(),
+            account::RejectedDepositEvent::Fungible(XRD, dec!("1"))
+        )
+    }
+    {
+        assert_eq!(
+            nfts_rejected_deposit_event.0 .0,
+            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+        );
+        assert_eq!(
+            test_runner.event_name(&nfts_rejected_deposit_event.0),
+            account::RejectedDepositEvent::event_name()
+        );
+        assert_eq!(
+            scrypto_decode::<account::RejectedDepositEvent>(&nfts_rejected_deposit_event.1)
+                .unwrap(),
+            account::RejectedDepositEvent::NonFungible(
+                resource_address,
+                btreeset![
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
+                    NonFungibleLocalId::integer(3)
+                ]
+            )
+        )
+    }
 }

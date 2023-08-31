@@ -1,3 +1,4 @@
+use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelApi;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
@@ -8,10 +9,10 @@ use radix_engine_interface::constants::*;
 use sbor::rust::prelude::*;
 use sbor::traversal::TerminalValueRef;
 
-use super::node_modules::type_info::TypeInfoSubstate;
 use super::system::SystemService;
 use super::system_callback::SystemConfig;
 use super::system_callback_api::SystemCallbackObject;
+use super::type_info::TypeInfoSubstate;
 
 //=======================================================================================================
 // NOTE:
@@ -25,10 +26,16 @@ use super::system_callback_api::SystemCallbackObject;
 //==================
 
 /// We use a trait here so it can be implemented either by the System API (mid-execution) or by off-ledger systems
-pub trait TypeInfoLookup {
-    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfoForValidation>;
+pub trait ValidationContext {
+    type Error;
+
+    fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, Self::Error>;
 
     fn schema_origin(&self) -> &SchemaOrigin;
+
+    fn allow_ownership(&self) -> bool;
+
+    fn allow_non_global_ref(&self) -> bool;
 }
 
 #[derive(Debug, Clone)]
@@ -50,6 +57,8 @@ pub struct SystemServiceTypeInfoLookup<
 > {
     system_service: RefCell<&'s mut SystemService<'a, Y, V>>,
     schema_origin: SchemaOrigin,
+    allow_ownership: bool,
+    allow_non_global_ref: bool,
 }
 
 impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>
@@ -58,29 +67,36 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>
     pub fn new(
         system_service: &'s mut SystemService<'a, Y, V>,
         schema_origin: SchemaOrigin,
+        allow_ownership: bool,
+        allow_non_global_ref: bool,
     ) -> Self {
         Self {
             system_service: system_service.into(),
             schema_origin,
+            allow_ownership,
+            allow_non_global_ref,
         }
     }
 }
 
-impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLookup
+impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> ValidationContext
     for SystemServiceTypeInfoLookup<'s, 'a, Y, V>
 {
-    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfoForValidation> {
+    type Error = RuntimeError;
+
+    fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, RuntimeError> {
         let type_info = self
             .system_service
             .borrow_mut()
             .get_node_type_info(&node_id)?;
         let mapped = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
-                TypeInfoForValidation::Object {
-                    package: blueprint_id.package_address,
-                    blueprint: blueprint_id.blueprint_name,
-                }
-            }
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint_info: BlueprintInfo { blueprint_id, .. },
+                ..
+            }) => TypeInfoForValidation::Object {
+                package: blueprint_id.package_address,
+                blueprint: blueprint_id.blueprint_name,
+            },
             TypeInfoSubstate::KeyValueStore(_) => TypeInfoForValidation::KeyValueStore,
             TypeInfoSubstate::GlobalAddressReservation(_) => {
                 TypeInfoForValidation::GlobalAddressReservation
@@ -90,11 +106,19 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
                 blueprint: info.blueprint_id.blueprint_name,
             },
         };
-        Some(mapped)
+        Ok(mapped)
     }
 
     fn schema_origin(&self) -> &SchemaOrigin {
         &self.schema_origin
+    }
+
+    fn allow_ownership(&self) -> bool {
+        self.allow_ownership
+    }
+
+    fn allow_non_global_ref(&self) -> bool {
+        self.allow_non_global_ref
     }
 }
 
@@ -139,15 +163,37 @@ impl TypeInfoForValidation {
 // VALIDATION
 //==================
 
-type Lookup<'a> = Box<dyn TypeInfoLookup + 'a>;
+type Lookup<'a, E> = Box<dyn ValidationContext<Error = E> + 'a>;
 
-impl<'a> ValidatableCustomExtension<Lookup<'a>> for ScryptoCustomExtension {
+impl<'a, E: ToString> ValidatableCustomExtension<Lookup<'a, E>> for ScryptoCustomExtension {
     fn apply_validation_for_custom_value<'de>(
         schema: &Schema<Self::CustomSchema>,
         custom_value: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
         type_index: LocalTypeIndex,
-        context: &Lookup<'a>,
+        context: &Lookup<'a, E>,
     ) -> Result<(), PayloadValidationError<Self>> {
+        match &custom_value.0 {
+            ScryptoCustomValue::Own(..) => {
+                if !context.allow_ownership() {
+                    return Err(PayloadValidationError::ValidationError(
+                        ValidationError::CustomError(format!("Ownership is not allowed")),
+                    ));
+                }
+            }
+            ScryptoCustomValue::Reference(reference) => {
+                if !reference.0.is_global() {
+                    if !context.allow_non_global_ref() {
+                        return Err(PayloadValidationError::ValidationError(
+                            ValidationError::CustomError(format!(
+                                "Non Global Reference is not allowed"
+                            )),
+                        ));
+                    }
+                }
+            }
+            _ => {}
+        }
+
         match schema
             .resolve_type_validation(type_index)
             .ok_or(PayloadValidationError::SchemaInconsistency)?
@@ -164,7 +210,7 @@ impl<'a> ValidatableCustomExtension<Lookup<'a>> for ScryptoCustomExtension {
         _: &Schema<Self::CustomSchema>,
         _: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
         _: &TerminalValueRef<'de, Self::CustomTraversal>,
-        _: &Lookup<'a>,
+        _: &Lookup<'a, E>,
     ) -> Result<(), PayloadValidationError<Self>> {
         // Non-custom values must have non-custom type kinds...
         // But custom type validations aren't allowed to combine with non-custom type kinds
@@ -172,10 +218,10 @@ impl<'a> ValidatableCustomExtension<Lookup<'a>> for ScryptoCustomExtension {
     }
 }
 
-fn apply_custom_validation_to_custom_value(
+fn apply_custom_validation_to_custom_value<E: ToString>(
     custom_validation: &ScryptoCustomTypeValidation,
     custom_value: &ScryptoCustomValue,
-    lookup: &Lookup,
+    lookup: &Lookup<E>,
 ) -> Result<(), PayloadValidationError<ScryptoCustomExtension>> {
     match custom_validation {
         ScryptoCustomTypeValidation::Reference(reference_validation) => {
@@ -222,6 +268,7 @@ fn apply_custom_validation_to_custom_value(
             let ScryptoCustomValue::Own(own) = custom_value else {
                 return Err(PayloadValidationError::SchemaInconsistency);
             };
+
             let node_id = own.0;
             let type_info = resolve_type_info(&node_id, lookup)?;
             let is_valid = match own_validation {
@@ -258,14 +305,11 @@ fn apply_custom_validation_to_custom_value(
     Ok(())
 }
 
-fn resolve_type_info(
+fn resolve_type_info<E: ToString>(
     node_id: &NodeId,
-    lookup: &Lookup,
+    lookup: &Lookup<E>,
 ) -> Result<TypeInfoForValidation, PayloadValidationError<ScryptoCustomExtension>> {
-    lookup.get_node_type_info(node_id).ok_or_else(|| {
-        PayloadValidationError::ValidationError(ValidationError::CustomError(format!(
-            "Node doesn't exist - could not lookup type info: {:?}",
-            node_id
-        )))
+    lookup.get_node_type_info(node_id).map_err(|e| {
+        PayloadValidationError::ValidationError(ValidationError::CustomError(e.to_string()))
     })
 }

@@ -1,13 +1,13 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT,
-    OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, LockFlags, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -16,17 +16,352 @@ use radix_engine_interface::types::*;
 pub enum NonFungibleVaultError {
     MissingId(NonFungibleLocalId),
     NotEnoughAmount,
+    DecimalOverflow,
 }
 
-pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as NonFungibleVaultBalanceSubstate;
+declare_native_blueprint_state! {
+    blueprint_ident: NonFungibleVault,
+    blueprint_snake_case: non_fungible_vault,
+    fields: {
+        balance: {
+            ident: Balance,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+        },
+        locked_resource: {
+            ident: LockedResource,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            transience: FieldTransience::TransientStatic {
+                default_value: scrypto_encode(&NonFungibleVaultLockedResourceFieldPayload::from_content_source(LockedNonFungibleResource::default())).unwrap(),
+            },
+        },
+        freeze_status: {
+            ident: FreezeStatus,
+            field_type: {
+                kind: StaticSingleVersioned,
+            },
+            condition: Condition::if_outer_feature(NonFungibleResourceManagerFeature::VaultFreeze),
+        },
+    },
+    collections: {
+        non_fungibles: Index {
+            entry_ident: NonFungible,
+            key_type: {
+                kind: Static,
+                content_type: NonFungibleLocalId,
+            },
+            value_type: {
+                kind: StaticSingleVersioned,
+            },
+            allow_ownership: false,
+        },
+    },
+}
 
-pub const NON_FUNGIBLE_VAULT_CONTENTS_INDEX: CollectionIndex = 0u8;
-
-pub use crate::types::NonFungibleLocalId as NonFungibleVaultContentsEntry;
+type NonFungibleVaultBalanceV1 = LiquidNonFungibleVault;
+type NonFungibleVaultLockedResourceV1 = LockedNonFungibleResource;
+type NonFungibleVaultFreezeStatusV1 = VaultFrozenFlag;
+type NonFungibleVaultNonFungibleV1 = ();
 
 pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {
+    pub fn get_definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let state = NonFungibleVaultStateSchemaInit::create_schema_init(&mut aggregator);
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            VAULT_TAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_TAKE_ADVANCED_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultTakeAdvancedInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultTakeAdvancedOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_RECALL_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo {
+                    receiver: Receiver::SelfRefMut,
+                    ref_types: RefTypes::DIRECT_ACCESS,
+                }),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_FREEZE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo {
+                    receiver: Receiver::SelfRefMut,
+                    ref_types: RefTypes::DIRECT_ACCESS,
+                }),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultFreezeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultFreezeOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_UNFREEZE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo {
+                    receiver: Receiver::SelfRefMut,
+                    ref_types: RefTypes::DIRECT_ACCESS,
+                }),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultUnfreezeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultUnfreezeOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo {
+                    receiver: Receiver::SelfRefMut,
+                    ref_types: RefTypes::DIRECT_ACCESS,
+                }),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesOutput>(
+                        ),
+                ),
+                export: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_PUT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultPutInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_GET_AMOUNT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsOutput>()),
+                export: NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<NonFungibleVaultContainsNonFungibleInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<NonFungibleVaultContainsNonFungibleOutput>()),
+                export: NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesInput>()),
+                output: TypeRef::Static(aggregator
+                    .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesOutput>()),
+                export: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesOutput>(
+                        ),
+                ),
+                export: NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_BURN_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultBurnInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<VaultBurnOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<NonFungibleVaultBurnNonFungiblesOutput>(),
+                ),
+                export: NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                non_fungible_vault::WithdrawEvent,
+                non_fungible_vault::DepositEvent,
+                non_fungible_vault::RecallEvent
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::Inner {
+                outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            },
+            is_transient: false,
+            dependencies: btreeset!(),
+            feature_set: NonFungibleVaultFeatureSet::all_features(),
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state,
+                events: event_schema,
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
+                    roles: RoleSpecification::UseOuter,
+                    methods: method_auth_template! {
+                        VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT => MethodAccessibility::Public;
+                        NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
+
+                        VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                        VAULT_TAKE_ADVANCED_IDENT => [WITHDRAWER_ROLE];
+                        NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAWER_ROLE];
+                        VAULT_RECALL_IDENT => [RECALLER_ROLE];
+                        VAULT_FREEZE_IDENT => [FREEZER_ROLE];
+                        VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
+                        NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALLER_ROLE];
+                        VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
+                        VAULT_BURN_IDENT => [BURNER_ROLE];
+                        NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURNER_ROLE];
+
+                        NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => MethodAccessibility::OwnPackageOnly;
+                        NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => MethodAccessibility::OwnPackageOnly;
+                    },
+                }),
+            },
+        }
+    }
+
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
@@ -44,7 +379,42 @@ impl NonFungibleVaultBlueprint {
     {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
-        let amount = amount.for_withdrawal(0, withdraw_strategy);
+        // deduct from liquidity pool
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::Balance.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut balance = api
+            .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
+            .into_latest();
+
+        // Early exit if input amount is obviously wrong
+        // This is to prevent for_withdrawal from overflowing in case a bad amount is sent in
+        {
+            if amount.is_negative() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::InvalidAmount),
+                ));
+            }
+
+            let vault_amount_plus_one = balance
+                .amount
+                .safe_add(Decimal::ONE)
+                .ok_or_else(|| VaultError::DecimalOverflow)?;
+            if amount > &vault_amount_plus_one {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
+                ));
+            }
+        }
+
+        let amount =
+            amount
+                .for_withdrawal(0, withdraw_strategy)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::DecimalOverflow),
+                ))?;
 
         // Check amount
         let n = check_non_fungible_amount(&amount).map_err(|_| {
@@ -52,10 +422,35 @@ impl NonFungibleVaultBlueprint {
         })?;
 
         // Take
-        let taken = Self::internal_take_by_amount(n, api)?;
+        balance.amount = balance
+            .amount
+            .safe_sub(n)
+            .ok_or_else(|| VaultError::DecimalOverflow)?;
+        let taken = {
+            let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
+                .actor_index_drain_typed(
+                    ACTOR_STATE_SELF,
+                    NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
+                    n,
+                )?;
+            LiquidNonFungibleResource {
+                ids: ids.into_iter().map(|(key, _value)| key).collect(),
+            }
+        };
+
+        api.field_write_typed(
+            handle,
+            &NonFungibleVaultBalanceFieldPayload::from_content_source(balance),
+        )?;
+        api.field_close(handle)?;
 
         // Create node
-        NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
+        let ids = taken.into_ids();
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
+
+        Runtime::emit_event(api, events::non_fungible_vault::WithdrawEvent { ids })?;
+
+        Ok(bucket)
     }
 
     pub fn take_non_fungibles<Y>(
@@ -71,7 +466,12 @@ impl NonFungibleVaultBlueprint {
         let taken = Self::internal_take_non_fungibles(non_fungible_local_ids, api)?;
 
         // Create node
-        NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
+        let ids = taken.into_ids();
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
+
+        Runtime::emit_event(api, events::non_fungible_vault::WithdrawEvent { ids })?;
+
+        Ok(bucket)
     }
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
@@ -82,9 +482,12 @@ impl NonFungibleVaultBlueprint {
 
         // Drop other bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
+        let ids = other_bucket.liquid.ids().clone();
 
         // Put
         Self::internal_put(other_bucket.liquid, api)?;
+
+        Runtime::emit_event(api, events::non_fungible_vault::DepositEvent { ids })?;
 
         Ok(())
     }
@@ -93,19 +496,60 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let amount = Self::liquid_amount(api)? + Self::locked_amount(api)?;
+        Self::liquid_amount(api)?
+            .safe_add(Self::locked_amount(api)?)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::DecimalOverflow),
+            ))
+    }
 
-        Ok(amount)
+    pub fn contains_non_fungible<Y>(
+        id: NonFungibleLocalId,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let ids = Self::locked_non_fungible_local_ids(u32::MAX, api)?;
+        if ids.contains(&id) {
+            return Ok(true);
+        }
+
+        // TODO: Replace with better index api
+        let key = scrypto_encode(&id).unwrap();
+        let removed = api.actor_index_remove(
+            ACTOR_STATE_SELF,
+            NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
+            key.clone(),
+        )?;
+        let exists = removed.is_some();
+        if let Some(removed) = removed {
+            api.actor_index_insert(
+                ACTOR_STATE_SELF,
+                NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
+                key,
+                removed,
+            )?;
+        }
+
+        Ok(exists)
     }
 
     pub fn get_non_fungible_local_ids<Y>(
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut ids = Self::liquid_non_fungible_local_ids(api)?;
-        ids.extend(Self::locked_non_fungible_local_ids(api)?);
+        let mut ids = Self::locked_non_fungible_local_ids(limit, api)?;
+        let id_len: u32 = ids.len().try_into().unwrap();
+
+        if id_len < limit {
+            let locked_count = limit - id_len;
+            ids.extend(Self::liquid_non_fungible_local_ids(locked_count, api)?);
+        }
+
         Ok(ids)
     }
 
@@ -121,9 +565,10 @@ impl NonFungibleVaultBlueprint {
 
         let taken = Self::internal_take_by_amount(n, api)?;
 
-        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
+        let ids = taken.into_ids();
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
+        Runtime::emit_event(api, events::non_fungible_vault::RecallEvent { ids })?;
 
         Ok(bucket)
     }
@@ -135,14 +580,19 @@ impl NonFungibleVaultBlueprint {
         Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::VaultFrozenFlag.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::FreezeStatus.into(),
             LockFlags::MUTABLE,
         )?;
 
-        let mut frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
+        let mut frozen = api
+            .field_read_typed::<NonFungibleVaultFreezeStatusFieldPayload>(frozen_flag_handle)?
+            .into_latest();
         frozen.frozen.insert(to_freeze);
-        api.field_write_typed(frozen_flag_handle, &frozen)?;
+        api.field_write_typed(
+            frozen_flag_handle,
+            &NonFungibleVaultFreezeStatusFieldPayload::from_content_source(frozen),
+        )?;
 
         Ok(())
     }
@@ -154,13 +604,18 @@ impl NonFungibleVaultBlueprint {
         Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::VaultFrozenFlag.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::FreezeStatus.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
+        let mut frozen = api
+            .field_read_typed::<NonFungibleVaultFreezeStatusFieldPayload>(frozen_flag_handle)?
+            .into_latest();
         frozen.frozen.remove(to_unfreeze);
-        api.field_write_typed(frozen_flag_handle, &frozen)?;
+        api.field_write_typed(
+            frozen_flag_handle,
+            &NonFungibleVaultFreezeStatusFieldPayload::from_content_source(frozen),
+        )?;
 
         Ok(())
     }
@@ -176,9 +631,10 @@ impl NonFungibleVaultBlueprint {
 
         let taken = Self::internal_take_non_fungibles(&non_fungible_local_ids, api)?;
 
-        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
+        let ids = taken.into_ids();
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(api, RecallResourceEvent::Ids(non_fungible_local_ids))?;
+        Runtime::emit_event(api, events::non_fungible_vault::RecallEvent { ids })?;
 
         Ok(bucket)
     }
@@ -205,10 +661,10 @@ impl NonFungibleVaultBlueprint {
         })?;
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof_evidence),
-            ],
+            btreemap! {
+                0u8 => FieldValue::new(&proof_info),
+                1u8 => FieldValue::new(&proof_evidence),
+            },
         )?;
         Ok(Proof(Own(proof_id)))
     }
@@ -248,11 +704,13 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedNonFungible.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::LockedResource.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
+        let mut locked = api
+            .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
+            .into_latest();
 
         // Take from liquid if needed
         let delta: BTreeSet<NonFungibleLocalId> = ids
@@ -267,7 +725,10 @@ impl NonFungibleVaultBlueprint {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
 
-        api.field_write_typed(handle, &locked)?;
+        api.field_write_typed(
+            handle,
+            &NonFungibleVaultLockedResourceFieldPayload::from_content_source(locked),
+        )?;
 
         // Issue proof
         Ok(())
@@ -281,11 +742,13 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedNonFungible.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::LockedResource.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
+        let mut locked = api
+            .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
+            .into_latest();
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
         for id in ids {
@@ -300,7 +763,10 @@ impl NonFungibleVaultBlueprint {
             }
         }
 
-        api.field_write_typed(handle, &locked)?;
+        api.field_write_typed(
+            handle,
+            &NonFungibleVaultLockedResourceFieldPayload::from_content_source(locked),
+        )?;
 
         Self::internal_put(LiquidNonFungibleResource::new(liquid_non_fungibles), api)
     }
@@ -313,16 +779,21 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
+        if !api.actor_is_feature_enabled(
+            ACTOR_STATE_OUTER_OBJECT,
+            NonFungibleResourceManagerFeature::VaultFreeze.feature_name(),
+        )? {
             return Ok(());
         }
 
         let frozen_flag_handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::VaultFrozenFlag.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::FreezeStatus.into(),
             LockFlags::read_only(),
         )?;
-        let frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
+        let frozen = api
+            .field_read_typed::<NonFungibleVaultFreezeStatusFieldPayload>(frozen_flag_handle)?
+            .into_latest();
         api.field_close(frozen_flag_handle)?;
 
         if frozen.frozen.intersects(flags) {
@@ -338,7 +809,10 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
+        if !api.actor_is_feature_enabled(
+            ACTOR_STATE_OUTER_OBJECT,
+            NonFungibleResourceManagerFeature::VaultFreeze.feature_name(),
+        )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotFreezable),
             ));
@@ -351,7 +825,10 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_RECALL_FEATURE)? {
+        if !api.actor_is_feature_enabled(
+            ACTOR_STATE_OUTER_OBJECT,
+            NonFungibleResourceManagerFeature::VaultRecall.feature_name(),
+        )? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotRecallable),
             ));
@@ -365,11 +842,13 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LiquidNonFungible.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::Balance.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
+        let substate_ref = api
+            .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
+            .into_latest();
         let amount = substate_ref.amount;
         api.field_close(handle)?;
         Ok(amount)
@@ -380,45 +859,51 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedNonFungible.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::LockedResource.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
+        let substate_ref = api
+            .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
+            .into_latest();
         let amount = substate_ref.amount();
         api.field_close(handle)?;
         Ok(amount)
     }
 
     fn liquid_non_fungible_local_ids<Y>(
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        // FIXME: only allow a certain amount to be returned
-        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(
-            OBJECT_HANDLE_SELF,
-            NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
-            u32::MAX,
+        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_keys_typed(
+            ACTOR_STATE_SELF,
+            NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
+            limit,
         )?;
         let ids = items.into_iter().collect();
         Ok(ids)
     }
 
     fn locked_non_fungible_local_ids<Y>(
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LockedNonFungible.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::LockedResource.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
-        let ids = substate_ref.ids();
+        let substate_ref = api
+            .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
+            .into_latest();
+        let limit: usize = limit.try_into().unwrap();
+        let ids = substate_ref.ids().into_iter().take(limit).collect();
         api.field_close(handle)?;
         Ok(ids)
     }
@@ -432,34 +917,43 @@ impl NonFungibleVaultBlueprint {
     {
         // deduct from liquidity pool
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LiquidNonFungible.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
+        let mut balance = api
+            .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
+            .into_latest();
 
-        if substate_ref.amount < Decimal::from(n) {
+        if balance.amount < Decimal::from(n) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
             ));
         }
-        substate_ref.amount -= Decimal::from(n);
+        balance.amount = balance
+            .amount
+            .safe_sub(n)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::DecimalOverflow),
+            ))?;
 
         let taken = {
-            let ids: Vec<NonFungibleLocalId> = api.actor_index_take_typed(
-                OBJECT_HANDLE_SELF,
-                NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
-                n,
-            )?;
+            let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
+                .actor_index_drain_typed(
+                    ACTOR_STATE_SELF,
+                    NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
+                    n,
+                )?;
             LiquidNonFungibleResource {
-                ids: ids.into_iter().collect(),
+                ids: ids.into_iter().map(|(key, _value)| key).collect(),
             }
         };
 
-        api.field_write_typed(handle, &substate_ref)?;
+        api.field_write_typed(
+            handle,
+            &NonFungibleVaultBalanceFieldPayload::from_content_source(balance),
+        )?;
         api.field_close(handle)?;
-
-        Runtime::emit_event(api, WithdrawResourceEvent::Ids(taken.ids.clone()))?;
 
         Ok(taken)
     }
@@ -472,19 +966,27 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LiquidNonFungible.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
+        let mut substate_ref = api
+            .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
+            .into_latest();
 
-        substate_ref.amount -= Decimal::from(ids.len());
+        substate_ref.amount =
+            substate_ref
+                .amount
+                .safe_sub(ids.len())
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::DecimalOverflow),
+                ))?;
 
         // TODO: Batch remove
         for id in ids {
             let removed = api.actor_index_remove(
-                OBJECT_HANDLE_SELF,
-                NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
+                ACTOR_STATE_SELF,
+                NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
                 scrypto_encode(id).unwrap(),
             )?;
 
@@ -497,8 +999,10 @@ impl NonFungibleVaultBlueprint {
             }
         }
 
-        Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids.clone()))?;
-        api.field_write_typed(handle, &substate_ref)?;
+        api.field_write_typed(
+            handle,
+            &NonFungibleVaultBalanceFieldPayload::from_content_source(substate_ref),
+        )?;
         api.field_close(handle)?;
 
         Ok(LiquidNonFungibleResource::new(ids.clone()))
@@ -515,33 +1019,40 @@ impl NonFungibleVaultBlueprint {
             return Ok(());
         }
 
-        let event = DepositResourceEvent::Ids(resource.ids().clone());
-
         let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleVaultField::LiquidNonFungible.into(),
+            ACTOR_STATE_SELF,
+            NonFungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut vault: LiquidNonFungibleVault = api.field_read_typed(handle)?;
+        let mut vault = api
+            .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
+            .into_latest();
 
-        vault.amount += Decimal::from(resource.ids.len());
+        vault.amount =
+            vault
+                .amount
+                .safe_add(resource.ids.len())
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::VaultError(VaultError::DecimalOverflow),
+                ))?;
 
         // update liquidity
         // TODO: Batch update
         // TODO: Rather than insert, use create_unique?
         for id in resource.ids {
             api.actor_index_insert_typed(
-                OBJECT_HANDLE_SELF,
-                NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
-                scrypto_encode(&id).unwrap(),
+                ACTOR_STATE_SELF,
+                NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
                 id,
+                NonFungibleVaultNonFungibleEntryPayload::from_content_source(()),
             )?;
         }
 
-        api.field_write_typed(handle, &vault)?;
+        api.field_write_typed(
+            handle,
+            &NonFungibleVaultBalanceFieldPayload::from_content_source(vault),
+        )?;
         api.field_close(handle)?;
-
-        Runtime::emit_event(api, event)?;
 
         Ok(())
     }

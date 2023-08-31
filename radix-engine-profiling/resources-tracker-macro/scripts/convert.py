@@ -1,22 +1,23 @@
 #!/usr/bin/python3
 #
-# Required python packages: lxml, tabulate. To install run command: pip3 install lxml tabulate
+# Required python packages: lxml, tabulate, numpy, scikit-learn, statsmodels. 
+# To install run command: pip3 install lxml tabulate numpy scikit-learn statsmodels
 #
 
 from lxml import etree
 from statistics import mean, median
 from tabulate import tabulate
+from sklearn.linear_model import LinearRegression
 import pprint
 import sys
 import os
+import numpy as np
+
 
 if len(sys.argv) < 2:
-    print("Usage: convert.py <INPUT_FOLDER> <DETAILED_OUTPUT_TABLE>\n\nwhere: <DETAILED_OUTPUT_TABLE>: 1 or 0", file=sys.stderr)
+    print("Usage: convert.py <INPUT_FOLDER_WITH_XML_FILES>\n\nResults are generaged in files:", file=sys.stderr)
+    print(" /tmp/_out_table.txt\n /tmp/_out_table_detailed.txt\n /tmp/_out_linear_regression_coeff.txt\n /tmp/native_function_base_costs.csv", file=sys.stderr)
     sys.exit(-1)
-
-detailed_output = 0
-if len(sys.argv) == 3:
-    detailed_output = sys.argv[2]
 
 input_folder = sys.argv[1]
 if not os.path.exists(os.path.dirname(input_folder)):
@@ -26,12 +27,20 @@ if not os.path.exists(os.path.dirname(input_folder)):
 api_functions_ins = {}
 api_functions_info_data = {}
 
-kernel_invoke_divide_by_size = [ "publish_native", "publish_wasm_advanced" ]
+# Define functions which should be used for linear regression based on defined parameter (size, count, etc.)
+kernel_invoke_divide_by_param = [ "publish_native", "publish_wasm_advanced", "kernel_drain_substates" ]
+
 use_max_instead_of_median = ["kernel_create_wasm_instance"] # due to use of caching
 
+file_list_cnt = 1
+file_list = os.listdir(input_folder)
 
-for path in os.listdir(input_folder):
+for path in file_list:
     input_file = os.path.join(input_folder, path)
+
+    print("Parsing file ", file_list_cnt, "/", len(file_list), ": ", input_file)
+    file_list_cnt += 1
+
     if not os.path.isfile(input_file):
         continue
     if str(os.path.splitext(input_file)[1]).lower() != ".xml":
@@ -46,10 +55,8 @@ for path in os.listdir(input_folder):
         print("Cannot parse file: ", input_file, " - skipping", file=sys.stderr)
         continue
 
-    #print("Parsing file: ", input_file)
-
     # Look for all "kernel..." calls
-    root = tree.xpath(".//*[starts-with(local-name(), 'kernel')]")
+    root = tree.xpath(".//*[starts-with(local-name(), 'kernel') or starts-with(local-name(), 'before_invoke') or starts-with(local-name(), 'after_invoke')]")
     for child in root:
 
         key = child.tag
@@ -81,18 +88,13 @@ for path in os.listdir(input_folder):
                 native = "native"
             pkg = resolve[0].attrib["arg1"].replace('"','')
             fcn_name = resolve[0].attrib["export_name"]
-            if fcn_name in kernel_invoke_divide_by_size:
+            if fcn_name in kernel_invoke_divide_by_param:
                 key += "::" + native + "::" + pkg + "::" + fcn_name + "::" + invoke_size
             else:
                 key += "::" + native + "::" + pkg + "::" + fcn_name
 
         # handle kernel_create_node
         param = child.xpath("./self::kernel_create_node/@arg0")
-        if param:
-            key += "::" + param[0]
-
-        # handle kernel_drop_node
-        param = child.xpath("./self::kernel_drop_node/@arg0")
         if param:
             key += "::" + param[0]
 
@@ -107,6 +109,61 @@ for path in os.listdir(input_folder):
             module_id = param[0].attrib["module_id"]
             node_id = param[0].attrib["arg0"]
             key += "::" + module_id + "::" + node_id
+
+        # handle kernel_allocate_node_id - not using this rule
+        # param = child.xpath("./self::kernel_allocate_node_id/@entity_type")
+        # if param:
+        #     key += "::" + param[0]
+
+        # handle kernel_drain_substates
+        param = child.xpath("./self::kernel_drain_substates/@limit")
+        if param:
+            key += "::" + param[0]
+
+        # handle before_invoke
+#        param = child.xpath("./self::before_invoke/@arg0")
+#        if param:
+#            key += "::" + param[0]
+
+        # handle after_invoke
+        param = child.xpath("./self::after_invoke/@arg0")
+        if param:
+            key += "::" + param[0]
+
+        # handle kernel_open_substate_with_default
+        param = child.xpath("./self::kernel_open_substate_with_default/@arg0")
+        if param:
+            key += "::" + param[0]
+
+        # handle kernel_read_substate
+        resolve_heap_or_track = child.xpath("./self::kernel_read_substate/on_read_substate")
+        if resolve_heap_or_track:
+            read_from_heap = resolve_heap_or_track[0].attrib["arg0"]
+            if read_from_heap == "true":
+                key += "::heap"
+            else:
+                key += "::store"
+
+        # handle kernel_scan_keys
+#        param = child.xpath("./self::kernel_scan_keys[@arg0 | @count]")
+#        if param:
+#            entity_type = param[0].attrib["arg0"]
+#            count = param[0].attrib["count"]
+#            key += "::" + entity_type + "::" + count
+
+        # handle kernel_scan_sorted_substates
+#        param = child.xpath("./self::kernel_scan_sorted_substates[@arg0 | @count]")
+#        if param:
+#            entity_type = param[0].attrib["arg0"]
+#            count = param[0].attrib["count"]
+#            key += "::" + entity_type + "::" + count
+
+        # handle kernel_set_substate
+#        param = child.xpath("./self::kernel_set_substate[@arg0 | @arg1]")
+#        if param:
+#            entity_type = param[0].attrib["arg0"]
+#            value_len = param[0].attrib["arg1"]
+#            key += "::" + entity_type + "::" + value_len
 
         # correcting parenthesis
         c1 = key.count('(')
@@ -149,64 +206,104 @@ for path in os.listdir(input_folder):
 
 output = {}
 output_tab = []
+output_tab_detailed = []
 
-if detailed_output:
-    for i in api_functions_ins.keys():
-        output_tab.append([i, len(api_functions_ins[i]), min(api_functions_ins[i]), max(api_functions_ins[i]), round(mean(api_functions_ins[i])), round(median(api_functions_ins[i])) ])
-else:
-    for i in api_functions_ins.keys():
-        if i.split(':')[0] in use_max_instead_of_median:
-            output_tab.append([i, max(api_functions_ins[i]), "max" ])
-        else:
-            output_tab.append([i, round(median(api_functions_ins[i])), "median" ])
+for i in api_functions_ins.keys():
+    output_tab_detailed.append([i, len(api_functions_ins[i]), min(api_functions_ins[i]), max(api_functions_ins[i]), round(mean(api_functions_ins[i])), round(median(api_functions_ins[i])) ])
 
-#sorted(output_tab, key=lambda x: x[0])
+for i in api_functions_ins.keys():
+    if i.split(':')[0] in use_max_instead_of_median:
+        output_tab.append([i, max(api_functions_ins[i]), "max" ])
+    else:
+        output_tab.append([i, round(median(api_functions_ins[i])), "median" ])
+
+output_tab_detailed.sort()
+for idx, item in enumerate(output_tab_detailed):
+    item.insert(0,idx + 1)
+
 output_tab.sort()
 for idx, item in enumerate(output_tab):
     item.insert(0,idx + 1)
 
-if detailed_output:
-    output_tab.insert(0,["No.", "API function with params", "calls count", "min instr.", "max instr.", "mean", "median"])
-    print(tabulate(output_tab, headers="firstrow"))
-else:
-    min_ins = sys.maxsize
-    if len(output_tab) > 0 and len(output_tab[0]) > 2:
-        min_ins = output_tab[0][2]
+# calculate linear approximation coefficients for selected functions and write to file
+f = open("/tmp/_out_linear_regression_coeff.txt", "w")
+for s in kernel_invoke_divide_by_param:
+    values_size = []
+    values_instructions = []
     for row in output_tab:
-        if row[2] < min_ins and row[2] > 0:
-            min_ins = row[2]
-    mul_div = 16
-    for row in output_tab:
-        coeff = round(mul_div * row[2] / min_ins)
-        row.append(coeff)
-        row.append( row[2] - coeff * min_ins / mul_div )
-    output_tab.insert(0,["No.", "API function with params", "instructions", "calculation", "function cost (F)", "error"])
-    print(tabulate(output_tab, headers="firstrow"))
-    print("\nCost function coeff: ", min_ins, "\n")
-    print("Cost calculation = ( F *", min_ins, ") /", mul_div, "\n")
+        if row[1].find("::" + s + "::") != -1 or row[1].find(s + "::") == 0:
+            # extracting size from 2nd table column
+            last_token_idx = row[1].rfind("::") + 2
+            size = row[1][last_token_idx:]
+            values_size.append(int(size))
+            values_instructions.append(int(row[2]))
+    if len(values_size) > 0:
+        x = np.array(values_size).reshape((-1, 1))
+        y = np.array(values_instructions)
+        model = LinearRegression().fit(x, y)
+        r_sq = model.score(x, y)
+        intercept = model.intercept_
+        slope = model.coef_[0]
+        out_str = s + ": " + "instructions(param) = " + str(slope) + " * param + " + str(intercept) + "\n"
+        f.write(out_str)
+    else:
+        print("Linear regression param not found for '",s,"' function.")
+f.close()
 
-    f = open("/tmp/_out_table.csv", "w")
-    for row in output_tab:
-        for col in row:
-            if type(col) == str and col.count(';') > 0:
-                f.write("\"")
-                f.write(col)
-                f.write("\";")
-            else:
-                f.write(str(col))
-                f.write(";")
-        f.write("\n")
-    f.close()
 
-    f = open("/tmp/native_function_base_costs.csv", "w")
-    # skip header row
-    for row in output_tab[1:]:
-        token = "kernel_invoke::native::"
-        if type(row[1]) == str and row[1].find(token) == 0:
-            package_address_and_function = str(row[1][len(token):])
-            if package_address_and_function.count("::") == 1:
-                package_address_and_function = package_address_and_function.replace("::",",")
-                f.write( package_address_and_function + "," + str(row[2]))
-                f.write("\n")
-            #else: function with additional size parameter
-    f.close()
+
+# Write detailed output table
+f = open("/tmp/_out_table_detailed.txt", "w")
+output_tab_detailed.insert(0,["No.", "API function with params", "calls count", "min instr.", "max instr.", "mean", "median"])
+f.write(tabulate(output_tab_detailed, headers="firstrow"))
+f.write("\n")
+f.close()
+
+# Write results output table
+f = open("/tmp/_out_table.txt", "w")
+min_ins = sys.maxsize
+if len(output_tab) > 0 and len(output_tab[0]) > 2 and output_tab[0][2] > 0:
+    min_ins = output_tab[0][2]
+for row in output_tab:
+    if row[2] < min_ins and row[2] > 0:
+        min_ins = row[2]
+mul_div = 16
+for row in output_tab:
+    coeff = round(mul_div * row[2] / min_ins)
+    row.append(coeff)
+    row.append( row[2] - coeff * min_ins / mul_div )
+output_tab.insert(0,["No.", "API function with params", "instructions", "calculation", "function cost (F)", "error"])
+f.write(tabulate(output_tab, headers="firstrow"))
+coef = "\nCost function coeff: " + str(min_ins) + "\n"
+f.write(coef)
+fcn = "Cost calculation = ( F *" + str(min_ins) + ") /" + str(mul_div) + "\n"
+f.write(fcn)
+f.close()
+
+# Write results output table as csv file
+f = open("/tmp/_out_table.csv", "w")
+for row in output_tab:
+    for col in row:
+        if type(col) == str and col.count(';') > 0:
+            f.write("\"")
+            f.write(col)
+            f.write("\";")
+        else:
+            f.write(str(col))
+            f.write(";")
+    f.write("\n")
+f.close()
+
+# Write results for native function base costs csv file
+f = open("/tmp/native_function_base_costs.csv", "w")
+# skip header row
+for row in output_tab[1:]:
+    token = "kernel_invoke::native::"
+    if type(row[1]) == str and row[1].find(token) == 0:
+        package_address_and_function = str(row[1][len(token):])
+        if package_address_and_function.count("::") == 1:
+            package_address_and_function = package_address_and_function.replace("::",",")
+            f.write( package_address_and_function + "," + str(row[2]))
+            f.write("\n")
+        #else: function with additional size parameter
+f.close()

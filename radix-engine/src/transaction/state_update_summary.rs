@@ -1,30 +1,26 @@
-use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use crate::blueprints::resource::{FungibleVaultBalanceFieldPayload, FungibleVaultField};
+use crate::internal_prelude::*;
+use crate::system::system_db_reader::SystemDatabaseReader;
+use crate::system::type_info::TypeInfoSubstate;
+use crate::track::TrackedSubstateValue;
+use crate::track::{TrackedNode, Write};
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_store_interface::{
-    db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
-    interface::SubstateDatabase,
+    db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
-use sbor::rust::ops::AddAssign;
+use sbor::rust::ops::Add;
 use sbor::rust::prelude::*;
-
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::FieldSubstate;
-use crate::track::TrackedSubstateValue;
-use crate::track::{TrackedNode, Write};
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
-    pub new_packages: Vec<PackageAddress>,
-    pub new_components: Vec<ComponentAddress>,
-    pub new_resources: Vec<ResourceAddress>,
-    pub new_vaults: Vec<InternalAddress>,
-    pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-    /// This field accounts for Direct vault recalls (and the owner is not loaded during the transaction);
-    pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
+    pub new_packages: IndexSet<PackageAddress>,
+    pub new_components: IndexSet<ComponentAddress>,
+    pub new_resources: IndexSet<ResourceAddress>,
+    pub new_vaults: IndexSet<InternalAddress>,
+    pub vault_balance_changes: IndexMap<NodeId, (ResourceAddress, BalanceChange)>,
 }
 
 impl StateUpdateSummary {
@@ -54,16 +50,14 @@ impl StateUpdateSummary {
             }
         }
 
-        let (balance_changes, direct_vault_updates) =
-            BalanceAccounter::new(substate_db, &updates).run();
+        let vault_balance_changes = BalanceAccounter::new(substate_db, &updates).run();
 
         StateUpdateSummary {
-            new_packages: new_packages.into_iter().collect(),
-            new_components: new_components.into_iter().collect(),
-            new_resources: new_resources.into_iter().collect(),
-            new_vaults: new_vaults.into_iter().collect(),
-            balance_changes,
-            direct_vault_updates,
+            new_packages,
+            new_components,
+            new_resources,
+            new_vaults,
+            vault_balance_changes,
         }
     }
 }
@@ -75,6 +69,32 @@ pub enum BalanceChange {
         added: BTreeSet<NonFungibleLocalId>,
         removed: BTreeSet<NonFungibleLocalId>,
     },
+}
+
+impl Add for BalanceChange {
+    type Output = Self;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        match &mut self {
+            BalanceChange::Fungible(self_value) => {
+                let BalanceChange::Fungible(value) = rhs else {
+                    panic!("cannot {:?} + {:?}", self, rhs);
+                };
+                *self_value = self_value.safe_add(value).unwrap();
+            }
+            BalanceChange::NonFungible {
+                added: self_added,
+                removed: self_removed,
+            } => {
+                let BalanceChange::NonFungible { added, removed } = rhs else {
+                    panic!("cannot {:?} + {:?}", self, rhs);
+                };
+                self_added.extend(added);
+                self_removed.extend(removed);
+            }
+        }
+        self
+    }
 }
 
 impl BalanceChange {
@@ -102,168 +122,37 @@ impl BalanceChange {
 /// detached. If this changes, we will have to account for objects that are removed
 /// from a substate.
 pub struct BalanceAccounter<'a, S: SubstateDatabase> {
-    substate_db: &'a S,
+    system_reader: SystemDatabaseReader<'a, S>,
     tracked: &'a IndexMap<NodeId, TrackedNode>,
 }
 
 impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     pub fn new(substate_db: &'a S, tracked: &'a IndexMap<NodeId, TrackedNode>) -> Self {
         Self {
-            substate_db,
+            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, tracked),
             tracked,
         }
     }
 
-    pub fn run(
-        &self,
-    ) -> (
-        IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-        IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
-    ) {
-        let mut balance_changes = index_map_new();
-        let mut direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>> =
-            index_map_new();
-        let mut accounted_vaults = index_set_new();
-
+    pub fn run(&self) -> IndexMap<NodeId, (ResourceAddress, BalanceChange)> {
         self.tracked
             .keys()
-            .filter_map(|x| GlobalAddress::try_from(x.as_ref()).ok())
-            .for_each(|root| {
-                self.traverse_state_updates(
-                    &mut balance_changes,
-                    &mut accounted_vaults,
-                    &root,
-                    root.as_node_id(),
-                )
-            });
-
-        self.tracked
-            .keys()
-            .filter(|x| x.is_internal_vault() && !accounted_vaults.contains(*x))
-            .for_each(|vault_node_id| {
-                if let Some((resource_address, balance_change)) =
-                    self.calculate_vault_balance_change(vault_node_id)
-                {
-                    match balance_change {
-                        BalanceChange::Fungible(delta) => {
-                            let existing = direct_vault_updates
-                                .entry(*vault_node_id)
-                                .or_default()
-                                .entry(resource_address)
-                                .or_insert(BalanceChange::Fungible(Decimal::ZERO))
-                                .fungible();
-                            existing.add_assign(delta);
-                        }
-                        BalanceChange::NonFungible { added, removed } => {
-                            let existing = direct_vault_updates
-                                .entry(*vault_node_id)
-                                .or_default()
-                                .entry(resource_address)
-                                .or_insert(BalanceChange::NonFungible {
-                                    added: BTreeSet::new(),
-                                    removed: BTreeSet::new(),
-                                });
-                            existing.added_non_fungibles().extend(added);
-                            existing.removed_non_fungibles().extend(removed);
-                        }
-                    }
-                }
-            });
-
-        // prune balance changes
-
-        balance_changes.retain(|_, map| {
-            map.retain(|_, change| match change {
-                BalanceChange::Fungible(delta) => !delta.is_zero(),
-                BalanceChange::NonFungible { added, removed } => {
-                    added.retain(|x| !removed.contains(x));
-                    removed.retain(|x| !added.contains(x));
-                    !added.is_empty() || !removed.is_empty()
-                }
-            });
-            !map.is_empty()
-        });
-
-        direct_vault_updates.retain(|_, map| {
-            map.retain(|_, change| match change {
-                BalanceChange::Fungible(delta) => !delta.is_zero(),
-                BalanceChange::NonFungible { added, removed } => {
-                    added.retain(|x| !removed.contains(x));
-                    removed.retain(|x| !added.contains(x));
-                    !added.is_empty() || !removed.is_empty()
-                }
-            });
-            !map.is_empty()
-        });
-
-        (balance_changes, direct_vault_updates)
-    }
-
-    fn traverse_state_updates(
-        &self,
-        balance_changes: &mut IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
-        accounted_vaults: &mut IndexSet<NodeId>,
-        root: &GlobalAddress,
-        current_node: &NodeId,
-    ) -> () {
-        if let Some(tracked_node) = self.tracked.get(current_node) {
-            if current_node.is_internal_vault() {
-                accounted_vaults.insert(current_node.clone());
-
-                if let Some((resource_address, balance_change)) =
-                    self.calculate_vault_balance_change(current_node)
-                {
-                    match balance_change {
-                        BalanceChange::Fungible(delta) => {
-                            let existing = balance_changes
-                                .entry(*root)
-                                .or_default()
-                                .entry(resource_address)
-                                .or_insert(BalanceChange::Fungible(Decimal::ZERO))
-                                .fungible();
-                            existing.add_assign(delta);
-                        }
-                        BalanceChange::NonFungible { added, removed } => {
-                            let existing = balance_changes
-                                .entry(*root)
-                                .or_default()
-                                .entry(resource_address)
-                                .or_insert(BalanceChange::NonFungible {
-                                    added: BTreeSet::new(),
-                                    removed: BTreeSet::new(),
-                                });
-                            existing.added_non_fungibles().extend(added);
-                            existing.removed_non_fungibles().extend(removed);
-                        }
-                    }
-                }
-            } else {
-                // Scan loaded substates to find children
-                for tracked_module in tracked_node.tracked_partitions.values() {
-                    for tracked_key in tracked_module.substates.values() {
-                        if let Some(value) = tracked_key.substate_value.get() {
-                            for own in value.owned_nodes() {
-                                self.traverse_state_updates(
-                                    balance_changes,
-                                    accounted_vaults,
-                                    root,
-                                    own,
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-        }
+            .filter(|node_id| node_id.is_internal_vault())
+            .filter_map(|vault_id| {
+                self.calculate_vault_balance_change(vault_id)
+                    .map(|change| (*vault_id, change))
+            })
+            .collect::<IndexMap<_, _>>()
     }
 
     fn calculate_vault_balance_change(
         &self,
-        node_id: &NodeId,
+        vault_id: &NodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
         let type_info: TypeInfoSubstate = self
+            .system_reader
             .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                node_id,
+                vault_id,
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             )
@@ -276,65 +165,77 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             _ => panic!("Unexpected"),
         };
 
-        if resource_address
+        let is_fungible = resource_address
             .as_node_id()
-            .is_global_fungible_resource_manager()
-        {
-            // If there is an update to the liquid resource
-            if let Some(substate) = self
-                .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
-                    node_id,
-                    MAIN_BASE_PARTITION,
-                    &FungibleVaultField::LiquidFungible.into(),
-                )
-            {
-                let old_substate = self
-                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
-                        node_id,
-                        MAIN_BASE_PARTITION,
-                        &FungibleVaultField::LiquidFungible.into(),
-                    );
-
-                let old_balance = if let Some(s) = old_substate {
-                    s.value.0.amount()
-                } else {
-                    Decimal::ZERO
-                };
-                let new_balance = substate.value.0.amount();
-
-                Some(BalanceChange::Fungible(new_balance - old_balance))
-            } else {
-                None
-            }
+            .is_global_fungible_resource_manager();
+        let change = if is_fungible {
+            self.calculate_fungible_vault_balance_change(vault_id)
         } else {
-            // If there is an update to the liquid resource
+            self.calculate_non_fungible_vault_balance_change(vault_id)
+        };
 
-            let vault_updates = self.tracked.get(node_id).and_then(|n| {
-                n.tracked_partitions
+        change.map(|change| (resource_address, change))
+    }
+
+    fn calculate_fungible_vault_balance_change(&self, vault_id: &NodeId) -> Option<BalanceChange> {
+        self
+            .system_reader
+            .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, FieldSubstate<FungibleVaultBalanceFieldPayload>>(
+                vault_id,
+                MAIN_BASE_PARTITION,
+                &FungibleVaultField::Balance.into(),
+            )
+            .map(|new_substate| new_substate.into_payload().into_latest().amount())
+            .map(|new_balance| {
+                let old_balance = self
+                    .system_reader
+                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, FieldSubstate<FungibleVaultBalanceFieldPayload>>(
+                        vault_id,
+                        MAIN_BASE_PARTITION,
+                        &FungibleVaultField::Balance.into(),
+                    )
+                    .map(|old_balance| old_balance.into_payload().into_latest().amount())
+                    .unwrap_or(Decimal::ZERO);
+
+                // TODO: Handle potential Decimal arithmetic operation (safe_sub) errors instead of panicking.
+                new_balance.safe_sub(old_balance).unwrap()
+            })
+            .filter(|change| change != &Decimal::ZERO) // prune
+            .map(|change| BalanceChange::Fungible(change))
+    }
+
+    fn calculate_non_fungible_vault_balance_change(
+        &self,
+        vault_id: &NodeId,
+    ) -> Option<BalanceChange> {
+        self.tracked
+            .get(vault_id)
+            .and_then(|vault_node| {
+                vault_node
+                    .tracked_partitions
                     .get(&MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap())
-            });
-
-            if let Some(tracked_module) = vault_updates {
+            })
+            .map(|vault_updates| {
                 let mut added = BTreeSet::new();
                 let mut removed = BTreeSet::new();
 
-                for tracked_key in tracked_module.substates.values() {
-                    match &tracked_key.substate_value {
-                        TrackedSubstateValue::New(substate)
-                        | TrackedSubstateValue::ReadNonExistAndWrite(substate) => {
-                            let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
+                for tracked_substate in vault_updates.substates.values() {
+                    let id: NonFungibleLocalId =
+                        scrypto_decode(tracked_substate.substate_key.for_map().unwrap()).unwrap();
+
+                    match &tracked_substate.substate_value {
+                        TrackedSubstateValue::New(..)
+                        | TrackedSubstateValue::ReadNonExistAndWrite(..) => {
                             added.insert(id);
                         }
-                        TrackedSubstateValue::ReadExistAndWrite(old, write) => match write {
+                        TrackedSubstateValue::ReadExistAndWrite(_, write) => match write {
                             Write::Update(..) => {}
                             Write::Delete => {
-                                let id: NonFungibleLocalId = old.as_typed().unwrap();
                                 removed.insert(id);
                             }
                         },
                         TrackedSubstateValue::WriteOnly(write) => match write {
-                            Write::Update(substate) => {
-                                let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
+                            Write::Update(..) => {
                                 added.insert(id);
                             }
                             Write::Delete => {
@@ -345,53 +246,19 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                     }
                 }
 
-                Some(BalanceChange::NonFungible { added, removed })
-            } else {
-                None
-            }
-        }
-        .map(|x| (resource_address, x))
-    }
-
-    fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        key: &SubstateKey,
-    ) -> Option<D> {
-        // FIXME: explore if we can avoid loading from substate database
-        // - Part of the engine still reads/writes substates without touching the TypeInfo;
-        // - Track does not store the initial value of substate.
-
-        self.fetch_substate_from_state_updates::<M, D>(node_id, partition_num, key)
-            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, partition_num, key))
-    }
-
-    fn fetch_substate_from_database<M: DatabaseKeyMapper, D: ScryptoDecode>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        key: &SubstateKey,
-    ) -> Option<D> {
-        self.substate_db
-            .get_mapped::<M, D>(node_id, partition_num, key)
-    }
-
-    fn fetch_substate_from_state_updates<M: DatabaseKeyMapper, D: ScryptoDecode>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        key: &SubstateKey,
-    ) -> Option<D> {
-        self.tracked
-            .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
-            .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
-            .and_then(|tracked_key| {
-                tracked_key
-                    .substate_value
-                    .get()
-                    .map(|e| e.as_typed().unwrap())
+                (added, removed)
             })
+            .map(|(mut added, mut removed)| {
+                // prune
+                let cancelled_out = added
+                    .intersection(&removed)
+                    .cloned()
+                    .collect::<BTreeSet<_>>();
+                added.retain(|id| !cancelled_out.contains(id));
+                removed.retain(|id| !cancelled_out.contains(id));
+                (added, removed)
+            })
+            .filter(|(added, removed)| !added.is_empty() || !removed.is_empty())
+            .map(|(added, removed)| BalanceChange::NonFungible { added, removed })
     }
 }

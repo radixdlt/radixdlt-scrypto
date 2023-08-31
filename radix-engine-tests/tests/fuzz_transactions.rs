@@ -1,10 +1,10 @@
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
+    execute_and_commit_transaction, CostingParameters, ExecutionConfig,
 };
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;
@@ -20,7 +20,8 @@ use transaction::validation::{
 
 struct TransactionFuzzer {
     rng: ChaCha8Rng,
-    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
+    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    native_vm: NativeVm<NoExtension>,
     substate_db: InMemorySubstateDatabase,
 }
 
@@ -28,18 +29,22 @@ impl TransactionFuzzer {
     fn new() -> Self {
         let rng = ChaCha8Rng::seed_from_u64(1234);
 
-        let scrypto_interpreter = ScryptoVm {
+        let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
+        let native_vm = DefaultNativeVm::new();
+        let vm = Vm::new(&scrypto_vm, native_vm.clone());
+
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
             .bootstrap_test_default()
             .unwrap();
 
         Self {
             rng,
-            scrypto_interpreter,
+            scrypto_vm,
+            native_vm,
             substate_db,
         }
     }
@@ -52,12 +57,14 @@ impl TransactionFuzzer {
             .expect("transaction to be validatable");
 
         let execution_config = ExecutionConfig::for_test_transaction();
-        let fee_reserve_config = FeeReserveConfig::default();
+        let costing_parameters = CostingParameters::default();
+
+        let vm = Vm::new(&self.scrypto_vm, self.native_vm.clone());
 
         execute_and_commit_transaction(
             &mut self.substate_db,
-            &self.scrypto_interpreter,
-            &fee_reserve_config,
+            vm,
+            &costing_parameters,
             &execution_config,
             &validated.get_executable(),
         );
@@ -69,9 +76,9 @@ impl TransactionFuzzer {
         for _ in 0..instruction_count {
             let next = self.rng.gen_range(0u32..4u32);
             builder = match next {
-                0 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll)),
-                1 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll)),
-                2 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll)),
+                0 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None),
+                1 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None),
+                2 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None),
                 3 => builder.lock_fee(FAUCET, 100),
                 _ => panic!("Unexpected"),
             }

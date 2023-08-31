@@ -1,10 +1,10 @@
-use radix_engine::errors::RejectionError;
+use radix_engine::errors::RejectionReason;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
+use radix_engine::transaction::{CostingParameters, ExecutionConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
 use transaction::errors::TransactionValidationError;
@@ -14,7 +14,7 @@ use transaction::validation::*;
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let current_epoch = Epoch::of(150);
     let valid_from_epoch = Epoch::of(151);
@@ -29,14 +29,14 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
         },
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .clear_auth_zone()
+            .drop_auth_zone_proofs()
             .build(),
     );
 
     // Act
     let receipt = test_runner.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
-        FeeReserveConfig::default(),
+        CostingParameters::default(),
         ExecutionConfig::for_test_transaction(),
     );
 
@@ -44,7 +44,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     let rejection_error = receipt.expect_rejection();
     assert_eq!(
         rejection_error,
-        &RejectionError::TransactionEpochNotYetValid {
+        &RejectionReason::TransactionEpochNotYetValid {
             valid_from: valid_from_epoch,
             current_epoch
         }
@@ -54,7 +54,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 #[test]
 fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let current_epoch = Epoch::of(157);
     let valid_from_epoch = Epoch::of(151);
@@ -69,14 +69,14 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
         },
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .clear_auth_zone()
+            .drop_auth_zone_proofs()
             .build(),
     );
 
     // Act
     let receipt = test_runner.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
-        FeeReserveConfig::default(),
+        CostingParameters::default(),
         ExecutionConfig::for_test_transaction(),
     );
 
@@ -84,7 +84,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     let rejection_error = receipt.expect_rejection();
     assert_eq!(
         rejection_error,
-        &RejectionError::TransactionEpochNoLongerValid {
+        &RejectionReason::TransactionEpochNoLongerValid {
             valid_until: valid_until_epoch,
             current_epoch
         }
@@ -94,16 +94,24 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 #[test]
 fn test_normal_transaction_flow() {
     // Arrange
-    let mut scrypto_interpreter = ScryptoVm {
+    let scrypto_vm = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_validator_config: WasmValidatorConfigV1::new(),
     };
-    let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, true)
-        .bootstrap_test_default()
-        .unwrap();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
 
-    let fee_reserve_config = FeeReserveConfig::default();
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    Bootstrapper::new(
+        NetworkDefinition::simulator(),
+        &mut substate_db,
+        vm.clone(),
+        true,
+    )
+    .bootstrap_test_default()
+    .unwrap();
+
+    let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
     let raw_transaction = create_notarized_transaction(
         TransactionParams {
@@ -113,7 +121,10 @@ fn test_normal_transaction_flow() {
         {
             let mut builder = ManifestBuilder::new();
             builder.add_blob([123u8; 1023 * 1024].to_vec());
-            builder.lock_fee_from_faucet().clear_auth_zone().build()
+            builder
+                .lock_fee_from_faucet()
+                .drop_auth_zone_proofs()
+                .build()
         },
     )
     .to_raw()
@@ -124,13 +135,13 @@ fn test_normal_transaction_flow() {
         .validate_from_raw(&raw_transaction)
         .expect("Invalid transaction");
     let executable = validated.get_executable();
-    assert_eq!(executable.payload_size(), 1023 * 1024 + 391);
+    assert_eq!(executable.payload_size(), 1023 * 1024 + 380);
 
     // Act
     let receipt = execute_and_commit_transaction(
         &mut substate_db,
-        &mut scrypto_interpreter,
-        &fee_reserve_config,
+        vm,
+        &costing_parameters,
         &execution_config,
         &executable,
     );

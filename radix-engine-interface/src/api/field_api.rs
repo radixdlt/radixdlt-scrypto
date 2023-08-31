@@ -29,6 +29,10 @@ impl LockFlags {
 
 pub type FieldHandle = u32;
 
+pub trait FieldPayloadMarker {}
+
+impl<T: FieldPayloadMarker> FieldPayloadMarker for &T {}
+
 /// A high level api to read/write fields
 pub trait ClientFieldApi<E: Debug> {
     fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, E>;
@@ -44,9 +48,9 @@ pub trait ClientFieldApi<E: Debug> {
     fn field_write_typed<S: ScryptoEncode>(
         &mut self,
         handle: FieldHandle,
-        substate: S,
+        substate: &S,
     ) -> Result<(), E> {
-        let buf = scrypto_encode(&substate).unwrap();
+        let buf = scrypto_encode(substate).unwrap();
         self.field_write(handle, buf)
     }
 

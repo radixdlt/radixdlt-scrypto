@@ -1,11 +1,14 @@
-use scrypto::prelude::*;
+use radix_engine_interface::prelude::*;
+use scrypto::this_package;
+use scrypto_test::prelude::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+
+use ${wasm_name}::test_bindings::*;
 
 #[test]
 fn test_hello() {
     // Setup the environment
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Create an account
     let (public_key, _private_key, account) = test_runner.new_allocated_account();
@@ -44,4 +47,22 @@ fn test_hello() {
     );
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
+}
+
+#[test]
+fn test_hello_with_test_environment() -> Result<(), RuntimeError> {
+    // Arrange
+    let mut env = TestEnvironment::new();
+    let package_address = Package::compile_and_publish(this_package!(), &mut env)?;
+
+    let mut hello = Hello::instantiate_hello(package_address, &mut env)?;
+
+    // Act
+    let bucket = hello.free_token(&mut env)?;
+
+    // Assert
+    let amount = bucket.amount(&mut env)?;
+    assert_eq!(amount, dec!("1"));
+
+    Ok(())
 }

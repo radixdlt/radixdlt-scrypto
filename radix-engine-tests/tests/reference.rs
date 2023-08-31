@@ -1,8 +1,6 @@
-use radix_engine::{
-    errors::{CallFrameError, KernelError, RuntimeError},
-    kernel::call_frame::{CloseSubstateError, MoveModuleError},
-    types::*,
-};
+use radix_engine::errors::SystemError;
+use radix_engine::system::system_type_checker::TypeCheckError;
+use radix_engine::{errors::RuntimeError, types::*};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -10,7 +8,7 @@ use transaction::prelude::*;
 #[test]
 fn test_create_global_node_with_local_ref() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -32,11 +30,9 @@ fn test_create_global_node_with_local_ref() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::MoveModuleError(x),
-        )) => {
-            matches!(x, MoveModuleError::NonGlobalRefNotAllowed(_))
-        }
+        RuntimeError::SystemError(SystemError::TypeCheckError(
+            TypeCheckError::BlueprintPayloadValidationError(.., error),
+        )) => error.contains("Non Global Reference"),
         _ => false,
     });
 }
@@ -44,7 +40,7 @@ fn test_create_global_node_with_local_ref() {
 #[test]
 fn test_add_local_ref_to_stored_substate() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -80,11 +76,9 @@ fn test_add_local_ref_to_stored_substate() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::CloseSubstateError(x),
-        )) => {
-            matches!(x, CloseSubstateError::NonGlobalRefNotAllowed(_))
-        }
+        RuntimeError::SystemError(SystemError::TypeCheckError(
+            TypeCheckError::BlueprintPayloadValidationError(.., error),
+        )) => error.contains("Non Global Reference"),
         _ => false,
     });
 }

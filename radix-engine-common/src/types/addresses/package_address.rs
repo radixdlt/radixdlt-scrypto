@@ -59,19 +59,19 @@ impl PackageAddress {
     }
 
     #[cfg(feature = "resource_tracker")]
-    pub fn is_native_address(&self) -> bool {
-        self.0 == native_addresses::PACKAGE_PACKAGE.0
-            || self.0 == native_addresses::RESOURCE_PACKAGE.0
-            || self.0 == native_addresses::ACCOUNT_PACKAGE.0
-            || self.0 == native_addresses::IDENTITY_PACKAGE.0
-            || self.0 == native_addresses::CONSENSUS_MANAGER_PACKAGE.0
-            || self.0 == native_addresses::ACCESS_CONTROLLER_PACKAGE.0
-            || self.0 == native_addresses::POOL_PACKAGE.0
-            || self.0 == native_addresses::TRANSACTION_PROCESSOR_PACKAGE.0
-            || self.0 == native_addresses::METADATA_MODULE_PACKAGE.0
-            || self.0 == native_addresses::ROYALTY_MODULE_PACKAGE.0
-            || self.0 == native_addresses::ACCESS_RULES_MODULE_PACKAGE.0
-            || self.0 == native_addresses::TRANSACTION_TRACKER_PACKAGE.0
+    pub fn is_native_package(&self) -> bool {
+        self.0 == crate::constants::PACKAGE_PACKAGE.0
+            || self.0 == crate::constants::RESOURCE_PACKAGE.0
+            || self.0 == crate::constants::ACCOUNT_PACKAGE.0
+            || self.0 == crate::constants::IDENTITY_PACKAGE.0
+            || self.0 == crate::constants::CONSENSUS_MANAGER_PACKAGE.0
+            || self.0 == crate::constants::ACCESS_CONTROLLER_PACKAGE.0
+            || self.0 == crate::constants::POOL_PACKAGE.0
+            || self.0 == crate::constants::TRANSACTION_PROCESSOR_PACKAGE.0
+            || self.0 == crate::constants::METADATA_MODULE_PACKAGE.0
+            || self.0 == crate::constants::ROYALTY_MODULE_PACKAGE.0
+            || self.0 == crate::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE.0
+            || self.0 == crate::constants::TRANSACTION_TRACKER_PACKAGE.0
     }
 }
 
@@ -190,7 +190,7 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::PackageAddress,
     NodeId::LENGTH,
-    PACKAGE_ADDRESS_ID,
+    PACKAGE_ADDRESS_TYPE,
     package_address_type_data
 );
 

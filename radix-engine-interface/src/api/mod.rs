@@ -11,25 +11,30 @@ pub mod object_api;
 pub mod system_modules;
 
 // Re-exports
-pub use actor_api::ClientActorApi;
-use actor_index_api::ClientActorIndexApi;
-pub use actor_key_value_entry_api::ClientActorKeyValueEntryApi;
-pub use actor_sorted_index_api::ClientActorSortedIndexApi;
-pub use blueprint_api::ClientBlueprintApi;
-pub use field_api::ClientFieldApi;
-pub use field_api::LockFlags;
-use key_value_entry_api::ClientKeyValueEntryApi;
-use key_value_store_api::ClientKeyValueStoreApi;
+pub use actor_api::*;
+pub use actor_index_api::*;
+pub use actor_key_value_entry_api::*;
+pub use actor_sorted_index_api::*;
+pub use blueprint_api::*;
+pub use field_api::*;
+pub use key_value_entry_api::*;
+pub use key_value_store_api::*;
 pub use object_api::*;
-pub use system_modules::auth_api::ClientAuthApi;
 pub use system_modules::costing_api::ClientCostingApi;
 pub use system_modules::execution_trace_api::ClientExecutionTraceApi;
 pub use system_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
 
-pub type ObjectHandle = u32;
+pub type ActorStateHandle = u32;
 
-pub const OBJECT_HANDLE_SELF: ObjectHandle = 0u32;
-pub const OBJECT_HANDLE_OUTER_OBJECT: ObjectHandle = 1u32;
+pub const ACTOR_STATE_SELF: ActorStateHandle = 0u32;
+pub const ACTOR_STATE_OUTER_OBJECT: ActorStateHandle = 1u32;
+
+pub type ActorRefHandle = u32;
+
+pub const ACTOR_REF_SELF: ActorRefHandle = 0u32;
+pub const ACTOR_REF_OUTER: ActorRefHandle = 1u32;
+pub const ACTOR_REF_GLOBAL: ActorRefHandle = 2u32;
+pub const ACTOR_REF_AUTH_ZONE: ActorRefHandle = 8u32;
 
 pub type FieldIndex = u8;
 pub type CollectionIndex = u8;
@@ -50,6 +55,7 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientCostingApi<E>
     + ClientTransactionRuntimeApi<E>
     + ClientExecutionTraceApi<E>
-    + ClientAuthApi<E>
 {
 }
+
+// TODO: decide if to use marker traits for type safety and act on it

@@ -1,4 +1,3 @@
-mod access_rules;
 mod auth_zone;
 mod bucket;
 mod fungible;
@@ -9,10 +8,10 @@ mod proof_rule;
 mod resource;
 mod resource_manager;
 mod resource_type;
+mod role_assignment;
 mod vault;
 mod worktop;
 
-pub use access_rules::*;
 pub use auth_zone::*;
 pub use bucket::*;
 pub use fungible::*;
@@ -24,6 +23,7 @@ pub use resource::*;
 pub use resource_manager::ResourceFeature::*;
 pub use resource_manager::*;
 pub use resource_type::*;
+pub use role_assignment::*;
 use sbor::Sbor;
 pub use vault::*;
 pub use worktop::*;
@@ -34,18 +34,17 @@ use arbitrary::Arbitrary;
 use radix_engine_common::math::*;
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
-use sbor::rust::vec::Vec;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
     !amount.is_negative()
-        && amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into())) == BnumI256::from(0)
+        && amount.0 % I192::from(10i128.pow((18 - divisibility).into())) == I192::from(0)
 }
 
 pub fn check_non_fungible_amount(amount: &Decimal) -> Result<u32, ()> {
     // Integers between [0..u32::MAX]
     if amount >= &Decimal::from(u32::MIN)
         && amount <= &Decimal::from(u32::MAX)
-        && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
+        && amount.0 % I192::from(10i128.pow(18)) == I192::from(0)
     {
         Ok(u32::from_str(&amount.to_string()).unwrap())
     } else {
@@ -71,8 +70,8 @@ macro_rules! resource_roles {
         }
 
         impl $roles_struct<RoleDefinition> {
-            pub fn to_role_init(self) -> $crate::blueprints::resource::RolesInit {
-                let mut roles = $crate::blueprints::resource::RolesInit::new();
+            pub fn to_role_init(self) -> $crate::blueprints::resource::RoleAssignmentInit {
+                let mut roles = $crate::blueprints::resource::RoleAssignmentInit::new();
                 roles.define_role($actor_field_name, self.$actor_field);
                 roles.define_role($updater_field_name, self.$updater_field);
                 roles
@@ -204,14 +203,22 @@ pub enum WithdrawStrategy {
 }
 
 pub trait ForWithdrawal {
-    fn for_withdrawal(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal;
+    fn for_withdrawal(
+        &self,
+        divisibility: u8,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Option<Decimal>;
 }
 
 impl ForWithdrawal for Decimal {
-    fn for_withdrawal(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal {
+    fn for_withdrawal(
+        &self,
+        divisibility: u8,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Option<Decimal> {
         match withdraw_strategy {
-            WithdrawStrategy::Exact => self.clone(),
-            WithdrawStrategy::Rounded(mode) => self.round(divisibility, mode),
+            WithdrawStrategy::Exact => Some(self.clone()),
+            WithdrawStrategy::Rounded(mode) => self.safe_round(divisibility, mode),
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::api::ObjectHandle;
+use crate::api::ActorStateHandle;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
@@ -11,24 +11,24 @@ pub trait ClientActorIndexApi<E> {
     /// Inserts an entry into an index
     fn actor_index_insert(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), E>;
 
     /// Inserts an entry into an index
-    fn actor_index_insert_typed<V: ScryptoEncode>(
+    fn actor_index_insert_typed<K: ScryptoEncode, V: ScryptoEncode>(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        key: Vec<u8>,
+        key: K,
         value: V,
     ) -> Result<(), E> {
         self.actor_index_insert(
             object_handle,
             collection_index,
-            key,
+            scrypto_encode(&key).unwrap(),
             scrypto_encode(&value).unwrap(),
         )
     }
@@ -36,7 +36,7 @@ pub trait ClientActorIndexApi<E> {
     /// Removes an entry from an index
     fn actor_index_remove(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, E>;
@@ -44,7 +44,7 @@ pub trait ClientActorIndexApi<E> {
     /// Removes an entry from an index
     fn actor_index_remove_typed<V: ScryptoDecode>(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         key: Vec<u8>,
     ) -> Result<Option<V>, E> {
@@ -55,26 +55,26 @@ pub trait ClientActorIndexApi<E> {
     }
 
     /// Scans arbitrary elements of count from an index
-    fn actor_index_scan(
+    fn actor_index_scan_keys(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<Vec<u8>>, E>;
 
     /// Scans arbitrary elements of count from an index
-    fn actor_index_scan_typed<S: ScryptoDecode>(
+    fn actor_index_scan_keys_typed<K: ScryptoDecode>(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        count: u32,
-    ) -> Result<Vec<S>, E> {
+        limit: u32,
+    ) -> Result<Vec<K>, E> {
         let entries = self
-            .actor_index_scan(object_handle, collection_index, count)?
+            .actor_index_scan_keys(object_handle, collection_index, limit)?
             .into_iter()
-            .map(|buf| {
-                let typed: S = scrypto_decode(&buf).unwrap();
-                typed
+            .map(|key| {
+                let key: K = scrypto_decode(&key).unwrap();
+                key
             })
             .collect();
 
@@ -82,26 +82,27 @@ pub trait ClientActorIndexApi<E> {
     }
 
     /// Removes and returns arbitrary elements of count from an index
-    fn actor_index_take(
+    fn actor_index_drain(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        count: u32,
-    ) -> Result<Vec<Vec<u8>>, E>;
+        limit: u32,
+    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
 
     /// Removes and returns arbitrary elements of count from an index
-    fn actor_index_take_typed<S: ScryptoDecode>(
+    fn actor_index_drain_typed<K: ScryptoDecode, V: ScryptoDecode>(
         &mut self,
-        object_handle: ObjectHandle,
+        object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        count: u32,
-    ) -> Result<Vec<S>, E> {
+        limit: u32,
+    ) -> Result<Vec<(K, V)>, E> {
         let entries = self
-            .actor_index_take(object_handle, collection_index, count)?
+            .actor_index_drain(object_handle, collection_index, limit)?
             .into_iter()
-            .map(|buf| {
-                let typed: S = scrypto_decode(&buf).unwrap();
-                typed
+            .map(|(key, value)| {
+                let key: K = scrypto_decode(&key).unwrap();
+                let value: V = scrypto_decode(&value).unwrap();
+                (key, value)
             })
             .collect();
 
