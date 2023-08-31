@@ -107,7 +107,7 @@ mod tests {
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             stringify!(MyEnum),
-                            :: sbor :: rust :: collections :: btree_map :: btreemap ! [
+                            :: sbor :: rust :: prelude :: indexmap ! [
                                 0u8 => :: sbor :: TypeData :: struct_with_named_fields ("A", :: sbor :: rust :: vec ! [("named", < T as :: sbor :: Describe < radix_engine_common::data::scrypto::ScryptoCustomTypeKind >> :: TYPE_ID) ,] ,) ,
                                 1u8 => :: sbor :: TypeData :: struct_with_unnamed_fields ("B", :: sbor :: rust :: vec ! [< String as :: sbor :: Describe < radix_engine_common::data::scrypto::ScryptoCustomTypeKind >> :: TYPE_ID ,] ,) ,
                                 2u8 => :: sbor :: TypeData :: struct_with_unit_fields ("C") ,
