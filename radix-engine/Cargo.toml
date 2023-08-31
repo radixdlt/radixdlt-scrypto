@@ -26,7 +26,7 @@ radix-engine-macros = { path = "../radix-engine-macros" }
 
 # WASM validation
 wasmparser = { version = "0.107.0", default-features = false }
-syn = { version = "1.0.93", features = ["full", "extra-traits"] }
+syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
 
 # WASM instrumentation
 wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "radix-master", default-features = false,  features = ["ignore_custom_section"]}

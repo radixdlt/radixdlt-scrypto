@@ -9,7 +9,7 @@ bench = false
 
 [dependencies]
 proc-macro2 = { version = "1.0.38" }
-syn = { version = "1.0.93", features = ["full", "extra-traits"] }
+syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
 quote = { version = "1.0.18" }
 sbor-derive-common = { path = "../sbor-derive-common" }
 
