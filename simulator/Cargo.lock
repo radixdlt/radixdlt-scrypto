@@ -991,7 +991,7 @@ dependencies = [
  "sbor",
  "serde_json",
  "strum",
- "syn 1.0.109",
+ "syn 1.0.93",
  "transaction",
  "utils",
  "wasm-instrument",
@@ -1025,7 +1025,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "sbor-derive-common",
- "syn 1.0.109",
+ "syn 1.0.93",
 ]
 
 [[package]]
@@ -1053,7 +1053,7 @@ version = "0.12.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 1.0.93",
 ]
 
 [[package]]
@@ -1241,7 +1241,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "radix-engine-profiling",
- "syn 1.0.109",
+ "syn 1.0.93",
 ]
 
 [[package]]
@@ -1332,7 +1332,7 @@ dependencies = [
  "itertools",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 1.0.93",
 ]
 
 [[package]]
@@ -1537,6 +1537,16 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 name = "syn"
+version = "1.0.93"
+source = "git+https://github.com/dtolnay/syn.git?tag=1.0.93#2e505a847174ff8939431c4f5ffb565906590ac2"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
+]
+
+[[package]]
+name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
@@ -1677,6 +1687,12 @@ name = "unicode-width"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0edd1e5b14653f783770bce4a4dabb4a5108a5370a5f5d8cfe8710c361f6c8b"
+
+[[package]]
+name = "unicode-xid"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "utils"
