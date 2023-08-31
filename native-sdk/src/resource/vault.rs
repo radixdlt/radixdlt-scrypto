@@ -4,7 +4,7 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 
 // TODO: split impl
@@ -89,13 +89,13 @@ pub trait NativeNonFungibleVault {
         &self,
         limit: u32,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
         Y: ClientApi<E>;
 
     fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
-        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -103,7 +103,7 @@ pub trait NativeNonFungibleVault {
 
     fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &self,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, E>
     where
@@ -111,7 +111,7 @@ pub trait NativeNonFungibleVault {
 
     fn burn_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
-        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), E>
     where
@@ -303,7 +303,7 @@ impl NativeFungibleVault for Vault {
 impl NativeNonFungibleVault for Vault {
     fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
-        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -323,7 +323,7 @@ impl NativeNonFungibleVault for Vault {
 
     fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &self,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, E>
     where
@@ -340,7 +340,7 @@ impl NativeNonFungibleVault for Vault {
 
     fn burn_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
-        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), E>
     where
@@ -362,7 +362,7 @@ impl NativeNonFungibleVault for Vault {
         &self,
         limit: u32,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
         Y: ClientApi<E>,
     {

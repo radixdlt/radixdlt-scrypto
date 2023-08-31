@@ -82,9 +82,9 @@ pub trait ScryptoFungibleProof {}
 pub trait ScryptoNonFungibleProof {
     fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool;
 
-    fn contains_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> bool;
+    fn contains_non_fungibles(&self, ids: &IndexSet<NonFungibleLocalId>) -> bool;
 
-    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
+    fn non_fungible_local_ids(&self) -> IndexSet<NonFungibleLocalId>;
 
     fn non_fungible_local_id(&self) -> NonFungibleLocalId;
 
@@ -436,10 +436,10 @@ impl ScryptoProof for CheckedNonFungibleProof {
 
 impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
     fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool {
-        self.non_fungible_local_ids().contains(&id)
+        self.non_fungible_local_ids().contains(id)
     }
 
-    fn contains_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> bool {
+    fn contains_non_fungibles(&self, ids: &IndexSet<NonFungibleLocalId>) -> bool {
         self.non_fungible_local_ids().is_superset(&ids)
     }
 
@@ -479,7 +479,7 @@ impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
         non_fungibles.into_iter().next().unwrap()
     }
 
-    fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
+    fn non_fungible_local_ids(&self) -> IndexSet<NonFungibleLocalId> {
         let rtn = ScryptoVmV1Api::object_call(
             self.0 .0 .0.as_node_id(),
             NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,

@@ -5,7 +5,7 @@ use crate::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
@@ -51,7 +51,7 @@ pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str = "create_proof_of
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneCreateProofOfNonFungiblesInput {
-    pub ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: IndexSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 

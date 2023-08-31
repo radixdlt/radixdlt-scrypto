@@ -85,7 +85,7 @@ pub type PackageClaimRoyaltiesOutput = Bucket;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct PackageDefinition {
-    pub blueprints: BTreeMap<String, BlueprintDefinitionInit>,
+    pub blueprints: IndexMap<String, BlueprintDefinitionInit>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -104,8 +104,8 @@ impl Default for BlueprintType {
 pub struct BlueprintDefinitionInit {
     pub blueprint_type: BlueprintType,
     pub is_transient: bool,
-    pub feature_set: BTreeSet<String>,
-    pub dependencies: BTreeSet<GlobalAddress>,
+    pub feature_set: IndexSet<String>,
+    pub dependencies: IndexSet<GlobalAddress>,
     pub schema: BlueprintSchemaInit,
     pub royalty_config: PackageRoyaltyConfig,
     pub auth_config: AuthConfig,
@@ -116,8 +116,8 @@ impl Default for BlueprintDefinitionInit {
         Self {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
-            feature_set: BTreeSet::default(),
-            dependencies: BTreeSet::default(),
+            feature_set: IndexSet::default(),
+            dependencies: IndexSet::default(),
             schema: BlueprintSchemaInit::default(),
             royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig::default(),
@@ -136,7 +136,7 @@ pub enum FunctionAuth {
     /// All functions are accessible
     AllowAll,
     /// Functions are protected by an access rule
-    AccessRules(BTreeMap<String, AccessRule>),
+    AccessRules(IndexMap<String, AccessRule>),
     /// Only the root call frame may call all functions.
     /// Used primarily for transaction processor functions, any other use would
     /// essentially make the function inaccessible for any normal transaction
@@ -166,7 +166,7 @@ impl Default for MethodAuthTemplate {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum RoleSpecification {
     /// Roles are specified in the current blueprint and defined in the instantiated object.
-    Normal(BTreeMap<RoleKey, RoleList>),
+    Normal(IndexMap<RoleKey, RoleList>),
     /// Roles are specified in the *outer* blueprint and defined in the instantiated *outer* object.
     /// This may only be used by inner blueprints and is currently used by the Vault blueprints
     UseOuter,
@@ -175,14 +175,14 @@ pub enum RoleSpecification {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct StaticRoleDefinition {
     pub roles: RoleSpecification,
-    pub methods: BTreeMap<MethodKey, MethodAccessibility>,
+    pub methods: IndexMap<MethodKey, MethodAccessibility>,
 }
 
 impl Default for StaticRoleDefinition {
     fn default() -> Self {
         Self {
-            methods: BTreeMap::new(),
-            roles: RoleSpecification::Normal(BTreeMap::new()),
+            methods: index_map_new(),
+            roles: RoleSpecification::Normal(index_map_new()),
         }
     }
 }
@@ -206,9 +206,9 @@ impl PackageDefinition {
     // For testing only
     pub fn new_roles_only_test_definition(
         blueprint_name: &str,
-        roles: BTreeMap<RoleKey, RoleList>,
+        roles: IndexMap<RoleKey, RoleList>,
     ) -> PackageDefinition {
-        let mut blueprints = BTreeMap::new();
+        let mut blueprints = index_map_new();
         blueprints.insert(
             blueprint_name.to_string(),
             BlueprintDefinitionInit {
@@ -230,7 +230,7 @@ impl PackageDefinition {
         blueprint_name: &str,
         functions: Vec<(&str, &str, bool)>,
     ) -> PackageDefinition {
-        let mut blueprints = BTreeMap::new();
+        let mut blueprints = index_map_new();
         blueprints.insert(
             blueprint_name.to_string(),
             BlueprintDefinitionInit {
@@ -267,7 +267,7 @@ impl PackageDefinition {
         num_fields: usize,
         functions: Vec<(&str, &str, bool)>,
     ) -> PackageDefinition {
-        let mut blueprints = BTreeMap::new();
+        let mut blueprints = index_map_new();
         blueprints.insert(
             blueprint_name.to_string(),
             BlueprintDefinitionInit {
@@ -317,7 +317,7 @@ impl PackageDefinition {
         blueprint_name: &str,
         functions: Vec<(&str, &str, bool)>,
     ) -> PackageDefinition {
-        let mut blueprints = BTreeMap::new();
+        let mut blueprints = index_map_new();
         blueprints.insert(
             blueprint_name.to_string(),
             BlueprintDefinitionInit {

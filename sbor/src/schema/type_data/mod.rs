@@ -70,7 +70,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink> TypeData<C, L> {
         )
     }
 
-    pub fn enum_variants(name: &'static str, variants: BTreeMap<u8, TypeData<C, L>>) -> Self {
+    pub fn enum_variants(name: &'static str, variants: IndexMap<u8, TypeData<C, L>>) -> Self {
         let (variant_naming, variant_tuple_schemas) = variants
             .into_iter()
             .map(|(k, variant_type_data)| {

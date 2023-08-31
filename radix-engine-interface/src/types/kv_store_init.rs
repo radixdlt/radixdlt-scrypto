@@ -1,27 +1,28 @@
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use core::hash::Hash;
 use sbor::rust::prelude::*;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
-pub struct KeyValueStoreInit<K: Ord, V> {
-    pub data: BTreeMap<K, KeyValueStoreInitEntry<V>>,
+pub struct KeyValueStoreInit<K: Hash + Eq + PartialEq, V> {
+    pub data: IndexMap<K, KeyValueStoreInitEntry<V>>,
 }
 
-impl<K: Ord, V> Default for KeyValueStoreInit<K, V> {
+impl<K: Hash + Eq + PartialEq, V> Default for KeyValueStoreInit<K, V> {
     fn default() -> Self {
         Self {
-            data: BTreeMap::new(),
+            data: index_map_new(),
         }
     }
 }
 
-impl<K: Ord, V> KeyValueStoreInit<K, V> {
+impl<K: Hash + Eq + PartialEq, V> KeyValueStoreInit<K, V> {
     pub fn new() -> Self {
         KeyValueStoreInit {
-            data: BTreeMap::new(),
+            data: index_map_new(),
         }
     }
 

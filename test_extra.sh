@@ -24,7 +24,7 @@ test_crates_features \
     "sbor \
     sbor-tests \
     scrypto-schema \
-    scrypto-tests \
+    scrypto-derive-tests \
     radix-engine \
     radix-engine-tests \
     scrypto" \

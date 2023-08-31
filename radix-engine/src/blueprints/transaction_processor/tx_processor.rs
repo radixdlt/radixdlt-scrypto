@@ -153,7 +153,7 @@ impl TransactionProcessorBlueprint {
                             blueprint_version: BlueprintVersion::default(),
                             generic_substitutions: Vec::new(),
                             outer_obj_info: OuterObjectInfo::default(),
-                            features: btreeset!(),
+                            features: indexset!(),
                         },
                         object_type: ObjectType::Owned,
                     })

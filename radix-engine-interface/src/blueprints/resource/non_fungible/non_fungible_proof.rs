@@ -1,6 +1,6 @@
 use crate::data::scrypto::model::*;
 use crate::*;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
@@ -11,4 +11,4 @@ pub const NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT: &str = "NonFungibleProof_get_l
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct NonFungibleProofGetLocalIdsInput {}
 
-pub type NonFungibleProofGetLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
+pub type NonFungibleProofGetLocalIdsOutput = IndexSet<NonFungibleLocalId>;

@@ -402,8 +402,8 @@ impl SystemMapper {
     pub fn system_struct_to_node_substates(
         schema: &IndexedStateSchema,
         system_struct: (
-            BTreeMap<u8, FieldValue>,
-            BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
+            IndexMap<u8, FieldValue>,
+            IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
         ),
         base_partition_num: PartitionNumber,
     ) -> NodeSubstates {

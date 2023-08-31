@@ -77,7 +77,7 @@ impl BucketFactory {
                     |env| {
                         env.new_simple_object(
                             FUNGIBLE_BUCKET_BLUEPRINT,
-                            btreemap!(
+                            indexmap!(
                                 FungibleBucketField::Liquid.into() => FieldValue::new(LiquidFungibleResource::new(*amount)),
                                 FungibleBucketField::Locked.into() => FieldValue::new(LockedFungibleResource::default()),
                             )
@@ -128,7 +128,7 @@ impl BucketFactory {
 
                         env.new_simple_object(
                             NON_FUNGIBLE_BUCKET_BLUEPRINT,
-                            btreemap!(
+                            indexmap!(
                                 NonFungibleBucketField::Liquid.into() => FieldValue::new(LiquidNonFungibleResource::new(non_fungibles.keys().cloned().collect())),
                                 NonFungibleBucketField::Locked.into() => FieldValue::new(LockedNonFungibleResource::default()),
                             )

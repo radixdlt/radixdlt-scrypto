@@ -2,13 +2,9 @@ use crate::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
 use crate::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
 use radix_engine_common::constants::BLUEPRINT_PAYLOAD_MAX_DEPTH;
 use radix_engine_interface::blueprints::package::{BlueprintPayloadIdentifier, BlueprintVersion};
-use radix_engine_interface::prelude::{BlueprintInfo, EventTypeIdentifier, OuterObjectInfo};
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::Emitter;
 use radix_engine_store_interface::interface::SubstateDatabase;
-use sbor::rust::fmt::Debug;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
-use utils::btreeset;
 
 pub trait ApplicationEventChecker: Default {
     type ApplicationEventCheckerResults: Debug + Default;
@@ -60,7 +56,7 @@ impl<A: ApplicationEventChecker> SystemEventChecker<A> {
                         blueprint_id: blueprint_id.clone(),
                         blueprint_version: BlueprintVersion::default(),
                         outer_obj_info: OuterObjectInfo::None,
-                        features: btreeset!(),
+                        features: indexset!(),
                         generic_substitutions: vec![],
                     },
                     meta: SchemaValidationMeta::Blueprint,

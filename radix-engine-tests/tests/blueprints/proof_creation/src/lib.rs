@@ -30,7 +30,7 @@ mod pc {
             let bucket = Self::create_fungible_bucket();
             let proof = bucket
                 .as_non_fungible()
-                .create_proof_of_non_fungibles(&btreeset!(
+                .create_proof_of_non_fungibles(&indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)
                 ))
@@ -59,7 +59,7 @@ mod pc {
             let bucket = Self::create_non_fungible_bucket();
             let proof = bucket
                 .as_non_fungible()
-                .create_proof_of_non_fungibles(&btreeset!(
+                .create_proof_of_non_fungibles(&indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)
                 ))
@@ -98,7 +98,7 @@ mod pc {
             let vault = Self::create_fungible_vault();
             let proof = vault
                 .as_non_fungible()
-                .create_proof_of_non_fungibles(&btreeset!(
+                .create_proof_of_non_fungibles(&indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)
                 ))
@@ -115,7 +115,7 @@ mod pc {
             let vault = Self::create_non_fungible_vault();
             let proof = vault
                 .as_non_fungible()
-                .create_proof_of_non_fungibles(&btreeset!(NonFungibleLocalId::integer(1)))
+                .create_proof_of_non_fungibles(&indexset!(NonFungibleLocalId::integer(1)))
                 .skip_checking();
             assert_eq!(proof.amount(), dec!(1));
             proof.drop();
@@ -141,7 +141,7 @@ mod pc {
             let vault = Self::create_non_fungible_vault();
             let proof = vault
                 .as_non_fungible()
-                .create_proof_of_non_fungibles(&btreeset!(
+                .create_proof_of_non_fungibles(&indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)
                 ))
@@ -170,7 +170,7 @@ mod pc {
         pub fn create_proof_from_fungible_auth_zone_of_non_fungibles() {
             let bucket = Self::prepare_auth_zone_fungible_proof_to_bucket();
             let proof = LocalAuthZone::create_proof_of_non_fungibles(
-                btreeset!(
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)
                 ),
@@ -213,7 +213,7 @@ mod pc {
         pub fn create_proof_from_non_fungible_auth_zone_of_non_fungibles() {
             let bucket = Self::prepare_non_fungible_proof();
             let proof = LocalAuthZone::create_proof_of_non_fungibles(
-                btreeset!(
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)
                 ),

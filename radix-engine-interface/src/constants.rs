@@ -16,8 +16,8 @@ pub use radix_engine_common::constants::*;
 // - Split bootstrapping into state flushing and transaction execution (the "chicken-and-egg" problem)
 //
 lazy_static! {
-    pub static ref ALWAYS_VISIBLE_GLOBAL_NODES: BTreeSet<NodeId> = {
-        btreeset![
+    pub static ref ALWAYS_VISIBLE_GLOBAL_NODES: IndexSet<NodeId> = {
+        indexset!(
             // resource managers
             XRD.into(),
             SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
@@ -46,6 +46,6 @@ lazy_static! {
             TRANSACTION_TRACKER_PACKAGE.into(),
             // components
             CONSENSUS_MANAGER.into(),
-        ]
+        )
     };
 }

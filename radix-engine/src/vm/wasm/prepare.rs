@@ -1382,14 +1382,14 @@ mod tests {
 
     #[test]
     fn test_blueprint_constraints() {
-        let mut blueprints = BTreeMap::new();
+        let mut blueprints = index_map_new();
         blueprints.insert(
             "Test".to_string(),
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: false,
-                feature_set: btreeset!(),
-                dependencies: btreeset!(),
+                feature_set: indexset!(),
+                dependencies: indexset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -1406,7 +1406,7 @@ mod tests {
                     },
                     events: Default::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        functions: btreemap!(
+                        functions: indexmap!(
                             "f".to_string() => FunctionSchemaInit {
                                 receiver: Option::None,
                                 input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),

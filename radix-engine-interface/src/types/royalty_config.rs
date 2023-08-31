@@ -9,7 +9,7 @@ use crate::*;
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Default, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct ComponentRoyaltyConfig {
-    pub royalty_amounts: BTreeMap<String, (RoyaltyAmount, bool)>,
+    pub royalty_amounts: IndexMap<String, (RoyaltyAmount, bool)>,
 }
 
 /// Royalty rules
@@ -17,7 +17,7 @@ pub struct ComponentRoyaltyConfig {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum PackageRoyalty {
     Disabled,
-    Enabled(BTreeMap<String, RoyaltyAmount>),
+    Enabled(IndexMap<String, RoyaltyAmount>),
 }
 
 /// Royalty rules
@@ -25,7 +25,7 @@ pub enum PackageRoyalty {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum PackageRoyaltyConfig {
     Disabled,
-    Enabled(BTreeMap<String, RoyaltyAmount>),
+    Enabled(IndexMap<String, RoyaltyAmount>),
 }
 
 impl Default for PackageRoyaltyConfig {

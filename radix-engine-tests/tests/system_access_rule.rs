@@ -196,19 +196,19 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
             match export_name {
                 "create_access_rule" => match self.0 {
                     AccessRuleCreation::OwnerCreation => {
-                        RoleAssignment::create(OwnerRole::Fixed(self.1.clone()), btreemap!(), api)?;
+                        RoleAssignment::create(OwnerRole::Fixed(self.1.clone()), indexmap!(), api)?;
                     }
                     AccessRuleCreation::RoleCreation => {
                         RoleAssignment::create(
                             OwnerRole::None,
-                            btreemap!(ObjectModuleId::Main => roles2!("test" => self.1.clone();)),
+                            indexmap!(ObjectModuleId::Main => roles2!("test" => self.1.clone();)),
                             api,
                         )?;
                     }
                     AccessRuleCreation::OwnerSet => {
                         let role_assignment = RoleAssignment::create(
                             OwnerRole::Updatable(AccessRule::AllowAll),
-                            btreemap!(),
+                            indexmap!(),
                             api,
                         )?;
                         role_assignment.set_owner_role(self.1.clone(), api)?;
@@ -216,7 +216,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
                     AccessRuleCreation::RoleSet => {
                         let role_assignment = RoleAssignment::create(
                             OwnerRole::Updatable(AccessRule::AllowAll),
-                            btreemap!(),
+                            indexmap!(),
                             api,
                         )?;
                         role_assignment.set_role(

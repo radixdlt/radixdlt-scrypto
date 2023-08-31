@@ -11,7 +11,7 @@ impl TestUtilsBlueprint {
     pub fn get_definition() -> BlueprintDefinitionInit {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let functions = btreemap! {
+        let functions = indexmap! {
             TEST_UTILS_PANIC_IDENT.to_owned() => FunctionSchemaInit {
                 receiver: None,
                 input: TypeRef::Static(

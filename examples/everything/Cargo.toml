@@ -6,12 +6,20 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../../sbor" }
 scrypto = { path = "../../scrypto" }
-native-sdk = { path = "../../native-sdk" }
 
 [dev-dependencies]
 transaction = { path = "../../transaction" }
 radix-engine = { path = "../../radix-engine" }
 scrypto-unit = { path = "../../scrypto-unit" }
+native-sdk = { path = "../../native-sdk" }
+
+[profile.release]
+opt-level = 'z'        # Optimize for size.
+lto = true             # Enable Link Time Optimization.
+codegen-units = 1      # Reduce number of codegen units to increase optimizations.
+panic = 'abort'        # Abort on panic.
+strip = true           # Strip the symbols.
+overflow-checks = true # Panic in the case of an overflow.
 
 [lib]
 crate-type = ["cdylib", "lib"]

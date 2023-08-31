@@ -18,7 +18,7 @@ pub enum MultiResourcePoolError {
         resource_address: ResourceAddress,
     },
     MissingOrEmptyBuckets {
-        resource_addresses: BTreeSet<ResourceAddress>,
+        resource_addresses: IndexSet<ResourceAddress>,
     },
     PoolCreationWithSameResource,
     ContributionOfEmptyBucketError,

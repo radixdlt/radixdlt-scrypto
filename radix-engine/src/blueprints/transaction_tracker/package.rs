@@ -61,7 +61,7 @@ impl TransactionTrackerNativePackage {
             aggregator.add_child_type_and_descendents::<TransactionTrackerSubstate>(),
         ));
 
-        let mut functions = BTreeMap::new();
+        let mut functions = index_map_new();
         functions.insert(
             TRANSACTION_TRACKER_CREATE_IDENT.to_string(),
             FunctionSchemaInit {
@@ -77,13 +77,13 @@ impl TransactionTrackerNativePackage {
         );
 
         let schema = generate_full_schema(aggregator);
-        let blueprints = btreemap!(
+        let blueprints = indexmap!(
             TRANSACTION_TRACKER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 is_transient: false,
-                dependencies: btreeset!(
+                dependencies: indexset!(
                 ),
-                feature_set: btreeset!(),
+                feature_set: indexset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
@@ -101,7 +101,7 @@ impl TransactionTrackerNativePackage {
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AccessRules(
-                        btreemap!(
+                        indexmap!(
                             TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                         )
                     ),
@@ -250,7 +250,7 @@ impl TransactionTrackerBlueprint {
         let current_epoch = Runtime::current_epoch(api)?;
         let intent_store = api.new_simple_object(
             TRANSACTION_TRACKER_BLUEPRINT,
-            btreemap!(
+            indexmap!(
                 0u8 => FieldValue::new(&TransactionTrackerSubstate::V1(TransactionTrackerSubstateV1{
                     start_epoch: current_epoch.number(),
                     start_partition: PARTITION_RANGE_START,
@@ -260,12 +260,12 @@ impl TransactionTrackerBlueprint {
                 }))
             ),
         )?;
-        let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?.0;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?.0;
         let metadata = Metadata::create(api)?;
 
         let address = api.globalize(
             intent_store,
-            btreemap!(
+            indexmap!(
                 ModuleId::RoleAssignment => role_assignment.0,
                 ModuleId::Metadata => metadata.0,
             ),

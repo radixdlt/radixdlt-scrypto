@@ -91,7 +91,7 @@ impl AuthZoneBlueprint {
                                 outer_obj_info: OuterObjectInfo::Some {
                                     outer_object: resource_address.into(),
                                 },
-                                features: btreeset!(),
+                                features: indexset!(),
                                 generic_substitutions: vec![],
                             },
                             object_type: ObjectType::Owned,
@@ -112,7 +112,7 @@ impl AuthZoneBlueprint {
                             outer_obj_info: OuterObjectInfo::Some {
                                 outer_object: resource_address.into(),
                             },
-                            features: btreeset!(),
+                            features: indexset!(),
                             generic_substitutions: vec![],
                         },
                         object_type: ObjectType::Owned,
@@ -127,7 +127,7 @@ impl AuthZoneBlueprint {
 
     pub fn create_proof_of_non_fungibles<Y>(
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
@@ -157,7 +157,7 @@ impl AuthZoneBlueprint {
                         outer_obj_info: OuterObjectInfo::Some {
                             outer_object: resource_address.into(),
                         },
-                        features: btreeset!(),
+                        features: indexset!(),
                         generic_substitutions: vec![],
                     },
                     object_type: ObjectType::Owned,
@@ -204,7 +204,7 @@ impl AuthZoneBlueprint {
                         outer_obj_info: OuterObjectInfo::Some {
                             outer_object: resource_address.into(),
                         },
-                        features: btreeset!(),
+                        features: indexset!(),
                         generic_substitutions: vec![],
                     },
                     object_type: ObjectType::Owned,

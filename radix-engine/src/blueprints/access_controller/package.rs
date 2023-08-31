@@ -13,7 +13,7 @@ pub struct AccessControllerNativePackage;
 
 impl AccessControllerNativePackage {
     pub fn definition() -> PackageDefinition {
-        let blueprints = btreemap!(
+        let blueprints = indexmap!(
             ACCESS_CONTROLLER_BLUEPRINT.to_string() => AccessControllerBlueprint::definition()
         );
 

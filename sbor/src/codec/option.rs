@@ -1,4 +1,5 @@
 use crate::constants::*;
+use crate::prelude::indexmap;
 use crate::value_kind::*;
 use crate::*;
 
@@ -58,7 +59,7 @@ impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> 
         use crate::rust::borrow::ToOwned;
         TypeData::enum_variants(
             "Option",
-            crate::rust::collections::btree_map::btreemap![
+            indexmap![
                 OPTION_VARIANT_NONE => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![]}, "None"),
                 OPTION_VARIANT_SOME => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![T::TYPE_ID]}, "Some"),
             ],

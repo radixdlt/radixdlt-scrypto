@@ -20,7 +20,7 @@ pub struct RoleAssignment(pub Own);
 impl RoleAssignment {
     pub fn create<Y, R: Into<OwnerRoleEntry>, E: Debug + ScryptoDecode>(
         owner_role: R,
-        roles: BTreeMap<ObjectModuleId, RoleAssignmentInit>,
+        roles: IndexMap<ObjectModuleId, RoleAssignmentInit>,
         api: &mut Y,
     ) -> Result<Self, E>
     where

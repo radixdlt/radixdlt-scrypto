@@ -3,9 +3,6 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod component_module {
-    use crate::ComponentRoyaltyConfig;
-    use std::collections::BTreeMap;
-
     struct ComponentModule {}
 
     impl ComponentModule {
@@ -37,7 +34,7 @@ mod component_module {
                 ROLE_ASSIGNMENT_CREATE_IDENT,
                 scrypto_encode(&RoleAssignmentCreateInput {
                     owner_role: OwnerRole::None.into(),
-                    roles: BTreeMap::new(),
+                    roles: index_map_new(),
                 })
                 .unwrap(),
             );
@@ -45,7 +42,7 @@ mod component_module {
 
             let address = ScryptoVmV1Api::object_globalize(
                 *component.0.handle().as_node_id(),
-                btreemap!(
+                indexmap!(
                     ModuleId::RoleAssignment => metadata.0,
                     ModuleId::Metadata => royalty.0,
                     ModuleId::Royalty => role_assignment.0,

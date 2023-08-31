@@ -36,26 +36,18 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Tuple(
         Map<String, Tuple>(
-            "description" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities"
-                    )
-                ),
-                false
-            ),
-            "info_url" => Tuple(
-                Enum<1u8>(
-                    Enum<13u8>(
-                        "https://radiswap.radixdlt.com/"
-                    )
-                ),
-                false
-            ),
             "name" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
                         "Radiswap - dApp Owner Badge"
+                    )
+                ),
+                false
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities"
                     )
                 ),
                 false
@@ -69,6 +61,14 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                             "pool",
                             "radiswap"
                         )
+                    )
+                ),
+                false
+            ),
+            "info_url" => Tuple(
+                Enum<1u8>(
+                    Enum<13u8>(
+                        "https://radiswap.radixdlt.com/"
                     )
                 ),
                 false

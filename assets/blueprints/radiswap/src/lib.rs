@@ -76,7 +76,7 @@ mod radiswap {
             self.withdraw(output_resource_address, output_amount)
         }
 
-        fn vault_reserves(&self) -> BTreeMap<ResourceAddress, Decimal> {
+        fn vault_reserves(&self) -> IndexMap<ResourceAddress, Decimal> {
             self.pool_component.get_vault_amounts()
         }
 

@@ -19,7 +19,7 @@ PUBLISH_PACKAGE_ADVANCED
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ntyz0z6xtksc7uuu3xxhkr9zd246c5d7kscy5zudyn9l54j0rz8wd8:#1#")
+                        NonFungibleGlobalId("resource_sim1n2g6wz8kh4nkr8vx0cpvnfp97mp98n824ske0tks2z7ttu6pgq5a2z:#1#")
                     )
                 )
             )
@@ -560,6 +560,20 @@ PUBLISH_PACKAGE_ADVANCED
                     Map<String, Enum>(),
                     Tuple(
                         Map<String, Tuple>(
+                            "new" => Tuple(
+                                Enum<0u8>(),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        2u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        11u64
+                                    )
+                                ),
+                                "Radiswap_new"
+                            ),
                             "add_liquidity" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
@@ -580,20 +594,6 @@ PUBLISH_PACKAGE_ADVANCED
                                     )
                                 ),
                                 "Radiswap_add_liquidity"
-                            ),
-                            "new" => Tuple(
-                                Enum<0u8>(),
-                                Enum<0u8>(
-                                    Enum<1u8>(
-                                        2u64
-                                    )
-                                ),
-                                Enum<0u8>(
-                                    Enum<1u8>(
-                                        11u64
-                                    )
-                                ),
-                                "Radiswap_new"
                             ),
                             "remove_liquidity" => Tuple(
                                 Enum<1u8>(
@@ -651,20 +651,20 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("88e4af92a6a447ed9cc6224e266aac12baf503943614cb2c8b7c750ee3984a0c")
+    Blob("c60c4715f1382e392ad8a7e0fe9a617563eb81a3f23541e9ec333a7b0dd7d94c")
     Map<String, Tuple>(
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "[EXAMPLE] A package of the logic of a Uniswap v2 style DEX."
-                )
-            ),
-            true
-        ),
         "name" => Tuple(
             Enum<1u8>(
                 Enum<0u8>(
                     "Radiswap Package"
+                )
+            ),
+            true
+        ),
+        "description" => Tuple(
+            Enum<1u8>(
+                Enum<0u8>(
+                    "[EXAMPLE] A package of the logic of a Uniswap v2 style DEX."
                 )
             ),
             true
@@ -695,14 +695,14 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ntyz0z6xtksc7uuu3xxhkr9zd246c5d7kscy5zudyn9l54j0rz8wd8:#1#")
+                        NonFungibleGlobalId("resource_sim1n2g6wz8kh4nkr8vx0cpvnfp97mp98n824ske0tks2z7ttu6pgq5a2z:#1#")
                     )
                 )
             )
         )
     )
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Address("resource_sim1thaq3da2vuvtulmaqddqgdu4u924arvn6dz9l8flukt2wm6zhqkcts")
+    Address("resource_sim1t5pj98uqzu7k6w68wcme5hz59udcmh07qwxar36032mftdwna85mn2")
 ;
 CALL_FUNCTION
     NamedAddress("radiswap_package")
@@ -713,14 +713,14 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ntyz0z6xtksc7uuu3xxhkr9zd246c5d7kscy5zudyn9l54j0rz8wd8:#1#")
+                        NonFungibleGlobalId("resource_sim1n2g6wz8kh4nkr8vx0cpvnfp97mp98n824ske0tks2z7ttu6pgq5a2z:#1#")
                     )
                 )
             )
         )
     )
-    Address("resource_sim1tk63m2mhewtk2npkgj8xdnpkcrundmv8za8n8asj56aru9h0qr2kx3")
-    Address("resource_sim1tk2wrhezcsnyqmcsymzwlzs0km9ccxzjjq62ytpehjwzc09w89m3gh")
+    Address("resource_sim1thfpe3dlszf5ahpxaj46f9ndwk7mx42jnn23wsj4zrzdhwwekt25g0")
+    Address("resource_sim1tkqte60nkrw896whyqc4lk36gluedk229uky0eax2axa3ul02kak5n")
 ;
 CALL_METHOD
     Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")

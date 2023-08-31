@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::types::NonFungibleData;
-use sbor::rust::collections::{BTreeMap, BTreeSet};
+use sbor::rust::collections::{IndexMap, IndexSet};
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -106,7 +106,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
+    pub entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
     pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
@@ -119,7 +119,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
+    pub entries: IndexMap<NonFungibleLocalId, (ManifestValue,)>,
     pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
@@ -212,12 +212,12 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint";
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintManifestInput {
-    pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
+    pub entries: IndexMap<NonFungibleLocalId, (ManifestValue,)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintInput {
-    pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
+    pub entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
 }
 
 pub type NonFungibleResourceManagerMintOutput = Bucket;
@@ -249,7 +249,7 @@ pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLo
 pub struct NonFungibleDataSchema {
     pub schema: VersionedScryptoSchema,
     pub non_fungible: LocalTypeIndex,
-    pub mutable_fields: BTreeSet<String>,
+    pub mutable_fields: IndexSet<String>,
 }
 
 impl NonFungibleData for () {

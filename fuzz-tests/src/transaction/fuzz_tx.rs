@@ -685,7 +685,7 @@ impl TxFuzzer {
                 // RecallNonFungiblesFromVault
                 InstructionDiscriminants::RecallNonFungiblesFromVault => {
                     let input = NonFungibleVaultRecallNonFungiblesInput {
-                        non_fungible_local_ids: BTreeSet::from_iter(
+                        non_fungible_local_ids: IndexSet::from_iter(
                             non_fungible_ids.clone().into_iter(),
                         ),
                     };

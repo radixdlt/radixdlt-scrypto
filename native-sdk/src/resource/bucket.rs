@@ -6,7 +6,7 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 
 use super::ResourceManager;
@@ -105,13 +105,13 @@ pub trait NativeNonFungibleBucket {
     fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
         Y: ClientApi<E>;
 
     fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -119,7 +119,7 @@ pub trait NativeNonFungibleBucket {
 
     fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, E>
     where
@@ -315,7 +315,7 @@ impl NativeNonFungibleBucket for Bucket {
     fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
         Y: ClientApi<E>,
     {
@@ -330,7 +330,7 @@ impl NativeNonFungibleBucket for Bucket {
 
     fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -347,7 +347,7 @@ impl NativeNonFungibleBucket for Bucket {
 
     fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, E>
     where

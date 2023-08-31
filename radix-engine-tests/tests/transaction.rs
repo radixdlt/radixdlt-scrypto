@@ -117,7 +117,7 @@ fn test_non_existent_blob_hash() {
             PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef([0; 32]),
                 definition: PackageDefinition {
-                    blueprints: btreemap!(),
+                    blueprints: indexmap!(),
                 },
                 metadata: metadata_init!(),
                 owner_role: OwnerRole::None,

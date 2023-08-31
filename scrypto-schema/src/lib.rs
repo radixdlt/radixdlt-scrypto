@@ -63,7 +63,7 @@ pub struct BlueprintStateSchemaInit {
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct BlueprintEventSchemaInit {
-    pub event_schema: BTreeMap<String, TypeRef<LocalTypeIndex>>,
+    pub event_schema: IndexMap<String, TypeRef<LocalTypeIndex>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -76,13 +76,13 @@ pub struct FunctionSchemaInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintFunctionsSchemaInit {
-    pub functions: BTreeMap<String, FunctionSchemaInit>,
+    pub functions: IndexMap<String, FunctionSchemaInit>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintHooksInit {
     // TODO: allow registration of variant count if we make virtualizable entity type fully dynamic
-    pub hooks: BTreeMap<BlueprintHook, String>,
+    pub hooks: IndexMap<BlueprintHook, String>,
 }
 
 impl BlueprintSchemaInit {

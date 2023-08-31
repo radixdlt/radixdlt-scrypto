@@ -585,7 +585,7 @@ fn contribution_emits_expected_event() {
         .unwrap();
     assert_eq!(
         contributed_resources,
-        btreemap!(
+        indexmap!(
             test_runner.pool_resource1 => dec!("2.22"),
             test_runner.pool_resource2 => dec!("8.88"),
         )
@@ -629,7 +629,7 @@ fn redemption_emits_expected_event() {
     assert_eq!(pool_unit_tokens_redeemed, dec!("4.44"));
     assert_eq!(
         redeemed_resources,
-        btreemap!(
+        indexmap!(
             test_runner.pool_resource1 => dec!("2.22"),
             test_runner.pool_resource2 => dec!("8.88"),
         )

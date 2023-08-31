@@ -27,7 +27,7 @@ pub use CreationStrategy::*;
 #[derive(Clone, Debug)]
 pub enum FactoryResourceSpecifier {
     Amount(ResourceAddress, Decimal),
-    Ids(ResourceAddress, BTreeMap<NonFungibleLocalId, ScryptoValue>),
+    Ids(ResourceAddress, IndexMap<NonFungibleLocalId, ScryptoValue>),
 }
 
 impl FactoryResourceSpecifier {

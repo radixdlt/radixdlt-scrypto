@@ -40,7 +40,7 @@ impl ScryptoVmV1Api {
 
     pub fn object_new(
         blueprint_ident: &str,
-        object_states: BTreeMap<FieldIndex, FieldValue>,
+        object_states: IndexMap<FieldIndex, FieldValue>,
     ) -> NodeId {
         let object_states = scrypto_encode(&object_states).unwrap();
 
@@ -57,7 +57,7 @@ impl ScryptoVmV1Api {
 
     pub fn object_globalize(
         object_id: NodeId,
-        modules: BTreeMap<ModuleId, NodeId>,
+        modules: IndexMap<ModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> GlobalAddress {
         let modules = scrypto_encode(&modules).unwrap();

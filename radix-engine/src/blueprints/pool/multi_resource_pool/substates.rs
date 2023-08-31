@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct MultiResourcePoolSubstate {
-    /// The vaults being stored as a `BTreeMap` and not as a `KeyValueStore` is intentional here!
+    /// The vaults being stored as a `IndexMap` and not as a `KeyValueStore` is intentional here!
     ///
     /// All of the operations on the many pool blueprint require loading all of the vaults and doing
     /// some arithmetic, reading their state (with exception to protected deposit and withdraw).
@@ -26,7 +26,7 @@ pub struct MultiResourcePoolSubstate {
     /// reference to the pool. In other words, if the dApp has a method that does not interact with
     /// the pool, it is not in any way affected by how the pool stores the vaults; cost units and
     /// fees do not come into the picture there.
-    pub vaults: BTreeMap<ResourceAddress, Vault>,
+    pub vaults: IndexMap<ResourceAddress, Vault>,
 
     /// The resource manager of the pool unit resource that the pool works with.
     pub pool_unit_resource_manager: ResourceManager,

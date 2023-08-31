@@ -519,7 +519,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::RecallEvent>(event_identifier)
                 && is_decoded_equal(
-                    &non_fungible_vault::RecallEvent::new(btreeset!(NonFungibleLocalId::integer(
+                    &non_fungible_vault::RecallEvent::new(indexset!(NonFungibleLocalId::integer(
                         1
                     ))),
                     event_data
@@ -535,7 +535,9 @@ fn vault_non_fungible_recall_emits_correct_events() {
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
-                    &non_fungible_vault::DepositEvent::new([non_fungible_local_id.clone()].into()),
+                    &non_fungible_vault::DepositEvent::new(
+                        indexset!(non_fungible_local_id.clone())
+                    ),
                     event_data
                 ) =>
                 true,
@@ -792,7 +794,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &MintNonFungibleResourceEvent {
-                        ids: [id.clone()].into()
+                        ids: indexset!(id.clone())
                     },
                     event_data
                 ) =>
@@ -808,7 +810,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &BurnNonFungibleResourceEvent {
-                        ids: [id.clone()].into()
+                        ids: indexset!(id.clone())
                     },
                     event_data
                 ) =>
@@ -902,7 +904,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &MintNonFungibleResourceEvent {
-                        ids: [id.clone(), id2.clone()].into()
+                        ids: indexset!(id.clone(), id2.clone())
                     },
                     event_data
                 ) =>
@@ -925,7 +927,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
-                    &non_fungible_vault::DepositEvent::new([id.clone(), id2.clone()].into()),
+                    &non_fungible_vault::DepositEvent::new(indexset!(id.clone(), id2.clone())),
                     event_data
                 ) =>
                 true,
@@ -940,7 +942,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 && is_decoded_equal(
                     &account::DepositEvent::NonFungible(
                         resource_address,
-                        [id.clone(), id2.clone()].into()
+                        indexset!(id.clone(), id2.clone())
                     ),
                     event_data
                 ) =>
@@ -955,7 +957,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
-                    &non_fungible_vault::WithdrawEvent::new([id.clone(), id2.clone()].into()),
+                    &non_fungible_vault::WithdrawEvent::new(indexset!(id.clone(), id2.clone())),
                     event_data
                 ) =>
                 true,
@@ -969,7 +971,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
-                    &non_fungible_vault::DepositEvent::new([id.clone(), id2.clone()].into()),
+                    &non_fungible_vault::DepositEvent::new(indexset!(id.clone(), id2.clone())),
                     event_data
                 ) =>
                 true,
@@ -2265,10 +2267,10 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
         panic!("Incorrect number of events: {}", events.len())
     };
 
-    let expected_non_fungibles = btreeset![
+    let expected_non_fungibles = indexset!(
         NonFungibleLocalId::integer(3),
         NonFungibleLocalId::integer(2)
-    ];
+    );
     {
         assert_eq!(
             test_runner.event_name(&vault_withdraw_event.0),
@@ -2657,11 +2659,11 @@ fn account_deposit_batch_emits_expected_events() {
                 scrypto_decode::<account::DepositEvent>(&nfts_deposit_event.1).unwrap(),
                 account::DepositEvent::NonFungible(
                     resource_address,
-                    btreeset![
+                    indexset!(
                         NonFungibleLocalId::integer(1),
                         NonFungibleLocalId::integer(2),
                         NonFungibleLocalId::integer(3)
-                    ]
+                    )
                 )
             )
         }
@@ -2746,11 +2748,11 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
                 .unwrap(),
             account::RejectedDepositEvent::NonFungible(
                 resource_address,
-                btreeset![
+                indexset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
-                ]
+                )
             )
         )
     }
