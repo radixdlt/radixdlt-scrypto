@@ -643,6 +643,34 @@ fn panic(
 
     runtime.sys_panic(message)
 }
+
+#[cfg(feature = "radix_engine_tests")]
+fn test_host_read_memory(
+    mut caller: Caller<'_, HostState>,
+    memory_offs: u32,
+    data_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    // - attempt to read data of given length data starting from given memory offset memory_ptr
+    let (memory, _runtime) = grab_runtime!(caller);
+
+    read_memory(caller.as_context_mut(), memory, memory_offs, data_len)?;
+    Ok(())
+}
+
+#[cfg(feature = "radix_engine_tests")]
+fn test_host_write_memory(
+    mut caller: Caller<'_, HostState>,
+    memory_ptr: u32,
+    data_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    // - generate some random data of of given length data_len
+    // - attempt to write this data into given memory offset memory_ptr
+    let (memory, _runtime) = grab_runtime!(caller);
+    let data = vec![!0u8; data_len as usize];
+
+    write_memory(caller.as_context_mut(), memory, memory_ptr, &data)?;
+    Ok(())
+}
 // native functions ends
 
 macro_rules! linker_define {
@@ -1306,6 +1334,30 @@ impl WasmiModule {
         );
 
         linker_define!(linker, SYS_GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
+
+        #[cfg(feature = "radix_engine_tests")]
+        {
+            let host_read_memory = Func::wrap(
+                store.as_context_mut(),
+                |caller: Caller<'_, HostState>,
+                 memory_offs: u32,
+                 data_len: u32|
+                 -> Result<(), Trap> {
+                    test_host_read_memory(caller, memory_offs, data_len).map_err(|e| e.into())
+                },
+            );
+            let host_write_memory = Func::wrap(
+                store.as_context_mut(),
+                |caller: Caller<'_, HostState>,
+                 memory_offs: u32,
+                 data_len: u32|
+                 -> Result<(), Trap> {
+                    test_host_write_memory(caller, memory_offs, data_len).map_err(|e| e.into())
+                },
+            );
+            linker_define!(linker, "test_host_read_memory", host_read_memory);
+            linker_define!(linker, "test_host_write_memory", host_write_memory);
+        }
 
         linker.instantiate(store.as_context_mut(), &module)
     }
