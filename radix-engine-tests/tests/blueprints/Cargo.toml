@@ -4,6 +4,7 @@ members = [
     "address_reservation",
     "allocated_address",
     "arguments",
+    "auth_scenarios",
     "balance_changes",
     "bucket",
     "cast",
