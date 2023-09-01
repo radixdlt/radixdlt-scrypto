@@ -101,13 +101,10 @@ fn hash_computed_consistently_after_higher_tier_leafs_deleted() {
     let reference_root = put_at_next_version(
         &mut reference_store,
         None,
-        vec![
-            change(2, 3, 4, Some(234)),
-            change(2, 3, 5, Some(235)),
-        ],
+        vec![change(2, 3, 4, Some(234)), change(2, 3, 5, Some(235))],
     );
 
-    // Compute a hash of the same state, at which we arrive after deleting some NodeId.
+    // Compute a hash of the same state, at which we arrive after deleting some unrelated NodeId.
     let mut store = TypedInMemoryTreeStore::new();
     put_at_next_version(
         &mut store,
@@ -121,18 +118,10 @@ fn hash_computed_consistently_after_higher_tier_leafs_deleted() {
     put_at_next_version(
         &mut store,
         Some(1),
-        vec![
-            change(1, 6, 2, None),
-            change(1, 6, 3, None),
-        ],
+        vec![change(1, 6, 2, None), change(1, 6, 3, None)],
     );
-    let root_after_deletes = put_at_next_version(
-        &mut store,
-        Some(2),
-        vec![
-            change(2, 3, 5, Some(235)),
-        ],
-    );
+    let root_after_deletes =
+        put_at_next_version(&mut store, Some(2), vec![change(2, 3, 5, Some(235))]);
 
     // We did [1:6:2, 1:6:3, 2:3:4] - [1:6:2, 1:6:3] + [2:3:5] = [2:3:4, 2:3:5] (i.e. same state).
     assert_eq!(root_after_deletes, reference_root);
@@ -332,6 +321,7 @@ fn sbor_uses_custom_direct_codecs_for_nibbles() {
     let node = TreeNode::Leaf(TreeLeafNode {
         key_suffix: nibbles,
         value_hash: Hash([7; 32]),
+        last_hash_change_version: 1337,
     });
     let encoded = scrypto_encode(&node).unwrap();
     assert!(encoded
@@ -362,6 +352,7 @@ fn sbor_decodes_what_was_encoded() {
         TreeNode::Leaf(TreeLeafNode {
             key_suffix: nibbles("abc"),
             value_hash: Hash([7; 32]),
+            last_hash_change_version: 1337,
         }),
         TreeNode::Null,
     ];
