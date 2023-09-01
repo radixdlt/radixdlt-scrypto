@@ -1,3 +1,4 @@
+use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionFeeDetails;
@@ -890,4 +891,38 @@ fn system_loan_should_cover_intended_use_case() {
     );
     receipt.expect_commit_success();
     println!("\n{:?}", receipt);
+}
+
+#[test]
+fn transaction_with_large_payload_but_insufficient_fee_payment_should_be_rejected() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_account(true);
+    let resource_address = test_runner.create_non_fungible_resource(account);
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, dec!("0.2"))
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    receipt.expect_commit_success();
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, dec!("0.2"))
+        .then(|mut builder| {
+            for _ in 0..10_000 {
+                // 640 KB
+                builder = builder.assert_worktop_contains_non_fungibles(
+                    resource_address,
+                    [NonFungibleLocalId::bytes([0u8; NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH]).unwrap()],
+                )
+            }
+            builder
+        })
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    receipt.expect_specific_rejection(|e| {
+        matches!(e, RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_))
+    })
 }

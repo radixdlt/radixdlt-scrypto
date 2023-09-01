@@ -26,7 +26,7 @@ fn non_existing_vault_should_cause_error() {
 
     // Assert
     receipt.expect_specific_rejection(|e| {
-        e.eq(&RejectionReason::ErrorBeforeFeeLoanRepaid(
+        e.eq(&RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(
             RuntimeError::KernelError(KernelError::InvalidReference(
                 non_existing_address.as_node_id().clone(),
             )),
