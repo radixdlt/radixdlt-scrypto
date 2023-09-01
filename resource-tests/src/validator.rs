@@ -42,11 +42,14 @@ impl ValidatorFuzzAction {
         &self,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
-        meta: ValidatorMeta,
+        meta: &Vec<ValidatorMeta>,
     ) -> (ManifestBuilder, bool) {
         match self {
             ValidatorFuzzAction::GetRedemptionValue => {
+                let next_validator = fuzzer.next(0usize..meta.len());
+                let meta = meta[next_validator];
                 let amount_of_stake_units = fuzzer.next_amount();
+
                 let builder = builder.call_method(
                     meta.validator_address,
                     VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
@@ -57,7 +60,10 @@ impl ValidatorFuzzAction {
                 (builder, amount_of_stake_units.is_zero())
             }
             ValidatorFuzzAction::Stake => {
+                let next_validator = fuzzer.next(0usize..meta.len());
+                let meta = meta[next_validator];
                 let amount_to_stake = fuzzer.next_amount();
+
                 let builder = builder
                     .withdraw_from_account(meta.account_address, XRD, amount_to_stake)
                     .take_all_from_worktop(XRD, "xrd")
@@ -71,7 +77,10 @@ impl ValidatorFuzzAction {
                 (builder, amount_to_stake.is_zero())
             }
             ValidatorFuzzAction::Unstake => {
+                let next_validator = fuzzer.next(0usize..meta.len());
+                let meta = meta[next_validator];
                 let amount = fuzzer.next_amount();
+
                 let builder = builder
                     .withdraw_from_account(meta.account_address, meta.stake_unit_resource, amount)
                     .take_all_from_worktop(meta.stake_unit_resource, "stake_units")
@@ -85,7 +94,10 @@ impl ValidatorFuzzAction {
                 (builder, amount.is_zero())
             }
             ValidatorFuzzAction::Claim => {
+                let next_validator = fuzzer.next(0usize..meta.len());
+                let meta = meta[next_validator];
                 let amount = fuzzer.next_amount();
+
                 let builder = builder
                     .withdraw_from_account(meta.account_address, meta.claim_resource, amount)
                     .take_all_from_worktop(meta.claim_resource, "claim_resource")
@@ -99,7 +111,10 @@ impl ValidatorFuzzAction {
                 (builder, false)
             }
             ValidatorFuzzAction::UpdateFee => {
+                let next_validator = fuzzer.next(0usize..meta.len());
+                let meta = meta[next_validator];
                 let fee_factor = fuzzer.next_amount();
+
                 let builder = builder
                     .create_proof_from_account_of_non_fungibles(
                         meta.account_address,
@@ -117,7 +132,10 @@ impl ValidatorFuzzAction {
                 (builder, fee_factor.is_zero())
             }
             ValidatorFuzzAction::LockOwnerStake => {
+                let next_validator = fuzzer.next(0usize..meta.len());
+                let meta = meta[next_validator];
                 let amount = fuzzer.next_amount();
+
                 let builder = builder
                     .withdraw_from_account(meta.account_address, meta.stake_unit_resource, amount)
                     .create_proof_from_account_of_non_fungibles(
@@ -139,6 +157,8 @@ impl ValidatorFuzzAction {
                 (builder, amount.is_zero())
             }
             ValidatorFuzzAction::StartUnlockOwnerStake => {
+                let next_validator = fuzzer.next(0usize..meta.len());
+                let meta = meta[next_validator];
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
@@ -159,6 +179,9 @@ impl ValidatorFuzzAction {
                 (builder, amount.is_zero())
             }
             ValidatorFuzzAction::FinishUnlockOwnerStake => {
+                let next_validator = fuzzer.next(0usize..meta.len());
+                let meta = meta[next_validator];
+
                 let builder = builder
                     .create_proof_from_account_of_non_fungibles(
                         meta.account_address,
@@ -176,6 +199,9 @@ impl ValidatorFuzzAction {
                 (builder, false)
             }
             ValidatorFuzzAction::Register => {
+                let next_validator = fuzzer.next(0usize..meta.len());
+                let meta = meta[next_validator];
+
                 let builder = builder
                     .create_proof_from_account_of_non_fungibles(
                         meta.account_address,

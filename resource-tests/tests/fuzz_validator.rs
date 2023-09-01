@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use resource_tests::validator::{ValidatorFuzzAction, ValidatorMeta};
-use resource_tests::TestFuzzer;
+use resource_tests::{FuzzTxnResult, TestFuzzer};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -37,19 +37,11 @@ fn fuzz_validator() {
     println!("{:#?}", summed_results);
 }
 
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum FuzzTxnResult {
-    TrivialSuccess,
-    Success,
-    TrivialFailure,
-    Failure,
-}
-
 struct ValidatorFuzzTest {
     fuzzer: TestFuzzer,
     test_runner: DefaultTestRunner,
-    validator_meta: ValidatorMeta,
+    validator_meta: Vec<ValidatorMeta>,
+    account_address: ComponentAddress,
     account_public_key: PublicKey,
     cur_round: Round,
 }
@@ -83,12 +75,13 @@ impl ValidatorFuzzTest {
         Self {
             fuzzer,
             test_runner,
-            validator_meta: ValidatorMeta {
+            validator_meta: vec![ValidatorMeta {
                 validator_address,
                 stake_unit_resource,
                 claim_resource,
                 account_address: account,
-            },
+            }],
+            account_address: account,
             account_public_key: public_key.into(),
             cur_round: Round::of(1u64),
         }
@@ -103,9 +96,9 @@ impl ValidatorFuzzTest {
             let action: ValidatorFuzzAction =
                 ValidatorFuzzAction::from_repr(self.fuzzer.next_u8(7u8)).unwrap();
             let (builder, trivial) =
-                action.add_to_manifest(builder, &mut self.fuzzer, self.validator_meta);
+                action.add_to_manifest(builder, &mut self.fuzzer, &self.validator_meta);
             let manifest = builder
-                .deposit_batch(self.validator_meta.account_address)
+                .deposit_batch(self.account_address)
                 .build();
             let receipt = self.test_runner.execute_manifest_ignoring_fee(
                 manifest,
@@ -114,12 +107,7 @@ impl ValidatorFuzzTest {
                 )],
             );
             let result = receipt.expect_commit_ignore_outcome();
-            let result = match (&result.outcome, trivial) {
-                (TransactionOutcome::Success(..), true) => FuzzTxnResult::TrivialSuccess,
-                (TransactionOutcome::Success(..), false) => FuzzTxnResult::Success,
-                (TransactionOutcome::Failure(..), true) => FuzzTxnResult::TrivialFailure,
-                (TransactionOutcome::Failure(..), false) => FuzzTxnResult::Failure,
-            };
+            let result = FuzzTxnResult::from_outcome(&result.outcome, trivial);
 
             if self.fuzzer.next(0u8..8u8) == 0u8 {
                 let rounds = self.fuzzer.next(1u64..10u64);

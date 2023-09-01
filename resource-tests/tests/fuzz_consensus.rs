@@ -115,13 +115,12 @@ impl ConsensusFuzzTest {
                         (fuzz_action, builder, trivial)
                     }
                     _ => {
-                        let next_validator = self.fuzzer.next(0usize..self.validator_meta.len());
                         let action: ValidatorFuzzAction =
                             ValidatorFuzzAction::from_repr(self.fuzzer.next_u8(8u8)).unwrap();
                         let (builder, trivial) = action.add_to_manifest(
                             builder,
                             &mut self.fuzzer,
-                            self.validator_meta[next_validator],
+                            &self.validator_meta,
                         );
                         (ConsensusFuzzAction::Validator(action), builder, trivial)
                     }
