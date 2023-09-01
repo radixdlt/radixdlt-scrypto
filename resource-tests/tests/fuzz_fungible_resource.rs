@@ -1,21 +1,18 @@
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::NativeVault;
-use radix_engine::errors::RuntimeError;
-use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::prelude::node_modules::auth::RoleDefinition;
-use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmInvoke};
+use radix_engine::vm::{OverridePackageCode};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::node_modules::ModuleConfig;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use resource_tests::resource::{
+    FungibleResourceFuzzGetBucketAction, ResourceFuzzUseBucketAction, VaultTestInvoke,
+    BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID,
+};
 use resource_tests::{FuzzTxnResult, TestFuzzer};
-use resource_tests::resource::{BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID, FungibleResourceFuzzGetBucketAction, FungibleResourceFuzzUseBucketAction, VaultTestInvoke};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -51,9 +48,8 @@ fn fuzz_fungible_resource() {
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 struct ResourceFuzzAction(
     FungibleResourceFuzzGetBucketAction,
-    FungibleResourceFuzzUseBucketAction,
+    ResourceFuzzUseBucketAction,
 );
-
 
 struct FungibleResourceFuzzTest {
     fuzzer: TestFuzzer,
@@ -69,7 +65,10 @@ impl FungibleResourceFuzzTest {
     fn new(seed: u64) -> Self {
         let fuzzer = TestFuzzer::new(seed);
         let mut test_runner = TestRunnerBuilder::new()
-            .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, VaultTestInvoke))
+            .with_custom_extension(OverridePackageCode::new(
+                CUSTOM_PACKAGE_CODE_ID,
+                VaultTestInvoke,
+            ))
             .build();
         let package_address = test_runner.publish_native_package(
             CUSTOM_PACKAGE_CODE_ID,
@@ -136,22 +135,14 @@ impl FungibleResourceFuzzTest {
         }
     }
 
-    fn next_amount(&mut self) -> Decimal {
-        self.fuzzer.next_amount()
-    }
-
-    fn run_fuzz(
-        &mut self,
-    ) -> BTreeMap<ResourceFuzzAction, BTreeMap<FuzzTxnResult, u64>> {
-        let mut fuzz_results: BTreeMap<
-            ResourceFuzzAction,
-            BTreeMap<FuzzTxnResult, u64>,
-        > = BTreeMap::new();
+    fn run_fuzz(&mut self) -> BTreeMap<ResourceFuzzAction, BTreeMap<FuzzTxnResult, u64>> {
+        let mut fuzz_results: BTreeMap<ResourceFuzzAction, BTreeMap<FuzzTxnResult, u64>> =
+            BTreeMap::new();
         for _ in 0..500 {
             let builder = ManifestBuilder::new();
-            let get_action =
+            let get_bucket_action =
                 FungibleResourceFuzzGetBucketAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
-            let (mut builder, mut trivial) = get_action.add_to_manifest(
+            let (mut builder, mut trivial) = get_bucket_action.add_to_manifest(
                 builder,
                 &mut self.fuzzer,
                 self.component_address,
@@ -159,7 +150,8 @@ impl FungibleResourceFuzzTest {
                 self.vault_id,
             );
 
-            let use_action = FungibleResourceFuzzUseBucketAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
+            let use_action =
+                ResourceFuzzUseBucketAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
             let (mut builder, end_trivial) = use_action.add_to_manifest(
                 builder,
                 &mut self.fuzzer,
@@ -182,7 +174,7 @@ impl FungibleResourceFuzzTest {
             let result = FuzzTxnResult::from_outcome(&result.outcome, trivial);
 
             let results = fuzz_results
-                .entry(ResourceFuzzAction(get_action, use_action))
+                .entry(ResourceFuzzAction(get_bucket_action, use_action))
                 .or_default();
             results.entry(result).or_default().add_assign(&1);
         }

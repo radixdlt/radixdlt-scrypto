@@ -14,7 +14,11 @@ use radix_engine_interface::prelude::node_modules::ModuleConfig;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use resource_tests::TestFuzzer;
+use resource_tests::resource::{
+    NonFungibleResourceFuzzGetBucketAction, ResourceFuzzUseBucketAction, VaultTestInvoke,
+    BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID,
+};
+use resource_tests::{FuzzTxnResult, TestFuzzer};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -46,103 +50,17 @@ fn fuzz_non_fungible_resource() {
     }
 
     println!("{:#?}", summed_results);
-
-    panic!("oops");
-}
-
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum NonFungibleResourceFuzzStartAction {
-    Mint,
-    VaultTake,
-    VaultTakeNonFungibles,
-    VaultTakeAdvanced,
-    VaultRecall,
-    VaultRecallNonFungibles,
-}
-
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum NonFungibleResourceFuzzEndAction {
-    Burn,
-    VaultPut,
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 struct NonFungibleResourceFuzzTxn(
-    NonFungibleResourceFuzzStartAction,
-    NonFungibleResourceFuzzEndAction,
+    NonFungibleResourceFuzzGetBucketAction,
+    ResourceFuzzUseBucketAction,
 );
-
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-enum FuzzTxnResult {
-    TrivialSuccess,
-    Success,
-    TrivialFailure,
-    Failure,
-}
-
-const BLUEPRINT_NAME: &str = "MyBlueprint";
-const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
-
-#[derive(Clone)]
-struct TestInvoke;
-impl VmInvoke for TestInvoke {
-    fn invoke<Y>(
-        &mut self,
-        export_name: &str,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-    {
-        match export_name {
-            "call_vault" => {
-                let handle = api
-                    .actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::read_only())
-                    .unwrap();
-                let vault: Vault = api.field_read_typed(handle).unwrap();
-
-                let input: (String, ScryptoValue) = scrypto_decode(input.as_slice()).unwrap();
-
-                let rtn = api.call_method(
-                    vault.0.as_node_id(),
-                    input.0.as_str(),
-                    scrypto_encode(&input.1).unwrap(),
-                )?;
-                return Ok(IndexedScryptoValue::from_vec(rtn).unwrap());
-            }
-            "new" => {
-                let resource_address: (ResourceAddress,) =
-                    scrypto_decode(input.as_slice()).unwrap();
-                let vault = Vault::create(resource_address.0, api).unwrap();
-
-                let metadata = Metadata::create(api)?;
-                let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
-                let node_id = api
-                    .new_simple_object(BLUEPRINT_NAME, btreemap!(0u8 => FieldValue::new(&vault)))?;
-
-                api.globalize(
-                    node_id,
-                    btreemap!(
-                        ModuleId::Metadata => metadata.0,
-                        ModuleId::RoleAssignment => access_rules.0.0,
-                    ),
-                    None,
-                )?;
-            }
-            _ => {}
-        }
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
-}
 
 struct ResourceFuzzTest {
     fuzzer: TestFuzzer,
-    test_runner: TestRunner<OverridePackageCode<TestInvoke>, InMemorySubstateDatabase>,
+    test_runner: TestRunner<OverridePackageCode<VaultTestInvoke>, InMemorySubstateDatabase>,
     resource_address: ResourceAddress,
     component_address: ComponentAddress,
     vault_id: InternalAddress,
@@ -154,7 +72,10 @@ impl ResourceFuzzTest {
     fn new(seed: u64) -> Self {
         let fuzzer = TestFuzzer::new(seed);
         let mut test_runner = TestRunnerBuilder::new()
-            .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
+            .with_custom_extension(OverridePackageCode::new(
+                CUSTOM_PACKAGE_CODE_ID,
+                VaultTestInvoke,
+            ))
             .build();
         let package_address = test_runner.publish_native_package(
             CUSTOM_PACKAGE_CODE_ID,
@@ -221,104 +142,30 @@ impl ResourceFuzzTest {
         }
     }
 
-    fn next_amount(&mut self) -> Decimal {
-        self.fuzzer.next_amount()
-    }
-
     fn run_fuzz(&mut self) -> BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>> {
         let mut fuzz_results: BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
         for _ in 0..700 {
             let builder = ManifestBuilder::new();
-            let start =
-                NonFungibleResourceFuzzStartAction::from_repr(self.fuzzer.next_u8(6u8)).unwrap();
-            let (builder, mut trivial) = match start {
-                NonFungibleResourceFuzzStartAction::Mint => {
-                    let entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)> = self
-                        .fuzzer
-                        .next_non_fungible_id_set()
-                        .into_iter()
-                        .map(|id| {
-                            let value: ManifestValue =
-                                manifest_decode(&manifest_encode(&()).unwrap()).unwrap();
-                            (id, (value,))
-                        })
-                        .collect();
+            let get_bucket_action =
+                NonFungibleResourceFuzzGetBucketAction::from_repr(self.fuzzer.next_u8(6u8))
+                    .unwrap();
+            let (mut builder, mut trivial) = get_bucket_action.add_to_manifest(
+                builder,
+                &mut self.fuzzer,
+                self.component_address,
+                self.resource_address,
+                self.vault_id,
+            );
 
-                    let builder = builder.call_method(
-                        self.resource_address,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-                        NonFungibleResourceManagerMintManifestInput { entries },
-                    );
-
-                    (builder, false)
-                }
-                NonFungibleResourceFuzzStartAction::VaultTake => {
-                    let amount = self.next_amount();
-                    let builder = builder.call_method(
-                        self.component_address,
-                        "call_vault",
-                        manifest_args!(VAULT_TAKE_IDENT, (amount,)),
-                    );
-                    (builder, amount.is_zero())
-                }
-                NonFungibleResourceFuzzStartAction::VaultTakeNonFungibles => {
-                    let ids = self.fuzzer.next_non_fungible_id_set();
-                    let trivial = ids.is_empty();
-                    let builder = builder.call_method(
-                        self.component_address,
-                        "call_vault",
-                        manifest_args!(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT, (ids,)),
-                    );
-                    (builder, trivial)
-                }
-                NonFungibleResourceFuzzStartAction::VaultTakeAdvanced => {
-                    let amount = self.next_amount();
-                    let withdraw_strategy = self.fuzzer.next_withdraw_strategy();
-                    let builder = builder.call_method(
-                        self.component_address,
-                        "call_vault",
-                        manifest_args!(VAULT_TAKE_ADVANCED_IDENT, (amount, withdraw_strategy)),
-                    );
-                    (builder, amount.is_zero())
-                }
-                NonFungibleResourceFuzzStartAction::VaultRecall => {
-                    let amount = self.next_amount();
-                    let builder = builder.recall(self.vault_id, amount);
-                    (builder, amount.is_zero())
-                }
-                NonFungibleResourceFuzzStartAction::VaultRecallNonFungibles => {
-                    let ids = self.fuzzer.next_non_fungible_id_set();
-                    let trivial = ids.is_empty();
-                    let builder = builder.recall_non_fungibles(self.vault_id, ids);
-                    (builder, trivial)
-                }
-            };
-
-            let end =
-                NonFungibleResourceFuzzEndAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
-            let (builder, end_trivial) = match end {
-                NonFungibleResourceFuzzEndAction::Burn => {
-                    let amount = self.next_amount();
-                    let builder = builder
-                        .take_from_worktop(self.resource_address, amount, "bucket")
-                        .burn_resource("bucket");
-                    (builder, amount.is_zero())
-                }
-                NonFungibleResourceFuzzEndAction::VaultPut => {
-                    let amount = self.next_amount();
-                    let builder = builder
-                        .take_from_worktop(self.resource_address, amount, "bucket")
-                        .with_bucket("bucket", |builder, bucket| {
-                            builder.call_method(
-                                self.component_address,
-                                "call_vault",
-                                manifest_args!(VAULT_PUT_IDENT, (bucket,)),
-                            )
-                        });
-                    (builder, amount.is_zero())
-                }
-            };
+            let use_bucket_action =
+                ResourceFuzzUseBucketAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
+            let (mut builder, mut end_trivial) = use_bucket_action.add_to_manifest(
+                builder,
+                &mut self.fuzzer,
+                self.resource_address,
+                self.component_address,
+            );
             trivial = trivial || end_trivial;
 
             let manifest = builder
@@ -330,17 +177,13 @@ impl ResourceFuzzTest {
                     &self.account_public_key,
                 )],
             );
-
             let result = receipt.expect_commit_ignore_outcome();
-            let result = match (&result.outcome, trivial) {
-                (TransactionOutcome::Success(..), true) => FuzzTxnResult::TrivialSuccess,
-                (TransactionOutcome::Success(..), false) => FuzzTxnResult::Success,
-                (TransactionOutcome::Failure(..), true) => FuzzTxnResult::TrivialFailure,
-                (TransactionOutcome::Failure(..), false) => FuzzTxnResult::Failure,
-            };
-
+            let result = FuzzTxnResult::from_outcome(&result.outcome, trivial);
             let results = fuzz_results
-                .entry(NonFungibleResourceFuzzTxn(start, end))
+                .entry(NonFungibleResourceFuzzTxn(
+                    get_bucket_action,
+                    use_bucket_action,
+                ))
                 .or_default();
             results.entry(result).or_default().add_assign(&1);
         }

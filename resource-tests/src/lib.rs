@@ -1,9 +1,9 @@
 pub mod consensus_manager;
+pub mod multi_pool;
 pub mod one_pool;
+pub mod resource;
 pub mod two_pool;
 pub mod validator;
-pub mod multi_pool;
-pub mod resource;
 
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;

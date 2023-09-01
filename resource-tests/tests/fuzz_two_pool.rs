@@ -4,8 +4,8 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use resource_tests::{FuzzTxnResult, TestFuzzer};
 use resource_tests::two_pool::TwoPoolFuzzAction;
+use resource_tests::{FuzzTxnResult, TestFuzzer};
 use scrypto_unit::*;
 use transaction::prelude::*;
 

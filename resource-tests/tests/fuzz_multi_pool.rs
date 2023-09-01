@@ -123,9 +123,7 @@ impl MultiPoolFuzzTest {
                 self.pool_unit_resource_address,
                 &self.pool_resources,
             );
-            let manifest = builder
-                .deposit_batch(self.account_address)
-                .build();
+            let manifest = builder.deposit_batch(self.account_address).build();
             let receipt = self.test_runner.execute_manifest_ignoring_fee(
                 manifest,
                 vec![NonFungibleGlobalId::from_public_key(

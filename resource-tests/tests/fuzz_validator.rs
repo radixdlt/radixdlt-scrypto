@@ -35,8 +35,6 @@ fn fuzz_validator() {
     }
 
     println!("{:#?}", summed_results);
-
-    panic!("oops");
 }
 
 #[repr(u8)]

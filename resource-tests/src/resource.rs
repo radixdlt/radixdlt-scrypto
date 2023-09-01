@@ -1,30 +1,30 @@
+use crate::TestFuzzer;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::NativeVault;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use crate::TestFuzzer;
 use radix_engine::types::FromRepr;
 use radix_engine::vm::VmInvoke;
-use radix_engine_common::constants::XRD;
 use radix_engine_common::manifest_args;
-use radix_engine_common::prelude::{ComponentAddress, NonFungibleLocalId, scrypto_decode, scrypto_encode, ScryptoValue, VALIDATOR_OWNER_BADGE};
-use radix_engine_common::types::{InternalAddress, ResourceAddress};
-use radix_engine_interface::api::{ACTOR_STATE_SELF, ClientApi, LockFlags, ModuleId};
-use radix_engine_interface::blueprints::pool::{
-    OneResourcePoolContributeManifestInput, OneResourcePoolGetRedemptionValueManifestInput,
-    OneResourcePoolProtectedDepositManifestInput, OneResourcePoolProtectedWithdrawManifestInput,
-    OneResourcePoolRedeemManifestInput, ONE_RESOURCE_POOL_CONTRIBUTE_IDENT,
-    ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT, ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-    ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, ONE_RESOURCE_POOL_REDEEM_IDENT,
+use radix_engine_common::prelude::{
+    manifest_decode, manifest_encode, scrypto_decode, scrypto_encode, ComponentAddress,
+    ManifestValue, NonFungibleLocalId, ScryptoValue,
 };
+use radix_engine_common::types::{InternalAddress, ResourceAddress};
+use radix_engine_interface::api::{ClientApi, LockFlags, ModuleId, ACTOR_STATE_SELF};
 use radix_engine_interface::data::manifest::ManifestArgs;
-use radix_engine_interface::prelude::{FieldValue, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, FungibleResourceManagerMintInput, OwnerRole, Vault, VAULT_PUT_IDENT, VAULT_TAKE_ADVANCED_IDENT, VAULT_TAKE_IDENT};
+use radix_engine_interface::prelude::{
+    FieldValue, FungibleResourceManagerMintInput, NonFungibleResourceManagerMintManifestInput,
+    OwnerRole, Vault, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
+    VAULT_PUT_IDENT, VAULT_TAKE_ADVANCED_IDENT, VAULT_TAKE_IDENT,
+};
 use radix_engine_interface::types::IndexedScryptoValue;
+use scrypto::prelude::indexmap::IndexMap;
 use transaction::builder::ManifestBuilder;
-use utils::{btreemap, btreeset, indexmap};
-
+use utils::indexmap;
 
 pub const BLUEPRINT_NAME: &str = "MyBlueprint";
 pub const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
@@ -38,8 +38,8 @@ impl VmInvoke for VaultTestInvoke {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
         match export_name {
             "call_vault" => {
@@ -139,15 +139,14 @@ impl FungibleResourceFuzzGetBucketAction {
     }
 }
 
-
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
-pub enum FungibleResourceFuzzUseBucketAction {
+pub enum ResourceFuzzUseBucketAction {
     Burn,
     VaultPut,
 }
 
-impl FungibleResourceFuzzUseBucketAction {
+impl ResourceFuzzUseBucketAction {
     pub fn add_to_manifest(
         &self,
         builder: ManifestBuilder,
@@ -156,7 +155,7 @@ impl FungibleResourceFuzzUseBucketAction {
         component_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
-            FungibleResourceFuzzUseBucketAction::Burn => {
+            ResourceFuzzUseBucketAction::Burn => {
                 let amount = fuzzer.next_amount();
                 let builder = builder
                     .take_from_worktop(resource_address, amount, "bucket")
@@ -164,7 +163,7 @@ impl FungibleResourceFuzzUseBucketAction {
 
                 (builder, amount.is_zero())
             }
-            FungibleResourceFuzzUseBucketAction::VaultPut => {
+            ResourceFuzzUseBucketAction::VaultPut => {
                 let amount = fuzzer.next_amount();
                 let builder = builder
                     .take_from_worktop(resource_address, amount, "bucket")
@@ -176,6 +175,91 @@ impl FungibleResourceFuzzUseBucketAction {
                         )
                     });
                 (builder, amount.is_zero())
+            }
+        }
+    }
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
+pub enum NonFungibleResourceFuzzGetBucketAction {
+    Mint,
+    VaultTake,
+    VaultTakeNonFungibles,
+    VaultTakeAdvanced,
+    VaultRecall,
+    VaultRecallNonFungibles,
+}
+
+impl NonFungibleResourceFuzzGetBucketAction {
+    pub fn add_to_manifest(
+        &self,
+        builder: ManifestBuilder,
+        fuzzer: &mut TestFuzzer,
+        component_address: ComponentAddress,
+        resource_address: ResourceAddress,
+        vault_id: InternalAddress,
+    ) -> (ManifestBuilder, bool) {
+        match self {
+            NonFungibleResourceFuzzGetBucketAction::Mint => {
+                let ids = fuzzer.next_non_fungible_id_set();
+                let trivial = ids.is_empty();
+                let entries: IndexMap<NonFungibleLocalId, (ManifestValue,)> = ids
+                    .into_iter()
+                    .map(|id| {
+                        let value: ManifestValue =
+                            manifest_decode(&manifest_encode(&()).unwrap()).unwrap();
+                        (id, (value,))
+                    })
+                    .collect();
+
+                let builder = builder.call_method(
+                    resource_address,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+                    NonFungibleResourceManagerMintManifestInput { entries },
+                );
+
+                (builder, trivial)
+            }
+            NonFungibleResourceFuzzGetBucketAction::VaultTake => {
+                let amount = fuzzer.next_amount();
+                let builder = builder.call_method(
+                    component_address,
+                    "call_vault",
+                    manifest_args!(VAULT_TAKE_IDENT, (amount,)),
+                );
+                (builder, amount.is_zero())
+            }
+            NonFungibleResourceFuzzGetBucketAction::VaultTakeNonFungibles => {
+                let ids = fuzzer.next_non_fungible_id_set();
+                let trivial = ids.is_empty();
+                let builder = builder.call_method(
+                    component_address,
+                    "call_vault",
+                    manifest_args!(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT, (ids,)),
+                );
+                (builder, trivial)
+            }
+            NonFungibleResourceFuzzGetBucketAction::VaultTakeAdvanced => {
+                let amount = fuzzer.next_amount();
+                let withdraw_strategy = fuzzer.next_withdraw_strategy();
+                let builder = builder.call_method(
+                    component_address,
+                    "call_vault",
+                    manifest_args!(VAULT_TAKE_ADVANCED_IDENT, (amount, withdraw_strategy)),
+                );
+                (builder, amount.is_zero())
+            }
+            NonFungibleResourceFuzzGetBucketAction::VaultRecall => {
+                let amount = fuzzer.next_amount();
+                let builder = builder.recall(vault_id, amount);
+                (builder, amount.is_zero())
+            }
+            NonFungibleResourceFuzzGetBucketAction::VaultRecallNonFungibles => {
+                let ids = fuzzer.next_non_fungible_id_set();
+                let trivial = ids.is_empty();
+                let builder = builder.recall_non_fungibles(vault_id, ids);
+                (builder, trivial)
             }
         }
     }

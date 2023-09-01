@@ -1,13 +1,9 @@
 use crate::TestFuzzer;
 use radix_engine::types::FromRepr;
-use radix_engine_common::constants::XRD;
-use radix_engine_common::manifest_args;
-use radix_engine_common::prelude::{ComponentAddress, NonFungibleLocalId, VALIDATOR_OWNER_BADGE};
+use radix_engine_common::prelude::{ComponentAddress};
 use radix_engine_common::types::ResourceAddress;
-use radix_engine_interface::blueprints::pool::{OneResourcePoolContributeManifestInput, OneResourcePoolGetRedemptionValueManifestInput, OneResourcePoolProtectedDepositManifestInput, OneResourcePoolProtectedWithdrawManifestInput, OneResourcePoolRedeemManifestInput, ONE_RESOURCE_POOL_CONTRIBUTE_IDENT, ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT, ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT, ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, ONE_RESOURCE_POOL_REDEEM_IDENT, TWO_RESOURCE_POOL_CONTRIBUTE_IDENT, TwoResourcePoolContributeManifestInput, TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT, TwoResourcePoolProtectedDepositManifestInput, TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, TwoResourcePoolProtectedWithdrawManifestInput, TWO_RESOURCE_POOL_REDEEM_IDENT, TwoResourcePoolRedeemManifestInput};
-use radix_engine_interface::data::manifest::ManifestArgs;
+use radix_engine_interface::blueprints::pool::{TWO_RESOURCE_POOL_CONTRIBUTE_IDENT, TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT, TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, TWO_RESOURCE_POOL_REDEEM_IDENT, TwoResourcePoolContributeManifestInput, TwoResourcePoolProtectedDepositManifestInput, TwoResourcePoolProtectedWithdrawManifestInput, TwoResourcePoolRedeemManifestInput};
 use transaction::builder::ManifestBuilder;
-use utils::btreeset;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
@@ -96,32 +92,30 @@ impl TwoPoolFuzzAction {
             TwoPoolFuzzAction::ProtectedWithdraw1 => {
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
-                let builder = builder
-                    .call_method(
-                        pool_address,
-                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                        TwoResourcePoolProtectedWithdrawManifestInput {
-                            resource_address: resource_address1,
-                            amount: amount.into(),
-                            withdraw_strategy,
-                        },
-                    );
+                let builder = builder.call_method(
+                    pool_address,
+                    TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+                    TwoResourcePoolProtectedWithdrawManifestInput {
+                        resource_address: resource_address1,
+                        amount: amount.into(),
+                        withdraw_strategy,
+                    },
+                );
 
                 (builder, amount.is_zero())
             }
             TwoPoolFuzzAction::ProtectedWithdraw2 => {
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
-                let builder = builder
-                    .call_method(
-                        pool_address,
-                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                        TwoResourcePoolProtectedWithdrawManifestInput {
-                            resource_address: resource_address2,
-                            amount,
-                            withdraw_strategy,
-                        },
-                    );
+                let builder = builder.call_method(
+                    pool_address,
+                    TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+                    TwoResourcePoolProtectedWithdrawManifestInput {
+                        resource_address: resource_address2,
+                        amount,
+                        withdraw_strategy,
+                    },
+                );
 
                 (builder, amount.is_zero())
             }
@@ -129,11 +123,7 @@ impl TwoPoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
-                    .withdraw_from_account(
-                        account_address,
-                        pool_unit_resource_address,
-                        amount,
-                    )
+                    .withdraw_from_account(account_address, pool_unit_resource_address, amount)
                     .take_all_from_worktop(pool_unit_resource_address, "pool_units")
                     .with_name_lookup(|builder, lookup| {
                         let bucket = lookup.bucket("pool_units");
@@ -150,16 +140,15 @@ impl TwoPoolFuzzAction {
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
 
-                let builder = builder
-                    .call_method(
-                        pool_address,
-                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                        TwoResourcePoolProtectedWithdrawManifestInput {
-                            resource_address: resource_address1,
-                            amount,
-                            withdraw_strategy,
-                        },
-                    );
+                let builder = builder.call_method(
+                    pool_address,
+                    TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+                    TwoResourcePoolProtectedWithdrawManifestInput {
+                        resource_address: resource_address1,
+                        amount,
+                        withdraw_strategy,
+                    },
+                );
 
                 (builder, amount.is_zero())
             }
@@ -167,16 +156,15 @@ impl TwoPoolFuzzAction {
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
 
-                let builder = builder
-                    .call_method(
-                        pool_address,
-                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                        TwoResourcePoolProtectedWithdrawManifestInput {
-                            resource_address: resource_address2,
-                            amount,
-                            withdraw_strategy,
-                        },
-                    );
+                let builder = builder.call_method(
+                    pool_address,
+                    TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+                    TwoResourcePoolProtectedWithdrawManifestInput {
+                        resource_address: resource_address2,
+                        amount,
+                        withdraw_strategy,
+                    },
+                );
 
                 (builder, amount.is_zero())
             }
