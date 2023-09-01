@@ -1,7 +1,7 @@
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ACTOR_STATE_SELF;
 use radix_engine_interface::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
+    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::types::*;
 use sbor::rust::fmt;
@@ -44,14 +44,14 @@ impl<V: ScryptoEncode> Drop for DataRef<V> {
     }
 }
 
-pub enum OriginalData {
-    KeyValueStoreEntry(ScryptoValue),
-    ComponentAppState(Vec<u8>),
+pub enum DataOrigin {
+    KeyValueStoreEntry,
+    ComponentState,
 }
 
 pub struct DataRefMut<V: ScryptoEncode> {
     lock_handle: SubstateHandle,
-    original_data: OriginalData,
+    origin: DataOrigin,
     value: V,
 }
 
@@ -62,14 +62,10 @@ impl<V: fmt::Display + ScryptoEncode> fmt::Display for DataRefMut<V> {
 }
 
 impl<V: ScryptoEncode> DataRefMut<V> {
-    pub fn new(
-        lock_handle: SubstateHandle,
-        original_data: OriginalData,
-        value: V,
-    ) -> DataRefMut<V> {
+    pub fn new(lock_handle: SubstateHandle, origin: DataOrigin, value: V) -> DataRefMut<V> {
         DataRefMut {
             lock_handle,
-            original_data,
+            origin,
             value,
         }
     }
@@ -77,9 +73,9 @@ impl<V: ScryptoEncode> DataRefMut<V> {
 
 impl<V: ScryptoEncode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
-        let substate = match &self.original_data {
-            OriginalData::KeyValueStoreEntry(_) => scrypto_encode(&Some(&self.value)).unwrap(),
-            OriginalData::ComponentAppState(_) => scrypto_encode(&self.value).unwrap(),
+        let substate = match &self.origin {
+            DataOrigin::KeyValueStoreEntry => scrypto_encode(&Some(&self.value)).unwrap(),
+            DataOrigin::ComponentState => scrypto_encode(&self.value).unwrap(),
         };
         ScryptoVmV1Api::field_entry_write(self.lock_handle, substate);
         ScryptoVmV1Api::field_entry_close(self.lock_handle);
@@ -126,7 +122,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRefMut {
             lock_handle,
-            original_data: OriginalData::ComponentAppState(raw_substate),
+            origin: DataOrigin::ComponentState,
             value,
         }
     }
