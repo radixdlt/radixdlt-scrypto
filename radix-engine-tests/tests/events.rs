@@ -1715,16 +1715,6 @@ fn validator_claim_xrd_emits_correct_events() {
         });
         assert!(match events.get(6) {
             Some((
-                event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::Main),
-                    ..,
-                ),
-                ..,
-            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
-            _ => false,
-        });
-        assert!(match events.get(7) {
-            Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
