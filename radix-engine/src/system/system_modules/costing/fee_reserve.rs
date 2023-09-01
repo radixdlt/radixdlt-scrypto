@@ -412,13 +412,10 @@ impl SystemLoanFeeReserve {
         self.execution_cost_units_deferred = 0;
 
         // Apply deferred storage cost
-        let mut applied = Vec::new();
-        for (k, v) in self.storage_cost_deferred.clone() {
-            self.consume_storage(k, v)?;
-            applied.push(k);
-        }
-        for k in applied {
-            self.storage_cost_deferred.remove(&k);
+        let types: Vec<StorageType> = self.storage_cost_deferred.keys().cloned().collect();
+        for t in types {
+            self.consume_storage(t, self.storage_cost_deferred.get(&t).cloned().unwrap())?;
+            self.storage_cost_deferred.remove(&t);
         }
 
         // Repay owed with balance
