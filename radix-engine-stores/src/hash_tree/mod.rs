@@ -67,16 +67,19 @@ pub fn put_at_next_version<S: TreeStore>(
     let node_changes = index_by_node_key_and_partition_num(changes)
         .into_iter()
         .map(|(node_key, substate_changes_by_partition)| {
+            let partition_root_version = get_lower_tier_root_version(
+                node_tier_store, node_root_version, &node_key
+            );
             let mut partition_tier_store = NestedTreeStore::new(node_tier_store, node_key.clone());
-            let partition_root_version = partition_tier_store.get_root_version(node_root_version);
             let partition_changes = substate_changes_by_partition
                 .into_iter()
                 .map(|(partition_num, substate_changes)| {
                     let partition_key = vec![partition_num];
+                    let substate_root_version = get_lower_tier_root_version(
+                        &partition_tier_store, partition_root_version, &partition_key
+                    );
                     let mut substate_tier_store =
                         NestedTreeStore::new(&mut partition_tier_store, partition_key);
-                    let substate_root_version =
-                        substate_tier_store.get_root_version(partition_root_version);
                     let partition_hash = put_id_hash_changes(
                         &mut substate_tier_store,
                         substate_root_version,
@@ -111,6 +114,25 @@ pub fn put_at_next_version<S: TreeStore>(
 }
 
 // only internals below
+
+fn get_lower_tier_root_version<S: ReadableTreeStore>(
+    store: &S, version: Option<Version>, leaf_bytes: &[u8]
+) -> Option<Version> {
+    version.and_then(|version| {
+        let leaf_node_data = JellyfishMerkleTree::new(store)
+            .get_with_proof(&LeafKey::new(leaf_bytes), version)
+            .unwrap()
+            .0;
+        // FIXME: the current impl below assumes that a lower-tier root's version is equal to
+        // higher-tier leaf's version (since "higher-tier leaf only changes when lower-tier is
+        // touched and propagates its hash change up"). However, this assumption is not true:
+        // a leaf at any tier can change its *version* e.g. when all its siblings are deleted (since
+        // JMT will juggle its nodes to maintain the compactness).
+        // Hence, a correct impl requires to store the "lower-tier root version" information
+        // explicitly, e.g. in the currently-unused `payload` of the higher-tier leaf.
+        leaf_node_data.map(|(_hash, _payload, version)| version)
+    })
+}
 
 fn index_by_node_key_and_partition_num(
     changes: Vec<SubstateHashChange>,
@@ -221,21 +243,6 @@ impl<'s, S> NestedTreeStore<'s, S> {
                     .chain(key.nibble_path().nibbles()),
             ),
         )
-    }
-}
-
-impl<'s, S: ReadableTreeStore> NestedTreeStore<'s, S> {
-    pub fn get_root_version(&self, higher_tier_root_version: Option<Version>) -> Option<Version> {
-        higher_tier_root_version.and_then(|higher_tier_root_version| {
-            JellyfishMerkleTree::new(self.underlying)
-                .get_with_proof(
-                    &LeafKey::new(&self.key_prefix_bytes),
-                    higher_tier_root_version,
-                )
-                .unwrap()
-                .0
-                .map(|(_hash, _payload, version)| version)
-        })
     }
 }
 
