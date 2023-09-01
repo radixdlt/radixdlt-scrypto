@@ -5,12 +5,12 @@ set -e
 
 # We use a globally loaded scrypto CLI so that this script works even if the code doesn't compile at present
 # It's also a little faster. If you wish to use the local version instead, swap out the below line.
-# scrypto="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin scrypto $@ --"
-scrypto="scrypto"
+scrypto="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin scrypto $@ --"
+# scrypto="scrypto"
 
 cd "$(dirname "$0")/assets/blueprints"
 
-for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata"
+for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment"
 do
   echo "Building $crate_name..."
   (cd $crate_name; $scrypto build)
