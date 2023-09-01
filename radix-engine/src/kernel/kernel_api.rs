@@ -160,8 +160,8 @@ pub struct KernelInvocation<C> {
 }
 
 impl<C: CallFrameReferences> KernelInvocation<C> {
-    pub fn logical_size(&self) -> usize {
-        self.call_frame_data.logical_size() + self.args.len()
+    pub fn len(&self) -> usize {
+        self.call_frame_data.len() + self.args.len()
     }
 }
 

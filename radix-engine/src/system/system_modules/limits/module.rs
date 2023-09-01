@@ -91,10 +91,10 @@ impl LimitsModule {
                 new_size,
             } => {
                 if old_size.is_none() {
-                    self.heap_substate_total_bytes += canonical_substate_key.logical_size();
+                    self.heap_substate_total_bytes += canonical_substate_key.len();
                 }
                 if new_size.is_none() {
-                    self.heap_substate_total_bytes -= canonical_substate_key.logical_size();
+                    self.heap_substate_total_bytes -= canonical_substate_key.len();
                 }
 
                 self.heap_substate_total_bytes += new_size.unwrap_or_default();
@@ -106,10 +106,10 @@ impl LimitsModule {
                 new_size,
             } => {
                 if old_size.is_none() {
-                    self.track_substate_total_bytes += canonical_substate_key.logical_size();
+                    self.track_substate_total_bytes += canonical_substate_key.len();
                 }
                 if new_size.is_none() {
-                    self.track_substate_total_bytes -= canonical_substate_key.logical_size();
+                    self.track_substate_total_bytes -= canonical_substate_key.len();
                 }
 
                 self.track_substate_total_bytes += new_size.unwrap_or_default();
@@ -160,7 +160,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
 
         // Check input size
         let limits = &mut api.kernel_get_system().modules.limits.config;
-        let input_size = invocation.logical_size();
+        let input_size = invocation.len();
         if input_size > limits.max_invoke_payload_size {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(

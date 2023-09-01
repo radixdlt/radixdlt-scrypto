@@ -204,7 +204,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .costing
             .apply_execution_cost(ExecutionCostingEntry::BeforeInvoke {
                 actor: &invocation.call_frame_data,
-                input_size: invocation.logical_size(),
+                input_size: invocation.len(),
             })?;
 
         // Identify the function, and optional component address

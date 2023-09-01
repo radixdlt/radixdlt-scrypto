@@ -622,10 +622,9 @@ where
 
                 /* state storage costs */
                 for store_commit in &info {
-                    system.modules.apply_storage_cost(
-                        StorageType::State,
-                        store_commit.logical_size_increase(),
-                    )?;
+                    system
+                        .modules
+                        .apply_storage_cost(StorageType::State, store_commit.len_increase())?;
                 }
 
                 /* archive storage costs */
@@ -634,12 +633,7 @@ where
                     .modules
                     .apply_storage_cost(StorageType::Archive, executable.payload_size())?;
 
-                let total_event_size = system
-                    .modules
-                    .events()
-                    .iter()
-                    .map(|x| x.logical_size())
-                    .sum();
+                let total_event_size = system.modules.events().iter().map(|x| x.len()).sum();
                 system
                     .modules
                     .apply_storage_cost(StorageType::Archive, total_event_size)?;
@@ -656,7 +650,7 @@ where
 
                 // Events are reverted
 
-                // Logs are NOT reverted (This is not ideal, as it means free if the transaction fails)
+                // Logs are NOT reverted (This is not ideal, as it means logs are free if the transaction fails)
 
                 Err(e)
             });

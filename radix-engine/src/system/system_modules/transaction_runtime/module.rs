@@ -13,7 +13,7 @@ pub struct Event {
 }
 
 impl Event {
-    pub fn logical_size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.type_identifier.0.get_length()
     }
 }

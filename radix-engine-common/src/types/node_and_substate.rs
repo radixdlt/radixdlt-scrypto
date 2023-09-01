@@ -102,7 +102,7 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_internal_vault())
     }
 
-    pub fn logical_size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
 }

@@ -138,7 +138,7 @@ impl CallFrameReferences for Actor {
         references
     }
 
-    fn logical_size(&self) -> usize {
+    fn len(&self) -> usize {
         match self {
             Actor::Root => 1,
             Actor::Method(MethodActor { ident, node_id, .. }) => {
