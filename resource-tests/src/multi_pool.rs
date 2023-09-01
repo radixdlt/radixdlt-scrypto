@@ -1,4 +1,4 @@
-use crate::TestFuzzer;
+use crate::{MultiPoolMeta, TestFuzzer};
 use radix_engine::types::FromRepr;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{ComponentAddress, Decimal, ManifestExpression};
@@ -30,13 +30,11 @@ impl MultiPoolFuzzAction {
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
         account_address: ComponentAddress,
-        pool_address: ComponentAddress,
-        pool_unit_resource_address: ResourceAddress,
-        pool_resources: &Vec<ResourceAddress>,
+        multi_pool_meta: &MultiPoolMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             MultiPoolFuzzAction::Contribute => {
-                let resource_to_amount_mapping: Vec<(ResourceAddress, Decimal)> = pool_resources
+                let resource_to_amount_mapping: Vec<(ResourceAddress, Decimal)> = multi_pool_meta.pool_resources
                     .iter()
                     .map(|resource| (*resource, fuzzer.next_amount()))
                     .collect();
@@ -46,7 +44,7 @@ impl MultiPoolFuzzAction {
                     builder = builder.mint_fungible(*resource_address, *amount)
                 }
                 let builder = builder.call_method(
-                    pool_address,
+                    multi_pool_meta.pool_address,
                     MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
                     manifest_args!(ManifestExpression::EntireWorktop),
                 );
@@ -54,8 +52,8 @@ impl MultiPoolFuzzAction {
                 (builder, false)
             }
             MultiPoolFuzzAction::ProtectedDeposit => {
-                let resource_address = pool_resources
-                    .get(fuzzer.next_usize(pool_resources.len()))
+                let resource_address = multi_pool_meta.pool_resources
+                    .get(fuzzer.next_usize(multi_pool_meta.pool_resources.len()))
                     .unwrap()
                     .clone();
                 let amount = fuzzer.next_amount();
@@ -66,7 +64,7 @@ impl MultiPoolFuzzAction {
                     .with_name_lookup(|builder, lookup| {
                         let bucket = lookup.bucket("to_deposit");
                         builder.call_method(
-                            pool_address,
+                            multi_pool_meta.pool_address,
                             MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
                             MultiResourcePoolProtectedDepositManifestInput { bucket },
                         )
@@ -75,15 +73,15 @@ impl MultiPoolFuzzAction {
                 (builder, amount.is_zero())
             }
             MultiPoolFuzzAction::ProtectedWithdraw => {
-                let resource_address = pool_resources
-                    .get(fuzzer.next_usize(pool_resources.len()))
+                let resource_address = multi_pool_meta.pool_resources
+                    .get(fuzzer.next_usize(multi_pool_meta.pool_resources.len()))
                     .unwrap()
                     .clone();
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
 
                 let builder = builder.call_method(
-                    pool_address,
+                    multi_pool_meta.pool_address,
                     MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     MultiResourcePoolProtectedWithdrawManifestInput {
                         resource_address,
@@ -98,11 +96,11 @@ impl MultiPoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
-                    .withdraw_from_account(account_address, pool_unit_resource_address, amount)
-                    .take_all_from_worktop(pool_unit_resource_address, "pool_units")
+                    .withdraw_from_account(account_address, multi_pool_meta.pool_unit_resource_address, amount)
+                    .take_all_from_worktop(multi_pool_meta.pool_unit_resource_address, "pool_units")
                     .with_name_lookup(|builder, lookup| {
                         builder.call_method(
-                            pool_address,
+                            multi_pool_meta.pool_address,
                             MULTI_RESOURCE_POOL_REDEEM_IDENT,
                             MultiResourcePoolRedeemManifestInput {
                                 bucket: lookup.bucket("pool_units"),
@@ -116,7 +114,7 @@ impl MultiPoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder.call_method(
-                    pool_address,
+                    multi_pool_meta.pool_address,
                     MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
                     MultiResourcePoolGetRedemptionValueManifestInput {
                         amount_of_pool_units: amount,

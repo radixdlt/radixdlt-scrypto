@@ -10,22 +10,22 @@ use crate::one_pool::OnePoolFuzzAction;
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
-use radix_engine::blueprints::pool::one_resource_pool;
+use radix_engine::blueprints::pool::{multi_resource_pool, one_resource_pool};
 use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::pool::{
-    TwoResourcePoolInstantiateManifestInput, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-};
+use radix_engine_interface::blueprints::pool::{TwoResourcePoolInstantiateManifestInput, TWO_RESOURCE_POOL_INSTANTIATE_IDENT, MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, MultiResourcePoolInstantiateManifestInput};
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
 use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
+use crate::multi_pool::MultiPoolFuzzAction;
 
 pub struct TestFuzzer {
     rng: ChaCha8Rng,
@@ -122,6 +122,7 @@ pub enum FuzzAction {
     Validator(ValidatorFuzzAction),
     OneResourcePool(OnePoolFuzzAction),
     TwoResourcePool(TwoPoolFuzzAction),
+    MultiResourcePool(MultiPoolFuzzAction),
 }
 
 impl FuzzAction {
@@ -133,6 +134,7 @@ impl FuzzAction {
         validators: &Vec<ValidatorMeta>,
         one_resource_pool: &OnePoolMeta,
         two_resource_pool: &TwoPoolMeta,
+        multi_resource_pool: &MultiPoolMeta,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
@@ -147,6 +149,9 @@ impl FuzzAction {
             }
             FuzzAction::TwoResourcePool(action) => {
                 action.add_to_manifest(builder, fuzzer, account_address, two_resource_pool)
+            }
+            FuzzAction::MultiResourcePool(action) => {
+                action.add_to_manifest(builder, fuzzer, account_address, multi_resource_pool)
             }
         }
     }
@@ -199,12 +204,20 @@ pub struct TwoPoolMeta {
     pub resource_address2: ResourceAddress,
 }
 
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct MultiPoolMeta {
+    pub pool_address: ComponentAddress,
+    pub pool_unit_resource_address: ResourceAddress,
+    pub pool_resources: Vec<ResourceAddress>,
+}
+
 pub struct FuzzTest<T: TxnFuzzer> {
     test_runner: DefaultTestRunner,
     fuzzer: TestFuzzer,
     validators: Vec<ValidatorMeta>,
     one_resource_pool: OnePoolMeta,
     two_resource_pool: TwoPoolMeta,
+    multi_resource_pool: MultiPoolMeta,
     account_address: ComponentAddress,
     account_public_key: PublicKey,
     cur_round: Round,
@@ -281,7 +294,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
                         TwoResourcePoolInstantiateManifestInput {
                             resource_addresses: (pool_resource1, pool_resource2),
-                            pool_manager_rule: rule!(require(virtual_signature_badge)),
+                            pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
                             owner_role: OwnerRole::None,
                             address_reservation: None,
                         },
@@ -303,6 +316,55 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             }
         };
 
+        let multi_resource_pool = {
+            let divisibility = vec![
+                fuzzer.next_valid_divisibility(),
+                fuzzer.next_valid_divisibility(),
+                fuzzer.next_valid_divisibility(),
+            ];
+
+            let pool_resources: Vec<ResourceAddress> = divisibility
+                .into_iter()
+                .map(|divisibility| {
+                    test_runner.create_freely_mintable_and_burnable_fungible_resource(
+                        OwnerRole::None,
+                        None,
+                        divisibility,
+                        account,
+                    )
+                })
+                .collect();
+
+            let (pool_component, pool_unit_resource) = {
+                let manifest = ManifestBuilder::new()
+                    .call_function(
+                        POOL_PACKAGE,
+                        MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
+                        MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
+                        MultiResourcePoolInstantiateManifestInput {
+                            resource_addresses: pool_resources.clone().into_iter().collect(),
+                            pool_manager_rule: rule!(require(virtual_signature_badge)),
+                            owner_role: OwnerRole::None,
+                            address_reservation: None,
+                        },
+                    )
+                    .build();
+                let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+                let commit_result = receipt.expect_commit_success();
+
+                (
+                    commit_result.new_component_addresses()[0],
+                    commit_result.new_resource_addresses()[0],
+                )
+            };
+
+            MultiPoolMeta {
+                pool_address: pool_component,
+                pool_unit_resource_address: pool_unit_resource,
+                pool_resources,
+            }
+        };
+
         Self {
             fuzzer,
             test_runner,
@@ -314,6 +376,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             }],
             one_resource_pool,
             two_resource_pool,
+            multi_resource_pool,
             account_address: account,
             account_public_key: public_key.into(),
             cur_round: Round::of(1u64),
@@ -369,6 +432,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 &self.validators,
                 &self.one_resource_pool,
                 &self.two_resource_pool,
+                &self.multi_resource_pool,
                 self.account_address,
             );
 
