@@ -154,6 +154,56 @@ fn hash_computed_consistently_after_adding_higher_tier_sibling() {
 }
 
 #[test]
+fn hash_same_for_partition_delete_vs_individual_deletes_of_all_substates() {
+    // get a root hash after deleting partition:
+    let mut partition_delete_store = TypedInMemoryTreeStore::new();
+    put_at_next_version(
+        &mut partition_delete_store,
+        None,
+        vec![
+            change(1, 6, 2, Some(162)),
+            change(1, 6, 3, Some(163)),
+            change(1, 2, 4, Some(124)),
+            change(2, 3, 5, Some(235)),
+        ],
+    );
+    let partition_delete_root = put_at_next_version(
+        &mut partition_delete_store,
+        Some(1),
+        vec![delete_partition(1, 6)],
+    );
+
+    // get a root hash after deleting all individual nodes of a partition:
+    let mut individual_deletes_store = TypedInMemoryTreeStore::new();
+    put_at_next_version(
+        &mut individual_deletes_store,
+        None,
+        vec![
+            change(1, 6, 2, Some(162)),
+            change(1, 6, 3, Some(163)),
+            change(1, 2, 4, Some(124)),
+            change(2, 3, 5, Some(235)),
+        ],
+    );
+    let individual_deletes_root = put_at_next_version(
+        &mut individual_deletes_store,
+        Some(1),
+        vec![change(1, 6, 2, None), change(1, 6, 3, None)],
+    );
+
+    // reference: get a root hash of a final state created directly
+    let mut reference_store = TypedInMemoryTreeStore::new();
+    let reference_root = put_at_next_version(
+        &mut reference_store,
+        None,
+        vec![change(1, 2, 4, Some(124)), change(2, 3, 5, Some(235))],
+    );
+
+    assert_eq!(partition_delete_root, reference_root);
+    assert_eq!(individual_deletes_root, reference_root);
+}
+
+#[test]
 fn hash_differs_when_states_only_differ_by_node_key() {
     let mut store_1 = TypedInMemoryTreeStore::new();
     let hash_1 = put_at_next_version(&mut store_1, None, vec![change(1, 6, 3, Some(30))]);
