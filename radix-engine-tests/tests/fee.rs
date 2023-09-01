@@ -473,12 +473,7 @@ fn test_contingent_fee_accounting_failure() {
     assert_eq!(
         account1_new_balance,
         account1_balance
-            .safe_sub(
-                receipt
-                    .effective_execution_cost_unit_price()
-                    .safe_mul(summary.total_execution_cost_units_consumed)
-                    .unwrap()
-            )
+            .safe_sub(receipt.fee_summary.total_cost())
             .unwrap()
     );
     assert_eq!(account2_new_balance, account2_balance);
