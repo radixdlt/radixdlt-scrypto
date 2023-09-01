@@ -4,6 +4,7 @@ use radix_engine_store_interface::interface::{
     DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
 };
 use utils::prelude::{index_map_new, IndexMap};
+use utils::rust::vec::Vec;
 
 /// A canonical form of "change to an entire hash tree".
 /// Use `From<Vec<HashChange>>` implementation to canonicalize a sequence of changes.
