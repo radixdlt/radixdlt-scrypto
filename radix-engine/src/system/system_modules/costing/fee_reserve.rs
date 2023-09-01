@@ -28,7 +28,7 @@ pub enum FeeReserveError {
     Abort(AbortReason),
 }
 
-#[derive(Copy, Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
+#[derive(Copy, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
 pub enum StorageType {
     State,
     Archive,
@@ -132,6 +132,7 @@ pub struct SystemLoanFeeReserve {
 
     /// Execution costs
     execution_cost_units_committed: u32,
+    execution_cost_units_deferred: u32,
 
     // Finalization costs
     finalization_cost_units_committed: u32,
@@ -141,10 +142,8 @@ pub struct SystemLoanFeeReserve {
     royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, u128>,
 
     /// Storage Costs
-    storage_cost: u128,
-
-    /// Deferred
-    deferred_cost: u128,
+    storage_cost_committed: u128,
+    storage_cost_deferred: BTreeMap<StorageType, usize>,
 
     /// Payments made during the execution of a transaction.
     locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
@@ -163,6 +162,12 @@ impl Default for SystemLoanFeeReserve {
 #[inline]
 fn checked_add(a: u32, b: u32) -> Result<u32, FeeReserveError> {
     a.checked_add(b).ok_or(FeeReserveError::Overflow)
+}
+
+#[inline]
+fn checked_assign_add(value: &mut u32, summand: u32) -> Result<(), FeeReserveError> {
+    *value = checked_add(*value, summand)?;
+    Ok(())
 }
 
 fn transmute_u128_as_decimal(a: u128) -> Decimal {
@@ -258,15 +263,15 @@ impl SystemLoanFeeReserve {
 
             // Internal states
             execution_cost_units_committed: 0,
+            execution_cost_units_deferred: 0,
 
             finalization_cost_units_committed: 0,
 
             royalty_cost_breakdown: BTreeMap::new(),
             royalty_cost: 0,
 
-            storage_cost: 0,
-
-            deferred_cost: 0,
+            storage_cost_committed: 0,
+            storage_cost_deferred: BTreeMap::new(),
 
             locked_fees: Vec::new(),
         }
@@ -403,9 +408,18 @@ impl SystemLoanFeeReserve {
 
     pub fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         // Apply deferred execution cost
-        let amount = min(self.xrd_balance, self.deferred_cost);
-        self.xrd_balance -= amount;
-        self.deferred_cost -= amount;
+        self.consume_execution_internal(self.execution_cost_units_deferred)?;
+        self.execution_cost_units_deferred = 0;
+
+        // Apply deferred storage cost
+        let mut applied = Vec::new();
+        for (k, v) in self.storage_cost_deferred.clone() {
+            self.consume_storage(k, v)?;
+            applied.push(k);
+        }
+        for k in applied {
+            self.storage_cost_deferred.remove(&k);
+        }
 
         // Repay owed with balance
         let amount = min(self.xrd_balance, self.xrd_owed);
@@ -413,9 +427,9 @@ impl SystemLoanFeeReserve {
         self.xrd_balance -= amount; // not used afterwards
 
         // Check outstanding loan
-        if self.deferred_cost != 0 || self.xrd_owed != 0 {
+        if self.xrd_owed != 0 {
             return Err(FeeReserveError::LoanRepaymentFailed {
-                xrd_owed: transmute_u128_as_decimal(self.deferred_cost + self.xrd_owed),
+                xrd_owed: transmute_u128_as_decimal(self.xrd_owed),
             });
         }
 
@@ -442,12 +456,7 @@ impl SystemLoanFeeReserve {
 
 impl PreExecutionFeeReserve for SystemLoanFeeReserve {
     fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
-        if cost_units == 0 {
-            return Ok(());
-        }
-        let amount = self.effective_execution_cost_unit_price * cost_units as u128;
-
-        self.deferred_cost += amount;
+        checked_assign_add(&mut self.execution_cost_units_deferred, cost_units)?;
 
         Ok(())
     }
@@ -457,16 +466,10 @@ impl PreExecutionFeeReserve for SystemLoanFeeReserve {
         storage_type: StorageType,
         size_increase: usize,
     ) -> Result<(), FeeReserveError> {
-        if size_increase == 0 {
-            return Ok(());
-        }
-        let amount = match storage_type {
-            StorageType::State => self.state_storage_price,
-            StorageType::Archive => self.archive_storage_price,
-        }
-        .saturating_mul(size_increase as u128);
-
-        self.deferred_cost += amount;
+        self.storage_cost_deferred
+            .entry(storage_type)
+            .or_default()
+            .add_assign(size_increase);
 
         Ok(())
     }
@@ -531,7 +534,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             });
         } else {
             self.xrd_balance -= amount;
-            self.storage_cost += amount;
+            self.storage_cost_committed += amount;
             Ok(())
         }
     }
@@ -590,7 +593,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             total_finalization_cost_in_xrd,
             total_tipping_cost_in_xrd,
             total_royalty_cost_in_xrd: transmute_u128_as_decimal(self.royalty_cost),
-            total_storage_cost_in_xrd: transmute_u128_as_decimal(self.storage_cost),
+            total_storage_cost_in_xrd: transmute_u128_as_decimal(self.storage_cost_committed),
             total_bad_debt_in_xrd: transmute_u128_as_decimal(self.xrd_owed),
             locked_fees: self.locked_fees,
             royalty_cost_breakdown,
