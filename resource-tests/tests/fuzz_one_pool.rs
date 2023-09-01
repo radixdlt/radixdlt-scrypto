@@ -8,10 +8,10 @@ use resource_tests::{FuzzAction, FuzzTest, FuzzTxnResult, TestFuzzer, TxnFuzzer}
 fn fuzz_one_pool() {
     struct OneResourcePoolFuzzer;
     impl TxnFuzzer for OneResourcePoolFuzzer {
-        fn next_action(fuzzer: &mut TestFuzzer) -> FuzzAction {
+        fn next_txn_intent(fuzzer: &mut TestFuzzer) -> Vec<FuzzAction> {
             let action: OnePoolFuzzAction =
                 OnePoolFuzzAction::from_repr(fuzzer.next_u8(5u8)).unwrap();
-            FuzzAction::OneResourcePool(action)
+            vec![FuzzAction::OneResourcePool(action)]
         }
     }
 

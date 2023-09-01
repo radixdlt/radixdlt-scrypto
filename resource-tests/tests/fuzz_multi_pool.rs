@@ -10,10 +10,10 @@ use resource_tests::{FuzzAction, FuzzTest, FuzzTxnResult, TestFuzzer, TxnFuzzer}
 fn fuzz_multi_pool() {
     struct MultiResourcePoolFuzzer;
     impl TxnFuzzer for MultiResourcePoolFuzzer {
-        fn next_action(fuzzer: &mut TestFuzzer) -> FuzzAction {
+        fn next_txn_intent(fuzzer: &mut TestFuzzer) -> Vec<FuzzAction> {
             let action: MultiPoolFuzzAction =
                 MultiPoolFuzzAction::from_repr(fuzzer.next_u8(5u8)).unwrap();
-            FuzzAction::MultiResourcePool(action)
+            vec![FuzzAction::MultiResourcePool(action)]
         }
     }
 

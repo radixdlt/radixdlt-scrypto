@@ -11,10 +11,10 @@ use scrypto_unit::*;
 fn fuzz_two_pool() {
     struct TwoResourcePoolFuzzer;
     impl TxnFuzzer for TwoResourcePoolFuzzer {
-        fn next_action(fuzzer: &mut TestFuzzer) -> FuzzAction {
+        fn next_txn_intent(fuzzer: &mut TestFuzzer) -> Vec<FuzzAction> {
             let action: TwoPoolFuzzAction =
                 TwoPoolFuzzAction::from_repr(fuzzer.next_u8(8u8)).unwrap();
-            FuzzAction::TwoResourcePool(action)
+            vec![FuzzAction::TwoResourcePool(action)]
         }
     }
 

@@ -12,10 +12,10 @@ use transaction::prelude::*;
 fn fuzz_validator() {
     struct ValidatorFuzzer;
     impl TxnFuzzer for ValidatorFuzzer {
-        fn next_action(fuzzer: &mut TestFuzzer) -> FuzzAction {
+        fn next_txn_intent(fuzzer: &mut TestFuzzer) -> Vec<FuzzAction> {
             let action: ValidatorFuzzAction =
                 ValidatorFuzzAction::from_repr(fuzzer.next_u8(7u8)).unwrap();
-            FuzzAction::Validator(action)
+            vec![FuzzAction::Validator(action)]
         }
     }
 

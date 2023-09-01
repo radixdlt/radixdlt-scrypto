@@ -177,8 +177,10 @@ impl FuzzTxnResult {
     }
 }
 
+pub type FuzzTxnIntent = Vec<FuzzAction>;
+
 pub trait TxnFuzzer {
-    fn next_action(fuzzer: &mut TestFuzzer) -> FuzzAction;
+    fn next_txn_intent(fuzzer: &mut TestFuzzer) -> FuzzTxnIntent;
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -385,10 +387,10 @@ impl<T: TxnFuzzer> FuzzTest<T> {
     }
 
     pub fn run_fuzz() {
-        let mut summed_results: BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>> =
+        let mut summed_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
 
-        let results: Vec<BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>>> = (1u64..=32u64)
+        let results: Vec<BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>>> = (1u64..=32u64)
             .into_par_iter()
             .map(|seed| {
                 let mut fuzz_test = Self::new(seed);
@@ -400,7 +402,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             for (txn, txn_results) in run_result {
                 for (txn_result, count) in txn_results {
                     summed_results
-                        .entry(txn)
+                        .entry(txn.clone())
                         .or_default()
                         .entry(txn_result)
                         .or_default()
@@ -409,32 +411,38 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             }
         }
 
-        for (action, results) in &summed_results {
+        for (intent, results) in &summed_results {
             if !results.contains_key(&FuzzTxnResult::Success) {
-                panic!("No successful {:?}", action)
+                panic!("No successful intent of: {:?}", intent)
             }
         }
 
         println!("{:#?}", summed_results);
     }
 
-    fn run_single_fuzz(&mut self) -> BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>> {
-        let mut fuzz_results: BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
+    fn run_single_fuzz(&mut self) -> BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> {
+        let mut fuzz_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
 
         for uuid in 0u64..100u64 {
             // Build new transaction
-            let builder = ManifestBuilder::new();
-            let fuzz_action = T::next_action(&mut self.fuzzer);
-            let (builder, trivial) = fuzz_action.add_to_manifest(
-                uuid,
-                builder,
-                &mut self.fuzzer,
-                &self.validators,
-                &self.one_resource_pool,
-                &self.two_resource_pool,
-                &self.multi_resource_pool,
-                self.account_address,
-            );
+            let mut builder = ManifestBuilder::new();
+            let mut trivial = false;
+            let fuzz_txn_intent = T::next_txn_intent(&mut self.fuzzer);
+            for fuzz_action in &fuzz_txn_intent {
+                let (next_builder, next_trivial) = fuzz_action.add_to_manifest(
+                    uuid,
+                    builder,
+                    &mut self.fuzzer,
+                    &self.validators,
+                    &self.one_resource_pool,
+                    &self.two_resource_pool,
+                    &self.multi_resource_pool,
+                    self.account_address,
+                );
+
+                trivial = trivial || next_trivial;
+                builder = next_builder;
+            }
 
             // Execute transaction
             let result = {
@@ -476,7 +484,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 self.consensus_round(rounds);
             }
 
-            let results = fuzz_results.entry(fuzz_action).or_default();
+            let results = fuzz_results.entry(fuzz_txn_intent).or_default();
             results.entry(result).or_default().add_assign(&1);
         }
 
