@@ -96,7 +96,6 @@ pub fn read_memory(instance: &Instance, ptr: u32, len: u32) -> Result<Vec<u8>, W
     let memory_slice = unsafe { memory.data_unchecked() };
     let memory_size = memory_slice.len();
     if ptr > memory_size || ptr + len > memory_size {
-        println!("read memory errr!!");
         return Err(WasmRuntimeError::MemoryAccessError);
     }
 
