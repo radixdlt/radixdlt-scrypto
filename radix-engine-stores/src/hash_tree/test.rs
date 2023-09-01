@@ -128,6 +128,31 @@ fn hash_computed_consistently_after_higher_tier_leafs_deleted() {
 }
 
 #[test]
+fn hash_computed_consistently_after_adding_higher_tier_sibling() {
+    // Compute a "reference" hash of state containing simply [1:9:6, 2:3:4, 2:3:5].
+    let mut reference_store = TypedInMemoryTreeStore::new();
+    let reference_root = put_at_next_version(
+        &mut reference_store,
+        None,
+        vec![
+            change(1, 9, 6, Some(196)),
+            change(2, 3, 4, Some(234)),
+            change(2, 3, 5, Some(235)),
+        ],
+    );
+
+    // Compute a hash of the same state, at which we arrive after adding some sibling NodeId.
+    let mut store = TypedInMemoryTreeStore::new();
+    put_at_next_version(&mut store, None, vec![change(2, 3, 4, Some(234))]);
+    put_at_next_version(&mut store, Some(1), vec![change(1, 9, 6, Some(196))]);
+    let root_after_deletes =
+        put_at_next_version(&mut store, Some(2), vec![change(2, 3, 5, Some(235))]);
+
+    // We did [2:3:4] + [1:9:6] + [2:3:5] = [1:9:6, 2:3:4, 2:3:5] (i.e. same state).
+    assert_eq!(root_after_deletes, reference_root);
+}
+
+#[test]
 fn hash_differs_when_states_only_differ_by_node_key() {
     let mut store_1 = TypedInMemoryTreeStore::new();
     let hash_1 = put_at_next_version(&mut store_1, None, vec![change(1, 6, 3, Some(30))]);
