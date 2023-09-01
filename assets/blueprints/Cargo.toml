@@ -6,6 +6,7 @@ members = [
     "flash_loan",
     "genesis_helper",
     "test_environment",
+    "inner_n_outer",
 ]
 resolver = "2"
 

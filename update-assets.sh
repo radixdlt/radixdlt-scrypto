@@ -10,7 +10,7 @@ scrypto="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin scrypto $@ --
 
 cd "$(dirname "$0")/assets/blueprints"
 
-for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment"
+for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "inner_n_outer"
 do
   echo "Building $crate_name..."
   (cd $crate_name; $scrypto build)
