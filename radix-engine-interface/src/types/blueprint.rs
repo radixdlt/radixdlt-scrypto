@@ -110,7 +110,7 @@ impl BlueprintId {
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub fn logical_size(&self) -> usize {
         self.package_address.as_ref().len() + self.blueprint_name.len()
     }
 }

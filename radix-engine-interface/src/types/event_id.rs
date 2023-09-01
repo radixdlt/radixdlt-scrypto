@@ -51,3 +51,13 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
         }
     }
 }
+
+impl EventTypeIdentifier {
+    pub fn logical_size(&self) -> usize {
+        let emitter_size = match &self.0 {
+            Emitter::Function(blueprint_id) => blueprint_id.logical_size(),
+            Emitter::Method(node_id, _module_1) => node_id.logical_size() + 1,
+        };
+        emitter_size + self.1.len()
+    }
+}

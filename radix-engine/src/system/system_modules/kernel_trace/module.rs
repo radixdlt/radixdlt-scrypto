@@ -39,7 +39,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         let message = format!(
             "Invoking: fn = {:?}, input size = {}",
             invocation.call_frame_data,
-            invocation.len(),
+            invocation.logical_size(),
         )
         .green();
 

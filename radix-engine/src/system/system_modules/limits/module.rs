@@ -160,7 +160,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
 
         // Check input size
         let limits = &mut api.kernel_get_system().modules.limits.config;
-        let input_size = invocation.len();
+        let input_size = invocation.logical_size();
         if input_size > limits.max_invoke_payload_size {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(

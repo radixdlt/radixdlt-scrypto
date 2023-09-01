@@ -594,6 +594,10 @@ where
                 executable.references(),
                 executable.blobs(),
             )
+            .map(|rtn| {
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
+            })
             .and_then(|x| {
                 // Note that if a transactions fails during this phase, the costing is
                 // done as if it would succeed.
@@ -616,10 +620,7 @@ where
                         logs: &system.modules.logs().clone(),
                     })?;
 
-                /* storage costs */
-                system
-                    .modules
-                    .apply_storage_cost(StorageType::Archive, executable.payload_size())?;
+                /* state storage costs */
                 for store_commit in &info {
                     system.modules.apply_storage_cost(
                         StorageType::State,
@@ -627,11 +628,37 @@ where
                     )?;
                 }
 
+                /* archive storage costs */
+                // TODO: fix this!
+                system
+                    .modules
+                    .apply_storage_cost(StorageType::Archive, executable.payload_size())?;
+
+                let total_event_size = system
+                    .modules
+                    .events()
+                    .iter()
+                    .map(|x| x.logical_size())
+                    .sum();
+                system
+                    .modules
+                    .apply_storage_cost(StorageType::Archive, total_event_size)?;
+
+                let total_log_size = system.modules.logs().iter().map(|x| x.1.len()).sum();
+                system
+                    .modules
+                    .apply_storage_cost(StorageType::Archive, total_log_size)?;
+
                 Ok(x)
             })
-            .map(|rtn| {
-                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-                output
+            .or_else(|e| {
+                // State updates are reverted
+
+                // Events are reverted
+
+                // Logs are NOT reverted (This is not ideal, as it means free if the transaction fails)
+
+                Err(e)
             });
 
         (interpretation_result, system.modules.unpack())

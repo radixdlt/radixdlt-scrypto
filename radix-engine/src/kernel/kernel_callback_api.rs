@@ -12,7 +12,7 @@ pub trait CallFrameReferences {
     fn direct_access_references(&self) -> Vec<NodeId>;
     fn stable_transient_references(&self) -> Vec<NodeId>;
 
-    fn len(&self) -> usize;
+    fn logical_size(&self) -> usize;
 }
 
 // TODO: Replace Events with separate callback functions
