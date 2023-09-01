@@ -628,8 +628,6 @@ where
                 }
 
                 /* archive storage costs */
-                // TODO: fix this!
-
                 let total_event_size = system.modules.events().iter().map(|x| x.len()).sum();
                 system
                     .modules
