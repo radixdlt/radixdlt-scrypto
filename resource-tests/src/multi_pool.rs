@@ -34,7 +34,8 @@ impl MultiPoolFuzzAction {
     ) -> (ManifestBuilder, bool) {
         match self {
             MultiPoolFuzzAction::Contribute => {
-                let resource_to_amount_mapping: Vec<(ResourceAddress, Decimal)> = multi_pool_meta.pool_resources
+                let resource_to_amount_mapping: Vec<(ResourceAddress, Decimal)> = multi_pool_meta
+                    .pool_resources
                     .iter()
                     .map(|resource| (*resource, fuzzer.next_amount()))
                     .collect();
@@ -52,7 +53,8 @@ impl MultiPoolFuzzAction {
                 (builder, false)
             }
             MultiPoolFuzzAction::ProtectedDeposit => {
-                let resource_address = multi_pool_meta.pool_resources
+                let resource_address = multi_pool_meta
+                    .pool_resources
                     .get(fuzzer.next_usize(multi_pool_meta.pool_resources.len()))
                     .unwrap()
                     .clone();
@@ -73,7 +75,8 @@ impl MultiPoolFuzzAction {
                 (builder, amount.is_zero())
             }
             MultiPoolFuzzAction::ProtectedWithdraw => {
-                let resource_address = multi_pool_meta.pool_resources
+                let resource_address = multi_pool_meta
+                    .pool_resources
                     .get(fuzzer.next_usize(multi_pool_meta.pool_resources.len()))
                     .unwrap()
                     .clone();
@@ -96,7 +99,11 @@ impl MultiPoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
-                    .withdraw_from_account(account_address, multi_pool_meta.pool_unit_resource_address, amount)
+                    .withdraw_from_account(
+                        account_address,
+                        multi_pool_meta.pool_unit_resource_address,
+                        amount,
+                    )
                     .take_all_from_worktop(multi_pool_meta.pool_unit_resource_address, "pool_units")
                     .with_name_lookup(|builder, lookup| {
                         builder.call_method(

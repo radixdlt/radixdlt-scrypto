@@ -6,33 +6,38 @@ pub mod two_pool;
 pub mod validator;
 
 use crate::consensus_manager::ConsensusManagerFuzzAction;
+use crate::multi_pool::MultiPoolFuzzAction;
 use crate::one_pool::OnePoolFuzzAction;
+use crate::resource::{
+    FungibleResourceFuzzGetBucketAction, NonFungibleResourceFuzzGetBucketAction,
+    ResourceFuzzUseBucketAction, VaultTestInvoke, BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID,
+};
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
-use radix_engine::blueprints::pool::{multi_resource_pool, one_resource_pool};
+use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
+use radix_engine::prelude::node_modules::ModuleConfig;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::pool::{TwoResourcePoolInstantiateManifestInput, TWO_RESOURCE_POOL_INSTANTIATE_IDENT, MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, MultiResourcePoolInstantiateManifestInput};
+use radix_engine::vm::OverridePackageCode;
+use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::blueprints::pool::{
+    MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
+    MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
+};
+use radix_engine_interface::prelude::node_modules::auth::RoleDefinition;
+use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
-use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunner, TestRunnerBuilder};
+use scrypto::prelude::{ToRoleEntry, Zero};
+use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
-use crate::multi_pool::MultiPoolFuzzAction;
-use crate::resource::{BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID, FungibleResourceFuzzGetBucketAction, ResourceFuzzUseBucketAction, VaultTestInvoke};
-use radix_engine_interface::prelude::node_modules::auth::RoleDefinition;
-use radix_engine::prelude::node_modules::ModuleConfig;
-use radix_engine::vm::OverridePackageCode;
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto::prelude::ToRoleEntry;
 
 pub struct TestFuzzer {
     rng: ChaCha8Rng,
@@ -131,7 +136,9 @@ pub enum FuzzAction {
     TwoResourcePool(TwoPoolFuzzAction),
     MultiResourcePool(MultiPoolFuzzAction),
     FungibleGetBucket(FungibleResourceFuzzGetBucketAction),
-    UseBucket(ResourceFuzzUseBucketAction),
+    FungibleUseBucket(ResourceFuzzUseBucketAction),
+    NonFungibleGetBucket(NonFungibleResourceFuzzGetBucketAction),
+    NonFungibleUseBucket(ResourceFuzzUseBucketAction),
 }
 
 impl FuzzAction {
@@ -144,7 +151,8 @@ impl FuzzAction {
         one_resource_pool: &OnePoolMeta,
         two_resource_pool: &TwoPoolMeta,
         multi_resource_pool: &MultiPoolMeta,
-        vault_component: &VaultComponentMeta,
+        fungible_vault_component: &VaultComponentMeta,
+        non_fungible_vault_component: &VaultComponentMeta,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
@@ -164,10 +172,16 @@ impl FuzzAction {
                 action.add_to_manifest(builder, fuzzer, account_address, multi_resource_pool)
             }
             FuzzAction::FungibleGetBucket(action) => {
-                action.add_to_manifest(builder, fuzzer, vault_component)
+                action.add_to_manifest(builder, fuzzer, fungible_vault_component)
             }
-            FuzzAction::UseBucket(action) => {
-                action.add_to_manifest(builder, fuzzer, vault_component)
+            FuzzAction::FungibleUseBucket(action) => {
+                action.add_to_manifest(builder, fuzzer, fungible_vault_component)
+            }
+            FuzzAction::NonFungibleGetBucket(action) => {
+                action.add_to_manifest(builder, fuzzer, non_fungible_vault_component)
+            }
+            FuzzAction::NonFungibleUseBucket(action) => {
+                action.add_to_manifest(builder, fuzzer, non_fungible_vault_component)
             }
         }
     }
@@ -243,7 +257,8 @@ pub struct FuzzTest<T: TxnFuzzer> {
     one_resource_pool: OnePoolMeta,
     two_resource_pool: TwoPoolMeta,
     multi_resource_pool: MultiPoolMeta,
-    vault_component: VaultComponentMeta,
+    fungible_vault_component: VaultComponentMeta,
+    non_fungible_vault_component: VaultComponentMeta,
     account_address: ComponentAddress,
     account_public_key: PublicKey,
     cur_round: Round,
@@ -259,7 +274,6 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             initial_epoch,
             CustomGenesis::default_consensus_manager_config(),
         );
-
 
         let (mut test_runner, validator_set) = TestRunnerBuilder::new()
             .with_custom_genesis(genesis)
@@ -375,7 +389,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
                         MultiResourcePoolInstantiateManifestInput {
                             resource_addresses: pool_resources.clone().into_iter().collect(),
-                            pool_manager_rule: rule!(require(virtual_signature_badge)),
+                            pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
                             owner_role: OwnerRole::None,
                             address_reservation: None,
                         },
@@ -397,15 +411,19 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             }
         };
 
-        let vault_component = {
-            let package_address = test_runner.publish_native_package(
-                CUSTOM_PACKAGE_CODE_ID,
-                PackageDefinition::new_with_field_test_definition(
-                    BLUEPRINT_NAME,
-                    vec![("call_vault", "call_vault", true), ("new", "new", false)],
-                ),
-            );
+        let package_address = test_runner.publish_native_package(
+            CUSTOM_PACKAGE_CODE_ID,
+            PackageDefinition::new_with_field_test_definition(
+                BLUEPRINT_NAME,
+                vec![
+                    ("call_vault", "call_vault", true),
+                    ("new", "new", false),
+                    ("new_with_bucket", "new_with_bucket", false),
+                ],
+            ),
+        );
 
+        let fungible_vault_component = {
             let receipt = test_runner.execute_manifest_ignoring_fee(
                 ManifestBuilder::new()
                     .create_fungible_resource(
@@ -414,17 +432,17 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         18u8,
                         FungibleResourceRoles {
                             mint_roles: mint_roles! {
-                            minter => rule!(allow_all);
-                            minter_updater => rule!(deny_all);
-                        },
+                                minter => rule!(allow_all);
+                                minter_updater => rule!(deny_all);
+                            },
                             burn_roles: burn_roles! {
-                            burner => rule!(allow_all);
-                            burner_updater => rule!(deny_all);
-                        },
+                                burner => rule!(allow_all);
+                                burner_updater => rule!(deny_all);
+                            },
                             recall_roles: recall_roles! {
-                            recaller => rule!(allow_all);
-                            recaller_updater => rule!(deny_all);
-                        },
+                                recaller => rule!(allow_all);
+                                recaller_updater => rule!(deny_all);
+                            },
                             ..Default::default()
                         },
                         metadata!(),
@@ -457,6 +475,74 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             }
         };
 
+        let non_fungible_vault_component = {
+            let ids: Vec<(NonFungibleLocalId, ())> = fuzzer
+                .next_non_fungible_id_set()
+                .into_iter()
+                .map(|id| (id, ()))
+                .collect();
+            let amount = ids.len();
+            let receipt = test_runner.execute_manifest_ignoring_fee(
+                ManifestBuilder::new()
+                    .create_non_fungible_resource(
+                        OwnerRole::None,
+                        NonFungibleIdType::Integer,
+                        true,
+                        NonFungibleResourceRoles {
+                            mint_roles: mint_roles! {
+                                minter => rule!(allow_all);
+                                minter_updater => rule!(deny_all);
+                            },
+                            burn_roles: burn_roles! {
+                                burner => rule!(allow_all);
+                                burner_updater => rule!(deny_all);
+                            },
+                            recall_roles: recall_roles! {
+                                recaller => rule!(allow_all);
+                                recaller_updater => rule!(deny_all);
+                            },
+                            ..Default::default()
+                        },
+                        metadata!(),
+                        Some(ids),
+                    )
+                    .deposit_batch(account)
+                    .build(),
+                vec![virtual_signature_badge.clone()],
+            );
+            let resource_address = receipt.expect_commit_success().new_resource_addresses()[0];
+
+            let manifest = {
+                let mut builder = ManifestBuilder::new();
+                if !amount.is_zero() {
+                    builder = builder.withdraw_from_account(account, resource_address, amount);
+                }
+                builder
+                    .take_all_from_worktop(resource_address, "bkt")
+                    .with_bucket("bkt", |builder, bucket| {
+                        builder.call_function(
+                            package_address,
+                            BLUEPRINT_NAME,
+                            "new_with_bucket",
+                            manifest_args!(bucket),
+                        )
+                    })
+                    .build()
+            };
+
+            let receipt =
+                test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge]);
+            let component_address = receipt.expect_commit_success().new_component_addresses()[0];
+
+            let vault_id = test_runner.get_component_vaults(component_address, resource_address)[0];
+
+            VaultComponentMeta {
+                component_address,
+                resource_address,
+                vault_address: InternalAddress::try_from(vault_id).unwrap(),
+            }
+        };
+
         Self {
             fuzzer,
             test_runner,
@@ -469,7 +555,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             one_resource_pool,
             two_resource_pool,
             multi_resource_pool,
-            vault_component,
+            fungible_vault_component,
+            non_fungible_vault_component,
             account_address: account,
             account_public_key: public_key.into(),
             cur_round: Round::of(1u64),
@@ -512,7 +599,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
     }
 
     fn run_single_fuzz(&mut self) -> BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> {
-        let mut fuzz_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
+        let mut fuzz_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
+            BTreeMap::new();
 
         for uuid in 0u64..100u64 {
             // Build new transaction
@@ -528,7 +616,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     &self.one_resource_pool,
                     &self.two_resource_pool,
                     &self.multi_resource_pool,
-                    &self.vault_component,
+                    &self.fungible_vault_component,
+                    &self.non_fungible_vault_component,
                     self.account_address,
                 );
 

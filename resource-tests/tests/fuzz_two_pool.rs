@@ -1,11 +1,6 @@
-use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::pool::*;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
 use resource_tests::two_pool::TwoPoolFuzzAction;
-use resource_tests::{FuzzAction, FuzzTest, FuzzTxnResult, TestFuzzer, TxnFuzzer};
-use scrypto_unit::*;
+use resource_tests::{FuzzAction, FuzzTest, TestFuzzer, TxnFuzzer};
 
 #[test]
 fn fuzz_two_pool() {

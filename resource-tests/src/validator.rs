@@ -3,7 +3,6 @@ use radix_engine::types::FromRepr;
 use radix_engine_common::constants::XRD;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{ComponentAddress, NonFungibleLocalId, VALIDATOR_OWNER_BADGE};
-use radix_engine_common::types::ResourceAddress;
 use radix_engine_interface::blueprints::consensus_manager::{
     ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_XRD_IDENT,
     VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT,

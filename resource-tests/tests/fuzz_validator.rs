@@ -1,12 +1,6 @@
-use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
-use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
-use resource_tests::validator::{ValidatorFuzzAction, ValidatorMeta};
-use resource_tests::{FuzzAction, FuzzTest, FuzzTxnResult, TestFuzzer, TxnFuzzer};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use resource_tests::validator::ValidatorFuzzAction;
+use resource_tests::{FuzzAction, FuzzTest, TestFuzzer, TxnFuzzer};
 
 #[test]
 fn fuzz_validator() {

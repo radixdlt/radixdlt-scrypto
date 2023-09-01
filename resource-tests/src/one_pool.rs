@@ -1,7 +1,6 @@
 use crate::{OnePoolMeta, TestFuzzer};
 use radix_engine::types::FromRepr;
 use radix_engine_common::prelude::ComponentAddress;
-use radix_engine_common::types::ResourceAddress;
 use radix_engine_interface::blueprints::pool::{
     OneResourcePoolContributeManifestInput, OneResourcePoolGetRedemptionValueManifestInput,
     OneResourcePoolProtectedDepositManifestInput, OneResourcePoolProtectedWithdrawManifestInput,

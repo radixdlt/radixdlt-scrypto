@@ -1,8 +1,6 @@
 use radix_engine::types::*;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
 use resource_tests::one_pool::OnePoolFuzzAction;
-use resource_tests::{FuzzAction, FuzzTest, FuzzTxnResult, TestFuzzer, TxnFuzzer};
+use resource_tests::{FuzzAction, FuzzTest, TestFuzzer, TxnFuzzer};
 
 #[test]
 fn fuzz_one_pool() {

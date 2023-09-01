@@ -1,10 +1,6 @@
-use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::pool::*;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
 use resource_tests::multi_pool::MultiPoolFuzzAction;
-use resource_tests::{FuzzAction, FuzzTest, FuzzTxnResult, TestFuzzer, TxnFuzzer};
+use resource_tests::{FuzzAction, FuzzTest, TestFuzzer, TxnFuzzer};
 
 #[test]
 fn fuzz_multi_pool() {

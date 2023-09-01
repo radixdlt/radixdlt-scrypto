@@ -1,7 +1,7 @@
 use crate::{TestFuzzer, VaultComponentMeta};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::NativeVault;
+use native_sdk::resource::{NativeBucket, NativeVault};
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
@@ -9,17 +9,18 @@ use radix_engine::types::FromRepr;
 use radix_engine::vm::VmInvoke;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{
-    manifest_decode, manifest_encode, scrypto_decode, scrypto_encode, ComponentAddress,
-    ManifestValue, NonFungibleLocalId, ScryptoValue,
+    manifest_decode, manifest_encode, scrypto_decode, scrypto_encode, ManifestValue,
+    NonFungibleLocalId, ScryptoValue,
 };
-use radix_engine_common::types::{InternalAddress, ResourceAddress};
+use radix_engine_common::types::ResourceAddress;
 use radix_engine_interface::api::{ClientApi, LockFlags, ModuleId, ACTOR_STATE_SELF};
 use radix_engine_interface::data::manifest::ManifestArgs;
 use radix_engine_interface::prelude::{
-    FieldValue, FungibleResourceManagerMintInput, NonFungibleResourceManagerMintManifestInput,
-    OwnerRole, Vault, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
-    VAULT_PUT_IDENT, VAULT_TAKE_ADVANCED_IDENT, VAULT_TAKE_IDENT,
+    Bucket, FieldValue, FungibleResourceManagerMintInput,
+    NonFungibleResourceManagerMintManifestInput, OwnerRole, Vault,
+    FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+    NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT, VAULT_PUT_IDENT, VAULT_TAKE_ADVANCED_IDENT,
+    VAULT_TAKE_IDENT,
 };
 use radix_engine_interface::types::IndexedScryptoValue;
 use scrypto::prelude::indexmap::IndexMap;
@@ -61,6 +62,26 @@ impl VmInvoke for VaultTestInvoke {
                 let resource_address: (ResourceAddress,) =
                     scrypto_decode(input.as_slice()).unwrap();
                 let vault = Vault::create(resource_address.0, api).unwrap();
+
+                let metadata = Metadata::create(api)?;
+                let access_rules = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
+                let node_id = api
+                    .new_simple_object(BLUEPRINT_NAME, indexmap!(0u8 => FieldValue::new(&vault)))?;
+
+                api.globalize(
+                    node_id,
+                    indexmap!(
+                        ModuleId::Metadata => metadata.0,
+                        ModuleId::RoleAssignment => access_rules.0.0,
+                    ),
+                    None,
+                )?;
+            }
+            "new_with_bucket" => {
+                let bucket: (Bucket,) = scrypto_decode(input.as_slice()).unwrap();
+                let resource_address = bucket.0.resource_address(api).unwrap();
+                let mut vault = Vault::create(resource_address, api).unwrap();
+                vault.put(bucket.0, api).unwrap();
 
                 let metadata = Metadata::create(api)?;
                 let access_rules = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
@@ -193,9 +214,7 @@ impl NonFungibleResourceFuzzGetBucketAction {
         &self,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
-        component_address: ComponentAddress,
-        resource_address: ResourceAddress,
-        vault_id: InternalAddress,
+        vault_meta: &VaultComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             NonFungibleResourceFuzzGetBucketAction::Mint => {
@@ -211,7 +230,7 @@ impl NonFungibleResourceFuzzGetBucketAction {
                     .collect();
 
                 let builder = builder.call_method(
-                    resource_address,
+                    vault_meta.resource_address,
                     NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                     NonFungibleResourceManagerMintManifestInput { entries },
                 );
@@ -221,7 +240,7 @@ impl NonFungibleResourceFuzzGetBucketAction {
             NonFungibleResourceFuzzGetBucketAction::VaultTake => {
                 let amount = fuzzer.next_amount();
                 let builder = builder.call_method(
-                    component_address,
+                    vault_meta.component_address,
                     "call_vault",
                     manifest_args!(VAULT_TAKE_IDENT, (amount,)),
                 );
@@ -231,7 +250,7 @@ impl NonFungibleResourceFuzzGetBucketAction {
                 let ids = fuzzer.next_non_fungible_id_set();
                 let trivial = ids.is_empty();
                 let builder = builder.call_method(
-                    component_address,
+                    vault_meta.component_address,
                     "call_vault",
                     manifest_args!(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT, (ids,)),
                 );
@@ -241,7 +260,7 @@ impl NonFungibleResourceFuzzGetBucketAction {
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
                 let builder = builder.call_method(
-                    component_address,
+                    vault_meta.component_address,
                     "call_vault",
                     manifest_args!(VAULT_TAKE_ADVANCED_IDENT, (amount, withdraw_strategy)),
                 );
@@ -249,13 +268,13 @@ impl NonFungibleResourceFuzzGetBucketAction {
             }
             NonFungibleResourceFuzzGetBucketAction::VaultRecall => {
                 let amount = fuzzer.next_amount();
-                let builder = builder.recall(vault_id, amount);
+                let builder = builder.recall(vault_meta.vault_address, amount);
                 (builder, amount.is_zero())
             }
             NonFungibleResourceFuzzGetBucketAction::VaultRecallNonFungibles => {
                 let ids = fuzzer.next_non_fungible_id_set();
                 let trivial = ids.is_empty();
-                let builder = builder.recall_non_fungibles(vault_id, ids);
+                let builder = builder.recall_non_fungibles(vault_meta.vault_address, ids);
                 (builder, trivial)
             }
         }
