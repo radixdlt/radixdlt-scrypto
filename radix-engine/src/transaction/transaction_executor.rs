@@ -594,10 +594,6 @@ where
                 executable.references(),
                 executable.blobs(),
             )
-            .map(|rtn| {
-                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-                output
-            })
             .and_then(|x| {
                 // Note that if a transactions fails during this phase, the costing is
                 // done as if it would succeed.
@@ -648,6 +644,10 @@ where
                 // Logs are NOT reverted (This is not ideal, as it means logs are free if the transaction fails)
 
                 Err(e)
+            })
+            .map(|rtn| {
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
             });
 
         (interpretation_result, system.modules.unpack())
