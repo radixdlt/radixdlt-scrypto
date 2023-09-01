@@ -15,7 +15,6 @@ use radix_engine_interface::data::manifest::ManifestArgs;
 use transaction::builder::ManifestBuilder;
 use utils::btreeset;
 
-
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
 pub enum ValidatorFuzzAction {

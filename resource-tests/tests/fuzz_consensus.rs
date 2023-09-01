@@ -11,11 +11,7 @@ fn fuzz_consensus() {
     impl TxnFuzzer for ConsensusFuzzer {
         fn next_action(fuzzer: &mut TestFuzzer) -> FuzzAction {
             match fuzzer.next(0u8..10u8) {
-                0u8 => {
-                    FuzzAction::ConsensusManager(
-                        ConsensusManagerFuzzAction::CreateValidator,
-                    )
-                }
+                0u8 => FuzzAction::ConsensusManager(ConsensusManagerFuzzAction::CreateValidator),
                 _ => {
                     let action: ValidatorFuzzAction =
                         ValidatorFuzzAction::from_repr(fuzzer.next_u8(8u8)).unwrap();
@@ -27,6 +23,3 @@ fn fuzz_consensus() {
 
     FuzzTest::<ConsensusFuzzer>::run_fuzz();
 }
-
-
-

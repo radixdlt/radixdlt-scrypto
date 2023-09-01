@@ -1,17 +1,15 @@
 use crate::TestFuzzer;
 use radix_engine::types::FromRepr;
 use radix_engine_common::manifest_args;
-use radix_engine_common::prelude::{
-    ComponentAddress, Decimal, ManifestExpression,
-};
+use radix_engine_common::prelude::{ComponentAddress, Decimal, ManifestExpression};
 use radix_engine_common::types::ResourceAddress;
 use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolGetRedemptionValueManifestInput,
     MultiResourcePoolProtectedDepositManifestInput,
     MultiResourcePoolProtectedWithdrawManifestInput, MultiResourcePoolRedeemManifestInput,
-    MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
-    MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT, MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-    MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, MULTI_RESOURCE_POOL_REDEEM_IDENT,
+    MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT, MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
+    MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT, MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+    MULTI_RESOURCE_POOL_REDEEM_IDENT,
 };
 use radix_engine_interface::data::manifest::ManifestArgs;
 use transaction::builder::ManifestBuilder;

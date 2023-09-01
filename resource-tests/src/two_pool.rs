@@ -1,8 +1,13 @@
-use crate::TestFuzzer;
+use crate::{TestFuzzer, TwoPoolMeta};
 use radix_engine::types::FromRepr;
-use radix_engine_common::prelude::{ComponentAddress};
+use radix_engine_common::prelude::ComponentAddress;
 use radix_engine_common::types::ResourceAddress;
-use radix_engine_interface::blueprints::pool::{TWO_RESOURCE_POOL_CONTRIBUTE_IDENT, TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT, TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, TWO_RESOURCE_POOL_REDEEM_IDENT, TwoResourcePoolContributeManifestInput, TwoResourcePoolProtectedDepositManifestInput, TwoResourcePoolProtectedWithdrawManifestInput, TwoResourcePoolRedeemManifestInput};
+use radix_engine_interface::blueprints::pool::{
+    TwoResourcePoolContributeManifestInput, TwoResourcePoolProtectedDepositManifestInput,
+    TwoResourcePoolProtectedWithdrawManifestInput, TwoResourcePoolRedeemManifestInput,
+    TWO_RESOURCE_POOL_CONTRIBUTE_IDENT, TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
+    TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, TWO_RESOURCE_POOL_REDEEM_IDENT,
+};
 use transaction::builder::ManifestBuilder;
 
 #[repr(u8)]
@@ -24,10 +29,7 @@ impl TwoPoolFuzzAction {
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
         account_address: ComponentAddress,
-        pool_address: ComponentAddress,
-        pool_unit_resource_address: ResourceAddress,
-        resource_address1: ResourceAddress,
-        resource_address2: ResourceAddress,
+        two_pool_meta: &TwoPoolMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             TwoPoolFuzzAction::Contribute => {
@@ -35,15 +37,15 @@ impl TwoPoolFuzzAction {
                 let amount2 = fuzzer.next_amount();
 
                 let builder = builder
-                    .mint_fungible(resource_address1, amount1)
-                    .mint_fungible(resource_address2, amount2)
-                    .take_all_from_worktop(resource_address1, "resource_1")
-                    .take_all_from_worktop(resource_address2, "resource_2")
+                    .mint_fungible(two_pool_meta.resource_address1, amount1)
+                    .mint_fungible(two_pool_meta.resource_address2, amount2)
+                    .take_all_from_worktop(two_pool_meta.resource_address1, "resource_1")
+                    .take_all_from_worktop(two_pool_meta.resource_address2, "resource_2")
                     .with_name_lookup(|builder, lookup| {
                         let bucket1 = lookup.bucket("resource_1");
                         let bucket2 = lookup.bucket("resource_2");
                         builder.call_method(
-                            pool_address,
+                            two_pool_meta.pool_address,
                             TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
                             TwoResourcePoolContributeManifestInput {
                                 buckets: (bucket1, bucket2),
@@ -57,11 +59,11 @@ impl TwoPoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
-                    .mint_fungible(resource_address1, amount)
-                    .take_all_from_worktop(resource_address1, "deposit")
+                    .mint_fungible(two_pool_meta.resource_address1, amount)
+                    .take_all_from_worktop(two_pool_meta.resource_address1, "deposit")
                     .with_name_lookup(|builder, lookup| {
                         builder.call_method(
-                            pool_address,
+                            two_pool_meta.pool_address,
                             TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
                             TwoResourcePoolProtectedDepositManifestInput {
                                 bucket: lookup.bucket("deposit"),
@@ -75,11 +77,11 @@ impl TwoPoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
-                    .mint_fungible(resource_address2, amount)
-                    .take_all_from_worktop(resource_address2, "deposit")
+                    .mint_fungible(two_pool_meta.resource_address2, amount)
+                    .take_all_from_worktop(two_pool_meta.resource_address2, "deposit")
                     .with_name_lookup(|builder, lookup| {
                         builder.call_method(
-                            pool_address,
+                            two_pool_meta.pool_address,
                             TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
                             TwoResourcePoolProtectedDepositManifestInput {
                                 bucket: lookup.bucket("deposit"),
@@ -93,10 +95,10 @@ impl TwoPoolFuzzAction {
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
                 let builder = builder.call_method(
-                    pool_address,
+                    two_pool_meta.pool_address,
                     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     TwoResourcePoolProtectedWithdrawManifestInput {
-                        resource_address: resource_address1,
+                        resource_address: two_pool_meta.resource_address1,
                         amount: amount.into(),
                         withdraw_strategy,
                     },
@@ -108,10 +110,10 @@ impl TwoPoolFuzzAction {
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
                 let builder = builder.call_method(
-                    pool_address,
+                    two_pool_meta.pool_address,
                     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     TwoResourcePoolProtectedWithdrawManifestInput {
-                        resource_address: resource_address2,
+                        resource_address: two_pool_meta.resource_address2,
                         amount,
                         withdraw_strategy,
                     },
@@ -123,12 +125,16 @@ impl TwoPoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
-                    .withdraw_from_account(account_address, pool_unit_resource_address, amount)
-                    .take_all_from_worktop(pool_unit_resource_address, "pool_units")
+                    .withdraw_from_account(
+                        account_address,
+                        two_pool_meta.pool_unit_resource_address,
+                        amount,
+                    )
+                    .take_all_from_worktop(two_pool_meta.pool_unit_resource_address, "pool_units")
                     .with_name_lookup(|builder, lookup| {
                         let bucket = lookup.bucket("pool_units");
                         builder.call_method(
-                            pool_address,
+                            two_pool_meta.pool_address,
                             TWO_RESOURCE_POOL_REDEEM_IDENT,
                             TwoResourcePoolRedeemManifestInput { bucket },
                         )
@@ -141,10 +147,10 @@ impl TwoPoolFuzzAction {
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
 
                 let builder = builder.call_method(
-                    pool_address,
+                    two_pool_meta.pool_address,
                     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     TwoResourcePoolProtectedWithdrawManifestInput {
-                        resource_address: resource_address1,
+                        resource_address: two_pool_meta.resource_address1,
                         amount,
                         withdraw_strategy,
                     },
@@ -157,10 +163,10 @@ impl TwoPoolFuzzAction {
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
 
                 let builder = builder.call_method(
-                    pool_address,
+                    two_pool_meta.pool_address,
                     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     TwoResourcePoolProtectedWithdrawManifestInput {
-                        resource_address: resource_address2,
+                        resource_address: two_pool_meta.resource_address2,
                         amount,
                         withdraw_strategy,
                     },

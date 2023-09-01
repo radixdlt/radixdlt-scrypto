@@ -5,21 +5,27 @@ pub mod resource;
 pub mod two_pool;
 pub mod validator;
 
+use crate::consensus_manager::ConsensusManagerFuzzAction;
+use crate::one_pool::OnePoolFuzzAction;
+use crate::two_pool::TwoPoolFuzzAction;
+use crate::validator::ValidatorFuzzAction;
+use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
+use radix_engine::blueprints::pool::one_resource_pool;
+use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::pool::{
+    TwoResourcePoolInstantiateManifestInput, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
+};
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
-use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
+use rayon::iter::ParallelIterator;
 use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
-use crate::consensus_manager::ConsensusManagerFuzzAction;
-use crate::validator::{ValidatorFuzzAction};
-use rayon::iter::ParallelIterator;
-use crate::one_pool::OnePoolFuzzAction;
 
 pub struct TestFuzzer {
     rng: ChaCha8Rng,
@@ -110,14 +116,13 @@ impl TestFuzzer {
     }
 }
 
-
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum FuzzAction {
     ConsensusManager(ConsensusManagerFuzzAction),
     Validator(ValidatorFuzzAction),
     OneResourcePool(OnePoolFuzzAction),
+    TwoResourcePool(TwoPoolFuzzAction),
 }
-
 
 impl FuzzAction {
     pub fn add_to_manifest(
@@ -127,18 +132,21 @@ impl FuzzAction {
         fuzzer: &mut TestFuzzer,
         validators: &Vec<ValidatorMeta>,
         one_resource_pool: &OnePoolMeta,
+        two_resource_pool: &TwoPoolMeta,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
-            FuzzAction::ConsensusManager(action) => action.add_to_manifest(uuid, builder, fuzzer, validators, account_address),
-            FuzzAction::Validator(action) => action.add_to_manifest(uuid, builder, fuzzer, validators, account_address),
+            FuzzAction::ConsensusManager(action) => {
+                action.add_to_manifest(uuid, builder, fuzzer, validators, account_address)
+            }
+            FuzzAction::Validator(action) => {
+                action.add_to_manifest(uuid, builder, fuzzer, validators, account_address)
+            }
             FuzzAction::OneResourcePool(action) => {
-                action.add_to_manifest(builder, fuzzer,
-                                       account_address,
-                                       one_resource_pool.pool_address,
-                                       one_resource_pool.pool_unit_resource_address,
-                                       one_resource_pool.resource_address,
-                )
+                action.add_to_manifest(builder, fuzzer, account_address, one_resource_pool)
+            }
+            FuzzAction::TwoResourcePool(action) => {
+                action.add_to_manifest(builder, fuzzer, account_address, two_resource_pool)
             }
         }
     }
@@ -183,11 +191,20 @@ pub struct OnePoolMeta {
     pub resource_address: ResourceAddress,
 }
 
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct TwoPoolMeta {
+    pub pool_address: ComponentAddress,
+    pub pool_unit_resource_address: ResourceAddress,
+    pub resource_address1: ResourceAddress,
+    pub resource_address2: ResourceAddress,
+}
+
 pub struct FuzzTest<T: TxnFuzzer> {
     test_runner: DefaultTestRunner,
     fuzzer: TestFuzzer,
     validators: Vec<ValidatorMeta>,
     one_resource_pool: OnePoolMeta,
+    two_resource_pool: TwoPoolMeta,
     account_address: ComponentAddress,
     account_public_key: PublicKey,
     cur_round: Round,
@@ -221,15 +238,70 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         let stake_unit_resource = validator_substate.stake_unit_resource;
         let claim_resource = validator_substate.claim_nft;
 
-        let one_pool_resource = test_runner.create_freely_mintable_and_burnable_fungible_resource(
-            OwnerRole::None,
-            None,
-            fuzzer.next(0u8..=18u8),
-            account,
-        );
+        let one_resource_pool = {
+            let one_pool_resource = test_runner
+                .create_freely_mintable_and_burnable_fungible_resource(
+                    OwnerRole::None,
+                    None,
+                    fuzzer.next(0u8..=18u8),
+                    account,
+                );
 
-        let (pool_address, pool_unit_resource_address) = test_runner
-            .create_one_resource_pool(one_pool_resource, rule!(require(virtual_signature_badge)));
+            let (pool_address, pool_unit_resource_address) = test_runner.create_one_resource_pool(
+                one_pool_resource,
+                rule!(require(virtual_signature_badge.clone())),
+            );
+
+            OnePoolMeta {
+                pool_address,
+                pool_unit_resource_address,
+                resource_address: one_pool_resource,
+            }
+        };
+
+        let two_resource_pool = {
+            let pool_resource1 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+                OwnerRole::None,
+                None,
+                fuzzer.next_valid_divisibility(),
+                account,
+            );
+            let pool_resource2 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+                OwnerRole::None,
+                None,
+                fuzzer.next_valid_divisibility(),
+                account,
+            );
+
+            let (pool_component, pool_unit_resource) = {
+                let manifest = ManifestBuilder::new()
+                    .call_function(
+                        POOL_PACKAGE,
+                        TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
+                        TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
+                        TwoResourcePoolInstantiateManifestInput {
+                            resource_addresses: (pool_resource1, pool_resource2),
+                            pool_manager_rule: rule!(require(virtual_signature_badge)),
+                            owner_role: OwnerRole::None,
+                            address_reservation: None,
+                        },
+                    )
+                    .build();
+                let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+                let commit_result = receipt.expect_commit_success();
+
+                (
+                    commit_result.new_component_addresses()[0],
+                    commit_result.new_resource_addresses()[0],
+                )
+            };
+            TwoPoolMeta {
+                pool_address: pool_component,
+                pool_unit_resource_address: pool_unit_resource,
+                resource_address1: pool_resource1,
+                resource_address2: pool_resource2,
+            }
+        };
 
         Self {
             fuzzer,
@@ -240,9 +312,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 claim_resource,
                 account_address: account,
             }],
-            one_resource_pool: OnePoolMeta {
-                pool_address, pool_unit_resource_address, resource_address: one_pool_resource
-            },
+            one_resource_pool,
+            two_resource_pool,
             account_address: account,
             account_public_key: public_key.into(),
             cur_round: Round::of(1u64),
@@ -285,22 +356,21 @@ impl<T: TxnFuzzer> FuzzTest<T> {
     }
 
     fn run_single_fuzz(&mut self) -> BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>> {
-        let mut fuzz_results: BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>> =
-            BTreeMap::new();
+        let mut fuzz_results: BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>> = BTreeMap::new();
 
         for uuid in 0u64..100u64 {
             // Build new transaction
             let builder = ManifestBuilder::new();
             let fuzz_action = T::next_action(&mut self.fuzzer);
-            let (builder, trivial) = fuzz_action
-                .add_to_manifest(
-                    uuid,
-                    builder,
-                    &mut self.fuzzer,
-                    &self.validators,
-                    &self.one_resource_pool,
-                    self.account_address,
-                );
+            let (builder, trivial) = fuzz_action.add_to_manifest(
+                uuid,
+                builder,
+                &mut self.fuzzer,
+                &self.validators,
+                &self.one_resource_pool,
+                &self.two_resource_pool,
+                self.account_address,
+            );
 
             // Execute transaction
             let result = {

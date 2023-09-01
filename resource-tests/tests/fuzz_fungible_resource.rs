@@ -1,6 +1,6 @@
 use radix_engine::prelude::node_modules::auth::RoleDefinition;
 use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode};
+use radix_engine::vm::OverridePackageCode;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::node_modules::ModuleConfig;

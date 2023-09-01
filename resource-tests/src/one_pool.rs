@@ -1,4 +1,4 @@
-use crate::TestFuzzer;
+use crate::{OnePoolMeta, TestFuzzer};
 use radix_engine::types::FromRepr;
 use radix_engine_common::prelude::ComponentAddress;
 use radix_engine_common::types::ResourceAddress;
@@ -27,20 +27,18 @@ impl OnePoolFuzzAction {
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
         account_address: ComponentAddress,
-        pool_address: ComponentAddress,
-        pool_unit_resource_address: ResourceAddress,
-        resource_address: ResourceAddress,
+        one_pool_meta: &OnePoolMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             OnePoolFuzzAction::Contribute => {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
-                    .mint_fungible(resource_address, amount)
-                    .take_all_from_worktop(resource_address, "contribution")
+                    .mint_fungible(one_pool_meta.resource_address, amount)
+                    .take_all_from_worktop(one_pool_meta.resource_address, "contribution")
                     .with_name_lookup(|builder, lookup| {
                         builder.call_method(
-                            pool_address,
+                            one_pool_meta.pool_address,
                             ONE_RESOURCE_POOL_CONTRIBUTE_IDENT,
                             OneResourcePoolContributeManifestInput {
                                 bucket: lookup.bucket("contribution"),
@@ -54,11 +52,11 @@ impl OnePoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
-                    .mint_fungible(resource_address, amount)
-                    .take_all_from_worktop(resource_address, "to_deposit")
+                    .mint_fungible(one_pool_meta.resource_address, amount)
+                    .take_all_from_worktop(one_pool_meta.resource_address, "to_deposit")
                     .with_name_lookup(|builder, lookup| {
                         builder.call_method(
-                            pool_address,
+                            one_pool_meta.pool_address,
                             ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
                             OneResourcePoolProtectedDepositManifestInput {
                                 bucket: lookup.bucket("to_deposit"),
@@ -73,7 +71,7 @@ impl OnePoolFuzzAction {
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
 
                 let builder = builder.call_method(
-                    pool_address,
+                    one_pool_meta.pool_address,
                     ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     OneResourcePoolProtectedWithdrawManifestInput {
                         amount: amount.into(),
@@ -87,11 +85,15 @@ impl OnePoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
-                    .withdraw_from_account(account_address, pool_unit_resource_address, amount)
-                    .take_all_from_worktop(pool_unit_resource_address, "pool_unit")
+                    .withdraw_from_account(
+                        account_address,
+                        one_pool_meta.pool_unit_resource_address,
+                        amount,
+                    )
+                    .take_all_from_worktop(one_pool_meta.pool_unit_resource_address, "pool_unit")
                     .with_name_lookup(|builder, lookup| {
                         builder.call_method(
-                            pool_address,
+                            one_pool_meta.pool_address,
                             ONE_RESOURCE_POOL_REDEEM_IDENT,
                             OneResourcePoolRedeemManifestInput {
                                 bucket: lookup.bucket("pool_unit"),
@@ -105,7 +107,7 @@ impl OnePoolFuzzAction {
                 let amount = fuzzer.next_amount();
 
                 let builder = builder.call_method(
-                    pool_address,
+                    one_pool_meta.pool_address,
                     ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
                     OneResourcePoolGetRedemptionValueManifestInput {
                         amount_of_pool_units: amount,
