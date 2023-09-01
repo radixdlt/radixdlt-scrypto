@@ -12,6 +12,12 @@ pub struct Event {
     pub flags: EventFlags,
 }
 
+impl Event {
+    pub fn len(&self) -> usize {
+        self.type_identifier.0.get_length()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {
     pub network_definition: NetworkDefinition,

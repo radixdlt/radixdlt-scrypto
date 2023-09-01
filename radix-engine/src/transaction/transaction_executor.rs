@@ -616,18 +616,34 @@ where
                         logs: &system.modules.logs().clone(),
                     })?;
 
-                /* storage costs */
-                system
-                    .modules
-                    .apply_storage_cost(StorageType::Archive, executable.payload_size())?;
+                /* state storage costs */
                 for store_commit in &info {
-                    system.modules.apply_storage_cost(
-                        StorageType::State,
-                        store_commit.logical_size_increase(),
-                    )?;
+                    system
+                        .modules
+                        .apply_storage_cost(StorageType::State, store_commit.len_increase())?;
                 }
 
+                /* archive storage costs */
+                let total_event_size = system.modules.events().iter().map(|x| x.len()).sum();
+                system
+                    .modules
+                    .apply_storage_cost(StorageType::Archive, total_event_size)?;
+
+                let total_log_size = system.modules.logs().iter().map(|x| x.1.len()).sum();
+                system
+                    .modules
+                    .apply_storage_cost(StorageType::Archive, total_log_size)?;
+
                 Ok(x)
+            })
+            .or_else(|e| {
+                // State updates are reverted
+
+                // Events are reverted
+
+                // Logs are NOT reverted (This is not ideal, as it means logs are free if the transaction fails)
+
+                Err(e)
             })
             .map(|rtn| {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
@@ -697,9 +713,9 @@ where
                 Ok(..) => {
                     TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
                 }
-                Err(error) => {
-                    TransactionResultType::Reject(RejectionReason::ErrorBeforeFeeLoanRepaid(error))
-                }
+                Err(error) => TransactionResultType::Reject(
+                    RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(error),
+                ),
             };
         }
 
