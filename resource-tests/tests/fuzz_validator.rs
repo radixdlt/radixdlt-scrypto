@@ -1,5 +1,5 @@
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
@@ -40,7 +40,7 @@ fn fuzz_validator() {
 struct ValidatorFuzzTest {
     fuzzer: TestFuzzer,
     test_runner: DefaultTestRunner,
-    validator_meta: Vec<ValidatorMeta>,
+    validators: Vec<ValidatorMeta>,
     account_address: ComponentAddress,
     account_public_key: PublicKey,
     cur_round: Round,
@@ -75,7 +75,7 @@ impl ValidatorFuzzTest {
         Self {
             fuzzer,
             test_runner,
-            validator_meta: vec![ValidatorMeta {
+            validators: vec![ValidatorMeta {
                 validator_address,
                 stake_unit_resource,
                 claim_resource,
@@ -91,12 +91,12 @@ impl ValidatorFuzzTest {
         let mut fuzz_results: BTreeMap<ValidatorFuzzAction, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
 
-        for _ in 0..100 {
+        for uuid in 0..100 {
             let builder = ManifestBuilder::new();
             let action: ValidatorFuzzAction =
                 ValidatorFuzzAction::from_repr(self.fuzzer.next_u8(7u8)).unwrap();
             let (builder, trivial) =
-                action.add_to_manifest(builder, &mut self.fuzzer, &self.validator_meta);
+                action.add_to_manifest(uuid, builder, &mut self.fuzzer, &self.validators, self.account_address);
             let manifest = builder
                 .deposit_batch(self.account_address)
                 .build();

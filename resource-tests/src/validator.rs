@@ -40,9 +40,11 @@ pub enum ValidatorFuzzAction {
 impl ValidatorFuzzAction {
     pub fn add_to_manifest(
         &self,
+        _uuid: u64,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
         meta: &Vec<ValidatorMeta>,
+        _account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
             ValidatorFuzzAction::GetRedemptionValue => {

@@ -11,6 +11,14 @@ use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
+use rayon::iter::IntoParallelIterator;
+use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
+use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
+use transaction::builder::ManifestBuilder;
+use transaction::prelude::Secp256k1PrivateKey;
+use crate::consensus_manager::ConsensusManagerFuzzAction;
+use crate::validator::{ValidatorFuzzAction, ValidatorMeta};
+use rayon::iter::ParallelIterator;
 
 pub struct TestFuzzer {
     rng: ChaCha8Rng,
@@ -101,6 +109,30 @@ impl TestFuzzer {
     }
 }
 
+
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub enum FuzzAction {
+    ConsensusManager(ConsensusManagerFuzzAction),
+    Validator(ValidatorFuzzAction),
+}
+
+
+impl FuzzAction {
+    pub fn add_to_manifest(
+        &self,
+        uuid: u64,
+        builder: ManifestBuilder,
+        fuzzer: &mut TestFuzzer,
+        validators: &Vec<ValidatorMeta>,
+        account_address: ComponentAddress,
+    ) -> (ManifestBuilder, bool) {
+        match self {
+            FuzzAction::ConsensusManager(action) => action.add_to_manifest(uuid, builder, fuzzer, validators, account_address),
+            FuzzAction::Validator(action) => action.add_to_manifest(uuid, builder, fuzzer, validators, account_address),
+        }
+    }
+}
+
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
 pub enum FuzzTxnResult {
@@ -117,6 +149,182 @@ impl FuzzTxnResult {
             (TransactionOutcome::Success(..), false) => FuzzTxnResult::Success,
             (TransactionOutcome::Failure(..), true) => FuzzTxnResult::TrivialFailure,
             (TransactionOutcome::Failure(..), false) => FuzzTxnResult::Failure,
+        }
+    }
+}
+
+pub trait TxnFuzzer {
+    fn next_action(fuzzer: &mut TestFuzzer) -> FuzzAction;
+}
+
+pub struct FuzzTest<T: TxnFuzzer> {
+    fuzzer: TestFuzzer,
+    test_runner: DefaultTestRunner,
+    validators: Vec<ValidatorMeta>,
+    account_address: ComponentAddress,
+    account_public_key: PublicKey,
+    cur_round: Round,
+    txn_fuzzer: PhantomData<T>,
+}
+
+impl<T: TxnFuzzer> FuzzTest<T> {
+    fn new(seed: u64) -> Self {
+        let fuzzer = TestFuzzer::new(seed);
+        let initial_epoch = Epoch::of(5);
+        let genesis = CustomGenesis::default_with_xrd_amount(
+            Decimal::from(24_000_000_000u64),
+            initial_epoch,
+            CustomGenesis::default_consensus_manager_config(),
+        );
+        let (test_runner, validator_set) = TestRunnerBuilder::new()
+            .with_custom_genesis(genesis)
+            .build_and_get_epoch();
+        let public_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+        let account = ComponentAddress::virtual_account_from_public_key(&public_key);
+
+        let validator_address = validator_set
+            .validators_by_stake_desc
+            .iter()
+            .next()
+            .unwrap()
+            .0
+            .clone();
+        let validator_substate = test_runner.get_validator_info(validator_address);
+        let stake_unit_resource = validator_substate.stake_unit_resource;
+        let claim_resource = validator_substate.claim_nft;
+
+        Self {
+            fuzzer,
+            test_runner,
+            validators: vec![ValidatorMeta {
+                validator_address,
+                stake_unit_resource,
+                claim_resource,
+                account_address: account,
+            }],
+            account_address: account,
+            account_public_key: public_key.into(),
+            cur_round: Round::of(1u64),
+            txn_fuzzer: PhantomData::default(),
+        }
+    }
+
+    pub fn run_fuzz() {
+        let mut summed_results: BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>> =
+            BTreeMap::new();
+
+        let results: Vec<BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>>> = (1u64..=32u64)
+            .into_par_iter()
+            .map(|seed| {
+                let mut fuzz_test = Self::new(seed);
+                fuzz_test.run_single_fuzz()
+            })
+            .collect();
+
+        for run_result in results {
+            for (txn, txn_results) in run_result {
+                for (txn_result, count) in txn_results {
+                    summed_results
+                        .entry(txn)
+                        .or_default()
+                        .entry(txn_result)
+                        .or_default()
+                        .add_assign(&count);
+                }
+            }
+        }
+
+        for (action, results) in &summed_results {
+            if !results.contains_key(&FuzzTxnResult::Success) {
+                panic!("No successful {:?}", action)
+            }
+        }
+
+        println!("{:#?}", summed_results);
+    }
+
+    fn run_single_fuzz(&mut self) -> BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>> {
+        let mut fuzz_results: BTreeMap<FuzzAction, BTreeMap<FuzzTxnResult, u64>> =
+            BTreeMap::new();
+
+        for uuid in 0u64..100u64 {
+            // Build new transaction
+            let builder = ManifestBuilder::new();
+            let fuzz_action = T::next_action(&mut self.fuzzer);
+            let (builder, trivial) = fuzz_action
+                .add_to_manifest(
+                    uuid,
+                    builder,
+                    &mut self.fuzzer,
+                    &self.validators,
+                    self.account_address,
+                );
+
+            // Execute transaction
+            let result = {
+                let manifest = builder
+                    .deposit_batch(self.validators[0].account_address)
+                    .build();
+                let receipt = self.test_runner.execute_manifest_ignoring_fee(
+                    manifest,
+                    vec![NonFungibleGlobalId::from_public_key(
+                        &self.account_public_key,
+                    )],
+                );
+                let result = receipt.expect_commit_ignore_outcome();
+
+                result
+                    .new_component_addresses()
+                    .iter()
+                    .filter(|a| a.as_node_id().is_global_validator())
+                    .for_each(|validator_address| {
+                        let validator_substate =
+                            self.test_runner.get_validator_info(*validator_address);
+                        let stake_unit_resource = validator_substate.stake_unit_resource;
+                        let claim_resource = validator_substate.claim_nft;
+
+                        self.validators.push(ValidatorMeta {
+                            account_address: self.validators[0].account_address,
+                            stake_unit_resource,
+                            claim_resource,
+                            validator_address: *validator_address,
+                        });
+                    });
+
+                FuzzTxnResult::from_outcome(&result.outcome, trivial)
+            };
+
+            // Execute a consensus round every 4 transactions
+            if self.fuzzer.next(0u8..8u8) == 0u8 {
+                let rounds = self.fuzzer.next(1u64..10u64);
+                self.consensus_round(rounds);
+            }
+
+            let results = fuzz_results.entry(fuzz_action).or_default();
+            results.entry(result).or_default().add_assign(&1);
+        }
+
+        fuzz_results
+    }
+
+    fn consensus_round(&mut self, num_rounds: u64) {
+        let receipt = self
+            .test_runner
+            .advance_to_round(Round::of(self.cur_round.number() + num_rounds));
+        let result = receipt.expect_commit_success();
+        let events = result.application_events.clone();
+        let epoch_change_event = events
+            .into_iter()
+            .filter(|(id, _data)| self.test_runner.is_event_name_equal::<EpochChangeEvent>(id))
+            .map(|(_id, data)| scrypto_decode::<EpochChangeEvent>(&data).unwrap())
+            .collect::<Vec<_>>()
+            .into_iter()
+            .next();
+
+        if let Some(..) = epoch_change_event {
+            self.cur_round = Round::of(1u64);
+        } else {
+            self.cur_round = Round::of(self.cur_round.number() + num_rounds);
         }
     }
 }

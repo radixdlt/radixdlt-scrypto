@@ -7,6 +7,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::types::FromRepr;
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
+use crate::validator::ValidatorMeta;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
@@ -20,6 +21,7 @@ impl ConsensusManagerFuzzAction {
         uuid: u64,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
+        _validators: &Vec<ValidatorMeta>,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
