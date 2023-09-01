@@ -629,9 +629,6 @@ where
 
                 /* archive storage costs */
                 // TODO: fix this!
-                system
-                    .modules
-                    .apply_storage_cost(StorageType::Archive, executable.payload_size())?;
 
                 let total_event_size = system.modules.events().iter().map(|x| x.len()).sum();
                 system

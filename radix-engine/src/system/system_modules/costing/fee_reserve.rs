@@ -28,7 +28,7 @@ pub enum FeeReserveError {
     Abort(AbortReason),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Copy, Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
 pub enum StorageType {
     State,
     Archive,
@@ -43,10 +43,17 @@ impl CanBeAbortion for FeeReserveError {
     }
 }
 
+/// This is only allowed before a transaction properly begins.
+/// After any other methods are called, this cannot be called again.
+
 pub trait PreExecutionFeeReserve {
-    /// This is only allowed before a transaction properly begins.
-    /// After any other methods are called, this cannot be called again.
-    fn consume_deferred(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
+    fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
+
+    fn consume_deferred_storage(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), FeeReserveError>;
 }
 
 pub trait ExecutionFeeReserve {
@@ -125,7 +132,6 @@ pub struct SystemLoanFeeReserve {
 
     /// Execution costs
     execution_cost_units_committed: u32,
-    execution_cost_units_deferred: u32,
 
     // Finalization costs
     finalization_cost_units_committed: u32,
@@ -136,6 +142,9 @@ pub struct SystemLoanFeeReserve {
 
     /// Storage Costs
     storage_cost: u128,
+
+    /// Deferred
+    deferred_cost: u128,
 
     /// Payments made during the execution of a transaction.
     locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
@@ -154,12 +163,6 @@ impl Default for SystemLoanFeeReserve {
 #[inline]
 fn checked_add(a: u32, b: u32) -> Result<u32, FeeReserveError> {
     a.checked_add(b).ok_or(FeeReserveError::Overflow)
-}
-
-#[inline]
-fn checked_assign_add(value: &mut u32, summand: u32) -> Result<(), FeeReserveError> {
-    *value = checked_add(*value, summand)?;
-    Ok(())
 }
 
 fn transmute_u128_as_decimal(a: u128) -> Decimal {
@@ -255,7 +258,6 @@ impl SystemLoanFeeReserve {
 
             // Internal states
             execution_cost_units_committed: 0,
-            execution_cost_units_deferred: 0,
 
             finalization_cost_units_committed: 0,
 
@@ -263,6 +265,8 @@ impl SystemLoanFeeReserve {
             royalty_cost: 0,
 
             storage_cost: 0,
+
+            deferred_cost: 0,
 
             locked_fees: Vec::new(),
         }
@@ -399,8 +403,9 @@ impl SystemLoanFeeReserve {
 
     pub fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         // Apply deferred execution cost
-        self.consume_execution_internal(self.execution_cost_units_deferred)?;
-        self.execution_cost_units_deferred = 0;
+        let amount = min(self.xrd_balance, self.deferred_cost);
+        self.xrd_balance -= amount;
+        self.deferred_cost -= amount;
 
         // Repay owed with balance
         let amount = min(self.xrd_balance, self.xrd_owed);
@@ -408,9 +413,9 @@ impl SystemLoanFeeReserve {
         self.xrd_balance -= amount; // not used afterwards
 
         // Check outstanding loan
-        if self.xrd_owed != 0 {
+        if self.deferred_cost != 0 || self.xrd_owed != 0 {
             return Err(FeeReserveError::LoanRepaymentFailed {
-                xrd_owed: transmute_u128_as_decimal(self.xrd_owed),
+                xrd_owed: transmute_u128_as_decimal(self.deferred_cost + self.xrd_owed),
             });
         }
 
@@ -436,12 +441,32 @@ impl SystemLoanFeeReserve {
 }
 
 impl PreExecutionFeeReserve for SystemLoanFeeReserve {
-    fn consume_deferred(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
+    fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
         if cost_units == 0 {
             return Ok(());
         }
+        let amount = self.effective_execution_cost_unit_price * cost_units as u128;
 
-        checked_assign_add(&mut self.execution_cost_units_deferred, cost_units)?;
+        self.deferred_cost += amount;
+
+        Ok(())
+    }
+
+    fn consume_deferred_storage(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), FeeReserveError> {
+        if size_increase == 0 {
+            return Ok(());
+        }
+        let amount = match storage_type {
+            StorageType::State => self.state_storage_price,
+            StorageType::Archive => self.archive_storage_price,
+        }
+        .saturating_mul(size_increase as u128);
+
+        self.deferred_cost += amount;
 
         Ok(())
     }

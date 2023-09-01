@@ -146,6 +146,7 @@ impl SystemModuleMixer {
                 enable_cost_breakdown: execution_config.enable_cost_breakdown,
                 execution_cost_breakdown: index_map_new(),
                 finalization_cost_breakdown: index_map_new(),
+                storage_cost_breakdown: index_map_new(),
             },
             auth: AuthModule {
                 params: auth_zone_params.clone(),
