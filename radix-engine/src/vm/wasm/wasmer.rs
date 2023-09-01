@@ -167,16 +167,17 @@ impl WasmerModule {
             env: &WasmerInstanceEnv,
             buffer_id: BufferId,
             destination_ptr: u32,
-        ) -> Result<(), RuntimeError> {
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let slice = runtime
-                .buffer_consume(buffer_id)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            write_memory(&instance, destination_ptr, &slice)?;
-
-            Ok(())
+            let result = runtime.buffer_consume(buffer_id);
+            match result {
+                Ok(slice) => {
+                    write_memory(instance, destination_ptr, &slice)?;
+                    Ok(())
+                }
+                Err(e) => Err(e),
+            }
         }
 
         pub fn blueprint_call(
@@ -189,7 +190,7 @@ impl WasmerModule {
             ident_len: u32,
             args_ptr: u32,
             args_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let package_address = read_memory(&instance, package_address_ptr, package_address_len)?;
@@ -197,11 +198,9 @@ impl WasmerModule {
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
-            let buffer = runtime
+            runtime
                 .blueprint_call(package_address, blueprint_name, ident, args)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn address_allocate(
@@ -210,31 +209,27 @@ impl WasmerModule {
             package_address_len: u32,
             blueprint_name_ptr: u32,
             blueprint_name_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
+            runtime
                 .address_allocate(
                     read_memory(&instance, package_address_ptr, package_address_len)?,
                     read_memory(&instance, blueprint_name_ptr, blueprint_name_len)?,
                 )
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn address_get_reservation_address(
             env: &WasmerInstanceEnv,
             node_id_ptr: u32,
             node_id_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
+            runtime
                 .address_get_reservation_address(read_memory(&instance, node_id_ptr, node_id_len)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn object_call(
@@ -245,18 +240,16 @@ impl WasmerModule {
             ident_len: u32,
             args_ptr: u32,
             args_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let receiver = read_memory(&instance, receiver_ptr, receiver_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
-            let buffer = runtime
+            runtime
                 .object_call(receiver, ident, args)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn object_call_module(
@@ -268,18 +261,16 @@ impl WasmerModule {
             ident_len: u32,
             args_ptr: u32,
             args_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let receiver = read_memory(&instance, receiver_ptr, receiver_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
-            let buffer = runtime
+            runtime
                 .object_call_module(receiver, module, ident, args)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn object_call_direct(
@@ -290,18 +281,16 @@ impl WasmerModule {
             ident_len: u32,
             args_ptr: u32,
             args_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let receiver = read_memory(&instance, receiver_ptr, receiver_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
-            let buffer = runtime
+            runtime
                 .object_call_direct(receiver, ident, args)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn object_new(
@@ -310,17 +299,15 @@ impl WasmerModule {
             blueprint_name_len: u32,
             object_states_ptr: u32,
             object_states_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
+            runtime
                 .object_new(
                     read_memory(&instance, blueprint_name_ptr, blueprint_name_len)?,
                     read_memory(&instance, object_states_ptr, object_states_len)?,
                 )
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn object_globalize(
@@ -331,18 +318,16 @@ impl WasmerModule {
             modules_len: u32,
             address_ptr: u32,
             address_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
+            runtime
                 .globalize_object(
                     read_memory(&instance, obj_ptr, obj_len)?,
                     read_memory(&instance, modules_ptr, modules_len)?,
                     read_memory(&instance, address_ptr, address_len)?,
                 )
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn object_instance_of(
@@ -353,46 +338,38 @@ impl WasmerModule {
             package_address_len: u32,
             blueprint_name_ptr: u32,
             blueprint_name_len: u32,
-        ) -> Result<u32, RuntimeError> {
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let rtn = runtime
-                .instance_of(
-                    read_memory(&instance, component_id_ptr, component_id_len)?,
-                    read_memory(&instance, package_address_ptr, package_address_len)?,
-                    read_memory(&instance, blueprint_name_ptr, blueprint_name_len)?,
-                )
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(rtn)
+            runtime.instance_of(
+                read_memory(&instance, component_id_ptr, component_id_len)?,
+                read_memory(&instance, package_address_ptr, package_address_len)?,
+                read_memory(&instance, blueprint_name_ptr, blueprint_name_len)?,
+            )
         }
 
         pub fn object_get_outer_object(
             env: &WasmerInstanceEnv,
             component_id_ptr: u32,
             component_id_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
+            runtime
                 .get_outer_object(read_memory(&instance, component_id_ptr, component_id_len)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn key_value_store_new(
             env: &WasmerInstanceEnv,
             schema_id_ptr: u32,
             schema_id_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
+            runtime
                 .key_value_store_new(read_memory(&instance, schema_id_ptr, schema_id_len)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn key_value_store_open_entry(
@@ -402,18 +379,14 @@ impl WasmerModule {
             key_ptr: u32,
             key_len: u32,
             flags: u32,
-        ) -> Result<u32, RuntimeError> {
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let handle = runtime
-                .key_value_store_open_entry(
-                    read_memory(&instance, node_id_ptr, node_id_len)?,
-                    read_memory(&instance, key_ptr, key_len)?,
-                    flags,
-                )
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(handle)
+            runtime.key_value_store_open_entry(
+                read_memory(&instance, node_id_ptr, node_id_len)?,
+                read_memory(&instance, key_ptr, key_len)?,
+                flags,
+            )
         }
 
         pub fn key_value_store_remove_entry(
@@ -422,30 +395,24 @@ impl WasmerModule {
             node_id_len: u32,
             key_ptr: u32,
             key_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
+            runtime
                 .key_value_store_remove_entry(
                     read_memory(&instance, node_id_ptr, node_id_len)?,
                     read_memory(&instance, key_ptr, key_len)?,
                 )
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn key_value_entry_read(
             env: &WasmerInstanceEnv,
             handle: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
-                .key_value_entry_get(handle)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+            runtime.key_value_entry_get(handle).map(|buffer| buffer.0)
         }
 
         pub fn key_value_entry_write(
@@ -453,39 +420,30 @@ impl WasmerModule {
             handle: u32,
             data_ptr: u32,
             data_len: u32,
-        ) -> Result<(), RuntimeError> {
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let data = read_memory(&instance, data_ptr, data_len)?;
 
-            runtime
-                .key_value_entry_set(handle, data)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(())
+            runtime.key_value_entry_set(handle, data)
         }
 
         pub fn key_value_entry_close(
             env: &WasmerInstanceEnv,
             handle: u32,
-        ) -> Result<(), RuntimeError> {
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            runtime
-                .key_value_entry_release(handle)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(())
+            runtime.key_value_entry_release(handle)
         }
 
-        pub fn field_entry_read(env: &WasmerInstanceEnv, handle: u32) -> Result<u64, RuntimeError> {
+        pub fn field_entry_read(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
-                .field_entry_read(handle)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+            runtime.field_entry_read(handle).map(|buffer| buffer.0)
         }
 
         pub fn field_entry_write(
@@ -493,26 +451,21 @@ impl WasmerModule {
             handle: u32,
             data_ptr: u32,
             data_len: u32,
-        ) -> Result<(), RuntimeError> {
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
             let data = read_memory(&instance, data_ptr, data_len)?;
 
-            runtime
-                .field_entry_write(handle, data)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(())
+            runtime.field_entry_write(handle, data)
         }
 
-        pub fn field_entry_close(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
+        pub fn field_entry_close(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            runtime
-                .field_entry_close(handle)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(())
+            runtime.field_entry_close(handle)
         }
 
         pub fn actor_open_field(
@@ -520,47 +473,37 @@ impl WasmerModule {
             object_handle: u32,
             field: u8,
             flags: u32,
-        ) -> Result<u32, RuntimeError> {
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let handle = runtime
-                .actor_open_field(object_handle, field, flags)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(handle)
+            runtime.actor_open_field(object_handle, field, flags)
         }
 
         pub fn actor_get_node_id(
             env: &WasmerInstanceEnv,
             actor_ref_handle: u32,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
+            runtime
                 .actor_get_node_id(actor_ref_handle)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
-        pub fn actor_get_package_address(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn actor_get_package_address(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
-                .actor_get_package_address()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+            runtime.actor_get_package_address().map(|buffer| buffer.0)
         }
 
-        pub fn actor_get_blueprint_name(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn actor_get_blueprint_name(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
-                .actor_get_blueprint_name()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+            runtime.actor_get_blueprint_name().map(|buffer| buffer.0)
         }
 
         fn actor_emit_event(
@@ -584,86 +527,72 @@ impl WasmerModule {
 
         pub fn costing_get_execution_cost_unit_limit(
             env: &WasmerInstanceEnv,
-        ) -> Result<u32, RuntimeError> {
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            runtime
-                .costing_get_execution_cost_unit_limit()
-                .map_err(|e| RuntimeError::user(Box::new(e)))
+            runtime.costing_get_execution_cost_unit_limit()
         }
 
         pub fn costing_get_execution_cost_unit_price(
             env: &WasmerInstanceEnv,
-        ) -> Result<u64, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
+            runtime
                 .costing_get_execution_cost_unit_price()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         pub fn costing_get_finalization_cost_unit_limit(
             env: &WasmerInstanceEnv,
-        ) -> Result<u32, RuntimeError> {
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            runtime
-                .costing_get_finalization_cost_unit_limit()
-                .map_err(|e| RuntimeError::user(Box::new(e)))
+            runtime.costing_get_finalization_cost_unit_limit()
         }
 
         pub fn costing_get_finalization_cost_unit_price(
             env: &WasmerInstanceEnv,
-        ) -> Result<u64, RuntimeError> {
-            let (_instance, runtime) = grab_runtime!(env);
-
-            let buffer = runtime
-                .costing_get_finalization_cost_unit_price()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
-        }
-
-        pub fn costing_get_tip_percentage(env: &WasmerInstanceEnv) -> Result<u32, RuntimeError> {
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
             runtime
-                .costing_get_tip_percentage()
-                .map_err(|e| RuntimeError::user(Box::new(e)))
+                .costing_get_finalization_cost_unit_price()
+                .map(|buffer| buffer.0)
         }
 
-        pub fn costing_get_fee_balance(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn costing_get_tip_percentage(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
-                .costing_get_fee_balance()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+            runtime.costing_get_tip_percentage()
         }
 
-        pub fn costing_get_usd_price(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn costing_get_fee_balance(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
-                .costing_get_usd_price()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+            runtime.costing_get_fee_balance().map(|buffer| buffer.0)
+        }
 
-            Ok(buffer.0)
+        pub fn costing_get_usd_price(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            runtime.costing_get_usd_price().map(|buffer| buffer.0)
         }
 
         fn consume_wasm_execution_units(
             env: &WasmerInstanceEnv,
             n: u64,
-        ) -> Result<(), RuntimeError> {
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
             // TODO: wasm-instrument uses u64 for cost units. We need to decide if we want to move from u32
             // to u64 as well.
-            runtime
-                .consume_wasm_execution_units(n as u32)
-                .map_err(|e| RuntimeError::user(Box::new(e)))
+            runtime.consume_wasm_execution_units(n as u32)
         }
 
         fn sys_log(
@@ -690,11 +619,9 @@ impl WasmerModule {
 
             let address = read_memory(&instance, address_ptr, address_len)?;
 
-            let buffer = runtime
+            runtime
                 .sys_bech32_encode_address(address)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+                .map(|buffer| buffer.0)
         }
 
         fn sys_panic(
@@ -709,24 +636,20 @@ impl WasmerModule {
             runtime.sys_panic(message)
         }
 
-        pub fn sys_get_transaction_hash(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn sys_get_transaction_hash(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
-                .sys_get_transaction_hash()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+            runtime.sys_get_transaction_hash().map(|buffer| buffer.0)
         }
 
-        pub fn sys_generate_ruid(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+        pub fn sys_generate_ruid(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            let buffer = runtime
-                .sys_generate_ruid()
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
-            Ok(buffer.0)
+            runtime.sys_generate_ruid().map(|buffer| buffer.0)
         }
 
         #[cfg(feature = "radix_engine_tests")]
