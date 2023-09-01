@@ -39,6 +39,7 @@ pub struct TreeChildEntry {
     pub is_leaf: bool,
 }
 
+/// Leaf node.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct TreeLeafNode {
     /// All the remaining nibbles in the _hashed_ payload's key.
@@ -47,6 +48,15 @@ pub struct TreeLeafNode {
     pub value_hash: Hash,
     /// A version at which the [`value_hash`] has most recently changed.
     pub last_hash_change_version: Version,
+}
+
+/// A part of a tree that may become stale (i.e. need eventual pruning).
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+pub enum StaleTreePart {
+    /// A single node to be removed.
+    Node(NodeKey),
+    /// An entire subtree of descendants of a specific node (including itself).
+    Subtree(NodeKey),
 }
 
 /// The "read" part of a physical tree node storage SPI.
@@ -60,9 +70,9 @@ pub trait WriteableTreeStore {
     /// Inserts the node under a new, unique key (i.e. never an update).
     fn insert_node(&mut self, key: NodeKey, node: TreeNode);
 
-    /// Marks the given node for a (potential) future removal by an arbitrary
-    /// external pruning process.
-    fn record_stale_node(&mut self, key: NodeKey);
+    /// Marks the given tree part for a (potential) future removal by an arbitrary external pruning
+    /// process.
+    fn record_stale_tree_part(&mut self, part: StaleTreePart);
 }
 
 /// A complete tree node storage SPI.
@@ -73,7 +83,7 @@ impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TypedInMemoryTreeStore {
     pub tree_nodes: HashMap<NodeKey, TreeNode>,
-    pub stale_key_buffer: Vec<NodeKey>,
+    pub stale_part_buffer: Vec<StaleTreePart>,
 }
 
 impl TypedInMemoryTreeStore {
@@ -81,7 +91,7 @@ impl TypedInMemoryTreeStore {
     pub fn new() -> TypedInMemoryTreeStore {
         TypedInMemoryTreeStore {
             tree_nodes: hash_map_new(),
-            stale_key_buffer: Vec::new(),
+            stale_part_buffer: Vec::new(),
         }
     }
 }
@@ -97,8 +107,8 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
         self.tree_nodes.insert(key, node);
     }
 
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.stale_key_buffer.push(key);
+    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+        self.stale_part_buffer.push(part);
     }
 }
 
@@ -106,7 +116,7 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
 #[derive(Debug, PartialEq, Eq)]
 pub struct SerializedInMemoryTreeStore {
     pub memory: HashMap<Vec<u8>, Vec<u8>>,
-    pub stale_key_buffer: Vec<Vec<u8>>,
+    pub stale_part_buffer: Vec<Vec<u8>>,
 }
 
 impl SerializedInMemoryTreeStore {
@@ -114,7 +124,7 @@ impl SerializedInMemoryTreeStore {
     pub fn new() -> Self {
         Self {
             memory: hash_map_new(),
-            stale_key_buffer: Vec::new(),
+            stale_part_buffer: Vec::new(),
         }
     }
 }
@@ -133,8 +143,8 @@ impl WriteableTreeStore for SerializedInMemoryTreeStore {
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
     }
 
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.stale_key_buffer.push(encode_key(&key));
+    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+        self.stale_part_buffer.push(scrypto_encode(&part).unwrap());
     }
 }
 

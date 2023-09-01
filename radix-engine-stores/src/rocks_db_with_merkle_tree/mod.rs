@@ -130,9 +130,15 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             }
         }
 
+        // TODO(next PR): pass actual deletions here when handling them in the runtime substate store
+        let partition_deletions = index_set_new();
         // derive and put new JMT nodes (also record keys of stale nodes, for later amortized background GC [not implemented here!])
-        let state_hash_tree_update =
-            compute_state_tree_update(self, parent_state_version, database_updates);
+        let state_hash_tree_update = compute_state_tree_update(
+            self,
+            parent_state_version,
+            database_updates,
+            &partition_deletions,
+        );
         for (key, node) in state_hash_tree_update.new_nodes {
             batch.put_cf(
                 self.cf(MERKLE_NODES_CF),
@@ -141,7 +147,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             );
         }
         let encoded_node_keys = state_hash_tree_update
-            .stale_hash_tree_node_keys
+            .stale_parts
             .iter()
             .map(encode_key)
             .collect::<Vec<_>>();

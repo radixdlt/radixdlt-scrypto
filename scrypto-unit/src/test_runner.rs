@@ -12,6 +12,7 @@ use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
 use radix_engine::system::type_info::TypeInfoSubstate;
+use radix_engine::track::StateUpdates;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
     ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
@@ -44,11 +45,13 @@ use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
-    SubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey,
+    ListableSubstateDatabase, SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use radix_engine_stores::hash_tree::{
+    put_at_next_version, BatchChange, HashChange, SubstateHashChange,
+};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto::prelude::*;
 use transaction::prelude::*;
@@ -1353,9 +1356,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            self.database.commit(&commit.state_updates.database_updates);
+            let StateUpdates {
+                database_updates,
+                partition_deletions,
+                ..
+            } = &commit.state_updates;
+            self.database.commit(database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
-                state_hash_support.update_with(&commit.state_updates.database_updates);
+                state_hash_support.update_with(database_updates, partition_deletions);
             }
 
             self.collected_events
@@ -2304,8 +2312,18 @@ impl StateHashSupport {
         }
     }
 
-    pub fn update_with(&mut self, db_updates: &DatabaseUpdates) {
+    pub fn update_with(
+        &mut self,
+        db_updates: &DatabaseUpdates,
+        partition_deletions: &IndexSet<DbPartitionKey>,
+    ) {
         let mut hash_changes = Vec::new();
+        // TODO(during review): this assumes that partition deletions happen before other changes - rightfully?
+        for db_partition_key in partition_deletions {
+            hash_changes.push(HashChange::Batch(BatchChange::DeletePartition(
+                db_partition_key.clone(),
+            )));
+        }
         for (db_partition_key, partition_update) in db_updates {
             for (db_sort_key, db_update) in partition_update {
                 let hash_change = SubstateHashChange::new(
@@ -2315,10 +2333,9 @@ impl StateHashSupport {
                         DatabaseUpdate::Delete => None,
                     },
                 );
-                hash_changes.push(hash_change);
+                hash_changes.push(HashChange::Single(hash_change));
             }
         }
-
         self.current_hash = put_at_next_version(
             &mut self.tree_store,
             Some(self.current_version).filter(|version| *version > 0),

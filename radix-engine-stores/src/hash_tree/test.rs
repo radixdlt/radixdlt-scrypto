@@ -1,10 +1,11 @@
 use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use crate::hash_tree::jellyfish::JellyfishMerkleTree;
 use crate::hash_tree::tree_store::{
-    SerializedInMemoryTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
-    TypedInMemoryTreeStore,
+    SerializedInMemoryTreeStore, StaleTreePart, TreeChildEntry, TreeInternalNode, TreeLeafNode,
+    TreeNode, TypedInMemoryTreeStore,
 };
 use crate::hash_tree::types::{LeafKey, NodeKey};
-use crate::hash_tree::{put_at_next_version, SubstateHashChange};
+use crate::hash_tree::{put_at_next_version, BatchChange, HashChange, SubstateHashChange};
 use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -208,35 +209,35 @@ fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
         &mut store,
         None,
         vec![
-            SubstateHashChange::new(
+            HashChange::Single(SubstateHashChange::new(
                 (db_partition_key(vec![1, 3, 3, 7], 99), DbSortKey(vec![253])),
                 Some(Hash([1; Hash::LENGTH])),
-            ),
-            SubstateHashChange::new(
+            )),
+            HashChange::Single(SubstateHashChange::new(
                 (db_partition_key(vec![1, 3, 3, 7], 99), DbSortKey(vec![66])),
                 Some(Hash([2; Hash::LENGTH])),
-            ),
-            SubstateHashChange::new(
+            )),
+            HashChange::Single(SubstateHashChange::new(
                 (
                     db_partition_key(vec![123, 12, 1, 0], 88),
                     DbSortKey(vec![6, 6, 6]),
                 ),
                 Some(Hash([3; Hash::LENGTH])),
-            ),
-            SubstateHashChange::new(
+            )),
+            HashChange::Single(SubstateHashChange::new(
                 (
                     db_partition_key(vec![123, 12, 1, 0], 88),
                     DbSortKey(vec![6, 6, 7]),
                 ),
                 Some(Hash([4; Hash::LENGTH])),
-            ),
-            SubstateHashChange::new(
+            )),
+            HashChange::Single(SubstateHashChange::new(
                 (
                     db_partition_key(vec![123, 12, 1, 0], 66),
                     DbSortKey(vec![1, 2, 3, 4]),
                 ),
                 Some(Hash([5; Hash::LENGTH])),
-            ),
+            )),
         ],
     );
 
@@ -330,13 +331,56 @@ fn records_stale_tree_node_keys() {
     put_at_next_version(&mut store, Some(1), vec![change(3, 2, 9, Some(70))]);
     put_at_next_version(&mut store, Some(2), vec![change(3, 2, 9, Some(80))]);
     let stale_versions = store
-        .stale_key_buffer
+        .stale_part_buffer
         .iter()
-        .map(|key| key.version())
+        .map(|stale_part| {
+            let StaleTreePart::Node(key) = stale_part else {
+                panic!("expected only single node removals");
+            };
+            key.version()
+        })
         .unique()
         .sorted()
         .collect::<Vec<Version>>();
     assert_eq!(stale_versions, vec![1, 2]);
+}
+
+#[test]
+fn records_stale_subtree_root_key_when_partition_removed() {
+    let mut store = TypedInMemoryTreeStore::new();
+    put_at_next_version(
+        &mut store,
+        None,
+        vec![
+            change(4, 7, 6, Some(36)),
+            change(4, 7, 7, Some(37)),
+            change(4, 7, 8, Some(38)),
+        ],
+    );
+    put_at_next_version(&mut store, Some(1), vec![delete_partition(4, 7)]);
+    assert_eq!(
+        store.stale_part_buffer,
+        vec![
+            // The entire subtree starting at the root of substate-tier JMT of partition `4:7`:
+            StaleTreePart::Subtree(NodeKey::new(
+                1,
+                NibblePath::new_even(
+                    [
+                        vec![4; Hash::LENGTH],
+                        vec![TIER_SEPARATOR, 7, TIER_SEPARATOR]
+                    ]
+                    .concat()
+                )
+            )),
+            // Regular single-node stale nodes up to the root, caused by hash update:
+            StaleTreePart::Node(NodeKey::new(
+                1,
+                NibblePath::new_even([vec![4; Hash::LENGTH], vec![TIER_SEPARATOR]].concat())
+            )),
+            StaleTreePart::Node(NodeKey::new(1, NibblePath::new_even(vec![]))),
+            // Importantly: individual 3x deletes of substate-tier nodes are not recorded
+        ]
+    );
 }
 
 #[test]
@@ -407,14 +451,21 @@ fn change(
     partition_num: u8,
     sort_key_seed: u8,
     value_hash_seed: Option<u8>,
-) -> SubstateHashChange {
-    SubstateHashChange::new(
+) -> HashChange {
+    HashChange::Single(SubstateHashChange::new(
         (
             db_partition_key(vec![node_key_seed; Hash::LENGTH], partition_num),
             DbSortKey(vec![sort_key_seed; sort_key_seed as usize]),
         ),
         value_hash_seed.map(|value_seed| value_hash(value_seed)),
-    )
+    ))
+}
+
+fn delete_partition(node_key_seed: u8, partition_num: u8) -> HashChange {
+    HashChange::Batch(BatchChange::DeletePartition(db_partition_key(
+        vec![node_key_seed; Hash::LENGTH],
+        partition_num,
+    )))
 }
 
 fn value_hash(value_seed: u8) -> Hash {
@@ -458,19 +509,31 @@ enum Tier {
 const TIER_SEPARATOR: u8 = b'_';
 
 fn get_leafs_of_tier(store: &TypedInMemoryTreeStore, tier: Tier) -> HashMap<LeafKey, Hash> {
-    let separator_count = tier as usize;
+    let stale_node_keys = store
+        .stale_part_buffer
+        .iter()
+        .cloned()
+        .flat_map(|stale_part| match stale_part {
+            StaleTreePart::Node(key) => vec![key],
+            StaleTreePart::Subtree(key) => JellyfishMerkleTree::new(store)
+                .get_all_nodes_referenced(key)
+                .unwrap(),
+        })
+        .collect::<HashSet<_>>();
+    let expected_separator_count = tier as usize;
     store
         .tree_nodes
         .iter()
         .filter(|(key, _)| {
-            key.nibble_path()
+            let separator_count = key
+                .nibble_path()
                 .bytes()
                 .iter()
                 .filter(|byte| **byte == TIER_SEPARATOR)
-                .count()
-                == separator_count
+                .count();
+            separator_count == expected_separator_count
         })
-        .filter(|(key, _)| !store.stale_key_buffer.contains(key))
+        .filter(|(key, _)| !stale_node_keys.contains(key))
         .filter_map(|(key, node)| match node {
             TreeNode::Leaf(leaf) => {
                 Some((leaf_key(key, &leaf.key_suffix), leaf.value_hash.clone()))
