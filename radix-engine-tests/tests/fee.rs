@@ -469,7 +469,6 @@ fn test_contingent_fee_accounting_failure() {
         .get(&XRD)
         .cloned()
         .unwrap();
-    let summary = &receipt.fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
