@@ -3,7 +3,8 @@ use crate::hash_tree::tree_store::{
 };
 use crate::hash_tree::{put_at_next_version, BatchChange, HashChange, SubstateHashChange};
 use radix_engine_common::crypto::hash;
-use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
+use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, DbPartitionKey};
+use utils::prelude::IndexSet;
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,

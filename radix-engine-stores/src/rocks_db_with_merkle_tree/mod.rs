@@ -149,7 +149,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         let encoded_node_keys = state_hash_tree_update
             .stale_parts
             .iter()
-            .map(encode_key)
+            .map(|stale_part| scrypto_encode(stale_part).unwrap())
             .collect::<Vec<_>>();
         batch.put_cf(
             self.cf(STALE_MERKLE_NODE_KEYS_CF),
