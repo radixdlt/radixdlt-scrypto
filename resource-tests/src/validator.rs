@@ -1,4 +1,4 @@
-use crate::TestFuzzer;
+use crate::{TestFuzzer, ValidatorMeta};
 use radix_engine::types::FromRepr;
 use radix_engine_common::constants::XRD;
 use radix_engine_common::manifest_args;
@@ -15,13 +15,6 @@ use radix_engine_interface::data::manifest::ManifestArgs;
 use transaction::builder::ManifestBuilder;
 use utils::btreeset;
 
-#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-pub struct ValidatorMeta {
-    pub account_address: ComponentAddress,
-    pub validator_address: ComponentAddress,
-    pub stake_unit_resource: ResourceAddress,
-    pub claim_resource: ResourceAddress,
-}
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]

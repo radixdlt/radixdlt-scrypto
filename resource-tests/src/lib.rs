@@ -17,8 +17,9 @@ use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
 use crate::consensus_manager::ConsensusManagerFuzzAction;
-use crate::validator::{ValidatorFuzzAction, ValidatorMeta};
+use crate::validator::{ValidatorFuzzAction};
 use rayon::iter::ParallelIterator;
+use crate::one_pool::OnePoolFuzzAction;
 
 pub struct TestFuzzer {
     rng: ChaCha8Rng,
@@ -114,6 +115,7 @@ impl TestFuzzer {
 pub enum FuzzAction {
     ConsensusManager(ConsensusManagerFuzzAction),
     Validator(ValidatorFuzzAction),
+    OneResourcePool(OnePoolFuzzAction),
 }
 
 
@@ -124,11 +126,20 @@ impl FuzzAction {
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
         validators: &Vec<ValidatorMeta>,
+        one_resource_pool: &OnePoolMeta,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
             FuzzAction::ConsensusManager(action) => action.add_to_manifest(uuid, builder, fuzzer, validators, account_address),
             FuzzAction::Validator(action) => action.add_to_manifest(uuid, builder, fuzzer, validators, account_address),
+            FuzzAction::OneResourcePool(action) => {
+                action.add_to_manifest(builder, fuzzer,
+                                       account_address,
+                                       one_resource_pool.pool_address,
+                                       one_resource_pool.pool_unit_resource_address,
+                                       one_resource_pool.resource_address,
+                )
+            }
         }
     }
 }
@@ -157,10 +168,26 @@ pub trait TxnFuzzer {
     fn next_action(fuzzer: &mut TestFuzzer) -> FuzzAction;
 }
 
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct ValidatorMeta {
+    pub account_address: ComponentAddress,
+    pub validator_address: ComponentAddress,
+    pub stake_unit_resource: ResourceAddress,
+    pub claim_resource: ResourceAddress,
+}
+
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct OnePoolMeta {
+    pub pool_address: ComponentAddress,
+    pub pool_unit_resource_address: ResourceAddress,
+    pub resource_address: ResourceAddress,
+}
+
 pub struct FuzzTest<T: TxnFuzzer> {
-    fuzzer: TestFuzzer,
     test_runner: DefaultTestRunner,
+    fuzzer: TestFuzzer,
     validators: Vec<ValidatorMeta>,
+    one_resource_pool: OnePoolMeta,
     account_address: ComponentAddress,
     account_public_key: PublicKey,
     cur_round: Round,
@@ -169,18 +196,19 @@ pub struct FuzzTest<T: TxnFuzzer> {
 
 impl<T: TxnFuzzer> FuzzTest<T> {
     fn new(seed: u64) -> Self {
-        let fuzzer = TestFuzzer::new(seed);
+        let mut fuzzer = TestFuzzer::new(seed);
         let initial_epoch = Epoch::of(5);
         let genesis = CustomGenesis::default_with_xrd_amount(
             Decimal::from(24_000_000_000u64),
             initial_epoch,
             CustomGenesis::default_consensus_manager_config(),
         );
-        let (test_runner, validator_set) = TestRunnerBuilder::new()
+        let (mut test_runner, validator_set) = TestRunnerBuilder::new()
             .with_custom_genesis(genesis)
             .build_and_get_epoch();
         let public_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         let account = ComponentAddress::virtual_account_from_public_key(&public_key);
+        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
         let validator_address = validator_set
             .validators_by_stake_desc
@@ -193,6 +221,16 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         let stake_unit_resource = validator_substate.stake_unit_resource;
         let claim_resource = validator_substate.claim_nft;
 
+        let one_pool_resource = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+            OwnerRole::None,
+            None,
+            fuzzer.next(0u8..=18u8),
+            account,
+        );
+
+        let (pool_address, pool_unit_resource_address) = test_runner
+            .create_one_resource_pool(one_pool_resource, rule!(require(virtual_signature_badge)));
+
         Self {
             fuzzer,
             test_runner,
@@ -202,6 +240,9 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 claim_resource,
                 account_address: account,
             }],
+            one_resource_pool: OnePoolMeta {
+                pool_address, pool_unit_resource_address, resource_address: one_pool_resource
+            },
             account_address: account,
             account_public_key: public_key.into(),
             cur_round: Round::of(1u64),
@@ -257,6 +298,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     builder,
                     &mut self.fuzzer,
                     &self.validators,
+                    &self.one_resource_pool,
                     self.account_address,
                 );
 
@@ -294,7 +336,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 FuzzTxnResult::from_outcome(&result.outcome, trivial)
             };
 
-            // Execute a consensus round every 4 transactions
+            // Execute a consensus round around every 4 transactions
             if self.fuzzer.next(0u8..8u8) == 0u8 {
                 let rounds = self.fuzzer.next(1u64..10u64);
                 self.consensus_round(rounds);
