@@ -96,6 +96,7 @@ pub fn read_memory(instance: &Instance, ptr: u32, len: u32) -> Result<Vec<u8>, W
     let memory_slice = unsafe { memory.data_unchecked() };
     let memory_size = memory_slice.len();
     if ptr > memory_size || ptr + len > memory_size {
+        println!("read memory errr!!");
         return Err(WasmRuntimeError::MemoryAccessError);
     }
 
@@ -728,6 +729,34 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
+        #[cfg(feature = "radix_engine_tests")]
+        pub fn host_read_memory(
+            env: &WasmerInstanceEnv,
+            memory_ptr: u32,
+            data_len: u32,
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
+            let (instance, _runtime) = grab_runtime!(env);
+
+            let _ = read_memory(&instance, memory_ptr, data_len)?;
+
+            Ok(())
+        }
+
+        #[cfg(feature = "radix_engine_tests")]
+        pub fn host_write_memory(
+            env: &WasmerInstanceEnv,
+            memory_ptr: u32,
+            data_len: u32,
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
+            // - generate some random data of of given length data_len
+            // - attempt to write this data into given memory offset memory_ptr
+            let (instance, _runtime) = grab_runtime!(env);
+            let data = vec![!0u8; data_len as usize];
+
+            let _ = write_memory(&instance, memory_ptr, &data)?;
+
+            Ok(())
+        }
         // native functions ends
 
         // env
@@ -777,6 +806,10 @@ impl WasmerModule {
                 SYS_GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_get_transaction_hash),
                 SYS_GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_generate_ruid),
                 BUFFER_CONSUME_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), buffer_consume),
+                #[cfg(feature = "radix_engine_tests")]
+                "test_host_read_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_read_memory),
+                #[cfg(feature = "radix_engine_tests")]
+                "test_host_write_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_write_memory),
             }
         };
 
