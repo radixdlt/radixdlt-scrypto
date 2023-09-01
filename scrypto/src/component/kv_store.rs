@@ -57,22 +57,13 @@ impl<
         let raw_bytes = ScryptoVmV1Api::kv_entry_read(handle);
 
         // Decode and create Ref
-        // [0] SBOR payload prefix
-        // [1] Value kind: ENUM
-        // [2] Enum variant discriminator: SOME, NONE
-        // [3] Enum variant field size: 1 if SOME
-        match raw_bytes[2] {
-            OPTION_VARIANT_SOME => Some(KeyValueEntryRef::new(
-                handle,
-                VecDecoder::new(&raw_bytes[4..], usize::MAX) // depth is checked by system
-                    .decode()
-                    .unwrap(),
-            )),
-            OPTION_VARIANT_NONE => {
+        let substate: Option<V> = scrypto_decode(&raw_bytes).unwrap();
+        match substate {
+            Some(v) => Some(KeyValueEntryRef::new(handle, v)),
+            None => {
                 ScryptoVmV1Api::kv_entry_close(handle);
                 None
             }
-            _ => unreachable!(),
         }
     }
 
@@ -86,22 +77,13 @@ impl<
         let raw_bytes = ScryptoVmV1Api::kv_entry_read(handle);
 
         // Decode and create RefMut
-        // [0] SBOR payload prefix
-        // [1] Value kind: ENUM
-        // [2] Enum variant discriminator: SOME, NONE
-        // [3] Enum variant field size: 1 if SOME
-        match raw_bytes[2] {
-            OPTION_VARIANT_SOME => Some(KeyValueEntryRefMut::new(
-                handle,
-                VecDecoder::new(&raw_bytes[4..], usize::MAX) // depth is checked by system
-                    .decode()
-                    .unwrap(),
-            )),
-            OPTION_VARIANT_NONE => {
+        let substate: Option<V> = scrypto_decode(&raw_bytes).unwrap();
+        match substate {
+            Some(v) => Some(KeyValueEntryRefMut::new(handle, v)),
+            None => {
                 ScryptoVmV1Api::kv_entry_close(handle);
                 None
             }
-            _ => unreachable!(),
         }
     }
 
