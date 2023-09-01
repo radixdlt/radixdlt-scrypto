@@ -447,6 +447,8 @@ impl SystemLoanFeeReserve {
 
     #[inline]
     pub fn fully_repaid(&self) -> bool {
+        // The xrd_owed state is not reset before all deferred costs are applied.
+        // Thus, not checking the deferred balance
         self.xrd_owed == 0
     }
 }

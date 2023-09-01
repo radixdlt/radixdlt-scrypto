@@ -713,9 +713,9 @@ where
                 Ok(..) => {
                     TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
                 }
-                Err(error) => {
-                    TransactionResultType::Reject(RejectionReason::ErrorBeforeFeeLoanRepaid(error))
-                }
+                Err(error) => TransactionResultType::Reject(
+                    RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(error),
+                ),
             };
         }
 

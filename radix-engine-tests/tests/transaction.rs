@@ -34,7 +34,7 @@ fn test_manifest_with_non_existent_resource() {
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RejectionReason::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+            RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError::KernelError(
                 KernelError::InvalidReference(..)
             ))
         )
