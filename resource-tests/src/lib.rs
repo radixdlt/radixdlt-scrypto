@@ -22,10 +22,17 @@ use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
-use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
+use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
 use crate::multi_pool::MultiPoolFuzzAction;
+use crate::resource::{BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID, FungibleResourceFuzzGetBucketAction, ResourceFuzzUseBucketAction, VaultTestInvoke};
+use radix_engine_interface::prelude::node_modules::auth::RoleDefinition;
+use radix_engine::prelude::node_modules::ModuleConfig;
+use radix_engine::vm::OverridePackageCode;
+use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use scrypto::prelude::ToRoleEntry;
 
 pub struct TestFuzzer {
     rng: ChaCha8Rng,
@@ -123,6 +130,8 @@ pub enum FuzzAction {
     OneResourcePool(OnePoolFuzzAction),
     TwoResourcePool(TwoPoolFuzzAction),
     MultiResourcePool(MultiPoolFuzzAction),
+    FungibleGetBucket(FungibleResourceFuzzGetBucketAction),
+    UseBucket(ResourceFuzzUseBucketAction),
 }
 
 impl FuzzAction {
@@ -135,6 +144,7 @@ impl FuzzAction {
         one_resource_pool: &OnePoolMeta,
         two_resource_pool: &TwoPoolMeta,
         multi_resource_pool: &MultiPoolMeta,
+        vault_component: &VaultComponentMeta,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
@@ -152,6 +162,12 @@ impl FuzzAction {
             }
             FuzzAction::MultiResourcePool(action) => {
                 action.add_to_manifest(builder, fuzzer, account_address, multi_resource_pool)
+            }
+            FuzzAction::FungibleGetBucket(action) => {
+                action.add_to_manifest(builder, fuzzer, vault_component)
+            }
+            FuzzAction::UseBucket(action) => {
+                action.add_to_manifest(builder, fuzzer, vault_component)
             }
         }
     }
@@ -213,13 +229,21 @@ pub struct MultiPoolMeta {
     pub pool_resources: Vec<ResourceAddress>,
 }
 
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct VaultComponentMeta {
+    pub component_address: ComponentAddress,
+    pub resource_address: ResourceAddress,
+    pub vault_address: InternalAddress,
+}
+
 pub struct FuzzTest<T: TxnFuzzer> {
-    test_runner: DefaultTestRunner,
+    test_runner: TestRunner<OverridePackageCode<VaultTestInvoke>, InMemorySubstateDatabase>,
     fuzzer: TestFuzzer,
     validators: Vec<ValidatorMeta>,
     one_resource_pool: OnePoolMeta,
     two_resource_pool: TwoPoolMeta,
     multi_resource_pool: MultiPoolMeta,
+    vault_component: VaultComponentMeta,
     account_address: ComponentAddress,
     account_public_key: PublicKey,
     cur_round: Round,
@@ -235,8 +259,14 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             initial_epoch,
             CustomGenesis::default_consensus_manager_config(),
         );
+
+
         let (mut test_runner, validator_set) = TestRunnerBuilder::new()
             .with_custom_genesis(genesis)
+            .with_custom_extension(OverridePackageCode::new(
+                CUSTOM_PACKAGE_CODE_ID,
+                VaultTestInvoke,
+            ))
             .build_and_get_epoch();
         let public_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         let account = ComponentAddress::virtual_account_from_public_key(&public_key);
@@ -367,6 +397,66 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             }
         };
 
+        let vault_component = {
+            let package_address = test_runner.publish_native_package(
+                CUSTOM_PACKAGE_CODE_ID,
+                PackageDefinition::new_with_field_test_definition(
+                    BLUEPRINT_NAME,
+                    vec![("call_vault", "call_vault", true), ("new", "new", false)],
+                ),
+            );
+
+            let receipt = test_runner.execute_manifest_ignoring_fee(
+                ManifestBuilder::new()
+                    .create_fungible_resource(
+                        OwnerRole::None,
+                        true,
+                        18u8,
+                        FungibleResourceRoles {
+                            mint_roles: mint_roles! {
+                            minter => rule!(allow_all);
+                            minter_updater => rule!(deny_all);
+                        },
+                            burn_roles: burn_roles! {
+                            burner => rule!(allow_all);
+                            burner_updater => rule!(deny_all);
+                        },
+                            recall_roles: recall_roles! {
+                            recaller => rule!(allow_all);
+                            recaller_updater => rule!(deny_all);
+                        },
+                            ..Default::default()
+                        },
+                        metadata!(),
+                        None,
+                    )
+                    .build(),
+                vec![],
+            );
+            let resource_address = receipt.expect_commit_success().new_resource_addresses()[0];
+
+            let receipt = test_runner.execute_manifest_ignoring_fee(
+                ManifestBuilder::new()
+                    .call_function(
+                        package_address,
+                        BLUEPRINT_NAME,
+                        "new",
+                        manifest_args!(resource_address),
+                    )
+                    .build(),
+                vec![],
+            );
+            let component_address = receipt.expect_commit_success().new_component_addresses()[0];
+
+            let vault_id = test_runner.get_component_vaults(component_address, resource_address)[0];
+
+            VaultComponentMeta {
+                component_address,
+                resource_address,
+                vault_address: InternalAddress::try_from(vault_id).unwrap(),
+            }
+        };
+
         Self {
             fuzzer,
             test_runner,
@@ -379,6 +469,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             one_resource_pool,
             two_resource_pool,
             multi_resource_pool,
+            vault_component,
             account_address: account,
             account_public_key: public_key.into(),
             cur_round: Round::of(1u64),
@@ -437,6 +528,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     &self.one_resource_pool,
                     &self.two_resource_pool,
                     &self.multi_resource_pool,
+                    &self.vault_component,
                     self.account_address,
                 );
 

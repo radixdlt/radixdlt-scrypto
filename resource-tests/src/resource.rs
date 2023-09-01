@@ -1,4 +1,4 @@
-use crate::TestFuzzer;
+use crate::{TestFuzzer, VaultComponentMeta};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::NativeVault;
@@ -97,15 +97,13 @@ impl FungibleResourceFuzzGetBucketAction {
         &self,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
-        component_address: ComponentAddress,
-        resource_address: ResourceAddress,
-        vault_id: InternalAddress,
+        vault_meta: &VaultComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             FungibleResourceFuzzGetBucketAction::Mint => {
                 let amount = fuzzer.next_amount();
                 let builder = builder.call_method(
-                    resource_address,
+                    vault_meta.resource_address,
                     FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                     FungibleResourceManagerMintInput { amount },
                 );
@@ -114,7 +112,7 @@ impl FungibleResourceFuzzGetBucketAction {
             FungibleResourceFuzzGetBucketAction::VaultTake => {
                 let amount = fuzzer.next_amount();
                 let builder = builder.call_method(
-                    component_address,
+                    vault_meta.component_address,
                     "call_vault",
                     manifest_args!(VAULT_TAKE_IDENT, (amount,)),
                 );
@@ -124,7 +122,7 @@ impl FungibleResourceFuzzGetBucketAction {
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
                 let builder = builder.call_method(
-                    component_address,
+                    vault_meta.component_address,
                     "call_vault",
                     manifest_args!(VAULT_TAKE_ADVANCED_IDENT, (amount, withdraw_strategy)),
                 );
@@ -132,7 +130,7 @@ impl FungibleResourceFuzzGetBucketAction {
             }
             FungibleResourceFuzzGetBucketAction::VaultRecall => {
                 let amount = fuzzer.next_amount();
-                let builder = builder.recall(vault_id, amount);
+                let builder = builder.recall(vault_meta.vault_address, amount);
                 (builder, amount.is_zero())
             }
         }
@@ -151,14 +149,13 @@ impl ResourceFuzzUseBucketAction {
         &self,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
-        resource_address: ResourceAddress,
-        component_address: ComponentAddress,
+        vault_meta: &VaultComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             ResourceFuzzUseBucketAction::Burn => {
                 let amount = fuzzer.next_amount();
                 let builder = builder
-                    .take_from_worktop(resource_address, amount, "bucket")
+                    .take_from_worktop(vault_meta.resource_address, amount, "bucket")
                     .burn_resource("bucket");
 
                 (builder, amount.is_zero())
@@ -166,10 +163,10 @@ impl ResourceFuzzUseBucketAction {
             ResourceFuzzUseBucketAction::VaultPut => {
                 let amount = fuzzer.next_amount();
                 let builder = builder
-                    .take_from_worktop(resource_address, amount, "bucket")
+                    .take_from_worktop(vault_meta.resource_address, amount, "bucket")
                     .with_bucket("bucket", |builder, bucket| {
                         builder.call_method(
-                            component_address,
+                            vault_meta.component_address,
                             "call_vault",
                             manifest_args!(VAULT_PUT_IDENT, (bucket,)),
                         )
