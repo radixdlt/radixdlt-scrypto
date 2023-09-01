@@ -1,5 +1,4 @@
 use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
-use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::pool::*;
 use rayon::iter::IntoParallelIterator;

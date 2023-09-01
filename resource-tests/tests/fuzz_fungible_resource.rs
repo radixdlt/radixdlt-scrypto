@@ -1,4 +1,3 @@
-use native_sdk::resource::NativeVault;
 use radix_engine::prelude::node_modules::auth::RoleDefinition;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode};
@@ -142,7 +141,7 @@ impl FungibleResourceFuzzTest {
             let builder = ManifestBuilder::new();
             let get_bucket_action =
                 FungibleResourceFuzzGetBucketAction::from_repr(self.fuzzer.next_u8(4u8)).unwrap();
-            let (mut builder, mut trivial) = get_bucket_action.add_to_manifest(
+            let (builder, mut trivial) = get_bucket_action.add_to_manifest(
                 builder,
                 &mut self.fuzzer,
                 self.component_address,
@@ -152,7 +151,7 @@ impl FungibleResourceFuzzTest {
 
             let use_action =
                 ResourceFuzzUseBucketAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
-            let (mut builder, end_trivial) = use_action.add_to_manifest(
+            let (builder, end_trivial) = use_action.add_to_manifest(
                 builder,
                 &mut self.fuzzer,
                 self.resource_address,

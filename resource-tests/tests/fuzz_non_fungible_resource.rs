@@ -1,13 +1,6 @@
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::NativeVault;
-use radix_engine::errors::RuntimeError;
-use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::prelude::node_modules::auth::RoleDefinition;
-use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmInvoke};
+use radix_engine::vm::OverridePackageCode;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::node_modules::ModuleConfig;
@@ -28,7 +21,7 @@ fn fuzz_non_fungible_resource() {
         BTreeMap::new();
 
     let results: Vec<BTreeMap<NonFungibleResourceFuzzTxn, BTreeMap<FuzzTxnResult, u64>>> = (1u64
-        ..64u64)
+        ..=64u64)
         .into_par_iter()
         .map(|seed| {
             let mut resource_fuzz_test = ResourceFuzzTest::new(seed);
@@ -150,7 +143,7 @@ impl ResourceFuzzTest {
             let get_bucket_action =
                 NonFungibleResourceFuzzGetBucketAction::from_repr(self.fuzzer.next_u8(6u8))
                     .unwrap();
-            let (mut builder, mut trivial) = get_bucket_action.add_to_manifest(
+            let (builder, mut trivial) = get_bucket_action.add_to_manifest(
                 builder,
                 &mut self.fuzzer,
                 self.component_address,
@@ -160,7 +153,7 @@ impl ResourceFuzzTest {
 
             let use_bucket_action =
                 ResourceFuzzUseBucketAction::from_repr(self.fuzzer.next_u8(2u8)).unwrap();
-            let (mut builder, mut end_trivial) = use_bucket_action.add_to_manifest(
+            let (builder, end_trivial) = use_bucket_action.add_to_manifest(
                 builder,
                 &mut self.fuzzer,
                 self.resource_address,

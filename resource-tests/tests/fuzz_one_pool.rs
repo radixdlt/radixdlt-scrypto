@@ -1,6 +1,4 @@
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt};
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::pool::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use resource_tests::one_pool::OnePoolFuzzAction;

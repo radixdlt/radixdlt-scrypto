@@ -9,7 +9,6 @@ use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolGetRedemptionValueManifestInput,
     MultiResourcePoolProtectedDepositManifestInput,
     MultiResourcePoolProtectedWithdrawManifestInput, MultiResourcePoolRedeemManifestInput,
-    OneResourcePoolContributeManifestInput, OneResourcePoolGetRedemptionValueManifestInput,
     MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
     MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT, MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
     MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, MULTI_RESOURCE_POOL_REDEEM_IDENT,

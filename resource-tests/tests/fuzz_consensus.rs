@@ -1,5 +1,4 @@
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
-use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::*;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
