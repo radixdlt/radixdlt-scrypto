@@ -57,13 +57,10 @@ impl<
         let raw_bytes = ScryptoVmV1Api::kv_entry_read(handle);
 
         // Decode and create Ref
-        let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
+        let substate: Option<V> = scrypto_decode(&raw_bytes).unwrap();
         match substate {
-            Option::Some(value) => Some(KeyValueEntryRef::new(
-                handle,
-                scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
-            )),
-            Option::None => {
+            Some(v) => Some(KeyValueEntryRef::new(handle, v)),
+            None => {
                 ScryptoVmV1Api::kv_entry_close(handle);
                 None
             }
@@ -80,13 +77,10 @@ impl<
         let raw_bytes = ScryptoVmV1Api::kv_entry_read(handle);
 
         // Decode and create RefMut
-        let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
+        let substate: Option<V> = scrypto_decode(&raw_bytes).unwrap();
         match substate {
-            Option::Some(value) => {
-                let rust_value = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
-                Some(KeyValueEntryRefMut::new(handle, rust_value))
-            }
-            Option::None => {
+            Some(v) => Some(KeyValueEntryRefMut::new(handle, v)),
+            None => {
                 ScryptoVmV1Api::kv_entry_close(handle);
                 None
             }

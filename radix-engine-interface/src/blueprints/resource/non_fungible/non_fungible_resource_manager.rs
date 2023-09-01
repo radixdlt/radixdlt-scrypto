@@ -112,6 +112,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
+/// For manifest
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
@@ -123,6 +124,19 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
+}
+
+/// For typed value, to skip any codec
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerCreateWithInitialSupplyTypedInput<T> {
+    pub owner_role: OwnerRole,
+    pub id_type: NonFungibleIdType,
+    pub track_total_supply: bool,
+    pub non_fungible_schema: NonFungibleDataSchema,
+    pub entries: IndexMap<NonFungibleLocalId, (T,)>,
+    pub resource_roles: NonFungibleResourceRoles,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<GlobalAddressReservation>,
 }
 
 pub type NonFungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddress, Bucket);
@@ -142,6 +156,32 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
+/// For manifest
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
+    pub owner_role: OwnerRole,
+    pub track_total_supply: bool,
+    pub non_fungible_schema: NonFungibleDataSchema,
+    pub entries: Vec<(ManifestValue,)>,
+    pub resource_roles: NonFungibleResourceRoles,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<ManifestAddressReservation>,
+}
+
+/// For typed value, to skip any codec
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyTypedInput<T> {
+    pub owner_role: OwnerRole,
+    pub track_total_supply: bool,
+    pub non_fungible_schema: NonFungibleDataSchema,
+    pub entries: Vec<(T,)>,
+    pub resource_roles: NonFungibleResourceRoles,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<GlobalAddressReservation>,
+}
+
 impl Default for NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     fn default() -> Self {
         Self {
@@ -156,18 +196,6 @@ impl Default for NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
-pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
-    pub owner_role: OwnerRole,
-    pub track_total_supply: bool,
-    pub non_fungible_schema: NonFungibleDataSchema,
-    pub entries: Vec<(ManifestValue,)>,
-    pub resource_roles: NonFungibleResourceRoles,
-    pub metadata: ModuleConfig<MetadataInit>,
-    pub address_reservation: Option<ManifestAddressReservation>,
-}
-
 pub type NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT: &str = "update_non_fungible_data";
@@ -179,12 +207,21 @@ pub struct NonFungibleResourceManagerUpdateDataInput {
     pub data: ScryptoValue,
 }
 
+/// For manifest
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerUpdateDataManifestInput {
     pub id: NonFungibleLocalId,
     pub field_name: String,
     pub data: ManifestValue,
+}
+
+/// For typed value, to skip any codec
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerUpdateDataTypedInput<T> {
+    pub id: NonFungibleLocalId,
+    pub field_name: String,
+    pub data: T,
 }
 
 pub type NonFungibleResourceManagerUpdateDataOutput = ();
@@ -209,30 +246,44 @@ pub type NonFungibleResourceManagerGetNonFungibleOutput = ScryptoValue;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint";
 
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerMintInput {
+    pub entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+}
+
+/// For manifest
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintManifestInput {
     pub entries: IndexMap<NonFungibleLocalId, (ManifestValue,)>,
 }
 
+/// For typed value, to skip any codec
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerMintInput {
-    pub entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+pub struct NonFungibleResourceManagerMintTypedInput<T> {
+    pub entries: IndexMap<NonFungibleLocalId, (T,)>,
 }
 
 pub type NonFungibleResourceManagerMintOutput = Bucket;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT: &str = "mint_ruid";
 
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerMintRuidInput {
+    pub entries: Vec<(ScryptoValue,)>,
+}
+
+/// For manifest
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintRuidManifestInput {
     pub entries: Vec<(ManifestValue,)>,
 }
 
+/// For typed value, to skip any codec
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerMintRuidInput {
-    pub entries: Vec<(ScryptoValue,)>,
+pub struct NonFungibleResourceManagerMintRuidTypedInput<T> {
+    pub entries: Vec<(T,)>,
 }
 
 pub type NonFungibleResourceManagerMintRuidOutput = Bucket;
@@ -243,6 +294,13 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT: &str = "mint_sin
 pub struct NonFungibleResourceManagerMintSingleRuidInput {
     pub entry: ScryptoValue,
 }
+
+/// For typed value, to skip any codec
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerMintSingleRuidTypedInput<T> {
+    pub entry: T,
+}
+
 pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLocalId);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

@@ -10,7 +10,7 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::RESOURCE_ADDRESS_TYPE;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
@@ -208,23 +208,21 @@ impl ResourceManagerStub {
         data: T,
     ) -> Bucket {
         let mut entries = index_map_new();
-        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
-        entries.insert(id.clone(), (value,));
+        entries.insert(id.clone(), (data,));
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-            &NonFungibleResourceManagerMintInput { entries },
+            &NonFungibleResourceManagerMintTypedInput { entries },
         )
     }
 
     /// Mints ruid non-fungible resources
     pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
         let mut entries = Vec::new();
-        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
-        entries.push((value,));
+        entries.push((data,));
 
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,
-            &NonFungibleResourceManagerMintRuidInput { entries },
+            &NonFungibleResourceManagerMintRuidTypedInput { entries },
         )
     }
 

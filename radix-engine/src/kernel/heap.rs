@@ -397,10 +397,10 @@ mod tests {
                     new_size,
                 } => {
                     if old_size.is_none() {
-                        total_size += canonical_substate_key.logical_size();
+                        total_size += canonical_substate_key.len();
                     }
                     if new_size.is_none() {
-                        total_size -= canonical_substate_key.logical_size();
+                        total_size -= canonical_substate_key.len();
                     }
 
                     total_size += new_size.unwrap_or_default();

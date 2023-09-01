@@ -45,7 +45,7 @@ pub trait CanBeAbortion {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionReason {
     SuccessButFeeLoanNotRepaid,
-    ErrorBeforeFeeLoanRepaid(RuntimeError),
+    ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
     TransactionEpochNotYetValid {
         valid_from: Epoch,
         current_epoch: Epoch,

@@ -28,7 +28,7 @@ pub enum FeeReserveError {
     Abort(AbortReason),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Copy, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
 pub enum StorageType {
     State,
     Archive,
@@ -43,10 +43,17 @@ impl CanBeAbortion for FeeReserveError {
     }
 }
 
+/// This is only allowed before a transaction properly begins.
+/// After any other methods are called, this cannot be called again.
+
 pub trait PreExecutionFeeReserve {
-    /// This is only allowed before a transaction properly begins.
-    /// After any other methods are called, this cannot be called again.
-    fn consume_deferred(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
+    fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
+
+    fn consume_deferred_storage(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), FeeReserveError>;
 }
 
 pub trait ExecutionFeeReserve {
@@ -135,7 +142,8 @@ pub struct SystemLoanFeeReserve {
     royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, u128>,
 
     /// Storage Costs
-    storage_cost: u128,
+    storage_cost_committed: u128,
+    storage_cost_deferred: BTreeMap<StorageType, usize>,
 
     /// Payments made during the execution of a transaction.
     locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
@@ -262,7 +270,8 @@ impl SystemLoanFeeReserve {
             royalty_cost_breakdown: BTreeMap::new(),
             royalty_cost: 0,
 
-            storage_cost: 0,
+            storage_cost_committed: 0,
+            storage_cost_deferred: BTreeMap::new(),
 
             locked_fees: Vec::new(),
         }
@@ -402,6 +411,13 @@ impl SystemLoanFeeReserve {
         self.consume_execution_internal(self.execution_cost_units_deferred)?;
         self.execution_cost_units_deferred = 0;
 
+        // Apply deferred storage cost
+        let types: Vec<StorageType> = self.storage_cost_deferred.keys().cloned().collect();
+        for t in types {
+            self.consume_storage(t, self.storage_cost_deferred.get(&t).cloned().unwrap())?;
+            self.storage_cost_deferred.remove(&t);
+        }
+
         // Repay owed with balance
         let amount = min(self.xrd_balance, self.xrd_owed);
         self.xrd_owed -= amount;
@@ -431,17 +447,28 @@ impl SystemLoanFeeReserve {
 
     #[inline]
     pub fn fully_repaid(&self) -> bool {
+        // The xrd_owed state is not reset before all deferred costs are applied.
+        // Thus, not checking the deferred balance
         self.xrd_owed == 0
     }
 }
 
 impl PreExecutionFeeReserve for SystemLoanFeeReserve {
-    fn consume_deferred(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
-        if cost_units == 0 {
-            return Ok(());
-        }
-
+    fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
         checked_assign_add(&mut self.execution_cost_units_deferred, cost_units)?;
+
+        Ok(())
+    }
+
+    fn consume_deferred_storage(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), FeeReserveError> {
+        self.storage_cost_deferred
+            .entry(storage_type)
+            .or_default()
+            .add_assign(size_increase);
 
         Ok(())
     }
@@ -506,7 +533,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             });
         } else {
             self.xrd_balance -= amount;
-            self.storage_cost += amount;
+            self.storage_cost_committed += amount;
             Ok(())
         }
     }
@@ -565,7 +592,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             total_finalization_cost_in_xrd,
             total_tipping_cost_in_xrd,
             total_royalty_cost_in_xrd: transmute_u128_as_decimal(self.royalty_cost),
-            total_storage_cost_in_xrd: transmute_u128_as_decimal(self.storage_cost),
+            total_storage_cost_in_xrd: transmute_u128_as_decimal(self.storage_cost_committed),
             total_bad_debt_in_xrd: transmute_u128_as_decimal(self.xrd_owed),
             locked_fees: self.locked_fees,
             royalty_cost_breakdown,

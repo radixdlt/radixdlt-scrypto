@@ -1,5 +1,6 @@
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
+use radix_engine_common::prelude::ScryptoEncode;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -13,7 +14,6 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
-use scrypto::prelude::ScryptoValue;
 use scrypto::resource::ResourceManager;
 
 /// Not divisible.
@@ -623,16 +623,18 @@ impl<D: NonFungibleData>
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                owner_role: self.owner_role,
-                track_total_supply: true,
-                id_type: StringNonFungibleLocalId::id_type(),
-                non_fungible_schema,
-                resource_roles: self.resource_roles,
-                metadata,
-                entries: map_entries(entries),
-                address_reservation: self.address_reservation,
-            })
+            scrypto_encode(
+                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                    owner_role: self.owner_role,
+                    track_total_supply: true,
+                    id_type: StringNonFungibleLocalId::id_type(),
+                    non_fungible_schema,
+                    resource_roles: self.resource_roles,
+                    metadata,
+                    entries: map_entries(entries),
+                    address_reservation: self.address_reservation,
+                },
+            )
             .unwrap(),
         );
         scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
@@ -679,16 +681,18 @@ impl<D: NonFungibleData>
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                owner_role: self.owner_role,
-                track_total_supply: true,
-                id_type: IntegerNonFungibleLocalId::id_type(),
-                non_fungible_schema,
-                resource_roles: self.resource_roles,
-                metadata,
-                entries: map_entries(entries),
-                address_reservation: self.address_reservation,
-            })
+            scrypto_encode(
+                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                    owner_role: self.owner_role,
+                    track_total_supply: true,
+                    id_type: IntegerNonFungibleLocalId::id_type(),
+                    non_fungible_schema,
+                    resource_roles: self.resource_roles,
+                    metadata,
+                    entries: map_entries(entries),
+                    address_reservation: self.address_reservation,
+                },
+            )
             .unwrap(),
         );
         scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
@@ -735,16 +739,18 @@ impl<D: NonFungibleData>
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                owner_role: self.owner_role,
-                id_type: BytesNonFungibleLocalId::id_type(),
-                track_total_supply: true,
-                non_fungible_schema,
-                resource_roles: self.resource_roles,
-                metadata,
-                entries: map_entries(entries),
-                address_reservation: self.address_reservation,
-            })
+            scrypto_encode(
+                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                    owner_role: self.owner_role,
+                    id_type: BytesNonFungibleLocalId::id_type(),
+                    track_total_supply: true,
+                    non_fungible_schema,
+                    resource_roles: self.resource_roles,
+                    metadata,
+                    entries: map_entries(entries),
+                    address_reservation: self.address_reservation,
+                },
+            )
             .unwrap(),
         );
         scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
@@ -781,6 +787,7 @@ impl<D: NonFungibleData>
     pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
     where
         T: IntoIterator<Item = D>,
+        D: ScryptoEncode,
     {
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
@@ -795,20 +802,13 @@ impl<D: NonFungibleData>
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(
-                &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+                &NonFungibleResourceManagerCreateRuidWithInitialSupplyTypedInput {
                     owner_role: self.owner_role,
                     non_fungible_schema,
                     track_total_supply: true,
                     resource_roles: self.resource_roles,
                     metadata,
-                    entries: entries
-                        .into_iter()
-                        .map(|data| {
-                            let value: ScryptoValue =
-                                scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
-                            (value,)
-                        })
-                        .collect(),
+                    entries: entries.into_iter().map(|data| (data,)).collect(),
                     address_reservation: self.address_reservation,
                 },
             )
@@ -827,13 +827,10 @@ impl<D: NonFungibleData>
 
 fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungibleLocalId>(
     entries: T,
-) -> IndexMap<NonFungibleLocalId, (ScryptoValue,)> {
+) -> IndexMap<NonFungibleLocalId, (V,)> {
     entries
         .into_iter()
-        .map(|(id, data)| {
-            let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
-            (id.into(), (value,))
-        })
+        .map(|(id, data)| (id.into(), (data,)))
         .collect()
 }
 

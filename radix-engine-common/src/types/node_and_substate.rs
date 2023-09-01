@@ -105,6 +105,10 @@ impl NodeId {
     pub const fn is_internal_vault(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_internal_vault())
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 impl AsRef<[u8]> for NodeId {

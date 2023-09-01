@@ -211,7 +211,7 @@ impl CanonicalSubstateKey {
 }
 
 impl CanonicalSubstateKey {
-    pub fn logical_size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.node_id.as_bytes().len()
             + 1
             + match &self.substate_key {
@@ -306,13 +306,13 @@ impl StoreCommit {
         }
     }
 
-    pub fn logical_size_increase(&self) -> usize {
+    pub fn len_increase(&self) -> usize {
         match self {
             StoreCommit::Insert {
                 canonical_substate_key,
                 size,
                 ..
-            } => canonical_substate_key.logical_size() + *size,
+            } => canonical_substate_key.len() + *size,
             StoreCommit::Update { size, old_size, .. } => {
                 if *size > *old_size {
                     *size - *old_size
