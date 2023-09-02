@@ -9,6 +9,7 @@ mod big_fi {
     struct BigFi {
         child: Owned<Subservio>,
         swappy: Global<Swappy>,
+        cerb: ResourceManager,
         cerb_vault: Vault,
     }
 
@@ -23,7 +24,7 @@ mod big_fi {
 
             let cerb_vault = Vault::new(cerb_resource);
 
-            let global = Self { child, swappy, cerb_vault }
+            let global = Self { child, swappy, cerb: cerb_resource.into(), cerb_vault }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
@@ -49,6 +50,10 @@ mod big_fi {
 
         pub fn deposit_cerb_into_subservio(&mut self, cerbs: Bucket) {
             self.child.deposit_cerb(cerbs);
+        }
+
+        pub fn mint_cerb(&self) -> Bucket {
+            self.cerb.mint_non_fungible(&NonFungibleLocalId::Integer(64u64.into()), ())
         }
     }
 }

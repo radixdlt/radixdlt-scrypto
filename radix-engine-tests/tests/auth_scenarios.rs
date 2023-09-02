@@ -171,3 +171,39 @@ fn scenario_4() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn scenario_5() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
+        .call_method(env.big_fi, "mint_cerb", manifest_args!())
+        .deposit_batch(env.acco)
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))));
+}
+
+#[test]
+fn scenario_6() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
+        .pop_from_auth_zone("Arnold")
+        .call_method(env.swappy, "protected_method", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))));
+}
