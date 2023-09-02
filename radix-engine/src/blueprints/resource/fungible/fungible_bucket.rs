@@ -52,6 +52,13 @@ impl FungibleBucketBlueprint {
                 .for_withdrawal(divisibility, withdraw_strategy)
                 .ok_or(BucketError::DecimalOverflow)?;
 
+            // Check amount
+            if !(check_fungible_amount(&amount, divisibility)) {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::InvalidAmount(amount)),
+                ));
+            }
+
             Self::internal_take(amount, api)?
         };
 
