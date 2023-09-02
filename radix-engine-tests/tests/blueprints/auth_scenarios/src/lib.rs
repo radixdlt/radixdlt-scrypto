@@ -80,10 +80,19 @@ mod big_fi {
             self.swappy.set_metadata("key", "value".to_string());
         }
 
-        pub fn some_method(&self) {
-        }
+        pub fn some_method(&self) {}
 
-        pub fn some_function() {
+        pub fn some_function() {}
+
+        pub fn call_swappy_with_badge(&self, bucket: Bucket) -> Bucket {
+            bucket.authorize_with_all(|| {
+                let bigfi_self: Global<BigFi> = Runtime::global_address().into();
+                bigfi_self.some_method();
+                Blueprint::<BigFi>::some_function();
+                self.call_swappy();
+            });
+
+            bucket
         }
     }
 }
@@ -117,6 +126,8 @@ mod swappy {
             put_proof_in_auth_zone => PUBLIC;
             set_metadata => PUBLIC;
             protected_method => restrict_to: [some_role];
+            another_protected_method => restrict_to: [some_role];
+            another_protected_method2 => restrict_to: [some_role];
         }
     }
 
@@ -154,6 +165,15 @@ mod swappy {
 
         pub fn protected_method(&self) {
             Runtime::assert_access_rule(self.access_rule.clone());
+        }
+
+        pub fn another_protected_method(&self) {
+            self.protected_method();
+        }
+
+        pub fn another_protected_method2(&self) {
+            let me: Global<Swappy> = Runtime::global_address().into();
+            me.protected_method();
         }
 
         pub fn public_method(&self, _proof: Proof) {

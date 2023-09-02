@@ -346,10 +346,14 @@ fn scenario_11() {
     // Act
     let manifest = ManifestBuilder::new()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
-        .call_metadata_method(env.swappy, METADATA_SET_IDENT, MetadataSetInput {
-            key: "key".to_string(),
-            value: MetadataValue::String("value".to_string()),
-        })
+        .call_metadata_method(
+            env.swappy,
+            METADATA_SET_IDENT,
+            MetadataSetInput {
+                key: "key".to_string(),
+                value: MetadataValue::String("value".to_string()),
+            },
+        )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
@@ -366,10 +370,14 @@ fn scenario_12() {
     // Act
     let manifest = ManifestBuilder::new()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
-        .call_metadata_method(env.swappy, METADATA_SET_IDENT, MetadataSetInput {
-            key: "key".to_string(),
-            value: MetadataValue::String("value".to_string()),
-        })
+        .call_metadata_method(
+            env.swappy,
+            METADATA_SET_IDENT,
+            MetadataSetInput {
+                key: "key".to_string(),
+                value: MetadataValue::String("value".to_string()),
+            },
+        )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
@@ -442,4 +450,45 @@ fn scenario_15() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn scenario_16() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
+        .call_method(env.swappy, "another_protected_method", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn scenario_17() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
+        .call_method(env.swappy, "another_protected_method2", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
 }
