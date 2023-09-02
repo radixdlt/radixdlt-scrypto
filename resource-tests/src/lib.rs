@@ -8,10 +8,7 @@ pub mod validator;
 use crate::consensus_manager::ConsensusManagerFuzzAction;
 use crate::multi_pool::MultiPoolFuzzAction;
 use crate::one_pool::OnePoolFuzzAction;
-use crate::resource::{
-    FungibleResourceFuzzGetBucketAction, NonFungibleResourceFuzzGetBucketAction,
-    ResourceFuzzUseBucketAction, VaultTestInvoke, BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID,
-};
+use crate::resource::{FungibleResourceFuzzGetBucketAction, NonFungibleResourceFuzzGetBucketAction, ResourceFuzzUseBucketAction, ResourceTestInvoke, BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID, ResourceFuzzTransformBucketAction};
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
@@ -136,6 +133,7 @@ pub enum FuzzAction {
     TwoResourcePool(TwoPoolFuzzAction),
     MultiResourcePool(MultiPoolFuzzAction),
     FungibleGetBucket(FungibleResourceFuzzGetBucketAction),
+    FungibleBucketTransform(ResourceFuzzTransformBucketAction),
     FungibleUseBucket(ResourceFuzzUseBucketAction),
     NonFungibleGetBucket(NonFungibleResourceFuzzGetBucketAction),
     NonFungibleUseBucket(ResourceFuzzUseBucketAction),
@@ -151,8 +149,8 @@ impl FuzzAction {
         one_resource_pool: &OnePoolMeta,
         two_resource_pool: &TwoPoolMeta,
         multi_resource_pool: &MultiPoolMeta,
-        fungible_vault_component: &VaultComponentMeta,
-        non_fungible_vault_component: &VaultComponentMeta,
+        fungible_component: &ResourceComponentMeta,
+        non_fungible_vault_component: &ResourceComponentMeta,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
@@ -172,10 +170,13 @@ impl FuzzAction {
                 action.add_to_manifest(builder, fuzzer, account_address, multi_resource_pool)
             }
             FuzzAction::FungibleGetBucket(action) => {
-                action.add_to_manifest(builder, fuzzer, fungible_vault_component)
+                action.add_to_manifest(builder, fuzzer, fungible_component)
+            }
+            FuzzAction::FungibleBucketTransform(action) => {
+                action.add_to_manifest(builder, fuzzer, fungible_component)
             }
             FuzzAction::FungibleUseBucket(action) => {
-                action.add_to_manifest(builder, fuzzer, fungible_vault_component)
+                action.add_to_manifest(builder, fuzzer, fungible_component)
             }
             FuzzAction::NonFungibleGetBucket(action) => {
                 action.add_to_manifest(builder, fuzzer, non_fungible_vault_component)
@@ -244,21 +245,21 @@ pub struct MultiPoolMeta {
 }
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-pub struct VaultComponentMeta {
+pub struct ResourceComponentMeta {
     pub component_address: ComponentAddress,
     pub resource_address: ResourceAddress,
     pub vault_address: InternalAddress,
 }
 
 pub struct FuzzTest<T: TxnFuzzer> {
-    test_runner: TestRunner<OverridePackageCode<VaultTestInvoke>, InMemorySubstateDatabase>,
+    test_runner: TestRunner<OverridePackageCode<ResourceTestInvoke>, InMemorySubstateDatabase>,
     fuzzer: TestFuzzer,
     validators: Vec<ValidatorMeta>,
     one_resource_pool: OnePoolMeta,
     two_resource_pool: TwoPoolMeta,
     multi_resource_pool: MultiPoolMeta,
-    fungible_vault_component: VaultComponentMeta,
-    non_fungible_vault_component: VaultComponentMeta,
+    fungible_meta: ResourceComponentMeta,
+    non_fungible_meta: ResourceComponentMeta,
     account_address: ComponentAddress,
     account_public_key: PublicKey,
     cur_round: Round,
@@ -279,7 +280,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             .with_custom_genesis(genesis)
             .with_custom_extension(OverridePackageCode::new(
                 CUSTOM_PACKAGE_CODE_ID,
-                VaultTestInvoke,
+                ResourceTestInvoke,
             ))
             .build_and_get_epoch();
         let public_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
@@ -419,6 +420,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     ("call_vault", "call_vault", true),
                     ("new", "new", false),
                     ("new_with_bucket", "new_with_bucket", false),
+                    ("combine_buckets", "combine_buckets", true),
                 ],
             ),
         );
@@ -468,7 +470,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
             let vault_id = test_runner.get_component_vaults(component_address, resource_address)[0];
 
-            VaultComponentMeta {
+            ResourceComponentMeta {
                 component_address,
                 resource_address,
                 vault_address: InternalAddress::try_from(vault_id).unwrap(),
@@ -536,7 +538,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
             let vault_id = test_runner.get_component_vaults(component_address, resource_address)[0];
 
-            VaultComponentMeta {
+            ResourceComponentMeta {
                 component_address,
                 resource_address,
                 vault_address: InternalAddress::try_from(vault_id).unwrap(),
@@ -555,8 +557,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             one_resource_pool,
             two_resource_pool,
             multi_resource_pool,
-            fungible_vault_component,
-            non_fungible_vault_component,
+            fungible_meta: fungible_vault_component,
+            non_fungible_meta: non_fungible_vault_component,
             account_address: account,
             account_public_key: public_key.into(),
             cur_round: Round::of(1u64),
@@ -602,7 +604,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         let mut fuzz_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
 
-        for uuid in 0u64..100u64 {
+        for uuid in 0u64..250u64 {
             // Build new transaction
             let mut builder = ManifestBuilder::new();
             let mut trivial = false;
@@ -616,8 +618,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     &self.one_resource_pool,
                     &self.two_resource_pool,
                     &self.multi_resource_pool,
-                    &self.fungible_vault_component,
-                    &self.non_fungible_vault_component,
+                    &self.fungible_meta,
+                    &self.non_fungible_meta,
                     self.account_address,
                 );
 

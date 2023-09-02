@@ -1,5 +1,5 @@
 use radix_engine::types::*;
-use resource_tests::resource::{FungibleResourceFuzzGetBucketAction, ResourceFuzzUseBucketAction};
+use resource_tests::resource::{FungibleResourceFuzzGetBucketAction, ResourceFuzzTransformBucketAction, ResourceFuzzUseBucketAction};
 use resource_tests::{FuzzAction, FuzzTest, TestFuzzer, TxnFuzzer};
 
 #[test]
@@ -13,8 +13,10 @@ fn fuzz_fungible_resource() {
             let action2: ResourceFuzzUseBucketAction =
                 ResourceFuzzUseBucketAction::from_repr(fuzzer.next_u8(2u8)).unwrap();
 
+
             vec![
                 FuzzAction::FungibleGetBucket(action1),
+                FuzzAction::FungibleBucketTransform(ResourceFuzzTransformBucketAction::Combine),
                 FuzzAction::FungibleUseBucket(action2),
             ]
         }

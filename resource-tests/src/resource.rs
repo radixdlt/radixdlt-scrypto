@@ -1,4 +1,4 @@
-use crate::{TestFuzzer, VaultComponentMeta};
+use crate::{TestFuzzer, ResourceComponentMeta};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::{NativeBucket, NativeVault};
@@ -31,8 +31,8 @@ pub const BLUEPRINT_NAME: &str = "MyBlueprint";
 pub const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
 
 #[derive(Clone)]
-pub struct VaultTestInvoke;
-impl VmInvoke for VaultTestInvoke {
+pub struct ResourceTestInvoke;
+impl VmInvoke for ResourceTestInvoke {
     fn invoke<Y>(
         &mut self,
         export_name: &str,
@@ -57,6 +57,11 @@ impl VmInvoke for VaultTestInvoke {
                     scrypto_encode(&input.1).unwrap(),
                 )?;
                 return Ok(IndexedScryptoValue::from_vec(rtn).unwrap());
+            }
+            "combine_buckets" => {
+                let input: (Bucket, Bucket) = scrypto_decode(input.as_slice()).unwrap();
+                input.0.put(input.1, api)?;
+                return Ok(IndexedScryptoValue::from_typed(&input.0));
             }
             "new" => {
                 let resource_address: (ResourceAddress,) =
@@ -118,7 +123,7 @@ impl FungibleResourceFuzzGetBucketAction {
         &self,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
-        vault_meta: &VaultComponentMeta,
+        vault_meta: &ResourceComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             FungibleResourceFuzzGetBucketAction::Mint => {
@@ -160,6 +165,48 @@ impl FungibleResourceFuzzGetBucketAction {
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
+pub enum ResourceFuzzTransformBucketAction {
+    Combine,
+}
+
+impl ResourceFuzzTransformBucketAction {
+    pub fn add_to_manifest(
+        &self,
+        builder: ManifestBuilder,
+        fuzzer: &mut TestFuzzer,
+        vault_meta: &ResourceComponentMeta,
+    ) -> (ManifestBuilder, bool) {
+        match self {
+            ResourceFuzzTransformBucketAction::Combine => {
+                let amount1 = fuzzer.next_amount();
+                let amount2 = fuzzer.next_amount();
+                let builder = builder
+                    .take_from_worktop(
+                        vault_meta.resource_address,
+                        amount1,
+                        "bucket1",
+                    )
+                    .take_from_worktop(
+                        vault_meta.resource_address,
+                        amount2,
+                        "bucket2",
+                    )
+                    .with_name_lookup(|builder, lookup| {
+                        builder.call_method(
+                            vault_meta.component_address,
+                            "combine_buckets",
+                            manifest_args!(lookup.bucket("bucket1"), lookup.bucket("bucket2")),
+                        )
+                    });
+
+                (builder, amount1.is_zero() && amount2.is_zero())
+            }
+        }
+    }
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
 pub enum ResourceFuzzUseBucketAction {
     Burn,
     VaultPut,
@@ -170,7 +217,7 @@ impl ResourceFuzzUseBucketAction {
         &self,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
-        vault_meta: &VaultComponentMeta,
+        vault_meta: &ResourceComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             ResourceFuzzUseBucketAction::Burn => {
@@ -214,7 +261,7 @@ impl NonFungibleResourceFuzzGetBucketAction {
         &self,
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
-        vault_meta: &VaultComponentMeta,
+        vault_meta: &ResourceComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             NonFungibleResourceFuzzGetBucketAction::Mint => {
