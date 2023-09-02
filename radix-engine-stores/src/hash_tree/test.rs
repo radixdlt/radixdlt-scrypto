@@ -145,11 +145,11 @@ fn hash_computed_consistently_after_adding_higher_tier_sibling() {
     let mut store = TypedInMemoryTreeStore::new();
     put_at_next_version(&mut store, None, vec![change(2, 3, 4, Some(234))]);
     put_at_next_version(&mut store, Some(1), vec![change(1, 9, 6, Some(196))]);
-    let root_after_deletes =
+    let root_after_adding_sibling =
         put_at_next_version(&mut store, Some(2), vec![change(2, 3, 5, Some(235))]);
 
     // We did [2:3:4] + [1:9:6] + [2:3:5] = [1:9:6, 2:3:4, 2:3:5] (i.e. same state).
-    assert_eq!(root_after_deletes, reference_root);
+    assert_eq!(root_after_adding_sibling, reference_root);
 }
 
 #[test]
