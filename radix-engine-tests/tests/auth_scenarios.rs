@@ -1,5 +1,5 @@
 use crate::node_modules::auth::RoleDefinition;
-use radix_engine::errors::{RuntimeError, SystemError, SystemModuleError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::node_modules::auth::ToRoleEntry;
 use radix_engine::types::*;
@@ -206,4 +206,65 @@ fn scenario_6() {
 
     // Assert
     receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))));
+}
+
+
+#[test]
+fn scenario_7() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
+        .pop_from_auth_zone("Arnold")
+        .with_name_lookup(|builder, lookup| {
+            let proof = lookup.proof("Arnold");
+            builder.call_method(env.swappy, "public_method", manifest_args!(proof))
+        })
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)));
+}
+
+#[test]
+fn scenario_8() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
+        .pop_from_auth_zone("Arnold")
+        .with_name_lookup(|builder, lookup| {
+            let proof = lookup.proof("Arnold");
+            builder.call_method(env.swappy, "put_proof_in_auth_zone", manifest_args!(proof))
+        })
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::PanicMessage(..))));
+}
+
+#[test]
+fn scenario_9() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
+        .create_proof_from_auth_zone_of_all(env.swappy_badge.resource_address(), "Bennet")
+        .call_method(env.swappy, "protected_method", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_commit_success();
 }

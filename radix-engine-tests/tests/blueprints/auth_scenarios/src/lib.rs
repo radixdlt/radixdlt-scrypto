@@ -84,6 +84,8 @@ mod swappy {
             some_role => updatable_by: [];
         },
         methods {
+            public_method => PUBLIC;
+            put_proof_in_auth_zone => PUBLIC;
             protected_method => restrict_to: [some_role];
         }
     }
@@ -121,7 +123,15 @@ mod swappy {
         }
 
         pub fn protected_method(&self) {
-            Runtime::assert_access_rule(self.access_rule.clone())
+            Runtime::assert_access_rule(self.access_rule.clone());
+        }
+
+        pub fn public_method(&self, _proof: Proof) {
+            Runtime::assert_access_rule(self.access_rule.clone());
+        }
+
+        pub fn put_proof_in_auth_zone(&self, proof: Proof) {
+            LocalAuthZone::push(proof);
         }
     }
 }
