@@ -86,7 +86,8 @@ mod big_fi {
         }
 
         pub fn update_swappy_metadata_rule(&self) {
-            self.swappy.set_metadata_role("metadata_setter", AccessRule::AllowAll);
+            self.swappy
+                .set_metadata_role("metadata_setter", AccessRule::AllowAll);
         }
 
         pub fn update_cerb_rule(&self) {
@@ -215,7 +216,6 @@ mod swappy {
             Runtime::global_component().set_metadata_role("metadata_setter", AccessRule::AllowAll);
         }
 
-        pub fn protected_function() {
-        }
+        pub fn protected_function() {}
     }
 }

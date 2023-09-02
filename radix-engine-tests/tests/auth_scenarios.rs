@@ -4,9 +4,9 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::node_modules::auth::ToRoleEntry;
 use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
-use radix_engine_interface::api::node_modules::auth::{AuthAddresses, ROLE_ASSIGNMENT_SET_IDENT, RoleAssignmentSetInput};
-use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::api::node_modules::auth::{
+    RoleAssignmentSetInput, ROLE_ASSIGNMENT_SET_IDENT,
+};
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
@@ -19,7 +19,6 @@ struct AuthScenariosEnv {
     cerb: ResourceAddress,
     package: PackageAddress,
     big_fi: ComponentAddress,
-    big_fi_badge: NonFungibleGlobalId,
     swappy: ComponentAddress,
     swappy_badge: NonFungibleGlobalId,
     cerb_vault: InternalAddress,
@@ -88,10 +87,6 @@ impl AuthScenariosEnv {
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![virtua_sig.clone()]);
         let result = receipt.expect_commit_success();
         let big_fi = result.new_component_addresses()[0];
-        let big_fi_resource = result.new_resource_addresses()[0];
-        let big_fi_badge =
-            NonFungibleGlobalId::new(big_fi_resource, NonFungibleLocalId::integer(0u64));
-
         let vault_id = test_runner.get_component_vaults(big_fi, cerb)[0];
 
         AuthScenariosEnv {
@@ -101,7 +96,6 @@ impl AuthScenariosEnv {
             cerb,
             package: package_address,
             big_fi,
-            big_fi_badge,
             swappy,
             swappy_badge,
             cerb_vault: InternalAddress::new_or_panic(vault_id.0),
@@ -443,7 +437,7 @@ fn scenario_15() {
         .withdraw_from_account(env.acco, env.swappy_badge.resource_address(), 1)
         .take_all_from_worktop(env.swappy_badge.resource_address(), "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.call_method(env.swappy, "call_swappy_with_badge", manifest_args!(bucket))
+            builder.call_method(env.big_fi, "call_swappy_with_badge", manifest_args!(bucket))
         })
         .deposit_batch(env.acco)
         .build();
@@ -505,12 +499,12 @@ fn scenario_18() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_role_assignment_method(
             env.swappy,
-                ROLE_ASSIGNMENT_SET_IDENT,
+            ROLE_ASSIGNMENT_SET_IDENT,
             RoleAssignmentSetInput {
                 module: ObjectModuleId::Metadata,
                 role_key: RoleKey::new("metadata_setter"),
                 rule: AccessRule::AllowAll,
-            }
+            },
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
@@ -583,7 +577,7 @@ fn scenario_21() {
                 module: ObjectModuleId::Main,
                 role_key: RoleKey::new("withdrawer"),
                 rule: AccessRule::AllowAll,
-            }
+            },
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
@@ -625,7 +619,12 @@ fn scenario_23() {
     // Act
     let manifest = ManifestBuilder::new()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
-        .call_function(env.package, "BigFi", "call_swappy_func", manifest_args!(env.swappy))
+        .call_function(
+            env.package,
+            "BigFi",
+            "call_swappy_func",
+            manifest_args!(env.swappy),
+        )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
