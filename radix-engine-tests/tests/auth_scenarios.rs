@@ -1,5 +1,6 @@
 use crate::node_modules::auth::RoleDefinition;
-use radix_engine::errors::{RuntimeError, SystemError};
+use radix_engine::errors::{RuntimeError, SystemError, SystemModuleError};
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::node_modules::auth::ToRoleEntry;
 use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
@@ -14,7 +15,7 @@ use transaction::prelude::*;
 struct AuthScenariosEnv {
     acco: ComponentAddress,
     virtua_sig: NonFungibleGlobalId,
-    cerb_badge: ResourceAddress,
+    cerb_badge: NonFungibleGlobalId,
     cerb: ResourceAddress,
     package: PackageAddress,
     big_fi: ComponentAddress,
@@ -30,24 +31,25 @@ impl AuthScenariosEnv {
         let (pub_key, _, acco) = test_runner.new_account(false);
         let virtua_sig = NonFungibleGlobalId::from_public_key(&pub_key);
 
-        let cerb_badge = test_runner.create_non_fungible_resource_advanced(
+        let cerb_resource = test_runner.create_non_fungible_resource_advanced(
             NonFungibleResourceRoles::default(),
             acco,
             1,
         );
+        let cerb_badge = NonFungibleGlobalId::new(cerb_resource, NonFungibleLocalId::integer(1u64));
 
         let cerb = test_runner.create_non_fungible_resource_with_roles(
             NonFungibleResourceRoles {
                 burn_roles: burn_roles! {
-                    burner => rule!(require(cerb_badge));
+                    burner => rule!(require(cerb_badge.clone()));
                     burner_updater => rule!(deny_all);
                 },
                 recall_roles: recall_roles! {
-                    recaller => rule!(require(cerb_badge));
+                    recaller => rule!(require(cerb_badge.clone()));
                     recaller_updater => rule!(deny_all);
                 },
                 freeze_roles: freeze_roles! {
-                    freezer => rule!(require(cerb_badge));
+                    freezer => rule!(require(cerb_badge.clone()));
                     freezer_updater => rule!(deny_all);
                 },
                 ..Default::default()
@@ -56,17 +58,6 @@ impl AuthScenariosEnv {
         );
 
         let package_address = test_runner.compile_and_publish("./tests/blueprints/auth_scenarios");
-
-        let manifest = ManifestBuilder::new()
-            .call_function(package_address, "BigFi", "create", manifest_args!())
-            .deposit_batch(acco)
-            .build();
-        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![virtua_sig.clone()]);
-        let result = receipt.expect_commit_success();
-        let big_fi = result.new_component_addresses()[0];
-        let big_fi_resource = result.new_resource_addresses()[0];
-        let big_fi_badge =
-            NonFungibleGlobalId::new(big_fi_resource, NonFungibleLocalId::integer(0u64));
 
         let manifest = ManifestBuilder::new()
             .call_function(package_address, "Swappy", "create", manifest_args!())
@@ -78,6 +69,18 @@ impl AuthScenariosEnv {
         let swappy_resource = result.new_resource_addresses()[0];
         let swappy_badge =
             NonFungibleGlobalId::new(swappy_resource, NonFungibleLocalId::integer(0u64));
+
+        let manifest = ManifestBuilder::new()
+            .call_function(package_address, "BigFi", "create", manifest_args!(cerb, swappy))
+            .deposit_batch(acco)
+            .build();
+        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![virtua_sig.clone()]);
+        let result = receipt.expect_commit_success();
+        let big_fi = result.new_component_addresses()[0];
+        let big_fi_resource = result.new_resource_addresses()[0];
+        let big_fi_badge =
+            NonFungibleGlobalId::new(big_fi_resource, NonFungibleLocalId::integer(0u64));
+
 
         AuthScenariosEnv {
             acco,
@@ -103,6 +106,44 @@ fn scenario_1() {
     let manifest = ManifestBuilder::new()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
         .call_method(env.swappy, "protected_method", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn scenario_2() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
+        .call_method(env.big_fi, "call_swappy", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))));
+}
+
+#[test]
+fn scenario_3() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
+        .withdraw_from_account(env.acco, env.cerb, 1)
+        .take_all_from_worktop(env.cerb, "cerbs")
+        .with_bucket("cerbs", |builder, bucket| {
+            builder.call_method(env.big_fi, "deposit_cerb", manifest_args!(bucket))
+        })
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 

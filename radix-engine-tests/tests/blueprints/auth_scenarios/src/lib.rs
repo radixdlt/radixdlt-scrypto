@@ -2,15 +2,18 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod big_fi {
+    use crate::swappy::Swappy;
     use crate::subservio::Subservio;
     use crate::subservio::SubservioFunctions;
 
     struct BigFi {
         child: Owned<Subservio>,
+        swappy: Global<Swappy>,
+        cerb_vault: Vault,
     }
 
     impl BigFi {
-        pub fn create() -> (Global<BigFi>, NonFungibleBucket) {
+        pub fn create(cerb_resource: ResourceAddress, swappy: Global<Swappy>) -> (Global<BigFi>, NonFungibleBucket) {
             let big_fi_badge = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
                 .mint_initial_supply(vec![(0u64.into(), ())]);
 
@@ -18,7 +21,9 @@ mod big_fi {
 
             let child = Blueprint::<Subservio>::create();
 
-            let global = Self { child }
+            let cerb_vault = Vault::new(cerb_resource);
+
+            let global = Self { child, swappy, cerb_vault }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
@@ -32,6 +37,14 @@ mod big_fi {
                 .globalize();
 
             (global, big_fi_badge)
+        }
+
+        pub fn call_swappy(&self) {
+            self.swappy.protected_method();
+        }
+
+        pub fn deposit_cerb(&mut self, cerbs: Bucket) {
+            self.cerb_vault.put(cerbs);
         }
     }
 }
