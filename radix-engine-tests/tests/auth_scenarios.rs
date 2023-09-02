@@ -22,6 +22,7 @@ struct AuthScenariosEnv {
     big_fi_badge: NonFungibleGlobalId,
     swappy: ComponentAddress,
     swappy_badge: NonFungibleGlobalId,
+    cerb_vault: InternalAddress,
 }
 
 impl AuthScenariosEnv {
@@ -31,12 +32,13 @@ impl AuthScenariosEnv {
         let (pub_key, _, acco) = test_runner.new_account(false);
         let virtua_sig = NonFungibleGlobalId::from_public_key(&pub_key);
 
-        let cerb_resource = test_runner.create_non_fungible_resource_advanced(
+        let cerb_badge_resource = test_runner.create_non_fungible_resource_advanced(
             NonFungibleResourceRoles::default(),
             acco,
             1,
         );
-        let cerb_badge = NonFungibleGlobalId::new(cerb_resource, NonFungibleLocalId::integer(1u64));
+        let cerb_badge =
+            NonFungibleGlobalId::new(cerb_badge_resource, NonFungibleLocalId::integer(1u64));
 
         let cerb = test_runner.create_non_fungible_resource_with_roles(
             NonFungibleResourceRoles {
@@ -71,7 +73,12 @@ impl AuthScenariosEnv {
             NonFungibleGlobalId::new(swappy_resource, NonFungibleLocalId::integer(0u64));
 
         let manifest = ManifestBuilder::new()
-            .call_function(package_address, "BigFi", "create", manifest_args!(cerb, swappy))
+            .call_function(
+                package_address,
+                "BigFi",
+                "create",
+                manifest_args!(cerb, swappy),
+            )
             .deposit_batch(acco)
             .build();
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![virtua_sig.clone()]);
@@ -81,6 +88,7 @@ impl AuthScenariosEnv {
         let big_fi_badge =
             NonFungibleGlobalId::new(big_fi_resource, NonFungibleLocalId::integer(0u64));
 
+        let vault_id = test_runner.get_component_vaults(big_fi, cerb)[0];
 
         AuthScenariosEnv {
             acco,
@@ -92,6 +100,7 @@ impl AuthScenariosEnv {
             big_fi_badge,
             swappy,
             swappy_badge,
+            cerb_vault: InternalAddress::new_or_panic(vault_id.0),
         }
     }
 }
@@ -127,7 +136,14 @@ fn scenario_2() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
 }
 
 #[test]
@@ -163,7 +179,11 @@ fn scenario_4() {
         .withdraw_from_account(env.acco, env.cerb, 1)
         .take_all_from_worktop(env.cerb, "cerbs")
         .with_bucket("cerbs", |builder, bucket| {
-            builder.call_method(env.big_fi, "deposit_cerb_into_subservio", manifest_args!(bucket))
+            builder.call_method(
+                env.big_fi,
+                "deposit_cerb_into_subservio",
+                manifest_args!(bucket),
+            )
         })
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
@@ -187,7 +207,14 @@ fn scenario_5() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
 }
 
 #[test]
@@ -205,9 +232,15 @@ fn scenario_6() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(..)))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
 }
-
 
 #[test]
 fn scenario_7() {
@@ -227,7 +260,12 @@ fn scenario_7() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
+        )
+    });
 }
 
 #[test]
@@ -248,7 +286,12 @@ fn scenario_8() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::PanicMessage(..))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PanicMessage(..))
+        )
+    });
 }
 
 #[test]
@@ -267,4 +310,29 @@ fn scenario_9() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn scenario_10() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
+        .call_method(env.big_fi, "recall_cerb", manifest_args!(env.cerb_vault))
+        .deposit_batch(env.acco)
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
 }

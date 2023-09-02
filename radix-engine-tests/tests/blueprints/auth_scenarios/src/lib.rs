@@ -2,9 +2,9 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod big_fi {
-    use crate::swappy::Swappy;
     use crate::subservio::Subservio;
     use crate::subservio::SubservioFunctions;
+    use crate::swappy::Swappy;
 
     struct BigFi {
         child: Owned<Subservio>,
@@ -14,7 +14,10 @@ mod big_fi {
     }
 
     impl BigFi {
-        pub fn create(cerb_resource: ResourceAddress, swappy: Global<Swappy>) -> (Global<BigFi>, NonFungibleBucket) {
+        pub fn create(
+            cerb_resource: ResourceAddress,
+            swappy: Global<Swappy>,
+        ) -> (Global<BigFi>, NonFungibleBucket) {
             let big_fi_badge = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
                 .mint_initial_supply(vec![(0u64.into(), ())]);
 
@@ -24,18 +27,23 @@ mod big_fi {
 
             let cerb_vault = Vault::new(cerb_resource);
 
-            let global = Self { child, swappy, cerb: cerb_resource.into(), cerb_vault }
-                .instantiate()
-                .prepare_to_globalize(OwnerRole::None)
-                .metadata(metadata! {
-                    roles {
-                        metadata_locker => rule!(deny_all);
-                        metadata_locker_updater => rule!(deny_all);
-                        metadata_setter => rule!(require(big_fi_resource));
-                        metadata_setter_updater => rule!(deny_all);
-                    }
-                })
-                .globalize();
+            let global = Self {
+                child,
+                swappy,
+                cerb: cerb_resource.into(),
+                cerb_vault,
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .metadata(metadata! {
+                roles {
+                    metadata_locker => rule!(deny_all);
+                    metadata_locker_updater => rule!(deny_all);
+                    metadata_setter => rule!(require(big_fi_resource));
+                    metadata_setter_updater => rule!(deny_all);
+                }
+            })
+            .globalize();
 
             (global, big_fi_badge)
         }
@@ -53,7 +61,19 @@ mod big_fi {
         }
 
         pub fn mint_cerb(&self) -> Bucket {
-            self.cerb.mint_non_fungible(&NonFungibleLocalId::Integer(64u64.into()), ())
+            self.cerb
+                .mint_non_fungible(&NonFungibleLocalId::Integer(64u64.into()), ())
+        }
+
+        pub fn recall_cerb(&self, vault_id: InternalAddress) -> Bucket {
+            let bucket: Bucket = scrypto_decode(&ScryptoVmV1Api::object_call_direct(
+                vault_id.as_node_id(),
+                VAULT_RECALL_IDENT,
+                scrypto_args!(Decimal::ONE),
+            ))
+            .unwrap();
+
+            bucket
         }
     }
 }
@@ -73,7 +93,6 @@ mod subservio {
         pub fn deposit_cerb(&mut self, cerbs: Bucket) {
             self.cerb_vault.put(cerbs);
         }
-
     }
 }
 
