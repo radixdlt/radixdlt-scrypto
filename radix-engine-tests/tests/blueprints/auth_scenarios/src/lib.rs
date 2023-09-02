@@ -5,6 +5,7 @@ mod big_fi {
     use crate::subservio::Subservio;
     use crate::subservio::SubservioFunctions;
     use crate::swappy::Swappy;
+    use crate::swappy::SwappyFunctions;
 
     struct BigFi {
         child: Owned<Subservio>,
@@ -46,6 +47,10 @@ mod big_fi {
             .globalize();
 
             (global, big_fi_badge)
+        }
+
+        pub fn call_swappy_func(swappy: Global<Swappy>) {
+            swappy.protected_method();
         }
 
         pub fn call_swappy(&self) {
@@ -102,6 +107,10 @@ mod big_fi {
 
             bucket
         }
+
+        pub fn call_swappy_function(&self) {
+            Blueprint::<Swappy>::protected_function();
+        }
     }
 }
 
@@ -125,6 +134,11 @@ mod subservio {
 
 #[blueprint]
 mod swappy {
+    enable_function_auth! {
+        create => rule!(allow_all);
+        protected_function => rule!(require(XRD));
+    }
+
     enable_method_auth! {
         roles {
             some_role => updatable_by: [];
@@ -199,6 +213,9 @@ mod swappy {
 
         pub fn update_metadata_rule(&self) {
             Runtime::global_component().set_metadata_role("metadata_setter", AccessRule::AllowAll);
+        }
+
+        pub fn protected_function() {
         }
     }
 }
