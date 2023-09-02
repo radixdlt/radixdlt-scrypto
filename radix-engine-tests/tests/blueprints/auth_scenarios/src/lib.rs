@@ -19,7 +19,7 @@ mod big_fi {
 
             let big_fi_resource = big_fi_badge.resource_address();
 
-            let child = Blueprint::<Subservio>::create();
+            let child = Blueprint::<Subservio>::create(cerb_resource);
 
             let cerb_vault = Vault::new(cerb_resource);
 
@@ -46,17 +46,29 @@ mod big_fi {
         pub fn deposit_cerb(&mut self, cerbs: Bucket) {
             self.cerb_vault.put(cerbs);
         }
+
+        pub fn deposit_cerb_into_subservio(&mut self, cerbs: Bucket) {
+            self.child.deposit_cerb(cerbs);
+        }
     }
 }
 
 #[blueprint]
 mod subservio {
-    struct Subservio {}
+    struct Subservio {
+        cerb_vault: Vault,
+    }
 
     impl Subservio {
-        pub fn create() -> Owned<Subservio> {
-            Self {}.instantiate()
+        pub fn create(cerb_resource: ResourceAddress) -> Owned<Subservio> {
+            let cerb_vault = Vault::new(cerb_resource);
+            Self { cerb_vault }.instantiate()
         }
+
+        pub fn deposit_cerb(&mut self, cerbs: Bucket) {
+            self.cerb_vault.put(cerbs);
+        }
+
     }
 }
 

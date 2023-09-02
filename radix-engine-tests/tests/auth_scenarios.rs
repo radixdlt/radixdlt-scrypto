@@ -150,3 +150,24 @@ fn scenario_3() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn scenario_4() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
+        .withdraw_from_account(env.acco, env.cerb, 1)
+        .take_all_from_worktop(env.cerb, "cerbs")
+        .with_bucket("cerbs", |builder, bucket| {
+            builder.call_method(env.big_fi, "deposit_cerb_into_subservio", manifest_args!(bucket))
+        })
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
