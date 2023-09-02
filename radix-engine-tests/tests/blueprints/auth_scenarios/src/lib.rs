@@ -80,6 +80,14 @@ mod big_fi {
             self.swappy.set_metadata("key", "value".to_string());
         }
 
+        pub fn update_swappy_metadata_rule(&self) {
+            self.swappy.set_metadata_role("metadata_setter", AccessRule::AllowAll);
+        }
+
+        pub fn update_cerb_rule(&self) {
+            self.cerb.set_role("withdrawer", AccessRule::AllowAll);
+        }
+
         pub fn some_method(&self) {}
 
         pub fn some_function() {}
@@ -125,6 +133,7 @@ mod swappy {
             public_method => PUBLIC;
             put_proof_in_auth_zone => PUBLIC;
             set_metadata => PUBLIC;
+            update_metadata_rule => PUBLIC;
             protected_method => restrict_to: [some_role];
             another_protected_method => restrict_to: [some_role];
             another_protected_method2 => restrict_to: [some_role];
@@ -155,7 +164,7 @@ mod swappy {
                     metadata_locker => rule!(deny_all);
                     metadata_locker_updater => rule!(deny_all);
                     metadata_setter => rule!(require(swappy_resource));
-                    metadata_setter_updater => rule!(deny_all);
+                    metadata_setter_updater => rule!(require(swappy_resource));
                 }
             })
             .globalize();
@@ -186,6 +195,10 @@ mod swappy {
 
         pub fn set_metadata(&self) {
             Runtime::global_component().set_metadata("key", "value".to_string());
+        }
+
+        pub fn update_metadata_rule(&self) {
+            Runtime::global_component().set_metadata_role("metadata_setter", AccessRule::AllowAll);
         }
     }
 }
