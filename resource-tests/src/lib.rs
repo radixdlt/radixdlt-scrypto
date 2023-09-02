@@ -8,7 +8,11 @@ pub mod validator;
 use crate::consensus_manager::ConsensusManagerFuzzAction;
 use crate::multi_pool::MultiPoolFuzzAction;
 use crate::one_pool::OnePoolFuzzAction;
-use crate::resource::{FungibleResourceFuzzGetBucketAction, NonFungibleResourceFuzzGetBucketAction, ResourceFuzzUseBucketAction, ResourceTestInvoke, BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID, ResourceFuzzTransformBucketAction};
+use crate::resource::{
+    FungibleResourceFuzzGetBucketAction, NonFungibleResourceFuzzGetBucketAction,
+    ResourceFuzzRandomAction, ResourceFuzzTransformBucketAction, ResourceFuzzUseBucketAction,
+    ResourceTestInvoke, BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID,
+};
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
@@ -38,12 +42,16 @@ use transaction::prelude::Secp256k1PrivateKey;
 
 pub struct TestFuzzer {
     rng: ChaCha8Rng,
+    resources: Vec<ResourceAddress>,
 }
 
 impl TestFuzzer {
     pub fn new(seed: u64) -> Self {
         let rng = ChaCha8Rng::seed_from_u64(seed);
-        Self { rng }
+        Self {
+            rng,
+            resources: Vec::new(),
+        }
     }
 
     pub fn next_amount(&mut self) -> Decimal {
@@ -123,6 +131,19 @@ impl TestFuzzer {
             _ => WithdrawStrategy::Rounded(RoundingMode::ToZero),
         }
     }
+
+    pub fn add_resource(&mut self, resource_address: ResourceAddress) {
+        self.resources.push(resource_address);
+    }
+
+    pub fn add_resources(&mut self, resources: &Vec<ResourceAddress>) {
+        self.resources.extend(resources);
+    }
+
+    pub fn next_resource(&mut self) -> ResourceAddress {
+        let index = self.rng.gen_range(0usize..self.resources.len());
+        self.resources[index]
+    }
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -137,6 +158,7 @@ pub enum FuzzAction {
     FungibleUseBucket(ResourceFuzzUseBucketAction),
     NonFungibleGetBucket(NonFungibleResourceFuzzGetBucketAction),
     NonFungibleUseBucket(ResourceFuzzUseBucketAction),
+    Resource(ResourceFuzzRandomAction),
 }
 
 impl FuzzAction {
@@ -184,6 +206,12 @@ impl FuzzAction {
             FuzzAction::NonFungibleUseBucket(action) => {
                 action.add_to_manifest(builder, fuzzer, non_fungible_vault_component)
             }
+            FuzzAction::Resource(action) => action.add_to_manifest(
+                builder,
+                fuzzer,
+                account_address,
+                non_fungible_vault_component,
+            ),
         }
     }
 }
@@ -287,16 +315,30 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         let account = ComponentAddress::virtual_account_from_public_key(&public_key);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
-        let validator_address = validator_set
-            .validators_by_stake_desc
-            .iter()
-            .next()
-            .unwrap()
-            .0
-            .clone();
-        let validator_substate = test_runner.get_validator_info(validator_address);
-        let stake_unit_resource = validator_substate.stake_unit_resource;
-        let claim_resource = validator_substate.claim_nft;
+        fuzzer.add_resource(XRD);
+
+        let validator_meta = {
+            let validator_address = validator_set
+                .validators_by_stake_desc
+                .iter()
+                .next()
+                .unwrap()
+                .0
+                .clone();
+            let validator_substate = test_runner.get_validator_info(validator_address);
+            let stake_unit_resource = validator_substate.stake_unit_resource;
+            let claim_resource = validator_substate.claim_nft;
+
+            fuzzer.add_resource(stake_unit_resource);
+            fuzzer.add_resource(claim_resource);
+
+            ValidatorMeta {
+                validator_address,
+                stake_unit_resource,
+                claim_resource,
+                account_address: account,
+            }
+        };
 
         let one_resource_pool = {
             let one_pool_resource = test_runner
@@ -382,6 +424,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 })
                 .collect();
 
+            fuzzer.add_resources(&pool_resources);
+
             let (pool_component, pool_unit_resource) = {
                 let manifest = ManifestBuilder::new()
                     .call_function(
@@ -454,6 +498,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 vec![],
             );
             let resource_address = receipt.expect_commit_success().new_resource_addresses()[0];
+
+            fuzzer.add_resource(resource_address);
 
             let receipt = test_runner.execute_manifest_ignoring_fee(
                 ManifestBuilder::new()
@@ -548,12 +594,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         Self {
             fuzzer,
             test_runner,
-            validators: vec![ValidatorMeta {
-                validator_address,
-                stake_unit_resource,
-                claim_resource,
-                account_address: account,
-            }],
+            validators: vec![validator_meta],
             one_resource_pool,
             two_resource_pool,
             multi_resource_pool,
@@ -566,15 +607,16 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         }
     }
 
-    pub fn run_fuzz() {
+    pub fn run_fuzz(num_tests: u64, num_txns: u64) {
         let mut summed_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
 
-        let results: Vec<BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>>> = (1u64..=32u64)
+        let results: Vec<BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>>> = (1u64
+            ..=num_tests)
             .into_par_iter()
             .map(|seed| {
                 let mut fuzz_test = Self::new(seed);
-                fuzz_test.run_single_fuzz()
+                fuzz_test.run_single_fuzz(num_txns)
             })
             .collect();
 
@@ -600,11 +642,14 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         println!("{:#?}", summed_results);
     }
 
-    fn run_single_fuzz(&mut self) -> BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> {
+    fn run_single_fuzz(
+        &mut self,
+        num_txns: u64,
+    ) -> BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> {
         let mut fuzz_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
 
-        for uuid in 0u64..250u64 {
+        for uuid in 0u64..num_txns {
             // Build new transaction
             let mut builder = ManifestBuilder::new();
             let mut trivial = false;

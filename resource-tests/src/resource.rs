@@ -1,4 +1,4 @@
-use crate::{TestFuzzer, ResourceComponentMeta};
+use crate::{ResourceComponentMeta, TestFuzzer};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::{NativeBucket, NativeVault};
@@ -12,7 +12,7 @@ use radix_engine_common::prelude::{
     manifest_decode, manifest_encode, scrypto_decode, scrypto_encode, ManifestValue,
     NonFungibleLocalId, ScryptoValue,
 };
-use radix_engine_common::types::ResourceAddress;
+use radix_engine_common::types::{ComponentAddress, ResourceAddress};
 use radix_engine_interface::api::{ClientApi, LockFlags, ModuleId, ACTOR_STATE_SELF};
 use radix_engine_interface::data::manifest::ManifestArgs;
 use radix_engine_interface::prelude::{
@@ -181,16 +181,60 @@ impl ResourceFuzzTransformBucketAction {
                 let amount1 = fuzzer.next_amount();
                 let amount2 = fuzzer.next_amount();
                 let builder = builder
-                    .take_from_worktop(
-                        vault_meta.resource_address,
-                        amount1,
-                        "bucket1",
-                    )
-                    .take_from_worktop(
-                        vault_meta.resource_address,
-                        amount2,
-                        "bucket2",
-                    )
+                    .take_from_worktop(vault_meta.resource_address, amount1, "bucket1")
+                    .take_from_worktop(vault_meta.resource_address, amount2, "bucket2")
+                    .with_name_lookup(|builder, lookup| {
+                        builder.call_method(
+                            vault_meta.component_address,
+                            "combine_buckets",
+                            manifest_args!(lookup.bucket("bucket1"), lookup.bucket("bucket2")),
+                        )
+                    });
+
+                (builder, amount1.is_zero() && amount2.is_zero())
+            }
+        }
+    }
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]
+pub enum ResourceFuzzRandomAction {
+    AccountTake,
+    FungibleMint,
+    CombineBuckets,
+}
+
+impl ResourceFuzzRandomAction {
+    pub fn add_to_manifest(
+        &self,
+        builder: ManifestBuilder,
+        fuzzer: &mut TestFuzzer,
+        account: ComponentAddress,
+        vault_meta: &ResourceComponentMeta,
+    ) -> (ManifestBuilder, bool) {
+        match self {
+            ResourceFuzzRandomAction::AccountTake => {
+                let amount = fuzzer.next_amount();
+                let builder =
+                    builder.withdraw_from_account(account, fuzzer.next_resource(), amount);
+                (builder, amount.is_zero())
+            }
+            ResourceFuzzRandomAction::FungibleMint => {
+                let amount = fuzzer.next_amount();
+                let builder = builder.call_method(
+                    fuzzer.next_resource(),
+                    FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+                    FungibleResourceManagerMintInput { amount },
+                );
+                (builder, false)
+            }
+            ResourceFuzzRandomAction::CombineBuckets => {
+                let amount1 = fuzzer.next_amount();
+                let amount2 = fuzzer.next_amount();
+                let builder = builder
+                    .take_from_worktop(fuzzer.next_resource(), amount1, "bucket1")
+                    .take_from_worktop(fuzzer.next_resource(), amount2, "bucket2")
                     .with_name_lookup(|builder, lookup| {
                         builder.call_method(
                             vault_meta.component_address,

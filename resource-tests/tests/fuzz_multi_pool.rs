@@ -13,5 +13,5 @@ fn fuzz_multi_pool() {
         }
     }
 
-    FuzzTest::<MultiResourcePoolFuzzer>::run_fuzz();
+    FuzzTest::<MultiResourcePoolFuzzer>::run_fuzz(32, 100);
 }
