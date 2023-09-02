@@ -75,6 +75,16 @@ mod big_fi {
 
             bucket
         }
+
+        pub fn set_swappy_metadata(&self) {
+            self.swappy.set_metadata("key", "value".to_string());
+        }
+
+        pub fn some_method(&self) {
+        }
+
+        pub fn some_function() {
+        }
     }
 }
 
@@ -105,6 +115,7 @@ mod swappy {
         methods {
             public_method => PUBLIC;
             put_proof_in_auth_zone => PUBLIC;
+            set_metadata => PUBLIC;
             protected_method => restrict_to: [some_role];
         }
     }
@@ -151,6 +162,10 @@ mod swappy {
 
         pub fn put_proof_in_auth_zone(&self, proof: Proof) {
             LocalAuthZone::push(proof);
+        }
+
+        pub fn set_metadata(&self) {
+            Runtime::global_component().set_metadata("key", "value".to_string());
         }
     }
 }
