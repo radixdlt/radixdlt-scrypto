@@ -379,38 +379,7 @@ impl NonFungibleVaultBlueprint {
     {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
-        // deduct from liquidity pool
-        let handle = api.actor_open_field(
-            ACTOR_STATE_SELF,
-            NonFungibleVaultField::Balance.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut balance = api
-            .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
-            .into_latest();
-
-        // Early exit if input amount is obviously wrong
-        // This is to prevent for_withdrawal from overflowing in case a bad amount is sent in
-        {
-            if amount.is_negative() {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::VaultError(VaultError::InvalidAmount),
-                ));
-            }
-
-            let vault_amount_plus_one = balance
-                .amount
-                .safe_add(Decimal::ONE)
-                .ok_or_else(|| VaultError::DecimalOverflow)?;
-            if amount > &vault_amount_plus_one {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
-                ));
-            }
-        }
-
-        // Check amount
-        let (amount, count) = {
+        let taken = {
             let amount = amount.for_withdrawal(0, withdraw_strategy).ok_or(
                 RuntimeError::ApplicationError(ApplicationError::NonFungibleVaultError(
                     NonFungibleVaultError::DecimalOverflow,
@@ -423,39 +392,8 @@ impl NonFungibleVaultBlueprint {
                 ))
             })?;
 
-            let amount = Decimal::from(n);
-
-            if balance.amount < amount {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
-                ));
-            }
-
-            (amount, n)
+            Self::internal_take_by_amount(n, api)?
         };
-
-        // Take
-        balance.amount = balance
-            .amount
-            .safe_sub(amount)
-            .ok_or_else(|| VaultError::DecimalOverflow)?;
-        let taken = {
-            let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
-                .actor_index_drain_typed(
-                    ACTOR_STATE_SELF,
-                    NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
-                    count,
-                )?;
-            LiquidNonFungibleResource {
-                ids: ids.into_iter().map(|(key, _value)| key).collect(),
-            }
-        };
-
-        api.field_write_typed(
-            handle,
-            &NonFungibleVaultBalanceFieldPayload::from_content_source(balance),
-        )?;
-        api.field_close(handle)?;
 
         // Create node
         let ids = taken.into_ids();

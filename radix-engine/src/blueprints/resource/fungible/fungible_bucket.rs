@@ -33,7 +33,7 @@ impl FungibleBucketBlueprint {
 
     pub fn take<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::take_advanced(amount, WithdrawStrategy::Exact, api)
     }
@@ -44,60 +44,17 @@ impl FungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        // Take
-        let handle = api.actor_open_field(
-            ACTOR_STATE_SELF,
-            FungibleBucketField::Liquid.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut liquid: LiquidFungibleResource = api.field_read_typed(handle)?;
+        let taken = {
+            let divisibility = Self::get_divisibility(api)?;
+            // Apply withdraw strategy
+            let amount = amount
+                .for_withdrawal(divisibility, withdraw_strategy)
+                .ok_or(BucketError::DecimalOverflow)?;
 
-        // Early exit if input amount is obviously wrong
-        // This is to prevent for_withdrawal from overflowing in case a bad amount is sent in
-        {
-            if amount.is_negative() {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::BucketError(BucketError::InvalidAmount(amount)),
-                ));
-            }
-            let liquid_amount = liquid.amount();
-            let bucket_amount_plus_one = liquid_amount
-                .safe_add(Decimal::ONE)
-                .ok_or_else(|| BucketError::DecimalOverflow)?;
-            if amount > bucket_amount_plus_one {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::BucketError(BucketError::ResourceError(
-                        ResourceError::InsufficientBalance {
-                            requested: amount,
-                            actual: liquid_amount,
-                        },
-                    )),
-                ));
-            }
-        }
-
-        // Apply withdraw strategy
-        let divisibility = Self::get_divisibility(api)?;
-        let amount = amount
-            .for_withdrawal(divisibility, withdraw_strategy)
-            .ok_or(BucketError::DecimalOverflow)?;
-
-        // Check amount
-        if !(check_fungible_amount(&amount, divisibility)) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::InvalidAmount(amount)),
-            ));
-        }
-
-        let taken = liquid.take_by_amount(amount).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceError(e),
-            ))
-        })?;
-        api.field_write_typed(handle, &liquid)?;
-        api.field_close(handle)?;
+            Self::internal_take(amount, api)?
+        };
 
         // Create node
         let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
@@ -129,7 +86,7 @@ impl FungibleBucketBlueprint {
 
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
             .safe_add(Self::locked_amount(api)?)
@@ -154,7 +111,7 @@ impl FungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
@@ -190,7 +147,7 @@ impl FungibleBucketBlueprint {
 
     pub fn create_proof_of_all<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::create_proof_of_amount(receiver, Self::get_amount(api)?, api)
     }
@@ -201,7 +158,7 @@ impl FungibleBucketBlueprint {
 
     pub fn lock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -232,7 +189,7 @@ impl FungibleBucketBlueprint {
 
     pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -281,7 +238,7 @@ impl FungibleBucketBlueprint {
 
     fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -299,7 +256,7 @@ impl FungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<LiquidFungibleResource, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
