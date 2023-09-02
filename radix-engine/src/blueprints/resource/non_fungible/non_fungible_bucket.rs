@@ -25,54 +25,21 @@ impl NonFungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
-            ACTOR_STATE_SELF,
-            NonFungibleBucketField::Liquid.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let taken = {
+            // Apply withdraw strategy
+            let amount = amount
+                .for_withdrawal(0, withdraw_strategy)
+                .ok_or(BucketError::DecimalOverflow)?;
 
-        let mut liquid: LiquidNonFungibleResource = api.field_read_typed(handle)?;
+            // Check amount
+            let n = check_non_fungible_amount(&amount).map_err(|_| {
+                RuntimeError::ApplicationError(ApplicationError::BucketError(
+                    BucketError::InvalidAmount,
+                ))
+            })?;
 
-        // Early exit if input amount is obviously wrong
-        // This is to prevent for_withdrawal from overflowing in case a bad amount is sent in
-        {
-            if amount.is_negative() {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::BucketError(BucketError::InvalidAmount),
-                ));
-            }
-            let bucket_amount_plus_one = liquid
-                .amount()
-                .safe_add(Decimal::ONE)
-                .ok_or_else(|| BucketError::DecimalOverflow)?;
-            if amount > &bucket_amount_plus_one {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::BucketError(BucketError::ResourceError(
-                        ResourceError::InsufficientBalance,
-                    )),
-                ));
-            }
-        }
-
-        // Apply withdraw strategy
-        let amount = amount
-            .for_withdrawal(0, withdraw_strategy)
-            .ok_or(BucketError::DecimalOverflow)?;
-
-        // Check amount
-        let n = check_non_fungible_amount(&amount).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::InvalidAmount,
-            ))
-        })?;
-
-        // Take
-        let taken = liquid
-            .take_by_amount(n)
-            .map_err(BucketError::ResourceError)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
-        api.field_write_typed(handle, &liquid)?;
-        api.field_close(handle)?;
+            Self::internal_take_by_amount(n, api)?
+        };
 
         // Create node
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
@@ -354,6 +321,32 @@ impl NonFungibleBucketBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
         api.field_write_typed(handle, &substate)?;
         api.field_close(handle)?;
+        Ok(taken)
+    }
+
+    fn internal_take_by_amount<Y>(
+        n: u32,
+        api: &mut Y,
+    ) -> Result<LiquidNonFungibleResource, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            NonFungibleBucketField::Liquid.into(),
+            LockFlags::MUTABLE,
+        )?;
+
+        let mut liquid: LiquidNonFungibleResource = api.field_read_typed(handle)?;
+
+        // Take
+        let taken = liquid
+            .take_by_amount(n)
+            .map_err(BucketError::ResourceError)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
+        api.field_write_typed(handle, &liquid)?;
+        api.field_close(handle)?;
+
         Ok(taken)
     }
 
