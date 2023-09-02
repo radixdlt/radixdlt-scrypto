@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, LockFlags, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
@@ -223,7 +222,7 @@ impl FungibleBucketBlueprint {
 
     fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
