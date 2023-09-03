@@ -1,3 +1,4 @@
+use radix_engine::errors::SystemError;
 use radix_engine::{
     blueprints::resource::BucketError,
     errors::{ApplicationError, CallFrameError, KernelError, RuntimeError},
@@ -51,11 +52,6 @@ fn test_bucket_drop_not_empty() {
 #[test]
 fn test_bucket_combine() {
     test_bucket_internal("combine", manifest_args!().into(), true);
-}
-
-#[test]
-fn test_bucket_combine_invalid() {
-    test_bucket_internal("combine_invalid", manifest_args!().into(), false);
 }
 
 #[test]
@@ -300,6 +296,130 @@ fn test_drop_locked_non_fungible_bucket() {
             RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::DropNodeError(
                 DropNodeError::NodeBorrowed(..)
             )))
+        )
+    });
+}
+
+#[test]
+fn test_bucket_combine_fungible_invalid() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "InvalidCombine",
+            "combine_fungible_invalid",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
+        )
+    });
+}
+
+#[test]
+fn test_bucket_combine_non_fungible_invalid() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "InvalidCombine",
+            "combine_non_fungible_invalid",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
+        )
+    });
+}
+
+#[test]
+fn test_vault_combine_fungible_invalid() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "InvalidCombine",
+            "combine_fungible_vault_invalid",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
+        )
+    });
+}
+
+#[test]
+fn test_vault_combine_non_fungible_invalid() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "InvalidCombine",
+            "combine_non_fungible_vault_invalid",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
         )
     });
 }
