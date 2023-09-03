@@ -202,6 +202,7 @@ impl ResourceFuzzTransformBucketAction {
 pub enum ResourceFuzzRandomAction {
     AccountTake,
     FungibleMint,
+    NonFungibleMint,
     CombineBuckets,
 }
 
@@ -226,6 +227,18 @@ impl ResourceFuzzRandomAction {
                     fuzzer.next_resource(),
                     FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                     FungibleResourceManagerMintInput { amount },
+                );
+                (builder, false)
+            }
+            ResourceFuzzRandomAction::NonFungibleMint => {
+                let entries = fuzzer.next_non_fungible_id_set()
+                    .into_iter()
+                    .map(|id| (id, (manifest_decode(&manifest_encode(&()).unwrap()).unwrap(),)))
+                    .collect();
+                let builder = builder.call_method(
+                    fuzzer.next_resource(),
+                    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+                    NonFungibleResourceManagerMintManifestInput { entries },
                 );
                 (builder, false)
             }

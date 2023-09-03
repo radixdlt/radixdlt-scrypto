@@ -105,10 +105,17 @@ impl TestFuzzer {
     }
 
     pub fn next_non_fungible_id_set(&mut self) -> BTreeSet<NonFungibleLocalId> {
-        (0u64..self.rng.gen_range(0u64..4u64))
-            .into_iter()
-            .map(|_| self.next_integer_non_fungible_id())
-            .collect()
+        match self.rng.gen_range(0u64..4u64) {
+            0u64 => {
+                btreeset!(NonFungibleLocalId::integer(self.rng.gen_range(0u64..100u64)))
+            }
+            _ => {
+                (0u64..self.rng.gen_range(0u64..4u64))
+                    .into_iter()
+                    .map(|_| self.next_integer_non_fungible_id())
+                    .collect()
+            }
+        }
     }
 
     pub fn next<T, R>(&mut self, range: R) -> T
@@ -120,7 +127,7 @@ impl TestFuzzer {
     }
 
     pub fn next_withdraw_strategy(&mut self) -> WithdrawStrategy {
-        match self.next_u32(4) {
+        match self.next(0u32..=7u32) {
             0u32 => WithdrawStrategy::Exact,
             1u32 => WithdrawStrategy::Rounded(RoundingMode::AwayFromZero),
             2u32 => WithdrawStrategy::Rounded(RoundingMode::ToNearestMidpointAwayFromZero),
@@ -134,10 +141,6 @@ impl TestFuzzer {
 
     pub fn add_resource(&mut self, resource_address: ResourceAddress) {
         self.resources.push(resource_address);
-    }
-
-    pub fn add_resources(&mut self, resources: &Vec<ResourceAddress>) {
-        self.resources.extend(resources);
     }
 
     pub fn next_resource(&mut self) -> ResourceAddress {
@@ -329,9 +332,6 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             let stake_unit_resource = validator_substate.stake_unit_resource;
             let claim_resource = validator_substate.claim_nft;
 
-            fuzzer.add_resource(stake_unit_resource);
-            fuzzer.add_resource(claim_resource);
-
             ValidatorMeta {
                 validator_address,
                 stake_unit_resource,
@@ -423,8 +423,6 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     )
                 })
                 .collect();
-
-            fuzzer.add_resources(&pool_resources);
 
             let (pool_component, pool_unit_resource) = {
                 let manifest = ManifestBuilder::new()
@@ -559,6 +557,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 vec![virtual_signature_badge.clone()],
             );
             let resource_address = receipt.expect_commit_success().new_resource_addresses()[0];
+
+            fuzzer.add_resource(resource_address);
 
             let manifest = {
                 let mut builder = ManifestBuilder::new();
