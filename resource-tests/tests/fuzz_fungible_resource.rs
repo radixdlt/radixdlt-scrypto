@@ -1,7 +1,7 @@
 use radix_engine::types::*;
 use resource_tests::resource::{
-    FungibleResourceFuzzGetBucketAction,
-    ResourceFuzzTransformBucketAction, ResourceFuzzUseBucketAction,
+    FungibleResourceFuzzGetBucketAction, ResourceFuzzTransformBucketAction,
+    ResourceFuzzUseBucketAction,
 };
 use resource_tests::{FuzzAction, FuzzTest, TestFuzzer, TxnFuzzer};
 

@@ -204,6 +204,7 @@ pub enum ResourceFuzzRandomAction {
     FungibleMint,
     NonFungibleMint,
     CombineBuckets,
+    VaultPut,
 }
 
 impl ResourceFuzzRandomAction {
@@ -212,7 +213,8 @@ impl ResourceFuzzRandomAction {
         builder: ManifestBuilder,
         fuzzer: &mut TestFuzzer,
         account: ComponentAddress,
-        vault_meta: &ResourceComponentMeta,
+        fungible_vault_meta: &ResourceComponentMeta,
+        non_fungible_vault_meta: &ResourceComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
             ResourceFuzzRandomAction::AccountTake => {
@@ -231,12 +233,18 @@ impl ResourceFuzzRandomAction {
                 (builder, false)
             }
             ResourceFuzzRandomAction::NonFungibleMint => {
-                let entries = fuzzer.next_non_fungible_id_set()
+                let entries = fuzzer
+                    .next_non_fungible_id_set()
                     .into_iter()
-                    .map(|id| (id, (manifest_decode(&manifest_encode(&()).unwrap()).unwrap(),)))
+                    .map(|id| {
+                        (
+                            id,
+                            (manifest_decode(&manifest_encode(&()).unwrap()).unwrap(),),
+                        )
+                    })
                     .collect();
                 let builder = builder.call_method(
-                    fuzzer.next_resource(),
+                    fuzzer.next_non_fungible(),
                     NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                     NonFungibleResourceManagerMintManifestInput { entries },
                 );
@@ -250,13 +258,32 @@ impl ResourceFuzzRandomAction {
                     .take_from_worktop(fuzzer.next_resource(), amount2, "bucket2")
                     .with_name_lookup(|builder, lookup| {
                         builder.call_method(
-                            vault_meta.component_address,
+                            fungible_vault_meta.component_address,
                             "combine_buckets",
                             manifest_args!(lookup.bucket("bucket1"), lookup.bucket("bucket2")),
                         )
                     });
 
                 (builder, amount1.is_zero() && amount2.is_zero())
+            }
+            ResourceFuzzRandomAction::VaultPut => {
+                let amount = fuzzer.next_amount();
+                let component = match fuzzer.next(0u32..=1u32) {
+                    0u32 => fungible_vault_meta.component_address,
+                    _ => non_fungible_vault_meta.component_address,
+                };
+
+                let builder = builder
+                    .take_from_worktop(fuzzer.next_resource(), amount, "bucket")
+                    .with_name_lookup(|builder, lookup| {
+                        builder.call_method(
+                            component,
+                            "call_vault",
+                            manifest_args!(VAULT_PUT_IDENT, (lookup.bucket("bucket"),)),
+                        )
+                    });
+
+                (builder, amount.is_zero())
             }
         }
     }

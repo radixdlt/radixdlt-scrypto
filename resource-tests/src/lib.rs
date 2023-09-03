@@ -43,6 +43,8 @@ use transaction::prelude::Secp256k1PrivateKey;
 pub struct TestFuzzer {
     rng: ChaCha8Rng,
     resources: Vec<ResourceAddress>,
+    non_fungibles: Vec<ResourceAddress>,
+    fungibles: Vec<ResourceAddress>,
 }
 
 impl TestFuzzer {
@@ -51,26 +53,30 @@ impl TestFuzzer {
         Self {
             rng,
             resources: Vec::new(),
+            non_fungibles: Vec::new(),
+            fungibles: Vec::new(),
         }
     }
 
     pub fn next_amount(&mut self) -> Decimal {
-        let next_amount_type = self.rng.gen_range(0u32..=8u32);
+        let next_amount_type = self.rng.gen_range(0u32..=4u32);
         match next_amount_type {
-            0 => Decimal::ZERO,
-            1 => Decimal::ONE,
-            2 => Decimal::MAX,
-            3 => Decimal::MIN,
-            4 => Decimal(I192::ONE),
-            5 => {
+            0 => match self.rng.gen_range(0u32..=4u32) {
+                0 => Decimal::ZERO,
+                1 => Decimal::ONE,
+                2 => Decimal::MAX,
+                3 => Decimal::MIN,
+                _ => Decimal(I192::ONE),
+            },
+            1 => {
                 let amount = self.rng.gen_range(0u64..u64::MAX);
                 Decimal::from(amount)
             }
-            6 => {
+            2 => {
                 let amount = self.rng.gen_range(1000u64..10000u64);
                 Decimal::from(amount)
             }
-            7 => {
+            3 => {
                 let mut bytes = [0u8; 24];
                 let (start, _end) = bytes.split_at_mut(8);
                 self.rng.fill_bytes(start);
@@ -107,14 +113,14 @@ impl TestFuzzer {
     pub fn next_non_fungible_id_set(&mut self) -> BTreeSet<NonFungibleLocalId> {
         match self.rng.gen_range(0u64..4u64) {
             0u64 => {
-                btreeset!(NonFungibleLocalId::integer(self.rng.gen_range(0u64..100u64)))
+                btreeset!(NonFungibleLocalId::integer(
+                    self.rng.gen_range(0u64..100u64)
+                ))
             }
-            _ => {
-                (0u64..self.rng.gen_range(0u64..4u64))
-                    .into_iter()
-                    .map(|_| self.next_integer_non_fungible_id())
-                    .collect()
-            }
+            _ => (0u64..self.rng.gen_range(0u64..4u64))
+                .into_iter()
+                .map(|_| self.next_integer_non_fungible_id())
+                .collect(),
         }
     }
 
@@ -141,11 +147,21 @@ impl TestFuzzer {
 
     pub fn add_resource(&mut self, resource_address: ResourceAddress) {
         self.resources.push(resource_address);
+        if resource_address.is_fungible() {
+            self.fungibles.push(resource_address);
+        } else {
+            self.non_fungibles.push(resource_address);
+        }
     }
 
     pub fn next_resource(&mut self) -> ResourceAddress {
         let index = self.rng.gen_range(0usize..self.resources.len());
         self.resources[index]
+    }
+
+    pub fn next_non_fungible(&mut self) -> ResourceAddress {
+        let index = self.rng.gen_range(0usize..self.non_fungibles.len());
+        self.non_fungibles[index]
     }
 }
 
@@ -175,7 +191,7 @@ impl FuzzAction {
         two_resource_pool: &TwoPoolMeta,
         multi_resource_pool: &MultiPoolMeta,
         fungible_component: &ResourceComponentMeta,
-        non_fungible_vault_component: &ResourceComponentMeta,
+        non_fungible_component: &ResourceComponentMeta,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
@@ -204,16 +220,17 @@ impl FuzzAction {
                 action.add_to_manifest(builder, fuzzer, fungible_component)
             }
             FuzzAction::NonFungibleGetBucket(action) => {
-                action.add_to_manifest(builder, fuzzer, non_fungible_vault_component)
+                action.add_to_manifest(builder, fuzzer, non_fungible_component)
             }
             FuzzAction::NonFungibleUseBucket(action) => {
-                action.add_to_manifest(builder, fuzzer, non_fungible_vault_component)
+                action.add_to_manifest(builder, fuzzer, non_fungible_component)
             }
             FuzzAction::Resource(action) => action.add_to_manifest(
                 builder,
                 fuzzer,
                 account_address,
-                non_fungible_vault_component,
+                fungible_component,
+                non_fungible_component,
             ),
         }
     }
@@ -633,10 +650,15 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             }
         }
 
+        let mut missing_success = BTreeSet::new();
         for (intent, results) in &summed_results {
             if !results.contains_key(&FuzzTxnResult::Success) {
-                panic!("No successful intent of: {:?}", intent)
+                missing_success.insert(intent);
             }
+        }
+
+        if !missing_success.is_empty() {
+            panic!("Missing intent success: {:#?}", missing_success);
         }
 
         println!("{:#?}", summed_results);

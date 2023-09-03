@@ -22,5 +22,5 @@ fn fuzz_non_fungible_resource() {
         }
     }
 
-    FuzzTest::<NonFungibleResourceFuzzer>::run_fuzz(32, 100);
+    FuzzTest::<NonFungibleResourceFuzzer>::run_fuzz(32, 1000);
 }

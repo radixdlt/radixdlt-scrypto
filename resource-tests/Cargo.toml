@@ -17,7 +17,9 @@ transaction-scenarios = { path = "../transaction-scenarios", default-features = 
 utils = { path = "../utils", default-features = false }
 radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"]}
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
+scrypto-test = { path = "../scrypto-test", default-features = false }
 wabt = { version = "0.10.0" }
+criterion = { version = "0.3", features = ["html_reports"] }
 scrypto = { path = "../scrypto", default-features = false }
 sbor-derive = { path = "../sbor-derive", default-features = false }
 scrypto-unit = { path = "../scrypto-unit", default-features = false }
