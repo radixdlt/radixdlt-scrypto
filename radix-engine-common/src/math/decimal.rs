@@ -377,65 +377,65 @@ impl Neg for Decimal {
 }
 
 impl Add<Decimal> for Decimal {
-    type Output = Decimal;
+    type Output = Self;
 
     #[inline]
-    fn add(self, other: Decimal) -> Self::Output {
+    fn add(self, other: Self) -> Self::Output {
         self.safe_add(other).expect("Overflow")
     }
 }
 
 impl Sub<Decimal> for Decimal {
-    type Output = Decimal;
+    type Output = Self;
 
     #[inline]
-    fn sub(self, other: Decimal) -> Self::Output {
+    fn sub(self, other: Self) -> Self::Output {
         self.safe_sub(other).expect("Overflow")
     }
 }
 
 impl Mul<Decimal> for Decimal {
-    type Output = Decimal;
+    type Output = Self;
 
     #[inline]
-    fn mul(self, other: Decimal) -> Self::Output {
+    fn mul(self, other: Self) -> Self::Output {
         self.safe_mul(other).expect("Overflow")
     }
 }
 
 impl Div<Decimal> for Decimal {
-    type Output = Decimal;
+    type Output = Self;
 
     #[inline]
-    fn div(self, other: Decimal) -> Self::Output {
+    fn div(self, other: Self) -> Self::Output {
         self.safe_div(other).expect("Overflow or division by zero")
     }
 }
 
 impl AddAssign<Decimal> for Decimal {
     #[inline]
-    fn add_assign(&mut self, other: Decimal) {
+    fn add_assign(&mut self, other: Self) {
         *self = *self + other;
     }
 }
 
 impl SubAssign<Decimal> for Decimal {
     #[inline]
-    fn sub_assign(&mut self, other: Decimal) {
+    fn sub_assign(&mut self, other: Self) {
         *self = *self - other;
     }
 }
 
 impl MulAssign<Decimal> for Decimal {
     #[inline]
-    fn mul_assign(&mut self, other: Decimal) {
+    fn mul_assign(&mut self, other: Self) {
         *self = *self * other;
     }
 }
 
 impl DivAssign<Decimal> for Decimal {
     #[inline]
-    fn div_assign(&mut self, other: Decimal) {
+    fn div_assign(&mut self, other: Self) {
         *self = *self / other;
     }
 }
@@ -509,7 +509,7 @@ macro_rules! impl_arith_ops {
         }
 
         impl Add<$type> for Decimal {
-            type Output = Decimal;
+            type Output = Self;
 
             #[inline]
             fn add(self, other: $type) -> Self::Output {
@@ -518,7 +518,7 @@ macro_rules! impl_arith_ops {
         }
 
         impl Sub<$type> for Decimal {
-            type Output = Decimal;
+            type Output = Self;
 
 
             #[inline]
@@ -528,7 +528,7 @@ macro_rules! impl_arith_ops {
         }
 
         impl Mul<$type> for Decimal {
-            type Output = Decimal;
+            type Output = Self;
 
             #[inline]
             fn mul(self, other: $type) -> Self::Output {
@@ -537,7 +537,7 @@ macro_rules! impl_arith_ops {
         }
 
         impl Div<$type> for Decimal {
-            type Output = Decimal;
+            type Output = Self;
 
             #[inline]
             fn div(self, other: $type) -> Self::Output {
