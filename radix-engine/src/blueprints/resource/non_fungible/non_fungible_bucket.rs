@@ -34,7 +34,7 @@ impl NonFungibleBucketBlueprint {
             // Check amount
             let n = check_non_fungible_amount(&amount).map_err(|_| {
                 RuntimeError::ApplicationError(ApplicationError::BucketError(
-                    BucketError::InvalidAmount,
+                    BucketError::InvalidAmount(amount),
                 ))
             })?;
 

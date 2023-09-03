@@ -41,14 +41,6 @@ mod bucket_test {
             bucket.drop_empty();
         }
 
-        pub fn combine_invalid() -> Bucket {
-            let mut bucket1 = Self::create_test_token(100);
-            let bucket2 = Self::create_test_token(100);
-
-            bucket1.put(bucket2);
-            bucket1
-        }
-
         pub fn combine() -> Bucket {
             let mut bucket1 = Self::create_test_token(100);
             let bucket2 = bucket1.take(50);
@@ -190,6 +182,72 @@ mod bucket_test {
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
             .globalize();
+        }
+    }
+}
+
+#[blueprint]
+mod invalid_combine_test {
+    struct InvalidCombine {
+        vault: Vault,
+    }
+
+    impl InvalidCombine {
+        fn create_test_token() -> Bucket {
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .mint_initial_supply(100)
+                .into();
+            bucket
+        }
+
+        fn create_non_fungible_test_token() -> Bucket {
+            let bucket: Bucket = ResourceBuilder::new_ruid_non_fungible(OwnerRole::None)
+                .mint_initial_supply(vec![()])
+                .into();
+            bucket
+        }
+
+        pub fn combine_fungible_invalid() -> Bucket {
+            let mut bucket1 = Self::create_test_token();
+            let bucket2 = Self::create_test_token();
+
+            bucket1.put(bucket2);
+            bucket1
+        }
+
+        pub fn combine_non_fungible_invalid() -> Bucket {
+            let mut bucket1 = Self::create_non_fungible_test_token();
+            let bucket2 = Self::create_non_fungible_test_token();
+
+            bucket1.put(bucket2);
+            bucket1
+        }
+
+        pub fn combine_fungible_vault_invalid() -> Global<InvalidCombine> {
+            let bucket1 = Self::create_test_token();
+            let mut vault = Vault::with_bucket(bucket1);
+            let bucket2 = Self::create_test_token();
+
+            vault.put(bucket2);
+
+            InvalidCombine { vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
+        }
+
+        pub fn combine_non_fungible_vault_invalid() -> Global<InvalidCombine> {
+            let bucket1 = Self::create_non_fungible_test_token();
+            let mut vault = Vault::with_bucket(bucket1);
+            let bucket2 = Self::create_non_fungible_test_token();
+
+            vault.put(bucket2);
+
+            InvalidCombine { vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
     }
 }

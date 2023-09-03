@@ -122,7 +122,7 @@ impl FungibleBucketBlueprint {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::InvalidAmount),
+                ApplicationError::BucketError(BucketError::InvalidAmount(amount)),
             ));
         }
 
