@@ -418,7 +418,7 @@ macro_rules! impl_arith_ops {
             type Output = Self;
 
             fn safe_add(self, other: $type) -> Option<Self::Output> {
-                self.safe_add(Self::from(other))
+                self.safe_add(Self::try_from(other).ok()?)
             }
         }
 
@@ -426,7 +426,7 @@ macro_rules! impl_arith_ops {
             type Output = Self;
 
             fn safe_sub(self, other: $type) -> Option<Self::Output> {
-                self.safe_sub(Self::from(other))
+                self.safe_sub(Self::try_from(other).ok()?)
             }
         }
 
@@ -434,7 +434,7 @@ macro_rules! impl_arith_ops {
             type Output = Self;
 
             fn safe_mul(self, other: $type) -> Option<Self::Output> {
-                self.safe_mul(Self::from(other))
+                self.safe_mul(Self::try_from(other).ok()?)
             }
         }
 
@@ -442,7 +442,7 @@ macro_rules! impl_arith_ops {
             type Output = Self;
 
             fn safe_div(self, other: $type) -> Option<Self::Output> {
-                self.safe_div(Self::from(other))
+                self.safe_div(Self::try_from(other).ok()?)
             }
         }
 
@@ -459,7 +459,7 @@ macro_rules! impl_arith_ops {
             type Output = Decimal;
 
             fn safe_sub(self, other: Decimal) -> Option<Self::Output> {
-                Decimal::from(self).safe_sub(other)
+                Decimal::try_from(self).ok()?.safe_sub(other)
             }
         }
 
@@ -476,7 +476,7 @@ macro_rules! impl_arith_ops {
             type Output = Decimal;
 
             fn safe_div(self, other: Decimal) -> Option<Self::Output> {
-                Decimal::from(self).safe_div(other)
+                Decimal::try_from(self).ok()?.safe_div(other)
             }
         }
 
@@ -561,6 +561,12 @@ impl_arith_ops!(i32);
 impl_arith_ops!(i64);
 impl_arith_ops!(i128);
 impl_arith_ops!(isize);
+impl_arith_ops!(I192);
+impl_arith_ops!(I256);
+impl_arith_ops!(I512);
+impl_arith_ops!(U192);
+impl_arith_ops!(U256);
+impl_arith_ops!(U512);
 
 //========
 // binary
@@ -1653,6 +1659,44 @@ mod tests {
     test_arith_decimal_primitive!(i64);
     test_arith_decimal_primitive!(i128);
     test_arith_decimal_primitive!(isize);
+
+    macro_rules! test_arith_decimal_integer {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_arith_decimal_$type:lower>]() {
+                    let d1 = Decimal::ONE;
+                    let u1 = $type::try_from(2).unwrap();
+                    let u2 = $type::try_from(1).unwrap();
+                    let d2 = Decimal::from(2);
+                    assert_eq!(d1.safe_mul(u1).unwrap(), u2.safe_mul(d2).unwrap());
+                    assert_eq!(d1.safe_div(u1).unwrap(), u2.safe_div(d2).unwrap());
+                    assert_eq!(d1.safe_add(u1).unwrap(), u2.safe_add(d2).unwrap());
+                    assert_eq!(d1.safe_sub(u1).unwrap(), u2.safe_sub(d2).unwrap());
+
+                    let d1 = dec!("2");
+                    let u1 = $type::MAX;
+                    assert!(d1.safe_mul(u1).is_none());
+                    assert!(d1.safe_add(u1).is_none());
+                    assert!(d1.safe_sub(u1).is_none());
+                    assert!(d1.safe_div(u1).is_none());
+
+                    let d1 = Decimal::MAX;
+                    let u1 = $type::try_from(2).unwrap();
+                    assert_eq!(d1.safe_mul(u1), None);
+                    assert_eq!(d1.safe_div(u1).unwrap(), Decimal::MAX / dec!("2"));
+                    assert_eq!(d1.safe_add(u1), None);
+                    assert_eq!(d1.safe_sub(u1).unwrap(), Decimal::MAX - dec!("2"));
+                }
+            }
+        };
+    }
+    test_arith_decimal_integer!(I192);
+    test_arith_decimal_integer!(I256);
+    test_arith_decimal_integer!(I512);
+    test_arith_decimal_integer!(U192);
+    test_arith_decimal_integer!(U256);
+    test_arith_decimal_integer!(U512);
 
     macro_rules! test_math_operands_decimal {
         ($type:ident) => {
