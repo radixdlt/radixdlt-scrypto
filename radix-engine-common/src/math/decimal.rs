@@ -1660,6 +1660,22 @@ mod tests {
         ))
     }
 
+    #[test]
+    fn test_neg_decimal() {
+        let d = Decimal::ONE;
+        assert_eq!(-d, dec!("-1"));
+        let d = Decimal::MAX;
+        assert_eq!(-d, Decimal(I192::MIN + I192::ONE));
+    }
+
+    #[test]
+    #[should_panic(expected = "Overflow")]
+    fn test_neg_decimal_panic() {
+        let d = Decimal::MIN;
+        let _ = -d;
+    }
+
+
     // These tests make sure that any basic arithmetic operation
     // between primitive type and Decimal produces a Decimal, no matter the order.
     // Additionally result of such operation shall be equal, if operands are derived from the same
