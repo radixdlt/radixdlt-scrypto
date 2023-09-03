@@ -869,9 +869,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_add_overflow_decimal() {
-        let _ = Decimal::MAX.safe_add(Decimal::ONE).expect("Overflow");
+        assert!(Decimal::MAX.safe_add(Decimal::ONE).is_none());
     }
 
     #[test]
@@ -883,9 +882,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_sub_overflow_decimal() {
-        let _ = Decimal::MIN.safe_sub(Decimal::ONE).expect("Overflow");
+        assert!(Decimal::MIN.safe_sub(Decimal::ONE).is_none());
     }
 
     #[test]
@@ -902,43 +900,36 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_mul_overflow_by_small_decimal() {
-        let _ = Decimal::MAX
-            .safe_mul(dec!("1.000000000000000001"))
-            .expect("Overflow");
+        assert!(Decimal::MAX
+            .safe_mul(dec!("1.000000000000000001")).is_none());
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_mul_overflow_by_a_lot_decimal() {
-        let _ = Decimal::MAX.safe_mul(dec!("1.1")).expect("Overflow");
+        assert!(Decimal::MAX.safe_mul(dec!("1.1")).is_none());
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_mul_neg_overflow_decimal() {
-        let _ = Decimal::MAX
+        assert!(Decimal::MAX
             .safe_neg()
             .unwrap()
-            .safe_mul(dec!("-1.000000000000000001"))
-            .expect("Overflow");
+            .safe_mul(dec!("-1.000000000000000001")).is_none());
     }
 
     #[test]
-    #[should_panic]
     fn test_div_by_zero_decimal() {
         let a = Decimal::from(5u32);
         let b = Decimal::from(0u32);
-        a.safe_div(b).unwrap();
+        assert!(a.safe_div(b).is_none());
     }
 
     #[test]
-    #[should_panic]
     fn test_powi_exp_overflow_decimal() {
         let a = Decimal::from(5u32);
         let b = i64::MIN;
-        assert_eq!(a.safe_powi(b).unwrap().to_string(), "0");
+        assert!(a.safe_powi(b).is_none());
     }
 
     #[test]
