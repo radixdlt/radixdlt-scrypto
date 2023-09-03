@@ -81,7 +81,7 @@
 
 use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
-use radix_engine_derive::ScryptoSbor;
+use radix_engine_common::Sbor;
 use sbor::rust::collections::hash_map::HashMap;
 use sbor::rust::ops::Range;
 use sbor::rust::string::String;
@@ -679,7 +679,7 @@ impl LeafKey {
 
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/storage/jellyfish-merkle/src/node_type/mod.rs#L48
 /// The unique key of each node.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd, ScryptoSbor)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd, Sbor)]
 pub struct NodeKey {
     // The version at which the node is created.
     version: Version,
