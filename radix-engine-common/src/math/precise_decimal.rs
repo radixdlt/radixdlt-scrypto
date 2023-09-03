@@ -622,17 +622,6 @@ impl Truncate<Decimal> for PreciseDecimal {
     }
 }
 
-macro_rules! from_integer {
-    ($($t:ident),*) => {
-        $(
-            impl From<$t> for PreciseDecimal {
-                fn from(val: $t) -> Self {
-                    Self(I256::from(val) * Self::ONE.0)
-                }
-            }
-        )*
-    };
-}
 macro_rules! try_from_integer {
     ($($t:ident),*) => {
         $(
@@ -655,9 +644,8 @@ macro_rules! try_from_integer {
     };
 }
 
-from_integer!(I192, U192);
-try_from_integer!(I256, I320, I384, I448, I512);
-try_from_integer!(U256, U320, U384, U448, U512);
+try_from_integer!(I192, I256, I320, I384, I448, I512);
+try_from_integer!(U192, U256, U320, U384, U448, U512);
 
 #[cfg(test)]
 mod tests {
