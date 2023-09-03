@@ -1457,14 +1457,25 @@ mod tests {
     }
 
     test_try_from_integer_overflow! {
-        (I256::MAX, 1),
-        (I256::MIN, 2),
+        (I192::MAX, 1),
+        (I192::MIN, 2),
+        (I256::MAX, 3),
+        (I256::MIN, 4),
+        (I320::MAX, 5),
+        (I320::MIN, 6),
+        (I448::MAX, 7),
+        (I448::MIN, 8),
+        (I512::MAX, 9),
+        (I512::MIN, 10),
         // maximal PreciseDecimal integer part + 1
-        (I256::MAX/(I256::from(10).pow(PreciseDecimal::SCALE)) + I256::ONE, 3),
+        (I256::MAX/(I256::from(10).pow(PreciseDecimal::SCALE)) + I256::ONE, 11),
         // minimal PreciseDecimal integer part - 1
-        (I256::MIN/(I256::from(10).pow(PreciseDecimal::SCALE)) - I256::ONE, 4),
-        (I256::MIN, 5),
-        (I256::MAX, 6)
+        (I256::MIN/(I256::from(10).pow(PreciseDecimal::SCALE)) - I256::ONE, 12),
+        (U192::MAX, 13),
+        (U256::MAX, 14),
+        (U320::MAX, 15),
+        (U448::MAX, 16),
+        (U512::MAX, 17)
     }
 
     macro_rules! test_try_from_integer {
@@ -1482,34 +1493,25 @@ mod tests {
     }
 
     test_try_from_integer! {
-        (I256::ONE, "1", 1),
-        (-I256::ONE, "-1", 2),
-        // maximal PreciseDecimal integer part
-        (I256::MAX/(I256::from(10).pow(PreciseDecimal::SCALE)), "57896044618658097711785492504343953926634", 3),
-        // minimal PreciseDecimal integer part
-        (I256::MIN/(I256::from(10).pow(PreciseDecimal::SCALE)), "-57896044618658097711785492504343953926634", 4),
-        (U256::MIN, "0", 5)
-    }
-
-    macro_rules! test_from_integer {
-        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
-            paste!{
-            $(
-                #[test]
-                fn [<test_from_integer_ $suffix>]() {
-                    let dec = PreciseDecimal::from($from);
-                    assert_eq!(dec.to_string(), $expected)
-                }
-            )*
-            }
-        };
-    }
-
-    test_from_integer! {
         (I192::ONE, "1", 1),
         (-I192::ONE, "-1", 2),
-        (U192::MIN, "0", 3),
-        (U192::ONE, "1", 4)
+        (I256::ONE, "1", 3),
+        (-I256::ONE, "-1", 4),
+        (I320::ONE, "1", 5),
+        (-I320::ONE, "-1", 6),
+        (I448::ONE, "1", 7),
+        (-I448::ONE, "-1", 8),
+        (I512::ONE, "1", 9),
+        (-I512::ONE, "-1", 10),
+        // maximal PreciseDecimal integer part
+        (I256::MAX/(I256::from(10).pow(PreciseDecimal::SCALE)), "57896044618658097711785492504343953926634", 11),
+        // minimal PreciseDecimal integer part
+        (I256::MIN/(I256::from(10).pow(PreciseDecimal::SCALE)), "-57896044618658097711785492504343953926634", 12),
+        (U192::MIN, "0", 13),
+        (U256::MIN, "0", 14),
+        (U320::MIN, "0", 15),
+        (U448::MIN, "0", 16),
+        (U512::MIN, "0", 17)
     }
 
     #[test]
