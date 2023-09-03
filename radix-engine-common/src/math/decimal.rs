@@ -1918,4 +1918,10 @@ mod tests {
     test_math_operands_decimal!(i64);
     test_math_operands_decimal!(i128);
     test_math_operands_decimal!(isize);
+    test_math_operands_decimal!(I192);
+    test_math_operands_decimal!(I256);
+    test_math_operands_decimal!(I512);
+    test_math_operands_decimal!(U192);
+    test_math_operands_decimal!(U256);
+    test_math_operands_decimal!(U512);
 }
