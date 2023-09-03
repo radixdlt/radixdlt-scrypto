@@ -623,9 +623,13 @@ impl_arith_ops!(i128);
 impl_arith_ops!(isize);
 impl_arith_ops!(I192);
 impl_arith_ops!(I256);
+impl_arith_ops!(I320);
+impl_arith_ops!(I448);
 impl_arith_ops!(I512);
 impl_arith_ops!(U192);
 impl_arith_ops!(U256);
+impl_arith_ops!(U320);
+impl_arith_ops!(U448);
 impl_arith_ops!(U512);
 
 //========
@@ -794,7 +798,7 @@ macro_rules! try_from_integer {
         )*
     };
 }
-try_from_integer!(I192, I256, I512, U192, U256, U512);
+try_from_integer!(I192, I256, I320, I448, I512, U192, U256, U320, U448, U512);
 
 #[cfg(test)]
 mod tests {
@@ -1551,10 +1555,19 @@ mod tests {
         (I192::MAX/(I192::from(10).pow(Decimal::SCALE)) + I192::ONE, 3),
         // minimal Decimal integer part - 1
         (I192::MIN/(I192::from(10).pow(Decimal::SCALE)) - I192::ONE, 4),
-        (U256::MAX, 5),
-        (I512::MAX, 6),
-        (I512::MIN, 7),
-        (U512::MAX, 8)
+        (I256::MAX, 5),
+        (I256::MIN, 6),
+        (I320::MAX, 7),
+        (I320::MIN, 8),
+        (I448::MAX, 9),
+        (I448::MIN, 10),
+        (I512::MAX, 11),
+        (I512::MIN, 12),
+        (U192::MAX, 13),
+        (U256::MAX, 14),
+        (U320::MAX, 15),
+        (U448::MAX, 16),
+        (U512::MAX, 17)
     }
 
     macro_rules! test_try_from_integer {
@@ -1574,14 +1587,23 @@ mod tests {
     test_try_from_integer! {
         (I192::ONE, "1", 1),
         (-I192::ONE, "-1", 2),
+        (I256::ONE, "1", 3),
+        (-I256::ONE, "-1", 4),
+        (I320::ONE, "1", 5),
+        (-I320::ONE, "-1", 6),
+        (I448::ONE, "1", 7),
+        (-I448::ONE, "-1", 8),
+        (I512::ONE, "1", 9),
+        (-I512::ONE, "-1", 10),
         // maximal Decimal integer part
-        (I192::MAX/(I192::from(10_u64.pow(Decimal::SCALE))), "3138550867693340381917894711603833208051", 3),
+        (I192::MAX/(I192::from(10_u64.pow(Decimal::SCALE))), "3138550867693340381917894711603833208051", 11),
         // minimal Decimal integer part
-        (I192::MIN/(I192::from(10_u64.pow(Decimal::SCALE))), "-3138550867693340381917894711603833208051", 4),
-        (U256::MIN, "0", 5),
-        (U512::MIN, "0", 6),
-        (I512::ONE, "1", 7),
-        (-I512::ONE, "-1", 8)
+        (I192::MIN/(I192::from(10_u64.pow(Decimal::SCALE))), "-3138550867693340381917894711603833208051", 12),
+        (U192::MIN, "0", 13),
+        (U256::MIN, "0", 14),
+        (U320::MIN, "0", 15),
+        (U448::MIN, "0", 16),
+        (U512::MIN, "0", 17)
     }
 
     #[test]
@@ -1913,8 +1935,12 @@ mod tests {
     test_math_operands_decimal!(isize);
     test_math_operands_decimal!(I192);
     test_math_operands_decimal!(I256);
+    test_math_operands_decimal!(I320);
+    test_math_operands_decimal!(I448);
     test_math_operands_decimal!(I512);
     test_math_operands_decimal!(U192);
     test_math_operands_decimal!(U256);
+    test_math_operands_decimal!(U320);
+    test_math_operands_decimal!(U448);
     test_math_operands_decimal!(U512);
 }
