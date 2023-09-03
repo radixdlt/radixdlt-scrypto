@@ -1152,13 +1152,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_10_powi_16_precise_decimal() {
         let a = PreciseDecimal(10i128.into());
-        assert_eq!(
-            a.safe_powi(16).unwrap().to_string(),
-            "1000000000000000000000"
-        );
+        assert_eq!(a.safe_powi(16).unwrap().to_string(), "0");
     }
 
     #[test]
