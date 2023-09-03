@@ -6,6 +6,7 @@ use num_traits::{Pow, Zero};
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::format;
+use sbor::rust::ops::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
@@ -366,6 +367,51 @@ impl SafeDiv<Decimal> for Decimal {
     }
 }
 
+impl Neg for Decimal {
+    type Output = Self;
+
+    #[inline]
+    fn neg(self) -> Self::Output {
+        self.safe_neg().expect("Overflow")
+    }
+}
+
+impl Add<Decimal> for Decimal {
+    type Output = Decimal;
+
+    #[inline]
+    fn add(self, other: Decimal) -> Self::Output {
+        self.safe_add(other).expect("Overflow")
+    }
+}
+
+impl Sub<Decimal> for Decimal {
+    type Output = Decimal;
+
+    #[inline]
+    fn sub(self, other: Decimal) -> Self::Output {
+        self.safe_sub(other).expect("Overflow")
+    }
+}
+
+impl Mul<Decimal> for Decimal {
+    type Output = Decimal;
+
+    #[inline]
+    fn mul(self, other: Decimal) -> Self::Output {
+        self.safe_mul(other).expect("Overflow")
+    }
+}
+
+impl Div<Decimal> for Decimal {
+    type Output = Decimal;
+
+    #[inline]
+    fn div(self, other: Decimal) -> Self::Output {
+        self.safe_div(other).expect("Overflow or division by zero")
+    }
+}
+
 macro_rules! impl_arith_ops {
     ($type:ident) => {
         impl SafeAdd<$type> for Decimal {
@@ -431,6 +477,74 @@ macro_rules! impl_arith_ops {
 
             fn safe_div(self, other: Decimal) -> Option<Self::Output> {
                 Decimal::from(self).safe_div(other)
+            }
+        }
+
+        impl Add<$type> for Decimal {
+            type Output = Decimal;
+
+            #[inline]
+            fn add(self, other: $type) -> Self::Output {
+                self.safe_add(other).expect("Overflow")
+            }
+        }
+
+        impl Sub<$type> for Decimal {
+            type Output = Decimal;
+
+            fn sub(self, other: $type) -> Self::Output {
+                self.safe_sub(other).expect("Overflow")
+            }
+        }
+
+        impl Mul<$type> for Decimal {
+            type Output = Decimal;
+
+            #[inline]
+            fn mul(self, other: $type) -> Self::Output {
+                self.safe_mul(other).expect("Overflow")
+            }
+        }
+
+        impl Div<$type> for Decimal {
+            type Output = Decimal;
+
+            fn div(self, other: $type) -> Self::Output {
+                self.safe_div(other).expect("Overflow or division by zero")
+            }
+        }
+
+        impl Add<Decimal> for $type {
+            type Output = Decimal;
+
+            #[inline]
+            fn add(self, other: Decimal) -> Self::Output {
+                other + self
+            }
+        }
+
+        impl Sub<Decimal> for $type {
+            type Output = Decimal;
+
+            fn sub(self, other: Decimal) -> Self::Output {
+                self.safe_sub(other).expect("Overflow")
+            }
+        }
+
+        impl Mul<Decimal> for $type {
+            type Output = Decimal;
+
+            #[inline]
+            fn mul(self, other: Decimal) -> Self::Output {
+                other * self
+            }
+        }
+
+        impl Div<Decimal> for $type {
+            type Output = Decimal;
+
+            fn div(self, other: Decimal) -> Self::Output {
+                self.safe_div(other).expect("Overflow or division by zero")
             }
         }
     };
@@ -1539,4 +1653,104 @@ mod tests {
     test_arith_decimal_primitive!(i64);
     test_arith_decimal_primitive!(i128);
     test_arith_decimal_primitive!(isize);
+
+    macro_rules! test_math_operands_decimal {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_math_operands_decimal_$type:lower>]() {
+                    let d1 = dec!("2");
+                    let u1 = $type::try_from(4).unwrap();
+                    assert_eq!(d1 + u1, dec!("6"));
+                    assert_eq!(d1 - u1, dec!("-2"));
+                    assert_eq!(d1 * u1, dec!("8"));
+                    assert_eq!(d1 / u1, dec!("0.5"));
+
+                    let u1 = $type::try_from(2).unwrap();
+                    let d1 = dec!("4");
+                    assert_eq!(u1 + d1, dec!("6"));
+                    assert_eq!(u1 - d1, dec!("-2"));
+                    assert_eq!(u1 * d1, dec!("8"));
+                    assert_eq!(u1 / d1, dec!("0.5"));
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_add_decimal_$type:lower _panic>]() {
+                    let d1 = Decimal::MAX;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = d1 + u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_add_$type:lower _xdecimal_panic>]() {
+                    let d1 = Decimal::MAX;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = u1 + d1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_sub_decimal_$type:lower _panic>]() {
+                    let d1 = Decimal::MIN;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = d1 - u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_sub_$type:lower _xdecimal_panic>]() {
+                    let d1 = Decimal::MIN;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = u1 - d1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_mul_decimal_$type:lower _panic>]() {
+                    let d1 = Decimal::MAX;
+                    let u1 = $type::try_from(2).unwrap();
+                    let _ = d1 * u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_mul_$type:lower _xdecimal_panic>]() {
+                    let d1 = Decimal::MAX;
+                    let u1 = $type::try_from(2).unwrap();
+                    let _ = u1 * d1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_div_zero_decimal_$type:lower _panic>]() {
+                    let d1 = Decimal::MAX;
+                    let u1 = $type::try_from(0).unwrap();
+                    let _ = d1 / u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow or division by zero")]
+                fn [<test_math_div_zero_$type:lower _xdecimal_panic>]() {
+                    let d1 = Decimal::ZERO;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = u1 / d1;
+                }
+            }
+        };
+    }
+    test_math_operands_decimal!(Decimal);
+    test_math_operands_decimal!(u8);
+    test_math_operands_decimal!(u16);
+    test_math_operands_decimal!(u32);
+    test_math_operands_decimal!(u64);
+    test_math_operands_decimal!(u128);
+    test_math_operands_decimal!(usize);
+    test_math_operands_decimal!(i8);
+    test_math_operands_decimal!(i16);
+    test_math_operands_decimal!(i32);
+    test_math_operands_decimal!(i64);
+    test_math_operands_decimal!(i128);
+    test_math_operands_decimal!(isize);
 }
