@@ -919,11 +919,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_add_overflow_precise_decimal() {
-        let _ = PreciseDecimal::MAX
-            .safe_add(PreciseDecimal::ONE)
-            .expect("Overflow");
+        assert!(PreciseDecimal::MAX.safe_add(PreciseDecimal::ONE).is_none());
     }
 
     #[test]
@@ -935,11 +932,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_sub_overflow_precise_decimal() {
-        let _ = PreciseDecimal::MIN
-            .safe_sub(PreciseDecimal::ONE)
-            .expect("Overflow");
+        assert!(PreciseDecimal::MIN.safe_sub(PreciseDecimal::ONE).is_none());
     }
 
     #[test]
@@ -960,47 +954,38 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_mul_overflow_by_small_precise_decimal() {
-        let _ = PreciseDecimal::MAX
+        assert!(PreciseDecimal::MAX
             .safe_mul(pdec!("1.000000000000000000000000000000000001"))
-            .expect("Overflow");
+            .is_none());
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_mul_overflow_by_a_lot_precise_decimal() {
-        let _ = PreciseDecimal::MAX
-            .safe_mul(pdec!("1.1"))
-            .expect("Overflow");
+        assert!(PreciseDecimal::MAX.safe_mul(pdec!("1.1")).is_none());
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_mul_neg_overflow_precise_decimal() {
-        let p = pdec!("-1.000000000000000000000000000000000001");
-        println!("p = {}", p);
-        let _ = PreciseDecimal::MAX
+        assert!(PreciseDecimal::MAX
             .safe_neg()
             .unwrap()
             .safe_mul(pdec!("-1.000000000000000000000000000000000001"))
-            .expect("Overflow");
+            .is_none());
     }
 
     #[test]
-    #[should_panic]
     fn test_div_by_zero_precise_decimal() {
         let a = PreciseDecimal::from(5u32);
         let b = PreciseDecimal::from(0u32);
-        a.safe_div(b).unwrap();
+        assert!(a.safe_div(b).is_none());
     }
 
     #[test]
-    #[should_panic]
     fn test_powi_exp_overflow_precise_decimal() {
         let a = PreciseDecimal::from(5u32);
         let b = i64::MIN;
-        assert_eq!(a.safe_powi(b).unwrap().to_string(), "0");
+        assert!(a.safe_powi(b).is_none());
     }
 
     #[test]
