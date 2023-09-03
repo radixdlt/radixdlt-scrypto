@@ -110,30 +110,38 @@ macro_rules! create_well_known_lookup {
                     // If we exceed 256, we'll get a panic when this loads and tests will fail.
                     let mut lookup: [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 256] = [ [<$lookup_name:upper _INIT>]; 256 ];
 
+                    let mut add = |type_index: WellKnownTypeIndex, type_data: TypeData<$custom_type_kind, LocalTypeIndex>| {
+                        let index = type_index.as_index();
+                        let entry = lookup.get(index).expect("Well known type index larger than lookup size");
+                        if entry.is_some() {
+                            panic!("Duplicate well known type index: {:?}", type_index);
+                        }
+                        lookup[index] = Some(type_data);
+                    };
+
                     // Now add in the basic types
-                    lookup[BOOL_TYPE.as_index()] = Some(bool_type_data());
-                    lookup[I8_TYPE.as_index()] = Some(i8_type_data());
-                    lookup[I16_TYPE.as_index()] = Some(i16_type_data());
-                    lookup[I32_TYPE.as_index()] = Some(i32_type_data());
-                    lookup[I64_TYPE.as_index()] = Some(i64_type_data());
-                    lookup[I128_TYPE.as_index()] = Some(i128_type_data());
-                    lookup[U8_TYPE.as_index()] = Some(u8_type_data());
-                    lookup[U16_TYPE.as_index()] = Some(u16_type_data());
-                    lookup[U32_TYPE.as_index()] = Some(u32_type_data());
-                    lookup[U64_TYPE.as_index()] = Some(u64_type_data());
-                    lookup[U128_TYPE.as_index()] = Some(u128_type_data());
-                    lookup[STRING_TYPE.as_index()] = Some(string_type_data());
-                    lookup[ANY_TYPE.as_index()] = Some(any_type_data());
-                    lookup[BYTES_TYPE.as_index()] = Some(bytes_type_data());
-                    lookup[UNIT_TYPE.as_index()] = Some(unit_type_data());
+                    add(BOOL_TYPE, bool_type_data());
+                    add(I8_TYPE, i8_type_data());
+                    add(I16_TYPE, i16_type_data());
+                    add(I32_TYPE, i32_type_data());
+                    add(I64_TYPE, i64_type_data());
+                    add(I128_TYPE, i128_type_data());
+                    add(U8_TYPE, u8_type_data());
+                    add(U16_TYPE, u16_type_data());
+                    add(U32_TYPE, u32_type_data());
+                    add(U64_TYPE, u64_type_data());
+                    add(U128_TYPE, u128_type_data());
+                    add(STRING_TYPE, string_type_data());
+                    add(ANY_TYPE, any_type_data());
+                    add(BYTES_TYPE, bytes_type_data());
+                    add(UNIT_TYPE, unit_type_data());
 
                     // And now add in the custom types
-                    $(lookup[$constants_mod::[<$name:upper _TYPE>].as_index()] = Some($constants_mod::[<$name:lower _type_data>]());)*
+                    $(add($constants_mod::[<$name:upper _TYPE>],$constants_mod::[<$name:lower _type_data>]());)*
 
                     // And return the lookup
                     lookup
                 };
-
             }
         }
     };
