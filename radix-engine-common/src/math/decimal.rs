@@ -520,7 +520,6 @@ macro_rules! impl_arith_ops {
         impl Sub<$type> for Decimal {
             type Output = Self;
 
-
             #[inline]
             fn sub(self, other: $type) -> Self::Output {
                 self.safe_sub(other).expect("Overflow")
@@ -581,32 +580,28 @@ macro_rules! impl_arith_ops {
             }
         }
 
-        impl AddAssign<$type> for Decimal
-        {
+        impl AddAssign<$type> for Decimal {
             #[inline]
             fn add_assign(&mut self, other: $type) {
                 *self = *self + other;
             }
         }
 
-        impl SubAssign<$type> for Decimal
-        {
+        impl SubAssign<$type> for Decimal {
             #[inline]
             fn sub_assign(&mut self, other: $type) {
                 *self = *self - other;
             }
         }
 
-        impl MulAssign<$type> for Decimal
-        {
+        impl MulAssign<$type> for Decimal {
             #[inline]
             fn mul_assign(&mut self, other: $type) {
                 *self = *self * other;
             }
         }
 
-        impl DivAssign<$type> for Decimal
-        {
+        impl DivAssign<$type> for Decimal {
             #[inline]
             fn div_assign(&mut self, other: $type) {
                 *self = *self / other;
@@ -902,7 +897,8 @@ mod tests {
     #[test]
     fn test_mul_overflow_by_small_decimal() {
         assert!(Decimal::MAX
-            .safe_mul(dec!("1.000000000000000001")).is_none());
+            .safe_mul(dec!("1.000000000000000001"))
+            .is_none());
     }
 
     #[test]
@@ -915,7 +911,8 @@ mod tests {
         assert!(Decimal::MAX
             .safe_neg()
             .unwrap()
-            .safe_mul(dec!("-1.000000000000000001")).is_none());
+            .safe_mul(dec!("-1.000000000000000001"))
+            .is_none());
     }
 
     #[test]
@@ -1090,10 +1087,7 @@ mod tests {
     #[test]
     fn test_10_powi_16_decimal() {
         let a = Decimal(10i128.into());
-        assert_eq!(
-            a.safe_powi(16).unwrap().to_string(),
-            "0"
-        );
+        assert_eq!(a.safe_powi(16).unwrap().to_string(), "0");
     }
 
     #[test]
@@ -1674,7 +1668,6 @@ mod tests {
         let d = Decimal::MIN;
         let _ = -d;
     }
-
 
     // These tests make sure that any basic arithmetic operation
     // between primitive type and Decimal produces a Decimal, no matter the order.
