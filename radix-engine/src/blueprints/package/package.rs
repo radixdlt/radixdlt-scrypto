@@ -1193,6 +1193,11 @@ impl PackageNativePackage {
                     );
                 }
 
+                let mut types = index_map_new();
+                for (key, local_type_id) in definition_init.schema.types.type_schema {
+                    types.insert(key, NodeScopedTypeId(schema_hash, local_type_id));
+                }
+
                 let system_instructions = system_instructions
                     .get(&blueprint)
                     .cloned()
@@ -1218,7 +1223,7 @@ impl PackageNativePackage {
                         feature_set: definition_init.feature_set,
                         functions,
                         events,
-                        types: definition_init.schema.types.type_schema,
+                        types,
                         state: IndexedStateSchema::from_schema(
                             schema_hash,
                             definition_init.schema.state,
