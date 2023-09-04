@@ -1,8 +1,6 @@
-use crate::crypto::*;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::*;
 
 /// Represents any natively supported public key.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -11,10 +9,19 @@ use sbor::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "public_key")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Categorize, Encode, Decode, BasicDescribe)]
 pub enum PublicKey {
     Secp256k1(Secp256k1PublicKey),
     Ed25519(Ed25519PublicKey),
+}
+
+impl Describe<ScryptoCustomTypeKind> for PublicKey {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::PUBLIC_KEY_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::public_key_type_data()
+    }
 }
 
 impl From<Secp256k1PublicKey> for PublicKey {

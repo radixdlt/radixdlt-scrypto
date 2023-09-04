@@ -570,8 +570,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate fields
                     let mut fields = Vec::new();
-                    let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
-                    fields.push(FieldSchema::static_field(type_index));
+                    let type_id = aggregator.add_child_type_and_descendents::<#bp_ident>();
+                    fields.push(FieldSchema::static_field(type_id));
 
                     let state = BlueprintStateSchemaInit {
                         fields,
@@ -594,8 +594,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     let events = {
                         let mut event_schema = index_map_new();
                         #({
-                            let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
-                            event_schema.insert(#event_type_names.to_owned(), TypeRef::Static(local_type_index));
+                            let local_type_id = aggregator.add_child_type_and_descendents::<#event_type_paths>();
+                            event_schema.insert(#event_type_names.to_owned(), TypeRef::Static(local_type_id));
                         })*
                         BlueprintEventSchemaInit {
                             event_schema,
@@ -1728,8 +1728,8 @@ mod tests {
                         let schema = {
                             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
                             let mut fields = Vec::new();
-                            let type_index = aggregator.add_child_type_and_descendents::<Test>();
-                            fields.push(FieldSchema::static_field(type_index));
+                            let type_id = aggregator.add_child_type_and_descendents::<Test>();
+                            fields.push(FieldSchema::static_field(type_id));
 
                             let state = BlueprintStateSchemaInit {
                                 fields,

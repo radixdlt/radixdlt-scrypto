@@ -43,7 +43,7 @@ pub enum BuildCallArgumentsError {
 #[derive(Debug, Clone)]
 pub enum BuildCallArgumentError {
     /// The argument is of unsupported type.
-    UnsupportedType(ScryptoTypeKind<LocalTypeIndex>),
+    UnsupportedType(ScryptoTypeKind<LocalTypeId>),
 
     /// Failure when parsing an argument.
     FailedToParse(String),
@@ -97,12 +97,12 @@ pub fn build_call_arguments<'a>(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
     schema: &VersionedScryptoSchema,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     args: Vec<String>,
     account: Option<ComponentAddress>,
 ) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentsError> {
     let mut built_args = Vec::<ManifestValue>::new();
-    match schema.v1().resolve_type_kind(type_index) {
+    match schema.v1().resolve_type_kind(type_id) {
         Some(TypeKind::Tuple { field_types }) => {
             if args.len() != field_types.len() {
                 return Err(BuildCallArgumentsError::WrongNumberOfArguments(
@@ -152,7 +152,7 @@ macro_rules! parse_basic_type {
 fn build_call_argument<'a>(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
-    type_kind: &ScryptoTypeKind<LocalTypeIndex>,
+    type_kind: &ScryptoTypeKind<LocalTypeId>,
     type_validation: &TypeValidation<ScryptoCustomTypeValidation>,
     argument: String,
     account: Option<ComponentAddress>,
@@ -646,7 +646,7 @@ mod test {
 
     pub fn build_and_decode_arg<S: AsRef<str>, T: ManifestDecode>(
         arg: S,
-        type_kind: ScryptoTypeKind<LocalTypeIndex>,
+        type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
     ) -> Result<T, BuildAndDecodeArgError> {
         let builder = ManifestBuilder::new();

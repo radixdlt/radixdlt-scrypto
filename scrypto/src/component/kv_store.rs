@@ -165,9 +165,9 @@ impl<
         V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
     > Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
 {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(OWN_KEY_VALUE_STORE_TYPE);
+    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(OWN_KEY_VALUE_STORE_TYPE);
 
-    fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+    fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, RustTypeId> {
         own_key_value_store_type_data()
     }
 }

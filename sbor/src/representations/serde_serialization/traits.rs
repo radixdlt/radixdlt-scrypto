@@ -13,7 +13,7 @@ pub struct CustomTypeSerialization<'a, 't, 'de, 's1, 's2, E: SerializableCustomE
 pub trait SerializableCustomExtension: FormattableCustomExtension + Copy {
     fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
         context: &SerializationContext<'s, 'a, Self>,
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
         value: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self>;
 }

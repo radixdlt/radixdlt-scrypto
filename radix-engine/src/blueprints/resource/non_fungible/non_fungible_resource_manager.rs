@@ -111,7 +111,7 @@ pub enum NonFungibleResourceManagerError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InvalidNonFungibleSchema {
     SchemaValidationError(SchemaValidationError),
-    InvalidLocalTypeIndex,
+    InvalidLocalTypeId,
     NotATuple,
     MissingFieldNames,
     MutableFieldDoesNotExist(String),
@@ -513,7 +513,7 @@ impl NonFungibleResourceManagerBlueprint {
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
                     NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                        InvalidNonFungibleSchema::InvalidLocalTypeIndex,
+                        InvalidNonFungibleSchema::InvalidLocalTypeId,
                     ),
                 ),
             ))?;
@@ -536,7 +536,7 @@ impl NonFungibleResourceManagerBlueprint {
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
                     NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                        InvalidNonFungibleSchema::InvalidLocalTypeIndex,
+                        InvalidNonFungibleSchema::InvalidLocalTypeId,
                     ),
                 ),
             ))?;
@@ -613,7 +613,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
+            generic_substitutions: vec![GenericSubstitution::Local(ScopedTypeId(
                 schema_hash,
                 non_fungible_schema.non_fungible,
             ))],
@@ -740,7 +740,7 @@ impl NonFungibleResourceManagerBlueprint {
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
+            generic_substitutions: vec![GenericSubstitution::Local(ScopedTypeId(
                 schema_hash,
                 non_fungible_schema.non_fungible,
             ))],
@@ -838,7 +838,7 @@ impl NonFungibleResourceManagerBlueprint {
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
+            generic_substitutions: vec![GenericSubstitution::Local(ScopedTypeId(
                 schema_hash,
                 non_fungible_schema.non_fungible,
             ))],

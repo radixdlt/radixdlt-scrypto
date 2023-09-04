@@ -538,11 +538,11 @@ impl AccessControllerBlueprint {
                 NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
 
             let resource_address = {
-                let (local_type_index, schema) =
+                let (local_type_id, schema) =
                     generate_full_schema_from_single_type::<(), ScryptoCustomSchema>();
                 let non_fungible_schema = NonFungibleDataSchema {
                     schema,
-                    non_fungible: local_type_index,
+                    non_fungible: local_type_id,
                     mutable_fields: Default::default(),
                 };
 

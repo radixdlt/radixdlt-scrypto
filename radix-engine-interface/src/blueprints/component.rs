@@ -1,7 +1,6 @@
 use core::marker::PhantomData;
 
 use radix_engine_common::prelude::*;
-use sbor::*;
 
 pub trait TypeInfoMarker {
     const PACKAGE_ADDRESS: Option<PackageAddress>;
@@ -70,10 +69,10 @@ impl<O: TypeInfoMarker, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustom
 }
 
 impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for Global<T> {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::Novel(const_sha1::sha1(T::GLOBAL_TYPE_NAME.as_bytes()).as_bytes());
+    const TYPE_ID: RustTypeId =
+        RustTypeId::Novel(const_sha1::sha1(T::GLOBAL_TYPE_NAME.as_bytes()).as_bytes());
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Reference),
             metadata: TypeMetadata::no_child_names(T::GLOBAL_TYPE_NAME),
@@ -123,10 +122,10 @@ impl<O: TypeInfoMarker, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustom
 }
 
 impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for Owned<T> {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::Novel(const_sha1::sha1(T::OWNED_TYPE_NAME.as_bytes()).as_bytes());
+    const TYPE_ID: RustTypeId =
+        RustTypeId::Novel(const_sha1::sha1(T::OWNED_TYPE_NAME.as_bytes()).as_bytes());
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names(T::OWNED_TYPE_NAME),
