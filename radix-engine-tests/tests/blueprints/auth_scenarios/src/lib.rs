@@ -120,6 +120,14 @@ mod big_fi {
         pub fn burn_vault(&mut self) {
             self.cerb_vault.burn(1);
         }
+
+        pub fn assert_in_subservio(&mut self) {
+            let bucket = self.cerb_vault.take(1);
+            bucket.authorize_with_all(|| {
+                self.child.assert_local();
+            });
+            self.cerb_vault.put(bucket);
+        }
     }
 }
 
@@ -127,16 +135,26 @@ mod big_fi {
 mod subservio {
     struct Subservio {
         cerb_vault: Vault,
+        other_vault: Vault,
     }
 
     impl Subservio {
         pub fn create(cerb_resource: ResourceAddress) -> Owned<Subservio> {
             let cerb_vault = Vault::new(cerb_resource);
-            Self { cerb_vault }.instantiate()
+            let resource = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(5);
+            let other_vault = Vault::with_bucket(resource.into());
+
+            Self { cerb_vault, other_vault }.instantiate()
         }
 
         pub fn deposit_cerb(&mut self, cerbs: Bucket) {
             self.cerb_vault.put(cerbs);
+        }
+
+        pub fn assert_local(&self) {
+            let proof = self.other_vault.as_fungible().create_proof_of_amount(1);
+            LocalAuthZone::push(proof);
+            Runtime::assert_access_rule(rule!(require(self.other_vault.resource_address()) && require(self.cerb_vault.resource_address())));
         }
     }
 }
