@@ -446,6 +446,7 @@ impl NonFungibleResourceManagerBlueprint {
                 schema,
                 state,
                 events: event_schema,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },

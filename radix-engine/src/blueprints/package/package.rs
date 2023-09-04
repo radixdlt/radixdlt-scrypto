@@ -808,6 +808,7 @@ impl PackageNativePackage {
                     schema,
                     state,
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },

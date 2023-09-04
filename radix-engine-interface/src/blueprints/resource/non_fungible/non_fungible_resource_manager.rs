@@ -310,6 +310,18 @@ pub struct NonFungibleDataSchema {
     pub mutable_fields: IndexSet<String>,
 }
 
+pub enum NonFungibleDataSchemaDef {
+    Local {
+        schema: VersionedScryptoSchema,
+        type_id: LocalTypeId,
+    },
+    Remote {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        type_name: String,
+    },
+}
+
 impl NonFungibleData for () {
     const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }

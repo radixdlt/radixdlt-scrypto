@@ -453,6 +453,7 @@ impl AccessControllerBlueprint {
                 schema,
                 state,
                 events,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },
