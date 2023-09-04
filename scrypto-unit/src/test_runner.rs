@@ -3,6 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use crate::HashTreeUpdatingDatabase;
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
@@ -48,11 +49,8 @@ use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
-    SubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase, SubstateDatabase,
 };
-use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto::prelude::*;
 use transaction::prelude::*;
@@ -266,7 +264,6 @@ pub struct TestRunnerBuilder<E, D> {
     custom_extension: E,
     custom_database: D,
     trace: bool,
-    state_hashing: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -276,7 +273,6 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
-            state_hashing: false,
         }
     }
 }
@@ -287,9 +283,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         self
     }
 
-    pub fn with_state_hashing(mut self) -> Self {
-        self.state_hashing = true;
-        self
+    pub fn with_state_hashing(self) -> TestRunnerBuilder<E, HashTreeUpdatingDatabase<D>> {
+        TestRunnerBuilder {
+            custom_genesis: self.custom_genesis,
+            custom_extension: self.custom_extension,
+            custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
+            trace: self.trace,
+        }
     }
 
     pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
@@ -306,7 +306,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: extension,
             custom_database: self.custom_database,
             trace: self.trace,
-            state_hashing: self.state_hashing,
         }
     }
 
@@ -316,7 +315,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: self.custom_extension,
             custom_database: database,
             trace: self.trace,
-            state_hashing: self.state_hashing,
         }
     }
 
@@ -389,9 +387,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             scrypto_vm,
             native_vm,
             database: substate_db,
-            state_hash_support: Some(self.state_hashing)
-                .filter(|x| *x)
-                .map(|_| StateHashSupport::new()),
             next_private_key,
             next_transaction_nonce,
             trace,
@@ -418,7 +413,6 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     next_private_key: u64,
     next_transaction_nonce: u32,
     trace: bool,
-    state_hash_support: Option<StateHashSupport>,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
     xrd_free_credits_used: bool,
 }
@@ -450,7 +444,6 @@ pub struct TestRunnerSnapshot {
     database: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
-    state_hash_support: Option<StateHashSupport>,
 }
 
 impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
@@ -459,7 +452,6 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
             database: self.database.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
-            state_hash_support: self.state_hash_support.clone(),
         }
     }
 
@@ -467,7 +459,6 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
         self.database = snapshot.database;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
-        self.state_hash_support = snapshot.state_hash_support;
     }
 }
 
@@ -1388,13 +1379,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             self.database.commit(&commit.state_updates.database_updates);
-            if let Some(state_hash_support) = &mut self.state_hash_support {
-                state_hash_support.update_with(&commit.state_updates.database_updates);
-            }
-
             self.collected_events
                 .push(commit.application_events.clone());
-
             assert_receipt_substate_changes_can_be_typed(commit);
         }
         transaction_receipt
@@ -2043,13 +2029,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         receipt.expect_commit(true).output(0)
     }
 
-    pub fn get_state_hash(&self) -> Hash {
-        self.state_hash_support
-            .as_ref()
-            .expect("state hashing not enabled")
-            .get_current()
-    }
-
     pub fn execute_system_transaction_with_preallocation(
         &mut self,
         instructions: Vec<InstructionV1>,
@@ -2311,6 +2290,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 }
 
+impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, HashTreeUpdatingDatabase<D>> {
+    pub fn get_state_hash(&self) -> Hash {
+        self.database.get_current()
+    }
+}
+
 pub struct SubtreeVaults<'d, D> {
     database: &'d D,
 }
@@ -2346,50 +2331,6 @@ impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
                     .map(|change| (traversed_resource, change))
             })
             .collect()
-    }
-}
-
-#[derive(Clone)]
-pub struct StateHashSupport {
-    tree_store: TypedInMemoryTreeStore,
-    current_version: Version,
-    current_hash: Hash,
-}
-
-impl StateHashSupport {
-    fn new() -> Self {
-        StateHashSupport {
-            tree_store: TypedInMemoryTreeStore::new(),
-            current_version: 0,
-            current_hash: Hash([0; Hash::LENGTH]),
-        }
-    }
-
-    pub fn update_with(&mut self, db_updates: &DatabaseUpdates) {
-        let mut hash_changes = Vec::new();
-        for (db_partition_key, partition_update) in db_updates {
-            for (db_sort_key, db_update) in partition_update {
-                let hash_change = SubstateHashChange::new(
-                    (db_partition_key.clone(), db_sort_key.clone()),
-                    match db_update {
-                        DatabaseUpdate::Set(v) => Some(hash(v)),
-                        DatabaseUpdate::Delete => None,
-                    },
-                );
-                hash_changes.push(hash_change);
-            }
-        }
-
-        self.current_hash = put_at_next_version(
-            &mut self.tree_store,
-            Some(self.current_version).filter(|version| *version > 0),
-            hash_changes,
-        );
-        self.current_version += 1;
-    }
-
-    pub fn get_current(&self) -> Hash {
-        self.current_hash
     }
 }
 
