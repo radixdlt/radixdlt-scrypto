@@ -10,15 +10,33 @@ pub trait TypeInfoMarker {
     const GLOBAL_TYPE_NAME: &'static str;
 }
 
-pub struct GlobalMarker<T>(pub ComponentAddress, PhantomData<T>)
+pub struct Global<T>(pub ComponentAddress, PhantomData<T>)
 where
     T: TypeInfoMarker;
 
-pub struct OwnedMarker<T>(pub InternalAddress, PhantomData<T>)
+pub struct Owned<T>(pub InternalAddress, PhantomData<T>)
 where
     T: TypeInfoMarker;
 
-impl<O: TypeInfoMarker> Categorize<ScryptoCustomValueKind> for GlobalMarker<O> {
+impl<T> Global<T>
+where
+    T: TypeInfoMarker,
+{
+    pub fn new(address: ComponentAddress) -> Self {
+        Self(address, PhantomData)
+    }
+}
+
+impl<T> Owned<T>
+where
+    T: TypeInfoMarker,
+{
+    pub fn new(address: InternalAddress) -> Self {
+        Self(address, PhantomData)
+    }
+}
+
+impl<O: TypeInfoMarker> Categorize<ScryptoCustomValueKind> for Global<O> {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
         ValueKind::Custom(ScryptoCustomValueKind::Reference)
@@ -26,7 +44,7 @@ impl<O: TypeInfoMarker> Categorize<ScryptoCustomValueKind> for GlobalMarker<O> {
 }
 
 impl<O: TypeInfoMarker, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
-    for GlobalMarker<O>
+    for Global<O>
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -40,7 +58,7 @@ impl<O: TypeInfoMarker, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustom
 }
 
 impl<O: TypeInfoMarker, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
-    for GlobalMarker<O>
+    for Global<O>
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -51,7 +69,7 @@ impl<O: TypeInfoMarker, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustom
     }
 }
 
-impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for GlobalMarker<T> {
+impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for Global<T> {
     const TYPE_ID: GlobalTypeId =
         GlobalTypeId::Novel(const_sha1::sha1(T::GLOBAL_TYPE_NAME.as_bytes()).as_bytes());
 
@@ -71,7 +89,7 @@ impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for GlobalMarker<T> {
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
 
-impl<O: TypeInfoMarker> Categorize<ScryptoCustomValueKind> for OwnedMarker<O> {
+impl<O: TypeInfoMarker> Categorize<ScryptoCustomValueKind> for Owned<O> {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
         ValueKind::Custom(ScryptoCustomValueKind::Own)
@@ -79,7 +97,7 @@ impl<O: TypeInfoMarker> Categorize<ScryptoCustomValueKind> for OwnedMarker<O> {
 }
 
 impl<O: TypeInfoMarker, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
-    for OwnedMarker<O>
+    for Owned<O>
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -93,7 +111,7 @@ impl<O: TypeInfoMarker, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustom
 }
 
 impl<O: TypeInfoMarker, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
-    for OwnedMarker<O>
+    for Owned<O>
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -104,7 +122,7 @@ impl<O: TypeInfoMarker, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustom
     }
 }
 
-impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for OwnedMarker<T> {
+impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for Owned<T> {
     const TYPE_ID: GlobalTypeId =
         GlobalTypeId::Novel(const_sha1::sha1(T::OWNED_TYPE_NAME.as_bytes()).as_bytes());
 
@@ -121,7 +139,7 @@ impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for OwnedMarker<T> {
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
 
-macro_rules! define_address_type_info {
+macro_rules! define_type_info_marker {
     ($package_address: expr, $blueprint_name: ident) => {
         paste::paste! {
             pub struct [< $blueprint_name ObjectTypeInfo >];
@@ -137,4 +155,4 @@ macro_rules! define_address_type_info {
         }
     };
 }
-pub(crate) use define_address_type_info;
+pub(crate) use define_type_info_marker;
