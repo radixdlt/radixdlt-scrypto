@@ -230,11 +230,7 @@ impl FlashReceipt {
 
                 let mut system_updates = self.system_updates;
                 system_updates.extend(result.state_updates.system_updates.drain(..));
-                let mut database_updates = self.database_updates;
-                database_updates.extend(result.state_updates.database_updates.drain(..));
-
                 result.state_updates.system_updates = system_updates;
-                result.state_updates.database_updates = database_updates;
 
                 let mut substate_system_structures = self.substate_system_structures;
                 for (node_id, by_partition_num) in
@@ -392,8 +388,11 @@ where
 
         let commit_result = receipt.expect_commit(true);
 
-        self.substate_db
-            .commit(&commit_result.state_updates.database_updates);
+        self.substate_db.commit(
+            &commit_result
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
 
         receipt
     }
@@ -418,8 +417,11 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db
-            .commit(&commit_result.state_updates.database_updates);
+        self.substate_db.commit(
+            &commit_result
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
 
         receipt
     }
@@ -440,8 +442,11 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db
-            .commit(&commit_result.state_updates.database_updates);
+        self.substate_db.commit(
+            &commit_result
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
 
         receipt
     }

@@ -6,10 +6,10 @@ use crate::track::utils::OverlayingResultIterator;
 use crate::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_engine_store_interface::interface::DbPartitionKey;
+use radix_engine_store_interface::interface::{DatabaseUpdates, DbPartitionKey};
 use radix_engine_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
-    interface::{DatabaseUpdate, DatabaseUpdates, DbSortKey, PartitionEntry, SubstateDatabase},
+    interface::{DatabaseUpdate, DbSortKey, PartitionEntry, SubstateDatabase},
 };
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
@@ -19,12 +19,36 @@ use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, St
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct StateUpdates {
-    pub database_updates: DatabaseUpdates,
+    /// A set of partitions that were entirely deleted.
+    /// Note: this batch changes should be applied *before* the [`system_updates`] below (i.e.
+    /// allowing a latter individual substate creation to be applied).
+    pub partition_deletions: IndexSet<(NodeId, PartitionNumber)>,
+
+    /// A set of individual substate updates (indexed by partition and substate key).
     pub system_updates: SystemUpdates,
-    /// Unstable, for transaction tracker only; Must be applied after committing the updates above.
-    /// TODO: if time allows, consider merging it into database/system updates.
-    pub partition_deletions: IndexSet<DbPartitionKey>,
 }
+
+impl StateUpdates {
+    pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> DatabaseUpdates {
+        // TODO(after RCNet-v3.1): Expand the `DatabaseUpdates` definition in order to capture the
+        // `partition_deletions` there as well (preferably using a "canonicalized" representation).
+        self.system_updates
+            .iter()
+            .map(|((node_id, partition_num), substate_updates)| {
+                (
+                    M::to_db_partition_key(node_id, *partition_num),
+                    substate_updates
+                        .iter()
+                        .map(|(substate_key, update)| {
+                            (M::to_db_sort_key(substate_key), update.clone())
+                        })
+                        .collect::<IndexMap<_, _>>(),
+                )
+            })
+            .collect()
+    }
+}
+
 pub type SystemUpdates = IndexMap<(NodeId, PartitionNumber), IndexMap<SubstateKey, DatabaseUpdate>>;
 
 #[derive(Clone, Debug)]
@@ -283,16 +307,13 @@ impl TrackedNode {
 
 pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
     index: IndexMap<NodeId, TrackedNode>,
-    deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
+    partition_deletions: IndexSet<(NodeId, PartitionNumber)>,
 ) -> StateUpdates {
-    let mut database_updates: DatabaseUpdates = index_map_new();
-    let mut system_updates: SystemUpdates = index_map_new();
+    let mut system_updates = index_map_new();
     for (node_id, tracked_node) in index {
         for (partition_num, tracked_partition) in tracked_node.tracked_partitions {
-            let mut db_partition_updates = index_map_new();
             let mut partition_updates = index_map_new();
-
-            for (db_sort_key, tracked) in tracked_partition.substates {
+            for tracked in tracked_partition.substates.into_values() {
                 let update = match tracked.substate_value {
                     TrackedSubstateValue::ReadOnly(..) | TrackedSubstateValue::Garbage => None,
                     TrackedSubstateValue::ReadNonExistAndWrite(substate)
@@ -306,24 +327,14 @@ pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
                     },
                 };
                 if let Some(update) = update {
-                    db_partition_updates.insert(db_sort_key, update.clone());
                     partition_updates.insert(tracked.substate_key, update);
                 }
             }
-
-            let db_partition_key = M::to_db_partition_key(&node_id, partition_num);
-            database_updates.insert(db_partition_key, db_partition_updates);
             system_updates.insert((node_id.clone(), partition_num), partition_updates);
         }
     }
 
-    let partition_deletions = deleted_partitions
-        .into_iter()
-        .map(|(node_id, partition_num)| M::to_db_partition_key(&node_id, partition_num))
-        .collect();
-
     StateUpdates {
-        database_updates,
         system_updates,
         partition_deletions,
     }
