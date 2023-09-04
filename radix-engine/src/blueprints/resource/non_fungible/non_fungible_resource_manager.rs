@@ -528,7 +528,7 @@ impl NonFungibleResourceManagerBlueprint {
                     Self::validate_non_fungible_schema(&schema, scoped_type_id.1, mutable_fields)?;
                 Ok((
                     GenericArgs {
-                        additional_schema: Some(schema),
+                        additional_schema: None,
                         generic_substitutions: vec![GenericSubstitution::Remote(type_id.clone())],
                     },
                     mutable_indices,
