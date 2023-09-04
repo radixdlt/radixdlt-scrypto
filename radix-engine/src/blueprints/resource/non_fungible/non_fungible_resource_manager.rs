@@ -511,7 +511,7 @@ impl NonFungibleResourceManagerBlueprint {
                 Ok((
                     GenericArgs {
                         additional_schema: Some(schema.clone()),
-                        generic_substitutions: vec![GenericSubstitution::Local(NodeScopedTypeId(
+                        generic_substitutions: vec![GenericSubstitution::Local(ScopedTypeId(
                             schema_hash,
                             *type_id,
                         ))],

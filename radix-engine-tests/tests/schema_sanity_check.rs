@@ -118,11 +118,17 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
                             println!("Partition {:?} is {:?}", partition, result);
                         }
                     }
-                    BlueprintCollectionSchema::Index(_) => {
-                        // TODO: add check when schema is added
+                    BlueprintCollectionSchema::Index(kv) => {
+                        let result = check_payload_defs(&schemas_by_hash, &[kv.key, kv.value]);
+                        if result.is_not_safe() {
+                            println!("Partition {:?} is {:?}", partition, result);
+                        }
                     }
-                    BlueprintCollectionSchema::SortedIndex(_) => {
-                        // TODO: add check when schema is added
+                    BlueprintCollectionSchema::SortedIndex(kv) => {
+                        let result = check_payload_defs(&schemas_by_hash, &[kv.key, kv.value]);
+                        if result.is_not_safe() {
+                            println!("Partition {:?} is {:?}", partition, result);
+                        }
                     }
                 }
             }
@@ -235,11 +241,12 @@ fn check_type_internal(
                                 return CheckResult::Safe;
                             }
                             OwnValidation::IsKeyValueStore => {
-                                // TODO: consider this as unsafe in native blueprints?
-                                return CheckResult::Safe;
+                                return CheckResult::PossiblyUnsafe {
+                                    type_kind: type_kind.clone(),
+                                    type_validation: schema.v1().type_validations[i].clone(),
+                                };
                             }
                             OwnValidation::IsGlobalAddressReservation => {
-                                // TODO: consider this as unsafe in native blueprints?
                                 return CheckResult::Safe;
                             }
                             _ => {

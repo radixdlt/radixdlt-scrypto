@@ -1725,8 +1725,8 @@ where
                 let schema_hash = additional_schema.generate_schema_hash();
                 additional_schemas.insert(schema_hash, additional_schema);
                 (
-                    GenericSubstitution::Local(NodeScopedTypeId(schema_hash, key_type)),
-                    GenericSubstitution::Local(NodeScopedTypeId(schema_hash, value_type)),
+                    GenericSubstitution::Local(ScopedTypeId(schema_hash, key_type)),
+                    GenericSubstitution::Local(ScopedTypeId(schema_hash, value_type)),
                     allow_ownership,
                 )
             }
@@ -2150,7 +2150,7 @@ where
     fn resolve_blueprint_type(
         &mut self,
         blueprint_type_id: &BlueprintTypeId,
-    ) -> Result<(VersionedScryptoSchema, NodeScopedTypeId), RuntimeError> {
+    ) -> Result<(VersionedScryptoSchema, ScopedTypeId), RuntimeError> {
         self.get_blueprint_type_schema(blueprint_type_id)
     }
 }

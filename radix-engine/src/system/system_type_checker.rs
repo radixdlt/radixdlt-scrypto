@@ -419,7 +419,7 @@ where
     pub fn get_blueprint_type_schema(
         &mut self,
         type_id: &BlueprintTypeId,
-    ) -> Result<(VersionedScryptoSchema, NodeScopedTypeId), RuntimeError> {
+    ) -> Result<(VersionedScryptoSchema, ScopedTypeId), RuntimeError> {
         let BlueprintTypeId {
             package_address,
             blueprint_name,

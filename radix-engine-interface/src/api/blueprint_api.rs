@@ -16,5 +16,5 @@ pub trait ClientBlueprintApi<E> {
     fn resolve_blueprint_type(
         &mut self,
         blueprint_type_id: &BlueprintTypeId,
-    ) -> Result<(VersionedScryptoSchema, NodeScopedTypeId), E>;
+    ) -> Result<(VersionedScryptoSchema, ScopedTypeId), E>;
 }

@@ -641,9 +641,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         let obj_type_reference = match payload_def {
             BlueprintPayloadDef::Static(type_identifier) => {
                 ObjectSubstateTypeReference::Package(PackageTypeReference {
-                    package_address: target.blueprint_info.blueprint_id.package_address,
-                    schema_hash: type_identifier.0,
-                    local_type_id: type_identifier.1,
+                    full_type_id: type_identifier
+                        .under_node(target.blueprint_info.blueprint_id.package_address),
                 })
             }
             BlueprintPayloadDef::Generic(instance_index) => {
@@ -665,18 +664,14 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 match generic_substitution {
                     GenericSubstitution::Local(type_id) => {
                         ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
-                            entity_address,
-                            schema_hash: type_id.0,
                             instance_type_id: instance_index,
-                            local_type_id: type_id.1,
+                            resolved_full_type_id: type_id.under_node(entity_address),
                         })
                     }
                     GenericSubstitution::Remote(type_id) => {
                         let (_, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
                         ObjectSubstateTypeReference::Package(PackageTypeReference {
-                            package_address: type_id.package_address,
-                            schema_hash: scoped_type_id.0,
-                            local_type_id: scoped_type_id.1,
+                            full_type_id: scoped_type_id.under_node(type_id.package_address),
                         })
                     }
                 }
@@ -785,7 +780,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     fn get_blueprint_type_schema(
         &self,
         type_id: &BlueprintTypeId,
-    ) -> Result<(VersionedScryptoSchema, NodeScopedTypeId), SystemReaderError> {
+    ) -> Result<(VersionedScryptoSchema, ScopedTypeId), SystemReaderError> {
         let BlueprintTypeId {
             package_address,
             blueprint_name,

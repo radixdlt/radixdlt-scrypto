@@ -1168,14 +1168,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: function_schema_init.receiver,
-                            input: BlueprintPayloadDef::Static(NodeScopedTypeId(
-                                schema_hash,
-                                input,
-                            )),
-                            output: BlueprintPayloadDef::Static(NodeScopedTypeId(
-                                schema_hash,
-                                output,
-                            )),
+                            input: BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, input)),
+                            output: BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, output)),
                         },
                     );
                     let export = PackageExport {
@@ -1195,7 +1189,7 @@ impl PackageNativePackage {
 
                 let mut types = index_map_new();
                 for (key, local_type_id) in definition_init.schema.types.type_schema {
-                    types.insert(key, NodeScopedTypeId(schema_hash, local_type_id));
+                    types.insert(key, ScopedTypeId(schema_hash, local_type_id));
                 }
 
                 let system_instructions = system_instructions
