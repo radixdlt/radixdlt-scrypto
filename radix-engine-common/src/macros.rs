@@ -14,7 +14,7 @@ macro_rules! dec {
         {
             let base = $crate::math::Decimal::try_from($base).unwrap();
             if $shift >= 0 {
-                base.safe_mul(
+                base.checked_mul(
                     $crate::math::Decimal::try_from(
                         $crate::math::I192::from(10u8)
                             .pow(u32::try_from($shift).expect("Shift overflow")),
@@ -23,7 +23,7 @@ macro_rules! dec {
                 )
                 .expect("Overflow")
             } else {
-                base.safe_div(
+                base.checked_div(
                     $crate::math::Decimal::try_from(
                         $crate::math::I192::from(10u8)
                             .pow(u32::try_from(-$shift).expect("Shift overflow")),
@@ -64,7 +64,7 @@ macro_rules! pdec {
         {
             let base = $crate::math::PreciseDecimal::try_from($base).unwrap();
             if $shift >= 0 {
-                base.safe_mul(
+                base.checked_mul(
                     $crate::math::PreciseDecimal::try_from(
                         $crate::math::I256::from(10u8)
                             .pow(u32::try_from($shift).expect("Shift overflow")),
@@ -73,7 +73,7 @@ macro_rules! pdec {
                 )
                 .expect("Overflow")
             } else {
-                base.safe_div(
+                base.checked_div(
                     $crate::math::PreciseDecimal::try_from(
                         $crate::math::I256::from(10u8)
                             .pow(u32::try_from(-$shift).expect("Shift overflow")),
