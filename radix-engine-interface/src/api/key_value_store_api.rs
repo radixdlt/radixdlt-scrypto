@@ -26,8 +26,8 @@ impl KeyValueStoreGenericArgs {
         let schema_hash = schema.generate_schema_hash();
         Self {
             additional_schema: Some(schema),
-            key_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, key_type_id)),
-            value_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, value_type_id)),
+            key_type: GenericSubstitution::Local(NodeScopedTypeId(schema_hash, key_type_id)),
+            value_type: GenericSubstitution::Local(NodeScopedTypeId(schema_hash, value_type_id)),
             allow_ownership,
         }
     }
@@ -44,8 +44,8 @@ impl KeyValueStoreGenericArgs {
         let schema_hash = schema.generate_schema_hash();
         Self {
             additional_schema: Some(schema),
-            key_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, key_type_id)),
-            value_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, value_type_id)),
+            key_type: GenericSubstitution::Local(NodeScopedTypeId(schema_hash, key_type_id)),
+            value_type: GenericSubstitution::Local(NodeScopedTypeId(schema_hash, value_type_id)),
             allow_ownership,
         }
     }

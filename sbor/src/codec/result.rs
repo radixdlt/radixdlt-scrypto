@@ -54,7 +54,9 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode
     }
 }
 
-impl<C: CustomTypeKind<DefinitionTypeId>, T: Describe<C>, E: Describe<C>> Describe<C> for Result<T, E> {
+impl<C: CustomTypeKind<DefinitionTypeId>, T: Describe<C>, E: Describe<C>> Describe<C>
+    for Result<T, E>
+{
     const TYPE_ID: DefinitionTypeId = DefinitionTypeId::novel("Result", &[T::TYPE_ID, E::TYPE_ID]);
 
     fn type_data() -> TypeData<C, DefinitionTypeId> {

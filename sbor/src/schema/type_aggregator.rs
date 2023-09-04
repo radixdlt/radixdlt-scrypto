@@ -110,7 +110,9 @@ pub fn resolve_local_type_id(
     type_id: &DefinitionTypeId,
 ) -> LocalTypeId {
     match type_id {
-        DefinitionTypeId::WellKnown(well_known_type_id) => LocalTypeId::WellKnown(*well_known_type_id),
+        DefinitionTypeId::WellKnown(well_known_type_id) => {
+            LocalTypeId::WellKnown(*well_known_type_id)
+        }
         DefinitionTypeId::Novel(type_hash) => {
             LocalTypeId::SchemaLocalIndex(resolve_index(type_indices, type_hash))
         }

@@ -1129,8 +1129,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: function_schema_init.receiver,
-                            input: BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, input)),
-                            output: BlueprintPayloadDef::Static(TypeIdentifier(
+                            input: BlueprintPayloadDef::Static(NodeScopedTypeId(schema_hash, input)),
+                            output: BlueprintPayloadDef::Static(NodeScopedTypeId(
                                 schema_hash,
                                 output,
                             )),

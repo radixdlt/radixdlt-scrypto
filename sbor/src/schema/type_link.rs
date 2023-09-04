@@ -32,7 +32,11 @@ impl DefinitionTypeId {
         generate_type_hash(&[name], &[], dependencies)
     }
 
-    pub const fn novel_with_code(name: &str, dependencies: &[DefinitionTypeId], code: &[u8]) -> Self {
+    pub const fn novel_with_code(
+        name: &str,
+        dependencies: &[DefinitionTypeId],
+        code: &[u8],
+    ) -> Self {
         generate_type_hash(&[name], &[("code", code)], dependencies)
     }
 

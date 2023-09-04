@@ -170,9 +170,9 @@ fn check_payload_def(
     }
 }
 
-fn check_type(schema: &VersionedScryptoSchema, id: LocalTypeId) -> CheckResult {
+fn check_type(schema: &VersionedScryptoSchema, type_id: LocalTypeId) -> CheckResult {
     let mut visited_indices = index_set_new();
-    check_type_internal(schema, index, &mut visited_indices)
+    check_type_internal(schema, type_id, &mut visited_indices)
 }
 
 fn check_types_internal(
@@ -191,14 +191,14 @@ fn check_types_internal(
 
 fn check_type_internal(
     schema: &VersionedScryptoSchema,
-    id: LocalTypeId,
+    type_id: LocalTypeId,
     visited_indices: &mut IndexSet<LocalTypeId>,
 ) -> CheckResult {
-    if visited_indices.contains(&index) {
+    if visited_indices.contains(&type_id) {
         return CheckResult::Safe;
     }
-    visited_indices.insert(index);
-    match index {
+    visited_indices.insert(type_id);
+    match type_id {
         LocalTypeId::WellKnown(x) => return is_safe_well_known_type(schema, x),
         LocalTypeId::SchemaLocalIndex(i) => {
             let type_kind = &schema.v1().type_kinds[i];

@@ -29,8 +29,8 @@ use sbor::rust::ops::DerefMut;
 use sbor::rust::prelude::*;
 use sbor::*;
 use sbor::{
-    Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, DefinitionTypeId,
-    ValueKind,
+    Categorize, Decode, DecodeError, Decoder, DefinitionTypeId, Describe, Encode, EncodeError,
+    Encoder, ValueKind,
 };
 use scrypto::modules::{Attached, HasComponentRoyalties, Metadata};
 

@@ -613,7 +613,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
+            generic_substitutions: vec![GenericSubstitution::Local(NodeScopedTypeId(
                 schema_hash,
                 non_fungible_schema.non_fungible,
             ))],
@@ -740,7 +740,7 @@ impl NonFungibleResourceManagerBlueprint {
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
+            generic_substitutions: vec![GenericSubstitution::Local(NodeScopedTypeId(
                 schema_hash,
                 non_fungible_schema.non_fungible,
             ))],
@@ -838,7 +838,7 @@ impl NonFungibleResourceManagerBlueprint {
         let schema_hash = non_fungible_schema.schema.generate_schema_hash();
         let generic_args = GenericArgs {
             additional_schema: Some(non_fungible_schema.schema),
-            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
+            generic_substitutions: vec![GenericSubstitution::Local(NodeScopedTypeId(
                 schema_hash,
                 non_fungible_schema.non_fungible,
             ))],
