@@ -58,16 +58,20 @@ impl FeeReserveFinalizationSummary {
     }
 
     pub fn to_proposer_amount(&self) -> Decimal {
-        let dec_100 = dec!(100);
+        let one_percent = Decimal::ONE_HUNDREDTH;
 
         self.total_tipping_cost_in_xrd
-            .checked_mul(TIPS_PROPOSER_SHARE_PERCENTAGE.checked_div(dec_100).unwrap())
+            .checked_mul(
+                one_percent
+                    .checked_mul(TIPS_PROPOSER_SHARE_PERCENTAGE)
+                    .unwrap(),
+            )
             .unwrap()
             .checked_add(
                 self.network_fees()
                     .checked_mul(
-                        NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE
-                            .checked_div(dec_100)
+                        one_percent
+                            .checked_mul(NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -76,20 +80,20 @@ impl FeeReserveFinalizationSummary {
     }
 
     pub fn to_validator_set_amount(&self) -> Decimal {
-        let dec_100 = dec!(100);
+        let one_percent = Decimal::ONE_HUNDREDTH;
 
         self.total_tipping_cost_in_xrd
             .checked_mul(
-                TIPS_VALIDATOR_SET_SHARE_PERCENTAGE
-                    .checked_div(dec_100)
+                one_percent
+                    .checked_mul(TIPS_VALIDATOR_SET_SHARE_PERCENTAGE)
                     .unwrap(),
             )
             .unwrap()
             .checked_add(
                 self.network_fees()
                     .checked_mul(
-                        NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE
-                            .checked_div(dec_100)
+                        one_percent
+                            .checked_mul(NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE)
                             .unwrap(),
                     )
                     .unwrap(),

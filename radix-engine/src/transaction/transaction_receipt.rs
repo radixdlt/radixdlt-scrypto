@@ -439,7 +439,7 @@ impl TransactionReceipt {
     }
 
     pub fn effective_execution_cost_unit_price(&self) -> Decimal {
-        let dec_100 = dec!(100);
+        let one_percent = Decimal::ONE_HUNDREDTH;
 
         // Below unwraps are safe, no chance to overflow considering current costing parameters
         self.costing_parameters
@@ -447,9 +447,8 @@ impl TransactionReceipt {
             .checked_mul(
                 Decimal::ONE
                     .checked_add(
-                        self.transaction_costing_parameters
-                            .tip_percentage
-                            .checked_div(dec_100)
+                        one_percent
+                            .checked_mul(self.transaction_costing_parameters.tip_percentage)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -458,7 +457,7 @@ impl TransactionReceipt {
     }
 
     pub fn effective_finalization_cost_unit_price(&self) -> Decimal {
-        let dec_100 = dec!(100);
+        let one_percent = Decimal::ONE_HUNDREDTH;
 
         // Below unwraps are safe, no chance to overflow considering current costing parameters
         self.costing_parameters
@@ -466,9 +465,8 @@ impl TransactionReceipt {
             .checked_mul(
                 Decimal::ONE
                     .checked_add(
-                        self.transaction_costing_parameters
-                            .tip_percentage
-                            .checked_div(dec_100)
+                        one_percent
+                            .checked_mul(self.transaction_costing_parameters.tip_percentage)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -893,15 +891,16 @@ impl TransactionFeeSummary {
     }
 
     pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
-        let dec_100 = dec!(100);
-        TIPS_PROPOSER_SHARE_PERCENTAGE
-            .checked_div(dec_100)
+        let one_percent = Decimal::ONE_HUNDREDTH;
+
+        one_percent
+            .checked_mul(TIPS_PROPOSER_SHARE_PERCENTAGE)
             .unwrap()
             .checked_mul(self.total_tipping_cost_in_xrd)
             .unwrap()
             .checked_add(
-                NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE
-                    .checked_div(dec_100)
+                one_percent
+                    .checked_mul(NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE)
                     .unwrap()
                     .checked_mul(
                         self.total_execution_cost_in_xrd
@@ -916,16 +915,16 @@ impl TransactionFeeSummary {
     }
 
     pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
-        let dec_100 = dec!(100);
+        let one_percent = Decimal::ONE_HUNDREDTH;
 
-        TIPS_VALIDATOR_SET_SHARE_PERCENTAGE
-            .checked_div(dec_100)
+        one_percent
+            .checked_mul(TIPS_VALIDATOR_SET_SHARE_PERCENTAGE)
             .unwrap()
             .checked_mul(self.total_tipping_cost_in_xrd)
             .unwrap()
             .checked_add(
-                NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE
-                    .checked_div(dec_100)
+                one_percent
+                    .checked_mul(NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE)
                     .unwrap()
                     .checked_mul(
                         self.total_execution_cost_in_xrd

@@ -190,9 +190,8 @@ impl SystemLoanFeeReserve {
 
         let tip_percentage = Decimal::ONE
             .checked_add(
-                transaction_costing_parameters
-                    .tip_percentage
-                    .checked_div(dec!(100))
+                Decimal::ONE_HUNDREDTH
+                    .checked_mul(transaction_costing_parameters.tip_percentage)
                     .unwrap(),
             )
             .unwrap();
