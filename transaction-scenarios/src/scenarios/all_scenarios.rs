@@ -33,6 +33,9 @@ impl Iterator for AllScenariosIterator {
                     account_authorized_depositors::AccountAuthorizedDepositorsScenarioCreator::create(core)
                 }))
             }
+            7 => Some(Box::new(|core| {
+                global_n_owned::GlobalNOwnedScenarioCreator::create(core)
+            })),
             _ => None,
         }
     }
