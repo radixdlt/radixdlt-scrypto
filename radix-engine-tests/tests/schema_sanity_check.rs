@@ -91,8 +91,6 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
     let test_runner = TestRunnerBuilder::new().build();
     let bech32 = AddressBech32Encoder::for_simulator();
 
-    let state_exceptions = indexset!(("Account", AccountPartitionOffset::ResourceVaultKeyValue),);
-
     let package_addresses = test_runner.find_all_packages();
     for package_address in package_addresses {
         println!("\nChecking {}", package_address.to_string(&bech32));
