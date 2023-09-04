@@ -15,7 +15,6 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::*;
-use sbor::*;
 use transaction::prelude::*;
 
 pub fn validate_call_arguments_to_native_components(

@@ -32,6 +32,21 @@ pub fn generate_full_schema<S: CustomSchema>(
     })
 }
 
+pub fn localize_well_known_type_data<S: CustomSchema>(
+    type_data: TypeData<S::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
+) -> TypeData<S::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
+    let TypeData {
+        kind,
+        metadata,
+        validation,
+    } = type_data;
+    TypeData {
+        kind: linearize::<S>(kind, &indexset!()),
+        metadata,
+        validation,
+    }
+}
+
 pub fn localize_well_known<S: CustomSchema>(
     type_kind: TypeKind<S::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
 ) -> TypeKind<S::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {

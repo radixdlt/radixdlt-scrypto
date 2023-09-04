@@ -1,9 +1,6 @@
-use crate::crypto::*;
-use crate::types::NodeId;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::*;
 
 //===============
 // TRAITS + UTILS
@@ -32,10 +29,19 @@ pub fn hash_public_key_bytes<T: AsRef<[u8]>>(key_bytes: T) -> [u8; NodeId::RID_L
 ///
 /// In particular, it is the last 29 bytes of Blake2b-256 hash of the public key in the Radix canonical encoding.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Categorize, Encode, Decode, BasicDescribe)]
 pub enum PublicKeyHash {
     Secp256k1(Secp256k1PublicKeyHash),
     Ed25519(Ed25519PublicKeyHash),
+}
+
+impl Describe<ScryptoCustomTypeKind> for PublicKeyHash {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::PUBLIC_KEY_HASH_TYPE);
+
+    fn type_data() -> ScryptoTypeData<GlobalTypeId> {
+        well_known_scrypto_custom_types::public_key_hash_type_data()
+    }
 }
 
 impl From<Secp256k1PublicKeyHash> for PublicKeyHash {

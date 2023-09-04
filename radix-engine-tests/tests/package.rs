@@ -492,7 +492,7 @@ fn well_known_types_in_schema_are_validated() {
         .unwrap();
 
     // Invalid well known type
-    method_definition.input = TypeRef::Static(LocalTypeIndex::WellKnown(WellKnownTypeIndex::of(0)));
+    method_definition.input = TypeRef::Static(LocalTypeIndex::WellKnown(WellKnownTypeId::of(0)));
 
     // Act
     let manifest = ManifestBuilder::new()

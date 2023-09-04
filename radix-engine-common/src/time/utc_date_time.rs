@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::time::constants::*;
 use crate::time::Instant;
 use sbor::rust::fmt;
@@ -5,7 +6,6 @@ use sbor::rust::fmt::Display;
 use sbor::rust::num::ParseIntError;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 const UNIX_EPOCH_YEAR: u32 = 1970;
 
@@ -88,7 +88,7 @@ impl fmt::Display for DateTimeError {
 ///
 /// `UtcDateTime` supports methods for easy conversion to and from the [`Instant`](super::Instant) type, which
 /// can be queried from the Radix Engine.
-#[derive(Sbor, PartialEq, Eq, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Categorize, Encode, Decode, BasicDescribe)]
 pub struct UtcDateTime {
     year: u32,
     month: u8,
@@ -96,6 +96,15 @@ pub struct UtcDateTime {
     hour: u8,
     minute: u8,
     second: u8,
+}
+
+impl Describe<ScryptoCustomTypeKind> for UtcDateTime {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::UTC_DATE_TIME_TYPE);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        well_known_scrypto_custom_types::utc_date_time_type_data()
+    }
 }
 
 impl UtcDateTime {
@@ -439,7 +448,7 @@ impl fmt::Display for ParseUtcDateTimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ParseUtcDateTimeError::InvalidFormat => write!(f, "Invalid date time format. Must be in ISO-8601 format, up to second precision, such as '2011-12-03T10:15:30Z'."),
-            ParseUtcDateTimeError::DateTimeError(e) => e.fmt(f)
+            ParseUtcDateTimeError::DateTimeError(e) => fmt::Display::fmt(e, f)
         }
     }
 }

@@ -5,19 +5,19 @@ use sbor::*;
 /// Marker trait for a link between [`TypeKind`]s:
 /// - [`GlobalTypeId`]: A global identifier for a type (a well known id, or type hash)
 /// - [`LocalTypeIndex`]: A link in the context of a schema (a well known id, or a local index)
-pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq + From<WellKnownTypeIndex> {}
+pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq + From<WellKnownTypeId> {}
 
 /// This is a global identifier for a type.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum GlobalTypeId {
     /// This takes a well_known type index.
-    WellKnown(WellKnownTypeIndex),
+    WellKnown(WellKnownTypeId),
     /// The global type hash of a type - used for types which aren't well known.
     Novel(TypeHash),
 }
 
-impl From<WellKnownTypeIndex> for GlobalTypeId {
-    fn from(value: WellKnownTypeIndex) -> Self {
+impl From<WellKnownTypeId> for GlobalTypeId {
+    fn from(value: WellKnownTypeId) -> Self {
         GlobalTypeId::WellKnown(value)
     }
 }
@@ -107,13 +107,13 @@ const fn capture_dependent_type_ids(
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum LocalTypeIndex {
     /// This takes a well_known type index
-    WellKnown(WellKnownTypeIndex),
+    WellKnown(WellKnownTypeId),
     /// For non-simple types
     SchemaLocalIndex(usize),
 }
 
-impl From<WellKnownTypeIndex> for LocalTypeIndex {
-    fn from(value: WellKnownTypeIndex) -> Self {
+impl From<WellKnownTypeId> for LocalTypeIndex {
+    fn from(value: WellKnownTypeId) -> Self {
         LocalTypeIndex::WellKnown(value)
     }
 }
@@ -128,9 +128,9 @@ impl LocalTypeIndex {
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 #[sbor(transparent)]
-pub struct WellKnownTypeIndex(u8);
+pub struct WellKnownTypeId(u8);
 
-impl WellKnownTypeIndex {
+impl WellKnownTypeId {
     pub const fn of(x: u8) -> Self {
         Self(x as u8)
     }

@@ -125,9 +125,9 @@ impl CustomSchema for ScryptoCustomSchema {
     }
 
     fn resolve_well_known_type(
-        well_known_index: WellKnownTypeIndex,
+        well_known_id: WellKnownTypeId,
     ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
-        resolve_scrypto_well_known_type(well_known_index)
+        resolve_scrypto_well_known_type(well_known_id)
     }
 
     fn validate_custom_type_kind(

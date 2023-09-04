@@ -5,7 +5,6 @@ use radix_engine::{
     },
     types::*,
 };
-use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
 use radix_engine_interface::schema::TypeRef;
 use radix_engine_queries::typed_substate_layout::BlueprintPayloadDef;
 use sbor::basic_well_known_types::*;
@@ -285,7 +284,7 @@ fn check_type_internal(
 
 fn is_safe_well_known_type(
     schema: &VersionedScryptoSchema,
-    type_id: WellKnownTypeIndex,
+    type_id: WellKnownTypeId,
 ) -> CheckResult {
     let is_safe = match type_id {
         // Basic SBOR
