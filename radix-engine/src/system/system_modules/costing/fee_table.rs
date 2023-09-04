@@ -188,42 +188,19 @@ impl FeeTable {
 
     #[inline]
     pub fn allocate_node_id_cost(&self) -> u32 {
-        2990u32 / CPU_INSTRUCTIONS_TO_COST_UNIT
+        2990 / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
     #[inline]
     pub fn create_node_cost(&self, event: &CreateNodeEvent) -> u32 {
         match event {
-            CreateNodeEvent::Start(node_id, node_substates) => {
-                let base_cost: u32 = match node_id.entity_type() {
-                    Some(EntityType::GlobalAccessController) => 10230,
-                    Some(EntityType::GlobalAccount) => 9634,
-                    Some(EntityType::GlobalConsensusManager) => 7746,
-                    Some(EntityType::GlobalFungibleResourceManager) => 8048,
-                    Some(EntityType::GlobalGenericComponent) => 7719,
-                    Some(EntityType::GlobalIdentity) => 9870,
-                    Some(EntityType::GlobalMultiResourcePool) => 9592,
-                    Some(EntityType::GlobalNonFungibleResourceManager) => 7687,
-                    Some(EntityType::GlobalOneResourcePool) => 9467,
-                    Some(EntityType::GlobalPackage) => 7411,
-                    Some(EntityType::GlobalTransactionTracker) => 7710,
-                    Some(EntityType::GlobalTwoResourcePool) => 8996,
-                    Some(EntityType::GlobalValidator) => 9448,
-                    Some(EntityType::GlobalVirtualEd25519Account) => 8506,
-                    Some(EntityType::GlobalVirtualSecp256k1Account) => 7565,
-                    Some(EntityType::GlobalVirtualSecp256k1Identity) => 10047,
-                    Some(EntityType::InternalFungibleVault) => 11947,
-                    Some(EntityType::InternalGenericComponent) => 16167,
-                    Some(EntityType::InternalKeyValueStore) => 12231,
-                    Some(EntityType::InternalNonFungibleVault) => 12532,
-                    Some(EntityType::GlobalVirtualEd25519Identity) | None => 9458,
-                };
+            CreateNodeEvent::Start(_node_id, node_substates) => {
                 let total_substate_size = node_substates
                     .values()
                     .map(|x| x.values().map(|x| x.len()).sum::<usize>())
                     .sum::<usize>();
                 add(
-                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT, // todo
+                    15385 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                     Self::data_processing_cost(total_substate_size),
                 )
             }
@@ -234,7 +211,7 @@ impl FeeTable {
 
     #[inline]
     pub fn pin_node_cost(&self, _node_id: &NodeId) -> u32 {
-        2473u32
+        2473
     }
 
     #[inline]
@@ -248,7 +225,7 @@ impl FeeTable {
                     .map(|x| x.values().map(|x| x.len()).sum::<usize>())
                     .sum::<usize>();
                 add(
-                    39309u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                    39309 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                     Self::data_processing_cost(total_substate_size),
                 )
             }
@@ -259,7 +236,7 @@ impl FeeTable {
     pub fn move_module_cost(&self, event: &MoveModuleEvent) -> u32 {
         match event {
             MoveModuleEvent::IOAccess(io_access) => add(
-                4791u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                4791 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 self.io_access_cost(io_access),
             ),
         }
@@ -270,35 +247,10 @@ impl FeeTable {
         match event {
             OpenSubstateEvent::Start { .. } => 0,
             OpenSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
-            OpenSubstateEvent::End { size, node_id, .. } => {
-                let base_cost: u32 = match node_id.entity_type() {
-                    Some(EntityType::GlobalAccessController) => 11410,
-                    Some(EntityType::GlobalAccount) => 10511,
-                    Some(EntityType::GlobalConsensusManager) => 8412,
-                    Some(EntityType::GlobalFungibleResourceManager) => 8235,
-                    Some(EntityType::GlobalGenericComponent) => 10979,
-                    Some(EntityType::GlobalIdentity) => 10630,
-                    Some(EntityType::GlobalMultiResourcePool) => 11300,
-                    Some(EntityType::GlobalNonFungibleResourceManager) => 8286,
-                    Some(EntityType::GlobalOneResourcePool) => 11315,
-                    Some(EntityType::GlobalPackage) => 18920,
-                    Some(EntityType::GlobalTransactionTracker) => 8245,
-                    Some(EntityType::GlobalTwoResourcePool) => 11276,
-                    Some(EntityType::GlobalValidator) => 9327,
-                    Some(EntityType::GlobalVirtualEd25519Account) => 11129,
-                    Some(EntityType::GlobalVirtualSecp256k1Account) => 10738,
-                    Some(EntityType::GlobalVirtualSecp256k1Identity) => 11377,
-                    Some(EntityType::InternalFungibleVault) => 11452,
-                    Some(EntityType::InternalGenericComponent) => 8454,
-                    Some(EntityType::InternalKeyValueStore) => 12312,
-                    Some(EntityType::InternalNonFungibleVault) => 11501,
-                    Some(EntityType::GlobalVirtualEd25519Identity) | None => 11054,
-                };
-                add(
-                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
-                    Self::data_processing_cost(*size),
-                )
-            }
+            OpenSubstateEvent::End { size, .. } => add(
+                10360 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                Self::data_processing_cost(*size),
+            ),
         }
     }
 
@@ -325,7 +277,7 @@ impl FeeTable {
         match event {
             WriteSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
             WriteSubstateEvent::Start { value, .. } => add(
-                7488u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                7488 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 Self::data_processing_cost(value.len()),
             ),
         }
@@ -334,7 +286,7 @@ impl FeeTable {
     #[inline]
     pub fn close_substate_cost(&self, event: &CloseSubstateEvent) -> u32 {
         match event {
-            CloseSubstateEvent::End(..) => 4333u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            CloseSubstateEvent::End(..) => 4333 / CPU_INSTRUCTIONS_TO_COST_UNIT,
         }
     }
 
@@ -342,7 +294,7 @@ impl FeeTable {
     pub fn set_substate_cost(&self, event: &SetSubstateEvent) -> u32 {
         match event {
             SetSubstateEvent::Start(.., value) => add(
-                9750u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                9750 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 Self::data_processing_cost(value.len()),
             ),
             SetSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
@@ -352,7 +304,7 @@ impl FeeTable {
     #[inline]
     pub fn remove_substate_cost(&self, event: &RemoveSubstateEvent) -> u32 {
         match event {
-            RemoveSubstateEvent::Start(..) => 23446u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            RemoveSubstateEvent::Start(..) => 23446 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             RemoveSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
     }
@@ -364,13 +316,13 @@ impl FeeTable {
         _partition_number: &PartitionNumber,
         _substate_key: &SubstateKey,
     ) -> u32 {
-        1904u32
+        1904
     }
 
     #[inline]
     pub fn scan_keys_cost(&self, event: &ScanKeysEvent) -> u32 {
         match event {
-            ScanKeysEvent::Start => 15461u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            ScanKeysEvent::Start => 15461 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             ScanKeysEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
     }
@@ -379,7 +331,7 @@ impl FeeTable {
     pub fn drain_substates_cost(&self, event: &DrainSubstatesEvent) -> u32 {
         match event {
             DrainSubstatesEvent::Start(count) => {
-                let cpu_instructions = add(8489u32, mul(9173u32, *count));
+                let cpu_instructions = add(8489, mul(9173, *count));
                 cpu_instructions / CPU_INSTRUCTIONS_TO_COST_UNIT
             }
             DrainSubstatesEvent::IOAccess(io_access) => self.io_access_cost(io_access),
@@ -389,7 +341,7 @@ impl FeeTable {
     #[inline]
     pub fn scan_sorted_substates_cost(&self, event: &ScanSortedSubstatesEvent) -> u32 {
         match event {
-            ScanSortedSubstatesEvent::Start => 6137u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            ScanSortedSubstatesEvent::Start => 6137 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             ScanSortedSubstatesEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
     }

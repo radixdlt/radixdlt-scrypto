@@ -94,9 +94,9 @@ for path in file_list:
                 key += "::" + native + "::" + pkg + "::" + fcn_name
 
         # handle kernel_create_node
-        param = child.xpath("./self::kernel_create_node/@arg0")
-        if param:
-            key += "::" + param[0]
+        # param = child.xpath("./self::kernel_create_node/@arg0")
+        # if param:
+        #    key += "::" + param[0]
 
         # handle kernel_get_node_info
         param = child.xpath("./self::kernel_get_node_info/@arg0")
@@ -104,11 +104,11 @@ for path in file_list:
             key += "::" + param[0]
 
         # handle kernel_open_substate
-        param = child.xpath("./self::kernel_open_substate[@module_id | @arg0 | @arg2]")
-        if param:
-            module_id = param[0].attrib["module_id"]
-            node_id = param[0].attrib["arg0"]
-            key += "::" + module_id + "::" + node_id
+        #param = child.xpath("./self::kernel_open_substate[@module_id | @arg0 | @arg2]")
+        #if param:
+        #    module_id = param[0].attrib["module_id"]
+        #    node_id = param[0].attrib["arg0"]
+        #    key += "::" + module_id + "::" + node_id
 
         # handle kernel_allocate_node_id - not using this rule
         # param = child.xpath("./self::kernel_allocate_node_id/@entity_type")
@@ -121,9 +121,9 @@ for path in file_list:
             key += "::" + param[0]
 
         # handle before_invoke
-#        param = child.xpath("./self::before_invoke/@arg0")
-#        if param:
-#            key += "::" + param[0]
+        # param = child.xpath("./self::before_invoke/@arg0")
+        # if param:
+        # key += "::" + param[0]
 
         # handle after_invoke
         param = child.xpath("./self::after_invoke/@arg0")
@@ -131,9 +131,9 @@ for path in file_list:
             key += "::" + param[0]
 
         # handle kernel_open_substate_with_default
-        param = child.xpath("./self::kernel_open_substate_with_default/@arg0")
-        if param:
-            key += "::" + param[0]
+        #param = child.xpath("./self::kernel_open_substate_with_default/@arg0")
+        #if param:
+        #    key += "::" + param[0]
 
         # handle kernel_read_substate
         resolve_heap_or_track = child.xpath("./self::kernel_read_substate/on_read_substate")
