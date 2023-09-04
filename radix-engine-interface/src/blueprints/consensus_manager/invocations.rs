@@ -164,9 +164,9 @@ impl EpochChangeCondition {
         // No realistic chance to overflow.
         // 100 years in ms is less than 2^35
         let proportion_difference = (Decimal::from(actual_duration_millis)
-            .safe_sub(self.target_duration_millis)
+            .checked_sub(self.target_duration_millis)
             .expect("Overflow"))
-        .safe_div(self.target_duration_millis)
+        .checked_div(self.target_duration_millis)
         .expect("Overflow");
         proportion_difference <= dec!("0.1")
     }
