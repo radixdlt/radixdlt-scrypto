@@ -9,9 +9,12 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::prelude::ClientApi;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
+
+use crate::runtime::Runtime;
 
 /// Represents a resource manager.
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
@@ -107,14 +110,15 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientBlueprintApi<E>,
+        Y: ClientApi<E>,
     {
         let metadata = ModuleConfig {
             init: metadata.into(),
             roles: RoleAssignmentInit::default(),
         };
 
-        let non_fungible_schema = NonFungibleDataSchema::new_schema::<N>();
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_local::<N>(Runtime::package_address(api)?);
         let result = api.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
