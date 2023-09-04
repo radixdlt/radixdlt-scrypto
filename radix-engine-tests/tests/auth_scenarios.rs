@@ -83,7 +83,7 @@ impl AuthScenariosEnv {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/auth_scenarios");
 
         let manifest = ManifestBuilder::new()
-            .call_function(package_address, "Swappy", "create", manifest_args!())
+            .call_function(package_address, "Swappy", "create", manifest_args!(cerb))
             .deposit_batch(acco)
             .build();
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![virtua_sig.clone()]);
@@ -741,14 +741,46 @@ fn scenario_27() {
     let manifest = ManifestBuilder::new()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .withdraw_from_account(env.acco, env.cerb, 1)
+        .withdraw_from_account(env.acco, env.swappy_badge.resource_address(), 1)
         .take_all_from_worktop(env.cerb, "cerbs")
+        .take_all_from_worktop(env.swappy_badge.resource_address(), "swappy")
         .with_bucket("cerbs", |builder, bucket| {
             builder.call_method(env.big_fi, "deposit_cerb", manifest_args!(bucket))
         })
-        .call_method(env.big_fi, "assert_in_subservio", manifest_args!())
+        .with_bucket("swappy", |builder, bucket| {
+            builder.call_method(env.big_fi, "assert_in_subservio", manifest_args!(bucket))
+        })
+        .deposit_batch(env.acco)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)));
+}
+
+#[test]
+fn scenario_28() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
+        .withdraw_from_account(env.acco, env.cerb, 1)
+        .withdraw_from_account(env.acco, env.swappy_badge.resource_address(), 1)
+        .take_all_from_worktop(env.cerb, "cerbs")
+        .take_all_from_worktop(env.swappy_badge.resource_address(), "swappy")
+        .with_bucket("cerbs", |builder, bucket| {
+            builder.call_method(env.big_fi, "deposit_cerb", manifest_args!(bucket))
+        })
+        .with_bucket("swappy", |builder, bucket| {
+            builder.call_method(env.big_fi, "call_swappy_in_subservio", manifest_args!(bucket))
+        })
+        .deposit_batch(env.acco)
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_commit_success();
 }
