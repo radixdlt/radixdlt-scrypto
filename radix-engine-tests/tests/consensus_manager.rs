@@ -1383,8 +1383,8 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
             .checked_sub(last_reward)
             .unwrap()
             .checked_add(
-                num_epochs_with_default_fee
-                    .checked_mul(emission_xrd_per_epoch)
+                emission_xrd_per_epoch
+                    .checked_mul(num_epochs_with_default_fee)
                     .unwrap()
             )
             .unwrap()
