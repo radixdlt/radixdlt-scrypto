@@ -1754,7 +1754,7 @@ mod tests {
                 Enum<0u8>()
                 Enum<NonFungibleIdType::Integer>()
                 false
-                Tuple(
+                Enum<0u8>(
                     Enum<0u8>(
                         Tuple(
                             Array<Enum>(),
@@ -1859,7 +1859,7 @@ mod tests {
                 Enum<0u8>()
                 Enum<NonFungibleIdType::Integer>()
                 false
-                Tuple(
+                Enum<0u8>(
                     Enum<0u8>(
                         Tuple(
                             Array<Enum>(),
