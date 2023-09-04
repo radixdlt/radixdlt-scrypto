@@ -298,7 +298,7 @@ pub enum NonFungibleDataSchema {
         mutable_fields: IndexSet<String>,
     },
     Remote {
-        type_id: BlueprintTypeId,
+        type_id: BlueprintTypeIdentifier,
         mutable_fields: IndexSet<String>,
     },
 }
@@ -336,7 +336,7 @@ impl NonFungibleDataSchema {
     }
 
     pub fn new_remote<T: AsRef<[S]>, S: AsRef<str>>(
-        type_id: BlueprintTypeId,
+        type_id: BlueprintTypeIdentifier,
         mutable_fields: T,
     ) -> Self {
         Self::Remote {

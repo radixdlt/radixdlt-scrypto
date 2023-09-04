@@ -21,8 +21,8 @@ pub enum KeyValueStoreDataSchema {
         allow_ownership: bool,
     },
     Remote {
-        key_type: BlueprintTypeId,
-        value_type: BlueprintTypeId,
+        key_type: BlueprintTypeIdentifier,
+        value_type: BlueprintTypeIdentifier,
         allow_ownership: bool,
     },
 }
@@ -64,8 +64,8 @@ impl KeyValueStoreDataSchema {
     }
 
     pub fn new_remote(
-        key_type: BlueprintTypeId,
-        value_type: BlueprintTypeId,
+        key_type: BlueprintTypeIdentifier,
+        value_type: BlueprintTypeIdentifier,
         allow_ownership: bool,
     ) -> Self {
         Self::Remote {

@@ -156,7 +156,7 @@ implement_client_api! {
         ) -> Result<Vec<u8>, RuntimeError>,
         resolve_blueprint_type: (
             &mut self,
-            blueprint_type_id: &BlueprintTypeId,
+            blueprint_type_id: &BlueprintTypeIdentifier,
         ) -> Result<(VersionedScryptoSchema, ScopedTypeId), RuntimeError>
     },
     ClientFieldApi: {

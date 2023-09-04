@@ -779,9 +779,9 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
     pub fn get_blueprint_type_schema(
         &self,
-        type_id: &BlueprintTypeId,
+        type_id: &BlueprintTypeIdentifier,
     ) -> Result<(VersionedScryptoSchema, ScopedTypeId), SystemReaderError> {
-        let BlueprintTypeId {
+        let BlueprintTypeIdentifier {
             package_address,
             blueprint_name,
             type_name,

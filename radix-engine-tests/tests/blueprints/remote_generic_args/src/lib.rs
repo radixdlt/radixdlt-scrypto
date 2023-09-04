@@ -24,7 +24,7 @@ mod non_fungible_data {
             type_name: String,
         ) {
             let non_fungible_schema = NonFungibleDataSchema::new_remote(
-                BlueprintTypeId {
+                BlueprintTypeIdentifier {
                     package_address,
                     blueprint_name,
                     type_name,
@@ -79,12 +79,12 @@ mod key_value_store {
         ) {
             // Create
             let kv_store = ScryptoVmV1Api::kv_store_new(KeyValueStoreDataSchema::Remote {
-                key_type: BlueprintTypeId {
+                key_type: BlueprintTypeIdentifier {
                     package_address,
                     blueprint_name: blueprint_name.clone(),
                     type_name: type_name.clone(),
                 },
-                value_type: BlueprintTypeId {
+                value_type: BlueprintTypeIdentifier {
                     package_address,
                     blueprint_name: blueprint_name.clone(),
                     type_name: type_name.clone(),

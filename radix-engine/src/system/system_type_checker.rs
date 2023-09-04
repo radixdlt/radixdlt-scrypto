@@ -46,7 +46,7 @@ pub struct KVStoreTypeTarget {
 pub enum TypeCheckError {
     InvalidNumberOfGenericArgs { expected: usize, actual: usize },
     InvalidLocalTypeId(LocalTypeId),
-    InvalidBlueprintTypeId(BlueprintTypeId),
+    InvalidBlueprintTypeIdentifier(BlueprintTypeIdentifier),
     InvalidCollectionIndex(Box<BlueprintInfo>, CollectionIndex),
     BlueprintPayloadDoesNotExist(Box<BlueprintInfo>, BlueprintPayloadIdentifier),
     BlueprintPayloadValidationError(Box<BlueprintInfo>, BlueprintPayloadIdentifier, String),
@@ -116,7 +116,7 @@ where
             GenericSubstitution::Remote(type_id) => self
                 .get_blueprint_type_schema(type_id)
                 .map(|_| ())
-                .map_err(|_| TypeCheckError::InvalidBlueprintTypeId(type_id.clone())),
+                .map_err(|_| TypeCheckError::InvalidBlueprintTypeIdentifier(type_id.clone())),
         }
     }
 
@@ -418,9 +418,9 @@ where
 
     pub fn get_blueprint_type_schema(
         &mut self,
-        type_id: &BlueprintTypeId,
+        type_id: &BlueprintTypeIdentifier,
     ) -> Result<(VersionedScryptoSchema, ScopedTypeId), RuntimeError> {
-        let BlueprintTypeId {
+        let BlueprintTypeIdentifier {
             package_address,
             blueprint_name,
             type_name,

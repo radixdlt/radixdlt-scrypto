@@ -59,11 +59,11 @@ pub enum GenericSubstitution {
     Local(ScopedTypeId),
     /// Currently supports default version of blueprint only.
     /// New variants can be added for specific version of blueprint in the future.
-    Remote(BlueprintTypeId),
+    Remote(BlueprintTypeIdentifier),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
-pub struct BlueprintTypeId {
+pub struct BlueprintTypeIdentifier {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
     pub type_name: String,
