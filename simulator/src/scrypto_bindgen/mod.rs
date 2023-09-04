@@ -90,7 +90,7 @@ pub fn run() -> Result<(), Error> {
     };
 
     for binding in bindings {
-        println!("{}\n", binding)
+        println!("{}", binding)
     }
 
     Ok(())

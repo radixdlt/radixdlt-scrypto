@@ -34,7 +34,9 @@ list=(
 );
 for address in ${list[@]}; 
 do
-    file_contents="$file_contents$($scrypto_bindgen $address)"
+    file_contents="$file_contents
+
+$($scrypto_bindgen $address)"
 done
 
 echo "$file_contents" > $PWD/scrypto/src/component/stubs.rs

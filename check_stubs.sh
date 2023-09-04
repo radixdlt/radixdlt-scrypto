@@ -7,7 +7,7 @@ stubs_path=$PWD/scrypto/src/component/stubs.rs
 
 current_hash=$(md5sum $stubs_path | awk '{print $1}')
 
-./update-bindings
+./update-bindings.sh
 new_hash=$(md5sum $stubs_path | awk '{print $1}')
 
 if [ "$current_hash" == "$new_hash" ]; then
