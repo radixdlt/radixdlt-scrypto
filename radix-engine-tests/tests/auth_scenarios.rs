@@ -57,9 +57,22 @@ impl AuthScenariosEnv {
                     withdrawer => rule!(require(cerb_badge.clone()));
                     withdrawer_updater => rule!(require(cerb_badge.clone()));
                 },
+                deposit_roles: deposit_roles! {
+                    depositor => rule!(allow_all);
+                    depositor_updater => rule!(allow_all);
+                },
                 ..Default::default()
             },
             acco,
+        );
+        test_runner.execute_manifest_ignoring_fee(ManifestBuilder::new()
+            .call_role_assignment_method(cerb, ROLE_ASSIGNMENT_SET_IDENT, RoleAssignmentSetInput {
+                module: ObjectModuleId::Main,
+                role_key: RoleKey::new("depositor"),
+                rule: rule!(require(cerb_badge.clone())),
+            })
+            .build(),
+            vec![]
         );
 
         let package_address = test_runner.compile_and_publish("./tests/blueprints/auth_scenarios");
@@ -662,3 +675,63 @@ fn scenario_24() {
         )
     });
 }
+
+#[test]
+fn scenario_25() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
+        .withdraw_from_account(env.acco, env.cerb, 1)
+        .take_all_from_worktop(env.cerb, "bucket")
+        .with_bucket("bucket", |builder, bucket| {
+            builder
+                .call_method(env.big_fi, "burn_bucket", manifest_args!(bucket))
+        })
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
+}
+
+/*
+#[test]
+fn scenario_27() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
+        .withdraw_from_account(env.acco, env.cerb, 1)
+        .take_all_from_worktop(env.cerb, "bucket")
+        .with_bucket("bucket", |builder, bucket| {
+            builder
+                .call_method(env.big_fi, "burn_bucket", manifest_args!(bucket))
+        })
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
+}
+ */

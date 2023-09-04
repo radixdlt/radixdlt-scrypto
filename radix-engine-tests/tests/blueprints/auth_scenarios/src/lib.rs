@@ -112,6 +112,10 @@ mod big_fi {
         pub fn call_swappy_function(&self) {
             Blueprint::<Swappy>::protected_function();
         }
+
+        pub fn burn_bucket(&self, bucket: Bucket) {
+            bucket.burn();
+        }
     }
 }
 
