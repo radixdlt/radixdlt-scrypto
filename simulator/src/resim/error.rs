@@ -79,5 +79,5 @@ pub enum Error {
 
     InvalidResourceSpecifier(String),
 
-    RemoteGenericSubstitutionNotSupported
+    RemoteGenericSubstitutionNotSupported,
 }

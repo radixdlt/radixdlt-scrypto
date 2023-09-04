@@ -30,7 +30,10 @@ fn opening_long_substate_key_should_fail() {
             match export_name {
                 "test" => {
                     let kv_store = api.key_value_store_new(
-                        KeyValueStoreDataSchema::new_local::<String, ()>(TEST_UTILS_PACKAGE, false),
+                        KeyValueStoreDataSchema::new_local_with_self_package_replacement::<
+                            String,
+                            (),
+                        >(TEST_UTILS_PACKAGE, false),
                     )?;
                     let long_key = "a".repeat(MAX_SUBSTATE_KEY_SIZE + 1);
                     api.key_value_store_open_entry(

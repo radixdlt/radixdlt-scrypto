@@ -34,8 +34,10 @@ impl<
 {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let store_schema =
-            KeyValueStoreDataSchema::new_local::<K, V>(Runtime::package_address(), true);
+        let store_schema = KeyValueStoreDataSchema::new_local_with_self_package_replacement::<K, V>(
+            Runtime::package_address(),
+            true,
+        );
 
         Self {
             id: Own(ScryptoVmV1Api::kv_store_new(store_schema)),

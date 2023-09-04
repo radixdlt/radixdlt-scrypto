@@ -611,7 +611,9 @@ impl<D: NonFungibleData>
     where
         T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_local::<D>(Runtime::package_address());
+        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
+            Runtime::package_address(),
+        );
 
         let metadata = self
             .metadata_config
@@ -668,7 +670,9 @@ impl<D: NonFungibleData>
     where
         T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_local::<D>(Runtime::package_address());
+        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
+            Runtime::package_address(),
+        );
 
         let metadata = self
             .metadata_config
@@ -725,7 +729,9 @@ impl<D: NonFungibleData>
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_local::<D>(Runtime::package_address());
+        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
+            Runtime::package_address(),
+        );
 
         let metadata = self
             .metadata_config
@@ -786,7 +792,9 @@ impl<D: NonFungibleData>
         T: IntoIterator<Item = D>,
         D: ScryptoEncode,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_local::<D>(Runtime::package_address());
+        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
+            Runtime::package_address(),
+        );
 
         let metadata = self
             .metadata_config
@@ -864,7 +872,9 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
     for InProgressResourceBuilder<NonFungibleResourceType<Y, D>>
 {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
-        let non_fungible_schema = NonFungibleDataSchema::new_local::<D>(Runtime::package_address());
+        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
+            Runtime::package_address(),
+        );
 
         private::CreateWithNoSupply::NonFungible {
             owner_role: self.owner_role,

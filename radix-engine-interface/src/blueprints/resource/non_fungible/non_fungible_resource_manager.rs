@@ -309,8 +309,10 @@ impl NonFungibleData for () {
 
 impl NonFungibleDataSchema {
     /// Arguments:
-    /// * [`package_address`] - The package address to use for resolving types defined within this package
-    pub fn new_local<N: NonFungibleData>(package_address: PackageAddress) -> Self {
+    /// * [`package_address`] - The package address to use for replacing `None` package address in type validation
+    pub fn new_local_with_self_package_replacement<N: NonFungibleData>(
+        package_address: PackageAddress,
+    ) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let type_id = aggregator.add_child_type_and_descendents::<N>();
         let mut schema = generate_full_schema(aggregator);

@@ -29,9 +29,9 @@ pub enum KeyValueStoreDataSchema {
 
 impl KeyValueStoreDataSchema {
     /// Arguments:
-    /// * [`package_address`] - The package address to use for resolving types defined within this package
+    /// * [`package_address`] - The package address to use for replacing `None` package address in type validation
     /// * [`allow_ownership`] - Whether to allow ownership in value
-    pub fn new_local<K: ScryptoDescribe, V: ScryptoDescribe>(
+    pub fn new_local_with_self_package_replacement<K: ScryptoDescribe, V: ScryptoDescribe>(
         package_address: PackageAddress,
         allow_ownership: bool,
     ) -> Self {

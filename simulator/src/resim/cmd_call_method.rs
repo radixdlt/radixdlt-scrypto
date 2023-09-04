@@ -126,7 +126,7 @@ impl CallMethod {
                         let schema = export_schema(bp_id.package_address.as_node_id(), type_id.0)?;
                         (schema, type_id.1)
                     }
-                    GenericSubstitution::Remote(_) =>  {
+                    GenericSubstitution::Remote(_) => {
                         return Err(Error::RemoteGenericSubstitutionNotSupported);
                     }
                 }
