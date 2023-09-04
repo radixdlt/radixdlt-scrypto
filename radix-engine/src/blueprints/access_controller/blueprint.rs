@@ -31,10 +31,10 @@ use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use sbor::rust::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
     /// A vault where the asset controlled by the access controller lives.
-    pub controlled_asset: Own,
+    pub controlled_asset: Vault,
 
     /// The amount of time (in minutes) that it takes for timed recovery to be done. Maximum is
     /// 4,294,967,295 minutes which is 8171.5511700913 years. When this is [`None`], then timed
@@ -58,9 +58,20 @@ pub struct AccessControllerSubstate {
     ),
 }
 
+impl Clone for AccessControllerSubstate {
+    fn clone(&self) -> Self {
+        Self {
+            controlled_asset: Vault(self.controlled_asset.0),
+            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes.clone(),
+            recovery_badge: self.recovery_badge,
+            state: self.state.clone(),
+        }
+    }
+}
+
 impl AccessControllerSubstate {
     pub fn new(
-        controlled_asset: Own,
+        controlled_asset: Vault,
         timed_recovery_delay_in_minutes: Option<u32>,
         recovery_badge: ResourceAddress,
     ) -> Self {
@@ -465,19 +476,22 @@ impl AccessControllerBlueprint {
                         "primary" => updaters: [SELF_ROLE];
                         "recovery" => updaters: [SELF_ROLE];
                         "confirmation" => updaters: [SELF_ROLE];
-                        "this_package";
                     },
                     methods {
+                        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => MethodAccessibility::Public;
+
                         ACCESS_CONTROLLER_CREATE_PROOF_IDENT => ["primary"];
+
                         ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => ["primary"];
                         ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary"];
                         ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => ["primary"];
                         ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  ["primary"];
+
                         ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => ["recovery"];
-                        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => ["recovery"];
-                        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => MethodAccessibility::Public;
                         ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery"];
+                        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => ["recovery"];
                         ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery"];
+
                         ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => ["recovery"];
                         ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => ["recovery"];
 
@@ -594,7 +608,7 @@ impl AccessControllerBlueprint {
         };
 
         let substate = AccessControllerSubstate::new(
-            vault.0,
+            vault,
             input.timed_recovery_delay_in_minutes,
             recovery_badge_resource,
         );
@@ -615,7 +629,6 @@ impl AccessControllerBlueprint {
             },
             api,
         )?;
-        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
         api.globalize(
@@ -623,7 +636,6 @@ impl AccessControllerBlueprint {
             indexmap!(
                 ModuleId::RoleAssignment => role_assignment.0,
                 ModuleId::Metadata => metadata.0,
-                ModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;
@@ -1160,7 +1172,6 @@ fn locked_role_assignment() -> RuleSet {
 
 fn init_roles_from_rule_set(rule_set: RuleSet) -> RoleAssignmentInit {
     roles2! {
-        "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
         "primary" => rule_set.primary_role, updatable;
         "recovery" => rule_set.recovery_role, updatable;
         "confirmation" => rule_set.confirmation_role, updatable;
