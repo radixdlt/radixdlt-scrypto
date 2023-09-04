@@ -777,7 +777,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .expect("Schema should exist if substate exists"))
     }
 
-    fn get_blueprint_type_schema(
+    pub fn get_blueprint_type_schema(
         &self,
         type_id: &BlueprintTypeId,
     ) -> Result<(VersionedScryptoSchema, ScopedTypeId), SystemReaderError> {

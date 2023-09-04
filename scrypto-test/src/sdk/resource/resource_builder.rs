@@ -637,7 +637,8 @@ impl<D: NonFungibleData>
         Y: ClientApi<E>,
         E: Debug,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
 
         let metadata = self
             .metadata_config
@@ -696,7 +697,8 @@ impl<D: NonFungibleData>
         Y: ClientApi<E>,
         E: Debug,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
 
         let metadata = self
             .metadata_config
@@ -755,7 +757,8 @@ impl<D: NonFungibleData>
         Y: ClientApi<E>,
         E: Debug,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
 
         let metadata = self
             .metadata_config
@@ -817,7 +820,8 @@ impl<D: NonFungibleData>
         Y: ClientApi<E>,
         E: Debug,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
 
         let metadata = self
             .metadata_config
@@ -905,7 +909,8 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
     for InProgressResourceBuilder<NonFungibleResourceType<Y, D>>
 {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
-        let non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
 
         private::CreateWithNoSupply::NonFungible {
             owner_role: self.owner_role,

@@ -78,4 +78,6 @@ pub enum Error {
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 
     InvalidResourceSpecifier(String),
+
+    RemoteGenericSubstitutionNotSupported
 }
