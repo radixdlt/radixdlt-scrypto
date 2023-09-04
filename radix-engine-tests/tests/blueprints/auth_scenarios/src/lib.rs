@@ -138,6 +138,10 @@ mod big_fi {
             self.cerb_vault.put(bucket);
             swappy_badge
         }
+
+        pub fn pass_proof(&mut self, proof: Proof) {
+            self.child.receive_proof(proof);
+        }
     }
 }
 
@@ -179,6 +183,9 @@ mod subservio {
             self.swappy.method_protected_by_cerb_and_swappy();
 
             swappy_badge
+        }
+
+        pub fn receive_proof(&self, _proof: Proof) {
         }
     }
 }

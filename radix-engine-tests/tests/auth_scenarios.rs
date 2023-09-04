@@ -784,3 +784,23 @@ fn scenario_28() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn scenario_29() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, NonFungibleGlobalId::new(env.cerb, NonFungibleLocalId::integer(1)))
+        .create_proof_from_auth_zone_of_all(env.cerb, "cerb_proof")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_method(env.big_fi, "pass_proof", manifest_args!(lookup.proof("cerb_proof")))
+        })
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
