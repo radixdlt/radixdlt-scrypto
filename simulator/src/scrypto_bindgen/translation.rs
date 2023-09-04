@@ -192,7 +192,7 @@ where
             key_type,
             value_type,
         } => format!(
-            "BTreeMap<{}, {}>",
+            "IndexMap<{}, {}>",
             type_name(
                 &TypeIdentifier(type_identifier.0, key_type),
                 blueprint_name,
