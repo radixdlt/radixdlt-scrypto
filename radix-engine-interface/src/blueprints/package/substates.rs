@@ -44,10 +44,10 @@ pub enum BlueprintPayloadDef {
 }
 
 impl BlueprintPayloadDef {
-    pub fn from_type_ref(type_ref: TypeRef<LocalTypeIndex>, schema_hash: SchemaHash) -> Self {
+    pub fn from_type_ref(type_ref: TypeRef<LocalTypeId>, schema_hash: SchemaHash) -> Self {
         match type_ref {
-            TypeRef::Static(type_index) => {
-                BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
+            TypeRef::Static(type_id) => {
+                BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_id))
             }
             TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
         }

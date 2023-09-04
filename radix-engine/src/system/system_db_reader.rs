@@ -18,7 +18,7 @@ use radix_engine_store_interface::{
     interface::SubstateDatabase,
 };
 use sbor::rust::prelude::*;
-use sbor::LocalTypeIndex;
+use sbor::LocalTypeId;
 use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
@@ -61,7 +61,7 @@ pub enum SystemPartitionDescriptor {
 
 pub struct ResolvedPayloadSchema {
     pub schema: VersionedScryptoSchema,
-    pub type_index: LocalTypeIndex,
+    pub type_id: LocalTypeId,
     pub allow_ownership: bool,
     pub allow_non_global_refs: bool,
     pub schema_origin: SchemaOrigin,
@@ -607,7 +607,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
                 Ok(ResolvedPayloadSchema {
                     schema,
-                    type_index: type_identifier.1,
+                    type_id: type_identifier.1,
                     allow_ownership,
                     allow_non_global_refs,
                     schema_origin: SchemaOrigin::KeyValueStore,
@@ -634,7 +634,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 ObjectSubstateTypeReference::Package(PackageTypeReference {
                     package_address: target.blueprint_info.blueprint_id.package_address,
                     schema_hash: type_identifier.0,
-                    local_type_index: type_identifier.1,
+                    local_type_id: type_identifier.1,
                 })
             }
             BlueprintPayloadDef::Generic(instance_index) => {
@@ -658,8 +658,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                         ObjectSubstateTypeReference::ObjectInstance(ObjectInstanceTypeReference {
                             entity_address,
                             schema_hash: type_id.0,
-                            instance_type_index: instance_index,
-                            local_type_index: type_id.1,
+                            instance_type_id: instance_index,
+                            local_type_id: type_id.1,
                         })
                     }
                 }
@@ -729,7 +729,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
         Ok(ResolvedPayloadSchema {
             schema,
-            type_index: index,
+            type_id: index,
             allow_ownership,
             allow_non_global_refs,
             schema_origin,
@@ -789,7 +789,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
             payload_schema.schema.v1(),
-            payload_schema.type_index,
+            payload_schema.type_id,
             &validation_context,
             depth_limit,
         )

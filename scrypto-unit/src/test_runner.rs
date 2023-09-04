@@ -2143,7 +2143,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn event_schema(
         &self,
         event_type_identifier: &EventTypeIdentifier,
-    ) -> (LocalTypeIndex, VersionedScryptoSchema) {
+    ) -> (LocalTypeId, VersionedScryptoSchema) {
         let (blueprint_id, name) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
                 let blueprint_id = match node_module {
@@ -2196,10 +2196,10 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn event_name(&self, event_type_identifier: &EventTypeIdentifier) -> String {
-        let (local_type_index, schema) = self.event_schema(event_type_identifier);
+        let (local_type_id, schema) = self.event_schema(event_type_identifier);
         schema
             .v1()
-            .resolve_type_metadata(local_type_index)
+            .resolve_type_metadata(local_type_id)
             .unwrap()
             .get_name_string()
             .unwrap()
@@ -2210,11 +2210,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         event_type_identifier: &EventTypeIdentifier,
     ) -> bool {
         let expected_type_name = {
-            let (local_type_index, schema) =
+            let (local_type_id, schema) =
                 sbor::generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
             schema
                 .v1()
-                .resolve_type_metadata(local_type_index)
+                .resolve_type_metadata(local_type_id)
                 .unwrap()
                 .get_name_string()
                 .unwrap()

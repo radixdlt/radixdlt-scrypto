@@ -17,7 +17,7 @@ use sbor::rust::collections::{IndexMap, IndexSet};
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use sbor::{generate_full_schema, LocalTypeIndex, TypeAggregator};
+use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";
 
@@ -306,7 +306,7 @@ pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLo
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleDataSchema {
     pub schema: VersionedScryptoSchema,
-    pub non_fungible: LocalTypeIndex,
+    pub non_fungible: LocalTypeId,
     pub mutable_fields: IndexSet<String>,
 }
 

@@ -111,7 +111,7 @@ pub enum NonFungibleResourceManagerError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InvalidNonFungibleSchema {
     SchemaValidationError(SchemaValidationError),
-    InvalidLocalTypeIndex,
+    InvalidLocalTypeId,
     NotATuple,
     MissingFieldNames,
     MutableFieldDoesNotExist(String),
@@ -513,7 +513,7 @@ impl NonFungibleResourceManagerBlueprint {
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
                     NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                        InvalidNonFungibleSchema::InvalidLocalTypeIndex,
+                        InvalidNonFungibleSchema::InvalidLocalTypeId,
                     ),
                 ),
             ))?;
@@ -536,7 +536,7 @@ impl NonFungibleResourceManagerBlueprint {
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
                     NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                        InvalidNonFungibleSchema::InvalidLocalTypeIndex,
+                        InvalidNonFungibleSchema::InvalidLocalTypeId,
                     ),
                 ),
             ))?;

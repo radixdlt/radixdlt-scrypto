@@ -14,8 +14,8 @@ impl CustomExtension for ScryptoCustomExtension {
         _: &Schema<Self::CustomSchema>,
         custom_value_kind: Self::CustomValueKind,
         type_kind: &TypeKind<
-            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
-            LocalTypeIndex,
+            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
+            LocalTypeId,
         >,
     ) -> bool {
         match custom_value_kind {
@@ -42,7 +42,7 @@ impl CustomExtension for ScryptoCustomExtension {
 
     fn custom_type_kind_matches_non_custom_value_kind(
         _: &Schema<Self::CustomSchema>,
-        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
         _: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         // It's not possible for a custom type kind to match a non-custom value kind

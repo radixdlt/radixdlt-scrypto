@@ -39,9 +39,9 @@ pub enum SystemFieldKind {
 pub struct KeyValueStoreEntryStructure {
     pub key_value_store_address: InternalAddress,
     pub key_schema_hash: SchemaHash,
-    pub key_local_type_index: LocalTypeIndex,
+    pub key_local_type_id: LocalTypeId,
     pub value_schema_hash: SchemaHash,
-    pub value_local_type_index: LocalTypeIndex,
+    pub value_local_type_id: LocalTypeId,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -77,15 +77,15 @@ pub enum ObjectSubstateTypeReference {
 pub struct PackageTypeReference {
     pub package_address: PackageAddress,
     pub schema_hash: SchemaHash,
-    pub local_type_index: LocalTypeIndex,
+    pub local_type_id: LocalTypeId,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct ObjectInstanceTypeReference {
     pub entity_address: NodeId,
     pub schema_hash: SchemaHash,
-    pub instance_type_index: u8,
-    pub local_type_index: LocalTypeIndex,
+    pub instance_type_id: u8,
+    pub local_type_id: LocalTypeId,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -245,9 +245,9 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 SubstateSystemStructure::KeyValueStoreEntry(KeyValueStoreEntryStructure {
                     key_value_store_address: (*node_id).try_into().unwrap(),
                     key_schema_hash: key_type_id.0,
-                    key_local_type_index: key_type_id.1,
+                    key_local_type_id: key_type_id.1,
                     value_schema_hash: value_type_id.0,
-                    value_local_type_index: value_type_id.1,
+                    value_local_type_id: value_type_id.1,
                 })
             }
             SystemPartitionDescriptor::Object(module_id, object_partition_descriptor) => {
@@ -415,7 +415,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
                 package_type_reference: PackageTypeReference {
                     package_address: blueprint_id.package_address,
                     schema_hash: type_identifier.0,
-                    local_type_index: type_identifier.1,
+                    local_type_id: type_identifier.1,
                 },
             };
 

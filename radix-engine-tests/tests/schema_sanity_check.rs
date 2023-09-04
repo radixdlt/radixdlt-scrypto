@@ -170,15 +170,15 @@ fn check_payload_def(
     }
 }
 
-fn check_type(schema: &VersionedScryptoSchema, index: LocalTypeIndex) -> CheckResult {
+fn check_type(schema: &VersionedScryptoSchema, id: LocalTypeId) -> CheckResult {
     let mut visited_indices = index_set_new();
     check_type_internal(schema, index, &mut visited_indices)
 }
 
 fn check_types_internal(
     schema: &VersionedScryptoSchema,
-    indices: &[LocalTypeIndex],
-    visited_indices: &mut IndexSet<LocalTypeIndex>,
+    indices: &[LocalTypeId],
+    visited_indices: &mut IndexSet<LocalTypeId>,
 ) -> CheckResult {
     for index in indices {
         let result = check_type_internal(schema, *index, visited_indices);
@@ -191,16 +191,16 @@ fn check_types_internal(
 
 fn check_type_internal(
     schema: &VersionedScryptoSchema,
-    index: LocalTypeIndex,
-    visited_indices: &mut IndexSet<LocalTypeIndex>,
+    id: LocalTypeId,
+    visited_indices: &mut IndexSet<LocalTypeId>,
 ) -> CheckResult {
     if visited_indices.contains(&index) {
         return CheckResult::Safe;
     }
     visited_indices.insert(index);
     match index {
-        LocalTypeIndex::WellKnown(x) => return is_safe_well_known_type(schema, x),
-        LocalTypeIndex::SchemaLocalIndex(i) => {
+        LocalTypeId::WellKnown(x) => return is_safe_well_known_type(schema, x),
+        LocalTypeId::SchemaLocalIndex(i) => {
             let type_kind = &schema.v1().type_kinds[i];
             match type_kind {
                 ScryptoTypeKind::Array { element_type } => {
@@ -210,7 +210,7 @@ fn check_type_internal(
                     return check_types_internal(schema, field_types, visited_indices);
                 }
                 ScryptoTypeKind::Enum { variants } => {
-                    let mut indices = Vec::<LocalTypeIndex>::new();
+                    let mut indices = Vec::<LocalTypeId>::new();
                     for v in variants {
                         for ty in v.1 {
                             indices.push(*ty);
@@ -335,12 +335,12 @@ fn is_safe_well_known_type(
         CheckResult::PossiblyUnsafe {
             type_kind: schema
                 .v1()
-                .resolve_type_kind(LocalTypeIndex::WellKnown(type_id))
+                .resolve_type_kind(LocalTypeId::WellKnown(type_id))
                 .unwrap()
                 .clone(),
             type_validation: schema
                 .v1()
-                .resolve_type_validation(LocalTypeIndex::WellKnown(type_id))
+                .resolve_type_validation(LocalTypeId::WellKnown(type_id))
                 .unwrap()
                 .clone(),
         }
@@ -351,7 +351,7 @@ fn is_safe_well_known_type(
 pub enum CheckResult {
     Safe,
     PossiblyUnsafe {
-        type_kind: ScryptoTypeKind<LocalTypeIndex>,
+        type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
     },
 }
@@ -380,7 +380,7 @@ pub fn test_fake_bucket() {
         .schema
         .state
         .fields[0]
-        .field = TypeRef::Static(LocalTypeIndex::WellKnown(DECIMAL_TYPE));
+        .field = TypeRef::Static(LocalTypeId::WellKnown(DECIMAL_TYPE));
     let package_address =
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 

@@ -70,7 +70,7 @@ mod tests {
     use super::*;
     use crate::rust::prelude::*;
 
-    fn create_schema(type_data: Vec<TypeData<NoCustomTypeKind, LocalTypeIndex>>) -> BasicSchema {
+    fn create_schema(type_data: Vec<TypeData<NoCustomTypeKind, LocalTypeId>>) -> BasicSchema {
         let mut type_kinds = vec![];
         let mut type_metadata = vec![];
         let mut type_validations = vec![];
@@ -112,8 +112,8 @@ mod tests {
         let schema = create_schema(vec![TypeData::struct_with_named_fields(
             "TestStruct",
             vec![
-                ("a", LocalTypeIndex::from(WellKnownTypeId::of(1))),
-                ("a", LocalTypeIndex::from(WellKnownTypeId::of(1))),
+                ("a", LocalTypeId::from(WellKnownTypeId::of(1))),
+                ("a", LocalTypeId::from(WellKnownTypeId::of(1))),
             ],
         )]);
         assert_eq!(

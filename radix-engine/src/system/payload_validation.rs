@@ -169,7 +169,7 @@ impl<'a, E: ToString> ValidatableCustomExtension<Lookup<'a, E>> for ScryptoCusto
     fn apply_validation_for_custom_value<'de>(
         schema: &Schema<Self::CustomSchema>,
         custom_value: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
         context: &Lookup<'a, E>,
     ) -> Result<(), PayloadValidationError<Self>> {
         match &custom_value.0 {
@@ -195,7 +195,7 @@ impl<'a, E: ToString> ValidatableCustomExtension<Lookup<'a, E>> for ScryptoCusto
         }
 
         match schema
-            .resolve_type_validation(type_index)
+            .resolve_type_validation(type_id)
             .ok_or(PayloadValidationError::SchemaInconsistency)?
         {
             TypeValidation::None => Ok(()),

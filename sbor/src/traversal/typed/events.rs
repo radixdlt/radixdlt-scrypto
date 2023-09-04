@@ -48,10 +48,10 @@ impl<'t, 's, 'de, E: CustomExtension> TypedLocatedTraversalEvent<'t, 's, 'de, E>
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypedTraversalEvent<'de, E: CustomExtension> {
-    ContainerStart(LocalTypeIndex, ContainerHeader<E::CustomTraversal>),
-    ContainerEnd(LocalTypeIndex, ContainerHeader<E::CustomTraversal>),
-    TerminalValue(LocalTypeIndex, TerminalValueRef<'de, E::CustomTraversal>),
-    TerminalValueBatch(LocalTypeIndex, TerminalValueBatchRef<'de>),
+    ContainerStart(LocalTypeId, ContainerHeader<E::CustomTraversal>),
+    ContainerEnd(LocalTypeId, ContainerHeader<E::CustomTraversal>),
+    TerminalValue(LocalTypeId, TerminalValueRef<'de, E::CustomTraversal>),
+    TerminalValueBatch(LocalTypeId, TerminalValueBatchRef<'de>),
     End,
     Error(TypedTraversalError<E>),
 }
@@ -59,17 +59,17 @@ pub enum TypedTraversalEvent<'de, E: CustomExtension> {
 impl<'de, E: CustomExtension> TypedTraversalEvent<'de, E> {
     pub fn current_value_info(&self) -> Option<CurrentValueInfo<E>> {
         match self {
-            TypedTraversalEvent::ContainerStart(type_index, header) => {
-                Some(CurrentValueInfo::for_container(*type_index, header))
+            TypedTraversalEvent::ContainerStart(type_id, header) => {
+                Some(CurrentValueInfo::for_container(*type_id, header))
             }
-            TypedTraversalEvent::ContainerEnd(type_index, header) => {
-                Some(CurrentValueInfo::for_container(*type_index, header))
+            TypedTraversalEvent::ContainerEnd(type_id, header) => {
+                Some(CurrentValueInfo::for_container(*type_id, header))
             }
-            TypedTraversalEvent::TerminalValue(type_index, value_ref) => Some(
-                CurrentValueInfo::for_value(*type_index, value_ref.value_kind()),
+            TypedTraversalEvent::TerminalValue(type_id, value_ref) => Some(
+                CurrentValueInfo::for_value(*type_id, value_ref.value_kind()),
             ),
-            TypedTraversalEvent::TerminalValueBatch(type_index, value_batch_ref) => Some(
-                CurrentValueInfo::for_value(*type_index, value_batch_ref.value_kind()),
+            TypedTraversalEvent::TerminalValueBatch(type_id, value_batch_ref) => Some(
+                CurrentValueInfo::for_value(*type_id, value_batch_ref.value_kind()),
             ),
             TypedTraversalEvent::End => None,
             TypedTraversalEvent::Error(TypedTraversalError::DecodeError(_)) => None,
@@ -83,18 +83,15 @@ impl<'de, E: CustomExtension> TypedTraversalEvent<'de, E> {
                 | TypeMismatchError::MismatchingChildElementType { .. }
                 | TypeMismatchError::MismatchingChildKeyType { .. }
                 | TypeMismatchError::MismatchingChildValueType { .. } => None,
-                TypeMismatchError::MismatchingTupleLength { type_index, .. } => {
-                    Some(CurrentValueInfo::for_value(*type_index, ValueKind::Tuple))
+                TypeMismatchError::MismatchingTupleLength { type_id, .. } => {
+                    Some(CurrentValueInfo::for_value(*type_id, ValueKind::Tuple))
                 }
                 TypeMismatchError::MismatchingEnumVariantLength {
-                    variant,
-                    type_index,
-                    ..
-                } => Some(CurrentValueInfo::for_enum_variant(*type_index, *variant)),
-                TypeMismatchError::UnknownEnumVariant {
-                    type_index,
-                    variant,
-                } => Some(CurrentValueInfo::for_enum_variant(*type_index, *variant)),
+                    variant, type_id, ..
+                } => Some(CurrentValueInfo::for_enum_variant(*type_id, *variant)),
+                TypeMismatchError::UnknownEnumVariant { type_id, variant } => {
+                    Some(CurrentValueInfo::for_enum_variant(*type_id, *variant))
+                }
             },
         }
     }
@@ -102,19 +99,16 @@ impl<'de, E: CustomExtension> TypedTraversalEvent<'de, E> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CurrentValueInfo<E: CustomExtension> {
-    pub type_index: LocalTypeIndex,
+    pub type_id: LocalTypeId,
     pub value_kind: ValueKind<E::CustomValueKind>,
     pub variant: Option<u8>,
     pub error: Option<TypedTraversalError<E>>,
 }
 
 impl<E: CustomExtension> CurrentValueInfo<E> {
-    pub fn for_value(
-        type_index: LocalTypeIndex,
-        value_kind: ValueKind<E::CustomValueKind>,
-    ) -> Self {
+    pub fn for_value(type_id: LocalTypeId, value_kind: ValueKind<E::CustomValueKind>) -> Self {
         Self {
-            type_index,
+            type_id,
             error: None,
             value_kind,
             variant: None,
@@ -122,7 +116,7 @@ impl<E: CustomExtension> CurrentValueInfo<E> {
     }
 
     pub fn for_container(
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
         container_header: &ContainerHeader<E::CustomTraversal>,
     ) -> Self {
         let (value_kind, variant) = match container_header {
@@ -132,16 +126,16 @@ impl<E: CustomExtension> CurrentValueInfo<E> {
             ContainerHeader::Map(_) => (ValueKind::Map, None),
         };
         Self {
-            type_index,
+            type_id,
             error: None,
             value_kind,
             variant,
         }
     }
 
-    pub fn for_enum_variant(type_index: LocalTypeIndex, variant: u8) -> Self {
+    pub fn for_enum_variant(type_id: LocalTypeId, variant: u8) -> Self {
         Self {
-            type_index,
+            type_id,
             error: None,
             value_kind: ValueKind::Enum,
             variant: Some(variant),
@@ -159,7 +153,7 @@ pub struct TypedLocation<'t, 's, C: CustomTraversal> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypedTraversalError<E: CustomExtension> {
-    TypeIndexNotFound(LocalTypeIndex),
+    TypeIndexNotFound(LocalTypeId),
     ValueMismatchWithType(TypeMismatchError<E>),
     DecodeError(DecodeError),
 }
@@ -167,50 +161,42 @@ pub enum TypedTraversalError<E: CustomExtension> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeMismatchError<E: CustomExtension> {
     MismatchingType {
-        expected_type_index: LocalTypeIndex,
-        expected_type_kind: TypeKind<
-            <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
-            LocalTypeIndex,
-        >,
+        expected_type_id: LocalTypeId,
+        expected_type_kind:
+            TypeKind<<E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>, LocalTypeId>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildElementType {
-        expected_type_index: LocalTypeIndex,
-        expected_type_kind: TypeKind<
-            <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
-            LocalTypeIndex,
-        >,
+        expected_type_id: LocalTypeId,
+        expected_type_kind:
+            TypeKind<<E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>, LocalTypeId>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildKeyType {
-        expected_type_index: LocalTypeIndex,
-        expected_type_kind: TypeKind<
-            <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
-            LocalTypeIndex,
-        >,
+        expected_type_id: LocalTypeId,
+        expected_type_kind:
+            TypeKind<<E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>, LocalTypeId>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildValueType {
-        expected_type_index: LocalTypeIndex,
-        expected_type_kind: TypeKind<
-            <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
-            LocalTypeIndex,
-        >,
+        expected_type_id: LocalTypeId,
+        expected_type_kind:
+            TypeKind<<E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>, LocalTypeId>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingTupleLength {
         expected: usize,
         actual: usize,
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
     },
     MismatchingEnumVariantLength {
         expected: usize,
         actual: usize,
         variant: u8,
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
     },
     UnknownEnumVariant {
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
         variant: u8,
     },
 }

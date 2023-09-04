@@ -4,10 +4,11 @@ use sbor::*;
 
 /// Marker trait for a link between [`TypeKind`]s:
 /// - [`GlobalTypeId`]: A global identifier for a type (a well known id, or type hash)
-/// - [`LocalTypeIndex`]: A link in the context of a schema (a well known id, or a local index)
+/// - [`LocalTypeId`]: A link in the context of a schema (a well known id, or a local index)
 pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq + From<WellKnownTypeId> {}
 
-/// This is a global identifier for a type.
+/// This is a compile-time identifier for a given type, used by the type aggregator
+/// to uniquely identify a type.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum GlobalTypeId {
     /// This takes a well_known type index.
@@ -103,24 +104,25 @@ const fn capture_dependent_type_ids(
     capture_dependent_type_ids(buffer, next + 1, dependencies)
 }
 
+/// The TypeId which is local to a given [`Schema`].
 /// This is the [`SchemaTypeLink`] used in a linearized [`Schema`] to link [`TypeKind`]s.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
-pub enum LocalTypeIndex {
+pub enum LocalTypeId {
     /// This takes a well_known type index
     WellKnown(WellKnownTypeId),
     /// For non-simple types
     SchemaLocalIndex(usize),
 }
 
-impl From<WellKnownTypeId> for LocalTypeIndex {
+impl From<WellKnownTypeId> for LocalTypeId {
     fn from(value: WellKnownTypeId) -> Self {
-        LocalTypeIndex::WellKnown(value)
+        LocalTypeId::WellKnown(value)
     }
 }
 
-impl SchemaTypeLink for LocalTypeIndex {}
+impl SchemaTypeLink for LocalTypeId {}
 
-impl LocalTypeIndex {
+impl LocalTypeId {
     pub fn any() -> Self {
         Self::WellKnown(basic_well_known_types::ANY_TYPE.into())
     }

@@ -68,11 +68,11 @@ mod max_sbor_depth {
                 additional_schema: Some(schema),
                 key_type: GenericSubstitution::Local(TypeIdentifier(
                     schema_hash,
-                    LocalTypeIndex::from(ANY_TYPE),
+                    LocalTypeId::from(ANY_TYPE),
                 )),
                 value_type: GenericSubstitution::Local(TypeIdentifier(
                     schema_hash,
-                    LocalTypeIndex::from(ANY_TYPE),
+                    LocalTypeId::from(ANY_TYPE),
                 )),
                 allow_ownership: false,
             });

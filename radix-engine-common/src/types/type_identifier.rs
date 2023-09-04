@@ -9,7 +9,7 @@ define_wrapped_hash!(
 /// like a pointer as two equivalent type identifiers will map to
 /// the same schema
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
-pub struct TypeIdentifier(pub SchemaHash, pub LocalTypeIndex);
+pub struct TypeIdentifier(pub SchemaHash, pub LocalTypeId);
 
 /// A reference to the type to substitute with for the case of
 /// generics.

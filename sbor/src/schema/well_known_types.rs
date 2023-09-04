@@ -91,7 +91,7 @@ macro_rules! create_well_known_lookup {
         [
             $((
                 $name: ident,
-                $type_index: expr,
+                $type_id: expr,
                 $type_data: expr$(,)?
             )),*
             $(,)?
@@ -103,7 +103,7 @@ macro_rules! create_well_known_lookup {
                 use super::*;
 
                 $(
-                    pub const [<$name:upper _TYPE>]: WellKnownTypeId = WellKnownTypeId::of($type_index);
+                    pub const [<$name:upper _TYPE>]: WellKnownTypeId = WellKnownTypeId::of($type_id);
 
                     pub fn [<$name:lower _type_data>]<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
                         $type_data
@@ -111,22 +111,22 @@ macro_rules! create_well_known_lookup {
                 )*
             }
 
-            const [<$lookup_name:upper _INIT>]: Option<TypeData<$custom_type_kind, LocalTypeIndex>> = None;
+            const [<$lookup_name:upper _INIT>]: Option<TypeData<$custom_type_kind, LocalTypeId>> = None;
 
             lazy_static::lazy_static! {
-                static ref $lookup_name: [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 256] = {
+                static ref $lookup_name: [Option<TypeData<$custom_type_kind, LocalTypeId>>; 256] = {
                     use sbor::basic_well_known_types::*;
 
                     // Note - whilst WellKnownTypeId is u16, we don't yet use any index > 256 - so this should fit all
                     // existing well known types.
                     // If we exceed 256, we'll get a panic when this loads and tests will fail.
-                    let mut lookup: [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 256] = [ [<$lookup_name:upper _INIT>]; 256 ];
+                    let mut lookup: [Option<TypeData<$custom_type_kind, LocalTypeId>>; 256] = [ [<$lookup_name:upper _INIT>]; 256 ];
 
-                    let mut add = |type_index: WellKnownTypeId, type_data: TypeData<$custom_type_kind, LocalTypeIndex>| {
-                        let index = type_index.as_index();
+                    let mut add = |type_id: WellKnownTypeId, type_data: TypeData<$custom_type_kind, LocalTypeId>| {
+                        let index = type_id.as_index();
                         let entry = lookup.get(index).expect("Well known type index larger than lookup size");
                         if entry.is_some() {
-                            panic!("Duplicate well known type index: {:?}", type_index);
+                            panic!("Duplicate well known type index: {:?}", type_id);
                         }
                         lookup[index] = Some(type_data);
                     };

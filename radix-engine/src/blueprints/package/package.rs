@@ -19,7 +19,7 @@ use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::*;
-use sbor::LocalTypeIndex;
+use sbor::LocalTypeId;
 use syn::Ident;
 
 // Import and re-export substate types
@@ -44,7 +44,7 @@ pub enum PackageError {
     SystemInstructionsNotSupported,
 
     FailedToResolveLocalSchema {
-        local_type_index: LocalTypeIndex,
+        local_type_id: LocalTypeId,
     },
     EventNameMismatch {
         expected: String,
@@ -56,7 +56,7 @@ pub enum PackageError {
     InvalidName(String),
     MissingOuterBlueprint,
     WasmUnsupported(String),
-    InvalidLocalTypeIndex(LocalTypeIndex),
+    InvalidLocalTypeId(LocalTypeId),
     InvalidGenericId(u8),
     EventGenericTypeNotSupported,
 
@@ -211,19 +211,19 @@ fn validate_package_schema(
 
 fn validate_package_schema_type_ref(
     blueprint_schema_init: &BlueprintSchemaInit,
-    type_ref: TypeRef<LocalTypeIndex>,
+    type_ref: TypeRef<LocalTypeId>,
 ) -> Result<(), PackageError> {
     match type_ref {
-        TypeRef::Static(local_type_index) => {
+        TypeRef::Static(local_type_id) => {
             if blueprint_schema_init
                 .schema
                 .v1()
-                .resolve_type_kind(local_type_index)
+                .resolve_type_kind(local_type_id)
                 .is_some()
             {
                 Ok(())
             } else {
-                Err(PackageError::InvalidLocalTypeIndex(local_type_index))
+                Err(PackageError::InvalidLocalTypeId(local_type_id))
             }
         }
         TypeRef::Generic(generic_id) => {
@@ -236,21 +236,21 @@ fn validate_package_schema_type_ref(
     }
 }
 
-fn extract_package_event_static_type_index(
+fn extract_package_event_static_type_id(
     blueprint_init: &BlueprintSchemaInit,
-    type_ref: TypeRef<LocalTypeIndex>,
-) -> Result<LocalTypeIndex, PackageError> {
+    type_ref: TypeRef<LocalTypeId>,
+) -> Result<LocalTypeId, PackageError> {
     match type_ref {
-        TypeRef::Static(local_type_index) => {
+        TypeRef::Static(local_type_id) => {
             if blueprint_init
                 .schema
                 .v1()
-                .resolve_type_kind(local_type_index)
+                .resolve_type_kind(local_type_id)
                 .is_some()
             {
-                Ok(local_type_index)
+                Ok(local_type_id)
             } else {
-                Err(PackageError::InvalidLocalTypeIndex(local_type_index))
+                Err(PackageError::InvalidLocalTypeId(local_type_id))
             }
         }
         TypeRef::Generic(_) => Err(PackageError::EventGenericTypeNotSupported),
@@ -265,12 +265,12 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
         let BlueprintSchemaInit { schema, events, .. } = blueprint_schema_init;
 
         for (expected_event_name, type_ref) in events.event_schema.iter() {
-            let local_type_index =
-                extract_package_event_static_type_index(blueprint_schema_init, *type_ref)?;
+            let local_type_id =
+                extract_package_event_static_type_id(blueprint_schema_init, *type_ref)?;
 
             // Checking that the event is either a struct or an enum
-            let type_kind = schema.v1().resolve_type_kind(local_type_index).map_or(
-                Err(PackageError::FailedToResolveLocalSchema { local_type_index }),
+            let type_kind = schema.v1().resolve_type_kind(local_type_id).map_or(
+                Err(PackageError::FailedToResolveLocalSchema { local_type_id }),
                 Ok,
             )?;
             match type_kind {
@@ -280,9 +280,9 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
             }?;
 
             // Checking that the event name is indeed what the user claims it to be
-            let actual_event_name = schema.v1().resolve_type_metadata(local_type_index).map_or(
+            let actual_event_name = schema.v1().resolve_type_metadata(local_type_id).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
-                    local_type_index: local_type_index,
+                    local_type_id: local_type_id,
                 }),
                 |metadata| Ok(metadata.get_name_string()),
             )?;
@@ -1106,7 +1106,7 @@ impl PackageNativePackage {
                 let mut function_exports = index_map_new();
                 for (function, function_schema_init) in definition_init.schema.functions.functions {
                     let input = match function_schema_init.input {
-                        TypeRef::Static(input_type_index) => input_type_index,
+                        TypeRef::Static(input_type_id) => input_type_id,
                         TypeRef::Generic(..) => {
                             return Err(RuntimeError::ApplicationError(
                                 ApplicationError::PackageError(PackageError::WasmUnsupported(
@@ -1116,7 +1116,7 @@ impl PackageNativePackage {
                         }
                     };
                     let output = match function_schema_init.output {
-                        TypeRef::Static(output_type_index) => output_type_index,
+                        TypeRef::Static(output_type_id) => output_type_id,
                         TypeRef::Generic(..) => {
                             return Err(RuntimeError::ApplicationError(
                                 ApplicationError::PackageError(PackageError::WasmUnsupported(
