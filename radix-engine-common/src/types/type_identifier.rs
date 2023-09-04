@@ -47,7 +47,7 @@ pub enum GenericSubstitution {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
 pub struct BlueprintTypeId {
-    package_address: PackageAddress,
-    blueprint_name: String,
-    type_name: String,
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub type_name: String,
 }
