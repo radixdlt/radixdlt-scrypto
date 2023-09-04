@@ -67,16 +67,20 @@ pub fn put_at_next_version<S: TreeStore>(
     let node_changes = index_by_node_key_and_partition_num(changes)
         .into_iter()
         .map(|(node_key, substate_changes_by_partition)| {
+            let partition_root_version =
+                get_lower_tier_root_version(node_tier_store, node_root_version, &node_key);
             let mut partition_tier_store = NestedTreeStore::new(node_tier_store, node_key.clone());
-            let partition_root_version = partition_tier_store.get_root_version(node_root_version);
             let partition_changes = substate_changes_by_partition
                 .into_iter()
                 .map(|(partition_num, substate_changes)| {
                     let partition_key = vec![partition_num];
+                    let substate_root_version = get_lower_tier_root_version(
+                        &partition_tier_store,
+                        partition_root_version,
+                        &partition_key,
+                    );
                     let mut substate_tier_store =
                         NestedTreeStore::new(&mut partition_tier_store, partition_key);
-                    let substate_root_version =
-                        substate_tier_store.get_root_version(partition_root_version);
                     let partition_hash = put_id_hash_changes(
                         &mut substate_tier_store,
                         substate_root_version,
@@ -112,6 +116,20 @@ pub fn put_at_next_version<S: TreeStore>(
 
 // only internals below
 
+fn get_lower_tier_root_version<S: ReadableTreeStore>(
+    store: &S,
+    version: Option<Version>,
+    leaf_bytes: &[u8],
+) -> Option<Version> {
+    version.and_then(|version| {
+        let leaf_node_data = JellyfishMerkleTree::new(store)
+            .get_with_proof(&LeafKey::new(leaf_bytes), version)
+            .unwrap()
+            .0;
+        leaf_node_data.map(|(_hash, last_hash_change_version, _version)| last_hash_change_version)
+    })
+}
+
 fn index_by_node_key_and_partition_num(
     changes: Vec<SubstateHashChange>,
 ) -> IndexMap<DbNodeKey, IndexMap<DbPartitionNum, Vec<IdHashChange<DbSortKey>>>> {
@@ -146,7 +164,7 @@ fn put_id_hash_changes<S: TreeStore>(
         next_version,
         changes
             .into_iter()
-            .map(|change| to_leaf_change(change))
+            .map(|change| to_leaf_change(change, next_version))
             .collect(),
     );
     if root_hash == SPARSE_MERKLE_PLACEHOLDER_HASH {
@@ -156,16 +174,16 @@ fn put_id_hash_changes<S: TreeStore>(
     }
 }
 
-fn to_leaf_change(change: IdHashChange<Vec<u8>>) -> LeafChange {
+fn to_leaf_change(change: IdHashChange<Vec<u8>>, version: Version) -> LeafChange {
     LeafChange {
         key: LeafKey { bytes: change.id },
-        new_payload: change.hash_change.map(|value_hash| (value_hash, ())),
+        new_payload: change.hash_change.map(|value_hash| (value_hash, version)),
     }
 }
 
 struct LeafChange {
     key: LeafKey,
-    new_payload: Option<(Hash, ())>,
+    new_payload: Option<(Hash, Version)>,
 }
 
 fn put_leaf_changes<S: TreeStore>(
@@ -221,21 +239,6 @@ impl<'s, S> NestedTreeStore<'s, S> {
                     .chain(key.nibble_path().nibbles()),
             ),
         )
-    }
-}
-
-impl<'s, S: ReadableTreeStore> NestedTreeStore<'s, S> {
-    pub fn get_root_version(&self, higher_tier_root_version: Option<Version>) -> Option<Version> {
-        higher_tier_root_version.and_then(|higher_tier_root_version| {
-            JellyfishMerkleTree::new(self.underlying)
-                .get_with_proof(
-                    &LeafKey::new(&self.key_prefix_bytes),
-                    higher_tier_root_version,
-                )
-                .unwrap()
-                .0
-                .map(|(_hash, _payload, version)| version)
-        })
     }
 }
 

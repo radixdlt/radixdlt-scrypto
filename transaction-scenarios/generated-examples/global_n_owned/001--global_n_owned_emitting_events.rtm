@@ -13,7 +13,7 @@ PUBLISH_PACKAGE_ADVANCED
     Enum<0u8>()
     Tuple(
         Map<String, Tuple>(
-            "Outer" => Tuple(
+            "GlobalBp" => Tuple(
                 Enum<0u8>(),
                 false,
                 Array<String>(),
@@ -49,19 +49,19 @@ PUBLISH_PACKAGE_ADVANCED
                             Array<Tuple>(
                                 Tuple(
                                     Enum<1u8>(
-                                        "Outer"
+                                        "GlobalBp"
                                     ),
                                     Enum<0u8>()
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "OwnedInner"
+                                        "OwnedOwnedBp"
                                     ),
                                     Enum<0u8>()
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "Outer_new_Input"
+                                        "GlobalBp_new_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
@@ -71,13 +71,13 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "GlobalOuter"
+                                        "GlobalGlobalBp"
                                     ),
                                     Enum<0u8>()
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "Outer_emit_event_Input"
+                                        "GlobalBp_emit_event_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
@@ -87,7 +87,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "OuterEvent"
+                                        "GlobalBpEvent"
                                     ),
                                     Enum<0u8>()
                                 )
@@ -98,7 +98,7 @@ PUBLISH_PACKAGE_ADVANCED
                                     Enum<1u8>(
                                         Enum<5u8>(
                                             Enum<0u8>(),
-                                            "Inner"
+                                            "OwnedBp"
                                         )
                                     )
                                 ),
@@ -107,7 +107,7 @@ PUBLISH_PACKAGE_ADVANCED
                                     Enum<0u8>(
                                         Enum<4u8>(
                                             Enum<0u8>(),
-                                            "Outer"
+                                            "GlobalBp"
                                         )
                                     )
                                 ),
@@ -131,7 +131,7 @@ PUBLISH_PACKAGE_ADVANCED
                         Array<Enum>()
                     ),
                     Map<String, Enum>(
-                        "OuterEvent" => Enum<0u8>(
+                        "GlobalBpEvent" => Enum<0u8>(
                             Enum<1u8>(
                                 5u64
                             )
@@ -151,7 +151,7 @@ PUBLISH_PACKAGE_ADVANCED
                                         3u64
                                     )
                                 ),
-                                "Outer_new"
+                                "GlobalBp_new"
                             ),
                             "emit_event" => Tuple(
                                 Enum<1u8>(
@@ -172,7 +172,7 @@ PUBLISH_PACKAGE_ADVANCED
                                         66u8
                                     )
                                 ),
-                                "Outer_emit_event"
+                                "GlobalBp_emit_event"
                             )
                         )
                     ),
@@ -182,24 +182,11 @@ PUBLISH_PACKAGE_ADVANCED
                 ),
                 Enum<0u8>(),
                 Tuple(
-                    Enum<1u8>(
-                        Map<String, Enum>(
-                            "new" => Enum<0u8>()
-                        )
-                    ),
-                    Enum<1u8>(
-                        Tuple(
-                            Enum<0u8>(
-                                Map<String, Array>()
-                            ),
-                            Map<String, Enum>(
-                                "emit_event" => Enum<0u8>()
-                            )
-                        )
-                    )
+                    Enum<0u8>(),
+                    Enum<0u8>()
                 )
             ),
-            "Inner" => Tuple(
+            "OwnedBp" => Tuple(
                 Enum<0u8>(),
                 false,
                 Array<String>(),
@@ -228,7 +215,7 @@ PUBLISH_PACKAGE_ADVANCED
                             Array<Tuple>(
                                 Tuple(
                                     Enum<1u8>(
-                                        "Inner"
+                                        "OwnedBp"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
@@ -238,7 +225,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "Inner_new_Input"
+                                        "OwnedBp_new_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
@@ -248,13 +235,13 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "OwnedInner"
+                                        "OwnedOwnedBp"
                                     ),
                                     Enum<0u8>()
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "Inner_emit_event_Input"
+                                        "OwnedBp_emit_event_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
@@ -264,7 +251,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "InnerEvent"
+                                        "OwnedBpEvent"
                                     ),
                                     Enum<0u8>()
                                 )
@@ -276,7 +263,7 @@ PUBLISH_PACKAGE_ADVANCED
                                     Enum<1u8>(
                                         Enum<5u8>(
                                             Enum<0u8>(),
-                                            "Inner"
+                                            "OwnedBp"
                                         )
                                     )
                                 ),
@@ -300,7 +287,7 @@ PUBLISH_PACKAGE_ADVANCED
                         Array<Enum>()
                     ),
                     Map<String, Enum>(
-                        "InnerEvent" => Enum<0u8>(
+                        "OwnedBpEvent" => Enum<0u8>(
                             Enum<1u8>(
                                 4u64
                             )
@@ -320,7 +307,7 @@ PUBLISH_PACKAGE_ADVANCED
                                         2u64
                                     )
                                 ),
-                                "Inner_new"
+                                "OwnedBp_new"
                             ),
                             "emit_event" => Tuple(
                                 Enum<1u8>(
@@ -341,7 +328,7 @@ PUBLISH_PACKAGE_ADVANCED
                                         66u8
                                     )
                                 ),
-                                "Inner_emit_event"
+                                "OwnedBp_emit_event"
                             )
                         )
                     ),
@@ -351,26 +338,13 @@ PUBLISH_PACKAGE_ADVANCED
                 ),
                 Enum<0u8>(),
                 Tuple(
-                    Enum<1u8>(
-                        Map<String, Enum>(
-                            "new" => Enum<0u8>()
-                        )
-                    ),
-                    Enum<1u8>(
-                        Tuple(
-                            Enum<0u8>(
-                                Map<String, Array>()
-                            ),
-                            Map<String, Enum>(
-                                "emit_event" => Enum<0u8>()
-                            )
-                        )
-                    )
+                    Enum<0u8>(),
+                    Enum<0u8>()
                 )
             )
         )
     )
-    Blob("5698ea082d7901d1202821927b4458f5f6d2917ee620c5b20cf167703de89fcc")
+    Blob("ed13d03d89bcf7729e64bfce5e539f2fdbc30f72528cc0e7bed65b75b6a8ccd1")
     Map<String, Tuple>()
     Enum<1u8>(
         AddressReservation("package_address_reservation")
@@ -378,6 +352,6 @@ PUBLISH_PACKAGE_ADVANCED
 ;
 CALL_FUNCTION
     NamedAddress("package_address")
-    "Outer"
+    "GlobalBp"
     "new"
 ;

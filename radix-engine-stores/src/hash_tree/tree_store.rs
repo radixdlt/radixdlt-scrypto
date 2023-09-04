@@ -45,6 +45,8 @@ pub struct TreeLeafNode {
     pub key_suffix: NibblePath,
     /// An externally-provided hash of the payload.
     pub value_hash: Hash,
+    /// A version at which the [`value_hash`] has most recently changed.
+    pub last_hash_change_version: Version,
 }
 
 /// The "read" part of a physical tree node storage SPI.

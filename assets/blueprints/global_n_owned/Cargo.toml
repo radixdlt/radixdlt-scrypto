@@ -1,5 +1,5 @@
 [package]
-name = "inner_n_outer"
+name = "global_n_owned"
 version = "0.1.0"
 edition = "2021"
 

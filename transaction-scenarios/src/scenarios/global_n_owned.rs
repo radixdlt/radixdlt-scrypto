@@ -4,13 +4,13 @@ use radix_engine_interface::blueprints::package::{PackageDefinition, PACKAGE_BLU
 use radix_engine_interface::*;
 
 #[derive(Default)]
-pub struct InnerNOuterScenarioState(Option<(PackageAddress, ComponentAddress)>);
+pub struct GlobalNOwnedScenarioState(Option<(PackageAddress, ComponentAddress)>);
 
-pub struct InnerNOuterScenarioCreator;
+pub struct GlobalNOwnedScenarioCreator;
 
-impl ScenarioCreator for InnerNOuterScenarioCreator {
+impl ScenarioCreator for GlobalNOwnedScenarioCreator {
     type Config = ();
-    type State = InnerNOuterScenarioState;
+    type State = GlobalNOwnedScenarioState;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
@@ -18,21 +18,21 @@ impl ScenarioCreator for InnerNOuterScenarioCreator {
         start_state: Self::State,
     ) -> Box<dyn ScenarioInstance> {
         let metadata = ScenarioMetadata {
-            logical_name: "inner_n_outer",
+            logical_name: "global_n_owned",
         };
 
         #[allow(unused_variables)]
         ScenarioBuilder::new(core, metadata, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, state, _| {
-                    let code = include_bytes!("../../../assets/inner_n_outer.wasm");
+                    let code = include_bytes!("../../../assets/global_n_owned.wasm");
                     let schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                        "../../../assets/inner_n_outer.rpd"
+                        "../../../assets/global_n_owned.rpd"
                     ))
                     .unwrap();
 
                     core.next_transaction_with_faucet_lock_fee(
-                        "inner_n_outer_emitting_events",
+                        "global_n_owned_emitting_events",
                         |builder| {
                             builder
                                 .allocate_global_address(
@@ -53,7 +53,7 @@ impl ScenarioCreator for InnerNOuterScenarioCreator {
                                         )
                                         .call_function(
                                             package_address,
-                                            "Outer",
+                                            "GlobalBp",
                                             "new",
                                             manifest_args!(),
                                         )
@@ -72,8 +72,8 @@ impl ScenarioCreator for InnerNOuterScenarioCreator {
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("inner_n_outer_package_address", state.0.unwrap().0)
-                        .add("inner_n_outer_component_address", state.0.unwrap().1),
+                        .add("global_n_owned_package_address", state.0.unwrap().0)
+                        .add("global_n_owned_component_address", state.0.unwrap().1),
                 })
             })
     }

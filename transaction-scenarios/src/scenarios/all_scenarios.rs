@@ -34,7 +34,7 @@ impl Iterator for AllScenariosIterator {
                 }))
             }
             7 => Some(Box::new(|core| {
-                inner_n_outer::InnerNOuterScenarioCreator::create(core)
+                global_n_owned::GlobalNOwnedScenarioCreator::create(core)
             })),
             _ => None,
         }

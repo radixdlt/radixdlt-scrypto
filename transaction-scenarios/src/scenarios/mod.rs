@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 pub mod account_authorized_depositors;
 mod all_scenarios;
 pub mod fungible_resource;
-pub mod inner_n_outer;
+pub mod global_n_owned;
 pub mod metadata;
 pub mod non_fungible_resource;
 pub mod radiswap;

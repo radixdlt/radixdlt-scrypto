@@ -1,14 +1,14 @@
-use inner::*;
+use owned::*;
 use scrypto::prelude::*;
 
 #[blueprint]
-#[events(OuterEvent)]
-mod outer {
-    pub struct Outer(Owned<Inner>);
+#[events(GlobalBpEvent)]
+mod global {
+    pub struct GlobalBp(Owned<OwnedBp>);
 
-    impl Outer {
-        pub fn new() -> Global<Outer> {
-            let this = Self(Inner::new())
+    impl GlobalBp {
+        pub fn new() -> Global<GlobalBp> {
+            let this = Self(OwnedBp::new())
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize();
@@ -18,29 +18,29 @@ mod outer {
 
         pub fn emit_event(&self) {
             self.0.emit_event();
-            Runtime::emit_event(OuterEvent)
+            Runtime::emit_event(GlobalBpEvent)
         }
     }
 }
 
 #[blueprint]
-#[events(InnerEvent)]
-mod inner {
-    pub struct Inner {}
+#[events(OwnedBpEvent)]
+mod owned {
+    pub struct OwnedBp {}
 
-    impl Inner {
-        pub fn new() -> Owned<Inner> {
+    impl OwnedBp {
+        pub fn new() -> Owned<OwnedBp> {
             Self {}.instantiate()
         }
 
         pub fn emit_event(&self) {
-            Runtime::emit_event(InnerEvent)
+            Runtime::emit_event(OwnedBpEvent)
         }
     }
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
-pub struct InnerEvent;
+pub struct OwnedBpEvent;
 
 #[derive(ScryptoSbor, ScryptoEvent)]
-pub struct OuterEvent;
+pub struct GlobalBpEvent;

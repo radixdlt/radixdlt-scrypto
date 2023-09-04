@@ -47,6 +47,7 @@ pub struct CostingModule {
     pub enable_cost_breakdown: bool,
     pub execution_cost_breakdown: IndexMap<String, u32>,
     pub finalization_cost_breakdown: IndexMap<String, u32>,
+    pub storage_cost_breakdown: IndexMap<StorageType, usize>,
 }
 
 impl CostingModule {
@@ -85,11 +86,13 @@ impl CostingModule {
     ) -> Result<(), RuntimeError> {
         let cost_units = costing_entry.to_execution_cost_units(&self.fee_table);
 
-        self.fee_reserve.consume_deferred(cost_units).map_err(|e| {
-            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::FeeReserveError(e),
-            ))
-        })?;
+        self.fee_reserve
+            .consume_deferred_execution(cost_units)
+            .map_err(|e| {
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
+            })?;
 
         if self.enable_cost_breakdown {
             let key = costing_entry.to_trace_key();
@@ -97,6 +100,29 @@ impl CostingModule {
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
+        }
+
+        Ok(())
+    }
+
+    pub fn apply_deferred_storage_cost(
+        &mut self,
+        storage_type: StorageType,
+        size_increase: usize,
+    ) -> Result<(), RuntimeError> {
+        self.fee_reserve
+            .consume_deferred_storage(storage_type, size_increase)
+            .map_err(|e| {
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
+            })?;
+
+        if self.enable_cost_breakdown {
+            self.storage_cost_breakdown
+                .entry(storage_type)
+                .or_default()
+                .add_assign(size_increase);
         }
 
         Ok(())
@@ -139,6 +165,13 @@ impl CostingModule {
                     CostingError::FeeReserveError(e),
                 ))
             })?;
+
+        if self.enable_cost_breakdown {
+            self.storage_cost_breakdown
+                .entry(storage_type)
+                .or_default()
+                .add_assign(size_increase);
+        }
 
         Ok(())
     }
@@ -186,6 +219,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         costing.apply_deferred_execution_cost(ExecutionCostingEntry::VerifyTxSignatures {
             num_signatures: costing.tx_num_of_signature_validations,
         })?;
+
+        costing.apply_deferred_storage_cost(StorageType::Archive, costing.tx_payload_len)?;
 
         Ok(())
     }
