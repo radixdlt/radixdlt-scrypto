@@ -466,7 +466,7 @@ fn native_blueprints_with_typed_addresses_have_expected_schema() {
 
     assert!(matches!(
         type_kind,
-        TypeKind::<ScryptoCustomTypeKind, LocalTypeIndex>::Custom(ScryptoCustomTypeKind::Reference)
+        TypeKind::<ScryptoCustomTypeKind, LocalTypeId>::Custom(ScryptoCustomTypeKind::Reference)
     ));
     assert!(matches!(
         type_validation,
