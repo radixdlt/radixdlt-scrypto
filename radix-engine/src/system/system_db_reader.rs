@@ -589,13 +589,9 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         key_or_value: KeyOrValue,
     ) -> Result<ResolvedPayloadSchema, SystemReaderError> {
         let (substs, allow_ownership, allow_non_global_refs) = match key_or_value {
-            KeyOrValue::Key => (
-                &target.kv_store_type.key_generic_substitutions,
-                false,
-                false,
-            ),
+            KeyOrValue::Key => (&target.kv_store_type.key_generic_substitution, false, false),
             KeyOrValue::Value => (
-                &target.kv_store_type.value_generic_substitutions,
+                &target.kv_store_type.value_generic_substitution,
                 target.kv_store_type.allow_ownership,
                 false,
             ),

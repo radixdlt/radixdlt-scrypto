@@ -236,10 +236,10 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     .get_kv_store_type_target(node_id)
                     .expect(&format!("Could not get type info for node {node_id:?}"));
 
-                let key_type_id = match info.kv_store_type.key_generic_substitutions {
+                let key_type_id = match info.kv_store_type.key_generic_substitution {
                     GenericSubstitution::Local(type_id) => type_id,
                 };
-                let value_type_id = match info.kv_store_type.value_generic_substitutions {
+                let value_type_id = match info.kv_store_type.value_generic_substitution {
                     GenericSubstitution::Local(type_id) => type_id,
                 };
                 SubstateSystemStructure::KeyValueStoreEntry(KeyValueStoreEntryStructure {

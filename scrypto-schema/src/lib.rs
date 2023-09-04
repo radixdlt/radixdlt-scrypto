@@ -10,8 +10,8 @@ use radix_engine_common::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreGenericSubstitutions {
-    pub key_generic_substitutions: GenericSubstitution,
-    pub value_generic_substitutions: GenericSubstitution,
+    pub key_generic_substitution: GenericSubstitution,
+    pub value_generic_substitution: GenericSubstitution,
     pub allow_ownership: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 

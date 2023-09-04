@@ -1697,10 +1697,10 @@ where
     }
 }
 
-#[cfg_attr(
-    feature = "std",
-    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
-)]
+// #[cfg_attr(
+//     feature = "std",
+//     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+// )]
 impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -1713,19 +1713,36 @@ where
         data_schema: KeyValueStoreDataSchema,
     ) -> Result<NodeId, RuntimeError> {
         let mut additional_schemas = index_map_new();
-        if let Some(schema) = data_schema.additional_schema {
-            validate_schema(schema.v1())
-                .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
-            let schema_hash = schema.generate_schema_hash();
-            additional_schemas.insert(schema_hash, schema);
-        }
+        let (key_type, value_type, allow_ownership) = match data_schema {
+            KeyValueStoreDataSchema::Local {
+                additional_schema,
+                key_type,
+                value_type,
+                allow_ownership,
+            } => {
+                validate_schema(additional_schema.v1())
+                    .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
+                let schema_hash = additional_schema.generate_schema_hash();
+                additional_schemas.insert(schema_hash, additional_schema);
+                (
+                    GenericSubstitution::Local(NodeScopedTypeId(schema_hash, key_type)),
+                    GenericSubstitution::Local(NodeScopedTypeId(schema_hash, value_type)),
+                    allow_ownership,
+                )
+            }
+            KeyValueStoreDataSchema::Remote {
+                key_type,
+                value_type,
+                allow_ownership,
+            } => (
+                GenericSubstitution::Remote(key_type),
+                GenericSubstitution::Remote(value_type),
+                allow_ownership,
+            ),
+        };
 
-        self.validate_kv_store_generic_args(
-            &additional_schemas,
-            &data_schema.key_type,
-            &data_schema.value_type,
-        )
-        .map_err(|e| RuntimeError::SystemError(SystemError::TypeCheckError(e)))?;
+        self.validate_kv_store_generic_args(&additional_schemas, &key_type, &value_type)
+            .map_err(|e| RuntimeError::SystemError(SystemError::TypeCheckError(e)))?;
 
         let schema_partition = additional_schemas
             .into_iter()
@@ -1738,9 +1755,9 @@ where
             .collect();
 
         let generic_substitutions = KeyValueStoreGenericSubstitutions {
-            key_generic_substitutions: data_schema.key_type,
-            value_generic_substitutions: data_schema.value_type,
-            allow_ownership: data_schema.allow_ownership,
+            key_generic_substitution: key_type,
+            value_generic_substitution: value_type,
+            allow_ownership: allow_ownership,
         };
 
         let node_id = self
