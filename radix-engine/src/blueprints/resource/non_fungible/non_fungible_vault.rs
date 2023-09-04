@@ -400,7 +400,7 @@ impl NonFungibleVaultBlueprint {
 
             let vault_amount_plus_one = balance
                 .amount
-                .safe_add(Decimal::ONE)
+                .checked_add(Decimal::ONE)
                 .ok_or_else(|| VaultError::DecimalOverflow)?;
             if amount > &vault_amount_plus_one {
                 return Err(RuntimeError::ApplicationError(
@@ -437,7 +437,7 @@ impl NonFungibleVaultBlueprint {
         // Take
         balance.amount = balance
             .amount
-            .safe_sub(amount)
+            .checked_sub(amount)
             .ok_or_else(|| VaultError::DecimalOverflow)?;
         let taken = {
             let ids: Vec<(NonFungibleLocalId, NonFungibleVaultNonFungibleEntryPayload)> = api
@@ -510,7 +510,7 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
-            .safe_add(Self::locked_amount(api)?)
+            .checked_add(Self::locked_amount(api)?)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::DecimalOverflow),
             ))
@@ -945,7 +945,7 @@ impl NonFungibleVaultBlueprint {
         }
         balance.amount = balance
             .amount
-            .safe_sub(n)
+            .checked_sub(n)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::DecimalOverflow),
             ))?;
@@ -990,7 +990,7 @@ impl NonFungibleVaultBlueprint {
         substate_ref.amount =
             substate_ref
                 .amount
-                .safe_sub(ids.len())
+                .checked_sub(ids.len())
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::VaultError(VaultError::DecimalOverflow),
                 ))?;
@@ -1044,7 +1044,7 @@ impl NonFungibleVaultBlueprint {
         vault.amount =
             vault
                 .amount
-                .safe_add(resource.ids.len())
+                .checked_add(resource.ids.len())
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::VaultError(VaultError::DecimalOverflow),
                 ))?;

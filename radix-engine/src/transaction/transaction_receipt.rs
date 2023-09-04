@@ -444,12 +444,12 @@ impl TransactionReceipt {
         // Below unwraps are safe, no chance to overflow considering current costing parameters
         self.costing_parameters
             .execution_cost_unit_price
-            .safe_mul(
+            .checked_mul(
                 Decimal::ONE
-                    .safe_add(
+                    .checked_add(
                         self.transaction_costing_parameters
                             .tip_percentage
-                            .safe_div(dec_100)
+                            .checked_div(dec_100)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -463,12 +463,12 @@ impl TransactionReceipt {
         // Below unwraps are safe, no chance to overflow considering current costing parameters
         self.costing_parameters
             .finalization_cost_unit_price
-            .safe_mul(
+            .checked_mul(
                 Decimal::ONE
-                    .safe_add(
+                    .checked_add(
                         self.transaction_costing_parameters
                             .tip_percentage
-                            .safe_div(dec_100)
+                            .checked_div(dec_100)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -864,21 +864,21 @@ impl From<FeeReserveFinalizationSummary> for TransactionFeeSummary {
 impl TransactionFeeSummary {
     pub fn total_cost(&self) -> Decimal {
         self.total_execution_cost_in_xrd
-            .safe_add(self.total_finalization_cost_in_xrd)
+            .checked_add(self.total_finalization_cost_in_xrd)
             .unwrap()
-            .safe_add(self.total_tipping_cost_in_xrd)
+            .checked_add(self.total_tipping_cost_in_xrd)
             .unwrap()
-            .safe_add(self.total_storage_cost_in_xrd)
+            .checked_add(self.total_storage_cost_in_xrd)
             .unwrap()
-            .safe_add(self.total_royalty_cost_in_xrd)
+            .checked_add(self.total_royalty_cost_in_xrd)
             .unwrap()
     }
 
     pub fn network_fees(&self) -> Decimal {
         self.total_execution_cost_in_xrd
-            .safe_add(self.total_finalization_cost_in_xrd)
+            .checked_add(self.total_finalization_cost_in_xrd)
             .unwrap()
-            .safe_add(self.total_storage_cost_in_xrd)
+            .checked_add(self.total_storage_cost_in_xrd)
             .unwrap()
     }
 
@@ -888,26 +888,26 @@ impl TransactionFeeSummary {
 
     pub fn expected_reward_if_single_validator(&self) -> Decimal {
         self.expected_reward_as_proposer_if_single_validator()
-            .safe_add(self.expected_reward_as_active_validator_if_single_validator())
+            .checked_add(self.expected_reward_as_active_validator_if_single_validator())
             .unwrap()
     }
 
     pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
         let dec_100 = dec!(100);
         TIPS_PROPOSER_SHARE_PERCENTAGE
-            .safe_div(dec_100)
+            .checked_div(dec_100)
             .unwrap()
-            .safe_mul(self.total_tipping_cost_in_xrd)
+            .checked_mul(self.total_tipping_cost_in_xrd)
             .unwrap()
-            .safe_add(
+            .checked_add(
                 NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE
-                    .safe_div(dec_100)
+                    .checked_div(dec_100)
                     .unwrap()
-                    .safe_mul(
+                    .checked_mul(
                         self.total_execution_cost_in_xrd
-                            .safe_add(self.total_finalization_cost_in_xrd)
+                            .checked_add(self.total_finalization_cost_in_xrd)
                             .unwrap()
-                            .safe_add(self.total_storage_cost_in_xrd)
+                            .checked_add(self.total_storage_cost_in_xrd)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -919,19 +919,19 @@ impl TransactionFeeSummary {
         let dec_100 = dec!(100);
 
         TIPS_VALIDATOR_SET_SHARE_PERCENTAGE
-            .safe_div(dec_100)
+            .checked_div(dec_100)
             .unwrap()
-            .safe_mul(self.total_tipping_cost_in_xrd)
+            .checked_mul(self.total_tipping_cost_in_xrd)
             .unwrap()
-            .safe_add(
+            .checked_add(
                 NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE
-                    .safe_div(dec_100)
+                    .checked_div(dec_100)
                     .unwrap()
-                    .safe_mul(
+                    .checked_mul(
                         self.total_execution_cost_in_xrd
-                            .safe_add(self.total_finalization_cost_in_xrd)
+                            .checked_add(self.total_finalization_cost_in_xrd)
                             .unwrap()
-                            .safe_add(self.total_storage_cost_in_xrd)
+                            .checked_add(self.total_storage_cost_in_xrd)
                             .unwrap(),
                     )
                     .unwrap(),

@@ -790,7 +790,7 @@ where
 
             // Take fees
             collected_fees.put(locked.take_by_amount(amount).unwrap());
-            required = required.safe_sub(amount).unwrap();
+            required = required.checked_sub(amount).unwrap();
 
             // Refund overpayment
             let mut vault_balance = track
@@ -820,7 +820,7 @@ where
 
             // Record final payments
             let entry = fee_payments.entry(vault_id).or_default();
-            *entry = entry.safe_add(amount).unwrap();
+            *entry = entry.checked_add(amount).unwrap();
 
             events.push((
                 EventTypeIdentifier(
@@ -834,7 +834,7 @@ where
         if free_credit.is_positive() {
             let amount = Decimal::min(free_credit, required);
             collected_fees.put(LiquidFungibleResource::new(amount));
-            required = required.safe_sub(amount).unwrap();
+            required = required.checked_sub(amount).unwrap();
         }
 
         let to_proposer = fee_reserve_finalization.to_proposer_amount();
@@ -852,11 +852,11 @@ where
             "Locked fee does not cover transaction cost: {} required",
             required
         );
-        let remaining_collected_fees = collected_fees.amount().safe_sub(fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */).unwrap();
+        let remaining_collected_fees = collected_fees.amount().checked_sub(fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */).unwrap();
         let to_distribute = to_proposer
-            .safe_add(to_validator_set)
+            .checked_add(to_validator_set)
             .unwrap()
-            .safe_add(to_burn)
+            .checked_add(to_burn)
             .unwrap();
         assert!(
             remaining_collected_fees  == to_distribute,
@@ -894,7 +894,7 @@ where
 
             if let Some(current_leader) = current_leader {
                 let entry = rewards.proposer_rewards.entry(current_leader).or_default();
-                *entry = entry.safe_add(to_proposer).unwrap()
+                *entry = entry.checked_add(to_proposer).unwrap()
             } else {
                 // If there is no current leader, the rewards go to the pool
             };
@@ -913,7 +913,7 @@ where
                 .unwrap();
 
             // Put validator rewards into the vault
-            let total_amount = to_proposer.safe_add(to_validator_set).unwrap();
+            let total_amount = to_proposer.checked_add(to_validator_set).unwrap();
             let mut vault_balance = track
                 .read_substate(
                     &vault_node_id,

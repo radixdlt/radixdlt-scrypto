@@ -43,7 +43,7 @@ impl NonFungibleBucketBlueprint {
             }
             let bucket_amount_plus_one = liquid
                 .amount()
-                .safe_add(Decimal::ONE)
+                .checked_add(Decimal::ONE)
                 .ok_or_else(|| BucketError::DecimalOverflow)?;
             if amount > &bucket_amount_plus_one {
                 return Err(RuntimeError::ApplicationError(
@@ -143,7 +143,7 @@ impl NonFungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
-            .safe_add(Self::locked_amount(api)?)
+            .checked_add(Self::locked_amount(api)?)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::BucketError(BucketError::DecimalOverflow),
             ))

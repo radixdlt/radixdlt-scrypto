@@ -904,7 +904,7 @@ impl ValidatorBlueprint {
                     ApplicationError::ValidatorError(ValidatorError::EpochUnlockHasNotOccurredYet),
                 ));
             }
-            unstake_amount = unstake_amount.safe_add(data.claim_amount).ok_or(
+            unstake_amount = unstake_amount.checked_add(data.claim_amount).ok_or(
                 RuntimeError::ApplicationError(ApplicationError::ValidatorError(
                     ValidatorError::UnexpectedDecimalComputationError,
                 )),
@@ -1234,7 +1234,7 @@ impl ValidatorBlueprint {
             .entry(current_epoch.after(config_substate.config.num_owner_stake_units_unlock_epochs))
             .and_modify(|pending_amount| {
                 *pending_amount = pending_amount
-                    .safe_add(requested_stake_unit_amount)
+                    .checked_add(requested_stake_unit_amount)
                     .unwrap_or(Decimal::MAX)
             })
             .or_insert(requested_stake_unit_amount);
@@ -1329,7 +1329,7 @@ impl ValidatorBlueprint {
                 .expect("key was just returned by the iterator");
             substate.already_unlocked_owner_stake_unit_amount = substate
                 .already_unlocked_owner_stake_unit_amount
-                .safe_add(available_amount)
+                .checked_add(available_amount)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(
                         ValidatorError::UnexpectedDecimalComputationError,
@@ -1372,7 +1372,7 @@ impl ValidatorBlueprint {
         // - calculate the validator fee and subtract it from the emission bucket
         let total_emission_xrd = xrd_bucket.amount(api)?;
         let validator_fee_xrd = effective_validator_fee_factor
-            .safe_mul(total_emission_xrd)
+            .checked_mul(total_emission_xrd)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
             ))?;
@@ -1385,16 +1385,16 @@ impl ValidatorBlueprint {
 
         // - stake the validator fee XRDs (effectively same as regular staking)
         let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
-        let stake_pool_added_xrd = total_emission_xrd.safe_sub(validator_fee_xrd).ok_or(
+        let stake_pool_added_xrd = total_emission_xrd.checked_sub(validator_fee_xrd).ok_or(
             RuntimeError::ApplicationError(ApplicationError::ValidatorError(
                 ValidatorError::UnexpectedDecimalComputationError,
             )),
         )?;
         let post_emission_stake_pool_xrd = starting_stake_pool_xrd
-            .safe_add(stake_pool_added_xrd)
+            .checked_add(stake_pool_added_xrd)
             .ok_or(RuntimeError::ApplicationError(
-            ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
-        ))?;
+                ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
+            ))?;
         let total_stake_unit_supply = stake_unit_resman.total_supply(api)?.unwrap();
         let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
             validator_fee_xrd,
@@ -1408,11 +1408,11 @@ impl ValidatorBlueprint {
         Vault(substate.locked_owner_stake_unit_vault_id).put(fee_stake_unit_bucket, api)?;
 
         // - update the index, since the stake increased (because of net emission + staking of the validator fee)
-        let new_stake_xrd = starting_stake_pool_xrd.safe_add(total_emission_xrd).ok_or(
-            RuntimeError::ApplicationError(ApplicationError::ValidatorError(
-                ValidatorError::UnexpectedDecimalComputationError,
-            )),
-        )?;
+        let new_stake_xrd = starting_stake_pool_xrd
+            .checked_add(total_emission_xrd)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
+            ))?;
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
 
@@ -1478,11 +1478,11 @@ impl ValidatorBlueprint {
         Vault(substate.locked_owner_stake_unit_vault_id).put(new_stake_unit_bucket, api)?;
 
         // Update the index, since the stake increased (because of staking of the reward)
-        let new_stake_xrd = starting_stake_pool_xrd.safe_add(total_reward_xrd).ok_or(
-            RuntimeError::ApplicationError(ApplicationError::ValidatorError(
-                ValidatorError::UnexpectedDecimalComputationError,
-            )),
-        )?;
+        let new_stake_xrd = starting_stake_pool_xrd
+            .checked_add(total_reward_xrd)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
+            ))?;
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
 
@@ -1612,8 +1612,8 @@ impl ValidatorBlueprint {
             Decimal::zero()
         } else {
             active_stake_amount
-                .safe_div(total_stake_unit_supply)
-                .and_then(|amount| amount_of_stake_units.safe_mul(amount))
+                .checked_div(total_stake_unit_supply)
+                .and_then(|amount| amount_of_stake_units.checked_mul(amount))
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(
                         ValidatorError::UnexpectedDecimalComputationError,
@@ -1634,8 +1634,8 @@ impl ValidatorBlueprint {
             Ok(xrd_amount)
         } else {
             total_stake_unit_supply
-                .safe_div(total_stake_xrd_amount)
-                .and_then(|amount| xrd_amount.safe_mul(amount))
+                .checked_div(total_stake_xrd_amount)
+                .and_then(|amount| xrd_amount.checked_mul(amount))
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(
                         ValidatorError::UnexpectedDecimalComputationError,
@@ -1661,14 +1661,14 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> Result<[u8; 2], RuntimeError
     // If all available XRD was staked to one validator, they'd have 3.6 * u16::MAX * 100k stake
     // In reality, validators will have far less than u16::MAX * 100k stake, but let's handle that case just in case
     let stake_100k: Decimal = stake
-        .safe_div(100000)
+        .checked_div(100000)
         .ok_or(RuntimeError::ApplicationError(
             ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
         ))?;
 
     let stake_100k_whole_units = Decimal::from(10)
-        .safe_powi(Decimal::SCALE.into())
-        .and_then(|power| stake_100k.safe_div(power))
+        .checked_powi(Decimal::SCALE.into())
+        .and_then(|power| stake_100k.checked_div(power))
         .ok_or(RuntimeError::ApplicationError(
             ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
         ))?
@@ -1886,7 +1886,9 @@ mod tests {
             (u16::MAX - 2).to_be_bytes()
         );
         // https://learn.radixdlt.com/article/start-here-radix-tokens-and-tokenomics
-        let max_xrd_supply = dec!(24).safe_mul(dec!(10).safe_powi(12).unwrap()).unwrap();
+        let max_xrd_supply = dec!(24)
+            .checked_mul(dec!(10).checked_powi(12).unwrap())
+            .unwrap();
         assert_eq!(
             create_sort_prefix_from_stake(max_xrd_supply).unwrap(),
             0u16.to_be_bytes()

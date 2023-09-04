@@ -363,14 +363,14 @@ impl OneResourcePoolBlueprint {
         ) {
             (false, false) => Ok(amount_of_contributed_resources),
             (false, true) => amount_of_contributed_resources
-                .safe_add(reserves)
+                .checked_add(reserves)
                 .ok_or(OneResourcePoolError::DecimalOverflowError),
             (true, false) => Err(OneResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves),
             // Note: we do the division first to make it harder for the calculation to overflow. The
             // amount_of_contributed_resources / reserves is guaranteed to be in the range of [0, 1]
             (true, true) => amount_of_contributed_resources
-                .safe_div(reserves)
-                .and_then(|d| d.safe_mul(pool_unit_total_supply))
+                .checked_div(reserves)
+                .and_then(|d| d.checked_mul(pool_unit_total_supply))
                 .ok_or(OneResourcePoolError::DecimalOverflowError),
         }?;
 
@@ -581,15 +581,15 @@ impl OneResourcePoolBlueprint {
         pool_resource_divisibility: u8,
     ) -> Result<Decimal, RuntimeError> {
         let amount_owed = pool_units_to_redeem
-            .safe_div(pool_units_total_supply)
-            .and_then(|d| d.safe_mul(pool_resource_reserves))
+            .checked_div(pool_units_total_supply)
+            .and_then(|d| d.checked_mul(pool_resource_reserves))
             .ok_or(OneResourcePoolError::DecimalOverflowError)?;
 
         let amount_owed = if pool_resource_divisibility == 18 {
             amount_owed
         } else {
             amount_owed
-                .safe_round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
+                .checked_round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
                 .ok_or(OneResourcePoolError::DecimalOverflowError)?
         };
 

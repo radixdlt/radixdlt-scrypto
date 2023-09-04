@@ -189,26 +189,26 @@ impl SystemLoanFeeReserve {
         // No chance to overflow considering current costing parameters
 
         let tip_percentage = Decimal::ONE
-            .safe_add(
+            .checked_add(
                 transaction_costing_parameters
                     .tip_percentage
-                    .safe_div(dec!(100))
+                    .checked_div(dec!(100))
                     .unwrap(),
             )
             .unwrap();
 
         let effective_execution_cost_unit_price = costing_parameters
             .execution_cost_unit_price
-            .safe_mul(tip_percentage)
+            .checked_mul(tip_percentage)
             .unwrap();
 
         let effective_finalization_cost_unit_price = costing_parameters
             .finalization_cost_unit_price
-            .safe_mul(tip_percentage)
+            .checked_mul(tip_percentage)
             .unwrap();
 
         let system_loan_in_xrd = effective_execution_cost_unit_price
-            .safe_mul(costing_parameters.execution_cost_unit_loan)
+            .checked_mul(costing_parameters.execution_cost_unit_loan)
             .unwrap();
 
         Self {
@@ -255,7 +255,7 @@ impl SystemLoanFeeReserve {
             // Running balance
             xrd_balance: transmute_decimal_as_u128(
                 system_loan_in_xrd
-                    .safe_add(transaction_costing_parameters.free_credit_in_xrd)
+                    .checked_add(transaction_costing_parameters.free_credit_in_xrd)
                     .unwrap(),
             )
             .unwrap(),
@@ -562,23 +562,23 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
     fn finalize(self) -> FeeReserveFinalizationSummary {
         let total_execution_cost_in_xrd: Decimal =
             transmute_u128_as_decimal(self.execution_cost_unit_price)
-                .safe_mul(self.execution_cost_units_committed)
+                .checked_mul(self.execution_cost_units_committed)
                 .unwrap();
 
         let total_finalization_cost_in_xrd =
             transmute_u128_as_decimal(self.finalization_cost_unit_price)
-                .safe_mul(self.finalization_cost_units_committed)
+                .checked_mul(self.finalization_cost_units_committed)
                 .unwrap();
 
-        let tip_percentage = Decimal::from(self.tip_percentage).safe_div(100).unwrap();
+        let tip_percentage = Decimal::from(self.tip_percentage).checked_div(100).unwrap();
 
         let mut total_tipping_cost_in_xrd: Decimal = total_execution_cost_in_xrd
-            .safe_mul(tip_percentage)
+            .checked_mul(tip_percentage)
             .unwrap();
         total_tipping_cost_in_xrd = total_tipping_cost_in_xrd
-            .safe_add(
+            .checked_add(
                 total_finalization_cost_in_xrd
-                    .safe_mul(tip_percentage)
+                    .checked_mul(tip_percentage)
                     .unwrap(),
             )
             .unwrap();

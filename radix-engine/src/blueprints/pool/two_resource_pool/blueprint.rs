@@ -444,13 +444,13 @@ impl TwoResourcePoolBlueprint {
                     )
                      */
                     PreciseDecimal::from(contribution1)
-                        .sqrt()
+                        .checked_sqrt()
                         .and_then(|c1_sqrt| {
                             PreciseDecimal::from(contribution2)
-                                .sqrt()
-                                .and_then(|c2_sqrt| c1_sqrt.safe_mul(c2_sqrt))
+                                .checked_sqrt()
+                                .and_then(|c2_sqrt| c1_sqrt.checked_mul(c2_sqrt))
                         })
-                        .and_then(|d| d.safe_round(19, RoundingMode::ToPositiveInfinity))
+                        .and_then(|d| d.checked_round(19, RoundingMode::ToPositiveInfinity))
                         .and_then(|d| Decimal::try_from(d).ok())
                         .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
                     contribution1,
@@ -467,15 +467,15 @@ impl TwoResourcePoolBlueprint {
                     )
                      */
                     PreciseDecimal::from(contribution1)
-                        .safe_add(PreciseDecimal::from(reserves1))
-                        .and_then(|d| d.sqrt())
+                        .checked_add(PreciseDecimal::from(reserves1))
+                        .and_then(|d| d.checked_sqrt())
                         .and_then(|sqrt_cr1| {
                             PreciseDecimal::from(contribution2)
-                                .safe_add(PreciseDecimal::from(reserves2))
-                                .and_then(|d| d.sqrt())
-                                .and_then(|sqrt_cr2| sqrt_cr1.safe_mul(sqrt_cr2))
+                                .checked_add(PreciseDecimal::from(reserves2))
+                                .and_then(|d| d.checked_sqrt())
+                                .and_then(|sqrt_cr2| sqrt_cr1.checked_mul(sqrt_cr2))
                         })
-                        .and_then(|d| d.safe_round(19, RoundingMode::ToPositiveInfinity))
+                        .and_then(|d| d.checked_round(19, RoundingMode::ToPositiveInfinity))
                         .and_then(|d| Decimal::try_from(d).ok())
                         .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
                     contribution1,
@@ -501,12 +501,12 @@ impl TwoResourcePoolBlueprint {
                     // amount of pool units.
                     [
                         contribution1
-                            .safe_div(reserves1)
-                            .and_then(|d| d.safe_mul(reserves2))
+                            .checked_div(reserves1)
+                            .and_then(|d| d.checked_mul(reserves2))
                             .map(|contribution2_required| (contribution1, contribution2_required)),
                         contribution2
-                            .safe_div(reserves2)
-                            .and_then(|d| d.safe_mul(reserves1))
+                            .checked_div(reserves2)
+                            .and_then(|d| d.checked_mul(reserves1))
                             .map(|contribution1_required| (contribution1_required, contribution2)),
                     ]
                     .into_iter()
@@ -516,9 +516,9 @@ impl TwoResourcePoolBlueprint {
                     })
                     .map(|(c1, c2)| -> Result<(Decimal, Decimal), RuntimeError> {
                         Ok((
-                            c1.safe_round(divisibility1, RoundingMode::ToNegativeInfinity)
+                            c1.checked_round(divisibility1, RoundingMode::ToNegativeInfinity)
                                 .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
-                            c2.safe_round(divisibility2, RoundingMode::ToNegativeInfinity)
+                            c2.checked_round(divisibility2, RoundingMode::ToNegativeInfinity)
                                 .ok_or(TwoResourcePoolError::DecimalOverflowError)?,
                         ))
                     })
@@ -526,8 +526,8 @@ impl TwoResourcePoolBlueprint {
                     .map(
                         |(c1, c2)| -> Result<(Decimal, Decimal, Decimal), RuntimeError> {
                             let pool_units_to_mint = c1
-                                .safe_div(reserves1)
-                                .and_then(|d| d.safe_mul(pool_unit_total_supply))
+                                .checked_div(reserves1)
+                                .and_then(|d| d.checked_mul(pool_unit_total_supply))
                                 .ok_or(TwoResourcePoolError::DecimalOverflowError)?;
                             Ok((pool_units_to_mint, c1, c2))
                         },
@@ -821,15 +821,15 @@ impl TwoResourcePoolBlueprint {
                     },
                 )| {
                     let amount_owed = pool_units_to_redeem
-                        .safe_div(pool_units_total_supply)
-                        .and_then(|d| d.safe_mul(reserves))
+                        .checked_div(pool_units_total_supply)
+                        .and_then(|d| d.checked_mul(reserves))
                         .ok_or(TwoResourcePoolError::DecimalOverflowError)?;
 
                     let amount_owed = if divisibility == 18 {
                         amount_owed
                     } else {
                         amount_owed
-                            .safe_round(divisibility, RoundingMode::ToNegativeInfinity)
+                            .checked_round(divisibility, RoundingMode::ToNegativeInfinity)
                             .ok_or(TwoResourcePoolError::DecimalOverflowError)?
                     };
 
