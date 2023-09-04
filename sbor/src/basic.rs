@@ -188,7 +188,7 @@ impl CustomSchema for NoCustomSchema {
     type CustomTypeValidation = NoCustomTypeValidation;
 
     fn linearize_type_kind(
-        _: Self::CustomTypeKind<GlobalTypeId>,
+        _: Self::CustomTypeKind<DefinitionTypeId>,
         _: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeId> {
         unreachable!("No custom type kinds exist")

@@ -92,17 +92,17 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for [T] {
-        const TYPE_ID: GlobalTypeId = match T::TYPE_ID {
-            GlobalTypeId::WellKnown(basic_well_known_types::U8_TYPE) => {
-                GlobalTypeId::WellKnown(basic_well_known_types::BYTES_TYPE)
+    impl<C: CustomTypeKind<DefinitionTypeId>, T: Describe<C>> Describe<C> for [T] {
+        const TYPE_ID: DefinitionTypeId = match T::TYPE_ID {
+            DefinitionTypeId::WellKnown(basic_well_known_types::U8_TYPE) => {
+                DefinitionTypeId::WellKnown(basic_well_known_types::BYTES_TYPE)
             }
-            _ => GlobalTypeId::novel("Array", &[T::TYPE_ID]),
+            _ => DefinitionTypeId::novel("Array", &[T::TYPE_ID]),
         };
 
-        fn type_data() -> TypeData<C, GlobalTypeId> {
+        fn type_data() -> TypeData<C, DefinitionTypeId> {
             match T::TYPE_ID {
-                GlobalTypeId::WellKnown(basic_well_known_types::U8_TYPE) => {
+                DefinitionTypeId::WellKnown(basic_well_known_types::U8_TYPE) => {
                     basic_well_known_types::bytes_type_data()
                 }
                 _ => TypeData::new(
@@ -119,14 +119,14 @@ mod schema {
         }
     }
 
-    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, const N: usize> Describe<C> for [T; N] {
-        const TYPE_ID: GlobalTypeId = GlobalTypeId::novel_validated(
+    impl<C: CustomTypeKind<DefinitionTypeId>, T: Describe<C>, const N: usize> Describe<C> for [T; N] {
+        const TYPE_ID: DefinitionTypeId = DefinitionTypeId::novel_validated(
             "Array",
             &[T::TYPE_ID],
             &[("min", &N.to_le_bytes()), ("max", &N.to_le_bytes())],
         );
 
-        fn type_data() -> TypeData<C, GlobalTypeId> {
+        fn type_data() -> TypeData<C, DefinitionTypeId> {
             let size = N
                 .try_into()
                 .expect("The array length is too large for a u32 for the SBOR schema");

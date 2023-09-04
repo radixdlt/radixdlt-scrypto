@@ -351,10 +351,10 @@ impl<
 
 wrapped_generic_describe!(T, Vec<T>, [T]);
 
-impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Set", &[T::TYPE_ID]);
+impl<C: CustomTypeKind<DefinitionTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
+    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::novel("Set", &[T::TYPE_ID]);
 
-    fn type_data() -> TypeData<C, GlobalTypeId> {
+    fn type_data() -> TypeData<C, DefinitionTypeId> {
         TypeData::new(
             TypeKind::Array {
                 element_type: T::TYPE_ID,
@@ -371,12 +371,12 @@ impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T
 wrapped_generic_describe!(T, HashSet<T>, BTreeSet<T>);
 wrapped_generic_describe!(T, IndexSet<T>, BTreeSet<T>);
 
-impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
+impl<C: CustomTypeKind<DefinitionTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
     for BTreeMap<K, V>
 {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Map", &[K::TYPE_ID, V::TYPE_ID]);
+    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::novel("Map", &[K::TYPE_ID, V::TYPE_ID]);
 
-    fn type_data() -> TypeData<C, GlobalTypeId> {
+    fn type_data() -> TypeData<C, DefinitionTypeId> {
         TypeData::new(
             TypeKind::Map {
                 key_type: K::TYPE_ID,

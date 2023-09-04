@@ -99,10 +99,10 @@ pub struct UtcDateTime {
 }
 
 impl Describe<ScryptoCustomTypeKind> for UtcDateTime {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::UTC_DATE_TIME_TYPE);
+    const TYPE_ID: DefinitionTypeId =
+        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::UTC_DATE_TIME_TYPE);
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
         well_known_scrypto_custom_types::utc_date_time_type_data()
     }
 }

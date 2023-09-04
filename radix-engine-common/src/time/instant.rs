@@ -15,10 +15,10 @@ pub struct Instant {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Instant {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::INSTANT_TYPE);
+    const TYPE_ID: DefinitionTypeId =
+        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::INSTANT_TYPE);
 
-    fn type_data() -> ScryptoTypeData<GlobalTypeId> {
+    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
         well_known_scrypto_custom_types::instant_type_data()
     }
 }

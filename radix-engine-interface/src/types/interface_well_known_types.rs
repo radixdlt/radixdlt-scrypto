@@ -71,7 +71,7 @@ mod tests {
     fn test_type_data_equivalent<T: ScryptoDescribe>(id: WellKnownTypeId) {
         let type_name = core::any::type_name::<T>();
 
-        assert_eq!(T::TYPE_ID, GlobalTypeId::from(id), "The ScryptoDescribe impl for {type_name} has a TYPE_ID which does not equal its well known type id");
+        assert_eq!(T::TYPE_ID, DefinitionTypeId::from(id), "The ScryptoDescribe impl for {type_name} has a TYPE_ID which does not equal its well known type id");
         let localized_type_data =
             localize_well_known_type_data::<ScryptoCustomSchema>(T::type_data());
         let resolved = resolve_scrypto_well_known_type(id)

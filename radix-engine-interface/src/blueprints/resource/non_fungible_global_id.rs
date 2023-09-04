@@ -19,10 +19,10 @@ use arbitrary::Arbitrary;
 pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
 
 impl Describe<ScryptoCustomTypeKind> for NonFungibleGlobalId {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::NON_FUNGIBLE_GLOBAL_ID_TYPE);
+    const TYPE_ID: DefinitionTypeId =
+        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::NON_FUNGIBLE_GLOBAL_ID_TYPE);
 
-    fn type_data() -> ScryptoTypeData<GlobalTypeId> {
+    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
         well_known_scrypto_custom_types::non_fungible_global_id_type_data()
     }
 }

@@ -2,7 +2,7 @@ use super::*;
 use sbor::rust::prelude::*;
 
 pub fn generate_full_schema_from_single_type<
-    T: Describe<S::CustomTypeKind<GlobalTypeId>>,
+    T: Describe<S::CustomTypeKind<DefinitionTypeId>>,
     S: CustomSchema,
 >() -> (LocalTypeId, VersionedSchema<S>) {
     let mut aggregator = TypeAggregator::new();
@@ -11,7 +11,7 @@ pub fn generate_full_schema_from_single_type<
 }
 
 pub fn generate_full_schema<S: CustomSchema>(
-    aggregator: TypeAggregator<S::CustomTypeKind<GlobalTypeId>>,
+    aggregator: TypeAggregator<S::CustomTypeKind<DefinitionTypeId>>,
 ) -> VersionedSchema<S> {
     let type_count = aggregator.types.len();
     let type_indices = IndexSet::from_iter(aggregator.types.keys().map(|k| k.clone()));
@@ -33,7 +33,7 @@ pub fn generate_full_schema<S: CustomSchema>(
 }
 
 pub fn localize_well_known_type_data<S: CustomSchema>(
-    type_data: TypeData<S::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
+    type_data: TypeData<S::CustomTypeKind<DefinitionTypeId>, DefinitionTypeId>,
 ) -> TypeData<S::CustomTypeKind<LocalTypeId>, LocalTypeId> {
     let TypeData {
         kind,
@@ -48,13 +48,13 @@ pub fn localize_well_known_type_data<S: CustomSchema>(
 }
 
 pub fn localize_well_known<S: CustomSchema>(
-    type_kind: TypeKind<S::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
+    type_kind: TypeKind<S::CustomTypeKind<DefinitionTypeId>, DefinitionTypeId>,
 ) -> TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId> {
     linearize::<S>(type_kind, &indexset!())
 }
 
 fn linearize<S: CustomSchema>(
-    type_kind: TypeKind<S::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
+    type_kind: TypeKind<S::CustomTypeKind<DefinitionTypeId>, DefinitionTypeId>,
     type_indices: &IndexSet<TypeHash>,
 ) -> TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId> {
     match type_kind {
@@ -107,11 +107,11 @@ fn linearize<S: CustomSchema>(
 
 pub fn resolve_local_type_id(
     type_indices: &IndexSet<TypeHash>,
-    type_id: &GlobalTypeId,
+    type_id: &DefinitionTypeId,
 ) -> LocalTypeId {
     match type_id {
-        GlobalTypeId::WellKnown(well_known_type_id) => LocalTypeId::WellKnown(*well_known_type_id),
-        GlobalTypeId::Novel(type_hash) => {
+        DefinitionTypeId::WellKnown(well_known_type_id) => LocalTypeId::WellKnown(*well_known_type_id),
+        DefinitionTypeId::Novel(type_hash) => {
             LocalTypeId::SchemaLocalIndex(resolve_index(type_indices, type_hash))
         }
     }
@@ -126,12 +126,12 @@ fn resolve_index(type_indices: &IndexSet<TypeHash>, type_hash: &TypeHash) -> usi
     })
 }
 
-pub struct TypeAggregator<C: CustomTypeKind<GlobalTypeId>> {
+pub struct TypeAggregator<C: CustomTypeKind<DefinitionTypeId>> {
     already_read_dependencies: IndexSet<TypeHash>,
-    types: IndexMap<TypeHash, TypeData<C, GlobalTypeId>>,
+    types: IndexMap<TypeHash, TypeData<C, DefinitionTypeId>>,
 }
 
-impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
+impl<C: CustomTypeKind<DefinitionTypeId>> TypeAggregator<C> {
     pub fn new() -> Self {
         Self {
             already_read_dependencies: index_set_new(),
@@ -159,14 +159,14 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     /// [`add_child_type_and_descendents`]: #method.add_child_type_and_descendents
     pub fn add_child_type(
         &mut self,
-        type_id: GlobalTypeId,
-        get_type_data: impl FnOnce() -> TypeData<C, GlobalTypeId>,
+        type_id: DefinitionTypeId,
+        get_type_data: impl FnOnce() -> TypeData<C, DefinitionTypeId>,
     ) -> LocalTypeId {
         let complex_type_hash = match type_id {
-            GlobalTypeId::WellKnown(well_known_type_id) => {
+            DefinitionTypeId::WellKnown(well_known_type_id) => {
                 return LocalTypeId::WellKnown(well_known_type_id);
             }
-            GlobalTypeId::Novel(complex_type_hash) => complex_type_hash,
+            DefinitionTypeId::Novel(complex_type_hash) => complex_type_hash,
         };
 
         if let Some(index) = self.types.get_index_of(&complex_type_hash) {
@@ -188,7 +188,7 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     /// [`add_schema_descendents`]: #method.add_schema_descendents
     /// [`add_child_type_and_descendents`]: #method.add_child_type_and_descendents
     pub fn add_schema_descendents<T: Describe<C>>(&mut self) -> bool {
-        let GlobalTypeId::Novel(complex_type_hash) = T::TYPE_ID else {
+        let DefinitionTypeId::Novel(complex_type_hash) = T::TYPE_ID else {
             return false;
         };
 

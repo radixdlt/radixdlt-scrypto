@@ -16,10 +16,10 @@ pub enum PublicKey {
 }
 
 impl Describe<ScryptoCustomTypeKind> for PublicKey {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::PUBLIC_KEY_TYPE);
+    const TYPE_ID: DefinitionTypeId =
+        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::PUBLIC_KEY_TYPE);
 
-    fn type_data() -> ScryptoTypeData<GlobalTypeId> {
+    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
         well_known_scrypto_custom_types::public_key_type_data()
     }
 }

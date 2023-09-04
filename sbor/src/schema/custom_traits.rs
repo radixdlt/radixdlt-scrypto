@@ -16,7 +16,7 @@ pub trait CustomSchema: Debug + Clone + Copy + PartialEq + Eq + 'static {
     >;
 
     fn linearize_type_kind(
-        type_kind: Self::CustomTypeKind<GlobalTypeId>,
+        type_kind: Self::CustomTypeKind<DefinitionTypeId>,
         type_indices: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeId>;
 

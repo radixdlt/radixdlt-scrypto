@@ -15,10 +15,10 @@ pub struct Secp256k1PublicKey(
 );
 
 impl Describe<ScryptoCustomTypeKind> for Secp256k1PublicKey {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::SECP256K1_PUBLIC_KEY_TYPE);
+    const TYPE_ID: DefinitionTypeId =
+        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::SECP256K1_PUBLIC_KEY_TYPE);
 
-    fn type_data() -> ScryptoTypeData<GlobalTypeId> {
+    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
         well_known_scrypto_custom_types::secp256k1_public_key_type_data()
     }
 }
@@ -57,10 +57,10 @@ impl TryFrom<&[u8]> for Secp256k1PublicKey {
 pub struct Secp256k1PublicKeyHash(pub [u8; Self::LENGTH]);
 
 impl Describe<ScryptoCustomTypeKind> for Secp256k1PublicKeyHash {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::SECP256K1_PUBLIC_KEY_HASH_TYPE);
+    const TYPE_ID: DefinitionTypeId =
+        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::SECP256K1_PUBLIC_KEY_HASH_TYPE);
 
-    fn type_data() -> ScryptoTypeData<GlobalTypeId> {
+    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
         well_known_scrypto_custom_types::secp256k1_public_key_hash_type_data()
     }
 }

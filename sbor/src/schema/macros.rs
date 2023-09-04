@@ -1,10 +1,10 @@
 macro_rules! describe_basic_well_known_type {
     ($type:ty, $well_known_index:ident, $well_known_type_data_method:ident) => {
-        impl<C: CustomTypeKind<GlobalTypeId>> Describe<C> for $type {
-            const TYPE_ID: GlobalTypeId =
-                GlobalTypeId::WellKnown(basic_well_known_types::$well_known_index);
+        impl<C: CustomTypeKind<DefinitionTypeId>> Describe<C> for $type {
+            const TYPE_ID: DefinitionTypeId =
+                DefinitionTypeId::WellKnown(basic_well_known_types::$well_known_index);
 
-            fn type_data() -> TypeData<C, GlobalTypeId> {
+            fn type_data() -> TypeData<C, DefinitionTypeId> {
                 basic_well_known_types::$well_known_type_data_method()
             }
         }
@@ -14,10 +14,10 @@ pub(crate) use describe_basic_well_known_type;
 
 macro_rules! wrapped_generic_describe {
     ($generic:ident, $type:ty, $other_type:ty) => {
-        impl<C: CustomTypeKind<GlobalTypeId>, $generic: Describe<C>> Describe<C> for $type {
-            const TYPE_ID: GlobalTypeId = <$other_type>::TYPE_ID;
+        impl<C: CustomTypeKind<DefinitionTypeId>, $generic: Describe<C>> Describe<C> for $type {
+            const TYPE_ID: DefinitionTypeId = <$other_type>::TYPE_ID;
 
-            fn type_data() -> TypeData<C, GlobalTypeId> {
+            fn type_data() -> TypeData<C, DefinitionTypeId> {
                 <$other_type>::type_data()
             }
 
@@ -32,14 +32,14 @@ pub(crate) use wrapped_generic_describe;
 macro_rules! wrapped_double_generic_describe {
     ($key_generic:ident, $value_generic:ident, $type:ty, $other_type:ty) => {
         impl<
-                C: CustomTypeKind<GlobalTypeId>,
+                C: CustomTypeKind<DefinitionTypeId>,
                 $key_generic: Describe<C>,
                 $value_generic: Describe<C>,
             > Describe<C> for $type
         {
-            const TYPE_ID: GlobalTypeId = <$other_type>::TYPE_ID;
+            const TYPE_ID: DefinitionTypeId = <$other_type>::TYPE_ID;
 
-            fn type_data() -> TypeData<C, GlobalTypeId> {
+            fn type_data() -> TypeData<C, DefinitionTypeId> {
                 <$other_type>::type_data()
             }
 

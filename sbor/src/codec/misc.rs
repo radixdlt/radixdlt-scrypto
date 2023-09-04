@@ -247,12 +247,12 @@ mod schema {
 
     wrapped_generic_describe!(T, &T, T);
 
-    impl<'a, C: CustomTypeKind<GlobalTypeId>, B: ?Sized + 'a + ToOwned + Describe<C>> Describe<C>
+    impl<'a, C: CustomTypeKind<DefinitionTypeId>, B: ?Sized + 'a + ToOwned + Describe<C>> Describe<C>
         for Cow<'a, B>
     {
-        const TYPE_ID: GlobalTypeId = <B>::TYPE_ID;
+        const TYPE_ID: DefinitionTypeId = <B>::TYPE_ID;
 
-        fn type_data() -> TypeData<C, GlobalTypeId> {
+        fn type_data() -> TypeData<C, DefinitionTypeId> {
             <B>::type_data()
         }
 

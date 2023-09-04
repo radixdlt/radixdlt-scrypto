@@ -13,10 +13,10 @@ pub enum RoyaltyAmount {
 }
 
 impl Describe<ScryptoCustomTypeKind> for RoyaltyAmount {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::ROYALTY_AMOUNT_TYPE);
+    const TYPE_ID: DefinitionTypeId =
+        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::ROYALTY_AMOUNT_TYPE);
 
-    fn type_data() -> ScryptoTypeData<GlobalTypeId> {
+    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
         well_known_scrypto_custom_types::royalty_amount_type_data()
     }
 }

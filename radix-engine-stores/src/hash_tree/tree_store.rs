@@ -179,10 +179,10 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for Nibble {
     }
 }
 
-impl<T: CustomTypeKind<GlobalTypeId>> Describe<T> for Nibble {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(basic_well_known_types::U8_TYPE);
+impl<T: CustomTypeKind<DefinitionTypeId>> Describe<T> for Nibble {
+    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::WellKnown(basic_well_known_types::U8_TYPE);
 
-    fn type_data() -> TypeData<T, GlobalTypeId> {
+    fn type_data() -> TypeData<T, DefinitionTypeId> {
         basic_well_known_types::u8_type_data()
     }
 }
@@ -223,10 +223,10 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for NibblePath {
     }
 }
 
-impl<T: CustomTypeKind<GlobalTypeId>> Describe<T> for NibblePath {
-    const TYPE_ID: GlobalTypeId = <(bool, Vec<u8>) as Describe<T>>::TYPE_ID;
+impl<T: CustomTypeKind<DefinitionTypeId>> Describe<T> for NibblePath {
+    const TYPE_ID: DefinitionTypeId = <(bool, Vec<u8>) as Describe<T>>::TYPE_ID;
 
-    fn type_data() -> TypeData<T, GlobalTypeId> {
+    fn type_data() -> TypeData<T, DefinitionTypeId> {
         <(bool, Vec<u8>) as Describe<T>>::type_data()
     }
 }

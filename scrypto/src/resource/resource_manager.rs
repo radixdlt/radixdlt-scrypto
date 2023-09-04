@@ -23,9 +23,9 @@ use scrypto::component::HasStub;
 pub struct ResourceManager(Global<ResourceManagerStub>);
 
 impl Describe<ScryptoCustomTypeKind> for ResourceManager {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown(RESOURCE_ADDRESS_TYPE);
+    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::WellKnown(RESOURCE_ADDRESS_TYPE);
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
         resource_address_type_data()
     }
 }

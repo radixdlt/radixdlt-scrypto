@@ -77,9 +77,9 @@ mod data_validation {
 pub struct CustomReference(Reference);
 
 impl Describe<ScryptoCustomTypeKind> for CustomReference {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::Novel([123u8; 20]);
+    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::Novel([123u8; 20]);
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
         TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Reference),
             metadata: TypeMetadata::no_child_names("CustomReference"),
