@@ -9,7 +9,6 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::prelude::ClientApi;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
@@ -108,7 +107,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientApi<E>,
+        Y: ClientBlueprintApi<E>,
     {
         let metadata = ModuleConfig {
             init: metadata.into(),

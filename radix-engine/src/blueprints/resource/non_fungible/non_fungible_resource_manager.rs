@@ -499,14 +499,16 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (generic_args, schema, local_type_id, mutable_fields) = match schema {
+        match schema {
             NonFungibleDataSchema::Local {
                 schema,
                 type_id,
                 mutable_fields,
             } => {
                 let schema_hash = schema.generate_schema_hash();
-                (
+                let mutable_indices =
+                    Self::validate_non_fungible_schema(schema, *type_id, mutable_fields)?;
+                Ok((
                     GenericArgs {
                         additional_schema: Some(schema.clone()),
                         generic_substitutions: vec![GenericSubstitution::Local(NodeScopedTypeId(
@@ -514,30 +516,25 @@ impl NonFungibleResourceManagerBlueprint {
                             *type_id,
                         ))],
                     },
-                    schema.clone(),
-                    *type_id,
-                    mutable_fields,
-                )
+                    mutable_indices,
+                ))
             }
             NonFungibleDataSchema::Remote {
                 type_id,
                 mutable_fields,
             } => {
                 let (schema, scoped_type_id) = api.resolve_blueprint_type(&type_id)?;
-                (
+                let mutable_indices =
+                    Self::validate_non_fungible_schema(&schema, scoped_type_id.1, mutable_fields)?;
+                Ok((
                     GenericArgs {
-                        additional_schema: Some(schema.clone()),
+                        additional_schema: Some(schema),
                         generic_substitutions: vec![GenericSubstitution::Remote(type_id.clone())],
                     },
-                    schema,
-                    scoped_type_id.1,
-                    mutable_fields,
-                )
+                    mutable_indices,
+                ))
             }
-        };
-        let mutable_indices =
-            Self::validate_non_fungible_schema(&schema, local_type_id, &mutable_fields)?;
-        Ok((generic_args, mutable_indices))
+        }
     }
 
     fn validate_non_fungible_schema(
