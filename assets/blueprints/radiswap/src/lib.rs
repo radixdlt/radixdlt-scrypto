@@ -1,6 +1,7 @@
 use scrypto::prelude::*;
 
 #[blueprint]
+#[events(AddLiquidityEvent, RemoveLiquidityEvent, SwapEvent)]
 mod radiswap {
     struct Radiswap {
         pool_component: Global<TwoResourcePool>,
@@ -39,6 +40,11 @@ mod radiswap {
             resource1: Bucket,
             resource2: Bucket,
         ) -> (Bucket, Option<Bucket>) {
+            Runtime::emit_event(AddLiquidityEvent([
+                (resource1.resource_address(), resource1.amount()),
+                (resource2.resource_address(), resource2.amount()),
+            ]));
+
             // All the checks for correctness of buckets and everything else is handled by the pool
             // component! Just pass it the resources and it will either return the pool units back
             // if it succeeds or abort on failure.
@@ -50,7 +56,18 @@ mod radiswap {
         /// so that users are only interacting with one component and do not need to know about the
         /// address of Radiswap and the address of the Radiswap pool.
         pub fn remove_liquidity(&mut self, pool_units: Bucket) -> (Bucket, Bucket) {
-            self.pool_component.redeem(pool_units)
+            let pool_units_amount = pool_units.amount();
+            let (bucket1, bucket2) = self.pool_component.redeem(pool_units);
+
+            Runtime::emit_event(RemoveLiquidityEvent {
+                pool_units_amount,
+                redeemed_resources: [
+                    (bucket1.resource_address(), bucket1.amount()),
+                    (bucket2.resource_address(), bucket2.amount()),
+                ],
+            });
+
+            (bucket1, bucket2)
         }
 
         pub fn swap(&mut self, input_bucket: Bucket) -> Bucket {
@@ -68,6 +85,11 @@ mod radiswap {
                 .unwrap()
                 .safe_div(input_reserves.safe_add(input_amount).unwrap())
                 .unwrap();
+
+            Runtime::emit_event(SwapEvent {
+                input: (input_bucket.resource_address(), input_bucket.amount()),
+                output: (output_resource_address, output_amount),
+            });
 
             // NOTE: It's the responsibility of the user of the pool to do the appropriate rounding
             // before calling the withdraw method.
@@ -92,4 +114,19 @@ mod radiswap {
             )
         }
     }
+}
+
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct AddLiquidityEvent([(ResourceAddress, Decimal); 2]);
+
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct RemoveLiquidityEvent {
+    pub pool_units_amount: Decimal,
+    pub redeemed_resources: [(ResourceAddress, Decimal); 2],
+}
+
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct SwapEvent {
+    pub input: (ResourceAddress, Decimal),
+    pub output: (ResourceAddress, Decimal),
 }

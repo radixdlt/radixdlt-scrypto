@@ -1,7 +1,7 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
 
-use crate::hash_tree::types::LeafKey;
+use crate::hash_tree::types::{LeafKey, Version};
 
 use super::tree_store::{
     ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
@@ -27,7 +27,7 @@ impl TreeInternalNode {
 }
 
 impl TreeLeafNode {
-    fn from(key: &NodeKey, leaf_node: &LeafNode<()>) -> Self {
+    fn from(key: &NodeKey, leaf_node: &LeafNode<Version>) -> Self {
         TreeLeafNode {
             key_suffix: NibblePath::from_iter(
                 NibblePath::new_even(leaf_node.leaf_key().bytes.clone())
@@ -35,12 +35,13 @@ impl TreeLeafNode {
                     .skip(key.nibble_path().num_nibbles()),
             ),
             value_hash: leaf_node.value_hash(),
+            last_hash_change_version: leaf_node.payload().clone(),
         }
     }
 }
 
 impl TreeNode {
-    pub fn from(key: &NodeKey, node: &Node<()>) -> Self {
+    pub fn from(key: &NodeKey, node: &Node<Version>) -> Self {
         match node {
             Node::Internal(internal_node) => {
                 TreeNode::Internal(TreeInternalNode::from(internal_node))
@@ -76,7 +77,7 @@ impl InternalNode {
     }
 }
 
-impl Node<()> {
+impl Node<Version> {
     fn from(key: &NodeKey, tree_node: &TreeNode) -> Self {
         match tree_node {
             TreeNode::Internal(internal_node) => Node::Internal(InternalNode::from(internal_node)),
@@ -86,7 +87,7 @@ impl Node<()> {
     }
 }
 
-impl LeafNode<()> {
+impl LeafNode<Version> {
     fn from(key: &NodeKey, leaf_node: &TreeLeafNode) -> Self {
         let full_key = NibblePath::from_iter(
             key.nibble_path()
@@ -96,14 +97,14 @@ impl LeafNode<()> {
         LeafNode::new(
             LeafKey::new(full_key.bytes()),
             leaf_node.value_hash,
-            (),
+            leaf_node.last_hash_change_version,
             key.version(),
         )
     }
 }
 
-impl<R: ReadableTreeStore> TreeReader<()> for R {
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<()>>, StorageError> {
+impl<R: ReadableTreeStore> TreeReader<Version> for R {
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<Version>>, StorageError> {
         Ok(self
             .get_node(node_key)
             .map(|tree_node| Node::from(node_key, &tree_node)))
