@@ -6,6 +6,7 @@ use num_traits::{Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::format;
+use sbor::rust::ops::*;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -379,13 +380,86 @@ impl SafeDiv<PreciseDecimal> for PreciseDecimal {
     }
 }
 
+impl Neg for PreciseDecimal {
+    type Output = Self;
+
+    #[inline]
+    fn neg(self) -> Self::Output {
+        self.safe_neg().expect("Overflow")
+    }
+}
+
+impl Add<PreciseDecimal> for PreciseDecimal {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, other: Self) -> Self::Output {
+        self.safe_add(other).expect("Overflow")
+    }
+}
+
+impl Sub<PreciseDecimal> for PreciseDecimal {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, other: Self) -> Self::Output {
+        self.safe_sub(other).expect("Overflow")
+    }
+}
+
+impl Mul<PreciseDecimal> for PreciseDecimal {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, other: Self) -> Self::Output {
+        self.safe_mul(other).expect("Overflow")
+    }
+}
+
+impl Div<PreciseDecimal> for PreciseDecimal {
+    type Output = Self;
+
+    #[inline]
+    fn div(self, other: Self) -> Self::Output {
+        self.safe_div(other).expect("Overflow or division by zero")
+    }
+}
+
+impl AddAssign<PreciseDecimal> for PreciseDecimal {
+    #[inline]
+    fn add_assign(&mut self, other: Self) {
+        *self = *self + other;
+    }
+}
+
+impl SubAssign<PreciseDecimal> for PreciseDecimal {
+    #[inline]
+    fn sub_assign(&mut self, other: Self) {
+        *self = *self - other;
+    }
+}
+
+impl MulAssign<PreciseDecimal> for PreciseDecimal {
+    #[inline]
+    fn mul_assign(&mut self, other: Self) {
+        *self = *self * other;
+    }
+}
+
+impl DivAssign<PreciseDecimal> for PreciseDecimal {
+    #[inline]
+    fn div_assign(&mut self, other: Self) {
+        *self = *self / other;
+    }
+}
+
 macro_rules! impl_arith_ops {
     ($type:ident) => {
         impl SafeAdd<$type> for PreciseDecimal {
             type Output = Self;
 
             fn safe_add(self, other: $type) -> Option<Self::Output> {
-                self.safe_add(Self::from(other))
+                self.safe_add(Self::try_from(other).ok()?)
             }
         }
 
@@ -393,7 +467,7 @@ macro_rules! impl_arith_ops {
             type Output = Self;
 
             fn safe_sub(self, other: $type) -> Option<Self::Output> {
-                self.safe_sub(Self::from(other))
+                self.safe_sub(Self::try_from(other).ok()?)
             }
         }
 
@@ -401,7 +475,7 @@ macro_rules! impl_arith_ops {
             type Output = Self;
 
             fn safe_mul(self, other: $type) -> Option<Self::Output> {
-                self.safe_mul(Self::from(other))
+                self.safe_mul(Self::try_from(other).ok()?)
             }
         }
 
@@ -409,7 +483,7 @@ macro_rules! impl_arith_ops {
             type Output = Self;
 
             fn safe_div(self, other: $type) -> Option<Self::Output> {
-                self.safe_div(Self::from(other))
+                self.safe_div(Self::try_from(other).ok()?)
             }
         }
 
@@ -426,7 +500,7 @@ macro_rules! impl_arith_ops {
             type Output = PreciseDecimal;
 
             fn safe_sub(self, other: PreciseDecimal) -> Option<Self::Output> {
-                PreciseDecimal::from(self).safe_sub(other)
+                PreciseDecimal::try_from(self).ok()?.safe_sub(other)
             }
         }
 
@@ -443,7 +517,107 @@ macro_rules! impl_arith_ops {
             type Output = PreciseDecimal;
 
             fn safe_div(self, other: PreciseDecimal) -> Option<Self::Output> {
-                PreciseDecimal::from(self).safe_div(other)
+                PreciseDecimal::try_from(self).ok()?.safe_div(other)
+            }
+        }
+
+        impl Add<$type> for PreciseDecimal {
+            type Output = Self;
+
+            #[inline]
+            fn add(self, other: $type) -> Self::Output {
+                self.safe_add(other).expect("Overflow")
+            }
+        }
+
+        impl Sub<$type> for PreciseDecimal {
+            type Output = Self;
+
+            #[inline]
+            fn sub(self, other: $type) -> Self::Output {
+                self.safe_sub(other).expect("Overflow")
+            }
+        }
+
+        impl Mul<$type> for PreciseDecimal {
+            type Output = Self;
+
+            #[inline]
+            fn mul(self, other: $type) -> Self::Output {
+                self.safe_mul(other).expect("Overflow")
+            }
+        }
+
+        impl Div<$type> for PreciseDecimal {
+            type Output = Self;
+
+            #[inline]
+            fn div(self, other: $type) -> Self::Output {
+                self.safe_div(other).expect("Overflow or division by zero")
+            }
+        }
+
+        impl Add<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            #[inline]
+            fn add(self, other: PreciseDecimal) -> Self::Output {
+                other + self
+            }
+        }
+
+        impl Sub<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            #[inline]
+            fn sub(self, other: PreciseDecimal) -> Self::Output {
+                self.safe_sub(other).expect("Overflow")
+            }
+        }
+
+        impl Mul<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            #[inline]
+            fn mul(self, other: PreciseDecimal) -> Self::Output {
+                other * self
+            }
+        }
+
+        impl Div<PreciseDecimal> for $type {
+            type Output = PreciseDecimal;
+
+            #[inline]
+            fn div(self, other: PreciseDecimal) -> Self::Output {
+                self.safe_div(other).expect("Overflow or division by zero")
+            }
+        }
+
+        impl AddAssign<$type> for PreciseDecimal {
+            #[inline]
+            fn add_assign(&mut self, other: $type) {
+                *self = *self + other;
+            }
+        }
+
+        impl SubAssign<$type> for PreciseDecimal {
+            #[inline]
+            fn sub_assign(&mut self, other: $type) {
+                *self = *self - other;
+            }
+        }
+
+        impl MulAssign<$type> for PreciseDecimal {
+            #[inline]
+            fn mul_assign(&mut self, other: $type) {
+                *self = *self * other;
+            }
+        }
+
+        impl DivAssign<$type> for PreciseDecimal {
+            #[inline]
+            fn div_assign(&mut self, other: $type) {
+                *self = *self / other;
             }
         }
     };
@@ -461,6 +635,16 @@ impl_arith_ops!(i64);
 impl_arith_ops!(i128);
 impl_arith_ops!(isize);
 impl_arith_ops!(Decimal);
+impl_arith_ops!(I192);
+impl_arith_ops!(I256);
+impl_arith_ops!(I320);
+impl_arith_ops!(I448);
+impl_arith_ops!(I512);
+impl_arith_ops!(U192);
+impl_arith_ops!(U256);
+impl_arith_ops!(U320);
+impl_arith_ops!(U448);
+impl_arith_ops!(U512);
 
 //========
 // binary
@@ -622,17 +806,6 @@ impl Truncate<Decimal> for PreciseDecimal {
     }
 }
 
-macro_rules! from_integer {
-    ($($t:ident),*) => {
-        $(
-            impl From<$t> for PreciseDecimal {
-                fn from(val: $t) -> Self {
-                    Self(I256::from(val) * Self::ONE.0)
-                }
-            }
-        )*
-    };
-}
 macro_rules! try_from_integer {
     ($($t:ident),*) => {
         $(
@@ -655,9 +828,8 @@ macro_rules! try_from_integer {
     };
 }
 
-from_integer!(I192, U192);
-try_from_integer!(I256, I320, I384, I448, I512);
-try_from_integer!(U256, U320, U384, U448, U512);
+try_from_integer!(I192, I256, I320, I384, I448, I512);
+try_from_integer!(U192, U256, U320, U384, U448, U512);
 
 #[cfg(test)]
 mod tests {
@@ -747,11 +919,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_add_overflow_precise_decimal() {
-        let _ = PreciseDecimal::MAX
-            .safe_add(PreciseDecimal::ONE)
-            .expect("Overflow");
+        assert!(PreciseDecimal::MAX.safe_add(PreciseDecimal::ONE).is_none());
     }
 
     #[test]
@@ -763,11 +932,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_sub_overflow_precise_decimal() {
-        let _ = PreciseDecimal::MIN
-            .safe_sub(PreciseDecimal::ONE)
-            .expect("Overflow");
+        assert!(PreciseDecimal::MIN.safe_sub(PreciseDecimal::ONE).is_none());
     }
 
     #[test]
@@ -788,47 +954,38 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_mul_overflow_by_small_precise_decimal() {
-        let _ = PreciseDecimal::MAX
+        assert!(PreciseDecimal::MAX
             .safe_mul(pdec!("1.000000000000000000000000000000000001"))
-            .expect("Overflow");
+            .is_none());
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_mul_overflow_by_a_lot_precise_decimal() {
-        let _ = PreciseDecimal::MAX
-            .safe_mul(pdec!("1.1"))
-            .expect("Overflow");
+        assert!(PreciseDecimal::MAX.safe_mul(pdec!("1.1")).is_none());
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
     fn test_mul_neg_overflow_precise_decimal() {
-        let p = pdec!("-1.000000000000000000000000000000000001");
-        println!("p = {}", p);
-        let _ = PreciseDecimal::MAX
+        assert!(PreciseDecimal::MAX
             .safe_neg()
             .unwrap()
             .safe_mul(pdec!("-1.000000000000000000000000000000000001"))
-            .expect("Overflow");
+            .is_none());
     }
 
     #[test]
-    #[should_panic]
     fn test_div_by_zero_precise_decimal() {
         let a = PreciseDecimal::from(5u32);
         let b = PreciseDecimal::from(0u32);
-        a.safe_div(b).unwrap();
+        assert!(a.safe_div(b).is_none());
     }
 
     #[test]
-    #[should_panic]
     fn test_powi_exp_overflow_precise_decimal() {
         let a = PreciseDecimal::from(5u32);
         let b = i64::MIN;
-        assert_eq!(a.safe_powi(b).unwrap().to_string(), "0");
+        assert!(a.safe_powi(b).is_none());
     }
 
     #[test]
@@ -995,13 +1152,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_10_powi_16_precise_decimal() {
         let a = PreciseDecimal(10i128.into());
-        assert_eq!(
-            a.safe_powi(16).unwrap().to_string(),
-            "1000000000000000000000"
-        );
+        assert_eq!(a.safe_powi(16).unwrap().to_string(), "0");
     }
 
     #[test]
@@ -1469,14 +1622,25 @@ mod tests {
     }
 
     test_try_from_integer_overflow! {
-        (I256::MAX, 1),
-        (I256::MIN, 2),
+        (I192::MAX, 1),
+        (I192::MIN, 2),
+        (I256::MAX, 3),
+        (I256::MIN, 4),
+        (I320::MAX, 5),
+        (I320::MIN, 6),
+        (I448::MAX, 7),
+        (I448::MIN, 8),
+        (I512::MAX, 9),
+        (I512::MIN, 10),
         // maximal PreciseDecimal integer part + 1
-        (I256::MAX/(I256::from(10).pow(PreciseDecimal::SCALE)) + I256::ONE, 3),
+        (I256::MAX/(I256::from(10).pow(PreciseDecimal::SCALE)) + I256::ONE, 11),
         // minimal PreciseDecimal integer part - 1
-        (I256::MIN/(I256::from(10).pow(PreciseDecimal::SCALE)) - I256::ONE, 4),
-        (I256::MIN, 5),
-        (I256::MAX, 6)
+        (I256::MIN/(I256::from(10).pow(PreciseDecimal::SCALE)) - I256::ONE, 12),
+        (U192::MAX, 13),
+        (U256::MAX, 14),
+        (U320::MAX, 15),
+        (U448::MAX, 16),
+        (U512::MAX, 17)
     }
 
     macro_rules! test_try_from_integer {
@@ -1494,34 +1658,25 @@ mod tests {
     }
 
     test_try_from_integer! {
-        (I256::ONE, "1", 1),
-        (-I256::ONE, "-1", 2),
-        // maximal PreciseDecimal integer part
-        (I256::MAX/(I256::from(10).pow(PreciseDecimal::SCALE)), "57896044618658097711785492504343953926634", 3),
-        // minimal PreciseDecimal integer part
-        (I256::MIN/(I256::from(10).pow(PreciseDecimal::SCALE)), "-57896044618658097711785492504343953926634", 4),
-        (U256::MIN, "0", 5)
-    }
-
-    macro_rules! test_from_integer {
-        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
-            paste!{
-            $(
-                #[test]
-                fn [<test_from_integer_ $suffix>]() {
-                    let dec = PreciseDecimal::from($from);
-                    assert_eq!(dec.to_string(), $expected)
-                }
-            )*
-            }
-        };
-    }
-
-    test_from_integer! {
         (I192::ONE, "1", 1),
         (-I192::ONE, "-1", 2),
-        (U192::MIN, "0", 3),
-        (U192::ONE, "1", 4)
+        (I256::ONE, "1", 3),
+        (-I256::ONE, "-1", 4),
+        (I320::ONE, "1", 5),
+        (-I320::ONE, "-1", 6),
+        (I448::ONE, "1", 7),
+        (-I448::ONE, "-1", 8),
+        (I512::ONE, "1", 9),
+        (-I512::ONE, "-1", 10),
+        // maximal PreciseDecimal integer part
+        (I256::MAX/(I256::from(10).pow(PreciseDecimal::SCALE)), "57896044618658097711785492504343953926634", 11),
+        // minimal PreciseDecimal integer part
+        (I256::MIN/(I256::from(10).pow(PreciseDecimal::SCALE)), "-57896044618658097711785492504343953926634", 12),
+        (U192::MIN, "0", 13),
+        (U256::MIN, "0", 14),
+        (U320::MIN, "0", 15),
+        (U448::MIN, "0", 16),
+        (U512::MIN, "0", 17)
     }
 
     #[test]
@@ -1621,6 +1776,21 @@ mod tests {
             decimal,
             Err(ParsePreciseDecimalError::UnsupportedDecimalPlace)
         ))
+    }
+
+    #[test]
+    fn test_neg_precise_decimal() {
+        let d = PreciseDecimal::ONE;
+        assert_eq!(-d, pdec!("-1"));
+        let d = PreciseDecimal::MAX;
+        assert_eq!(-d, PreciseDecimal(I256::MIN + I256::ONE));
+    }
+
+    #[test]
+    #[should_panic(expected = "Overflow")]
+    fn test_neg_precise_decimal_panic() {
+        let d = PreciseDecimal::MIN;
+        let _ = -d;
     }
 
     // These tests make sure that any basic arithmetic operation
@@ -1732,4 +1902,206 @@ mod tests {
     test_arith_precise_decimal_primitive!(i64);
     test_arith_precise_decimal_primitive!(i128);
     test_arith_precise_decimal_primitive!(isize);
+
+    macro_rules! test_arith_precise_decimal_integer {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_arith_precise_decimal_$type:lower>]() {
+                    let d1 = PreciseDecimal::ONE;
+                    let u1 = $type::try_from(2).unwrap();
+                    let u2 = $type::try_from(1).unwrap();
+                    let d2 = PreciseDecimal::from(2);
+                    assert_eq!(d1.safe_mul(u1).unwrap(), u2.safe_mul(d2).unwrap());
+                    assert_eq!(d1.safe_div(u1).unwrap(), u2.safe_div(d2).unwrap());
+                    assert_eq!(d1.safe_add(u1).unwrap(), u2.safe_add(d2).unwrap());
+                    assert_eq!(d1.safe_sub(u1).unwrap(), u2.safe_sub(d2).unwrap());
+
+                    let d1 = pdec!("2");
+                    let u1 = $type::MAX;
+                    assert!(d1.safe_mul(u1).is_none());
+                    assert!(d1.safe_add(u1).is_none());
+                    assert!(d1.safe_sub(u1).is_none());
+                    assert!(d1.safe_div(u1).is_none());
+
+                    let d1 = PreciseDecimal::MAX;
+                    let u1 = $type::try_from(2).unwrap();
+                    assert_eq!(d1.safe_mul(u1), None);
+                    assert_eq!(d1.safe_div(u1).unwrap(), PreciseDecimal::MAX / dec!("2"));
+                    assert_eq!(d1.safe_add(u1), None);
+                    assert_eq!(d1.safe_sub(u1).unwrap(), PreciseDecimal::MAX - dec!("2"));
+                }
+            }
+        };
+    }
+    test_arith_precise_decimal_integer!(I192);
+    test_arith_precise_decimal_integer!(I256);
+    test_arith_precise_decimal_integer!(I320);
+    test_arith_precise_decimal_integer!(I448);
+    test_arith_precise_decimal_integer!(I512);
+    test_arith_precise_decimal_integer!(U192);
+    test_arith_precise_decimal_integer!(U256);
+    test_arith_precise_decimal_integer!(U320);
+    test_arith_precise_decimal_integer!(U448);
+    test_arith_precise_decimal_integer!(U512);
+
+    macro_rules! test_math_operands_decimal {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_math_operands_precise_decimal_$type:lower>]() {
+                    let d1 = pdec!("2");
+                    let u1 = $type::try_from(4).unwrap();
+                    assert_eq!(d1 + u1, pdec!("6"));
+                    assert_eq!(d1 - u1, pdec!("-2"));
+                    assert_eq!(d1 * u1, pdec!("8"));
+                    assert_eq!(d1 / u1, pdec!("0.5"));
+
+                    let u1 = $type::try_from(2).unwrap();
+                    let d1 = pdec!("4");
+                    assert_eq!(u1 + d1, pdec!("6"));
+                    assert_eq!(u1 - d1, pdec!("-2"));
+                    assert_eq!(u1 * d1, pdec!("8"));
+                    assert_eq!(u1 / d1, pdec!("0.5"));
+
+                    let u1 = $type::try_from(4).unwrap();
+
+                    let mut d1 = pdec!("2");
+                    d1 += u1;
+                    assert_eq!(d1, pdec!("6"));
+
+                    let mut d1 = pdec!("2");
+                    d1 -= u1;
+                    assert_eq!(d1, pdec!("-2"));
+
+                    let mut d1 = pdec!("2");
+                    d1 *= u1;
+                    assert_eq!(d1, pdec!("8"));
+
+                    let mut d1 = pdec!("2");
+                    d1 /= u1;
+                    assert_eq!(d1, pdec!("0.5"));
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_add_precise_decimal_$type:lower _panic>]() {
+                    let d1 = PreciseDecimal::MAX;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = d1 + u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_add_$type:lower _xprecise_decimal_panic>]() {
+                    let d1 = PreciseDecimal::MAX;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = u1 + d1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_sub_precise_decimal_$type:lower _panic>]() {
+                    let d1 = PreciseDecimal::MIN;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = d1 - u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_sub_$type:lower _xprecise_precise_decimal_panic>]() {
+                    let d1 = PreciseDecimal::MIN;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = u1 - d1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_mul_precise_decimal_$type:lower _panic>]() {
+                    let d1 = PreciseDecimal::MAX;
+                    let u1 = $type::try_from(2).unwrap();
+                    let _ = d1 * u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_mul_$type:lower _xprecise_decimal_panic>]() {
+                    let d1 = PreciseDecimal::MAX;
+                    let u1 = $type::try_from(2).unwrap();
+                    let _ = u1 * d1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_div_zero_precise_decimal_$type:lower _panic>]() {
+                    let d1 = PreciseDecimal::MAX;
+                    let u1 = $type::try_from(0).unwrap();
+                    let _ = d1 / u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow or division by zero")]
+                fn [<test_math_div_zero_$type:lower _xdecimal_panic>]() {
+                    let d1 = PreciseDecimal::ZERO;
+                    let u1 = $type::try_from(1).unwrap();
+                    let _ = u1 / d1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_add_assign_precise_decimal_$type:lower _panic>]() {
+                    let mut d1 = PreciseDecimal::MAX;
+                    let u1 = $type::try_from(1).unwrap();
+                    d1 += u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_sub_assign_precise_decimal_$type:lower _panic>]() {
+                    let mut d1 = PreciseDecimal::MIN;
+                    let u1 = $type::try_from(1).unwrap();
+                    d1 -= u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow")]
+                fn [<test_math_mul_assign_precise_decimal_$type:lower _panic>]() {
+                    let mut d1 = PreciseDecimal::MAX;
+                    let u1 = $type::try_from(2).unwrap();
+                    d1 *= u1;
+                }
+
+                #[test]
+                #[should_panic(expected = "Overflow or division by zero")]
+                fn [<test_math_div_assign_precise_decimal_$type:lower _panic>]() {
+                    let mut d1 = PreciseDecimal::MAX;
+                    let u1 = $type::try_from(0).unwrap();
+                    d1 /= u1;
+                }
+            }
+        };
+    }
+    test_math_operands_decimal!(PreciseDecimal);
+    test_math_operands_decimal!(u8);
+    test_math_operands_decimal!(u16);
+    test_math_operands_decimal!(u32);
+    test_math_operands_decimal!(u64);
+    test_math_operands_decimal!(u128);
+    test_math_operands_decimal!(usize);
+    test_math_operands_decimal!(i8);
+    test_math_operands_decimal!(i16);
+    test_math_operands_decimal!(i32);
+    test_math_operands_decimal!(i64);
+    test_math_operands_decimal!(i128);
+    test_math_operands_decimal!(isize);
+    test_math_operands_decimal!(I192);
+    test_math_operands_decimal!(I256);
+    test_math_operands_decimal!(I320);
+    test_math_operands_decimal!(I448);
+    test_math_operands_decimal!(I512);
+    test_math_operands_decimal!(U192);
+    test_math_operands_decimal!(U256);
+    test_math_operands_decimal!(U320);
+    test_math_operands_decimal!(U448);
+    test_math_operands_decimal!(U512);
 }
