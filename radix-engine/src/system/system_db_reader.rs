@@ -630,11 +630,12 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .ok_or_else(|| SystemReaderError::PayloadDoesNotExist)?;
 
         let obj_type_reference = match payload_def {
-            BlueprintPayloadDef::Static(type_identifier) => ObjectSubstateTypeReference::Package(
-                PackageTypeReference {
-                    full_type_id: type_identifier.under_node(target.blueprint_info.blueprint_id.package_address),
-                }
-            ),
+            BlueprintPayloadDef::Static(type_identifier) => {
+                ObjectSubstateTypeReference::Package(PackageTypeReference {
+                    full_type_id: type_identifier
+                        .under_node(target.blueprint_info.blueprint_id.package_address),
+                })
+            }
             BlueprintPayloadDef::Generic(instance_index) => {
                 let generic_substitution = target
                     .blueprint_info
