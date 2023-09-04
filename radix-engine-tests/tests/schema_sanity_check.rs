@@ -7,7 +7,7 @@ use radix_engine::{
 };
 use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
 use radix_engine_interface::schema::TypeRef;
-use radix_engine_queries::typed_substate_layout::BlueprintPayloadDef;
+use radix_engine_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -410,4 +410,41 @@ pub fn test_fake_bucket() {
         }
         _ => false,
     });
+}
+
+#[test]
+fn native_blueprints_with_typed_addresses_have_expected_schema() {
+    // Arrange & Act
+    let mut blueprint_definition = AccountNativePackage::definition()
+        .blueprints
+        .remove("Account")
+        .unwrap();
+    let TypeRef::Static(local_type_index) = blueprint_definition
+        .schema
+        .functions
+        .functions
+        .remove("create_advanced")
+        .unwrap()
+        .output
+    else {
+        panic!("Generic output!")
+    };
+
+    let schema = blueprint_definition.schema.schema.into_latest();
+    let type_kind = schema.resolve_type_kind(local_type_index).unwrap();
+    let type_validation = schema.resolve_type_validation(local_type_index).unwrap();
+
+    assert!(matches!(
+        type_kind,
+        TypeKind::<ScryptoCustomTypeKind, LocalTypeIndex>::Custom(ScryptoCustomTypeKind::Reference)
+    ));
+    assert!(matches!(
+        type_validation,
+        TypeValidation::<ScryptoCustomTypeValidation>::Custom(
+            ScryptoCustomTypeValidation::Reference(ReferenceValidation::IsGlobalTyped(
+                Some(ACCOUNT_PACKAGE),
+                bp_name
+            ))
+        ) if bp_name == "Account"
+    ));
 }
