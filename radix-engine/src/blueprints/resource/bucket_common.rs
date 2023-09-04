@@ -11,7 +11,7 @@ pub enum BucketError {
     ProofError(ProofError),
     Locked(NodeId),
     MismatchingResource,
-    InvalidAmount,
+    InvalidAmount(Decimal),
     DecimalOverflow,
 }
 
