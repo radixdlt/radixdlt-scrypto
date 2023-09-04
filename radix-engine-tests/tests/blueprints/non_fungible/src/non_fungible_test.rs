@@ -494,7 +494,7 @@ mod non_fungible_test {
                     track_total_supply: false,
                     resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {},
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>(),
                     entries,
                     address_reservation: None,
                 })
