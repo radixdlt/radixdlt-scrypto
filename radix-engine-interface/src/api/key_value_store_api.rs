@@ -13,6 +13,7 @@ use sbor::{generate_full_schema, TypeAggregator};
 /// better for client-side optimization
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum KeyValueStoreDataSchema {
+    // TODO: ignore this variant in Scrypto for smaller code size
     Local {
         additional_schema: VersionedScryptoSchema,
         key_type: LocalTypeId,

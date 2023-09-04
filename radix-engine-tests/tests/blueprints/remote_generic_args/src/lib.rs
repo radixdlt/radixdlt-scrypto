@@ -58,7 +58,7 @@ mod key_value_store {
     }
 
     impl KVS {
-        pub fn create_key_value_store(
+        pub fn create_key_value_store_with_remote_type(
             package_address: PackageAddress,
             blueprint_name: String,
             type_name: String,
