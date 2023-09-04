@@ -593,7 +593,9 @@ impl ManifestBuilder {
                         owner_role,
                         id_type,
                         track_total_supply,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        non_fungible_schema: NonFungibleDataSchema::new_local::<V>(
+                            TEST_UTILS_PACKAGE
+                        ),
                         resource_roles,
                         metadata,
                         entries,
@@ -611,7 +613,9 @@ impl ManifestBuilder {
                         owner_role,
                         id_type,
                         track_total_supply,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        non_fungible_schema: NonFungibleDataSchema::new_local::<V>(
+                            TEST_UTILS_PACKAGE
+                        ),
                         resource_roles,
                         metadata,
                         address_reservation: None,
@@ -650,7 +654,9 @@ impl ManifestBuilder {
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
                         owner_role,
                         track_total_supply,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        non_fungible_schema: NonFungibleDataSchema::new_local::<V>(
+                            TEST_UTILS_PACKAGE
+                        ),
                         resource_roles,
                         metadata,
                         entries,
@@ -667,7 +673,9 @@ impl ManifestBuilder {
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
                         owner_role,
                         track_total_supply,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        non_fungible_schema: NonFungibleDataSchema::new_local::<V>(
+                            TEST_UTILS_PACKAGE
+                        ),
                         resource_roles,
                         metadata,
                         entries: vec![],

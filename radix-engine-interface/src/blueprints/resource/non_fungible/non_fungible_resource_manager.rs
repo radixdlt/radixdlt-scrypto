@@ -182,20 +182,6 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyTypedInput<T> {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-impl Default for NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
-    fn default() -> Self {
-        Self {
-            owner_role: Default::default(),
-            track_total_supply: true,
-            non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-            entries: Default::default(),
-            resource_roles: Default::default(),
-            metadata: Default::default(),
-            address_reservation: Default::default(),
-        }
-    }
-}
-
 pub type NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT: &str = "update_non_fungible_data";
@@ -304,21 +290,18 @@ pub struct NonFungibleResourceManagerMintSingleRuidTypedInput<T> {
 pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLocalId);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct NonFungibleDataSchema {
-    pub schema: VersionedScryptoSchema,
-    pub non_fungible: LocalTypeId,
-    pub mutable_fields: IndexSet<String>,
-}
-
-pub enum NonFungibleDataSchemaDef {
+pub enum NonFungibleDataSchema {
+    // TODO: ignore this variant in Scrypto for smaller code size
     Local {
         schema: VersionedScryptoSchema,
         type_id: LocalTypeId,
+        mutable_fields: IndexSet<String>,
     },
     Remote {
         package_address: PackageAddress,
         blueprint_name: String,
         type_name: String,
+        mutable_fields: IndexSet<String>,
     },
 }
 
@@ -327,19 +310,36 @@ impl NonFungibleData for () {
 }
 
 impl NonFungibleDataSchema {
-    pub fn new_schema<N: NonFungibleData>() -> Self {
+    /// Arguments:
+    /// * [`package_address`] - The package address to use for resolving types defined within this package
+    pub fn new_local<N: NonFungibleData>(package_address: PackageAddress) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let non_fungible_type = aggregator.add_child_type_and_descendents::<N>();
-        let schema = generate_full_schema(aggregator);
-        Self {
+        let type_id = aggregator.add_child_type_and_descendents::<N>();
+        let mut schema = generate_full_schema(aggregator);
+        replace_self_package_address(&mut schema, package_address);
+        Self::Local {
             schema,
-            non_fungible: non_fungible_type,
+            type_id,
             mutable_fields: N::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect(),
         }
     }
 
-    pub fn replace_self_package_address(&mut self, package_address: PackageAddress) {
-        replace_self_package_address(&mut self.schema, package_address);
+    pub fn new_remote<T: AsRef<[S]>, S: AsRef<str>>(
+        package_address: PackageAddress,
+        blueprint_name: String,
+        type_name: String,
+        mutable_fields: T,
+    ) -> Self {
+        Self::Remote {
+            package_address,
+            blueprint_name,
+            type_name,
+            mutable_fields: mutable_fields
+                .as_ref()
+                .iter()
+                .map(|s| s.as_ref().to_string())
+                .collect(),
+        }
     }
 }
 
@@ -349,6 +349,6 @@ impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
     // ScryptoSchema, therefore implementing arbitrary by hand.
     // TODO: Introduce a method that genearates NonFungibleDataSchema in a truly random manner
     fn arbitrary(_u: &mut Unstructured<'a>) -> Result<Self> {
-        Ok(Self::new_schema::<()>())
+        Ok(Self::new_local::<()>(TEST_UTILS_PACKAGE))
     }
 }

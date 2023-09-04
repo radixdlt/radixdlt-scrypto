@@ -173,7 +173,7 @@ implement_client_api! {
         key_value_entry_close: (&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError>,
     },
     ClientKeyValueStoreApi: {
-        key_value_store_new: (&mut self, generic_args: KeyValueStoreGenericArgs) -> Result<NodeId, RuntimeError>,
+        key_value_store_new: (&mut self, generic_args: KeyValueStoreDataSchema) -> Result<NodeId, RuntimeError>,
         key_value_store_open_entry: (
             &mut self,
             node_id: &NodeId,

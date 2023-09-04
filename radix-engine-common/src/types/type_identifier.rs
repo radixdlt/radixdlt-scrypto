@@ -40,9 +40,14 @@ pub struct NodeScopedTypeId(pub SchemaHash, pub LocalTypeId);
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
 pub enum GenericSubstitution {
     Local(NodeScopedTypeId),
-    Remote {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        type_name: String,
-    },
+    /// Currently supports default version of blueprint only.
+    /// New variants can be added for specific version of blueprint in the future.
+    Remote(BlueprintTypeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
+pub struct BlueprintTypeId {
+    package_address: PackageAddress,
+    blueprint_name: String,
+    type_name: String,
 }

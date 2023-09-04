@@ -33,7 +33,7 @@ use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
+    ClientKeyValueStoreApi, KeyValueStoreDataSchema,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
@@ -1710,7 +1710,7 @@ where
     #[trace_resources]
     fn key_value_store_new(
         &mut self,
-        generic_args: KeyValueStoreGenericArgs,
+        generic_args: KeyValueStoreDataSchema,
     ) -> Result<NodeId, RuntimeError> {
         let mut additional_schemas = index_map_new();
         if let Some(schema) = generic_args.additional_schema {

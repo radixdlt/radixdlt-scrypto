@@ -1489,6 +1489,7 @@ mod tests {
     use crate::signing::secp256k1::Secp256k1PrivateKey;
     use radix_engine_common::constants::CONSENSUS_MANAGER;
     use radix_engine_common::manifest_args;
+    use radix_engine_common::prelude::TEST_UTILS_PACKAGE;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::AddressBech32Decoder;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -1793,7 +1794,9 @@ mod tests {
                         owner_role: OwnerRole::None,
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        non_fungible_schema: NonFungibleDataSchema::new_local::<()>(
+                            TEST_UTILS_PACKAGE
+                        ),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_string(), locked;
@@ -1834,9 +1837,9 @@ mod tests {
                             owner_role: OwnerRole::None,
                             track_total_supply: false,
                             id_type: NonFungibleIdType::Integer,
-                            non_fungible_schema: NonFungibleDataSchema::new_schema::<
+                            non_fungible_schema: NonFungibleDataSchema::new_local::<
                                 MyNonFungibleData,
-                            >(),
+                            >(TEST_UTILS_PACKAGE),
                             resource_roles: NonFungibleResourceRoles::default(),
                             metadata: metadata!(),
                             address_reservation: None,
@@ -1902,7 +1905,9 @@ mod tests {
                         owner_role: OwnerRole::None,
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        non_fungible_schema: NonFungibleDataSchema::new_local::<()>(
+                            TEST_UTILS_PACKAGE
+                        ),
                         resource_roles: NonFungibleResourceRoles::default(),
                         metadata: metadata! {
                             init {
