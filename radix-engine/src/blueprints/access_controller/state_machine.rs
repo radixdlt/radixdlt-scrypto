@@ -67,16 +67,17 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
         // recovery or withdraw attempts.
         match self.state {
             (PrimaryRoleLockingState::Unlocked, _, _, _, _) => {
-                if self.controlled_asset.0.is_internal_fungible_vault() {
-                    let vault = Vault(self.controlled_asset);
-                    vault.create_proof_of_amount(vault.amount(api)?, api)
+                if self.controlled_asset.0 .0.is_internal_fungible_vault() {
+                    self.controlled_asset
+                        .create_proof_of_amount(self.controlled_asset.amount(api)?, api)
                 } else {
-                    let vault = Vault(self.controlled_asset);
-
                     // u32::MAX is used as vault size is limited to maximum bucket size which is constrained
                     // by same costing mechanism so we should never be in any danger of never being able to produce proofs
-                    let non_fungible_local_ids = vault.non_fungible_local_ids(u32::MAX, api)?;
-                    vault.create_proof_of_non_fungibles(non_fungible_local_ids, api)
+                    let non_fungible_local_ids = self
+                        .controlled_asset
+                        .non_fungible_local_ids(u32::MAX, api)?;
+                    self.controlled_asset
+                        .create_proof_of_non_fungibles(non_fungible_local_ids, api)
                 }
             }
             _ => access_controller_runtime_error!(OperationRequiresUnlockedPrimaryRole),
@@ -367,7 +368,7 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptSt
             (_, _, PrimaryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt, _, _) => {
                 // Transition back to the initial state of the state machine
                 self.state = Default::default();
-                Vault(self.controlled_asset).take_all(api)
+                self.controlled_asset.take_all(api)
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
@@ -399,7 +400,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptS
             (_, _, _, _, RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt) => {
                 // Transition back to the initial state of the state machine
                 self.state = Default::default();
-                Vault(self.controlled_asset).take_all(api)
+                self.controlled_asset.take_all(api)
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
