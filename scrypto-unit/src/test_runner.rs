@@ -1353,9 +1353,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            self.database.commit(&commit.state_updates.database_updates);
+            let database_updates = commit
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>();
+            self.database.commit(&database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
-                state_hash_support.update_with(&commit.state_updates.database_updates);
+                state_hash_support.update_with(&database_updates);
             }
 
             self.collected_events
