@@ -310,7 +310,7 @@ fn validate_type_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
         let blueprint_schema_init = &blueprint_init.schema;
         let BlueprintSchemaInit { schema, types, .. } = blueprint_schema_init;
 
-        for (expected_type_name, local_type_id) in types.type_schema.iter() {
+        for (_name_ignored, local_type_id) in types.type_schema.iter() {
             if schema.v1().resolve_type_kind(*local_type_id).is_none() {
                 return Err(PackageError::InvalidLocalTypeId(*local_type_id));
             }

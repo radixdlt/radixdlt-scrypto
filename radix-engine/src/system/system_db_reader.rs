@@ -672,7 +672,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                         })
                     }
                     GenericSubstitution::Remote(type_id) => {
-                        let (schema, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
+                        let (_, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
                         ObjectSubstateTypeReference::Package(PackageTypeReference {
                             package_address: type_id.package_address,
                             schema_hash: scoped_type_id.0,
@@ -747,7 +747,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                             scoped_type_id.1,
                             SchemaOrigin::Blueprint(BlueprintId {
                                 package_address: type_id.package_address,
-                                blueprint_name: type_id.blueprint_name,
+                                blueprint_name: type_id.blueprint_name.clone(),
                             }),
                         )
                     }
@@ -783,7 +783,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     }
 
     fn get_blueprint_type_schema(
-        &mut self,
+        &self,
         type_id: &BlueprintTypeId,
     ) -> Result<(VersionedScryptoSchema, NodeScopedTypeId), SystemReaderError> {
         let BlueprintTypeId {

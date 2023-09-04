@@ -204,14 +204,14 @@ where
                         (schema, type_id.1, SchemaOrigin::Instance)
                     }
                     GenericSubstitution::Remote(type_id) => {
-                        let (schema, local_type_id) = self.get_blueprint_type_schema(&type_id)?;
+                        let (schema, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
 
                         (
                             schema,
-                            local_type_id,
+                            scoped_type_id.1,
                             SchemaOrigin::Blueprint(BlueprintId {
                                 package_address: type_id.package_address,
-                                blueprint_name: type_id.blueprint_name,
+                                blueprint_name: type_id.blueprint_name.clone(),
                             }),
                         )
                     }
@@ -309,8 +309,8 @@ where
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
         let type_substitution = match payload_identifier {
-            KeyOrValue::Key => target.kv_store_type.key_generic_substitution,
-            KeyOrValue::Value => target.kv_store_type.value_generic_substitution,
+            KeyOrValue::Key => target.kv_store_type.key_generic_substitution.clone(),
+            KeyOrValue::Value => target.kv_store_type.value_generic_substitution.clone(),
         };
 
         let allow_ownership = match payload_identifier {
@@ -322,7 +322,9 @@ where
             GenericSubstitution::Local(type_id) => {
                 (self.get_schema(&target.meta, &type_id.0)?, type_id.1)
             }
-            GenericSubstitution::Remote(type_id) => self.get_blueprint_type_schema(&type_id)?,
+            GenericSubstitution::Remote(type_id) => self
+                .get_blueprint_type_schema(&type_id)
+                .map(|x| (x.0, x.1 .1))?,
         };
 
         self.validate_payload(
@@ -414,10 +416,10 @@ where
         Ok(schema)
     }
 
-    fn get_blueprint_type_schema(
+    pub fn get_blueprint_type_schema(
         &mut self,
         type_id: &BlueprintTypeId,
-    ) -> Result<(VersionedScryptoSchema, LocalTypeId), RuntimeError> {
+    ) -> Result<(VersionedScryptoSchema, NodeScopedTypeId), RuntimeError> {
         let BlueprintTypeId {
             package_address,
             blueprint_name,
@@ -435,7 +437,7 @@ where
             ))?;
         Ok((
             self.get_schema(package_address.as_node_id(), &scoped_type_id.0)?,
-            scoped_type_id.1,
+            scoped_type_id.clone(),
         ))
     }
 }

@@ -298,9 +298,7 @@ pub enum NonFungibleDataSchema {
         mutable_fields: IndexSet<String>,
     },
     Remote {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        type_name: String,
+        type_id: BlueprintTypeId,
         mutable_fields: IndexSet<String>,
     },
 }
@@ -336,15 +334,11 @@ impl NonFungibleDataSchema {
     }
 
     pub fn new_remote<T: AsRef<[S]>, S: AsRef<str>>(
-        package_address: PackageAddress,
-        blueprint_name: String,
-        type_name: String,
+        type_id: BlueprintTypeId,
         mutable_fields: T,
     ) -> Self {
         Self::Remote {
-            package_address,
-            blueprint_name,
-            type_name,
+            type_id,
             mutable_fields: mutable_fields
                 .as_ref()
                 .iter()

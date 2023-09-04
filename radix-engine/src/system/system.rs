@@ -2146,6 +2146,13 @@ where
 
         Ok(rtn)
     }
+
+    fn resolve_blueprint_type(
+        &mut self,
+        blueprint_type_id: &BlueprintTypeId,
+    ) -> Result<(VersionedScryptoSchema, NodeScopedTypeId), RuntimeError> {
+        self.get_blueprint_type_schema(blueprint_type_id)
+    }
 }
 
 #[cfg_attr(
