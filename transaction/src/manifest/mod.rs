@@ -5,9 +5,9 @@ pub mod decompiler;
 #[cfg(feature = "std")]
 pub mod dumper;
 pub mod e2e;
-pub mod manifest_enums;
 pub mod generator;
 pub mod lexer;
+pub mod manifest_enums;
 pub mod parser;
 
 pub use blob_provider::*;
