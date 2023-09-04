@@ -614,7 +614,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     let mut total_xrd_supply = Decimal::ZERO;
     for component in components {
         let xrd_balance = test_runner.get_component_balance(component, XRD);
-        total_xrd_supply = total_xrd_supply.safe_add(xrd_balance).unwrap();
+        total_xrd_supply = total_xrd_supply.checked_add(xrd_balance).unwrap();
         println!("{:?}, {}", component, xrd_balance);
     }
 
@@ -632,7 +632,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
             match actual_type_name.as_str() {
                 "MintFungibleResourceEvent" => {
                     total_mint_amount = total_mint_amount
-                        .safe_add(
+                        .checked_add(
                             scrypto_decode::<MintFungibleResourceEvent>(&event.1)
                                 .unwrap()
                                 .amount,
@@ -641,7 +641,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
                 }
                 "BurnFungibleResourceEvent" => {
                     total_burn_amount = total_burn_amount
-                        .safe_add(
+                        .checked_add(
                             scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
                                 .unwrap()
                                 .amount,
@@ -657,6 +657,6 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     println!("Total burn amount: {}", total_burn_amount);
     assert_eq!(
         total_xrd_supply,
-        total_mint_amount.safe_sub(total_burn_amount).unwrap()
+        total_mint_amount.checked_sub(total_burn_amount).unwrap()
     );
 }

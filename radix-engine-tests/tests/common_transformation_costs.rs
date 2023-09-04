@@ -59,7 +59,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         receipt2
             .fee_summary
             .total_cost()
-            .safe_sub(receipt1.fee_summary.total_cost())
+            .checked_sub(receipt1.fee_summary.total_cost())
             .unwrap()
     );
 }
@@ -120,7 +120,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         receipt2
             .fee_summary
             .total_cost()
-            .safe_sub(receipt1.fee_summary.total_cost())
+            .checked_sub(receipt1.fee_summary.total_cost())
             .unwrap()
     );
 }
@@ -185,7 +185,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         receipt2
             .fee_summary
             .total_cost()
-            .safe_sub(receipt1.fee_summary.total_cost())
+            .checked_sub(receipt1.fee_summary.total_cost())
             .unwrap()
     );
 }
@@ -254,7 +254,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         receipt2
             .fee_summary
             .total_cost()
-            .safe_sub(receipt1.fee_summary.total_cost())
+            .checked_sub(receipt1.fee_summary.total_cost())
             .unwrap()
     );
 }
@@ -322,7 +322,7 @@ fn estimate_adding_signature() {
         receipt2
             .fee_summary
             .total_cost()
-            .safe_sub(receipt1.fee_summary.total_cost())
+            .checked_sub(receipt1.fee_summary.total_cost())
             .unwrap()
     );
 }
@@ -384,7 +384,7 @@ fn estimate_notarizing(notary_is_signatory: bool) {
         receipt2
             .fee_summary
             .total_cost()
-            .safe_sub(receipt1.fee_summary.total_cost())
+            .checked_sub(receipt1.fee_summary.total_cost())
             .unwrap()
     );
 }

@@ -802,7 +802,9 @@ pub fn test_complete_interactions() {
                 .get(&test_runner.pool_unit_resource_address)
                 .cloned(),
             Some(BalanceChange::Fungible(
-                (dec!("500").safe_mul(dec!("200")).unwrap()).sqrt().unwrap()
+                (dec!("500").checked_mul(dec!("200")).unwrap())
+                    .checked_sqrt()
+                    .unwrap()
             ))
         );
         assert_eq!(
