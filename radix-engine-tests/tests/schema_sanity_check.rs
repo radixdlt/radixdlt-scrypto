@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     system::system_modules::costing::{
@@ -9,6 +11,7 @@ use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
 use radix_engine_interface::schema::TypeRef;
 use radix_engine_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
 use sbor::basic_well_known_types::*;
+use scrypto_test::prelude::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -414,7 +417,6 @@ pub fn test_fake_bucket() {
 
 #[test]
 fn native_blueprints_with_typed_addresses_have_expected_schema() {
-    // Arrange & Act
     let mut blueprint_definition = AccountNativePackage::definition()
         .blueprints
         .remove("Account")
