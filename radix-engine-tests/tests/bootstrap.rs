@@ -6,6 +6,7 @@ use radix_engine::system::checkers::{
 };
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine::track::{SingleSubstateUpdate, StateUpdate};
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -180,19 +181,28 @@ fn assert_complete_system_structure(result: &CommitResult) {
         event_system_structures,
     } = &result.system_structure;
 
-    for ((node_id, partition_num), by_substate_key) in &result.state_updates.system_updates {
-        for substate_key in by_substate_key.keys() {
-            let structure = substate_system_structures
-                .get(node_id)
-                .and_then(|partition_structures| partition_structures.get(partition_num))
-                .and_then(|substate_structures| substate_structures.get(substate_key));
-            assert!(
-                structure.is_some(),
-                "missing system structure for {:?}:{:?}:{:?}",
-                node_id,
-                partition_num,
-                substate_key
-            );
+    for update in &result.state_updates.elements {
+        match update {
+            StateUpdate::Single(single) => {
+                let SingleSubstateUpdate {
+                    node_id,
+                    partition_num,
+                    substate_key,
+                    ..
+                } = single;
+                let structure = substate_system_structures
+                    .get(node_id)
+                    .and_then(|partition_structures| partition_structures.get(partition_num))
+                    .and_then(|substate_structures| substate_structures.get(substate_key));
+                assert!(
+                    structure.is_some(),
+                    "missing system structure for {:?}:{:?}:{:?}",
+                    node_id,
+                    partition_num,
+                    substate_key
+                );
+            }
+            StateUpdate::Batch(_) => {}
         }
     }
 

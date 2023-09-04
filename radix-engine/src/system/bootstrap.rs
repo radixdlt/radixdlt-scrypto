@@ -20,7 +20,7 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::{StateUpdates, SystemUpdates};
+use crate::track::StateUpdates;
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
@@ -218,15 +218,18 @@ impl FlashReceipt {
                 result.state_update_summary.new_resources = new_resources;
 
                 // A sanity check that the system receipt should not be conflicting with the flash receipt
-                for (txn_key, txn_updates) in &result.state_updates.system_updates {
-                    for (flash_key, _) in &self.state_updates.system_updates {
-                        if txn_key.eq(flash_key) && !txn_updates.is_empty() {
-                            panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
-                        }
+                let mut result_state_updates = result
+                    .state_updates
+                    .elements
+                    .drain(..)
+                    .collect::<IndexSet<_>>();
+                for update in self.state_updates.elements {
+                    let added = result_state_updates.insert(update);
+                    if !added {
+                        panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
                     }
                 }
-
-                result.state_updates.extend(self.state_updates);
+                result.state_updates.elements = result_state_updates.into_iter().collect();
 
                 let mut substate_system_structures = self.substate_system_structures;
                 for (node_id, by_partition_num) in
@@ -568,7 +571,7 @@ pub fn create_system_bootstrap_flash(
 
 pub fn create_substate_flash_for_genesis() -> FlashReceipt {
     let substate_flash = create_system_bootstrap_flash();
-    let mut system_updates = SystemUpdates::default();
+    let mut system_updates = index_map_new();
     let mut new_packages = index_set_new();
     let mut new_components = index_set_new();
     let mut new_resources = index_set_new();
@@ -595,16 +598,13 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         }
     }
 
-    let state_updates = StateUpdates {
-        partition_deletions: index_set_new(),
-        system_updates,
-    };
+    let state_updates = StateUpdates::from_legacy_representation(index_set_new(), system_updates);
     let flashed_db = FlashedSubstateDatabase {
         flash_updates: state_updates.create_database_updates::<SpreadPrefixKeyMapper>(),
     };
     let mut substate_schema_mapper =
         SubstateSchemaMapper::new(SystemDatabaseReader::new(&flashed_db));
-    substate_schema_mapper.add_all_system_updates(&state_updates.system_updates);
+    substate_schema_mapper.add_for_all_individually_updated(&state_updates);
     let substate_system_structures = substate_schema_mapper.done();
 
     FlashReceipt {

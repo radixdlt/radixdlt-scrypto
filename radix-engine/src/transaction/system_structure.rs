@@ -3,7 +3,9 @@ use crate::system::system_db_reader::{
 };
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::{ReadOnly, SystemUpdates, TrackedNode, TrackedSubstateValue};
+use crate::track::{
+    ReadOnly, SingleSubstateUpdate, StateUpdate, StateUpdates, TrackedNode, TrackedSubstateValue,
+};
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::*;
@@ -202,12 +204,22 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         }
     }
 
-    /// A batch `add_substate_structure()` counterpart, tailored for processing all substates
-    /// captured in the given [`SystemUpdates`].
-    pub fn add_all_system_updates(&mut self, updates: &SystemUpdates) {
-        for ((node_id, partition_num), substate_updates) in updates {
-            for substate_key in substate_updates.keys() {
-                self.add_substate_structure(node_id, partition_num, substate_key);
+    /// A batch `add_substate_structure()` counterpart, tailored for processing all substates that
+    /// were *individually* updated in the given [`SystemUpdates`] (i.e. ignored substates affected
+    /// as part of a batch, e.g. during a partition deletion).
+    pub fn add_for_all_individually_updated(&mut self, updates: &StateUpdates) {
+        for update in &updates.elements {
+            match update {
+                StateUpdate::Single(single) => {
+                    let SingleSubstateUpdate {
+                        node_id,
+                        partition_num,
+                        substate_key,
+                        ..
+                    } = single;
+                    self.add_substate_structure(node_id, partition_num, substate_key);
+                }
+                StateUpdate::Batch(_) => {}
             }
         }
     }

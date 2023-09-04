@@ -17,50 +17,97 @@ use sbor::rust::mem;
 
 use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, StoreCommitInfo};
 
+/// A captured sequence of [`StateUpdate`]s to be applied in particular order.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct StateUpdates {
-    /// A set of partitions that were entirely deleted.
-    /// Note: this batch changes should be applied *before* the [`system_updates`] below (i.e.
-    /// allowing a latter individual substate creation to be applied).
-    pub partition_deletions: IndexSet<(NodeId, PartitionNumber)>,
-
-    /// A set of individual substate updates (indexed by partition and substate key).
-    pub system_updates: SystemUpdates,
+    pub elements: Vec<StateUpdate>,
 }
 
 impl StateUpdates {
-    /// Merges the updates from the given instance into this one.
-    pub fn extend(&mut self, mut other: Self) {
-        self.partition_deletions
-            .extend(other.partition_deletions.drain(..));
-        self.system_updates.extend(other.system_updates.drain(..));
+    /// Creates an instance from the previously used representation, consisting of:
+    /// - partitions to be entirely deleted (applied first),
+    /// - individual substate changes, indexed by partition and substate key.
+    pub fn from_legacy_representation(
+        partition_deletions: IndexSet<(NodeId, PartitionNumber)>,
+        system_updates: IndexMap<(NodeId, PartitionNumber), IndexMap<SubstateKey, DatabaseUpdate>>,
+    ) -> Self {
+        Self {
+            elements: partition_deletions
+                .into_iter()
+                .map(|(node_id, partition_num)| {
+                    StateUpdate::Batch(BatchStateUpdate::DeletePartition(node_id, partition_num))
+                })
+                .chain(system_updates.into_iter().flat_map(
+                    |((node_id, partition_num), by_substate_key)| {
+                        by_substate_key
+                            .into_iter()
+                            .map(move |(substate_key, update)| {
+                                StateUpdate::Single(SingleSubstateUpdate {
+                                    node_id: node_id.clone(),
+                                    partition_num: partition_num.clone(),
+                                    substate_key,
+                                    update,
+                                })
+                            })
+                    },
+                ))
+                .collect(),
+        }
     }
 
-    /// Uses the given [`DatabaseKeyMapper`] to express the `system_updates` using database-level
-    /// key encoding.
-    /// Note: Current implementation disregards `partition_deletions` (we are still missing support
-    /// for this operation in database layer).
+    /// Uses the given [`DatabaseKeyMapper`] to express the contained [`StateUpdate`]s using
+    /// database-level key encoding.
+    /// Note: Current implementation disregards all [`BatchStateUpdate`]s (namely: partition delete,
+    /// the only defined one - we are still missing support for this operation in database layer).
     pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> DatabaseUpdates {
         // TODO(after RCNet-v3.1): Expand the `DatabaseUpdates` definition in order to capture the
         // `partition_deletions` there as well (preferably using a "canonicalized" representation).
-        self.system_updates
-            .iter()
-            .map(|((node_id, partition_num), substate_updates)| {
-                (
-                    M::to_db_partition_key(node_id, *partition_num),
-                    substate_updates
-                        .iter()
-                        .map(|(substate_key, update)| {
-                            (M::to_db_sort_key(substate_key), update.clone())
-                        })
-                        .collect::<IndexMap<_, _>>(),
-                )
-            })
-            .collect()
+        let mut database_updates = DatabaseUpdates::default();
+        for update in &self.elements {
+            let update = match update {
+                StateUpdate::Single(update) => update,
+                StateUpdate::Batch(BatchStateUpdate::DeletePartition(..)) => continue,
+            };
+            let SingleSubstateUpdate {
+                node_id,
+                partition_num,
+                substate_key,
+                update,
+            } = update;
+            database_updates
+                .entry(M::to_db_partition_key(node_id, *partition_num))
+                .or_insert_with(|| index_map_new())
+                .insert(M::to_db_sort_key(substate_key), update.clone());
+        }
+        database_updates
     }
 }
 
-pub type SystemUpdates = IndexMap<(NodeId, PartitionNumber), IndexMap<SubstateKey, DatabaseUpdate>>;
+/// An act of changing a smaller or larger piece of state.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
+pub enum StateUpdate {
+    /// Change to a single substate.
+    Single(SingleSubstateUpdate),
+    /// Batch change.
+    Batch(BatchStateUpdate),
+}
+
+/// An individual substate change.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
+pub struct SingleSubstateUpdate {
+    pub node_id: NodeId,
+    pub partition_num: PartitionNumber,
+    pub substate_key: SubstateKey,
+    pub update: DatabaseUpdate,
+}
+
+/// A batch change, representing a (potentially large) number of [`SingleSubstateUpdate`]s in a more
+/// compact way (primarily for performance reasons).
+#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
+pub enum BatchStateUpdate {
+    /// A deletion of all substates within a specific partition.
+    DeletePartition(NodeId, PartitionNumber),
+}
 
 #[derive(Clone, Debug)]
 pub struct RuntimeSubstate {
@@ -345,10 +392,7 @@ pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
         }
     }
 
-    StateUpdates {
-        system_updates,
-        partition_deletions,
-    }
+    StateUpdates::from_legacy_representation(partition_deletions, system_updates)
 }
 
 struct IterationCountedIter<'a, E> {

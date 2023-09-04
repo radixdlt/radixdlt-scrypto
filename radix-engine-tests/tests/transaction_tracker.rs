@@ -1,4 +1,5 @@
 use radix_engine::errors::RejectionReason;
+use radix_engine::track::{BatchStateUpdate, StateUpdate};
 use radix_engine::transaction::{CostingParameters, ExecutionConfig};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
@@ -59,8 +60,13 @@ fn test_transaction_replay_protection() {
         receipt
             .expect_commit_success()
             .state_updates
-            .partition_deletions
-            .len(),
+            .elements
+            .iter()
+            .filter(|update| matches!(
+                update,
+                StateUpdate::Batch(BatchStateUpdate::DeletePartition(..))
+            ))
+            .count(),
         1
     );
 
