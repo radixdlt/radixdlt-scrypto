@@ -1,15 +1,24 @@
-use crate::math::*;
-use crate::ManifestSbor;
-use crate::ScryptoSbor;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
 pub enum RoyaltyAmount {
     Free,
     Xrd(Decimal),
     Usd(Decimal),
+}
+
+impl Describe<ScryptoCustomTypeKind> for RoyaltyAmount {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::WellKnown(well_known_scrypto_custom_types::ROYALTY_AMOUNT_TYPE);
+
+    fn type_data() -> ScryptoTypeData<GlobalTypeId> {
+        well_known_scrypto_custom_types::royalty_amount_type_data()
+    }
 }
 
 impl RoyaltyAmount {

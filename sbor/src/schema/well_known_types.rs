@@ -84,7 +84,19 @@ pub mod basic_well_known_types {
 
 #[macro_export]
 macro_rules! create_well_known_lookup {
-    ($lookup_name: ident, $constants_mod: ident, $custom_type_kind: ty, [$(($name: ident, $type_index: expr, $type_data: expr),)*]) => {
+    (
+        $lookup_name: ident,
+        $constants_mod: ident,
+        $custom_type_kind: ty,
+        [
+            $((
+                $name: ident,
+                $type_index: expr,
+                $type_data: expr$(,)?
+            )),*
+            $(,)?
+        ]
+    ) => {
         paste::paste! {
             pub mod $constants_mod {
                 #[allow(unused_imports)]

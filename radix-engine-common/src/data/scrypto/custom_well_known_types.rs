@@ -65,6 +65,16 @@ fn named_transparent<L: SchemaTypeLink>(
     inner.with_name(Some(name.into()))
 }
 
+fn array_of<L: SchemaTypeLink>(inner: WellKnownTypeId) -> ScryptoTypeData<L> {
+    TypeData {
+        kind: TypeKind::Array {
+            element_type: inner.into(),
+        },
+        metadata: TypeMetadata::unnamed(),
+        validation: TypeValidation::None,
+    }
+}
+
 fn named_enum<L: SchemaTypeLink>(
     name: &'static str,
     variants: impl IntoIterator<Item = (u8, ScryptoTypeData<L>)>,
@@ -83,6 +93,8 @@ const REFERENCES_START: u8 = 0x80;
 const OWNED_ENTITIES_START: u8 = 0xa0;
 const MISC_TYPES_START: u8 = 0xc0;
 const KEY_TYPES_START: u8 = 0xd0;
+const ROLE_ASSIGNMENT_TYPES_START: u8 = 0xe0;
+const OTHER_MODULE_TYPES_START: u8 = 0xf0;
 
 //===============================================================================================================
 // SCRYPTO WELL KNOWN TYPES
@@ -99,6 +111,9 @@ const KEY_TYPES_START: u8 = 0xd0;
 //    these types will be defined in a place where we can attach this data across everyones' schemas, instead of
 //    being owned by the owner of each schema.
 //    In other words, the type's GlobalTypeAddress is well known, instead of being into a schema under a node.
+//
+// NOTE:
+// - Once we create new types, they will need to be separate indices, but can have the same names
 //===============================================================================================================
 create_well_known_lookup!(
     WELL_KNOWN_LOOKUP,
@@ -422,8 +437,140 @@ create_well_known_lookup!(
                 bytes_fixed_length_type_data(Ed25519PublicKeyHash::LENGTH),
             )
         ),
-        // TODO(david) - Add const ACCESS_RULES_TYPES_START: u8 = 0xe0;
-        // AccessRule + friends (inc OwnerRole) from ACCESS_RULES_TYPES_START
+        // ROLE ASSIGNMENT TYPES
+        (
+            ACCESS_RULE,
+            ROLE_ASSIGNMENT_TYPES_START + 0,
+            named_enum(
+                // This is a clearer name for UIs, but not time to change in the code right now
+                "Rule",
+                [
+                    (0u8, named_tuple("AllowAll", [])),
+                    (1u8, named_tuple("DenyAll", [])),
+                    (2u8, named_tuple("Protected", [ACCESS_RULE_NODE_TYPE])),
+                ],
+            )
+        ),
+        (
+            ACCESS_RULE_NODE,
+            ROLE_ASSIGNMENT_TYPES_START + 1,
+            named_enum(
+                // This is a clearer name for UIs, but not time to change in the code right now
+                "RuleNode",
+                [
+                    (0u8, named_tuple("ProofRule", [PROOF_RULE_TYPE])),
+                    (1u8, named_tuple("AnyOf", [ACCESS_RULE_NODE_LIST_TYPE])),
+                    (2u8, named_tuple("AllOf", [ACCESS_RULE_NODE_LIST_TYPE])),
+                ],
+            )
+        ),
+        (
+            ACCESS_RULE_NODE_LIST,
+            ROLE_ASSIGNMENT_TYPES_START + 2,
+            array_of(ACCESS_RULE_NODE_TYPE)
+        ),
+        (
+            PROOF_RULE,
+            ROLE_ASSIGNMENT_TYPES_START + 3,
+            named_enum(
+                "ProofRule",
+                [
+                    (0u8, named_tuple("Require", [RESOURCE_OR_NON_FUNGIBLE_TYPE])),
+                    (
+                        1u8,
+                        named_tuple("AmountOf", [DECIMAL_TYPE, RESOURCE_ADDRESS_TYPE])
+                    ),
+                    (
+                        2u8,
+                        named_tuple("CountOf", [U8_TYPE, RESOURCE_OR_NON_FUNGIBLE_LIST_TYPE])
+                    ),
+                    (
+                        3u8,
+                        named_tuple("AllOf", [RESOURCE_OR_NON_FUNGIBLE_LIST_TYPE])
+                    ),
+                    (
+                        4u8,
+                        named_tuple("AnyOf", [RESOURCE_OR_NON_FUNGIBLE_LIST_TYPE])
+                    ),
+                ],
+            )
+        ),
+        (
+            RESOURCE_OR_NON_FUNGIBLE,
+            ROLE_ASSIGNMENT_TYPES_START + 4,
+            named_enum(
+                "ResourceOrNonFungible",
+                [
+                    (
+                        0u8,
+                        named_tuple("NonFungible", [NON_FUNGIBLE_GLOBAL_ID_TYPE])
+                    ),
+                    (1u8, named_tuple("Resource", [RESOURCE_ADDRESS_TYPE])),
+                ],
+            )
+        ),
+        (
+            RESOURCE_OR_NON_FUNGIBLE_LIST,
+            ROLE_ASSIGNMENT_TYPES_START + 5,
+            array_of(RESOURCE_OR_NON_FUNGIBLE_TYPE)
+        ),
+        (
+            OWNER_ROLE,
+            ROLE_ASSIGNMENT_TYPES_START + 6,
+            named_enum(
+                "OwnerRole",
+                [
+                    (0u8, named_tuple("None", [])),
+                    (1u8, named_tuple("Fixed", [ACCESS_RULE_TYPE])),
+                    (2u8, named_tuple("Updatable", [ACCESS_RULE_TYPE])),
+                ],
+            )
+        ),
+        (
+            ROLE_KEY,
+            ROLE_ASSIGNMENT_TYPES_START + 7,
+            named_transparent("RoleKey", string_type_data(),)
+        ),
+        // OTHER MODULE TYPES
+        (
+            OBJECT_MODULE_ID,
+            OTHER_MODULE_TYPES_START + 0,
+            named_enum(
+                // This is a clearer name for UIs, but not time to change in the code right now
+                "ModuleId",
+                [
+                    (0u8, named_tuple("Main", [])),
+                    (1u8, named_tuple("Metadata", [])),
+                    (2u8, named_tuple("Royalty", [])),
+                    (3u8, named_tuple("RoleAssignment", [])),
+                ],
+            )
+        ),
+        (
+            MODULE_ID,
+            OTHER_MODULE_TYPES_START + 1,
+            named_enum(
+                // This is a clearer name for UIs, but not time to change in the code right now
+                "NativeModuleId",
+                [
+                    (1u8, named_tuple("Metadata", [])),
+                    (2u8, named_tuple("Royalty", [])),
+                    (3u8, named_tuple("RoleAssignment", [])),
+                ],
+            )
+        ),
+        (
+            ROYALTY_AMOUNT,
+            OTHER_MODULE_TYPES_START + 2,
+            named_enum(
+                "RoyaltyAmount",
+                [
+                    (1u8, named_tuple("Free", [])),
+                    (2u8, named_tuple("Xrd", [DECIMAL_TYPE])),
+                    (3u8, named_tuple("Usd", [DECIMAL_TYPE])),
+                ],
+            )
+        ),
     ]
 );
 
@@ -447,12 +594,12 @@ mod tests {
         // But I've kept them in the list below for completeness, in order with the types above - as a comment.
 
         // MISC TYPES
-        test_statically_valid(DECIMAL_TYPE, dec!(1));
-        test_statically_valid(PRECISE_DECIMAL_TYPE, pdec!(1));
-        test_statically_valid(NON_FUNGIBLE_LOCAL_ID_TYPE, NonFungibleLocalId::integer(2));
+        test_equivalence(DECIMAL_TYPE, dec!(1));
+        test_equivalence(PRECISE_DECIMAL_TYPE, pdec!(1));
+        test_equivalence(NON_FUNGIBLE_LOCAL_ID_TYPE, NonFungibleLocalId::integer(2));
         // NonFungibleGlobalId - tested in interface crate
-        test_statically_valid(INSTANT_TYPE, Instant::new(0));
-        test_statically_valid(
+        test_equivalence(INSTANT_TYPE, Instant::new(0));
+        test_equivalence(
             UTC_DATE_TIME_TYPE,
             UtcDateTime::from_instant(&Instant::new(0)).unwrap(),
         );
@@ -460,43 +607,48 @@ mod tests {
         // Origin - tested in interface crate
 
         // KEY-RELATED
-        test_statically_valid(
+        test_equivalence(
             PUBLIC_KEY_TYPE,
             PublicKey::Ed25519(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
         );
-        test_statically_valid(
+        test_equivalence(
             PUBLIC_KEY_TYPE,
             PublicKey::Secp256k1(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
         );
-        test_statically_valid(
+        test_equivalence(
             ED25519_PUBLIC_KEY_TYPE,
             Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
         );
-        test_statically_valid(
+        test_equivalence(
             SECP256K1_PUBLIC_KEY_TYPE,
             Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
         );
-        test_statically_valid(
+        test_equivalence(
             PUBLIC_KEY_HASH_TYPE,
             PublicKeyHash::Ed25519(Ed25519PublicKeyHash([0; Ed25519PublicKeyHash::LENGTH])),
         );
-        test_statically_valid(
+        test_equivalence(
             PUBLIC_KEY_HASH_TYPE,
             PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash([0; Secp256k1PublicKeyHash::LENGTH])),
         );
-        test_statically_valid(
+        test_equivalence(
             ED25519_PUBLIC_KEY_HASH_TYPE,
             Ed25519PublicKeyHash([0; Ed25519PublicKeyHash::LENGTH]),
         );
-        test_statically_valid(
+        test_equivalence(
             SECP256K1_PUBLIC_KEY_HASH_TYPE,
             Secp256k1PublicKeyHash([0; Secp256k1PublicKeyHash::LENGTH]),
         );
     }
 
-    fn test_statically_valid<T: ScryptoEncode + ScryptoDescribe>(id: WellKnownTypeId, value: T) {
+    fn test_equivalence<T: ScryptoEncode + ScryptoDescribe>(id: WellKnownTypeId, value: T) {
+        test_type_data_equivalent::<T>(id);
+        test_statically_valid(id, value);
+    }
+
+    fn test_statically_valid<T: ScryptoEncode>(id: WellKnownTypeId, value: T) {
         let type_name = core::any::type_name::<T>();
-        // First - validate payload against well known type index
+
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             &scrypto_encode(&value).unwrap(),
             &ScryptoCustomSchema::empty_schema(),
@@ -505,10 +657,13 @@ mod tests {
             10,
         )
         .unwrap_or_else(|err| {
-            panic!("Expected well known index for {type_name} to be valid: {err:?}")
+            panic!("Expected value for {type_name} to match well known type but got: {err:?}")
         });
+    }
 
-        // Second - check that the type's impl is using the well known type index
+    fn test_type_data_equivalent<T: ScryptoDescribe>(id: WellKnownTypeId) {
+        let type_name = core::any::type_name::<T>();
+
         assert_eq!(T::TYPE_ID, GlobalTypeId::from(id), "The ScryptoDescribe impl for {type_name} has a TYPE_ID which does not equal its well known type id");
         let localized_type_data =
             localize_well_known_type_data::<ScryptoCustomSchema>(T::type_data());
