@@ -214,7 +214,7 @@ pub type ConsensusManagerGetCurrentTimeOutput = Instant;
 
 pub const CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT: &str = "compare_current_time";
 
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ConsensusManagerCompareCurrentTimeInput {
     pub instant: Instant,
     pub precision: TimePrecision,
@@ -384,7 +384,7 @@ pub type ValidatorClaimXrdOutput = Bucket;
 
 pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
 
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorUpdateKeyInput {
     pub key: Secp256k1PublicKey,
 }

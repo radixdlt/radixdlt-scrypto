@@ -55,6 +55,7 @@ pub mod prelude {
     pub use super::custom_validation::*;
     pub use super::custom_value::*;
     pub use super::custom_value_kind::*;
+    pub use super::custom_well_known_types::well_known_scrypto_custom_types::*;
     pub use super::custom_well_known_types::*;
     pub use super::definitions::*;
 }

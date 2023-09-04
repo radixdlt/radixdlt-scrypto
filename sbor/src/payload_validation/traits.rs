@@ -8,7 +8,7 @@ pub trait ValidatableCustomExtension<T>: CustomExtension {
     fn apply_validation_for_custom_value<'de>(
         schema: &Schema<Self::CustomSchema>,
         custom_value: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
         context: &T,
     ) -> Result<(), PayloadValidationError<Self>>;
 

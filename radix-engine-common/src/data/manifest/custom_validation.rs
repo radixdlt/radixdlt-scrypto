@@ -8,7 +8,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
     fn apply_validation_for_custom_value<'de>(
         schema: &Schema<Self::CustomSchema>,
         custom_value: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
         _: &(),
     ) -> Result<(), PayloadValidationError<Self>> {
         let ManifestCustomTerminalValueRef(custom_value) = custom_value;
@@ -17,7 +17,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
         match custom_value {
             ManifestCustomValue::Expression(ManifestExpression::EntireWorktop) => {
                 let element_type = match schema
-                    .resolve_type_kind(type_index)
+                    .resolve_type_kind(type_id)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?
                 {
                     TypeKind::Any => return Ok(()), // Can't do any validation on an any
@@ -48,7 +48,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
             }
             ManifestCustomValue::Expression(ManifestExpression::EntireAuthZone) => {
                 let element_type = match schema
-                    .resolve_type_kind(type_index)
+                    .resolve_type_kind(type_id)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?
                 {
                     TypeKind::Any => return Ok(()), // Can't do any validation on an any
@@ -79,7 +79,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
             }
             ManifestCustomValue::Blob(_) => {
                 let element_type = match schema
-                    .resolve_type_kind(type_index)
+                    .resolve_type_kind(type_id)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?
                 {
                     TypeKind::Any => return Ok(()), // Can't do any validation on an any
@@ -106,7 +106,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
             ManifestCustomValue::Address(address) => {
                 // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Reference
                 let validation = schema
-                    .resolve_type_validation(type_index)
+                    .resolve_type_validation(type_id)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?;
                 match validation {
                     TypeValidation::None => {}
@@ -146,7 +146,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
             ManifestCustomValue::Bucket(_) => {
                 // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Own
                 let validation = schema
-                    .resolve_type_validation(type_index)
+                    .resolve_type_validation(type_id)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?;
                 match validation {
                     TypeValidation::None => {}
@@ -166,7 +166,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
             ManifestCustomValue::Proof(_) => {
                 // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Own
                 let validation = schema
-                    .resolve_type_validation(type_index)
+                    .resolve_type_validation(type_id)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?;
                 match validation {
                     TypeValidation::None => {}
@@ -186,7 +186,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
             ManifestCustomValue::AddressReservation(_) => {
                 // We know from `custom_value_kind_matches_type_kind` that this has a ScryptoCustomTypeKind::Own
                 let validation = schema
-                    .resolve_type_validation(type_index)
+                    .resolve_type_validation(type_id)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?;
                 match validation {
                     TypeValidation::None => {}
@@ -237,10 +237,10 @@ mod tests {
     pub struct Bucket;
 
     impl Describe<ScryptoCustomTypeKind> for Bucket {
-        const TYPE_ID: GlobalTypeId =
-            GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_BUCKET_TYPE);
+        const TYPE_ID: RustTypeId =
+            RustTypeId::WellKnown(well_known_scrypto_custom_types::OWN_BUCKET_TYPE);
 
-        fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
             well_known_scrypto_custom_types::own_bucket_type_data()
         }
     }
@@ -248,10 +248,10 @@ mod tests {
     pub struct Proof;
 
     impl Describe<ScryptoCustomTypeKind> for Proof {
-        const TYPE_ID: GlobalTypeId =
-            GlobalTypeId::WellKnown(well_known_scrypto_custom_types::OWN_PROOF_TYPE);
+        const TYPE_ID: RustTypeId =
+            RustTypeId::WellKnown(well_known_scrypto_custom_types::OWN_PROOF_TYPE);
 
-        fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
             well_known_scrypto_custom_types::own_proof_type_data()
         }
     }
@@ -309,13 +309,13 @@ mod tests {
         ))
         .unwrap();
 
-        let (type_index, schema) =
+        let (type_id, schema) =
             generate_full_schema_from_single_type::<MyScryptoTuple, ScryptoCustomSchema>();
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
             &payload,
             schema.v1(),
-            type_index,
+            type_id,
             &(),
             MANIFEST_SBOR_V1_MAX_DEPTH,
         );
@@ -383,13 +383,12 @@ mod tests {
     }
 
     fn expect_matches<T: ScryptoDescribe>(payload: &[u8]) {
-        let (type_index, schema) =
-            generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
+        let (type_id, schema) = generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
             &payload,
             schema.v1(),
-            type_index,
+            type_id,
             &(),
             MANIFEST_SBOR_V1_MAX_DEPTH,
         );
@@ -398,13 +397,12 @@ mod tests {
     }
 
     fn expect_does_not_match<T: ScryptoDescribe>(payload: &[u8]) {
-        let (type_index, schema) =
-            generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
+        let (type_id, schema) = generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
             &payload,
             schema.v1(),
-            type_index,
+            type_id,
             &(),
             MANIFEST_SBOR_V1_MAX_DEPTH,
         );

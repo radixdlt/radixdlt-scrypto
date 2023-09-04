@@ -13,8 +13,8 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: TypeRef::Static(LocalTypeIndex::SchemaLocalIndex(1usize)),
-            output: TypeRef::Static(LocalTypeIndex::SchemaLocalIndex(2usize)),
+            input: TypeRef::Static(LocalTypeId::SchemaLocalIndex(1usize)),
+            output: TypeRef::Static(LocalTypeId::SchemaLocalIndex(2usize)),
             export: "BadFunctionSchema_f".to_string(),
         },
     );

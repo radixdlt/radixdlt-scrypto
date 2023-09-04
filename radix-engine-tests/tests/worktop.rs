@@ -1,9 +1,6 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
-use radix_engine::errors::SystemModuleError;
-use radix_engine::system::system_modules::costing::CostingError;
-use radix_engine::system::system_modules::costing::FeeReserveError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -58,12 +55,10 @@ fn test_many_current_auth_zone_call() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::FeeReserveError(FeeReserveError::LimitExceeded { .. })
-            ))
-        )
+        // Catch either:
+        // * A direct RuntimeError::SystemModuleError(SystemModuleError::CostingError(..))
+        // * An indirect error string inside another error, eg SystemError(TypeCheckError(BlueprintPayloadValidationError(..))
+        format!("{e:?}").contains("FeeReserveError(LimitExceeded")
     });
 }
 
@@ -89,11 +84,9 @@ fn test_many_worktop_call() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::FeeReserveError(FeeReserveError::LimitExceeded { .. })
-            ))
-        )
+        // Catch either:
+        // * A direct RuntimeError::SystemModuleError(SystemModuleError::CostingError(..))
+        // * An indirect error string inside another error, eg SystemError(TypeCheckError(BlueprintPayloadValidationError(..))
+        format!("{e:?}").contains("FeeReserveError(LimitExceeded")
     });
 }

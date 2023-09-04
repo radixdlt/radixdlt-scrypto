@@ -572,7 +572,7 @@ pub enum TypedNativeEventError {
     TypeHasNoName {
         package_definition: PackageDefinition,
         blueprint_name: String,
-        local_type_index: LocalTypeIndex,
+        local_type_id: LocalTypeId,
     },
     NotANativeBlueprint(EventTypeIdentifier),
     DecodeError(DecodeError),

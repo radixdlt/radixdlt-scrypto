@@ -30,12 +30,12 @@ mod tests {
             output,
             quote! {
                 impl ::sbor::Describe<radix_engine_common::data::scrypto::ScryptoCustomTypeKind > for MyStruct {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                         stringify!(MyStruct),
                         &[],
                         &#code_hash
                     );
-                    fn type_data() -> ::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::GlobalTypeId> {
+                    fn type_data() -> ::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
                             stringify!(MyStruct),
                             ::sbor::rust::vec![],
@@ -62,12 +62,12 @@ mod tests {
                         radix_engine_common::data::scrypto::ScryptoCustomTypeKind
                     >
                 {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                         stringify!(Thing),
                         &[<T>::TYPE_ID,],
                         &#code_hash
                     );
-                    fn type_data() -> ::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::GlobalTypeId> {
+                    fn type_data() -> ::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
                             stringify!(Thing),
                             ::sbor::rust::vec![
@@ -98,12 +98,12 @@ mod tests {
                 where
                     T: ::sbor::Describe<radix_engine_common::data::scrypto::ScryptoCustomTypeKind >
                 {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                         stringify!(MyEnum),
                         &[<T>::TYPE_ID,],
                         &#code_hash
                     );
-                    fn type_data() -> ::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::GlobalTypeId> {
+                    fn type_data() -> ::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             stringify!(MyEnum),

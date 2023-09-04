@@ -108,10 +108,10 @@ pub type AuthZoneAssertAccessRuleOutput = ();
 pub struct AuthZoneRef(pub NodeId);
 
 impl Describe<ScryptoCustomTypeKind> for AuthZoneRef {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::Novel(const_sha1::sha1("OwnedAuthZone".as_bytes()).as_bytes());
+    const TYPE_ID: RustTypeId =
+        RustTypeId::Novel(const_sha1::sha1("OwnedAuthZone".as_bytes()).as_bytes());
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names("OwnedAuthZone"),

@@ -56,21 +56,21 @@ impl Default for BlueprintSchemaInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintStateSchemaInit {
-    pub fields: Vec<FieldSchema<TypeRef<LocalTypeIndex>>>,
-    pub collections: Vec<BlueprintCollectionSchema<TypeRef<LocalTypeIndex>>>,
+    pub fields: Vec<FieldSchema<TypeRef<LocalTypeId>>>,
+    pub collections: Vec<BlueprintCollectionSchema<TypeRef<LocalTypeId>>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct BlueprintEventSchemaInit {
-    pub event_schema: IndexMap<String, TypeRef<LocalTypeIndex>>,
+    pub event_schema: IndexMap<String, TypeRef<LocalTypeId>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct FunctionSchemaInit {
     pub receiver: Option<ReceiverInfo>,
-    pub input: TypeRef<LocalTypeIndex>,
-    pub output: TypeRef<LocalTypeIndex>,
+    pub input: TypeRef<LocalTypeId>,
+    pub output: TypeRef<LocalTypeId>,
     pub export: String,
 }
 
@@ -181,8 +181,8 @@ pub struct FieldSchema<V> {
     pub transience: FieldTransience,
 }
 
-impl FieldSchema<TypeRef<LocalTypeIndex>> {
-    pub fn if_feature<I: Into<LocalTypeIndex>, S: ToString>(value: I, feature: S) -> Self {
+impl FieldSchema<TypeRef<LocalTypeId>> {
+    pub fn if_feature<I: Into<LocalTypeId>, S: ToString>(value: I, feature: S) -> Self {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfFeature(feature.to_string()),
@@ -190,7 +190,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         }
     }
 
-    pub fn if_outer_feature<I: Into<LocalTypeIndex>, S: ToString>(value: I, feature: S) -> Self {
+    pub fn if_outer_feature<I: Into<LocalTypeId>, S: ToString>(value: I, feature: S) -> Self {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::IfOuterFeature(feature.to_string()),
@@ -198,7 +198,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         }
     }
 
-    pub fn static_field<I: Into<LocalTypeIndex>>(value: I) -> Self {
+    pub fn static_field<I: Into<LocalTypeId>>(value: I) -> Self {
         FieldSchema {
             field: TypeRef::Static(value.into()),
             condition: Condition::Always,
@@ -206,7 +206,7 @@ impl FieldSchema<TypeRef<LocalTypeIndex>> {
         }
     }
 
-    pub fn transient_field<I: Into<LocalTypeIndex>, E: ScryptoEncode>(
+    pub fn transient_field<I: Into<LocalTypeId>, E: ScryptoEncode>(
         value: I,
         default_value: E,
     ) -> Self {
