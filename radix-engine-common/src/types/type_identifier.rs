@@ -37,7 +37,12 @@ pub struct FullyScopedTypeId(pub NodeId, pub SchemaHash, pub LocalTypeId);
 pub struct NodeScopedTypeId(pub SchemaHash, pub LocalTypeId);
 
 /// A reference to the type to substitute with for the case of generics.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
 pub enum GenericSubstitution {
     Local(NodeScopedTypeId),
+    Remote {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        type_name: String,
+    },
 }
