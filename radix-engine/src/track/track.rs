@@ -29,6 +29,17 @@ pub struct StateUpdates {
 }
 
 impl StateUpdates {
+    /// Merges the updates from the given instance into this one.
+    pub fn extend(&mut self, mut other: Self) {
+        self.partition_deletions
+            .extend(other.partition_deletions.drain(..));
+        self.system_updates.extend(other.system_updates.drain(..));
+    }
+
+    /// Uses the given [`DatabaseKeyMapper`] to express the `system_updates` using database-level
+    /// key encoding.
+    /// Note: Current implementation disregards `partition_deletions` (we are still missing support
+    /// for this operation in database layer).
     pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> DatabaseUpdates {
         // TODO(after RCNet-v3.1): Expand the `DatabaseUpdates` definition in order to capture the
         // `partition_deletions` there as well (preferably using a "canonicalized" representation).
