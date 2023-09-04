@@ -1710,10 +1710,10 @@ where
     #[trace_resources]
     fn key_value_store_new(
         &mut self,
-        generic_args: KeyValueStoreDataSchema,
+        data_schema: KeyValueStoreDataSchema,
     ) -> Result<NodeId, RuntimeError> {
         let mut additional_schemas = index_map_new();
-        if let Some(schema) = generic_args.additional_schema {
+        if let Some(schema) = data_schema.additional_schema {
             validate_schema(schema.v1())
                 .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
             let schema_hash = schema.generate_schema_hash();
@@ -1722,8 +1722,8 @@ where
 
         self.validate_kv_store_generic_args(
             &additional_schemas,
-            &generic_args.key_type,
-            &generic_args.value_type,
+            &data_schema.key_type,
+            &data_schema.value_type,
         )
         .map_err(|e| RuntimeError::SystemError(SystemError::TypeCheckError(e)))?;
 
@@ -1738,9 +1738,9 @@ where
             .collect();
 
         let generic_substitutions = KeyValueStoreGenericSubstitutions {
-            key_generic_substitutions: generic_args.key_type,
-            value_generic_substitutions: generic_args.value_type,
-            allow_ownership: generic_args.allow_ownership,
+            key_generic_substitutions: data_schema.key_type,
+            value_generic_substitutions: data_schema.value_type,
+            allow_ownership: data_schema.allow_ownership,
         };
 
         let node_id = self
