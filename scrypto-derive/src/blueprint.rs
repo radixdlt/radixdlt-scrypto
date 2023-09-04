@@ -609,6 +609,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         schema,
                         state,
                         events,
+                        types: BlueprintTypeSchemaInit::default(), // TODO: add front-end support
                         functions,
                         hooks: BlueprintHooksInit::default(),
                     }
@@ -1776,6 +1777,7 @@ mod tests {
                                 schema,
                                 state,
                                 events,
+                                types: BlueprintTypeSchemaInit::default(), // TODO: add front-end support
                                 functions,
                                 hooks: BlueprintHooksInit::default(),
                             }
