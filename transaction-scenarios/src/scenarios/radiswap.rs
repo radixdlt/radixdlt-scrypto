@@ -467,11 +467,12 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                         pool_unit_2,
                                     ]
                                 )
-                                .set_metadata(radiswap_1, "dapp_definitions", [definition])
-                                .set_metadata(pool_1, "dapp_definitions", [definition])
+                                // Note - Components use "dapp_definition" but Resources use "dapp_definitions"
+                                .set_metadata(radiswap_1, "dapp_definition", definition)
+                                .set_metadata(radiswap_2, "dapp_definition", definition)
+                                .set_metadata(pool_1, "dapp_definition", definition)
+                                .set_metadata(pool_2, "dapp_definition", definition)
                                 .set_metadata(pool_unit_1, "dapp_definitions", [definition])
-                                .set_metadata(radiswap_2, "dapp_definitions", [definition])
-                                .set_metadata(pool_2, "dapp_definitions", [definition])
                                 .set_metadata(pool_unit_2, "dapp_definitions", [definition])
                                 // Set up other metadata which has been missed
                                 .then(|builder| add_metadata(

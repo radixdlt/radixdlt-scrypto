@@ -27,42 +27,34 @@ SET_METADATA
 ;
 SET_METADATA
     Address("component_sim1cplmjue9wx4wqm8m5qhtq2xeaw9sj86aycqmertf2sfx3nw60pmphj")
-    "dapp_definitions"
-    Enum<136u8>(
-        Array<Address>(
-            Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
-        )
-    )
-;
-SET_METADATA
-    Address("pool_sim1chseykyq4thp6d9t67znw3v438p4k3kv40wnzwcz686m9alxvcz6lx")
-    "dapp_definitions"
-    Enum<136u8>(
-        Array<Address>(
-            Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
-        )
-    )
-;
-SET_METADATA
-    Address("resource_sim1t5gsl92cxldxrrg0qhaa3km9vkw23h5lxrrzkwyja96u6pclpvka50")
-    "dapp_definitions"
-    Enum<136u8>(
-        Array<Address>(
-            Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
-        )
+    "dapp_definition"
+    Enum<8u8>(
+        Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
     )
 ;
 SET_METADATA
     Address("component_sim1cr0rta9syg6dayknaqj99nzp8vh7d0k8trq6qmww979yrc3ax8xqy5")
-    "dapp_definitions"
-    Enum<136u8>(
-        Array<Address>(
-            Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
-        )
+    "dapp_definition"
+    Enum<8u8>(
+        Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
+    )
+;
+SET_METADATA
+    Address("pool_sim1chseykyq4thp6d9t67znw3v438p4k3kv40wnzwcz686m9alxvcz6lx")
+    "dapp_definition"
+    Enum<8u8>(
+        Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
     )
 ;
 SET_METADATA
     Address("pool_sim1ckw8dmk6w74sm2kw44y2a799uyra7jqy6mryvnv4glmuyeqeqne93q")
+    "dapp_definition"
+    Enum<8u8>(
+        Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
+    )
+;
+SET_METADATA
+    Address("resource_sim1t5gsl92cxldxrrg0qhaa3km9vkw23h5lxrrzkwyja96u6pclpvka50")
     "dapp_definitions"
     Enum<136u8>(
         Array<Address>(
