@@ -54,12 +54,10 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode
     }
 }
 
-impl<C: CustomTypeKind<DefinitionTypeId>, T: Describe<C>, E: Describe<C>> Describe<C>
-    for Result<T, E>
-{
-    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::novel("Result", &[T::TYPE_ID, E::TYPE_ID]);
+impl<C: CustomTypeKind<RustTypeId>, T: Describe<C>, E: Describe<C>> Describe<C> for Result<T, E> {
+    const TYPE_ID: RustTypeId = RustTypeId::novel("Result", &[T::TYPE_ID, E::TYPE_ID]);
 
-    fn type_data() -> TypeData<C, DefinitionTypeId> {
+    fn type_data() -> TypeData<C, RustTypeId> {
         #[allow(unused_imports)]
         use crate::rust::borrow::ToOwned;
         use crate::rust::collections::*;

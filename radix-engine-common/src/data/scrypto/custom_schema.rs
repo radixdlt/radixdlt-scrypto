@@ -112,7 +112,7 @@ impl CustomSchema for ScryptoCustomSchema {
     type CustomTypeValidation = ScryptoCustomTypeValidation;
 
     fn linearize_type_kind(
-        type_kind: Self::CustomTypeKind<DefinitionTypeId>,
+        type_kind: Self::CustomTypeKind<RustTypeId>,
         _type_indices: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeId> {
         match type_kind {

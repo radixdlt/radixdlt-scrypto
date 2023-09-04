@@ -108,7 +108,7 @@ macro_rules! look_up_type {
         match $self.schema.resolve_type_kind($type_id) {
             Some(resolved_type) => resolved_type,
             None => {
-                return TypedTraversalEvent::Error(TypedTraversalError::TypeIndexNotFound($type_id))
+                return TypedTraversalEvent::Error(TypedTraversalError::TypeIdNotFound($type_id))
             }
         }
     };

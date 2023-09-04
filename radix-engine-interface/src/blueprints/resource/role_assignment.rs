@@ -97,10 +97,10 @@ pub struct RoleKey {
 }
 
 impl Describe<ScryptoCustomTypeKind> for RoleKey {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::ROLE_KEY_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ROLE_KEY_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::role_key_type_data()
     }
 }
@@ -211,10 +211,10 @@ pub enum OwnerRole {
 }
 
 impl Describe<ScryptoCustomTypeKind> for OwnerRole {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::OWNER_ROLE_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::OWNER_ROLE_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::owner_role_type_data()
     }
 }

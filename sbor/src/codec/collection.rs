@@ -351,10 +351,10 @@ impl<
 
 wrapped_generic_describe!(T, Vec<T>, [T]);
 
-impl<C: CustomTypeKind<DefinitionTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
-    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::novel("Set", &[T::TYPE_ID]);
+impl<C: CustomTypeKind<RustTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
+    const TYPE_ID: RustTypeId = RustTypeId::novel("Set", &[T::TYPE_ID]);
 
-    fn type_data() -> TypeData<C, DefinitionTypeId> {
+    fn type_data() -> TypeData<C, RustTypeId> {
         TypeData::new(
             TypeKind::Array {
                 element_type: T::TYPE_ID,
@@ -371,12 +371,10 @@ impl<C: CustomTypeKind<DefinitionTypeId>, T: Describe<C>> Describe<C> for BTreeS
 wrapped_generic_describe!(T, HashSet<T>, BTreeSet<T>);
 wrapped_generic_describe!(T, IndexSet<T>, BTreeSet<T>);
 
-impl<C: CustomTypeKind<DefinitionTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
-    for BTreeMap<K, V>
-{
-    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::novel("Map", &[K::TYPE_ID, V::TYPE_ID]);
+impl<C: CustomTypeKind<RustTypeId>, K: Describe<C>, V: Describe<C>> Describe<C> for BTreeMap<K, V> {
+    const TYPE_ID: RustTypeId = RustTypeId::novel("Map", &[K::TYPE_ID, V::TYPE_ID]);
 
-    fn type_data() -> TypeData<C, DefinitionTypeId> {
+    fn type_data() -> TypeData<C, RustTypeId> {
         TypeData::new(
             TypeKind::Map {
                 key_type: K::TYPE_ID,

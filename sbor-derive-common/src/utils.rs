@@ -730,7 +730,7 @@ pub fn build_describe_generics<'a>(
 
     if need_to_add_ctk_generic {
         impl_generics.params.push(
-            parse_quote!(#custom_type_kind_generic: ::sbor::CustomTypeKind<::sbor::DefinitionTypeId>),
+            parse_quote!(#custom_type_kind_generic: ::sbor::CustomTypeKind<::sbor::RustTypeId>),
         );
     }
 

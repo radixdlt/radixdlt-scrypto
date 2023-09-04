@@ -237,10 +237,10 @@ mod tests {
     pub struct Bucket;
 
     impl Describe<ScryptoCustomTypeKind> for Bucket {
-        const TYPE_ID: DefinitionTypeId =
-            DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::OWN_BUCKET_TYPE);
+        const TYPE_ID: RustTypeId =
+            RustTypeId::WellKnown(well_known_scrypto_custom_types::OWN_BUCKET_TYPE);
 
-        fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+        fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
             well_known_scrypto_custom_types::own_bucket_type_data()
         }
     }
@@ -248,10 +248,10 @@ mod tests {
     pub struct Proof;
 
     impl Describe<ScryptoCustomTypeKind> for Proof {
-        const TYPE_ID: DefinitionTypeId =
-            DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::OWN_PROOF_TYPE);
+        const TYPE_ID: RustTypeId =
+            RustTypeId::WellKnown(well_known_scrypto_custom_types::OWN_PROOF_TYPE);
 
-        fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+        fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
             well_known_scrypto_custom_types::own_proof_type_data()
         }
     }

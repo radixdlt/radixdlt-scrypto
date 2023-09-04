@@ -43,10 +43,10 @@ pub enum ObjectModuleId {
 }
 
 impl Describe<ScryptoCustomTypeKind> for ObjectModuleId {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::OBJECT_MODULE_ID_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::OBJECT_MODULE_ID_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::object_module_id_type_data()
     }
 }
@@ -128,10 +128,10 @@ pub enum ModuleId {
 }
 
 impl Describe<ScryptoCustomTypeKind> for ModuleId {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::MODULE_ID_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::MODULE_ID_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::module_id_type_data()
     }
 }

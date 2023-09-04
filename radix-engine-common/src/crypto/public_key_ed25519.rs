@@ -15,10 +15,10 @@ pub struct Ed25519PublicKey(
 );
 
 impl Describe<ScryptoCustomTypeKind> for Ed25519PublicKey {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::ED25519_PUBLIC_KEY_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ED25519_PUBLIC_KEY_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::ed25519_public_key_type_data()
     }
 }
@@ -57,10 +57,10 @@ impl TryFrom<&[u8]> for Ed25519PublicKey {
 pub struct Ed25519PublicKeyHash(pub [u8; Self::LENGTH]);
 
 impl Describe<ScryptoCustomTypeKind> for Ed25519PublicKeyHash {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::ED25519_PUBLIC_KEY_HASH_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ED25519_PUBLIC_KEY_HASH_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::ed25519_public_key_hash_type_data()
     }
 }

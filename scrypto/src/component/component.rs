@@ -29,8 +29,8 @@ use sbor::rust::ops::DerefMut;
 use sbor::rust::prelude::*;
 use sbor::*;
 use sbor::{
-    Categorize, Decode, DecodeError, Decoder, DefinitionTypeId, Describe, Encode, EncodeError,
-    Encoder, ValueKind,
+    Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, RustTypeId,
+    ValueKind,
 };
 use scrypto::modules::{Attached, HasComponentRoyalties, Metadata};
 
@@ -167,10 +167,10 @@ impl<C: HasStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKi
 }
 
 impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Owned<T> {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::Novel(const_sha1::sha1(T::OWNED_TYPE_NAME.as_bytes()).as_bytes());
+    const TYPE_ID: RustTypeId =
+        RustTypeId::Novel(const_sha1::sha1(T::OWNED_TYPE_NAME.as_bytes()).as_bytes());
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names(T::OWNED_TYPE_NAME),
@@ -538,10 +538,10 @@ impl<O: HasStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKi
 }
 
 impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Global<T> {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::Novel(const_sha1::sha1(T::GLOBAL_TYPE_NAME.as_bytes()).as_bytes());
+    const TYPE_ID: RustTypeId =
+        RustTypeId::Novel(const_sha1::sha1(T::GLOBAL_TYPE_NAME.as_bytes()).as_bytes());
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Reference),
             metadata: TypeMetadata::no_child_names(T::GLOBAL_TYPE_NAME),
@@ -558,9 +558,9 @@ impl<T: HasTypeInfo + HasStub> Describe<ScryptoCustomTypeKind> for Global<T> {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
-    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::WellKnown(COMPONENT_ADDRESS_TYPE);
+    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(COMPONENT_ADDRESS_TYPE);
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         component_address_type_data()
     }
 
@@ -568,9 +568,9 @@ impl Describe<ScryptoCustomTypeKind> for Global<AnyComponent> {
 }
 
 impl Describe<ScryptoCustomTypeKind> for Owned<AnyComponent> {
-    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::WellKnown(OWN_TYPE);
+    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(OWN_TYPE);
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         own_type_data()
     }
 

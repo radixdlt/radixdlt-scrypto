@@ -101,28 +101,28 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for P
 }
 
 impl Describe<ScryptoCustomTypeKind> for Proof {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::OWN_PROOF_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::OWN_PROOF_TYPE);
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         well_known_scrypto_custom_types::own_proof_type_data()
     }
 }
 
 impl Describe<ScryptoCustomTypeKind> for FungibleProof {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::OWN_FUNGIBLE_PROOF_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::OWN_FUNGIBLE_PROOF_TYPE);
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         well_known_scrypto_custom_types::own_fungible_proof_type_data()
     }
 }
 
 impl Describe<ScryptoCustomTypeKind> for NonFungibleProof {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_PROOF_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_PROOF_TYPE);
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         well_known_scrypto_custom_types::own_non_fungible_proof_type_data()
     }
 }

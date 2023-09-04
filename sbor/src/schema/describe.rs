@@ -3,9 +3,9 @@ use crate::*;
 /// The `Describe` trait allows a type to describe how to interpret and validate a corresponding SBOR payload.
 ///
 /// Each unique interpretation/validation of a type should have its own distinct type in the schema.
-/// Uniqueness of a type in the schema is defined by its `DefinitionTypeId`.
+/// Uniqueness of a type in the schema is defined by its `RustTypeId`.
 #[allow(unused_variables)]
-pub trait Describe<C: CustomTypeKind<DefinitionTypeId>> {
+pub trait Describe<C: CustomTypeKind<RustTypeId>> {
     /// The `TYPE_ID` should give a unique identifier for its SBOR schema type.
     /// An SBOR schema type capture details about the SBOR payload, how it should be interpreted, validated and displayed.
     ///
@@ -25,19 +25,19 @@ pub trait Describe<C: CustomTypeKind<DefinitionTypeId>> {
     /// Most basic types without additional validation have an associated "Well Known" type, which is intended to save
     /// room in the schema. Any non-well known types are "Novel" and should be generated for each type.
     ///
-    /// If needing to generate a novel type id, this can be generated via helper methods on [`DefinitionTypeId`]:
+    /// If needing to generate a novel type id, this can be generated via helper methods on [`RustTypeId`]:
     /// ```ignore
     /// impl Describe<C: CustomTypeSchema, T1: Describe<C>> for MyType<T1> {
-    ///     const TYPE_ID: DefinitionTypeId = DefinitionTypeId::complex(stringify!(MyType), &[T1::TYPE_ID]);
-    /// #   fn type_data() -> TypeData<C, DefinitionTypeId> { unreachable!() }
+    ///     const TYPE_ID: RustTypeId = RustTypeId::complex(stringify!(MyType), &[T1::TYPE_ID]);
+    /// #   fn type_data() -> TypeData<C, RustTypeId> { unreachable!() }
     /// }
     /// ```
-    const TYPE_ID: DefinitionTypeId;
+    const TYPE_ID: RustTypeId;
 
     /// Returns the local schema for the given type.
     ///
     /// If the `TYPE_ID` is well_known, then this type data must match the corresponding well known type data.
-    fn type_data() -> TypeData<C, DefinitionTypeId>;
+    fn type_data() -> TypeData<C, RustTypeId>;
 
     /// For each type referenced in `get_local_type_data`, we need to ensure that the type and all of its own references
     /// get added to the aggregator.

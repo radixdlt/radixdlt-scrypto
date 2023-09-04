@@ -46,11 +46,10 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
 }
 
 impl Describe<ScryptoCustomTypeKind> for GlobalAddressReservation {
-    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::WellKnown(
-        well_known_scrypto_custom_types::OWN_GLOBAL_ADDRESS_RESERVATION_TYPE,
-    );
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::OWN_GLOBAL_ADDRESS_RESERVATION_TYPE);
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, DefinitionTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         well_known_scrypto_custom_types::own_global_address_reservation_type_data()
     }
 }

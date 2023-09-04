@@ -36,10 +36,10 @@ pub enum PublicKeyHash {
 }
 
 impl Describe<ScryptoCustomTypeKind> for PublicKeyHash {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::PUBLIC_KEY_HASH_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::PUBLIC_KEY_HASH_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::public_key_hash_type_data()
     }
 }

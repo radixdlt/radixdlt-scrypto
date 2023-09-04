@@ -73,7 +73,7 @@ impl<'de, E: CustomExtension> TypedTraversalEvent<'de, E> {
             ),
             TypedTraversalEvent::End => None,
             TypedTraversalEvent::Error(TypedTraversalError::DecodeError(_)) => None,
-            TypedTraversalEvent::Error(TypedTraversalError::TypeIndexNotFound(_)) => None,
+            TypedTraversalEvent::Error(TypedTraversalError::TypeIdNotFound(_)) => None,
             TypedTraversalEvent::Error(TypedTraversalError::ValueMismatchWithType(
                 type_mismatch_error,
             )) => match type_mismatch_error {
@@ -153,7 +153,7 @@ pub struct TypedLocation<'t, 's, C: CustomTraversal> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypedTraversalError<E: CustomExtension> {
-    TypeIndexNotFound(LocalTypeId),
+    TypeIdNotFound(LocalTypeId),
     ValueMismatchWithType(TypeMismatchError<E>),
     DecodeError(DecodeError),
 }
@@ -282,7 +282,7 @@ impl<E: CustomExtension> fmt::Display for TypedTraversalError<E> {
             }) => {
                 write!(f, "{{ unknown_variant_id: {:?} }}", variant)
             }
-            TypedTraversalError::TypeIndexNotFound(_) | TypedTraversalError::DecodeError(_) => {
+            TypedTraversalError::TypeIdNotFound(_) | TypedTraversalError::DecodeError(_) => {
                 write!(f, "{:?}", self)
             }
         }

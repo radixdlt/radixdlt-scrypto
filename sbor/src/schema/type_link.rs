@@ -3,46 +3,42 @@ use sbor::rust::fmt::Debug;
 use sbor::*;
 
 /// Marker trait for a link between [`TypeKind`]s:
-/// - [`DefinitionTypeId`]: A global identifier for a type (a well known id, or type hash)
+/// - [`RustTypeId`]: A global identifier for a type (a well known id, or type hash)
 /// - [`LocalTypeId`]: A link in the context of a schema (a well known id, or a local type index)
 pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq + From<WellKnownTypeId> {}
 
 /// This is a compile-time identifier for a given type, used by the type aggregator
 /// to uniquely identify a type.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
-pub enum DefinitionTypeId {
+pub enum RustTypeId {
     /// This takes a well_known type index.
     WellKnown(WellKnownTypeId),
     /// The global type hash of a type - used for types which aren't well known.
     Novel(TypeHash),
 }
 
-impl From<WellKnownTypeId> for DefinitionTypeId {
+impl From<WellKnownTypeId> for RustTypeId {
     fn from(value: WellKnownTypeId) -> Self {
-        DefinitionTypeId::WellKnown(value)
+        RustTypeId::WellKnown(value)
     }
 }
 
-impl SchemaTypeLink for DefinitionTypeId {}
+impl SchemaTypeLink for RustTypeId {}
 
 pub type TypeHash = [u8; 20];
 
-impl DefinitionTypeId {
-    pub const fn novel(name: &str, dependencies: &[DefinitionTypeId]) -> Self {
+impl RustTypeId {
+    pub const fn novel(name: &str, dependencies: &[RustTypeId]) -> Self {
         generate_type_hash(&[name], &[], dependencies)
     }
 
-    pub const fn novel_with_code(
-        name: &str,
-        dependencies: &[DefinitionTypeId],
-        code: &[u8],
-    ) -> Self {
+    pub const fn novel_with_code(name: &str, dependencies: &[RustTypeId], code: &[u8]) -> Self {
         generate_type_hash(&[name], &[("code", code)], dependencies)
     }
 
     pub const fn novel_validated(
         name: &str,
-        dependencies: &[DefinitionTypeId],
+        dependencies: &[RustTypeId],
         validations: &[(&str, &[u8])],
     ) -> Self {
         generate_type_hash(&[name], validations, dependencies)
@@ -50,8 +46,8 @@ impl DefinitionTypeId {
 
     pub const fn to_const_slice(&self) -> ConstSlice {
         match &self {
-            DefinitionTypeId::WellKnown(x) => ConstSlice::from_slice(&x.0.to_be_bytes()),
-            DefinitionTypeId::Novel(hash) => ConstSlice::from_slice(hash),
+            RustTypeId::WellKnown(x) => ConstSlice::from_slice(&x.0.to_be_bytes()),
+            RustTypeId::Novel(hash) => ConstSlice::from_slice(hash),
         }
     }
 }
@@ -59,8 +55,8 @@ impl DefinitionTypeId {
 const fn generate_type_hash(
     names: &[&str],
     type_data: &[(&str, &[u8])],
-    dependencies: &[DefinitionTypeId],
-) -> DefinitionTypeId {
+    dependencies: &[RustTypeId],
+) -> RustTypeId {
     let buffer = const_sha1::ConstSlice::new();
 
     // Const looping isn't allowed - but we can use recursion instead
@@ -68,7 +64,7 @@ const fn generate_type_hash(
     let buffer = capture_type_data(buffer, 0, type_data);
     let buffer = capture_dependent_type_ids(buffer, 0, dependencies);
 
-    DefinitionTypeId::Novel(const_sha1::sha1(buffer.as_slice()).as_bytes())
+    RustTypeId::Novel(const_sha1::sha1(buffer.as_slice()).as_bytes())
 }
 
 const fn capture_names(
@@ -99,7 +95,7 @@ const fn capture_type_data(
 const fn capture_dependent_type_ids(
     buffer: const_sha1::ConstSlice,
     next: usize,
-    dependencies: &[DefinitionTypeId],
+    dependencies: &[RustTypeId],
 ) -> const_sha1::ConstSlice {
     if next == dependencies.len() {
         return buffer;

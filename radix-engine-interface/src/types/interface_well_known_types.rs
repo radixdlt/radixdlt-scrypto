@@ -45,7 +45,9 @@ mod tests {
         // OTHER MODULE TYPES
         test_equivalence(OBJECT_MODULE_ID_TYPE, ObjectModuleId::Main);
         test_equivalence(MODULE_ID_TYPE, ModuleId::Metadata);
+        test_equivalence(ROYALTY_AMOUNT_TYPE, RoyaltyAmount::Free);
         test_equivalence(ROYALTY_AMOUNT_TYPE, RoyaltyAmount::Usd(dec!("1.6")));
+        test_equivalence(ROYALTY_AMOUNT_TYPE, RoyaltyAmount::Xrd(dec!("1.6")));
     }
 
     fn test_equivalence<T: ScryptoEncode + ScryptoDescribe>(id: WellKnownTypeId, value: T) {
@@ -71,7 +73,7 @@ mod tests {
     fn test_type_data_equivalent<T: ScryptoDescribe>(id: WellKnownTypeId) {
         let type_name = core::any::type_name::<T>();
 
-        assert_eq!(T::TYPE_ID, DefinitionTypeId::from(id), "The ScryptoDescribe impl for {type_name} has a TYPE_ID which does not equal its well known type id");
+        assert_eq!(T::TYPE_ID, RustTypeId::from(id), "The ScryptoDescribe impl for {type_name} has a TYPE_ID which does not equal its well known type id");
         let localized_type_data =
             localize_well_known_type_data::<ScryptoCustomSchema>(T::type_data());
         let resolved = resolve_scrypto_well_known_type(id)

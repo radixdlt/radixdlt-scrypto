@@ -242,10 +242,10 @@ impl<Ext: CustomExtension, D: Decoder<Ext::CustomValueKind>> Decode<Ext::CustomV
     }
 }
 
-impl<Ext: CustomExtension, C: CustomTypeKind<DefinitionTypeId>> Describe<C> for RawValue<'_, Ext> {
-    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::WellKnown(basic_well_known_types::ANY_TYPE);
+impl<Ext: CustomExtension, C: CustomTypeKind<RustTypeId>> Describe<C> for RawValue<'_, Ext> {
+    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(basic_well_known_types::ANY_TYPE);
 
-    fn type_data() -> TypeData<C, DefinitionTypeId> {
+    fn type_data() -> TypeData<C, RustTypeId> {
         basic_well_known_types::any_type_data()
     }
 }

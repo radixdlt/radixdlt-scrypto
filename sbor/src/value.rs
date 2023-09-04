@@ -339,12 +339,12 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode
     }
 }
 
-impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<DefinitionTypeId>> Describe<C>
+impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Describe<C>
     for Value<X, Y>
 {
-    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::WellKnown(basic_well_known_types::ANY_TYPE);
+    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(basic_well_known_types::ANY_TYPE);
 
-    fn type_data() -> TypeData<C, DefinitionTypeId> {
+    fn type_data() -> TypeData<C, RustTypeId> {
         basic_well_known_types::any_type_data()
     }
 }
@@ -403,12 +403,12 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode
     }
 }
 
-impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<DefinitionTypeId>> Describe<C>
+impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Describe<C>
     for EnumVariantValue<X, Y>
 {
-    const TYPE_ID: DefinitionTypeId = DefinitionTypeId::WellKnown(basic_well_known_types::ANY_TYPE);
+    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(basic_well_known_types::ANY_TYPE);
 
-    fn type_data() -> TypeData<C, DefinitionTypeId> {
+    fn type_data() -> TypeData<C, RustTypeId> {
         basic_well_known_types::any_type_data()
     }
 }

@@ -23,10 +23,10 @@ pub enum ResourceOrNonFungible {
 }
 
 impl Describe<ScryptoCustomTypeKind> for ResourceOrNonFungible {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::RESOURCE_OR_NON_FUNGIBLE_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::RESOURCE_OR_NON_FUNGIBLE_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::resource_or_non_fungible_type_data()
     }
 }
@@ -82,10 +82,10 @@ pub enum ProofRule {
 }
 
 impl Describe<ScryptoCustomTypeKind> for ProofRule {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::PROOF_RULE_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::PROOF_RULE_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::proof_rule_type_data()
     }
 }
@@ -129,10 +129,10 @@ pub enum AccessRuleNode {
 }
 
 impl Describe<ScryptoCustomTypeKind> for AccessRuleNode {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_NODE_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_NODE_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::access_rule_node_type_data()
     }
 }
@@ -232,10 +232,10 @@ pub enum AccessRule {
 }
 
 impl Describe<ScryptoCustomTypeKind> for AccessRule {
-    const TYPE_ID: DefinitionTypeId =
-        DefinitionTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_TYPE);
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_TYPE);
 
-    fn type_data() -> ScryptoTypeData<DefinitionTypeId> {
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::access_rule_type_data()
     }
 }

@@ -565,9 +565,9 @@ create_well_known_lookup!(
             named_enum(
                 "RoyaltyAmount",
                 [
-                    (1u8, named_tuple("Free", [])),
-                    (2u8, named_tuple("Xrd", [DECIMAL_TYPE])),
-                    (3u8, named_tuple("Usd", [DECIMAL_TYPE])),
+                    (0u8, named_tuple("Free", [])),
+                    (1u8, named_tuple("Xrd", [DECIMAL_TYPE])),
+                    (2u8, named_tuple("Usd", [DECIMAL_TYPE])),
                 ],
             )
         ),
@@ -664,7 +664,7 @@ mod tests {
     fn test_type_data_equivalent<T: ScryptoDescribe>(id: WellKnownTypeId) {
         let type_name = core::any::type_name::<T>();
 
-        assert_eq!(T::TYPE_ID, DefinitionTypeId::from(id), "The ScryptoDescribe impl for {type_name} has a TYPE_ID which does not equal its well known type id");
+        assert_eq!(T::TYPE_ID, RustTypeId::from(id), "The ScryptoDescribe impl for {type_name} has a TYPE_ID which does not equal its well known type id");
         let localized_type_data =
             localize_well_known_type_data::<ScryptoCustomSchema>(T::type_data());
         let resolved = resolve_scrypto_well_known_type(id)
