@@ -13,7 +13,9 @@ struct Type2 {
 #[blueprint]
 #[experimental_types(Type1)]
 mod non_fungible_data {
-    struct NFD {}
+    struct NFD {
+        vault: Vault,
+    }
 
     impl NFD {
         pub fn create_non_fungible_resource_with_remote_type(
@@ -30,7 +32,7 @@ mod non_fungible_data {
                 Vec::<String>::new(),
             );
 
-            ScryptoVmV1Api::blueprint_call(
+            let bytes = ScryptoVmV1Api::blueprint_call(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
@@ -41,11 +43,23 @@ mod non_fungible_data {
                     non_fungible_schema,
                     resource_roles: Default::default(),
                     metadata: Default::default(),
-                    entries: Default::default(),
+                    entries: indexmap!(
+                        NonFungibleLocalId::integer(5) => (scrypto_decode(&scrypto_encode(&Type1{a: "a".to_string()}).unwrap()).unwrap(),)
+                    ),
                     address_reservation: Default::default(),
                 })
                 .unwrap(),
             );
+
+            let bucket = scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
+                .unwrap()
+                .1;
+            Self {
+                vault: Vault::with_bucket(bucket.into()),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
         }
     }
 }
@@ -63,6 +77,7 @@ mod key_value_store {
             blueprint_name: String,
             type_name: String,
         ) {
+            // Create
             let kv_store = ScryptoVmV1Api::kv_store_new(KeyValueStoreDataSchema::Remote {
                 key_type: BlueprintTypeId {
                     package_address,
@@ -76,6 +91,15 @@ mod key_value_store {
                 },
                 allow_ownership: false,
             });
+
+            // Insert
+            let handle = ScryptoVmV1Api::kv_store_open_entry(
+                &kv_store,
+                &scrypto_encode(&Type2 { b: 1 }).unwrap(),
+                LockFlags::MUTABLE,
+            );
+            ScryptoVmV1Api::kv_entry_write(handle, scrypto_encode(&Type2 { b: 1 }).unwrap());
+            ScryptoVmV1Api::kv_entry_close(handle);
 
             Self {
                 kv_store: Own(kv_store),
