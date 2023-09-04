@@ -1,5 +1,5 @@
 use crate::manifest::ast::{Instruction, Value, ValueKind};
-use crate::manifest::enums::KNOWN_ENUM_DISCRIMINATORS;
+use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::lexer::{Token, TokenKind};
 use radix_engine_interface::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
 
