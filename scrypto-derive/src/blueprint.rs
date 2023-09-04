@@ -577,12 +577,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     .cloned()
                     .collect::<Vec<_>>(),
                 registered_type_paths
-                    .values()
+                    .keys()
                     .into_iter()
                     .cloned()
                     .collect::<Vec<_>>(),
                 registered_type_paths
-                    .keys()
+                    .values()
                     .into_iter()
                     .cloned()
                     .collect::<Vec<_>>(),
@@ -638,12 +638,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         }
                     };
 
-                    // Aggregate named types
+                    // Aggregate registered types
                     let types = {
                         let mut type_schema = index_map_new();
                         #({
                             let local_type_index = aggregator.add_child_type_and_descendents::<#registered_type_paths>();
-                            type_schema.insert(#registered_type_names, TypeRef::Static(local_type_index));
+                            type_schema.insert(#registered_type_names.to_owned(), local_type_index);
                         })*
                         BlueprintTypeSchemaInit {
                             type_schema,

@@ -7,7 +7,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<0u8>()
     Enum<2u8>()
     false
-    Tuple(
+    Enum<0u8>(
         Enum<0u8>(
             Tuple(
                 Array<Enum>(

@@ -290,6 +290,7 @@ PUBLISH_PACKAGE_ADVANCED
                         Array<Enum>()
                     ),
                     Map<String, Enum>(),
+                    Map<String, Enum>(),
                     Tuple(
                         Map<String, Tuple>(
                             "new" => Tuple(
@@ -474,7 +475,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("18508bce9f85ec36b0c39f2d5e50a0a74bbfe662dd3e1a3bd2a63b4d248b391b")
+    Blob("87be2af11914537f1955f84e891c41787a5f8dc14027dceb7645b6d4042a4f90")
     Map<String, Tuple>(
         "address" => Tuple(
             Enum<1u8>(
