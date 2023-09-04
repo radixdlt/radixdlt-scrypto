@@ -2487,6 +2487,42 @@ pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult
 
 pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
     for (event_type_identifier, event_data) in &commit_result.application_events {
+        match event_type_identifier.0 {
+            Emitter::Function(BlueprintId {
+                package_address, ..
+            }) if ![
+                PACKAGE_PACKAGE,
+                RESOURCE_PACKAGE,
+                ACCOUNT_PACKAGE,
+                IDENTITY_PACKAGE,
+                CONSENSUS_MANAGER_PACKAGE,
+                ACCESS_CONTROLLER_PACKAGE,
+                POOL_PACKAGE,
+                TRANSACTION_PROCESSOR_PACKAGE,
+                METADATA_MODULE_PACKAGE,
+                ROYALTY_MODULE_PACKAGE,
+                ROLE_ASSIGNMENT_MODULE_PACKAGE,
+                TEST_UTILS_PACKAGE,
+                GENESIS_HELPER_PACKAGE,
+                FAUCET_PACKAGE,
+                TRANSACTION_TRACKER_PACKAGE,
+            ]
+            .contains(&package_address) =>
+            {
+                continue
+            }
+            Emitter::Method(node_id, ..)
+                if node_id.entity_type().map_or(false, |item| {
+                    matches!(
+                        item,
+                        EntityType::GlobalGenericComponent | EntityType::InternalGenericComponent
+                    )
+                }) =>
+            {
+                continue
+            }
+            _ => {}
+        };
         let _ = to_typed_native_event(event_type_identifier, event_data).unwrap();
     }
 }

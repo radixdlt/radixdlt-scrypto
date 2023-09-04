@@ -230,6 +230,48 @@ PUBLISH_PACKAGE_ADVANCED
                                             145u8
                                         )
                                     )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<1u8>(
+                                            19u64
+                                        )
+                                    )
+                                ),
+                                Enum<13u8>(
+                                    Enum<1u8>(
+                                        20u64
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            133u8
+                                        ),
+                                        Enum<0u8>(
+                                            160u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            160u8
+                                        ),
+                                        Enum<1u8>(
+                                            19u64
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<1u8>(
+                                            20u64
+                                        ),
+                                        Enum<1u8>(
+                                            20u64
+                                        )
+                                    )
                                 )
                             ),
                             Array<Tuple>(
@@ -503,6 +545,46 @@ PUBLISH_PACKAGE_ADVANCED
                                             )
                                         )
                                     )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "AddLiquidityEvent"
+                                    ),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<0u8>(),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<0u8>(),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "RemoveLiquidityEvent"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "pool_units_amount",
+                                                "redeemed_resources"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "SwapEvent"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "input",
+                                                "output"
+                                            )
+                                        )
+                                    )
                                 )
                             ),
                             Array<Enum>(
@@ -539,6 +621,20 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<0u8>(),
                                 Enum<0u8>(),
                                 Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<12u8>(
+                                    Tuple(
+                                        Enum<1u8>(
+                                            2u32
+                                        ),
+                                        Enum<1u8>(
+                                            2u32
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
                                 Enum<0u8>()
                             )
                         )
@@ -557,7 +653,23 @@ PUBLISH_PACKAGE_ADVANCED
                         ),
                         Array<Enum>()
                     ),
-                    Map<String, Enum>(),
+                    Map<String, Enum>(
+                        "AddLiquidityEvent" => Enum<0u8>(
+                            Enum<1u8>(
+                                18u64
+                            )
+                        ),
+                        "RemoveLiquidityEvent" => Enum<0u8>(
+                            Enum<1u8>(
+                                21u64
+                            )
+                        ),
+                        "SwapEvent" => Enum<0u8>(
+                            Enum<1u8>(
+                                22u64
+                            )
+                        )
+                    ),
                     Tuple(
                         Map<String, Tuple>(
                             "new" => Tuple(
@@ -651,7 +763,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("b78c6fa1df28fb5c23f37e2945f93b960b93b532bc089e8781f0ae11767de9a9")
+    Blob("2369ecfa246d5f508e0442bad7f09e9e1cced698edf1754fc7e9c4c391a4dbcf")
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(
