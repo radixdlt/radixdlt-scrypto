@@ -2294,6 +2294,25 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, HashTreeUpdatingDataba
     pub fn get_state_hash(&self) -> Hash {
         self.database.get_current()
     }
+
+    pub fn assert_state_hash_tree_matches_substate_store(&mut self) {
+        let hashes_from_tree = self.database.list_hashes();
+        assert_eq!(
+            hashes_from_tree.keys().cloned().collect::<HashSet<_>>(),
+            self.database.list_partition_keys().collect::<HashSet<_>>(),
+            "partitions captured in the state hash tree should match those in the substate store"
+        );
+        for (db_partition_key, by_db_sort_key) in hashes_from_tree {
+            assert_eq!(
+                by_db_sort_key.into_iter().collect::<HashMap<_, _>>(),
+                self.database.list_entries(&db_partition_key)
+                    .map(|(db_sort_key, substate_value)| (db_sort_key, hash(substate_value)))
+                    .collect::<HashMap<_, _>>(),
+                "partition's {:?} substates in the state hash tree should match those in the substate store",
+                db_partition_key,
+            )
+        }
+    }
 }
 
 pub struct SubtreeVaults<'d, D> {
