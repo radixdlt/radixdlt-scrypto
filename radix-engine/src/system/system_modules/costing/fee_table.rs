@@ -223,7 +223,7 @@ impl FeeTable {
                     .map(|x| x.values().map(|x| x.len()).sum::<usize>())
                     .sum::<usize>();
                 add(
-                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,              // todo
+                    base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT, // todo
                     Self::data_processing_cost(total_substate_size),
                 )
             }
