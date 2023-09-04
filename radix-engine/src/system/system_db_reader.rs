@@ -740,10 +740,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                         (
                             schema,
                             scoped_type_id.1,
-                            SchemaOrigin::Blueprint(BlueprintId {
-                                package_address: type_id.package_address,
-                                blueprint_name: type_id.blueprint_name.clone(),
-                            }),
+                            SchemaOrigin::Blueprint(BlueprintId::new(
+                                &type_id.package_address,
+                                type_id.blueprint_name.clone(),
+                            )),
                         )
                     }
                 }
