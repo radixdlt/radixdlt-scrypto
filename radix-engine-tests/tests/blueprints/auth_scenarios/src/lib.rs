@@ -123,24 +123,28 @@ mod big_fi {
 
         pub fn assert_in_subservio(&mut self, swappy_badge: Bucket) -> Bucket {
             let bucket = self.cerb_vault.take(1);
-            let swappy_badge = bucket.authorize_with_all(|| {
-                self.child.assert_local(swappy_badge)
-            });
+            let swappy_badge = bucket.authorize_with_all(|| self.child.assert_local(swappy_badge));
             self.cerb_vault.put(bucket);
             swappy_badge
         }
 
         pub fn call_swappy_in_subservio(&mut self, swappy_badge: Bucket) -> Bucket {
             let bucket = self.cerb_vault.take(1);
-            let swappy_badge = bucket.authorize_with_all(|| {
-                self.child.call_swappy(swappy_badge)
-            });
+            let swappy_badge = bucket.authorize_with_all(|| self.child.call_swappy(swappy_badge));
             self.cerb_vault.put(bucket);
             swappy_badge
         }
 
         pub fn pass_proof(&mut self, proof: Proof) {
             self.child.receive_proof(proof);
+        }
+
+        pub fn create_and_pass_proof(&mut self) {
+            let proof = self
+                .cerb_vault
+                .as_non_fungible()
+                .create_proof_of_non_fungibles(&indexset!(NonFungibleLocalId::integer(1)));
+            self.child.receive_and_pass_proof(proof.into());
         }
     }
 }
@@ -185,7 +189,10 @@ mod subservio {
             swappy_badge
         }
 
-        pub fn receive_proof(&self, _proof: Proof) {
+        pub fn receive_proof(&self, _proof: Proof) {}
+
+        pub fn receive_and_pass_proof(&self, proof: Proof) {
+            self.swappy.receive_proof(proof);
         }
     }
 }
@@ -207,6 +214,7 @@ mod swappy {
             put_proof_in_auth_zone => PUBLIC;
             set_metadata => PUBLIC;
             update_metadata_rule => PUBLIC;
+            receive_proof => PUBLIC;
             protected_method => restrict_to: [some_role];
             another_protected_method => restrict_to: [some_role];
             another_protected_method2 => restrict_to: [some_role];
@@ -277,9 +285,9 @@ mod swappy {
         }
 
         pub fn protected_function() {}
-    
-        pub fn method_protected_by_cerb_and_swappy(&self) {
-        }
 
+        pub fn method_protected_by_cerb_and_swappy(&self) {}
+
+        pub fn receive_proof(&self, _proof: Proof) {}
     }
 }

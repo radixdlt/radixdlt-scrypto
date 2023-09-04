@@ -755,7 +755,12 @@ fn scenario_27() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
+        )
+    });
 }
 
 #[test]
@@ -775,7 +780,11 @@ fn scenario_28() {
             builder.call_method(env.big_fi, "deposit_cerb", manifest_args!(bucket))
         })
         .with_bucket("swappy", |builder, bucket| {
-            builder.call_method(env.big_fi, "call_swappy_in_subservio", manifest_args!(bucket))
+            builder.call_method(
+                env.big_fi,
+                "call_swappy_in_subservio",
+                manifest_args!(bucket),
+            )
         })
         .deposit_batch(env.acco)
         .build();
@@ -793,11 +802,40 @@ fn scenario_29() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account_of_non_fungible(env.acco, NonFungibleGlobalId::new(env.cerb, NonFungibleLocalId::integer(1)))
+        .create_proof_from_account_of_non_fungible(
+            env.acco,
+            NonFungibleGlobalId::new(env.cerb, NonFungibleLocalId::integer(1)),
+        )
         .create_proof_from_auth_zone_of_all(env.cerb, "cerb_proof")
         .with_name_lookup(|builder, lookup| {
-            builder.call_method(env.big_fi, "pass_proof", manifest_args!(lookup.proof("cerb_proof")))
+            builder.call_method(
+                env.big_fi,
+                "pass_proof",
+                manifest_args!(lookup.proof("cerb_proof")),
+            )
         })
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn scenario_30() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
+        .withdraw_from_account(env.acco, env.cerb, 3)
+        .take_all_from_worktop(env.cerb, "cerbs")
+        .with_bucket("cerbs", |builder, bucket| {
+            builder.call_method(env.big_fi, "deposit_cerb", manifest_args!(bucket))
+        })
+        .call_method(env.big_fi, "create_and_pass_proof", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
 
