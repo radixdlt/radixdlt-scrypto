@@ -731,7 +731,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>(),
                     resource_roles: NonFungibleResourceRoles {
                         withdraw_roles: withdraw_roles! {
                             withdrawer => rule!(deny_all);
@@ -768,7 +768,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>(),
                     resource_roles: NonFungibleResourceRoles {
                         withdraw_roles: withdraw_roles! {
                             withdrawer => rule!(deny_all);
@@ -805,7 +805,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(PACKAGE_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<PackageOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
                             minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE)));
@@ -842,7 +842,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(IDENTITY_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<IdentityOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
                             minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE)));
@@ -920,7 +920,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(ACCOUNT_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<AccountOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
                             minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE)));
@@ -1023,7 +1023,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>(),
                     resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
@@ -1054,7 +1054,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>(),
                     resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
@@ -1085,7 +1085,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>(),
                     resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
