@@ -116,6 +116,10 @@ mod big_fi {
         pub fn burn_bucket(&self, bucket: Bucket) {
             bucket.burn();
         }
+
+        pub fn burn_vault(&mut self) {
+            self.cerb_vault.burn(1);
+        }
     }
 }
 
