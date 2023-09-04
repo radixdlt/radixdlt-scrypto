@@ -324,6 +324,17 @@ impl NonFungibleDataSchema {
         }
     }
 
+    pub fn new_local_assuming_all_types_resolved<N: NonFungibleData>() -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let type_id = aggregator.add_child_type_and_descendents::<N>();
+        let schema = generate_full_schema(aggregator);
+        Self::Local {
+            schema,
+            type_id,
+            mutable_fields: N::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
     pub fn new_remote<T: AsRef<[S]>, S: AsRef<str>>(
         package_address: PackageAddress,
         blueprint_name: String,
@@ -349,6 +360,6 @@ impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
     // ScryptoSchema, therefore implementing arbitrary by hand.
     // TODO: Introduce a method that genearates NonFungibleDataSchema in a truly random manner
     fn arbitrary(_u: &mut Unstructured<'a>) -> Result<Self> {
-        Ok(Self::new_local::<()>(TEST_UTILS_PACKAGE))
+        Ok(Self::new_local_assuming_all_types_resolved::<()>())
     }
 }

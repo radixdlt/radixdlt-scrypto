@@ -47,6 +47,21 @@ impl KeyValueStoreDataSchema {
         }
     }
 
+    pub fn new_local_assuming_all_types_resolved<K: ScryptoDescribe, V: ScryptoDescribe>(
+        allow_ownership: bool,
+    ) -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let key_type_id = aggregator.add_child_type_and_descendents::<K>();
+        let value_type_id = aggregator.add_child_type_and_descendents::<V>();
+        let schema = generate_full_schema(aggregator);
+        Self::Local {
+            additional_schema: schema,
+            key_type: key_type_id,
+            value_type: value_type_id,
+            allow_ownership,
+        }
+    }
+
     pub fn new_remote(
         key_type: BlueprintTypeId,
         value_type: BlueprintTypeId,

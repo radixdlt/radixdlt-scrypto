@@ -14,8 +14,6 @@ use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 
-use crate::runtime::Runtime;
-
 /// Represents a resource manager.
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct ResourceManager(pub ResourceAddress);
@@ -118,7 +116,7 @@ impl ResourceManager {
         };
 
         let non_fungible_schema =
-            NonFungibleDataSchema::new_local::<N>(Runtime::package_address(api)?);
+            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<N>();
         let result = api.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

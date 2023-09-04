@@ -157,10 +157,10 @@ fn cannot_write_reference_in_kv_store() {
             match export_name {
                 "kv_store" => {
                     let kv_store = api.key_value_store_new(
-                        KeyValueStoreDataSchema::new_local::<(), Reference>(
-                            TEST_UTILS_PACKAGE,
-                            false,
-                        ),
+                        KeyValueStoreDataSchema::new_local_assuming_all_types_resolved::<
+                            (),
+                            Reference,
+                        >(false),
                     )?;
                     let handle = api.key_value_store_open_entry(
                         &kv_store,
