@@ -507,7 +507,7 @@ impl NonFungibleResourceManagerBlueprint {
             } => {
                 let schema_hash = schema.generate_schema_hash();
                 let mutable_indices =
-                    Self::validate_non_fungible_schema(schema, *type_id, mutable_fields)?;
+                    Self::validate_non_fungible_schema(schema, *type_id, mutable_fields, true)?;
                 Ok((
                     GenericArgs {
                         additional_schema: Some(schema.clone()),
@@ -524,8 +524,12 @@ impl NonFungibleResourceManagerBlueprint {
                 mutable_fields,
             } => {
                 let (schema, scoped_type_id) = api.resolve_blueprint_type(&type_id)?;
-                let mutable_indices =
-                    Self::validate_non_fungible_schema(&schema, scoped_type_id.1, mutable_fields)?;
+                let mutable_indices = Self::validate_non_fungible_schema(
+                    &schema,
+                    scoped_type_id.1,
+                    mutable_fields,
+                    false,
+                )?;
                 Ok((
                     GenericArgs {
                         additional_schema: None,
@@ -541,17 +545,20 @@ impl NonFungibleResourceManagerBlueprint {
         schema: &VersionedScryptoSchema,
         local_type_id: LocalTypeId,
         mutable_fields: &IndexSet<String>,
+        should_validate_schema: bool,
     ) -> Result<IndexMap<String, usize>, RuntimeError> {
         let mut mutable_field_index = indexmap!();
 
         // Validate schema
-        validate_schema(schema.v1()).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
-                NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                    InvalidNonFungibleSchema::SchemaValidationError(e),
-                ),
-            ))
-        })?;
+        if should_validate_schema {
+            validate_schema(schema.v1()).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                        InvalidNonFungibleSchema::SchemaValidationError(e),
+                    ),
+                ))
+            })?;
+        }
 
         // Validate type kind
         let type_kind =
