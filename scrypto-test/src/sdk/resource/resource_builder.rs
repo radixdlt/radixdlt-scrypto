@@ -638,7 +638,7 @@ impl<D: NonFungibleData>
         E: Debug,
     {
         let non_fungible_schema =
-            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
+            NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
         let metadata = self
             .metadata_config
@@ -698,7 +698,7 @@ impl<D: NonFungibleData>
         E: Debug,
     {
         let non_fungible_schema =
-            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
+            NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
         let metadata = self
             .metadata_config
@@ -758,7 +758,7 @@ impl<D: NonFungibleData>
         E: Debug,
     {
         let non_fungible_schema =
-            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
+            NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
         let metadata = self
             .metadata_config
@@ -821,7 +821,7 @@ impl<D: NonFungibleData>
         E: Debug,
     {
         let non_fungible_schema =
-            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
+            NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
         let metadata = self
             .metadata_config
@@ -910,7 +910,7 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
 {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
         let non_fungible_schema =
-            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<D>();
+            NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
         private::CreateWithNoSupply::NonFungible {
             owner_role: self.owner_role,

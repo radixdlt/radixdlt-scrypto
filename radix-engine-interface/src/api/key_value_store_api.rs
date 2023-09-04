@@ -48,7 +48,7 @@ impl KeyValueStoreDataSchema {
         }
     }
 
-    pub fn new_local_assuming_all_types_resolved<K: ScryptoDescribe, V: ScryptoDescribe>(
+    pub fn new_local_without_self_package_replacement<K: ScryptoDescribe, V: ScryptoDescribe>(
         allow_ownership: bool,
     ) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();

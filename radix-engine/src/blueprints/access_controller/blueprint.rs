@@ -540,7 +540,7 @@ impl AccessControllerBlueprint {
 
             let resource_address = {
                 let non_fungible_schema =
-                    NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>();
+                    NonFungibleDataSchema::new_local_without_self_package_replacement::<()>();
 
                 let result = api.call_function(
                     RESOURCE_PACKAGE,

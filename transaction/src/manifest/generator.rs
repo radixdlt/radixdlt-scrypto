@@ -1794,7 +1794,8 @@ mod tests {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema:
-                            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>(),
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
+                            ),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_string(), locked;
@@ -1836,7 +1837,7 @@ mod tests {
                             track_total_supply: false,
                             id_type: NonFungibleIdType::Integer,
                             non_fungible_schema:
-                                NonFungibleDataSchema::new_local_assuming_all_types_resolved::<
+                                NonFungibleDataSchema::new_local_without_self_package_replacement::<
                                     MyNonFungibleData,
                                 >(),
                             resource_roles: NonFungibleResourceRoles::default(),
@@ -1905,7 +1906,8 @@ mod tests {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema:
-                            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>(),
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
+                            ),
                         resource_roles: NonFungibleResourceRoles::default(),
                         metadata: metadata! {
                             init {

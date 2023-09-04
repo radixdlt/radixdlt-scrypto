@@ -594,7 +594,7 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema:
-                            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<V>(),
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
                         resource_roles,
                         metadata,
                         entries,
@@ -613,7 +613,7 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema:
-                            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<V>(),
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
                         resource_roles,
                         metadata,
                         address_reservation: None,
@@ -653,7 +653,7 @@ impl ManifestBuilder {
                         owner_role,
                         track_total_supply,
                         non_fungible_schema:
-                            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<V>(),
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
                         resource_roles,
                         metadata,
                         entries,
@@ -671,7 +671,7 @@ impl ManifestBuilder {
                         owner_role,
                         track_total_supply,
                         non_fungible_schema:
-                            NonFungibleDataSchema::new_local_assuming_all_types_resolved::<V>(),
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
                         resource_roles,
                         metadata,
                         entries: vec![],

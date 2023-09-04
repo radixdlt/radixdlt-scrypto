@@ -91,7 +91,7 @@ impl VmInvoke for TestInvoke {
                             entries,
                             owner_role: Default::default(),
                             track_total_supply: Default::default(),
-                            non_fungible_schema: NonFungibleDataSchema::new_local_assuming_all_types_resolved::<()>(),
+                            non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
                             resource_roles: Default::default(),
                             metadata: Default::default(),
                             address_reservation: Default::default(),
