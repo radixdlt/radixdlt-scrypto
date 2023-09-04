@@ -1091,6 +1091,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         Decimal::one(),
+        Decimal::ZERO,
         ComponentAddress::virtual_account_from_public_key(&validator_key),
         Epoch::of(4),
         CustomGenesis::default_consensus_manager_config()
@@ -1442,6 +1443,7 @@ fn validator_unstake_emits_correct_events() {
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
+        Decimal::ZERO,
         account_with_su,
         initial_epoch,
         CustomGenesis::default_consensus_manager_config()
@@ -1605,6 +1607,7 @@ fn validator_claim_xrd_emits_correct_events() {
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
+        Decimal::ZERO,
         account_with_su,
         initial_epoch,
         CustomGenesis::default_consensus_manager_config()
@@ -1711,16 +1714,6 @@ fn validator_claim_xrd_emits_correct_events() {
             _ => false,
         });
         assert!(match events.get(6) {
-            Some((
-                event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::Main),
-                    ..,
-                ),
-                ..,
-            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
-            _ => false,
-        });
-        assert!(match events.get(7) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),

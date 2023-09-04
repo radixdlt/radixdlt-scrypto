@@ -57,7 +57,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                         BurnFungibleResourceEvent::EVENT_NAME => {
                             let event: BurnFungibleResourceEvent =
                                 scrypto_decode(event_payload).unwrap();
-                            let tracked = self.resource_tracker.get_mut(&address).unwrap();
+                            let tracked = self.resource_tracker.entry(address).or_default();
                             *tracked = tracked.safe_sub(event.amount).unwrap();
 
                             if tracked.is_negative() {
@@ -84,7 +84,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                             let event: BurnNonFungibleResourceEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let amount: Decimal = event.ids.len().into();
-                            let tracked = self.resource_tracker.get_mut(&address).unwrap();
+                            let tracked = self.resource_tracker.entry(address).or_default();
                             *tracked = tracked.safe_sub(amount).unwrap();
 
                             if tracked.is_negative() {

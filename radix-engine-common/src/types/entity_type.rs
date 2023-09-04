@@ -172,6 +172,10 @@ impl EntityType {
         matches!(self, EntityType::GlobalConsensusManager)
     }
 
+    pub const fn is_global_validator(&self) -> bool {
+        matches!(self, EntityType::GlobalValidator)
+    }
+
     pub const fn is_global_resource_manager(&self) -> bool {
         matches!(
             self,

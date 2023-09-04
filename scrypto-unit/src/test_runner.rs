@@ -5,6 +5,7 @@ use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
+use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::checkers::*;
@@ -33,6 +34,9 @@ use radix_engine_interface::blueprints::consensus_manager::{
     VALIDATOR_STAKE_AS_OWNER_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::blueprints::pool::{
+    OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
@@ -137,6 +141,23 @@ impl CustomGenesis {
         Self::single_validator_and_staker(
             pub_key,
             Decimal::one(),
+            Decimal::zero(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+            genesis_epoch,
+            initial_config,
+        )
+    }
+
+    pub fn default_with_xrd_amount(
+        xrd_amount: Decimal,
+        genesis_epoch: Epoch,
+        initial_config: ConsensusManagerConfig,
+    ) -> CustomGenesis {
+        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+        Self::single_validator_and_staker(
+            pub_key,
+            Decimal::one(),
+            xrd_amount,
             ComponentAddress::virtual_account_from_public_key(&pub_key),
             genesis_epoch,
             initial_config,
@@ -163,6 +184,7 @@ impl CustomGenesis {
     pub fn single_validator_and_staker(
         validator_public_key: Secp256k1PublicKey,
         stake_xrd_amount: Decimal,
+        xrd_amount: Decimal,
         staker_account: ComponentAddress,
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
@@ -170,6 +192,7 @@ impl CustomGenesis {
         Self::validators_and_single_staker(
             vec![(validator_public_key, stake_xrd_amount)],
             staker_account,
+            xrd_amount,
             genesis_epoch,
             initial_config,
         )
@@ -178,6 +201,7 @@ impl CustomGenesis {
     pub fn validators_and_single_staker(
         validators_and_stakes: Vec<(Secp256k1PublicKey, Decimal)>,
         staker_account: ComponentAddress,
+        stacker_account_xrd_amount: Decimal,
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
@@ -203,6 +227,16 @@ impl CustomGenesis {
             GenesisDataChunk::Stakes {
                 accounts: vec![staker_account],
                 allocations: stake_allocations,
+            },
+            GenesisDataChunk::ResourceBalances {
+                accounts: vec![staker_account],
+                allocations: vec![(
+                    XRD,
+                    vec![GenesisResourceAllocation {
+                        account_index: 0u32,
+                        amount: stacker_account_xrd_amount,
+                    }],
+                )],
             },
         ];
         CustomGenesis {
@@ -1488,13 +1522,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     /// * Call `.expect_commit_success()` on the receipt to get access to receipt details.
     pub fn call_method(
         &mut self,
-        component_address: impl ResolvableGlobalAddress,
+        address: impl ResolvableGlobalAddress,
         method_name: impl Into<String>,
         args: impl ResolvableArguments,
     ) -> TransactionReceipt {
         self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .call_method(component_address, method_name, args)
+                .call_method(address, method_name, args)
                 .build(),
             vec![],
         )
@@ -1927,6 +1961,33 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
+    }
+
+    pub fn create_one_resource_pool(
+        &mut self,
+        resource_address: ResourceAddress,
+        pool_manager_rule: AccessRule,
+    ) -> (ComponentAddress, ResourceAddress) {
+        let manifest = ManifestBuilder::new()
+            .call_function(
+                POOL_PACKAGE,
+                ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
+                ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
+                OneResourcePoolInstantiateManifestInput {
+                    resource_address,
+                    pool_manager_rule,
+                    owner_role: OwnerRole::None,
+                    address_reservation: None,
+                },
+            )
+            .build();
+        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        let commit_result = receipt.expect_commit_success();
+
+        (
+            commit_result.new_component_addresses()[0],
+            commit_result.new_resource_addresses()[0],
+        )
     }
 
     pub fn new_component<F>(

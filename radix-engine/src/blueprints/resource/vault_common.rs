@@ -1,6 +1,5 @@
 use crate::blueprints::resource::*;
-use crate::errors::RuntimeError;
-use crate::internal_prelude::ApplicationError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;

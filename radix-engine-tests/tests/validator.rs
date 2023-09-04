@@ -22,6 +22,7 @@ where
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
+        Decimal::ZERO,
         validator_account_address,
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
