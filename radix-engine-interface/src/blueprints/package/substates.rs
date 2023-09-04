@@ -164,7 +164,7 @@ pub struct BlueprintInterface {
     pub state: IndexedStateSchema,
     pub functions: IndexMap<String, FunctionSchema>,
     pub events: IndexMap<String, BlueprintPayloadDef>,
-    pub types: IndexMap<String, LocalTypeId>,
+    pub types: IndexMap<String, NodeScopedTypeId>,
 }
 
 impl BlueprintInterface {

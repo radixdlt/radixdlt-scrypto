@@ -1697,10 +1697,10 @@ where
     }
 }
 
-// #[cfg_attr(
-//     feature = "std",
-//     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
-// )]
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,

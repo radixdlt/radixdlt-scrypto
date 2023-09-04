@@ -84,7 +84,7 @@ impl<'a, K: ScryptoEncode> ObjectCollectionKey<'a, K> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SystemReaderError {
     FieldDoesNotExist,
     CollectionDoesNotExist,
@@ -96,6 +96,7 @@ pub enum SystemReaderError {
     NotAnObject,
     SchemaDoesNotExist,
     TargetNotSupported,
+    BlueprintTypeNotFound(String),
 }
 
 /// A System Layer (Layer 2) abstraction over an underlying substate database
@@ -588,7 +589,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         target: &KVStoreTypeTarget,
         key_or_value: KeyOrValue,
     ) -> Result<ResolvedPayloadSchema, SystemReaderError> {
-        let (substs, allow_ownership, allow_non_global_refs) = match key_or_value {
+        let (substitution, allow_ownership, allow_non_global_refs) = match key_or_value {
             KeyOrValue::Key => (&target.kv_store_type.key_generic_substitution, false, false),
             KeyOrValue::Value => (
                 &target.kv_store_type.value_generic_substitution,
@@ -597,13 +598,25 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             ),
         };
 
-        match substs {
-            GenericSubstitution::Local(type_identifier) => {
-                let schema = self.get_schema(&target.meta, &type_identifier.0)?;
+        match substitution {
+            GenericSubstitution::Local(local_type_id) => {
+                let schema = self.get_schema(&target.meta, &local_type_id.0)?;
 
                 Ok(ResolvedPayloadSchema {
                     schema,
-                    type_id: type_identifier.1,
+                    type_id: local_type_id.1,
+                    allow_ownership,
+                    allow_non_global_refs,
+                    schema_origin: SchemaOrigin::KeyValueStore,
+                })
+            }
+            GenericSubstitution::Remote(blueprint_type_id) => {
+                let (schema, scoped_type_id) =
+                    self.get_blueprint_type_schema(&blueprint_type_id)?;
+
+                Ok(ResolvedPayloadSchema {
+                    schema,
+                    type_id: scoped_type_id.1,
                     allow_ownership,
                     allow_non_global_refs,
                     schema_origin: SchemaOrigin::KeyValueStore,
@@ -656,6 +669,14 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                             schema_hash: type_id.0,
                             instance_type_id: instance_index,
                             local_type_id: type_id.1,
+                        })
+                    }
+                    GenericSubstitution::Remote(type_id) => {
+                        let (schema, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
+                        ObjectSubstateTypeReference::Package(PackageTypeReference {
+                            package_address: type_id.package_address,
+                            schema_hash: scoped_type_id.0,
+                            local_type_id: scoped_type_id.1,
                         })
                     }
                 }
@@ -719,6 +740,17 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
                         (schema, type_id.1, SchemaOrigin::Instance)
                     }
+                    GenericSubstitution::Remote(type_id) => {
+                        let (schema, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
+                        (
+                            schema,
+                            scoped_type_id.1,
+                            SchemaOrigin::Blueprint(BlueprintId {
+                                package_address: type_id.package_address,
+                                blueprint_name: type_id.blueprint_name,
+                            }),
+                        )
+                    }
                 }
             }
         };
@@ -748,6 +780,30 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok(schema
             .into_value()
             .expect("Schema should exist if substate exists"))
+    }
+
+    fn get_blueprint_type_schema(
+        &mut self,
+        type_id: &BlueprintTypeId,
+    ) -> Result<(VersionedScryptoSchema, NodeScopedTypeId), SystemReaderError> {
+        let BlueprintTypeId {
+            package_address,
+            blueprint_name,
+            type_name,
+        } = type_id.clone();
+        let definition = self.get_blueprint_payload_def(&BlueprintId {
+            package_address,
+            blueprint_name,
+        })?;
+        let scoped_type_id = definition
+            .interface
+            .types
+            .get(&type_name)
+            .ok_or(SystemReaderError::BlueprintTypeNotFound(type_name.clone()))?;
+        Ok((
+            self.get_schema(package_address.as_node_id(), &scoped_type_id.0)?,
+            scoped_type_id.clone(),
+        ))
     }
 
     pub fn get_blueprint_payload_def(
