@@ -21,7 +21,7 @@ struct Struct2 {
 }
 
 #[blueprint]
-#[types(Hi => Struct1, Hello => Struct2)]
+#[types(Struct1, Struct2 as Hi)]
 mod simple {
     use scrypto::prelude::OwnerRole;
 

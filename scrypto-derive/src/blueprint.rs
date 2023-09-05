@@ -463,6 +463,34 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         import_statements
     };
 
+    let mut registered_type_defs = Vec::<ItemStruct>::new();
+    let mut registered_type_impls = Vec::<ItemImpl>::new();
+
+    for attribute in &blueprint.attributes {
+        if attribute.path.is_ident("types") {
+            let types_inner = parse2::<ast::TypesInner>(attribute.tokens.clone())?;
+            for aliasable_type in types_inner.aliasable_types {
+                if let Some(alias) = aliasable_type.alias {
+                    registered_type_defs.push(parse_quote! {
+                        pub struct #alias;
+                    });
+                    registered_type_impls.push(parse_quote! {
+                        impl RegisteredType for #alias {
+                            const BLUEPRINT_NAME: &'static str = #blueprint_name;
+                        }
+                    });
+                } else {
+                    let path = aliasable_type.path;
+                    registered_type_impls.push(parse_quote! {
+                        impl RegisteredType for #path {
+                            const BLUEPRINT_NAME: &'static str = #blueprint_name;
+                        }
+                    });
+                }
+            }
+        }
+    }
+
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
     #[cfg(not(feature = "no-schema"))]
@@ -539,13 +567,24 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     }
                 } else if attribute.path.is_ident("types") {
                     let types_inner = parse2::<ast::TypesInner>(attribute.tokens.clone())?;
-                    for path in types_inner.paths {
-                        if let Some(..) =
-                            registered_type_paths.insert(path.name.to_string(), path.rust_type)
-                        {
+                    for aliasable_type in types_inner.aliasable_types {
+                        let path = &aliasable_type.path;
+                        let ident_string = if let Some(alias) = &aliasable_type.alias {
+                            alias.to_string()
+                        } else {
+                            quote! { #path }
+                                .to_string()
+                                .split(':')
+                                .last()
+                                .unwrap()
+                                .trim()
+                                .to_owned()
+                        };
+
+                        if let Some(..) = registered_type_paths.insert(ident_string, path.clone()) {
                             return Err(Error::new(
-                                path.name.span(),
-                                "Type ident is already defined",
+                                path.span(),
+                                "A type with an identical name has already been registered",
                             ));
                         }
                     }

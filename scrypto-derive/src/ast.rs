@@ -1,6 +1,6 @@
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
-use syn::token::{Brace, FatArrow, Paren};
+use syn::token::{As, Brace, Paren};
 use syn::{
     braced, parenthesized, Attribute, Ident, ItemConst, ItemImpl, ItemMacro, ItemStruct, ItemUse,
     Path, Result, Token, Visibility,
@@ -106,7 +106,7 @@ impl Parse for EventsInner {
 
 pub struct TypesInner {
     pub paren_token: Paren,
-    pub paths: Punctuated<TypeAlias, Token![,]>,
+    pub aliasable_types: Punctuated<AliasableType, Token![,]>,
 }
 
 impl Parse for TypesInner {
@@ -114,22 +114,28 @@ impl Parse for TypesInner {
         let content;
         Ok(Self {
             paren_token: parenthesized!(content in input),
-            paths: content.parse_terminated(TypeAlias::parse)?,
+            aliasable_types: content.parse_terminated(AliasableType::parse)?,
         })
     }
 }
 
-pub struct TypeAlias {
-    pub name: Ident,
-    pub rust_type: Path,
+pub struct AliasableType {
+    pub path: Path,
+    pub alias: Option<Ident>,
 }
 
-impl Parse for TypeAlias {
+impl Parse for AliasableType {
     fn parse(input: ParseStream) -> Result<Self> {
-        let name: Ident = input.parse()?;
-        input.parse::<FatArrow>()?;
         let rust_type: Path = input.parse()?;
+        let alias = if input.parse::<Option<As>>()?.is_some() {
+            Some(input.parse::<Ident>()?)
+        } else {
+            None
+        };
 
-        Ok(Self { name, rust_type })
+        Ok(Self {
+            path: rust_type,
+            alias,
+        })
     }
 }
