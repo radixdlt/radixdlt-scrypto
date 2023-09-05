@@ -20,7 +20,9 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::{LegacyStateUpdates, NodeStateUpdates, StateUpdates};
+use crate::track::{
+    BatchPartitionUpdate, LegacyStateUpdates, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
+};
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
@@ -262,12 +264,26 @@ fn merge_asserting_no_overlap(target: &mut StateUpdates, source: StateUpdates) {
                 for (partition_num, partition_state_updates) in by_partition {
                     let previous_target_partition_state_updates =
                         target_by_partition.insert(partition_num, partition_state_updates);
-                    if previous_target_partition_state_updates.is_some() {
+                    if !is_noop_partition_state_updates(&previous_target_partition_state_updates) {
                         panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
                     }
                 }
             }
         }
+    }
+}
+
+/// Returns true if the given update is effectively no-op (i.e. [`None`] or empty delta).
+/// This check is required since under some circumstances, Track may end up with empty partition
+/// record (in fact, this check was migrated from previous version of the code, from before
+/// [`StateUpdates`] structure refactoring).
+fn is_noop_partition_state_updates(opt_updates: &Option<PartitionStateUpdates>) -> bool {
+    let Some(updates) = opt_updates else {
+        return true;
+    };
+    match updates {
+        PartitionStateUpdates::Delta { by_substate } => by_substate.is_empty(),
+        PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset { .. }) => false,
     }
 }
 
