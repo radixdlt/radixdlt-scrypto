@@ -47,7 +47,7 @@ mod wasm_buffers {
         pub fn read_memory(
             &self,
             buffer_size: usize,
-            read_memory_offs: usize,
+            read_memory_offs: isize,
             read_memory_len: usize,
         ) {
             // SBOR encoding of Vec<u8>
@@ -66,11 +66,14 @@ mod wasm_buffers {
             let handle = self.get_kv_store_handle();
 
             unsafe {
-                kv_entry::kv_entry_write(
-                    handle,
-                    buffer.as_ptr().add(read_memory_offs),
-                    read_memory_len,
-                )
+                let mut buffer_ptr = buffer.as_ptr();
+                buffer_ptr = if read_memory_offs < 0 {
+                    buffer_ptr.sub((-read_memory_offs) as usize)
+                } else {
+                    buffer_ptr.add(read_memory_offs as usize)
+                };
+
+                kv_entry::kv_entry_write(handle, buffer_ptr, read_memory_len)
             };
             unsafe { kv_entry::kv_entry_close(handle) };
         }
@@ -83,7 +86,7 @@ mod wasm_buffers {
         /// WASM memory grows in 64KB chunks.
         /// If attempting to access outside WASM memory, make sure that
         /// write_memory_offs > buffer_size + 64KB
-        pub fn write_memory(&self, buffer_size: usize, write_memory_offs: usize) {
+        pub fn write_memory(&self, buffer_size: usize, write_memory_offs: isize) {
             let handle = self.get_kv_store_handle();
             let buffer = unsafe { kv_entry::kv_entry_read(handle) };
 
@@ -91,7 +94,14 @@ mod wasm_buffers {
             let _vec = {
                 let mut vec = Vec::<u8>::with_capacity(buffer_size);
                 unsafe {
-                    buffer::buffer_consume(buffer.id(), vec.as_mut_ptr().add(write_memory_offs));
+                    let mut vec_ptr = vec.as_mut_ptr();
+                    vec_ptr = if write_memory_offs < 0 {
+                        vec_ptr.sub((-write_memory_offs) as usize)
+                    } else {
+                        vec_ptr.add(write_memory_offs as usize)
+                    };
+
+                    buffer::buffer_consume(buffer.id(), vec_ptr);
                     vec.set_len(buffer_size);
                 };
                 vec
