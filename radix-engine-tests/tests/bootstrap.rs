@@ -6,6 +6,7 @@ use radix_engine::system::checkers::{
 };
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine::track::LegacyStateUpdates;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -180,7 +181,8 @@ fn assert_complete_system_structure(result: &CommitResult) {
         event_system_structures,
     } = &result.system_structure;
 
-    for ((node_id, partition_num), by_substate_key) in &result.state_updates.system_updates {
+    let system_updates = result.state_updates.clone().into_legacy().system_updates;
+    for ((node_id, partition_num), by_substate_key) in &system_updates {
         for substate_key in by_substate_key.keys() {
             let structure = substate_system_structures
                 .get(node_id)

@@ -2467,8 +2467,12 @@ pub fn validate_notarized_transaction<'a>(
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
-    let system_updates = &commit_result.state_updates.system_updates;
-    for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
+    let system_updates = commit_result
+        .state_updates
+        .clone()
+        .into_legacy()
+        .system_updates;
+    for ((node_id, partition_num), partition_updates) in (&system_updates).into_iter() {
         for (substate_key, database_update) in partition_updates.into_iter() {
             let typed_substate_key =
                 to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)
