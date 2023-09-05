@@ -87,7 +87,7 @@ fn test_events_of_commit_failure() {
                         .expect_commit_failure()
                         .fee_destination
                         .to_proposer
-                        .safe_add(
+                        .checked_add(
                             receipt
                                 .expect_commit_failure()
                                 .fee_destination
@@ -174,7 +174,7 @@ fn create_proof_emits_correct_events() {
                         .expect_commit_success()
                         .fee_destination
                         .to_proposer
-                        .safe_add(
+                        .checked_add(
                             receipt
                                 .expect_commit_success()
                                 .fee_destination
@@ -1983,7 +1983,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     let mut total_burn_amount = Decimal::ZERO;
     for component in test_runner.find_all_components() {
         let balance = test_runner.get_component_balance(component, resource_address);
-        total_supply = total_supply.safe_add(balance).unwrap();
+        total_supply = total_supply.checked_add(balance).unwrap();
         println!("{:?}, {}", component, balance);
     }
     for tx_events in test_runner.collected_events() {
@@ -1998,7 +1998,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
             match actual_type_name.as_str() {
                 "MintFungibleResourceEvent" => {
                     total_mint_amount = total_mint_amount
-                        .safe_add(
+                        .checked_add(
                             scrypto_decode::<MintFungibleResourceEvent>(&event.1)
                                 .unwrap()
                                 .amount,
@@ -2007,7 +2007,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
                 }
                 "BurnFungibleResourceEvent" => {
                     total_burn_amount = total_burn_amount
-                        .safe_add(
+                        .checked_add(
                             scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
                                 .unwrap()
                                 .amount,
@@ -2023,7 +2023,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     println!("Total burn amount: {}", total_burn_amount);
     assert_eq!(
         total_supply,
-        total_mint_amount.safe_sub(total_burn_amount).unwrap()
+        total_mint_amount.checked_sub(total_burn_amount).unwrap()
     );
 
     // Query total supply from the resource manager
@@ -2093,7 +2093,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
     let mut total_burn_non_fungibles = BTreeSet::new();
     for component in test_runner.find_all_components() {
         let balance = test_runner.get_component_balance(component, resource_address);
-        total_supply = total_supply.safe_add(balance).unwrap();
+        total_supply = total_supply.checked_add(balance).unwrap();
         println!("{:?}, {}", component, balance);
     }
     for tx_events in test_runner.collected_events() {

@@ -10,8 +10,8 @@ use radix_engine_common::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreGenericSubstitutions {
-    pub key_generic_substitutions: GenericSubstitution,
-    pub value_generic_substitutions: GenericSubstitution,
+    pub key_generic_substitution: GenericSubstitution,
+    pub value_generic_substitution: GenericSubstitution,
     pub allow_ownership: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
@@ -33,6 +33,8 @@ pub struct BlueprintSchemaInit {
     pub schema: VersionedScryptoSchema,
     pub state: BlueprintStateSchemaInit,
     pub events: BlueprintEventSchemaInit,
+    /// Registered types for generic substitution
+    pub types: BlueprintTypeSchemaInit,
     pub functions: BlueprintFunctionsSchemaInit,
     pub hooks: BlueprintHooksInit,
 }
@@ -48,6 +50,7 @@ impl Default for BlueprintSchemaInit {
             }),
             state: BlueprintStateSchemaInit::default(),
             events: BlueprintEventSchemaInit::default(),
+            types: BlueprintTypeSchemaInit::default(),
             functions: BlueprintFunctionsSchemaInit::default(),
             hooks: BlueprintHooksInit::default(),
         }
@@ -64,6 +67,12 @@ pub struct BlueprintStateSchemaInit {
 #[sbor(transparent)]
 pub struct BlueprintEventSchemaInit {
     pub event_schema: IndexMap<String, TypeRef<LocalTypeId>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct BlueprintTypeSchemaInit {
+    pub type_schema: IndexMap<String, LocalTypeId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

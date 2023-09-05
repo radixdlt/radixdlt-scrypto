@@ -137,6 +137,7 @@ PUBLISH_PACKAGE_ADVANCED
                             )
                         )
                     ),
+                    Map<String, Enum>(),
                     Tuple(
                         Map<String, Tuple>(
                             "new" => Tuple(
@@ -293,6 +294,7 @@ PUBLISH_PACKAGE_ADVANCED
                             )
                         )
                     ),
+                    Map<String, Enum>(),
                     Tuple(
                         Map<String, Tuple>(
                             "new" => Tuple(
@@ -344,7 +346,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("49502200b6f29670edfed3ae0d412020d110f5fce93a562825a93cd573d6d5e0")
+    Blob("e58d829d6eb4b83834eb7bea2ff34c567c575cb528a7a74fc44a716ab14510cd")
     Map<String, Tuple>()
     Enum<1u8>(
         AddressReservation("package_address_reservation")

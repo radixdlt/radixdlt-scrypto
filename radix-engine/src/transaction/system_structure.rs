@@ -223,11 +223,21 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     .get_kv_store_type_target(node_id)
                     .expect(&format!("Could not get type info for node {node_id:?}"));
 
-                let key_full_type_id = match info.kv_store_type.key_generic_substitutions {
+                let key_full_type_id = match info.kv_store_type.key_generic_substitution {
                     GenericSubstitution::Local(type_id) => type_id.under_node(*node_id),
+                    GenericSubstitution::Remote(type_id) => self
+                        .system_reader
+                        .get_blueprint_type_schema(&type_id)
+                        .map(|x| x.1.under_node(type_id.package_address.into_node_id()))
+                        .expect(&format!("Could not get type info {type_id:?}")),
                 };
-                let value_full_type_id = match info.kv_store_type.value_generic_substitutions {
+                let value_full_type_id = match info.kv_store_type.value_generic_substitution {
                     GenericSubstitution::Local(type_id) => type_id.under_node(*node_id),
+                    GenericSubstitution::Remote(type_id) => self
+                        .system_reader
+                        .get_blueprint_type_schema(&type_id)
+                        .map(|x| x.1.under_node(type_id.package_address.into_node_id()))
+                        .expect(&format!("Could not get type info {type_id:?}")),
                 };
                 SubstateSystemStructure::KeyValueStoreEntry(KeyValueStoreEntryStructure {
                     key_full_type_id,

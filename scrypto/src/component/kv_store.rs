@@ -1,6 +1,6 @@
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
+use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
     own_key_value_store_type_data, OWN_KEY_VALUE_STORE_TYPE,
@@ -34,9 +34,9 @@ impl<
 {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let store_schema = KeyValueStoreGenericArgs::new_with_self_package::<K, V>(
-            true,
+        let store_schema = KeyValueStoreDataSchema::new_local_with_self_package_replacement::<K, V>(
             Runtime::package_address(),
+            true,
         );
 
         Self {

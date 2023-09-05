@@ -26,7 +26,7 @@ pub unsafe fn decimal_pow_native(_a_ptr: *mut u8, _b_ptr: *mut u8, _c_ptr: *mut 
 pub fn decimal_add() -> i64 {
     let x = Decimal::ONE;
     let y = Decimal::ONE;
-    let z = x.safe_add(y).unwrap();
+    let z = x.checked_add(y).unwrap();
     z.is_positive().into()
 }
 
@@ -34,7 +34,7 @@ pub fn decimal_add() -> i64 {
 pub fn decimal_mul() -> i64 {
     let x = Decimal::ONE;
     let y = Decimal::ONE;
-    let z = x.safe_mul(y).unwrap();
+    let z = x.checked_mul(y).unwrap();
     z.is_positive().into()
 }
 
@@ -42,7 +42,7 @@ pub fn decimal_mul() -> i64 {
 pub fn decimal_pow() -> i64 {
     let x = Decimal::from(2);
     let exp = 20;
-    let z = x.safe_powi(exp).unwrap();
+    let z = x.checked_powi(exp).unwrap();
     z.is_positive().into()
 }
 

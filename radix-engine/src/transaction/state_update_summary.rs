@@ -80,7 +80,7 @@ impl Add for BalanceChange {
                 let BalanceChange::Fungible(value) = rhs else {
                     panic!("cannot {:?} + {:?}", self, rhs);
                 };
-                *self_value = self_value.safe_add(value).unwrap();
+                *self_value = self_value.checked_add(value).unwrap();
             }
             BalanceChange::NonFungible {
                 added: self_added,
@@ -198,7 +198,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                     .unwrap_or(Decimal::ZERO);
 
                 // TODO: Handle potential Decimal arithmetic operation (safe_sub) errors instead of panicking.
-                new_balance.safe_sub(old_balance).unwrap()
+                new_balance.checked_sub(old_balance).unwrap()
             })
             .filter(|change| change != &Decimal::ZERO) // prune
             .map(|change| BalanceChange::Fungible(change))

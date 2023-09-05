@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
-use radix_engine_interface::prelude::SafeAdd;
+use radix_engine_interface::prelude::CheckedAdd;
 use radix_engine_interface::prelude::{BlueprintInfo, CollectionIndex};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
@@ -78,7 +78,8 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                         );
                         let amount = vault_balance.into_latest().amount();
                         let tracker = self.resources.entry(address).or_default();
-                        tracker.tracking_supply = tracker.tracking_supply.safe_add(amount).unwrap();
+                        tracker.tracking_supply =
+                            tracker.tracking_supply.checked_add(amount).unwrap();
 
                         self.fungible_vaults.insert(node_id, amount);
                     }
@@ -111,7 +112,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                         let vault_balance = vault_balance.into_latest();
                         tracker.tracking_supply = tracker
                             .tracking_supply
-                            .safe_add(vault_balance.amount)
+                            .checked_add(vault_balance.amount)
                             .unwrap();
 
                         let non_fungible_vault_tracker =
@@ -146,7 +147,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                             self.non_fungible_vaults.entry(node_id).or_default();
                         non_fungible_vault_tracker.tracking_supply = non_fungible_vault_tracker
                             .tracking_supply
-                            .safe_add(Decimal::one())
+                            .checked_add(Decimal::one())
                             .unwrap();
                     }
                 }

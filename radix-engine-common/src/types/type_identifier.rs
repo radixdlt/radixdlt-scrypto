@@ -54,7 +54,17 @@ impl ScopedTypeId {
 }
 
 /// A reference to the type to substitute with for the case of generics.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
 pub enum GenericSubstitution {
     Local(ScopedTypeId),
+    /// Currently supports default version of blueprint only.
+    /// New variants can be added for specific version of blueprint in the future.
+    Remote(BlueprintTypeIdentifier),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
+pub struct BlueprintTypeIdentifier {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub type_name: String,
 }

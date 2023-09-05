@@ -39,6 +39,7 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
                 collections: vec![],
             },
             events: BlueprintEventSchemaInit::default(),
+            types: BlueprintTypeSchemaInit::default(),
             functions: BlueprintFunctionsSchemaInit { functions },
             hooks: BlueprintHooksInit::default(),
         },

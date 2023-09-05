@@ -1430,6 +1430,7 @@ mod tests {
                         collections: vec![],
                     },
                     events: Default::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions: indexmap!(
                             "f".to_string() => FunctionSchemaInit {

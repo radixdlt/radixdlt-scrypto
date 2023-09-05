@@ -10,7 +10,13 @@ mod empty {
     impl Empty {}
 }
 
+#[derive(ScryptoSbor)]
+struct RegisteredStruct {
+    a: String,
+}
+
 #[blueprint]
+#[experimental_types(RegisteredStruct)]
 mod simple {
     use scrypto::prelude::OwnerRole;
 

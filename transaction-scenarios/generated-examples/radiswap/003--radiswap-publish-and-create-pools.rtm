@@ -19,7 +19,7 @@ PUBLISH_PACKAGE_ADVANCED
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1n2g6wz8kh4nkr8vx0cpvnfp97mp98n824ske0tks2z7ttu6pgq5a2z:#1#")
+                        NonFungibleGlobalId("resource_sim1nf8r6wpp9rn8fsrcn4ns5hr55xjmv0tk5ln9c3w9rmc949klq2fd5z:#1#")
                     )
                 )
             )
@@ -383,6 +383,7 @@ PUBLISH_PACKAGE_ADVANCED
                             )
                         )
                     ),
+                    Map<String, Enum>(),
                     Tuple(
                         Map<String, Tuple>(
                             "new" => Tuple(
@@ -476,7 +477,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("53bfc3197c993eb4412bbb155a5a9f95655bbca2543b0e5d114f0e6e14e58fb7")
+    Blob("6ea1d7af76b57f04312dc7c89e9bffe9e2ac47b880f43b01b69b175f3de9fbed")
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(
@@ -520,7 +521,7 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1n2g6wz8kh4nkr8vx0cpvnfp97mp98n824ske0tks2z7ttu6pgq5a2z:#1#")
+                        NonFungibleGlobalId("resource_sim1nf8r6wpp9rn8fsrcn4ns5hr55xjmv0tk5ln9c3w9rmc949klq2fd5z:#1#")
                     )
                 )
             )
@@ -538,7 +539,7 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1n2g6wz8kh4nkr8vx0cpvnfp97mp98n824ske0tks2z7ttu6pgq5a2z:#1#")
+                        NonFungibleGlobalId("resource_sim1nf8r6wpp9rn8fsrcn4ns5hr55xjmv0tk5ln9c3w9rmc949klq2fd5z:#1#")
                     )
                 )
             )

@@ -88,6 +88,9 @@ pub const MAX_FEATURE_NAME_LEN: usize = 100;
 /// The max length of an event name
 pub const MAX_EVENT_NAME_LEN: usize = 100;
 
+/// The max length of a registered type name
+pub const MAX_TYPE_NAME_LEN: usize = 100;
+
 /// The max length of a function name
 pub const MAX_FUNCTION_NAME_LEN: usize = 256;
 

@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     system::system_modules::costing::{
@@ -12,7 +10,6 @@ use radix_engine_queries::typed_substate_layout::{AccountNativePackage, Blueprin
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;
 use scrypto_unit::*;
-use transaction::prelude::*;
 
 #[test]
 fn check_native_function_base_costs() {

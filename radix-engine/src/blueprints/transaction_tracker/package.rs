@@ -92,6 +92,7 @@ impl TransactionTrackerNativePackage {
                         collections,
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },

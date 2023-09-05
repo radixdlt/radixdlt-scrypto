@@ -343,41 +343,41 @@ macro_rules! op_impl {
                     }
                 }
 
-                impl SafeAdd for $t
+                impl CheckedAdd for $t
                 {
                     type Output = $t;
 
-                    fn safe_add(self, other: Self) -> Option<Self::Output> {
+                    fn checked_add(self, other: Self) -> Option<Self::Output> {
                         let opt = self.0.checked_add(other.0);
                         opt.map(|v| Self(v))
                     }
                 }
 
-                impl SafeSub for $t
+                impl CheckedSub for $t
                 {
                     type Output = $t;
 
-                    fn safe_sub(self, other: Self) -> Option<Self::Output> {
+                    fn checked_sub(self, other: Self) -> Option<Self::Output> {
                         let opt = self.0.checked_sub(other.0);
                         opt.map(|v| Self(v))
                     }
                 }
 
-                impl SafeMul for $t
+                impl CheckedMul for $t
                 {
                     type Output = $t;
 
-                    fn safe_mul(self, other: Self) -> Option<Self::Output> {
+                    fn checked_mul(self, other: Self) -> Option<Self::Output> {
                         let opt = self.0.checked_mul(other.0);
                         opt.map(|v| Self(v))
                     }
                 }
 
-                impl SafeDiv for $t
+                impl CheckedDiv for $t
                 {
                     type Output = $t;
 
-                    fn safe_div(self, other: Self) -> Option<Self::Output> {
+                    fn checked_div(self, other: Self) -> Option<Self::Output> {
                         let opt = self.0.checked_div(other.0);
                         opt.map(|v| Self(v))
                     }
@@ -438,11 +438,11 @@ macro_rules! op_impl_signed {
                     }
                 }
 
-                impl SafeNeg for $t {
+                impl CheckedNeg for $t {
                     type Output = Self;
 
                     #[inline]
-                    fn safe_neg(self) -> Option<Self::Output> {
+                    fn checked_neg(self) -> Option<Self::Output> {
                         let c = self.0.checked_neg();
                         c.map(Self)
                     }
