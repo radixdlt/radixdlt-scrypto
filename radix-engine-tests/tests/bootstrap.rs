@@ -6,7 +6,6 @@ use radix_engine::system::checkers::{
 };
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::track::LegacyStateUpdates;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
