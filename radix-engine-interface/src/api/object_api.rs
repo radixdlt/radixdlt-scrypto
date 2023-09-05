@@ -42,6 +42,8 @@ pub enum ModuleId {
     RoleAssignment,
 }
 
+pub type ObjectModuleId = ModuleId;
+
 impl Describe<ScryptoCustomTypeKind> for ModuleId {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::MODULE_ID_TYPE);
