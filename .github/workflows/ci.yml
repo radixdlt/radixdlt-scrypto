@@ -194,25 +194,18 @@ jobs:
         os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        toolchain: 1.70.0
-    - name: reset registry
-      run: rm -fr ~/.cargo/registry
-    - name: Install nextest
-      uses: taiki-e/install-action@nextest
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run tests
-      run: |
-        cargo nextest run \
-          --features post_run_db_check serde \
+        tests-dir: scrypto-tests
+        flags: --features post_run_db_check serde \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests
-        ./check_stack_usage.sh
+    - name: Check stack usage
+      run: ./checkdd_stack_usage.sh
 
   radix-engine-release:
     # Run tests in release variant.
