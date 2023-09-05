@@ -8,5 +8,7 @@ pub mod rtmc;
 pub mod rtmd;
 /// Scrypto CLI.
 pub mod scrypto;
+/// Stubs Generator CLI.
+pub mod scrypto_bindgen;
 /// Utility functions.
 pub mod utils;
