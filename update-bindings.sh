@@ -40,6 +40,5 @@ $($scrypto_bindgen $address --reset-ledger)"
 done
 
 echo "$file_contents" > $PWD/scrypto/src/component/stubs.rs
-rustfmt $PWD/scrypto/src/component/stubs.rs
-
 python3 format-stubs.py
+rustfmt $PWD/scrypto/src/component/stubs.rs
