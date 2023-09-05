@@ -212,7 +212,7 @@ where
                     OwnValidation::IsKeyValueStore,
                 )) =>
         {
-            "NodeId".to_owned()
+            "Own".to_owned()
         }
         TypeKind::Custom(ScryptoCustomTypeKind::Own)
             if type_validation
@@ -225,9 +225,7 @@ where
         TypeKind::Custom(ScryptoCustomTypeKind::Own) => match type_validation {
             TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
                 OwnValidation::IsTypedObject(package_address, bp_name),
-            )) if package_address.is_none()
-                || package_address == Some(schema_resolver.package_address()) =>
-            {
+            )) if package_address == Some(schema_resolver.package_address()) => {
                 format!("Owned<{}>", bp_name.to_pascal_case())
             }
             _ => "Own".to_owned(),
@@ -276,9 +274,7 @@ where
         TypeKind::Custom(ScryptoCustomTypeKind::Reference) => match type_validation {
             TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
                 ReferenceValidation::IsGlobalTyped(package_address, bp_name),
-            )) if package_address.is_none()
-                || package_address == Some(schema_resolver.package_address()) =>
-            {
+            )) if package_address == Some(schema_resolver.package_address()) => {
                 format!("Global<{}>", bp_name.to_pascal_case())
             }
             _ => "Reference".to_owned(),
