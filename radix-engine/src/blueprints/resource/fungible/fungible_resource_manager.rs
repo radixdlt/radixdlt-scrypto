@@ -590,13 +590,14 @@ impl FungibleResourceManagerBlueprint {
                     total_supply_handle,
                 )?
                 .into_latest();
-            total_supply = total_supply
-                .safe_add(amount)
-                .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::FungibleResourceManagerError(
-                        FungibleResourceManagerError::UnexpectedDecimalComputationError,
-                    ),
-                ))?;
+            total_supply =
+                total_supply
+                    .checked_add(amount)
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::FungibleResourceManagerError(
+                            FungibleResourceManagerError::UnexpectedDecimalComputationError,
+                        ),
+                    ))?;
             api.field_write_typed(
                 total_supply_handle,
                 &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(total_supply),
@@ -655,11 +656,13 @@ impl FungibleResourceManagerBlueprint {
                     total_supply_handle,
                 )?
                 .into_latest();
-            total_supply = total_supply.safe_sub(other_bucket.liquid.amount()).ok_or(
-                RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
-                    FungibleResourceManagerError::UnexpectedDecimalComputationError,
-                )),
-            )?;
+            total_supply = total_supply
+                .checked_sub(other_bucket.liquid.amount())
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::FungibleResourceManagerError(
+                        FungibleResourceManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
             api.field_write_typed(
                 total_supply_handle,
                 &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(total_supply),

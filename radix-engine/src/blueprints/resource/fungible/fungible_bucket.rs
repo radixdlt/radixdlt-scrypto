@@ -64,7 +64,7 @@ impl FungibleBucketBlueprint {
             }
             let bucket_amount_plus_one = liquid
                 .amount()
-                .safe_add(Decimal::ONE)
+                .checked_add(Decimal::ONE)
                 .ok_or_else(|| BucketError::DecimalOverflow)?;
             if amount > bucket_amount_plus_one {
                 return Err(RuntimeError::ApplicationError(
@@ -129,7 +129,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
-            .safe_add(Self::locked_amount(api)?)
+            .checked_add(Self::locked_amount(api)?)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::BucketError(BucketError::DecimalOverflow),
             ))
@@ -211,7 +211,7 @@ impl FungibleBucketBlueprint {
         // Take from liquid if needed
         if amount > max_locked {
             let delta = amount
-                .safe_sub(max_locked)
+                .checked_sub(max_locked)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::BucketError(BucketError::DecimalOverflow),
                 ))?;
@@ -249,11 +249,12 @@ impl FungibleBucketBlueprint {
 
         api.field_write_typed(handle, &locked)?;
 
-        let delta = max_locked
-            .safe_sub(locked.amount())
-            .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::DecimalOverflow),
-            ))?;
+        let delta =
+            max_locked
+                .checked_sub(locked.amount())
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::BucketError(BucketError::DecimalOverflow),
+                ))?;
         Self::internal_put(LiquidFungibleResource::new(delta), api)
     }
 

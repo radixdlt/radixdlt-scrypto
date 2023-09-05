@@ -1,39 +1,39 @@
-pub trait SafeAdd<Rhs = Self> {
+pub trait CheckedAdd<Rhs = Self> {
     type Output;
 
-    fn safe_add(self, other: Rhs) -> Option<Self::Output>
+    fn checked_add(self, other: Rhs) -> Option<Self::Output>
     where
         Self: Sized;
 }
 
-pub trait SafeSub<Rhs = Self> {
+pub trait CheckedSub<Rhs = Self> {
     type Output;
 
-    fn safe_sub(self, other: Rhs) -> Option<Self::Output>
+    fn checked_sub(self, other: Rhs) -> Option<Self::Output>
     where
         Self: Sized;
 }
 
-pub trait SafeMul<Rhs = Self> {
+pub trait CheckedMul<Rhs = Self> {
     type Output;
 
-    fn safe_mul(self, other: Rhs) -> Option<Self::Output>
+    fn checked_mul(self, other: Rhs) -> Option<Self::Output>
     where
         Self: Sized;
 }
 
-pub trait SafeDiv<Rhs = Self> {
+pub trait CheckedDiv<Rhs = Self> {
     type Output;
 
-    fn safe_div(self, other: Rhs) -> Option<Self::Output>
+    fn checked_div(self, other: Rhs) -> Option<Self::Output>
     where
         Self: Sized;
 }
 
-pub trait SafeNeg<Rhs = Self> {
+pub trait CheckedNeg<Rhs = Self> {
     type Output;
 
-    fn safe_neg(self) -> Option<Self::Output>
+    fn checked_neg(self) -> Option<Self::Output>
     where
         Self: Sized;
 }

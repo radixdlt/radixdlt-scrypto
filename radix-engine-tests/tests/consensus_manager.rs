@@ -459,7 +459,7 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
 #[test]
 fn create_validator_with_not_enough_payment_should_fail() {
     create_validator_with_low_payment_amount_should_fail(
-        DEFAULT_VALIDATOR_XRD_COST.safe_sub(dec!(1)).unwrap(),
+        DEFAULT_VALIDATOR_XRD_COST.checked_sub(dec!(1)).unwrap(),
         false,
     )
 }
@@ -467,7 +467,7 @@ fn create_validator_with_not_enough_payment_should_fail() {
 #[test]
 fn create_validator_with_too_much_payment_should_succeed() {
     create_validator_with_low_payment_amount_should_fail(
-        DEFAULT_VALIDATOR_XRD_COST.safe_add(dec!(1)).unwrap(),
+        DEFAULT_VALIDATOR_XRD_COST.checked_add(dec!(1)).unwrap(),
         true,
     )
 }
@@ -790,7 +790,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let epoch_emissions_xrd = dec!("0.1");
     let a_initial_stake = dec!("2.5");
     let b_initial_stake = dec!("7.5");
-    let both_initial_stake = a_initial_stake.safe_add(b_initial_stake).unwrap();
+    let both_initial_stake = a_initial_stake.checked_add(b_initial_stake).unwrap();
 
     let a_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let b_key = Secp256k1PrivateKey::from_u64(2).unwrap().public_key();
@@ -849,13 +849,13 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         .inspect_vault_balance(a_substate.stake_xrd_vault_id.0)
         .unwrap();
     let a_stake_added = epoch_emissions_xrd
-        .safe_mul(a_initial_stake)
+        .checked_mul(a_initial_stake)
         .unwrap()
-        .safe_div(both_initial_stake)
+        .checked_div(both_initial_stake)
         .unwrap();
     assert_eq!(
         a_new_stake,
-        a_initial_stake.safe_add(a_stake_added).unwrap()
+        a_initial_stake.checked_add(a_stake_added).unwrap()
     );
 
     let b_substate = test_runner.get_active_validator_info_by_key(&b_key);
@@ -863,13 +863,13 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         .inspect_vault_balance(b_substate.stake_xrd_vault_id.0)
         .unwrap();
     let b_stake_added = epoch_emissions_xrd
-        .safe_mul(b_initial_stake)
+        .checked_mul(b_initial_stake)
         .unwrap()
-        .safe_div(both_initial_stake)
+        .checked_div(both_initial_stake)
         .unwrap();
     assert_eq!(
         b_new_stake,
-        b_initial_stake.safe_add(b_stake_added).unwrap()
+        b_initial_stake.checked_add(b_stake_added).unwrap()
     );
 
     let result = receipt.expect_commit_success();
@@ -980,18 +980,20 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     let validator_new_stake = test_runner
         .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
         .unwrap();
-    let actual_reliability = Decimal::one().safe_div(rounds_per_epoch).unwrap();
-    let tolerated_range = Decimal::one().safe_sub(min_required_reliability).unwrap();
-    let reliability_factor = actual_reliability
-        .safe_sub(min_required_reliability)
-        .unwrap()
-        .safe_div(tolerated_range)
+    let actual_reliability = Decimal::one().checked_div(rounds_per_epoch).unwrap();
+    let tolerated_range = Decimal::one()
+        .checked_sub(min_required_reliability)
         .unwrap();
-    let validator_stake_added = epoch_emissions_xrd.safe_mul(reliability_factor).unwrap();
+    let reliability_factor = actual_reliability
+        .checked_sub(min_required_reliability)
+        .unwrap()
+        .checked_div(tolerated_range)
+        .unwrap();
+    let validator_stake_added = epoch_emissions_xrd.checked_mul(reliability_factor).unwrap();
     assert_eq!(
         validator_new_stake,
         validator_initial_stake
-            .safe_add(validator_stake_added)
+            .checked_add(validator_stake_added)
             .unwrap()
     );
 
@@ -1104,7 +1106,11 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
 
 macro_rules! assert_close_to {
     ($a:expr, $b:expr) => {
-        if Decimal::from($a.safe_sub($b).unwrap()).safe_abs().unwrap() > dec!("0.0001") {
+        if Decimal::from($a.checked_sub($b).unwrap())
+            .checked_abs()
+            .unwrap()
+            > dec!("0.0001")
+        {
             panic!("{} is not close to {}", $a, $b);
         }
     };
@@ -1176,7 +1182,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         },]
     );
     let emission_and_tx1_rewards = emission_xrd_per_epoch
-        .safe_add(receipt1.fee_summary.expected_reward_if_single_validator())
+        .checked_add(receipt1.fee_summary.expected_reward_if_single_validator())
         .unwrap();
     let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
     assert_close_to!(
@@ -1184,7 +1190,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
             .unwrap(),
         initial_stake_amount
-            .safe_add(emission_and_tx1_rewards)
+            .checked_add(emission_and_tx1_rewards)
             .unwrap()
     );
     assert_close_to!(
@@ -1200,12 +1206,14 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     // Assert: during that next epoch, the `next_epoch_fee_factor` was already effective
     let result3 = receipt3.expect_commit_success();
     let next_epoch_start_stake_xrd = initial_stake_amount
-        .safe_add(emission_and_tx1_rewards)
+        .checked_add(emission_and_tx1_rewards)
         .unwrap();
     let next_epoch_fee_xrd = emission_xrd_per_epoch
-        .safe_mul(next_epoch_fee_factor)
+        .checked_mul(next_epoch_fee_factor)
         .unwrap();
-    let next_epoch_net_emission_xrd = emission_xrd_per_epoch.safe_sub(next_epoch_fee_xrd).unwrap();
+    let next_epoch_net_emission_xrd = emission_xrd_per_epoch
+        .checked_sub(next_epoch_fee_xrd)
+        .unwrap();
     let event = test_runner
         .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result3)
         .pop()
@@ -1224,20 +1232,20 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
             .unwrap(),
         initial_stake_amount
-            .safe_add(receipt1.fee_summary.expected_reward_if_single_validator())
+            .checked_add(receipt1.fee_summary.expected_reward_if_single_validator())
             .unwrap()
-            .safe_add(receipt2.fee_summary.expected_reward_if_single_validator())
+            .checked_add(receipt2.fee_summary.expected_reward_if_single_validator())
             .unwrap()
-            .safe_add(emission_xrd_per_epoch.safe_mul(2).unwrap()) // everything still goes into stake, by various means
+            .checked_add(emission_xrd_per_epoch.checked_mul(2).unwrap()) // everything still goes into stake, by various means
             .unwrap()
     );
     // the new fee goes into internal owner's vault (as stake units)
     let stake_unit_exchange_rate = event
         .starting_stake_pool_xrd
-        .safe_div(
+        .checked_div(
             event
                 .starting_stake_pool_xrd
-                .safe_add(next_epoch_net_emission_xrd)
+                .checked_add(next_epoch_net_emission_xrd)
                 .unwrap(),
         )
         .unwrap();
@@ -1247,13 +1255,13 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0)
             .unwrap(),
         emission_and_tx1_rewards
-            .safe_add(
+            .checked_add(
                 stake_unit_exchange_rate
-                    .safe_mul(
+                    .checked_mul(
                         receipt2
                             .fee_summary
                             .expected_reward_if_single_validator()
-                            .safe_add(next_epoch_fee_xrd)
+                            .checked_add(next_epoch_fee_xrd)
                             .unwrap()
                     )
                     .unwrap()
@@ -1319,14 +1327,14 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         )
         .fee_summary
         .expected_reward_if_single_validator();
-    total_rewards = total_rewards.safe_add(last_reward).unwrap();
+    total_rewards = total_rewards.checked_add(last_reward).unwrap();
 
     // ... and wait 1 epoch to make it effective
     last_reward = test_runner
         .advance_to_round(Round::of(1))
         .fee_summary
         .expected_reward_if_single_validator();
-    total_rewards = total_rewards.safe_add(last_reward).unwrap();
+    total_rewards = total_rewards.checked_add(last_reward).unwrap();
     let current_epoch = initial_epoch.next();
 
     // Act: request the fee increase
@@ -1349,7 +1357,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         )
         .fee_summary
         .expected_reward_if_single_validator();
-    total_rewards = total_rewards.safe_add(last_reward).unwrap();
+    total_rewards = total_rewards.checked_add(last_reward).unwrap();
     let increase_effective_at_epoch = current_epoch.after(fee_increase_delay_epochs);
 
     // advance a few epochs (just 1 short of the increase being effective)
@@ -1359,7 +1367,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
             .advance_to_round(Round::of(1))
             .fee_summary
             .expected_reward_if_single_validator();
-        total_rewards = total_rewards.safe_add(last_reward).unwrap();
+        total_rewards = total_rewards.checked_add(last_reward).unwrap();
     }
 
     // Assert: no change yet (the default `fee_factor = 1.0` was effective during all these epochs)
@@ -1370,13 +1378,13 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     assert_close_to!(
         starting_stake_pool,
         initial_stake_amount
-            .safe_add(total_rewards)
+            .checked_add(total_rewards)
             .unwrap()
-            .safe_sub(last_reward)
+            .checked_sub(last_reward)
             .unwrap()
-            .safe_add(
-                num_epochs_with_default_fee
-                    .safe_mul(emission_xrd_per_epoch)
+            .checked_add(
+                emission_xrd_per_epoch
+                    .checked_mul(num_epochs_with_default_fee)
                     .unwrap()
             )
             .unwrap()
@@ -1395,13 +1403,13 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     assert_close_to!(
         event.stake_pool_added_xrd,
         emission_xrd_per_epoch
-            .safe_mul(Decimal::one().safe_sub(increased_fee_factor).unwrap())
+            .checked_mul(Decimal::one().checked_sub(increased_fee_factor).unwrap())
             .unwrap()
     );
     assert_close_to!(
         event.validator_fee_xrd,
         emission_xrd_per_epoch
-            .safe_mul(increased_fee_factor)
+            .checked_mul(increased_fee_factor)
             .unwrap()
     );
     assert_eq!(event.proposals_made, 1);
@@ -2078,7 +2086,7 @@ fn owner_can_lock_stake_units() {
         test_runner
             .get_component_balance(validator_account, validator_substate.stake_unit_resource),
         total_stake_amount
-            .safe_sub(stake_units_to_lock_amount)
+            .checked_sub(stake_units_to_lock_amount)
             .unwrap()
     )
 }
@@ -2165,7 +2173,7 @@ fn owner_can_start_unlocking_stake_units() {
         test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
         Some(
             stake_units_to_lock_amount
-                .safe_sub(stake_units_to_unlock_amount)
+                .checked_sub(stake_units_to_unlock_amount)
                 .unwrap() // subtracted from the locked vault
         )
     );
@@ -2180,7 +2188,7 @@ fn owner_can_start_unlocking_stake_units() {
     assert_eq!(
         test_runner.get_component_balance(validator_account, stake_unit_resource),
         total_stake_amount
-            .safe_sub(stake_units_to_lock_amount)
+            .checked_sub(stake_units_to_lock_amount)
             .unwrap() // NOT in the external vault yet
     )
 }
@@ -2328,7 +2336,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     let stake_units_to_unlock_total_amount = {
         let mut sum = Decimal::ZERO;
         for v in stake_units_to_unlock_amounts.iter() {
-            sum = sum.safe_add(*v).unwrap();
+            sum = sum.checked_add(*v).unwrap();
         }
         sum
     };
@@ -2360,7 +2368,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
         Some(
             stake_units_to_lock_amount
-                .safe_sub(stake_units_to_unlock_total_amount)
+                .checked_sub(stake_units_to_unlock_total_amount)
                 .unwrap() // subtracted from the locked vault
         )
     );
@@ -2375,7 +2383,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     assert_eq!(
         test_runner.get_component_balance(validator_account, stake_unit_resource),
         total_stake_amount
-            .safe_sub(stake_units_to_lock_amount)
+            .checked_sub(stake_units_to_lock_amount)
             .unwrap() // NOT in the external vault yet
     )
 }
@@ -2391,7 +2399,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     let stake_units_to_unlock_amount = dec!("0.2");
     let stake_units_to_unlock_next_amount = dec!("0.03");
     let total_to_unlock_amount = stake_units_to_unlock_amount
-        .safe_add(stake_units_to_unlock_next_amount)
+        .checked_add(stake_units_to_unlock_next_amount)
         .unwrap();
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
@@ -2488,7 +2496,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
         Some(
             stake_units_to_lock_amount
-                .safe_sub(total_to_unlock_amount)
+                .checked_sub(total_to_unlock_amount)
                 .unwrap() // both amounts started unlocking
         )
     );
@@ -2622,9 +2630,9 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     assert_eq!(
         test_runner.get_component_balance(validator_account, stake_unit_resource),
         total_stake_amount
-            .safe_sub(stake_units_to_lock_amount)
+            .checked_sub(stake_units_to_lock_amount)
             .unwrap()
-            .safe_add(stake_units_to_unlock_amount)
+            .checked_add(stake_units_to_unlock_amount)
             .unwrap()
     )
 }
@@ -2740,7 +2748,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     assert_eq!(
         test_runner.get_component_balance(validator_account, stake_unit_resource),
         total_stake_amount
-            .safe_sub(stake_units_to_lock_amount)
+            .checked_sub(stake_units_to_lock_amount)
             .unwrap() // still NOT in the external vault
     )
 }
@@ -2804,7 +2812,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         receipt1
             .fee_summary
             .expected_reward_as_proposer_if_single_validator()
-            .safe_add(9)
+            .checked_add(9)
             .unwrap()
     );
 }
@@ -3016,15 +3024,15 @@ fn test_tips_and_fee_distribution_two_validators() {
         result1
             .fee_destination
             .to_proposer
-            .safe_add(
+            .checked_add(
                 result1
                     .fee_destination
                     .to_validator_set
-                    .safe_mul(initial_stake_amount1)
+                    .checked_mul(initial_stake_amount1)
                     .unwrap()
-                    .safe_div(
+                    .checked_div(
                         initial_stake_amount1
-                            .safe_add(initial_stake_amount2)
+                            .checked_add(initial_stake_amount2)
                             .unwrap()
                     )
                     .unwrap()
@@ -3037,11 +3045,11 @@ fn test_tips_and_fee_distribution_two_validators() {
         result1
             .fee_destination
             .to_validator_set
-            .safe_mul(initial_stake_amount2)
+            .checked_mul(initial_stake_amount2)
             .unwrap()
-            .safe_div(
+            .checked_div(
                 initial_stake_amount1
-                    .safe_add(initial_stake_amount2)
+                    .checked_add(initial_stake_amount2)
                     .unwrap()
             )
             .unwrap()

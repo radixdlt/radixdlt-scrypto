@@ -681,7 +681,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let mut sum = Decimal::ZERO;
         for vault in vaults {
             sum = sum
-                .safe_add(self.inspect_vault_balance(vault).unwrap())
+                .checked_add(self.inspect_vault_balance(vault).unwrap())
                 .unwrap();
         }
         sum

@@ -218,7 +218,7 @@ impl ForWithdrawal for Decimal {
     ) -> Option<Decimal> {
         match withdraw_strategy {
             WithdrawStrategy::Exact => Some(self.clone()),
-            WithdrawStrategy::Rounded(mode) => self.safe_round(divisibility, mode),
+            WithdrawStrategy::Rounded(mode) => self.checked_round(divisibility, mode),
         }
     }
 }

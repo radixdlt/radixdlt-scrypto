@@ -81,9 +81,9 @@ mod radiswap {
             let (output_resource_address, output_reserves) = reserves.into_iter().next().unwrap();
 
             let output_amount = input_amount
-                .safe_mul(output_reserves)
+                .checked_mul(output_reserves)
                 .unwrap()
-                .safe_div(input_reserves.safe_add(input_amount).unwrap())
+                .checked_div(input_reserves.checked_add(input_amount).unwrap())
                 .unwrap();
 
             Runtime::emit_event(SwapEvent {
