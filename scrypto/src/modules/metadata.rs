@@ -26,7 +26,7 @@ pub trait HasMetadata {
 pub struct Metadata(pub ModuleHandle);
 
 impl Attachable for Metadata {
-    const ATTACHED_MODULE_ID: AttachedModuleId = AttachedModuleId::Metadata;
+    const MODULE_ID: AttachedModuleId = AttachedModuleId::Metadata;
 
     fn new(handle: ModuleHandle) -> Self {
         Metadata(handle)

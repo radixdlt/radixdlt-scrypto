@@ -901,7 +901,7 @@ fn generate_methods_struct(method_idents: Vec<Ident>) -> TokenStream {
             }
 
             impl<T> MethodMapping<T> for Methods<T> {
-                const ATTACHED_MODULE_ID: scrypto::api::ModuleId = scrypto::api::ModuleId::Main;
+                const MODULE_ID: scrypto::api::ModuleId = scrypto::api::ModuleId::Main;
 
                 fn to_mapping(self) -> Vec<(String, T)> {
                     vec![]
@@ -922,7 +922,7 @@ fn generate_methods_struct(method_idents: Vec<Ident>) -> TokenStream {
             }
 
             impl<T> MethodMapping<T> for Methods<T> {
-                const ATTACHED_MODULE_ID: scrypto::api::ModuleId = scrypto::api::ModuleId::Main;
+                const MODULE_ID: scrypto::api::ModuleId = scrypto::api::ModuleId::Main;
 
                 fn to_mapping(self) -> Vec<(String, T)> {
                     vec![
@@ -1686,7 +1686,7 @@ mod tests {
                     }
 
                     impl<T> MethodMapping<T> for Methods<T> {
-                        const ATTACHED_MODULE_ID: scrypto::api::ModuleId = scrypto::api::ModuleId::Main;
+                        const MODULE_ID: scrypto::api::ModuleId = scrypto::api::ModuleId::Main;
 
                         fn to_mapping(self) -> Vec<(String, T)> {
                             vec![
