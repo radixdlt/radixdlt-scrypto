@@ -156,44 +156,44 @@ macro_rules! include_schema {
 #[macro_export]
 macro_rules! external_functions {
     (
-        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
+        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)* $(,)?) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. For these component methods, use a separate external_component! macro.");
     };
     (
-        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*);
+        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)* $(,)?);
         $($rest:tt)*
     ) => {
         compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. For these component methods, use a separate external_component! macro.");
     };
     (
-        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
+        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)* $(,)?) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. For these component methods, use a separate external_component! macro.");
     };
     (
-        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*);
+        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)* $(,)?);
         $($rest:tt)*
     ) => {
         compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. For these component methods, use a separate external_component! macro.");
     };
     (
-        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
+        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)* $(,)?) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. Also, just self is not supported. For these component methods, use a separate external_component! macro.");
     };
     (
-        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*);
+        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)* $(,)?);
         $($rest:tt)*
     ) => {
         compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. Also, just self is not supported. For these component methods, use a separate external_component! macro.");
     };
     (
         $(#[$meta: meta])*
-        fn $func_name:ident($($func_args:ident: $func_types:ty),*) -> $func_output:ty;
+        fn $func_name:ident($($func_args:ident: $func_types:ty),* $(,)?) -> $func_output:ty;
         $($rest:tt)*
     ) => {
         $(#[$meta])*
@@ -205,7 +205,7 @@ macro_rules! external_functions {
     };
     (
         $(#[$meta: meta])*
-        fn $func_name:ident($($func_args:ident: $func_types:ty),*);
+        fn $func_name:ident($($func_args:ident: $func_types:ty),* $(,)?);
         $($rest:tt)*
     ) => {
         $(#[$meta])*
@@ -224,7 +224,7 @@ macro_rules! external_functions {
 macro_rules! external_methods {
     (
         $(#[$meta: meta])*
-        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
+        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)* $(,)?) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         $(#[$meta])*
@@ -235,7 +235,7 @@ macro_rules! external_methods {
     };
     (
         $(#[$meta: meta])*
-        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*);
+        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)* $(,)?);
         $($rest:tt)*
     ) => {
         $(#[$meta])*
@@ -246,7 +246,7 @@ macro_rules! external_methods {
     };
     (
         $(#[$meta: meta])*
-        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
+        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)* $(,)?) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         $(#[$meta])*
@@ -257,7 +257,7 @@ macro_rules! external_methods {
     };
     (
         $(#[$meta: meta])*
-        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*);
+        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)* $(,)?);
         $($rest:tt)*
     ) => {
         $(#[$meta])*
@@ -268,28 +268,28 @@ macro_rules! external_methods {
     };
     (
         $(#[$meta: meta])*
-        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
+        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)* $(,)?) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         compile_error!("Components cannot define methods taking self. Did you mean &self or &mut self instead?");
     };
     (
         $(#[$meta: meta])*
-        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*);
+        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)* $(,)?);
         $($rest:tt)*
     ) => {
         compile_error!("Components cannot define methods taking self. Did you mean &self or &mut self instead?");
     };
     (
         $(#[$meta: meta])*
-        fn $method_name:ident($($method_args:ident: $method_types:ty),*) -> $method_output:ty;
+        fn $method_name:ident($($method_args:ident: $method_types:ty),* $(,)?) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         compile_error!("The external_component! macro cannot be used to define static blueprint methods which don't take &self or &mut self. For these package methods, use a separate external_blueprint! macro.");
     };
     (
         $(#[$meta: meta])*
-        fn $method_name:ident($($method_args:ident: $method_types:ty),*);
+        fn $method_name:ident($($method_args:ident: $method_types:ty),* $(,)?);
         $($rest:tt)*
     ) => {
         compile_error!("The external_component! macro cannot be used to define static blueprint methods which don't take &self or &mut self. For these package methods, use a separate external_blueprint! macro.");
