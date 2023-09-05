@@ -1,25 +1,27 @@
 use super::{BalanceChange, CostingParameters, StateUpdateSummary};
 use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
-use crate::system::system_modules::costing::{FeeReserveFinalizationSummary, RoyaltyRecipient};
-use crate::system::system_modules::execution_trace::{
-    ExecutionTrace, ResourceChange, WorktopChange,
-};
+use crate::internal_prelude::*;
+use crate::system::system_modules::costing::*;
+use crate::system::system_modules::execution_trace::*;
 use crate::track::StateUpdates;
 use crate::transaction::SystemStructure;
-use crate::types::*;
 use colored::*;
-use radix_engine_interface::address::AddressDisplayContext;
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::data::scrypto::ScryptoDecode;
-use radix_engine_interface::types::*;
 use sbor::representations::*;
 use transaction::prelude::TransactionCostingParameters;
-use utils::ContextualDisplay;
+
+define_single_versioned! {
+    /// We define a versioned transaction receipt for encoding in the preview API.
+    /// This allows a new toolkit build to be able to handle both current and future
+    /// receipt versions, allowing us to release a wallet ahead-of-time which is forward
+    /// compatible with a new version of the engine (and so a new transaction receipt).
+    #[derive(Clone, ScryptoSbor)]
+    pub enum VersionedTransactionReceipt => TransactionReceipt = TransactionReceiptV1
+}
 
 #[derive(Clone, ScryptoSbor)]
-pub struct TransactionReceipt {
+pub struct TransactionReceiptV1 {
     /// Costing parameters
     pub costing_parameters: CostingParameters,
     /// Transaction costing parameters

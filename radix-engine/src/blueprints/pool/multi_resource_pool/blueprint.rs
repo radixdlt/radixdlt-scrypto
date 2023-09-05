@@ -17,6 +17,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::component::Global;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
 };
@@ -332,7 +333,9 @@ impl MultiResourcePoolBlueprint {
             Some(address_reservation),
         )?;
 
-        Ok(ComponentAddress::new_or_panic(address.as_node_id().0))
+        Ok(Global::new(ComponentAddress::new_or_panic(
+            address.as_node_id().0,
+        )))
     }
 
     /**

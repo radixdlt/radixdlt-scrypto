@@ -20,7 +20,7 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::SystemUpdates;
+use crate::track::{StateUpdates, SystemUpdates};
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
@@ -44,7 +44,6 @@ use radix_engine_interface::math::traits::*;
 use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{
     DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry,
 };
@@ -184,8 +183,7 @@ pub struct GenesisReceipts {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FlashReceipt {
-    pub database_updates: DatabaseUpdates,
-    pub system_updates: SystemUpdates,
+    pub state_updates: StateUpdates,
     pub state_update_summary: StateUpdateSummary,
     pub substate_system_structures: SubstateSystemStructures,
 }
@@ -221,20 +219,14 @@ impl FlashReceipt {
 
                 // A sanity check that the system receipt should not be conflicting with the flash receipt
                 for (txn_key, txn_updates) in &result.state_updates.system_updates {
-                    for (flash_key, _) in &self.system_updates {
+                    for (flash_key, _) in &self.state_updates.system_updates {
                         if txn_key.eq(flash_key) && !txn_updates.is_empty() {
                             panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
                         }
                     }
                 }
 
-                let mut system_updates = self.system_updates;
-                system_updates.extend(result.state_updates.system_updates.drain(..));
-                let mut database_updates = self.database_updates;
-                database_updates.extend(result.state_updates.database_updates.drain(..));
-
-                result.state_updates.system_updates = system_updates;
-                result.state_updates.database_updates = database_updates;
+                result.state_updates.extend(self.state_updates);
 
                 let mut substate_system_structures = self.substate_system_structures;
                 for (node_id, by_partition_num) in
@@ -331,7 +323,11 @@ where
             );
 
         if first_typed_info.is_none() {
-            self.substate_db.commit(&flash_receipt.database_updates);
+            self.substate_db.commit(
+                &flash_receipt
+                    .state_updates
+                    .create_database_updates::<SpreadPrefixKeyMapper>(),
+            );
 
             let mut system_bootstrap_receipt = self.execute_system_bootstrap(
                 genesis_epoch,
@@ -392,8 +388,11 @@ where
 
         let commit_result = receipt.expect_commit(true);
 
-        self.substate_db
-            .commit(&commit_result.state_updates.database_updates);
+        self.substate_db.commit(
+            &commit_result
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
 
         receipt
     }
@@ -418,8 +417,11 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db
-            .commit(&commit_result.state_updates.database_updates);
+        self.substate_db.commit(
+            &commit_result
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
 
         receipt
     }
@@ -440,8 +442,11 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db
-            .commit(&commit_result.state_updates.database_updates);
+        self.substate_db.commit(
+            &commit_result
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
 
         receipt
     }
@@ -563,7 +568,6 @@ pub fn create_system_bootstrap_flash(
 
 pub fn create_substate_flash_for_genesis() -> FlashReceipt {
     let substate_flash = create_system_bootstrap_flash();
-    let mut database_updates = index_map_new();
     let mut system_updates = SystemUpdates::default();
     let mut new_packages = index_set_new();
     let mut new_components = index_set_new();
@@ -571,17 +575,11 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
     let mut new_vaults = index_set_new();
 
     for ((node_id, partition_num), substates) in substate_flash {
-        let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num);
-        let mut partition_updates = index_map_new();
         let mut substate_updates = index_map_new();
         for (substate_key, value) in substates {
-            let key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
-            let update = DatabaseUpdate::Set(value);
-            partition_updates.insert(key, update.clone());
-            substate_updates.insert(substate_key, update);
+            substate_updates.insert(substate_key, DatabaseUpdate::Set(value));
         }
 
-        database_updates.insert(partition_key, partition_updates);
         system_updates.insert((node_id, partition_num), substate_updates);
         if node_id.is_global_package() {
             new_packages.insert(PackageAddress::new_or_panic(node_id.0));
@@ -597,17 +595,20 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         }
     }
 
+    let state_updates = StateUpdates {
+        partition_deletions: index_set_new(),
+        system_updates,
+    };
     let flashed_db = FlashedSubstateDatabase {
-        flash_updates: &database_updates,
+        flash_updates: state_updates.create_database_updates::<SpreadPrefixKeyMapper>(),
     };
     let mut substate_schema_mapper =
         SubstateSchemaMapper::new(SystemDatabaseReader::new(&flashed_db));
-    substate_schema_mapper.add_all_system_updates(&system_updates);
+    substate_schema_mapper.add_all_system_updates(&state_updates.system_updates);
     let substate_system_structures = substate_schema_mapper.done();
 
     FlashReceipt {
-        database_updates,
-        system_updates,
+        state_updates,
         state_update_summary: StateUpdateSummary {
             new_packages,
             new_components,
@@ -621,11 +622,11 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
 
 /// A [`SubstateDatabase`] implementation holding only the initial [`DatabaseUpdates`] from a system
 /// bootstrap flash.
-struct FlashedSubstateDatabase<'a> {
-    flash_updates: &'a DatabaseUpdates,
+struct FlashedSubstateDatabase {
+    flash_updates: DatabaseUpdates,
 }
 
-impl<'a> SubstateDatabase for FlashedSubstateDatabase<'a> {
+impl SubstateDatabase for FlashedSubstateDatabase {
     fn get_substate(
         &self,
         partition_key: &DbPartitionKey,
