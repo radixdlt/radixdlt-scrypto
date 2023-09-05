@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::time::constants::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
@@ -7,10 +8,19 @@ use sbor::*;
 ///
 /// See also the [`UtcDateTime`](super::UtcDateTime) type which supports conversion to/from `Instant`.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Sbor, Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Categorize, Encode, Decode, BasicDescribe)]
 #[sbor(transparent)]
 pub struct Instant {
     pub seconds_since_unix_epoch: i64,
+}
+
+impl Describe<ScryptoCustomTypeKind> for Instant {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::INSTANT_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::instant_type_data()
+    }
 }
 
 impl Instant {

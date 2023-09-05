@@ -78,7 +78,7 @@ fn handle_transparent_describe(
                         .with_name(Some(Cow::Borrowed(stringify!(#ident))))
                 };
                 type_id = quote! {
-                    ::sbor::GlobalTypeId::novel_with_code(
+                    ::sbor::RustTypeId::novel_with_code(
                         stringify!(#ident),
                         &[#type_id],
                         &#code_hash
@@ -88,9 +88,9 @@ fn handle_transparent_describe(
 
             quote! {
                 impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: ::sbor::GlobalTypeId = #type_id;
+                    const TYPE_ID: ::sbor::RustTypeId = #type_id;
 
-                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                         #type_data_content
                     }
 
@@ -137,7 +137,7 @@ fn handle_normal_describe(
                 let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                        const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
                             // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
@@ -153,7 +153,7 @@ fn handle_normal_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                             ::sbor::TypeData::struct_with_named_fields(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
@@ -177,7 +177,7 @@ fn handle_normal_describe(
 
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                        const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
                             // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
@@ -193,7 +193,7 @@ fn handle_normal_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                             ::sbor::TypeData::struct_with_unnamed_fields(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
@@ -211,13 +211,13 @@ fn handle_normal_describe(
             syn::Fields::Unit => {
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                        const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                             stringify!(#ident),
                             &[#(<#child_types>::TYPE_ID,)*],
                             &#code_hash
                         );
 
-                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                             ::sbor::TypeData::struct_with_unit_fields(stringify!(#ident))
                         }
                     }
@@ -278,13 +278,13 @@ fn handle_normal_describe(
 
             quote! {
                 impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                         stringify!(#ident),
                         &[#(<#child_types>::TYPE_ID,)*],
                         &#code_hash
                     );
 
-                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             stringify!(#ident),
@@ -328,14 +328,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
+                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
                         &#code_hash
                     );
 
-                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
@@ -361,44 +361,44 @@ mod tests {
         let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(
             input,
-            Some("radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>"),
+            Some("radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>"),
         )
         .unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >
+                impl ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId> >
                     for Test
                 {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
                         &#code_hash
                     );
                     fn type_data() ->
                         ::sbor::TypeData<
-                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>,
-                            ::sbor::GlobalTypeId> {
+                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>,
+                            ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 (
                                     "a",
                                     <u32 as ::sbor::Describe<
-                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
                                     >>::TYPE_ID
                                 ),
                                 (
                                     "b",
                                     <Vec<u8> as ::sbor::Describe<
-                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
                                     >>::TYPE_ID
                                 ),
                                 (
                                     "c",
                                     <u32 as ::sbor::Describe<
-                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
                                     >>::TYPE_ID
                                 ),
                             ],
@@ -406,7 +406,7 @@ mod tests {
                     }
                     fn add_all_dependencies(
                         aggregator: &mut ::sbor::TypeAggregator<
-                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
                         >
                     ) {
                         aggregator.add_child_type_and_descendents::<u32>();
@@ -426,14 +426,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
+                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
                         &#code_hash
                     );
 
-                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_unnamed_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
@@ -462,14 +462,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
+                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
                         &#code_hash
                     );
 
-                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_unit_fields(stringify!(Test))
                     }
                 }
@@ -487,18 +487,18 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <T: SomeTrait, T2, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2>
+                impl <T: SomeTrait, T2, C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test<T, T2>
                 where
                     T: ::sbor::Describe<C>,
                     T2: ::sbor::Describe<C>
                 {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
                         stringify!(Test),
                         &[<T>::TYPE_ID, <T2>::TYPE_ID,],
                         &#code_hash
                     );
 
-                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             stringify!(Test),

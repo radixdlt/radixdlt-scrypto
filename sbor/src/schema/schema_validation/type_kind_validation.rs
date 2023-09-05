@@ -65,15 +65,15 @@ pub fn validate_type_kind<'a, S: CustomSchema>(
 
 pub fn validate_index<S: CustomSchema>(
     context: &SchemaContext,
-    type_index: &LocalTypeIndex,
+    type_id: &LocalTypeId,
 ) -> Result<(), SchemaValidationError> {
-    match type_index {
-        LocalTypeIndex::WellKnown(well_known_index) => {
+    match type_id {
+        LocalTypeId::WellKnown(well_known_index) => {
             if S::resolve_well_known_type(*well_known_index).is_none() {
                 return Err(SchemaValidationError::TypeKindInvalidWellKnownIndex);
             }
         }
-        LocalTypeIndex::SchemaLocalIndex(schema_local_index) => {
+        LocalTypeId::SchemaLocalIndex(schema_local_index) => {
             if *schema_local_index >= context.local_types_len {
                 return Err(SchemaValidationError::TypeKindInvalidSchemaLocalIndex);
             }

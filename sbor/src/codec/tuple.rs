@@ -122,10 +122,10 @@ mod schema {
     use super::*;
     macro_rules! describe_tuple {
         ($n:tt$( $idx:tt $name:ident)*) => {
-            impl<C: CustomTypeKind<GlobalTypeId>$(, $name: Describe<C>)*> Describe<C> for ($($name,)*) {
-                const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Tuple", &[$($name::TYPE_ID),*]);
+            impl<C: CustomTypeKind<RustTypeId>$(, $name: Describe<C>)*> Describe<C> for ($($name,)*) {
+                const TYPE_ID: RustTypeId = RustTypeId::novel("Tuple", &[$($name::TYPE_ID),*]);
 
-                fn type_data() -> TypeData<C, GlobalTypeId> {
+                fn type_data() -> TypeData<C, RustTypeId> {
                     TypeData::unnamed(
                         TypeKind::Tuple {
                             field_types: crate::rust::vec![

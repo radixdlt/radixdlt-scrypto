@@ -40,6 +40,7 @@ impl TestUtilsBlueprint {
                 events: BlueprintEventSchemaInit {
                     event_schema: Default::default(),
                 },
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit {
                     hooks: Default::default(),

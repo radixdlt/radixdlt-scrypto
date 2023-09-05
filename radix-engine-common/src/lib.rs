@@ -54,7 +54,7 @@ pub mod prelude {
         ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
     };
     pub use sbor::prelude::*;
-    pub use sbor::{Categorize, Decode, Encode, Sbor};
+    pub use sbor::*;
 
     // Exports from this crate
     pub use super::address::*;
@@ -77,5 +77,4 @@ pub(crate) mod internal_prelude {
     pub use super::prelude::*;
     pub use sbor::representations::*;
     pub use sbor::traversal::*;
-    pub use sbor::*;
 }

@@ -14,7 +14,7 @@ macro_rules! dec {
         {
             let base = $crate::math::Decimal::try_from($base).unwrap();
             if $shift >= 0 {
-                base.safe_mul(
+                base.checked_mul(
                     $crate::math::Decimal::try_from(
                         $crate::math::I192::from(10u8)
                             .pow(u32::try_from($shift).expect("Shift overflow")),
@@ -23,7 +23,7 @@ macro_rules! dec {
                 )
                 .expect("Overflow")
             } else {
-                base.safe_div(
+                base.checked_div(
                     $crate::math::Decimal::try_from(
                         $crate::math::I192::from(10u8)
                             .pow(u32::try_from(-$shift).expect("Shift overflow")),
@@ -64,7 +64,7 @@ macro_rules! pdec {
         {
             let base = $crate::math::PreciseDecimal::try_from($base).unwrap();
             if $shift >= 0 {
-                base.safe_mul(
+                base.checked_mul(
                     $crate::math::PreciseDecimal::try_from(
                         $crate::math::I256::from(10u8)
                             .pow(u32::try_from($shift).expect("Shift overflow")),
@@ -73,7 +73,7 @@ macro_rules! pdec {
                 )
                 .expect("Overflow")
             } else {
-                base.safe_div(
+                base.checked_div(
                     $crate::math::PreciseDecimal::try_from(
                         $crate::math::I256::from(10u8)
                             .pow(u32::try_from(-$shift).expect("Shift overflow")),
@@ -126,11 +126,11 @@ macro_rules! well_known_scrypto_custom_type {
         }
 
         impl sbor::Describe<$crate::data::scrypto::ScryptoCustomTypeKind> for $t {
-            const TYPE_ID: sbor::GlobalTypeId = sbor::GlobalTypeId::WellKnown(
+            const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::WellKnown(
                 $crate::data::scrypto::well_known_scrypto_custom_types::$well_known_type,
             );
 
-            fn type_data() -> sbor::TypeData<$crate::data::scrypto::ScryptoCustomTypeKind, sbor::GlobalTypeId> {
+            fn type_data() -> sbor::TypeData<$crate::data::scrypto::ScryptoCustomTypeKind, sbor::RustTypeId> {
                 $crate::data::scrypto::well_known_scrypto_custom_types::$well_known_type_data_method()
             }
         }

@@ -52,14 +52,14 @@ const REPEAT: usize = 1000;
 
 fn bench_schema_new(b: &mut Criterion) {
     let bytes = scrypto_encode(&get_simple_dataset(REPEAT)).unwrap();
-    let (type_index, schema) =
+    let (type_id, schema) =
         generate_full_schema_from_single_type::<SimpleStruct, ScryptoCustomSchema>();
     b.bench_function("schema::validate_payload", |b| {
         b.iter(|| {
             let result = validate_payload_against_schema::<ScryptoCustomExtension, _>(
                 &bytes,
                 schema.v1(),
-                type_index,
+                type_id,
                 &(),
                 SCRYPTO_SBOR_V1_MAX_DEPTH,
             );

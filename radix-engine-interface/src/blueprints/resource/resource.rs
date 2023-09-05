@@ -54,7 +54,7 @@ impl LiquidFungibleResource {
         // update liquidity
         // NOTE: Decimal arithmetic operation safe unwrap.
         // Mint limit should prevent from overflowing
-        self.amount = self.amount.safe_add(other.amount()).expect("Overflow");
+        self.amount = self.amount.checked_add(other.amount()).expect("Overflow");
     }
 
     pub fn take_by_amount(
@@ -70,7 +70,7 @@ impl LiquidFungibleResource {
         }
         self.amount = self
             .amount
-            .safe_sub(amount_to_take)
+            .checked_sub(amount_to_take)
             .ok_or(ResourceError::DecimalOverflow)?;
         Ok(LiquidFungibleResource::new(amount_to_take))
     }

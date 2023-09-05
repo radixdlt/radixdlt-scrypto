@@ -48,7 +48,9 @@ fn test_component_royalty() {
     let account_post_balance = test_runner.get_component_balance(account, XRD);
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
-        account_pre_balance.safe_sub(account_post_balance).unwrap(),
+        account_pre_balance
+            .checked_sub(account_post_balance)
+            .unwrap(),
         receipt.fee_summary.total_cost()
     );
     assert_eq!(
@@ -56,7 +58,7 @@ fn test_component_royalty() {
         receipt
             .fee_summary
             .total_royalty_cost_in_xrd
-            .safe_sub(2)
+            .checked_sub(2)
             .unwrap()
     );
 }
@@ -100,13 +102,15 @@ fn test_component_royalty_in_usd() {
         receipt.fee_summary.total_royalty_cost_in_xrd,
         Decimal::try_from(USD_PRICE_IN_XRD)
             .unwrap()
-            .safe_mul(Decimal::ONE)
+            .checked_mul(Decimal::ONE)
             .unwrap()
     );
     let account_post_balance = test_runner.get_component_balance(account, XRD);
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
-        account_pre_balance.safe_sub(account_post_balance).unwrap(),
+        account_pre_balance
+            .checked_sub(account_post_balance)
+            .unwrap(),
         receipt.fee_summary.total_cost()
     );
     assert_eq!(
@@ -138,7 +142,7 @@ fn test_package_royalty() {
     receipt.expect_commit(true);
     assert_eq!(
         receipt.fee_summary.total_royalty_cost_in_xrd,
-        dec!(1).safe_add(dec!("2")).unwrap()
+        dec!(1).checked_add(dec!("2")).unwrap()
     );
     let account_post_balance = test_runner.get_component_balance(account, XRD);
     let package_royalty = test_runner
@@ -146,7 +150,9 @@ fn test_package_royalty() {
         .unwrap();
     let component_royalty = test_runner.inspect_component_royalty(component_address);
     assert_eq!(
-        account_pre_balance.safe_sub(account_post_balance).unwrap(),
+        account_pre_balance
+            .checked_sub(account_post_balance)
+            .unwrap(),
         receipt.fee_summary.total_cost()
     );
     assert_eq!(package_royalty, dec!("2"));
@@ -319,7 +325,8 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: Roy
 #[test]
 fn cannot_initialize_package_royalty_if_greater_xrd_than_allowed() {
     let max_royalty_allowed_in_xrd = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
-    let royalty_amount = RoyaltyAmount::Xrd(max_royalty_allowed_in_xrd.safe_add(dec!(1)).unwrap());
+    let royalty_amount =
+        RoyaltyAmount::Xrd(max_royalty_allowed_in_xrd.checked_add(dec!(1)).unwrap());
     cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount);
 }
 
@@ -327,9 +334,10 @@ fn cannot_initialize_package_royalty_if_greater_xrd_than_allowed() {
 fn cannot_initialize_package_royalty_if_greater_usd_than_allowed() {
     let max_royalty_allowed_in_xrd = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
     let max_royalty_allowed_in_usd = max_royalty_allowed_in_xrd
-        .safe_div(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
+        .checked_div(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
         .unwrap();
-    let royalty_amount = RoyaltyAmount::Usd(max_royalty_allowed_in_usd.safe_add(dec!(1)).unwrap());
+    let royalty_amount =
+        RoyaltyAmount::Usd(max_royalty_allowed_in_usd.checked_add(dec!(1)).unwrap());
     cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount);
 }
 
@@ -353,7 +361,7 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
                 package_address,
                 "RoyaltyTest",
                 "create_component_with_royalty",
-                manifest_args!(max_royalty_allowed.safe_add(dec!(1)).unwrap()),
+                manifest_args!(max_royalty_allowed.checked_add(dec!(1)).unwrap()),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -395,7 +403,7 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
             .set_component_royalty(
                 component_address,
                 "paid_method",
-                RoyaltyAmount::Xrd(max_royalty_allowed.safe_add(dec!(1)).unwrap()),
+                RoyaltyAmount::Xrd(max_royalty_allowed.checked_add(dec!(1)).unwrap()),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

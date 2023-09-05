@@ -73,10 +73,10 @@ pub(crate) fn serialize_payload<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     payload: &[u8],
     context: &SerializationContext<'_, '_, E>,
-    index: LocalTypeIndex,
+    type_id: LocalTypeId,
     depth_limit: usize,
 ) -> Result<S::Ok, S::Error> {
-    let mut traverser = traverse_payload_with_types(payload, context.schema, index, depth_limit);
+    let mut traverser = traverse_payload_with_types(payload, context.schema, type_id, depth_limit);
     let success =
         serialize_value_tree::<S, E>(serializer, &mut traverser, context, &ValueContext::Default)?;
     consume_end_event::<S, E>(&mut traverser)?;
@@ -90,7 +90,7 @@ pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomExte
     check_exact_end: bool,
     current_depth: usize,
     context: &SerializationContext<'_, '_, E>,
-    index: LocalTypeIndex,
+    type_id: LocalTypeId,
     depth_limit: usize,
 ) -> Result<S::Ok, S::Error> {
     let mut traverser = traverse_partial_payload_with_types(
@@ -99,7 +99,7 @@ pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomExte
         check_exact_end,
         current_depth,
         context.schema,
-        index,
+        type_id,
         depth_limit,
     );
     let success =
@@ -187,12 +187,12 @@ fn serialize_value_tree<S: Serializer, E: SerializableCustomExtension>(
 ) -> Result<S::Ok, S::Error> {
     let typed_event = traverser.next_event();
     match typed_event.event {
-        ContainerStart(type_index, container_header) => match container_header {
+        ContainerStart(type_id, container_header) => match container_header {
             ContainerHeader::Tuple(header) => serialize_tuple(
                 serializer,
                 traverser,
                 context,
-                type_index,
+                type_id,
                 header,
                 value_context,
             ),
@@ -200,7 +200,7 @@ fn serialize_value_tree<S: Serializer, E: SerializableCustomExtension>(
                 serializer,
                 traverser,
                 context,
-                type_index,
+                type_id,
                 header,
                 value_context,
             ),
@@ -208,7 +208,7 @@ fn serialize_value_tree<S: Serializer, E: SerializableCustomExtension>(
                 serializer,
                 traverser,
                 context,
-                type_index,
+                type_id,
                 header,
                 value_context,
             ),
@@ -216,13 +216,13 @@ fn serialize_value_tree<S: Serializer, E: SerializableCustomExtension>(
                 serializer,
                 traverser,
                 context,
-                type_index,
+                type_id,
                 header,
                 value_context,
             ),
         },
-        TerminalValue(type_index, value_ref) => {
-            serialize_terminal_value(serializer, context, type_index, value_ref, value_context)
+        TerminalValue(type_id, value_ref) => {
+            serialize_terminal_value(serializer, context, type_id, value_ref, value_context)
         }
         _ => Err(map_unexpected_event::<S, E>(
             context,
@@ -466,13 +466,13 @@ fn serialize_tuple<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     tuple_header: TupleHeader,
     value_context: &ValueContext,
 ) -> Result<S::Ok, S::Error> {
     let tuple_metadata = context
         .schema
-        .resolve_matching_tuple_metadata(type_index, tuple_header.length);
+        .resolve_matching_tuple_metadata(type_id, tuple_header.length);
     let mut map_aggregator = SerdeValueMapAggregator::new(context, value_context);
 
     if !map_aggregator.should_embed_value_in_contextual_json_map() {
@@ -503,12 +503,12 @@ fn serialize_enum_variant<'s, S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'s, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     variant_header: EnumVariantHeader,
     value_context: &ValueContext,
 ) -> Result<S::Ok, S::Error> {
     let enum_metadata = context.schema.resolve_matching_enum_metadata(
-        type_index,
+        type_id,
         variant_header.variant,
         variant_header.length,
     );
@@ -533,7 +533,7 @@ fn serialize_array<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     array_header: ArrayHeader<E::CustomValueKind>,
     value_context: &ValueContext,
 ) -> Result<S::Ok, S::Error> {
@@ -545,7 +545,7 @@ fn serialize_array<S: Serializer, E: SerializableCustomExtension>(
         return SerializableArrayElements::new(traverser, array_header.length)
             .serialize(serializer, *context);
     }
-    let array_metadata = context.schema.resolve_matching_array_metadata(type_index);
+    let array_metadata = context.schema.resolve_matching_array_metadata(type_id);
     if array_header.element_value_kind == ValueKind::U8 {
         map_aggregator
             .add_initial_details_with_custom_value_kind_name("Bytes", array_metadata.array_name);
@@ -591,7 +591,7 @@ fn serialize_map<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     map_header: MapHeader<E::CustomValueKind>,
     value_context: &ValueContext,
 ) -> Result<S::Ok, S::Error> {
@@ -605,7 +605,7 @@ fn serialize_map<S: Serializer, E: SerializableCustomExtension>(
         )
         .serialize(serializer, *context);
     }
-    let map_metadata = context.schema.resolve_matching_map_metadata(type_index);
+    let map_metadata = context.schema.resolve_matching_map_metadata(type_id);
     map_aggregator.add_initial_details(ValueKind::Map, map_metadata.map_name);
     map_aggregator.add_map_child_details(
         map_header.key_value_kind,
@@ -626,7 +626,7 @@ fn serialize_map<S: Serializer, E: SerializableCustomExtension>(
 fn serialize_terminal_value<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     context: &SerializationContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     value_ref: TerminalValueRef<E::CustomTraversal>,
     value_context: &ValueContext,
 ) -> Result<S::Ok, S::Error> {
@@ -651,7 +651,7 @@ fn serialize_terminal_value<S: Serializer, E: SerializableCustomExtension>(
             let CustomTypeSerialization {
                 include_type_tag_in_simple_mode,
                 serialization,
-            } = E::map_value_for_serialization(context, type_index, custom_value);
+            } = E::map_value_for_serialization(context, type_id, custom_value);
             (serialization, include_type_tag_in_simple_mode)
         }
     };
@@ -661,7 +661,7 @@ fn serialize_terminal_value<S: Serializer, E: SerializableCustomExtension>(
         SerdeValueMapAggregator::new(context, value_context)
     };
     if map_aggregator.should_embed_value_in_contextual_json_map() {
-        let type_name = context.schema.resolve_type_name_from_metadata(type_index);
+        let type_name = context.schema.resolve_type_name_from_metadata(type_id);
         map_aggregator.add_initial_details(value_kind, type_name);
         map_aggregator.add_field("value", serializable_value);
         map_aggregator.into_map(serializer)
@@ -844,7 +844,7 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn complex_value_encoding() {
-        let (type_index, schema) =
+        let (type_id, schema) =
             generate_full_schema_from_single_type::<MyComplexTupleStruct, NoCustomSchema>();
         let value = MyComplexTupleStruct(
             vec![1, 2, 3],
@@ -1174,7 +1174,7 @@ mod tests {
                     mode: SerializationMode::Programmatic,
                     schema: schema.v1(),
                     custom_context: (),
-                    type_index,
+                    type_id,
                     depth_limit: 64,
                 }),
             expected_programmatic,
@@ -1220,7 +1220,7 @@ mod tests {
                     mode: SerializationMode::Natural,
                     schema: schema.v1(),
                     custom_context: (),
-                    type_index,
+                    type_id,
                     depth_limit: 64,
                 }),
             expected_natural,
@@ -1459,7 +1459,7 @@ mod tests {
                     mode: SerializationMode::Model,
                     schema: schema.v1(),
                     custom_context: (),
-                    type_index,
+                    type_id,
                     depth_limit: 64,
                 }),
             expected_model,

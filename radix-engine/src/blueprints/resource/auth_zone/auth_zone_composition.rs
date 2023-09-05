@@ -166,7 +166,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
 
     let mut total = Decimal::ZERO;
     for v in max.values().cloned() {
-        total = total.safe_add(v).ok_or(RuntimeError::ApplicationError(
+        total = total.checked_add(v).ok_or(RuntimeError::ApplicationError(
             ApplicationError::AuthZoneError(AuthZoneError::ComposeProofError(
                 ComposeProofError::UnexpectedDecimalComputationError,
             )),
@@ -267,7 +267,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
                     scrypto_args!(amount),
                 )?;
                 remaining = remaining
-                    .safe_sub(amount)
+                    .checked_sub(amount)
                     .ok_or(RuntimeError::ApplicationError(
                         ApplicationError::AuthZoneError(AuthZoneError::ComposeProofError(
                             ComposeProofError::UnexpectedDecimalComputationError,

@@ -23,6 +23,7 @@ radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, 
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 paste = { version = "1.0.13" }
 radix-engine-macros = { path = "../radix-engine-macros" }
+const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
 
 # WASM validation
 wasmparser = { version = "0.107.0", default-features = false }

@@ -512,6 +512,7 @@ impl AccountBlueprint {
                 schema,
                 state,
                 events,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit {
                     hooks: indexmap!(BlueprintHook::OnVirtualize => ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME.to_string()),

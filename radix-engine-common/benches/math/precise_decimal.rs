@@ -107,8 +107,8 @@ const FROM_STRING_OPERANDS: [&str; 4] = [
     "9",
 ];
 
-ops_fn!(PreciseDecimal, safe_powi, i64, "clone");
-ops_root_fn!(PreciseDecimal, nth_root, "clone");
+ops_fn!(PreciseDecimal, checked_powi, i64, "clone");
+ops_root_fn!(PreciseDecimal, checked_nth_root, "clone");
 bench_ops!(PreciseDecimal, "add");
 bench_ops!(PreciseDecimal, "sub");
 bench_ops!(PreciseDecimal, "mul");

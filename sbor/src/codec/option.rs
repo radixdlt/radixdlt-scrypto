@@ -51,10 +51,10 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option
     }
 }
 
-impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Option", &[T::TYPE_ID]);
+impl<C: CustomTypeKind<RustTypeId>, T: Describe<C>> Describe<C> for Option<T> {
+    const TYPE_ID: RustTypeId = RustTypeId::novel("Option", &[T::TYPE_ID]);
 
-    fn type_data() -> TypeData<C, GlobalTypeId> {
+    fn type_data() -> TypeData<C, RustTypeId> {
         #[allow(unused_imports)]
         use crate::rust::borrow::ToOwned;
         TypeData::enum_variants(

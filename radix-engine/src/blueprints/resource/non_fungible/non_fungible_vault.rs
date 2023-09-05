@@ -328,6 +328,7 @@ impl NonFungibleVaultBlueprint {
                 schema,
                 state,
                 events: event_schema,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },
@@ -448,7 +449,7 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
-            .safe_add(Self::locked_amount(api)?)
+            .checked_add(Self::locked_amount(api)?)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::DecimalOverflow),
             ))
@@ -883,7 +884,7 @@ impl NonFungibleVaultBlueprint {
         }
         balance.amount = balance
             .amount
-            .safe_sub(n)
+            .checked_sub(n)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::DecimalOverflow),
             ))?;
@@ -928,7 +929,7 @@ impl NonFungibleVaultBlueprint {
         substate_ref.amount =
             substate_ref
                 .amount
-                .safe_sub(ids.len())
+                .checked_sub(ids.len())
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::VaultError(VaultError::DecimalOverflow),
                 ))?;
@@ -982,7 +983,7 @@ impl NonFungibleVaultBlueprint {
         vault.amount =
             vault
                 .amount
-                .safe_add(resource.ids.len())
+                .checked_add(resource.ids.len())
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::VaultError(VaultError::DecimalOverflow),
                 ))?;

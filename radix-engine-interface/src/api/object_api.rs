@@ -28,16 +28,27 @@ use sbor::rust::vec::Vec;
     Hash,
     PartialOrd,
     Ord,
-    ScryptoSbor,
-    ManifestSbor,
     FromRepr,
     EnumIter,
+    ManifestSbor,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
 )]
 pub enum ObjectModuleId {
     Main,
     Metadata,
     Royalty,
     RoleAssignment,
+}
+
+impl Describe<ScryptoCustomTypeKind> for ObjectModuleId {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::OBJECT_MODULE_ID_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::object_module_id_type_data()
+    }
 }
 
 impl From<Option<ModuleId>> for ObjectModuleId {
@@ -102,15 +113,27 @@ impl ObjectModuleId {
     Hash,
     PartialOrd,
     Ord,
-    ScryptoSbor,
-    ManifestSbor,
     FromRepr,
     EnumIter,
+    ManifestSbor,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
 )]
+#[sbor(use_repr_discriminators)]
 pub enum ModuleId {
     Metadata = 1,
     Royalty = 2,
     RoleAssignment = 3,
+}
+
+impl Describe<ScryptoCustomTypeKind> for ModuleId {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::MODULE_ID_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::module_id_type_data()
+    }
 }
 
 impl ModuleId {
