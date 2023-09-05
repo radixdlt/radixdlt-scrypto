@@ -91,21 +91,51 @@ mod wasm_buffers {
             let buffer = unsafe { kv_entry::kv_entry_read(handle) };
 
             // copy buffer
-            let _vec = {
-                let mut vec = Vec::<u8>::with_capacity(buffer_size);
-                unsafe {
-                    let mut vec_ptr = vec.as_mut_ptr();
-                    vec_ptr = if write_memory_offs < 0 {
-                        vec_ptr.sub((-write_memory_offs) as usize)
-                    } else {
-                        vec_ptr.add(write_memory_offs as usize)
-                    };
-
-                    buffer::buffer_consume(buffer.id(), vec_ptr);
-                    vec.set_len(buffer_size);
+            let mut vec = Vec::<u8>::with_capacity(buffer_size);
+            unsafe {
+                let mut vec_ptr = vec.as_mut_ptr();
+                vec_ptr = if write_memory_offs < 0 {
+                    vec_ptr.sub((-write_memory_offs) as usize)
+                } else {
+                    vec_ptr.add(write_memory_offs as usize)
                 };
-                vec
-            };
+
+                buffer::buffer_consume(buffer.id(), vec_ptr);
+                vec.set_len(buffer_size);
+            }
+            unsafe { kv_entry::kv_entry_close(handle) };
+        }
+
+        pub fn write_memory_specific_buffer_id(&self, buffer_id: u32) {
+            let handle = self.get_kv_store_handle();
+            let buffer = unsafe { kv_entry::kv_entry_read(handle) };
+            let buffer_size = buffer.len() as usize;
+
+            // copy buffer
+            let mut vec = Vec::<u8>::with_capacity(buffer_size);
+            unsafe {
+                let vec_ptr = vec.as_mut_ptr();
+
+                // use specified buffer id
+                buffer::buffer_consume(buffer_id, vec_ptr);
+                vec.set_len(buffer_size);
+            }
+            unsafe { kv_entry::kv_entry_close(handle) };
+        }
+
+        pub fn write_memory_specific_buffer_ptr(&self, buffer_ptr: u32) {
+            let handle = self.get_kv_store_handle();
+            let buffer = unsafe { kv_entry::kv_entry_read(handle) };
+            let buffer_size = buffer.len() as usize;
+
+            // copy buffer
+            unsafe {
+                let vec_ptr: *mut u8 = buffer_ptr as *mut u8;
+
+                // use specified buffer ptr
+                buffer::buffer_consume(buffer.id(), vec_ptr);
+            }
+            unsafe { kv_entry::kv_entry_close(handle) };
         }
     }
 }

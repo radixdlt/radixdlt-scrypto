@@ -81,6 +81,27 @@ macro_rules! test_wasm_buffer_read {
     }};
 }
 
+macro_rules! test_wasm_buffer_consume {
+    ($test_runner:expr, $component_address: expr, buffer_id=$buffer_id:expr) => {{
+        let manifest_builder = ManifestBuilder::new().lock_fee_from_faucet().call_method(
+            $component_address,
+            "write_memory_specific_buffer_id",
+            manifest_args!($buffer_id as u32),
+        );
+        let manifest = manifest_builder.build();
+        $test_runner.execute_manifest(manifest, vec![])
+    }};
+    ($test_runner:expr, $component_address: expr, buffer_ptr=$buffer_ptr:expr) => {{
+        let manifest_builder = ManifestBuilder::new().lock_fee_from_faucet().call_method(
+            $component_address,
+            "write_memory_specific_buffer_ptr",
+            manifest_args!($buffer_ptr as u32),
+        );
+        let manifest = manifest_builder.build();
+        $test_runner.execute_manifest(manifest, vec![])
+    }};
+}
+
 fn get_memory_len(buffer_size: u64) -> u64 {
     if buffer_size == 0 {
         buffer_size + 4
@@ -293,6 +314,63 @@ fn test_wasm_buffer_read_memory_size_too_large() {
     });
 }
 
+#[test]
+fn test_wasm_buffer_invalid_buffer_id() {
+    // Arrange
+    let (mut test_runner, component_address) = get_test_runner();
+
+    for buffer_id in [0, 1, 3, u32::MAX] {
+        // Act
+        let receipt =
+            test_wasm_buffer_consume!(test_runner, component_address, buffer_id = buffer_id);
+        // Assert
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::BufferNotFound(..))),
+            )
+        });
+    }
+    // Act
+    let receipt = test_wasm_buffer_consume!(
+        test_runner,
+        component_address,
+        buffer_id = 2 // buffer_id=2 id of the kv_entry buffer
+    );
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_wasm_buffer_invalid_buffer_pointer() {
+    // Arrange
+    let (mut test_runner, component_address) = get_test_runner();
+    // Write 1KB to KV store
+    test_wasm_buffer_read!(
+        test_runner,
+        component_address,
+        read = (1 * KB, 0, get_memory_len(1 * KB))
+    );
+
+    // Act
+    let receipt = test_wasm_buffer_consume!(
+        test_runner,
+        component_address,
+        buffer_ptr = 0 // Invalid pointer
+    );
+    // Assert
+    receipt.expect_commit_success(); // This is actually success but should be failure
+
+    // Act
+    let receipt = test_wasm_buffer_consume!(test_runner, component_address, buffer_ptr = u32::MAX);
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::MemoryAccessError)),
+        )
+    });
+}
 #[test]
 fn test_wasm_memory_boundaries() {
     // Arrange
