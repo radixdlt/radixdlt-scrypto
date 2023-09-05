@@ -53,7 +53,7 @@ def produce_replacement(line: str) -> str:
     formatted_functions: str = "\n".join(map(add_sep, rustfmt(f"trait x {functions}").split("\n")[1:-2]))
     formatted_methods: str = "\n".join(map(add_sep, rustfmt(f"trait x {methods}").split("\n")[1:-2]))
 
-    replacement: str = f"extern_blueprint_internal!{{\n{formatted_package_address},\n{sep}{blueprint_ident},\n{sep}{blueprint_name},\n{sep}{owned_name},\n{sep}{global_name},\n{sep}{functions_name} {{\n{formatted_functions}\n{sep}}},\n{sep}{{\n{formatted_methods}\n{sep}}}\n}}"
+    replacement: str = f"extern_blueprint_internal! {{\n{formatted_package_address},\n{sep}{blueprint_ident},\n{sep}{blueprint_name},\n{sep}{owned_name},\n{sep}{global_name},\n{sep}{functions_name} {{\n{formatted_functions}\n{sep}}},\n{sep}{{\n{formatted_methods}\n{sep}}}\n}}"
     return replacement
 
 def rustfmt(string: str) -> str:
