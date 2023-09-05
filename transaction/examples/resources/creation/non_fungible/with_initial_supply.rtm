@@ -41,14 +41,14 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Tuple(                                                                   # Metadata initialization
         Map<String, Tuple>(                                                  # Initial metadata values
             "name" => Tuple(
-                Some(Enum<Metadata::String>("MyResource")),    # Resource Name
+                Some(Enum<Metadata::String>("MyResource")),                  # Resource Name
                 true                                                         # Locked
             )
         ),
         Map<String, Enum>(                                                   # Metadata roles
-            "metadata_setter" => Some(Enum<Rule::AllowAll>()),         # Metadata setter role
+            "metadata_setter" => Some(Enum<Rule::AllowAll>()),               # Metadata setter role
             "metadata_setter_updater" => None,                               # Metadata setter updater role as None defaults to OWNER
-            "metadata_locker" => Some(Enum<Rule::DenyAll>()),          # Metadata locker role
+            "metadata_locker" => Some(Enum<Rule::DenyAll>()),                # Metadata locker role
             "metadata_locker_updater" => None                                # Metadata locker updater role as None defaults to OWNER
         )
     )
