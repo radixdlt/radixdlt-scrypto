@@ -131,9 +131,9 @@ lazy_static! {
         known_enum!(
             m,
             enum AttachedModuleId {
-                Metadata = 0;
-                Royalty = 1;
-                RoleAssignment = 2;
+                Metadata = 1;
+                Royalty = 2;
+                RoleAssignment = 3;
             }
         );
 
