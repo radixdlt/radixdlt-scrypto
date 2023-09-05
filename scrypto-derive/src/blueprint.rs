@@ -470,9 +470,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         if attribute.path.is_ident("types") {
             let types_inner = parse2::<ast::TypesInner>(attribute.tokens.clone())?;
             for aliasable_type in types_inner.aliasable_types {
+                let path = aliasable_type.path;
                 if let Some(alias) = aliasable_type.alias {
                     registered_type_defs.push(parse_quote! {
-                        pub struct #alias;
+                        #[derive(ScryptoSbor)]
+                        #[sbor(transparent)]
+                        pub struct #alias(#path);
                     });
                     registered_type_impls.push(parse_quote! {
                         impl RegisteredType for #alias {
@@ -480,7 +483,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         }
                     });
                 } else {
-                    let path = aliasable_type.path;
                     registered_type_impls.push(parse_quote! {
                         impl RegisteredType for #path {
                             const BLUEPRINT_NAME: &'static str = #blueprint_name;
@@ -900,6 +902,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #output_schema
 
             #output_stubs
+
+            #(#registered_type_defs)*
+
+            #(#registered_type_impls)*
         }
 
         // Only available when the blueprint is build with the test feature.
