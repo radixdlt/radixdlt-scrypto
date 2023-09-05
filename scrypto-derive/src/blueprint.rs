@@ -537,20 +537,15 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                             ));
                         }
                     }
-                } else if attribute.path.is_ident("experimental_types") {
+                } else if attribute.path.is_ident("types") {
                     let types_inner = parse2::<ast::TypesInner>(attribute.tokens.clone())?;
-                    for path in types_inner.paths.iter() {
-                        let ident_string = quote! { #path }
-                            .to_string()
-                            .split(':')
-                            .last()
-                            .unwrap()
-                            .trim()
-                            .to_owned();
-                        if let Some(..) = registered_type_paths.insert(ident_string, path.clone()) {
+                    for path in types_inner.paths {
+                        if let Some(..) =
+                            registered_type_paths.insert(path.name.to_string(), path.rust_type)
+                        {
                             return Err(Error::new(
-                                path.span(),
-                                "An type with an identical name has already been named",
+                                path.name.span(),
+                                "Type ident is already defined",
                             ));
                         }
                     }

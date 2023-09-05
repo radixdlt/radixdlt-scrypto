@@ -11,7 +11,7 @@ struct Type2 {
 }
 
 #[blueprint]
-#[experimental_types(Type1)]
+#[types(Type1)]
 mod non_fungible_data {
     struct NFD {
         vault: Vault,
@@ -65,7 +65,7 @@ mod non_fungible_data {
 }
 
 #[blueprint]
-#[experimental_types(Type2)]
+#[types(Type2)]
 mod key_value_store {
     struct KVS {
         kv_store: Own,

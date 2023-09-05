@@ -11,12 +11,17 @@ mod empty {
 }
 
 #[derive(ScryptoSbor)]
-struct RegisteredStruct {
+struct Struct1 {
+    a: String,
+}
+
+#[derive(ScryptoSbor)]
+struct Struct2 {
     a: String,
 }
 
 #[blueprint]
-#[experimental_types(RegisteredStruct)]
+#[types(Hi => Struct1, Hello => Struct2)]
 mod simple {
     use scrypto::prelude::OwnerRole;
 
