@@ -96,7 +96,6 @@ impl fmt::Debug for ManifestAddress {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -140,15 +139,21 @@ mod tests {
     fn decode_named_fail() {
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
-        encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED).unwrap();
+        encoder
+            .write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED)
+            .unwrap();
         let malformed_value: u8 = 1; // use u8 instead of u32 should inovke an error
         encoder.write_slice(&malformed_value.to_le_bytes()).unwrap();
 
         let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
-        let addr_output = decoder.decode_deeper_body_with_value_kind::<ManifestAddress>(ManifestAddress::value_kind());
+        let addr_output = decoder
+            .decode_deeper_body_with_value_kind::<ManifestAddress>(ManifestAddress::value_kind());
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
-        assert!(matches!(addr_output, Err(DecodeError::BufferUnderflow { .. })));
+        assert!(matches!(
+            addr_output,
+            Err(DecodeError::BufferUnderflow { .. })
+        ));
     }
 
     #[test]
@@ -159,9 +164,9 @@ mod tests {
         encoder.write_discriminator(0xff).unwrap();
 
         let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
-        let addr_output = decoder.decode_deeper_body_with_value_kind::<ManifestAddress>(ManifestAddress::value_kind());
+        let addr_output = decoder
+            .decode_deeper_body_with_value_kind::<ManifestAddress>(ManifestAddress::value_kind());
 
         assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
     }
 }
-
