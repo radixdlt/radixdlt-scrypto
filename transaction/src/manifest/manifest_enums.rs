@@ -117,7 +117,7 @@ lazy_static! {
             }
         );
 
-        // TODO: remove
+        // Notes: This is to be deprecated, please use `ModuleId` instead
         known_enum!(
             m,
             enum ObjectModuleId {

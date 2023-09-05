@@ -42,6 +42,7 @@ pub enum ModuleId {
     RoleAssignment,
 }
 
+/// Notes: This is to be deprecated, please use `ModuleId` instead
 pub type ObjectModuleId = ModuleId;
 
 impl Describe<ScryptoCustomTypeKind> for ModuleId {
