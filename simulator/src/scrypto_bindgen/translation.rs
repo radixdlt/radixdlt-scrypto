@@ -94,7 +94,7 @@ where
 }
 
 fn type_name<S>(
-    type_identifier: &TypeIdentifier,
+    type_identifier: &ScopedTypeId,
     blueprint_name: &str,
     schema_resolver: &S,
 ) -> Result<String, schema::SchemaError>
@@ -123,7 +123,7 @@ where
             format!(
                 "Vec<{}>",
                 type_name(
-                    &TypeIdentifier(type_identifier.0, element_type),
+                    &ScopedTypeId(type_identifier.0, element_type),
                     blueprint_name,
                     schema_resolver
                 )?
@@ -140,7 +140,7 @@ where
                         field_types
                             .iter()
                             .map(|local_type_index| type_name(
-                                &TypeIdentifier(type_identifier.0, *local_type_index),
+                                &ScopedTypeId(type_identifier.0, *local_type_index),
                                 blueprint_name,
                                 schema_resolver
                             ))
@@ -164,7 +164,7 @@ where
                 (Some("Option"), 2usize, Some([]), Some([some_type_index])) => Ok(format!(
                     "Option<{}>",
                     type_name(
-                        &TypeIdentifier(type_identifier.0, *some_type_index),
+                        &ScopedTypeId(type_identifier.0, *some_type_index),
                         blueprint_name,
                         schema_resolver
                     )?
@@ -173,12 +173,12 @@ where
                     Ok(format!(
                         "Result<{}, {}>",
                         type_name(
-                            &TypeIdentifier(type_identifier.0, *ok_type_index),
+                            &ScopedTypeId(type_identifier.0, *ok_type_index),
                             blueprint_name,
                             schema_resolver
                         )?,
                         type_name(
-                            &TypeIdentifier(type_identifier.0, *err_type_index),
+                            &ScopedTypeId(type_identifier.0, *err_type_index),
                             blueprint_name,
                             schema_resolver
                         )?
@@ -194,12 +194,12 @@ where
         } => format!(
             "IndexMap<{}, {}>",
             type_name(
-                &TypeIdentifier(type_identifier.0, key_type),
+                &ScopedTypeId(type_identifier.0, key_type),
                 blueprint_name,
                 schema_resolver
             )?,
             type_name(
-                &TypeIdentifier(type_identifier.0, value_type),
+                &ScopedTypeId(type_identifier.0, value_type),
                 blueprint_name,
                 schema_resolver
             )?

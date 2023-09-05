@@ -4,24 +4,23 @@ use std::fmt::{Debug, Display};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 use sbor::prelude::IndexMap;
-use sbor::*;
 
 pub trait PackageSchemaResolver {
     fn lookup_schema(&self, schema_hash: &SchemaHash) -> Option<VersionedScryptoSchema>;
 
     fn resolve_type_kind(
         &self,
-        type_identifier: &TypeIdentifier,
+        type_identifier: &ScopedTypeId,
     ) -> Result<SchemaTypeKind<ScryptoCustomSchema>, SchemaError>;
 
     fn resolve_type_metadata(
         &self,
-        type_identifier: &TypeIdentifier,
+        type_identifier: &ScopedTypeId,
     ) -> Result<TypeMetadata, SchemaError>;
 
     fn resolve_type_validation(
         &self,
-        type_identifier: &TypeIdentifier,
+        type_identifier: &ScopedTypeId,
     ) -> Result<TypeValidation<ScryptoCustomTypeValidation>, SchemaError>;
 
     fn package_address(&self) -> PackageAddress;
@@ -80,9 +79,9 @@ where
                 arguments: arg_names
                     .into_iter()
                     .zip(arg_type_indices.iter().map(|local_type_index| {
-                        TypeIdentifier(args_type_identifier.0, *local_type_index)
+                        ScopedTypeId(args_type_identifier.0, *local_type_index)
                     }))
-                    .collect::<IndexMap<String, TypeIdentifier>>(),
+                    .collect::<IndexMap<String, ScopedTypeId>>(),
                 returns: if let BlueprintPayloadDef::Static(output_local_type_index) =
                     &fn_schema.output
                 {
@@ -110,14 +109,14 @@ pub struct BlueprintStub {
 pub struct Function {
     pub ident: String,
     pub receiver: Option<ReceiverInfo>,
-    pub arguments: IndexMap<String, TypeIdentifier>,
-    pub returns: TypeIdentifier,
+    pub arguments: IndexMap<String, ScopedTypeId>,
+    pub returns: ScopedTypeId,
 }
 
 #[derive(Clone, Debug)]
 pub enum SchemaError {
-    FunctionInputIsNotATuple(TypeIdentifier),
-    NonExistentLocalTypeIndex(LocalTypeIndex),
+    FunctionInputIsNotATuple(ScopedTypeId),
+    NonExistentLocalTypeIndex(LocalTypeId),
     SchemaValidationError(SchemaValidationError),
     FailedToGetSchemaFromSchemaHash,
     GenericTypeRefsNotSupported,

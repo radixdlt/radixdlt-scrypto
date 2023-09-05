@@ -1,9 +1,7 @@
 use crate::api::node_modules::auth::ToRoleEntry;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_interface::api::ObjectModuleId;
-use sbor::rust::prelude::*;
 
 use super::AccessRule;
 
@@ -80,10 +78,31 @@ impl ModuleRoleKey {
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ManifestSbor,
+    ScryptoCategorize,
+    ScryptoDecode,
+    ScryptoEncode,
+)]
 #[sbor(transparent)]
 pub struct RoleKey {
     pub key: String,
+}
+
+impl Describe<ScryptoCustomTypeKind> for RoleKey {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ROLE_KEY_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::role_key_type_data()
+    }
 }
 
 impl From<String> for RoleKey {
@@ -179,7 +198,9 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 
 /// Front end data structure for specifying owner role
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
+)]
 pub enum OwnerRole {
     /// No owner role
     None,
@@ -187,6 +208,15 @@ pub enum OwnerRole {
     Fixed(AccessRule),
     /// Rule protected Owner role which may only be updated by the owner themself
     Updatable(AccessRule),
+}
+
+impl Describe<ScryptoCustomTypeKind> for OwnerRole {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::OWNER_ROLE_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::owner_role_type_data()
+    }
 }
 
 impl Default for OwnerRole {

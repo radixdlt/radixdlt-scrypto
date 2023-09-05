@@ -45,7 +45,7 @@ pub struct KVStoreTypeTarget {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TypeCheckError {
     InvalidNumberOfGenericArgs { expected: usize, actual: usize },
-    InvalidLocalTypeIndex(LocalTypeIndex),
+    InvalidLocalTypeId(LocalTypeId),
     InvalidCollectionIndex(Box<BlueprintInfo>, CollectionIndex),
     BlueprintPayloadDoesNotExist(Box<BlueprintInfo>, BlueprintPayloadIdentifier),
     BlueprintPayloadValidationError(Box<BlueprintInfo>, BlueprintPayloadIdentifier, String),
@@ -106,7 +106,7 @@ where
                     .ok_or_else(|| TypeCheckError::MissingSchema)?;
 
                 if schema.v1().resolve_type_kind(type_id.1).is_none() {
-                    return Err(TypeCheckError::InvalidLocalTypeIndex(type_id.1));
+                    return Err(TypeCheckError::InvalidLocalTypeId(type_id.1));
                 }
             }
         }
@@ -121,7 +121,7 @@ where
     ) -> Result<
         (
             VersionedScryptoSchema,
-            LocalTypeIndex,
+            LocalTypeId,
             bool,
             bool,
             SchemaOrigin,
@@ -331,7 +331,7 @@ where
         &mut self,
         payload: &[u8],
         schema: &'s VersionedScryptoSchema,
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
         schema_origin: SchemaOrigin,
         allow_ownership: bool,
         allow_non_global_ref: bool,
@@ -347,7 +347,7 @@ where
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
             schema.v1(),
-            type_index,
+            type_id,
             &validation_context,
             depth_limit,
         )

@@ -97,11 +97,11 @@ fn check_encode_decode_schema<T: BasicEncode + BasicDecode + BasicDescribe + Eq 
         value
     );
 
-    let (type_index, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
+    let (type_id, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
     validate_payload_against_schema::<NoCustomExtension, ()>(
         &basic_encode(value).unwrap(),
         schema.v1(),
-        type_index,
+        type_id,
         &(),
         64,
     )

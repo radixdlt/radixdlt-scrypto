@@ -20,14 +20,14 @@ pub struct KeyValueStoreGenericArgs {
 impl KeyValueStoreGenericArgs {
     pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(allow_ownership: bool) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let key_type_index = aggregator.add_child_type_and_descendents::<K>();
-        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
+        let key_type_id = aggregator.add_child_type_and_descendents::<K>();
+        let value_type_id = aggregator.add_child_type_and_descendents::<V>();
         let schema = generate_full_schema(aggregator);
         let schema_hash = schema.generate_schema_hash();
         Self {
             additional_schema: Some(schema),
-            key_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, key_type_index)),
-            value_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, value_type_index)),
+            key_type: GenericSubstitution::Local(ScopedTypeId(schema_hash, key_type_id)),
+            value_type: GenericSubstitution::Local(ScopedTypeId(schema_hash, value_type_id)),
             allow_ownership,
         }
     }
@@ -37,15 +37,15 @@ impl KeyValueStoreGenericArgs {
         package_address: PackageAddress,
     ) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let key_type_index = aggregator.add_child_type_and_descendents::<K>();
-        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
+        let key_type_id = aggregator.add_child_type_and_descendents::<K>();
+        let value_type_id = aggregator.add_child_type_and_descendents::<V>();
         let mut schema = generate_full_schema(aggregator);
         replace_self_package_address(&mut schema, package_address);
         let schema_hash = schema.generate_schema_hash();
         Self {
             additional_schema: Some(schema),
-            key_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, key_type_index)),
-            value_type: GenericSubstitution::Local(TypeIdentifier(schema_hash, value_type_index)),
+            key_type: GenericSubstitution::Local(ScopedTypeId(schema_hash, key_type_id)),
+            value_type: GenericSubstitution::Local(ScopedTypeId(schema_hash, value_type_id)),
             allow_ownership,
         }
     }

@@ -5,15 +5,56 @@ define_wrapped_hash!(
     SchemaHash
 );
 
-/// An Identifier for a structural type. This can be treated almost
-/// like a pointer as two equivalent type identifiers will map to
-/// the same schema
+/*
+// NOTE: Conceptually we could have the following type, which can be used for _type identity_.
+// This isn't currently needed in the engine however, so is commented out to avoid dead code.
+```
+/// A global identifier for a type in a Radix network.
+/// A type is either well-known, or local to a node.
+/// This identifier includes the NodeId, which provides context for how to look-up the type.
+///
+/// If/when we add additional type metadata (eg translations, documentation),
+/// these will be added by the owner of the Node against the GlobalTypeAddress.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
-pub struct TypeIdentifier(pub SchemaHash, pub LocalTypeIndex);
+pub enum GlobalTypeAddress {
+    WellKnown(WellKnownTypeId),
+    NodeLocal(NodeId, SchemaHash, usize),
+}
+```
+*/
 
-/// A reference to the type to substitute with for the case of
-/// generics.
+/// An identifier for a type under a given node's schema context in the Radix network.
+///
+/// See also [`ScopedTypeId`] which captures an identifier for a type where the node
+/// is clear from context.
+///
+/// Note - this type provides scoping to a schema even for well-known types where
+/// the schema is irrelevant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+pub struct FullyScopedTypeId<T: Into<NodeId>>(pub T, pub SchemaHash, pub LocalTypeId);
+
+/// An identifier for a type in the context of a schema.
+///
+/// The location of the schema store is not given in this type, and
+/// is known from context. Currently the schema store will be in the
+/// Schema partition under a node.
+///
+/// See also [`FullyScopedTypeId`] for the same type, but with the node schema
+/// location included.
+///
+/// Note - this type provides scoping to a schema even for well-known types where
+/// the schema is irrelevant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+pub struct ScopedTypeId(pub SchemaHash, pub LocalTypeId);
+
+impl ScopedTypeId {
+    pub fn under_node<T: Into<NodeId>>(self, node: T) -> FullyScopedTypeId<T> {
+        FullyScopedTypeId(node, self.0, self.1)
+    }
+}
+
+/// A reference to the type to substitute with for the case of generics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum GenericSubstitution {
-    Local(TypeIdentifier),
+    Local(ScopedTypeId),
 }

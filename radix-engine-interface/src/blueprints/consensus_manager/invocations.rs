@@ -1,7 +1,9 @@
+use crate::blueprints::component::*;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::prelude::ManifestBucket;
+use radix_engine_common::prelude::CONSENSUS_MANAGER_PACKAGE;
 use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use radix_engine_common::types::*;
 use radix_engine_interface::crypto::Secp256k1PublicKey;
@@ -12,6 +14,9 @@ use sbor::rust::vec::Vec;
 
 pub const CONSENSUS_MANAGER_BLUEPRINT: &str = "ConsensusManager";
 pub const VALIDATOR_BLUEPRINT: &str = "Validator";
+
+define_type_info_marker!(Some(CONSENSUS_MANAGER_PACKAGE), ConsensusManager);
+define_type_info_marker!(Some(CONSENSUS_MANAGER_PACKAGE), Validator);
 
 pub const CONSENSUS_MANAGER_CREATE_IDENT: &str = "create";
 
@@ -214,7 +219,7 @@ pub type ConsensusManagerGetCurrentTimeOutput = Instant;
 
 pub const CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT: &str = "compare_current_time";
 
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ConsensusManagerCompareCurrentTimeInput {
     pub instant: Instant,
     pub precision: TimePrecision,
@@ -307,7 +312,7 @@ pub struct ConsensusManagerCreateValidatorManifestInput {
     pub xrd_payment: ManifestBucket,
 }
 
-pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket, Bucket);
+pub type ConsensusManagerCreateValidatorOutput = (Global<ValidatorObjectTypeInfo>, Bucket, Bucket);
 
 pub const CONSENSUS_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
@@ -384,7 +389,7 @@ pub type ValidatorClaimXrdOutput = Bucket;
 
 pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
 
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorUpdateKeyInput {
     pub key: Secp256k1PublicKey,
 }

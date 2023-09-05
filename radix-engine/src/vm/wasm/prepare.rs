@@ -1426,9 +1426,7 @@ mod tests {
                         type_validations: vec![],
                     }),
                     state: BlueprintStateSchemaInit {
-                        fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                            UNIT_TYPE,
-                        ))],
+                        fields: vec![FieldSchema::static_field(LocalTypeId::WellKnown(UNIT_TYPE))],
                         collections: vec![],
                     },
                     events: Default::default(),
@@ -1436,8 +1434,8 @@ mod tests {
                         functions: indexmap!(
                             "f".to_string() => FunctionSchemaInit {
                                 receiver: Option::None,
-                                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
-                                output: TypeRef::Static(LocalTypeIndex::WellKnown(UNIT_TYPE)),
+                                input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                                output: TypeRef::Static(LocalTypeId::WellKnown(UNIT_TYPE)),
                                 export: "Test_f".to_string(),
                             }
                         ),

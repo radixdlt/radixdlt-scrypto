@@ -119,7 +119,7 @@ where
 
     fn resolve_type_kind(
         &self,
-        type_identifier: &TypeIdentifier,
+        type_identifier: &ScopedTypeId,
     ) -> Result<SchemaTypeKind<ScryptoCustomSchema>, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
             .ok_or(SchemaError::FailedToGetSchemaFromSchemaHash)?
@@ -131,7 +131,7 @@ where
 
     fn resolve_type_metadata(
         &self,
-        type_identifier: &TypeIdentifier,
+        type_identifier: &ScopedTypeId,
     ) -> Result<TypeMetadata, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
             .ok_or(SchemaError::FailedToGetSchemaFromSchemaHash)?
@@ -143,7 +143,7 @@ where
 
     fn resolve_type_validation(
         &self,
-        type_identifier: &TypeIdentifier,
+        type_identifier: &ScopedTypeId,
     ) -> Result<TypeValidation<ScryptoCustomTypeValidation>, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
             .ok_or(SchemaError::FailedToGetSchemaFromSchemaHash)?
