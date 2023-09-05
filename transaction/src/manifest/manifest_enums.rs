@@ -198,6 +198,14 @@ lazy_static! {
             }
         );
 
+        known_enum!(
+            m,
+            enum NonFungibleDataSchema {
+                Local = 0;
+                Remote = 1;
+            }
+        );
+
         m
     };
 }
