@@ -25,9 +25,9 @@ mod tests {
             resource_or_non_fungible_2.clone(),
         ];
         let proof_rule = ProofRule::Require(resource_or_non_fungible_1.clone());
-        let access_rule_node = AccessRuleNode::ProofRule(proof_rule.clone());
+        let access_rule_node = RuleNode::ProofRule(proof_rule.clone());
         let access_rule_node_list = vec![access_rule_node.clone()];
-        let access_rule = AccessRule::Protected(access_rule_node.clone());
+        let access_rule = Rule::Protected(access_rule_node.clone());
 
         test_equivalence(ACCESS_RULE_TYPE, access_rule);
         test_equivalence(ACCESS_RULE_NODE_TYPE, access_rule_node);

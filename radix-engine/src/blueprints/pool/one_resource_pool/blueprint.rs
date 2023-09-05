@@ -216,7 +216,7 @@ impl OneResourcePoolBlueprint {
     pub fn instantiate<Y>(
         resource_address: ResourceAddress,
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule,
+        pool_manager_rule: Rule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<OneResourcePoolInstantiateOutput, RuntimeError>

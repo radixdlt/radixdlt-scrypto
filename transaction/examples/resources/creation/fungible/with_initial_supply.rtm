@@ -25,8 +25,8 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Tuple(
         Some(         # Mint Roles (if None: defaults to DenyAll, DenyAll)
             Tuple(
-                Some(Enum<AccessRule::AllowAll>()),  # Minter (if None: defaults to Owner)
-                Some(Enum<AccessRule::DenyAll>())    # Minter Updater (if None: defaults to Owner)
+                Some(Enum<Rule::AllowAll>()),  # Minter (if None: defaults to Owner)
+                Some(Enum<Rule::DenyAll>())    # Minter Updater (if None: defaults to Owner)
             )
         ),
         None,        # Burn Roles (if None: defaults to DenyAll, DenyAll)
@@ -43,9 +43,9 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             )
         ),
         Map<String, Enum>(                                                   # Metadata roles
-            "metadata_setter" => Some(Enum<AccessRule::AllowAll>()),         # Metadata setter role
+            "metadata_setter" => Some(Enum<Rule::AllowAll>()),         # Metadata setter role
             "metadata_setter_updater" => None,                               # Metadata setter updater role as None defaults to OWNER
-            "metadata_locker" => Some(Enum<AccessRule::DenyAll>()),          # Metadata locker role
+            "metadata_locker" => Some(Enum<Rule::DenyAll>()),          # Metadata locker role
             "metadata_locker_updater" => None                                # Metadata locker updater role as None defaults to OWNER
         )
     )

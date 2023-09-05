@@ -372,7 +372,7 @@ pub enum TypedTypeInfoModuleSubstateValue {
 #[derive(Debug)]
 pub enum TypedRoleAssignmentModuleSubstateValue {
     OwnerRole(FieldSubstate<RoleAssignmentOwnerFieldPayload>),
-    Rule(KeyValueEntrySubstate<RoleAssignmentAccessRuleEntryPayload>),
+    Rule(KeyValueEntrySubstate<RoleAssignmentRuleEntryPayload>),
 }
 
 #[derive(Debug)]

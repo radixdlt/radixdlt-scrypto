@@ -315,10 +315,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
         receipt.expect_commit_success();
     } else {
         receipt.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
-            )
+            matches!(e, RuntimeError::SystemError(SystemError::AssertRuleFailed))
         });
     }
 }
@@ -415,10 +412,7 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
-        )
+        matches!(e, RuntimeError::SystemError(SystemError::AssertRuleFailed))
     });
 }
 

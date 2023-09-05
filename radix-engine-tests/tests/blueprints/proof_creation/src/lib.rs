@@ -242,8 +242,8 @@ mod pc {
         pub fn create_fungible_bucket() -> Bucket {
             ResourceBuilder::new_fungible(OwnerRole::None)
                 .burn_roles(burn_roles! {
-                    burner => AccessRule::AllowAll;
-                    burner_updater => AccessRule::DenyAll;
+                    burner => Rule::AllowAll;
+                    burner_updater => Rule::DenyAll;
                 })
                 .mint_initial_supply(100)
                 .into()
@@ -252,8 +252,8 @@ mod pc {
         pub fn create_non_fungible_bucket() -> Bucket {
             ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
                 .burn_roles(burn_roles! {
-                    burner => AccessRule::AllowAll;
-                    burner_updater => AccessRule::DenyAll;
+                    burner => Rule::AllowAll;
+                    burner_updater => Rule::DenyAll;
                 })
                 .mint_initial_supply([
                     (

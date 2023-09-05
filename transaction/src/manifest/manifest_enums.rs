@@ -72,7 +72,7 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccessRule {
+            enum Rule {
                 AllowAll = 0;
                 DenyAll = 1;
                 Protected = 2;
@@ -81,7 +81,7 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccessRuleNode {
+            enum RuleNode {
                 ProofRule = 0;
                 AnyOf = 1;
                 AllOf = 2;

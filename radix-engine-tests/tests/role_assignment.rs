@@ -17,12 +17,8 @@ fn can_call_public_function() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/role_assignment");
 
     // Act
-    let receipt = test_runner.call_function(
-        package_address,
-        "FunctionAccessRules",
-        "public_function",
-        (),
-    );
+    let receipt =
+        test_runner.call_function(package_address, "FunctionRules", "public_function", ());
 
     // Assert
     receipt.expect_commit_success();
@@ -35,12 +31,8 @@ fn cannot_call_protected_function_without_auth() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/role_assignment");
 
     // Act
-    let receipt = test_runner.call_function(
-        package_address,
-        "FunctionAccessRules",
-        "protected_function",
-        (),
-    );
+    let receipt =
+        test_runner.call_function(package_address, "FunctionRules", "protected_function", ());
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -65,7 +57,7 @@ fn can_call_protected_function_with_auth() {
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .call_function(
             package_address,
-            "FunctionAccessRules",
+            "FunctionRules",
             "protected_function",
             manifest_args!(),
         )
@@ -138,7 +130,7 @@ fn role_assignment_method_auth_can_be_mutated_when_required_proofs_are_present()
     receipt.expect_commit_success();
 }
 
-fn component_role_assignment_can_be_mutated_through_manifest(to_rule: AccessRule) {
+fn component_role_assignment_can_be_mutated_through_manifest(to_rule: Rule) {
     // Arrange
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
@@ -191,7 +183,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/role_assignment");
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
+            .call_function(package_address, "AssertRule", "new", manifest_args!())
             .build();
 
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
@@ -215,7 +207,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
+            RuntimeError::SystemError(SystemError::AssertRuleFailed)
         )
     })
 }
@@ -229,7 +221,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
+            .call_function(package_address, "AssertRule", "new", manifest_args!())
             .build();
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
@@ -275,7 +267,7 @@ fn update_rule() {
     assert_eq!(
         ret[1],
         InstructionOutput::CallReturn(
-            scrypto_encode(&Some(AccessRule::Protected(AccessRuleNode::ProofRule(
+            scrypto_encode(&Some(Rule::Protected(RuleNode::ProofRule(
                 ProofRule::Require(ResourceOrNonFungible::Resource(XRD))
             ))))
             .unwrap()
@@ -294,7 +286,7 @@ fn update_rule() {
     let ret = receipt.expect_commit(true).outcome.expect_success();
     assert_eq!(
         ret[1],
-        InstructionOutput::CallReturn(scrypto_encode(&Some(AccessRule::AllowAll)).unwrap())
+        InstructionOutput::CallReturn(scrypto_encode(&Some(Rule::AllowAll)).unwrap())
     );
 }
 
@@ -325,7 +317,7 @@ struct MutableRolesTestRunner {
 }
 
 impl MutableRolesTestRunner {
-    const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
+    const BLUEPRINT_NAME: &'static str = "MutableRulesComponent";
 
     pub fn create_component(
         roles: RoleAssignmentInit,
@@ -361,7 +353,7 @@ impl MutableRolesTestRunner {
         test_runner.execute_manifest_ignoring_fee(manifest, vec![])
     }
 
-    pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
+    pub fn new_with_owner(update_access_rule: Rule) -> Self {
         let mut test_runner = TestRunnerBuilder::new().build();
         let receipt = Self::create_component_with_owner(
             OwnerRole::Fixed(update_access_rule),
@@ -404,11 +396,7 @@ impl MutableRolesTestRunner {
         self.initial_proofs.insert(initial_proof);
     }
 
-    pub fn set_role_rule(
-        &mut self,
-        role_key: RoleKey,
-        access_rule: AccessRule,
-    ) -> TransactionReceipt {
+    pub fn set_role_rule(&mut self, role_key: RoleKey, access_rule: Rule) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
             .set_role(
                 self.component_address,

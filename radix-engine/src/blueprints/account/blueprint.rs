@@ -971,8 +971,7 @@ impl AccountBlueprint {
     {
         // At this point we know that the badge is in the set of allowed depositors, so, we create
         // an access rule and assert against it.
-        let access_rule =
-            AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(badge)));
+        let access_rule = Rule::Protected(RuleNode::ProofRule(ProofRule::Require(badge)));
 
         Runtime::assert_access_rule(access_rule, api)?;
         Ok(())

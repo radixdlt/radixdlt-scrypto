@@ -82,7 +82,7 @@ macro_rules! resource_roles {
             fn default() -> Self {
                 Self {
                     $actor_field: Some($default_rule),
-                    $updater_field: Some(AccessRule::DenyAll),
+                    $updater_field: Some(Rule::DenyAll),
                 }
             }
         }
@@ -95,7 +95,7 @@ resource_roles!(
     minter_updater,
     MINTER_ROLE,
     MINTER_UPDATER_ROLE,
-    AccessRule::DenyAll
+    Rule::DenyAll
 );
 #[macro_export]
 macro_rules! mint_roles {
@@ -110,7 +110,7 @@ resource_roles!(
     burner_updater,
     BURNER_ROLE,
     BURNER_UPDATER_ROLE,
-    AccessRule::DenyAll
+    Rule::DenyAll
 );
 #[macro_export]
 macro_rules! burn_roles {
@@ -125,7 +125,7 @@ resource_roles!(
     recaller_updater,
     RECALLER_ROLE,
     RECALLER_UPDATER_ROLE,
-    AccessRule::DenyAll
+    Rule::DenyAll
 );
 #[macro_export]
 macro_rules! recall_roles {
@@ -140,7 +140,7 @@ resource_roles!(
     freezer_updater,
     FREEZER_ROLE,
     FREEZER_UPDATER_ROLE,
-    AccessRule::DenyAll
+    Rule::DenyAll
 );
 #[macro_export]
 macro_rules! freeze_roles {
@@ -155,7 +155,7 @@ resource_roles!(
     withdrawer_updater,
     WITHDRAWER_ROLE,
     WITHDRAWER_UPDATER_ROLE,
-    AccessRule::AllowAll
+    Rule::AllowAll
 );
 #[macro_export]
 macro_rules! withdraw_roles {
@@ -170,7 +170,7 @@ resource_roles!(
     depositor_updater,
     DEPOSITOR_ROLE,
     DEPOSITOR_UPDATER_ROLE,
-    AccessRule::AllowAll
+    Rule::AllowAll
 );
 #[macro_export]
 macro_rules! deposit_roles {
@@ -185,7 +185,7 @@ resource_roles!(
     non_fungible_data_updater_updater,
     NON_FUNGIBLE_DATA_UPDATER_ROLE,
     NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE,
-    AccessRule::DenyAll
+    Rule::DenyAll
 );
 #[macro_export]
 macro_rules! non_fungible_data_update_roles {

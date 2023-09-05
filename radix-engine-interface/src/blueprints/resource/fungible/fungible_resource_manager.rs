@@ -24,7 +24,7 @@ pub struct FungibleResourceRoles {
 }
 
 impl FungibleResourceRoles {
-    pub fn single_locked_rule(access_rule: AccessRule) -> Self {
+    pub fn single_locked_rule(access_rule: Rule) -> Self {
         Self {
             mint_roles: mint_roles! {
                 minter => access_rule.clone();

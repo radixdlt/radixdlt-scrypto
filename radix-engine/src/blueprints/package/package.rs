@@ -369,7 +369,7 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
     for (blueprint, definition_init) in &definition.blueprints {
         match &definition_init.auth_config.function_auth {
             FunctionAuth::AllowAll | FunctionAuth::RootOnly => {}
-            FunctionAuth::AccessRules(functions) => {
+            FunctionAuth::Rules(functions) => {
                 let num_functions = definition_init
                     .schema
                     .functions
@@ -567,7 +567,7 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
             }
         }
 
-        if let FunctionAuth::AccessRules(list) = &bp_init.auth_config.function_auth {
+        if let FunctionAuth::Rules(list) = &bp_init.auth_config.function_auth {
             for (name, _) in list.iter() {
                 condition(name)?;
             }
@@ -852,7 +852,7 @@ impl PackageNativePackage {
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: FunctionAuth::AccessRules(
+                    function_auth: FunctionAuth::Rules(
                         indexmap!(
                             PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
                             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
@@ -1498,13 +1498,13 @@ impl PackageAuthNativeBlueprint {
                 if api.kernel_get_current_depth() == 0 {
                     Ok(ResolvedPermission::AllowAll)
                 } else {
-                    Ok(ResolvedPermission::AccessRule(AccessRule::DenyAll))
+                    Ok(ResolvedPermission::Rule(Rule::DenyAll))
                 }
             }
-            FunctionAuth::AccessRules(rules) => {
+            FunctionAuth::Rules(rules) => {
                 let access_rule = rules.get(ident);
                 if let Some(access_rule) = access_rule {
-                    Ok(ResolvedPermission::AccessRule(access_rule.clone()))
+                    Ok(ResolvedPermission::Rule(access_rule.clone()))
                 } else {
                     let package_address = PackageAddress::new_or_panic(receiver.0.clone());
                     let blueprint_id =

@@ -59,71 +59,70 @@ impl ResourceManager {
         Self(Global(stub))
     }
 
-    pub fn set_mintable(&self, access_rule: AccessRule) {
+    pub fn set_mintable(&self, access_rule: Rule) {
         self.0.set_role(MINTER_ROLE, access_rule);
     }
 
-    pub fn set_burnable(&self, access_rule: AccessRule) {
+    pub fn set_burnable(&self, access_rule: Rule) {
         self.0.set_role(RESOURCE_MANAGER_BURN_IDENT, access_rule);
     }
 
-    pub fn set_withdrawable(&self, access_rule: AccessRule) {
+    pub fn set_withdrawable(&self, access_rule: Rule) {
         self.0.set_role(WITHDRAWER_ROLE, access_rule);
     }
 
-    pub fn set_depositable(&self, access_rule: AccessRule) {
+    pub fn set_depositable(&self, access_rule: Rule) {
         self.0.set_role(DEPOSITOR_ROLE, access_rule);
     }
 
-    pub fn set_recallable(&self, access_rule: AccessRule) {
+    pub fn set_recallable(&self, access_rule: Rule) {
         self.0.set_role(RECALLER_ROLE, access_rule);
     }
 
-    pub fn set_freezeable(&self, access_rule: AccessRule) {
+    pub fn set_freezeable(&self, access_rule: Rule) {
         self.0.set_role(FREEZER_ROLE, access_rule);
     }
 
-    pub fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
+    pub fn set_updatable_non_fungible_data(&self, access_rule: Rule) {
         self.0.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
     }
 
     pub fn lock_mintable(&self) {
-        self.0.set_role(MINTER_UPDATER_ROLE, AccessRule::DenyAll);
+        self.0.set_role(MINTER_UPDATER_ROLE, Rule::DenyAll);
     }
 
     pub fn lock_burnable(&self) {
-        self.0.set_role(BURNER_UPDATER_ROLE, AccessRule::DenyAll);
+        self.0.set_role(BURNER_UPDATER_ROLE, Rule::DenyAll);
     }
 
     pub fn lock_updatable_non_fungible_data(&self) {
         self.0
-            .set_role(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll);
+            .set_role(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, Rule::DenyAll);
     }
 
     pub fn lock_withdrawable(&self) {
-        self.0
-            .set_role(WITHDRAWER_UPDATER_ROLE, AccessRule::DenyAll);
+        self.0.set_role(WITHDRAWER_UPDATER_ROLE, Rule::DenyAll);
     }
 
     pub fn lock_depositable(&self) {
-        self.0.set_role(DEPOSITOR_UPDATER_ROLE, AccessRule::DenyAll);
+        self.0.set_role(DEPOSITOR_UPDATER_ROLE, Rule::DenyAll);
     }
 
     pub fn lock_recallable(&self) {
-        self.0.set_role(RECALLER_UPDATER_ROLE, AccessRule::DenyAll);
+        self.0.set_role(RECALLER_UPDATER_ROLE, Rule::DenyAll);
     }
 
     pub fn lock_freezeable(&self) {
-        self.0.set_role(FREEZER_UPDATER_ROLE, AccessRule::DenyAll);
+        self.0.set_role(FREEZER_UPDATER_ROLE, Rule::DenyAll);
     }
 
-    pub fn set_updatable_metadata(&self, access_rule: AccessRule) {
+    pub fn set_updatable_metadata(&self, access_rule: Rule) {
         self.0.set_metadata_role(METADATA_SETTER_ROLE, access_rule);
     }
 
     pub fn lock_updatable_metadata(&self) {
         self.0
-            .set_metadata_role(METADATA_SETTER_UPDATER_ROLE, AccessRule::DenyAll);
+            .set_metadata_role(METADATA_SETTER_UPDATER_ROLE, Rule::DenyAll);
     }
 }
 

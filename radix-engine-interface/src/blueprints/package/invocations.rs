@@ -136,7 +136,7 @@ pub enum FunctionAuth {
     /// All functions are accessible
     AllowAll,
     /// Functions are protected by an access rule
-    AccessRules(IndexMap<String, AccessRule>),
+    Rules(IndexMap<String, Rule>),
     /// Only the root call frame may call all functions.
     /// Used primarily for transaction processor functions, any other use would
     /// essentially make the function inaccessible for any normal transaction

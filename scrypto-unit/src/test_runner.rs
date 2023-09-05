@@ -899,7 +899,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let (pk3, sk3) = self.new_ed25519_key_pair();
         let (pk4, sk4) = self.new_ed25519_key_pair();
 
-        let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
+        let access_rule = Rule::Protected(RuleNode::ProofRule(ProofRule::CountOf(
             n_out_of_4,
             vec![
                 ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
@@ -1095,7 +1095,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                         definition: definition,
                         metadata: metadata_init!(),
                         package_address: Some(ManifestAddressReservation(0)),
-                        owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
+                        owner_role: OwnerRole::Fixed(Rule::AllowAll),
                     }),
                 }]),
                 blobs: BlobsV1 {

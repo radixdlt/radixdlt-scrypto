@@ -214,7 +214,7 @@ extern_blueprint_internal! {
     MultiResourcePoolFunctions {
         fn instantiate(
             owner_role: OwnerRole,
-            pool_manager_rule: AccessRule,
+            pool_manager_rule: Rule,
             resource_addresses: Vec<ResourceAddress>,
             address_reservation: Option<GlobalAddressReservation>
         ) -> Global<MultiResourcePool>;
@@ -246,7 +246,7 @@ extern_blueprint_internal! {
     OneResourcePoolFunctions {
         fn instantiate(
             owner_role: OwnerRole,
-            pool_manager_rule: AccessRule,
+            pool_manager_rule: Rule,
             resource_address: ResourceAddress,
             address_reservation: Option<GlobalAddressReservation>
         ) -> Global<OneResourcePool>;
@@ -274,7 +274,7 @@ extern_blueprint_internal! {
     TwoResourcePoolFunctions {
         fn instantiate(
             owner_role: OwnerRole,
-            pool_manager_rule: AccessRule,
+            pool_manager_rule: Rule,
             resource_addresses: (ResourceAddress, ResourceAddress),
             address_reservation: Option<GlobalAddressReservation>
         ) -> Global<TwoResourcePool>;

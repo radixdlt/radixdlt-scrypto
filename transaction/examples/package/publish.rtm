@@ -14,7 +14,7 @@ CALL_METHOD
 
 # Publishing a new package and setting some of its royalty and access rules.
 PUBLISH_PACKAGE_ADVANCED
-    Enum<AccessRule::AllowAll>() # Owner AccessRule
+    Enum<Rule::AllowAll>() # Owner Rule
     Tuple(                       # Package Definition
         Map<String, Tuple>()
     )

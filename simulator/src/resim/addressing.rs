@@ -3,7 +3,7 @@ use radix_engine::types::{
     PackageAddress, ResourceAddress,
 };
 use radix_engine_interface::{
-    blueprints::resource::{require, AccessRule, ParseNonFungibleGlobalIdError},
+    blueprints::resource::{require, Rule, ParseNonFungibleGlobalIdError},
     rule,
 };
 use sbor::rust::fmt;
@@ -221,7 +221,7 @@ impl From<SimulatorNonFungibleGlobalId> for SimulatorResourceOrNonFungibleGlobal
     }
 }
 
-impl From<SimulatorResourceOrNonFungibleGlobalId> for AccessRule {
+impl From<SimulatorResourceOrNonFungibleGlobalId> for Rule {
     fn from(address: SimulatorResourceOrNonFungibleGlobalId) -> Self {
         match address {
             SimulatorResourceOrNonFungibleGlobalId::ResourceAddress(resource_address) => {

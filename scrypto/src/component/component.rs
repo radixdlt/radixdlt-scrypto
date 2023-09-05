@@ -18,7 +18,7 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{AttachedModuleId, FieldValue};
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
+    Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit, Rule,
 };
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -421,27 +421,27 @@ impl<O: HasStub> HasMetadata for Global<O> {
 }
 
 impl<O: HasStub> HasRoleAssignment for Global<O> {
-    fn set_owner_role<A: Into<AccessRule>>(&self, rule: A) {
+    fn set_owner_role<A: Into<Rule>>(&self, rule: A) {
         self.role_assignment().set_owner_role(rule)
     }
 
-    fn lock_owner_role<A: Into<AccessRule>>(&self) {
+    fn lock_owner_role<A: Into<Rule>>(&self) {
         self.role_assignment().lock_owner_role()
     }
 
-    fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+    fn set_role<A: Into<Rule>>(&self, name: &str, rule: A) {
         self.role_assignment().set_role(name, rule);
     }
 
-    fn get_role(&self, name: &str) -> Option<AccessRule> {
+    fn get_role(&self, name: &str) -> Option<Rule> {
         self.role_assignment().get_role(name)
     }
 
-    fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+    fn set_metadata_role<A: Into<Rule>>(&self, name: &str, rule: A) {
         self.role_assignment().set_metadata_role(name, rule);
     }
 
-    fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+    fn set_component_royalties_role<A: Into<Rule>>(&self, name: &str, rule: A) {
         self.role_assignment()
             .set_component_royalties_role(name, rule);
     }

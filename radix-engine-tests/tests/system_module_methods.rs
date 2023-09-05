@@ -80,9 +80,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                AttachedModuleId::Royalty
-            ))
+            RuntimeError::SystemError(SystemError::ModuleDoesNotExist(AttachedModuleId::Royalty))
         )
     });
 }
@@ -159,9 +157,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                AttachedModuleId::Metadata
-            ))
+            RuntimeError::SystemError(SystemError::ModuleDoesNotExist(AttachedModuleId::Metadata))
         )
     });
 }
@@ -274,9 +270,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                AttachedModuleId::Metadata
-            ))
+            RuntimeError::SystemError(SystemError::ModuleDoesNotExist(AttachedModuleId::Metadata))
         )
     });
 }

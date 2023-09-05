@@ -490,7 +490,7 @@ impl ConsensusManagerBlueprint {
 
             royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig {
-                function_auth: FunctionAuth::AccessRules(indexmap!(
+                function_auth: FunctionAuth::Rules(indexmap!(
                     CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                 )),
                 method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(

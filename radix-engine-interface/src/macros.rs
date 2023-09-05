@@ -3,60 +3,60 @@
 macro_rules! access_and_or {
     (|| $tt:tt) => {{
         let next = $crate::access_rule_node!($tt);
-        move |e: AccessRuleNode| e.or(next)
+        move |e: RuleNode| e.or(next)
     }};
     (|| $right1:ident $right2:tt) => {{
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| e.or(next)
+        move |e: RuleNode| e.or(next)
     }};
     (|| $right:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::access_rule_node!($right);
-        move |e: AccessRuleNode| e.or(f(next))
+        move |e: RuleNode| e.or(f(next))
     }};
     (|| $right:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::access_rule_node!($right);
-        move |e: AccessRuleNode| f(e.or(next))
+        move |e: RuleNode| f(e.or(next))
     }};
     (|| $right1:ident $right2:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| e.or(f(next))
+        move |e: RuleNode| e.or(f(next))
     }};
     (|| $right1:ident $right2:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| f(e.or(next))
+        move |e: RuleNode| f(e.or(next))
     }};
 
     (&& $tt:tt) => {{
         let next = $crate::access_rule_node!($tt);
-        move |e: AccessRuleNode| e.and(next)
+        move |e: RuleNode| e.and(next)
     }};
     (&& $right1:ident $right2:tt) => {{
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| e.and(next)
+        move |e: RuleNode| e.and(next)
     }};
     (&& $right:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::access_rule_node!($right);
-        move |e: AccessRuleNode| f(e.and(next))
+        move |e: RuleNode| f(e.and(next))
     }};
     (&& $right:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::access_rule_node!($right);
-        move |e: AccessRuleNode| f(e.and(next))
+        move |e: RuleNode| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| f(e.and(next))
+        move |e: RuleNode| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| f(e.and(next))
+        move |e: RuleNode| f(e.and(next))
     }};
 }
 
@@ -84,13 +84,13 @@ macro_rules! access_rule_node {
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{
-        $crate::blueprints::resource::AccessRule::AllowAll
+        $crate::blueprints::resource::Rule::AllowAll
     }};
     (deny_all) => {{
-        $crate::blueprints::resource::AccessRule::DenyAll
+        $crate::blueprints::resource::Rule::DenyAll
     }};
     ($($tt:tt)+) => {{
-        $crate::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
+        $crate::blueprints::resource::Rule::Protected($crate::access_rule_node!($($tt)+))
     }};
 }
 

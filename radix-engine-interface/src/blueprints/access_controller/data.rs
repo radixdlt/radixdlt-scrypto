@@ -1,4 +1,4 @@
-use crate::blueprints::resource::AccessRule;
+use crate::blueprints::resource::Rule;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
@@ -33,9 +33,9 @@ impl From<Proposer> for Role {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct RuleSet {
-    pub primary_role: AccessRule,
-    pub recovery_role: AccessRule,
-    pub confirmation_role: AccessRule,
+    pub primary_role: Rule,
+    pub recovery_role: Rule,
+    pub confirmation_role: Rule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

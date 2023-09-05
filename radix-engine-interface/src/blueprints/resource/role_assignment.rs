@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
-use super::AccessRule;
+use super::Rule;
 
 pub const SELF_ROLE: &'static str = "_self_";
 pub const OWNER_ROLE: &'static str = "_owner_";
@@ -138,12 +138,12 @@ pub enum OwnerRoleUpdater {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct OwnerRoleEntry {
-    pub rule: AccessRule,
+    pub rule: Rule,
     pub updater: OwnerRoleUpdater,
 }
 
 impl OwnerRoleEntry {
-    pub fn new<A: Into<AccessRule>>(rule: A, updater: OwnerRoleUpdater) -> Self {
+    pub fn new<A: Into<Rule>>(rule: A, updater: OwnerRoleUpdater) -> Self {
         Self {
             rule: rule.into(),
             updater,
@@ -205,9 +205,9 @@ pub enum OwnerRole {
     /// No owner role
     None,
     /// Rule protected Owner role which may not be updated
-    Fixed(AccessRule),
+    Fixed(Rule),
     /// Rule protected Owner role which may only be updated by the owner themself
-    Updatable(AccessRule),
+    Updatable(Rule),
 }
 
 impl Describe<ScryptoCustomTypeKind> for OwnerRole {
@@ -228,7 +228,7 @@ impl Default for OwnerRole {
 impl Into<OwnerRoleEntry> for OwnerRole {
     fn into(self) -> OwnerRoleEntry {
         match self {
-            OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
+            OwnerRole::None => OwnerRoleEntry::new(Rule::DenyAll, OwnerRoleUpdater::None),
             OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::None),
             OwnerRole::Updatable(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::Owner),
         }
@@ -239,7 +239,7 @@ impl Into<OwnerRoleEntry> for OwnerRole {
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct RoleAssignmentInit {
-    pub data: IndexMap<RoleKey, Option<AccessRule>>,
+    pub data: IndexMap<RoleKey, Option<Rule>>,
 }
 
 impl RoleAssignmentInit {

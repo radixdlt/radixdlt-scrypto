@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi};
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
+    OwnerRoleEntry, RoleAssignmentInit, RoleKey, Rule,
 };
 use radix_engine_interface::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
@@ -60,7 +60,7 @@ impl RoleAssignmentObject for AttachedRoleAssignment {
 pub trait RoleAssignmentObject {
     fn self_id(&self) -> (&NodeId, Option<AttachedModuleId>);
 
-    fn set_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
+    fn set_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<Rule>>(
         &self,
         rule: A,
         api: &mut Y,
@@ -87,12 +87,7 @@ pub trait RoleAssignmentObject {
         Ok(())
     }
 
-    fn set_role<
-        Y: ClientApi<E>,
-        E: Debug + ScryptoDecode,
-        R: Into<RoleKey>,
-        A: Into<AccessRule>,
-    >(
+    fn set_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>, A: Into<Rule>>(
         &self,
         module: ModuleId,
         role_key: R,

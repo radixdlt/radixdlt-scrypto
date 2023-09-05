@@ -939,7 +939,7 @@ impl ManifestBuilder {
     pub fn set_owner_role(
         self,
         address: impl ResolvableGlobalAddress,
-        rule: impl Into<AccessRule>,
+        rule: impl Into<Rule>,
     ) -> Self {
         self.call_module_method(
             address,
@@ -962,7 +962,7 @@ impl ManifestBuilder {
         self,
         address: impl ResolvableGlobalAddress,
         role_key: impl Into<RoleKey>,
-        rule: impl Into<AccessRule>,
+        rule: impl Into<Rule>,
     ) -> Self {
         self.set_role(address, ModuleId::Main, role_key, rule)
     }
@@ -972,7 +972,7 @@ impl ManifestBuilder {
         address: impl ResolvableGlobalAddress,
         role_module: ModuleId,
         role_key: impl Into<RoleKey>,
-        rule: impl Into<AccessRule>,
+        rule: impl Into<Rule>,
     ) -> Self {
         self.call_module_method(
             address,
@@ -1291,11 +1291,7 @@ impl ManifestBuilder {
     }
 
     /// Creates a token resource with mutable supply.
-    pub fn new_token_mutable(
-        self,
-        metadata: ModuleConfig<MetadataInit>,
-        owner_role: AccessRule,
-    ) -> Self {
+    pub fn new_token_mutable(self, metadata: ModuleConfig<MetadataInit>, owner_role: Rule) -> Self {
         self.create_fungible_resource(
             OwnerRole::Fixed(owner_role),
             true,
@@ -1335,11 +1331,7 @@ impl ManifestBuilder {
     }
 
     /// Creates a badge resource with mutable supply.
-    pub fn new_badge_mutable(
-        self,
-        metadata: ModuleConfig<MetadataInit>,
-        owner_role: AccessRule,
-    ) -> Self {
+    pub fn new_badge_mutable(self, metadata: ModuleConfig<MetadataInit>, owner_role: Rule) -> Self {
         self.create_fungible_resource(
             OwnerRole::Fixed(owner_role),
             false,
@@ -1981,9 +1973,9 @@ impl ManifestBuilder {
     pub fn create_access_controller(
         self,
         controlled_asset: impl ExistingManifestBucket,
-        primary_role: AccessRule,
-        recovery_role: AccessRule,
-        confirmation_role: AccessRule,
+        primary_role: Rule,
+        recovery_role: Rule,
+        confirmation_role: Rule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> Self {
         let controlled_asset = controlled_asset.mark_consumed(&self.registrar);

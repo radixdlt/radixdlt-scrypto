@@ -501,11 +501,11 @@ macro_rules! enable_function_auth {
         $($function:ident => $rule:expr;)*
     ) => (
         fn function_auth() -> scrypto::blueprints::package::FunctionAuth {
-            let rules = Functions::<AccessRule> {
+            let rules = Functions::<Rule> {
                 $( $function: $rule, )*
             };
 
-            scrypto::blueprints::package::FunctionAuth::AccessRules(rules.to_mapping().into_iter().collect())
+            scrypto::blueprints::package::FunctionAuth::Rules(rules.to_mapping().into_iter().collect())
         }
     );
 }

@@ -14,10 +14,10 @@ mod mutable_role_assignment_component {
         }
     }
 
-    struct MutableAccessRulesComponent {}
+    struct MutableRulesComponent {}
 
-    impl MutableAccessRulesComponent {
-        pub fn new(roles: RoleAssignmentInit) -> Global<MutableAccessRulesComponent> {
+    impl MutableRulesComponent {
+        pub fn new(roles: RoleAssignmentInit) -> Global<MutableRulesComponent> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -25,7 +25,7 @@ mod mutable_role_assignment_component {
                 .globalize()
         }
 
-        pub fn new_with_owner(owner_role: OwnerRole) -> Global<MutableAccessRulesComponent> {
+        pub fn new_with_owner(owner_role: OwnerRole) -> Global<MutableRulesComponent> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(owner_role)
@@ -36,7 +36,7 @@ mod mutable_role_assignment_component {
                 .globalize()
         }
 
-        pub fn set_authority_rules(&self, role: String, rule: AccessRule) {
+        pub fn set_authority_rules(&self, role: String, rule: Rule) {
             Runtime::global_component().set_role(role.as_str(), rule);
         }
 

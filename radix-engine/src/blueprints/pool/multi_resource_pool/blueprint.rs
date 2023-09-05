@@ -219,7 +219,7 @@ impl MultiResourcePoolBlueprint {
     pub fn instantiate<Y>(
         resource_addresses: IndexSet<ResourceAddress>,
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule,
+        pool_manager_rule: Rule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<MultiResourcePoolInstantiateOutput, RuntimeError>

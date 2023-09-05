@@ -568,10 +568,10 @@ impl AccessControllerBlueprint {
                         },
                         metadata: metadata! {
                             roles {
-                                metadata_setter => AccessRule::DenyAll;
-                                metadata_setter_updater => AccessRule::DenyAll;
-                                metadata_locker => AccessRule::DenyAll;
-                                metadata_locker_updater => AccessRule::DenyAll;
+                                metadata_setter => Rule::DenyAll;
+                                metadata_setter_updater => Rule::DenyAll;
+                                metadata_locker => Rule::DenyAll;
+                                metadata_locker_updater => Rule::DenyAll;
                             },
                             init {
                                 "name" => "Recovery Badge".to_owned(), locked;
@@ -1148,9 +1148,9 @@ impl AccessControllerBlueprint {
 
 fn locked_role_assignment() -> RuleSet {
     RuleSet {
-        primary_role: AccessRule::DenyAll,
-        recovery_role: AccessRule::DenyAll,
-        confirmation_role: AccessRule::DenyAll,
+        primary_role: Rule::DenyAll,
+        recovery_role: Rule::DenyAll,
+        confirmation_role: Rule::DenyAll,
     }
 }
 

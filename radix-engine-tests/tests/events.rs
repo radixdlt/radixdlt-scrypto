@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
-use scrypto::prelude::{AccessRule, FromPublicKey};
+use scrypto::prelude::{FromPublicKey, Rule};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::model::InstructionV1;
@@ -1829,7 +1829,7 @@ fn create_account_events_can_be_looked_up() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None)
+        .new_account_advanced(OwnerRole::Fixed(Rule::AllowAll), None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -1861,7 +1861,7 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
 fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceAddress {
     let manifest = ManifestBuilder::new()
         .create_fungible_resource(
-            OwnerRole::Fixed(AccessRule::AllowAll),
+            OwnerRole::Fixed(Rule::AllowAll),
             false,
             18,
             FungibleResourceRoles {

@@ -134,7 +134,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                         admin_auth,
                         [NonFungibleLocalId::integer(1)],
                     )
-                    .set_role(token_address, ModuleId::Main, role_key, AccessRule::DenyAll)
+                    .set_role(token_address, ModuleId::Main, role_key, Rule::DenyAll)
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&public_key)],
             )

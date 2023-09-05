@@ -101,7 +101,7 @@ impl TransactionTrackerNativePackage {
 
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: FunctionAuth::AccessRules(
+                    function_auth: FunctionAuth::Rules(
                         indexmap!(
                             TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                         )

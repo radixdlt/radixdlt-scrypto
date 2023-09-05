@@ -8,7 +8,7 @@ use transaction::prelude::*;
 
 fn test_auth_rule(
     test_runner: &mut DefaultTestRunner,
-    auth_rule: &AccessRule,
+    auth_rule: &Rule,
     signer_public_keys: &[PublicKey],
     should_succeed: bool,
 ) {
@@ -307,7 +307,7 @@ fn can_update_updatable_owner_role_account() {
         .take_all_from_worktop(XRD, "bucket")
         .create_proof_from_bucket_of_all("bucket", "proof")
         .push_to_auth_zone("proof")
-        .set_owner_role(account, AccessRule::DenyAll)
+        .set_owner_role(account, Rule::DenyAll)
         .pop_from_auth_zone("proof2")
         .drop_proof("proof2")
         .return_to_worktop("bucket")
@@ -323,7 +323,7 @@ fn can_update_updatable_owner_role_account() {
 fn cannot_set_royalty_on_accounts() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let account = test_runner.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
+    let account = test_runner.new_account_advanced(OwnerRole::Updatable(Rule::AllowAll));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -335,9 +335,7 @@ fn cannot_set_royalty_on_accounts() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
-                AttachedModuleId::Royalty
-            ))
+            RuntimeError::SystemError(SystemError::ModuleDoesNotExist(AttachedModuleId::Royalty))
         )
     });
 }

@@ -219,7 +219,7 @@ impl TwoResourcePoolBlueprint {
     pub fn instantiate<Y>(
         (resource_address1, resource_address2): (ResourceAddress, ResourceAddress),
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule,
+        pool_manager_rule: Rule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<TwoResourcePoolInstantiateOutput, RuntimeError>

@@ -1,4 +1,4 @@
-use crate::blueprints::resource::AccessRuleNode::{AllOf, AnyOf};
+use crate::blueprints::resource::RuleNode::{AllOf, AnyOf};
 use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
@@ -90,21 +90,21 @@ impl Describe<ScryptoCustomTypeKind> for ProofRule {
     }
 }
 
-impl From<ResourceAddress> for AccessRuleNode {
+impl From<ResourceAddress> for RuleNode {
     fn from(resource_address: ResourceAddress) -> Self {
-        AccessRuleNode::ProofRule(ProofRule::Require(resource_address.into()))
+        RuleNode::ProofRule(ProofRule::Require(resource_address.into()))
     }
 }
 
-impl From<NonFungibleGlobalId> for AccessRuleNode {
+impl From<NonFungibleGlobalId> for RuleNode {
     fn from(id: NonFungibleGlobalId) -> Self {
-        AccessRuleNode::ProofRule(ProofRule::Require(id.into()))
+        RuleNode::ProofRule(ProofRule::Require(id.into()))
     }
 }
 
-impl From<ResourceOrNonFungible> for AccessRuleNode {
+impl From<ResourceOrNonFungible> for RuleNode {
     fn from(resource_or_non_fungible: ResourceOrNonFungible) -> Self {
-        AccessRuleNode::ProofRule(ProofRule::Require(resource_or_non_fungible))
+        RuleNode::ProofRule(ProofRule::Require(resource_or_non_fungible))
     }
 }
 
@@ -122,13 +122,13 @@ impl From<ResourceOrNonFungible> for AccessRuleNode {
     ScryptoEncode,
     ScryptoDecode,
 )]
-pub enum AccessRuleNode {
+pub enum RuleNode {
     ProofRule(ProofRule),
-    AnyOf(Vec<AccessRuleNode>),
-    AllOf(Vec<AccessRuleNode>),
+    AnyOf(Vec<RuleNode>),
+    AllOf(Vec<RuleNode>),
 }
 
-impl Describe<ScryptoCustomTypeKind> for AccessRuleNode {
+impl Describe<ScryptoCustomTypeKind> for RuleNode {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_NODE_TYPE);
 
@@ -137,10 +137,10 @@ impl Describe<ScryptoCustomTypeKind> for AccessRuleNode {
     }
 }
 
-impl AccessRuleNode {
-    pub fn or(self, other: AccessRuleNode) -> Self {
+impl RuleNode {
+    pub fn or(self, other: RuleNode) -> Self {
         match self {
-            AccessRuleNode::AnyOf(mut rules) => {
+            RuleNode::AnyOf(mut rules) => {
                 rules.push(other);
                 AnyOf(rules)
             }
@@ -148,9 +148,9 @@ impl AccessRuleNode {
         }
     }
 
-    pub fn and(self, other: AccessRuleNode) -> Self {
+    pub fn and(self, other: RuleNode) -> Self {
         match self {
-            AccessRuleNode::AllOf(mut rules) => {
+            RuleNode::AllOf(mut rules) => {
                 rules.push(other);
                 AllOf(rules)
             }
@@ -171,44 +171,44 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
     ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::global_caller_badge(global_caller))
 }
 
-pub fn require<T>(required: T) -> AccessRuleNode
+pub fn require<T>(required: T) -> RuleNode
 where
-    T: Into<AccessRuleNode>,
+    T: Into<RuleNode>,
 {
     required.into()
 }
 
-pub fn require_any_of<T>(resources: T) -> AccessRuleNode
+pub fn require_any_of<T>(resources: T) -> RuleNode
 where
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    AccessRuleNode::ProofRule(ProofRule::AnyOf(list.list))
+    RuleNode::ProofRule(ProofRule::AnyOf(list.list))
 }
 
-pub fn require_all_of<T>(resources: T) -> AccessRuleNode
+pub fn require_all_of<T>(resources: T) -> RuleNode
 where
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    AccessRuleNode::ProofRule(ProofRule::AllOf(list.list))
+    RuleNode::ProofRule(ProofRule::AllOf(list.list))
 }
 
-pub fn require_n_of<C, T>(count: C, resources: T) -> AccessRuleNode
+pub fn require_n_of<C, T>(count: C, resources: T) -> RuleNode
 where
     C: Into<u8>,
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    AccessRuleNode::ProofRule(ProofRule::CountOf(count.into(), list.list))
+    RuleNode::ProofRule(ProofRule::CountOf(count.into(), list.list))
 }
 
-pub fn require_amount<D, T>(amount: D, resource: T) -> AccessRuleNode
+pub fn require_amount<D, T>(amount: D, resource: T) -> RuleNode
 where
     D: Into<Decimal>,
     T: Into<ResourceAddress>,
 {
-    AccessRuleNode::ProofRule(ProofRule::AmountOf(amount.into(), resource.into()))
+    RuleNode::ProofRule(ProofRule::AmountOf(amount.into(), resource.into()))
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -225,13 +225,13 @@ where
     ScryptoEncode,
     ScryptoDecode,
 )]
-pub enum AccessRule {
+pub enum Rule {
     AllowAll,
     DenyAll,
-    Protected(AccessRuleNode),
+    Protected(RuleNode),
 }
 
-impl Describe<ScryptoCustomTypeKind> for AccessRule {
+impl Describe<ScryptoCustomTypeKind> for Rule {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_TYPE);
 
@@ -240,31 +240,28 @@ impl Describe<ScryptoCustomTypeKind> for AccessRule {
     }
 }
 
-impl From<AccessRuleNode> for AccessRule {
-    fn from(value: AccessRuleNode) -> Self {
-        AccessRule::Protected(value)
+impl From<RuleNode> for Rule {
+    fn from(value: RuleNode) -> Self {
+        Rule::Protected(value)
     }
 }
 
-pub trait AccessRuleVisitor {
+pub trait RuleVisitor {
     type Error;
-    fn visit(&mut self, node: &AccessRuleNode, depth: usize) -> Result<(), Self::Error>;
+    fn visit(&mut self, node: &RuleNode, depth: usize) -> Result<(), Self::Error>;
 }
 
-impl AccessRule {
-    pub fn dfs_traverse_nodes<V: AccessRuleVisitor>(
-        &self,
-        visitor: &mut V,
-    ) -> Result<(), V::Error> {
+impl Rule {
+    pub fn dfs_traverse_nodes<V: RuleVisitor>(&self, visitor: &mut V) -> Result<(), V::Error> {
         match self {
-            AccessRule::Protected(node) => node.dfs_traverse_recursive(visitor, 0),
+            Rule::Protected(node) => node.dfs_traverse_recursive(visitor, 0),
             _ => Ok(()),
         }
     }
 }
 
-impl AccessRuleNode {
-    fn dfs_traverse_recursive<V: AccessRuleVisitor>(
+impl RuleNode {
+    fn dfs_traverse_recursive<V: RuleVisitor>(
         &self,
         visitor: &mut V,
         depth: usize,
@@ -272,8 +269,8 @@ impl AccessRuleNode {
         visitor.visit(self, depth)?;
 
         match self {
-            AccessRuleNode::ProofRule(..) => {}
-            AccessRuleNode::AnyOf(nodes) | AccessRuleNode::AllOf(nodes) => {
+            RuleNode::ProofRule(..) => {}
+            RuleNode::AnyOf(nodes) | RuleNode::AllOf(nodes) => {
                 for node in nodes {
                     node.dfs_traverse_recursive(visitor, depth + 1)?;
                 }

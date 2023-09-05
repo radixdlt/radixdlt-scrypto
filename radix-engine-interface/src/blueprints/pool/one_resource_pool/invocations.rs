@@ -13,14 +13,14 @@ define_invocation! {
     function_name: instantiate,
     input: struct {
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule,
+        pool_manager_rule: Rule,
         resource_address: ResourceAddress,
         address_reservation: Option<GlobalAddressReservation>
     },
     output: type Global<OneResourcePoolObjectTypeInfo>,
     manifest_input: struct {
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule,
+        pool_manager_rule: Rule,
         resource_address: ResourceAddress,
         address_reservation: Option<ManifestAddressReservation>
     }

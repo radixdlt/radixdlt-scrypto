@@ -5,8 +5,8 @@ TAKE_ALL_FROM_WORKTOP
 CREATE_ACCESS_CONTROLLER 
     Bucket("some_xrd") 
     Tuple(
-        Enum<AccessRule::DenyAll>(), 
-        Enum<AccessRule::DenyAll>(), 
-        Enum<AccessRule::DenyAll>()
+        Enum<Rule::DenyAll>(), 
+        Enum<Rule::DenyAll>(), 
+        Enum<Rule::DenyAll>()
     ) 
     None;

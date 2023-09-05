@@ -34,14 +34,14 @@ pub enum AuthError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum FailedAccessRules {
-    RoleList(Vec<(RoleKey, Vec<AccessRule>)>),
-    AccessRule(Vec<AccessRule>),
+pub enum FailedRules {
+    RoleList(Vec<(RoleKey, Vec<Rule>)>),
+    Rule(Vec<Rule>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
-    pub failed_access_rules: FailedAccessRules,
+    pub failed_access_rules: FailedRules,
     pub fn_identifier: FnIdentifier,
 }
 
@@ -52,12 +52,12 @@ pub struct AuthModule {
 
 pub enum AuthorizationCheckResult {
     Authorized,
-    Failed(Vec<AccessRule>),
+    Failed(Vec<Rule>),
 }
 
 pub enum AuthorityListAuthorizationResult {
     Authorized,
-    Failed(Vec<(RoleKey, Vec<AccessRule>)>),
+    Failed(Vec<(RoleKey, Vec<Rule>)>),
 }
 
 pub enum ResolvedPermission {
@@ -66,7 +66,7 @@ pub enum ResolvedPermission {
         module_id: ModuleId,
         role_list: RoleList,
     },
-    AccessRule(AccessRule),
+    Rule(Rule),
     AllowAll,
 }
 
@@ -395,7 +395,7 @@ impl AuthModule {
     ) -> Result<(), RuntimeError> {
         match resolved_permission {
             ResolvedPermission::AllowAll => return Ok(()),
-            ResolvedPermission::AccessRule(rule) => {
+            ResolvedPermission::Rule(rule) => {
                 let result =
                     Authorization::check_authorization_against_access_rule(api, &auth_zone, &rule)?;
 
@@ -404,9 +404,7 @@ impl AuthModule {
                     AuthorizationCheckResult::Failed(access_rule_stack) => Err(
                         RuntimeError::SystemModuleError(SystemModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
-                                failed_access_rules: FailedAccessRules::AccessRule(
-                                    access_rule_stack,
-                                ),
+                                failed_access_rules: FailedRules::Rule(access_rule_stack),
                                 fn_identifier,
                             })),
                         )),
@@ -431,7 +429,7 @@ impl AuthModule {
                     AuthorityListAuthorizationResult::Failed(auth_list_fail) => Err(
                         RuntimeError::SystemModuleError(SystemModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
-                                failed_access_rules: FailedAccessRules::RoleList(auth_list_fail),
+                                failed_access_rules: FailedRules::RoleList(auth_list_fail),
                                 fn_identifier,
                             })),
                         )),
@@ -489,7 +487,7 @@ impl AuthModule {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
             Some(MethodAccessibility::OwnPackageOnly) => {
                 let package = blueprint_id.package_address;
-                Ok(ResolvedPermission::AccessRule(rule!(require(
+                Ok(ResolvedPermission::Rule(rule!(require(
                     package_of_direct_caller(package)
                 ))))
             }
@@ -497,11 +495,9 @@ impl AuthModule {
                 ModuleId::Main => {
                     let outer_object_info = &receiver_object_info.blueprint_info.outer_obj_info;
                     match outer_object_info {
-                        OuterObjectInfo::Some { outer_object } => {
-                            Ok(ResolvedPermission::AccessRule(rule!(require(
-                                global_caller(*outer_object)
-                            ))))
-                        }
+                        OuterObjectInfo::Some { outer_object } => Ok(ResolvedPermission::Rule(
+                            rule!(require(global_caller(*outer_object))),
+                        )),
                         OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
                             SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
                         )),

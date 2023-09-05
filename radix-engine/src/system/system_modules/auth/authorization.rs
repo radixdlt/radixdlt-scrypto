@@ -2,7 +2,7 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_modules::role_assignment::{
-    RoleAssignmentAccessRuleEntryPayload, RoleAssignmentOwnerFieldPayload,
+    RoleAssignmentOwnerFieldPayload, RoleAssignmentRuleEntryPayload,
 };
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
@@ -285,18 +285,18 @@ impl Authorization {
 
     pub fn verify_auth_rule<Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>, L: Default>(
         auth_zone: &NodeId,
-        auth_rule: &AccessRuleNode,
+        auth_rule: &RuleNode,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
-            AccessRuleNode::ProofRule(rule) => {
+            RuleNode::ProofRule(rule) => {
                 if Self::verify_proof_rule(auth_zone, rule, api)? {
                     Ok(AuthorizationCheckResult::Authorized)
                 } else {
                     Ok(AuthorizationCheckResult::Failed(vec![]))
                 }
             }
-            AccessRuleNode::AnyOf(rules) => {
+            RuleNode::AnyOf(rules) => {
                 for r in rules {
                     let rtn = Self::verify_auth_rule(auth_zone, r, api)?;
                     if matches!(rtn, AuthorizationCheckResult::Authorized) {
@@ -305,7 +305,7 @@ impl Authorization {
                 }
                 Ok(AuthorizationCheckResult::Failed(vec![]))
             }
-            AccessRuleNode::AllOf(rules) => {
+            RuleNode::AllOf(rules) => {
                 for r in rules {
                     let rtn = Self::verify_auth_rule(auth_zone, r, api)?;
                     if matches!(rtn, AuthorizationCheckResult::Failed(..)) {
@@ -343,7 +343,7 @@ impl Authorization {
                 }),
                 L::default(),
             )?;
-            let substate: KeyValueEntrySubstate<RoleAssignmentAccessRuleEntryPayload> =
+            let substate: KeyValueEntrySubstate<RoleAssignmentRuleEntryPayload> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_close_substate(handle)?;
 
@@ -381,10 +381,10 @@ impl Authorization {
     >(
         api: &mut Y,
         auth_zone: &NodeId,
-        rule: &AccessRule,
+        rule: &Rule,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match rule {
-            AccessRule::Protected(rule_node) => {
+            Rule::Protected(rule_node) => {
                 let mut rtn = Self::verify_auth_rule(auth_zone, rule_node, api)?;
                 match &mut rtn {
                     AuthorizationCheckResult::Authorized => {}
@@ -394,8 +394,8 @@ impl Authorization {
                 }
                 Ok(rtn)
             }
-            AccessRule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
-            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(vec![rule.clone()])),
+            Rule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
+            Rule::DenyAll => Ok(AuthorizationCheckResult::Failed(vec![rule.clone()])),
         }
     }
 

@@ -1424,15 +1424,15 @@ where
         let object_info = self.get_object_info(&receiver)?;
         match &object_info.object_type {
             ObjectType::Owned => {
-                return Err(RuntimeError::SystemError(
-                    SystemError::ObjectModuleDoesNotExist(module_id),
-                ));
+                return Err(RuntimeError::SystemError(SystemError::ModuleDoesNotExist(
+                    module_id,
+                )));
             }
             ObjectType::Global { modules } => {
                 if !modules.contains_key(&module_id) {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectModuleDoesNotExist(module_id),
-                    ));
+                    return Err(RuntimeError::SystemError(SystemError::ModuleDoesNotExist(
+                        module_id,
+                    )));
                 }
             }
         }

@@ -238,9 +238,9 @@ pub fn cancel_recovery() {
     test_runner
         .initiate_recovery(
             Role::Primary,
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
-            AccessRule::DenyAll,
+            Rule::AllowAll,
+            Rule::DenyAll,
+            Rule::DenyAll,
             Some(1),
         )
         .expect_commit_success();
@@ -1718,9 +1718,9 @@ impl AccessControllerTestRunner {
     pub fn initiate_recovery(
         &mut self,
         as_role: Role,
-        proposed_primary_role: AccessRule,
-        proposed_recovery_role: AccessRule,
-        proposed_confirmation_role: AccessRule,
+        proposed_primary_role: Rule,
+        proposed_recovery_role: Rule,
+        proposed_confirmation_role: Rule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
         let method_name = match as_role {
@@ -1778,9 +1778,9 @@ impl AccessControllerTestRunner {
         &mut self,
         as_role: Role,
         proposer: Role,
-        proposed_primary_role: AccessRule,
-        proposed_recovery_role: AccessRule,
-        proposed_confirmation_role: AccessRule,
+        proposed_primary_role: Rule,
+        proposed_recovery_role: Rule,
+        proposed_confirmation_role: Rule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
         let proposer = match proposer {
@@ -1850,9 +1850,9 @@ impl AccessControllerTestRunner {
     pub fn timed_confirm_recovery(
         &mut self,
         as_role: Role,
-        proposed_primary_role: AccessRule,
-        proposed_recovery_role: AccessRule,
-        proposed_confirmation_role: AccessRule,
+        proposed_primary_role: Rule,
+        proposed_recovery_role: Rule,
+        proposed_confirmation_role: Rule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
         let manifest = self
@@ -1936,9 +1936,9 @@ impl AccessControllerTestRunner {
     pub fn stop_timed_recovery(
         &mut self,
         as_role: Role,
-        proposed_primary_role: AccessRule,
-        proposed_recovery_role: AccessRule,
-        proposed_confirmation_role: AccessRule,
+        proposed_primary_role: Rule,
+        proposed_recovery_role: Rule,
+        proposed_confirmation_role: Rule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> TransactionReceipt {
         let manifest = self
