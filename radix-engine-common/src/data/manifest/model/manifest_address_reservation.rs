@@ -68,14 +68,13 @@ mod tests {
     #[test]
     fn manifest_address_reservation_fail() {
         let address = ManifestAddressReservation(0);
-        let address_vec = address.to_vec();
+        let mut address_vec = address.to_vec();
 
         assert!(ManifestAddressReservation::try_from(address_vec.as_slice()).is_ok());
 
         // malform encoded vector
-        let mut address_vec1 = address_vec.clone();
-        address_vec1.push(0);
-        let address_out = ManifestAddressReservation::try_from(address_vec1.as_slice());
+        address_vec.push(0);
+        let address_out = ManifestAddressReservation::try_from(address_vec.as_slice());
         assert!(matches!(
             address_out,
             Err(ParseManifestAddressReservationError::InvalidLength)

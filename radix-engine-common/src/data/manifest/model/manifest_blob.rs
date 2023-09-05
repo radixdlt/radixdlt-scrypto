@@ -57,7 +57,6 @@ impl ManifestBlobRef {
 
 manifest_type!(ManifestBlobRef, ManifestCustomValueKind::Blob, 32);
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -79,10 +78,7 @@ mod tests {
             Err(ParseManifestBlobRefError::InvalidLength)
         ));
 
-        println!(
-            "Manifest Blob error: {}",
-            blob_out.unwrap_err()
-        );
+        println!("Manifest Blob error: {}", blob_out.unwrap_err());
     }
 
     #[test]
@@ -93,9 +89,8 @@ mod tests {
         encoder.write_slice(&malformed_value.to_le_bytes()).unwrap();
 
         let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
-        let blob_output = decoder.decode_deeper_body_with_value_kind::<ManifestBlobRef>(
-            ManifestBlobRef::value_kind(),
-        );
+        let blob_output = decoder
+            .decode_deeper_body_with_value_kind::<ManifestBlobRef>(ManifestBlobRef::value_kind());
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
         assert!(matches!(
