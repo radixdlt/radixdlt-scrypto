@@ -20,7 +20,9 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::{StateUpdates, SystemUpdates};
+use crate::track::{
+    BatchPartitionUpdate, LegacyStateUpdates, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
+};
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
@@ -217,16 +219,7 @@ impl FlashReceipt {
                 result.state_update_summary.new_components = new_components;
                 result.state_update_summary.new_resources = new_resources;
 
-                // A sanity check that the system receipt should not be conflicting with the flash receipt
-                for (txn_key, txn_updates) in &result.state_updates.system_updates {
-                    for (flash_key, _) in &self.state_updates.system_updates {
-                        if txn_key.eq(flash_key) && !txn_updates.is_empty() {
-                            panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
-                        }
-                    }
-                }
-
-                result.state_updates.extend(self.state_updates);
+                merge_asserting_no_overlap(&mut result.state_updates, self.state_updates);
 
                 let mut substate_system_structures = self.substate_system_structures;
                 for (node_id, by_partition_num) in
@@ -246,6 +239,45 @@ impl FlashReceipt {
             }
             _ => {}
         }
+    }
+}
+
+/// Merges the given `source` into a `target`, asserting no overlap.
+/// This function is not a method on [`StateUpdates`], since it is only used here locally (called
+/// from a method describing itself as "a hack").
+/// Note: the system receipt should not be conflicting with the flash receipt, and this function
+/// will panic if this invariant is broken.
+fn merge_asserting_no_overlap(target: &mut StateUpdates, source: StateUpdates) {
+    for (node_id, source_node_state_updates) in source.by_node {
+        let target_node_state_updates = target.by_node.entry(node_id).or_default();
+        let target_by_partition = match target_node_state_updates {
+            NodeStateUpdates::Delta { by_partition } => by_partition,
+        };
+        match source_node_state_updates {
+            NodeStateUpdates::Delta { by_partition } => {
+                for (partition_num, partition_state_updates) in by_partition {
+                    let previous_target_partition_state_updates =
+                        target_by_partition.insert(partition_num, partition_state_updates);
+                    if !is_noop_partition_state_updates(&previous_target_partition_state_updates) {
+                        panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Returns true if the given update is effectively no-op (i.e. [`None`] or empty delta).
+/// This check is required since under some circumstances, Track may end up with empty partition
+/// record (in fact, this check was migrated from previous version of the code, from before
+/// [`StateUpdates`] structure refactoring).
+fn is_noop_partition_state_updates(opt_updates: &Option<PartitionStateUpdates>) -> bool {
+    let Some(updates) = opt_updates else {
+        return true;
+    };
+    match updates {
+        PartitionStateUpdates::Delta { by_substate } => by_substate.is_empty(),
+        PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset { .. }) => false,
     }
 }
 
@@ -568,7 +600,7 @@ pub fn create_system_bootstrap_flash(
 
 pub fn create_substate_flash_for_genesis() -> FlashReceipt {
     let substate_flash = create_system_bootstrap_flash();
-    let mut system_updates = SystemUpdates::default();
+    let mut system_updates = index_map_new();
     let mut new_packages = index_set_new();
     let mut new_components = index_set_new();
     let mut new_resources = index_set_new();
@@ -595,16 +627,16 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         }
     }
 
-    let state_updates = StateUpdates {
+    let state_updates = StateUpdates::from(LegacyStateUpdates {
         partition_deletions: index_set_new(),
         system_updates,
-    };
+    });
     let flashed_db = FlashedSubstateDatabase {
         flash_updates: state_updates.create_database_updates::<SpreadPrefixKeyMapper>(),
     };
     let mut substate_schema_mapper =
         SubstateSchemaMapper::new(SystemDatabaseReader::new(&flashed_db));
-    substate_schema_mapper.add_all_system_updates(&state_updates.system_updates);
+    substate_schema_mapper.add_for_all_individually_updated(&state_updates);
     let substate_system_structures = substate_schema_mapper.done();
 
     FlashReceipt {
