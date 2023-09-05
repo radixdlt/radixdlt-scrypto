@@ -54,14 +54,17 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
+    let delta = receipt2
+        .fee_summary
+        .total_cost()
+        .checked_sub(receipt1.fee_summary.total_cost())
+        .unwrap();
     println!(
         "Locking fee from an account protected by signature: {} XRD",
-        receipt2
-            .fee_summary
-            .total_cost()
-            .checked_sub(receipt1.fee_summary.total_cost())
-            .unwrap()
+        delta
     );
+    // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
+    assert!(delta <= dec!("0.08581566997"));
 }
 
 #[test]
@@ -115,14 +118,17 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
+    let delta = receipt2
+        .fee_summary
+        .total_cost()
+        .checked_sub(receipt1.fee_summary.total_cost())
+        .unwrap();
     println!(
         "Locking fee from an account protected by an access controller (1-4): {} XRD",
-        receipt2
-            .fee_summary
-            .total_cost()
-            .checked_sub(receipt1.fee_summary.total_cost())
-            .unwrap()
+        delta
     );
+    // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
+    assert!(delta <= dec!("0.18980039147"));
 }
 
 #[test]
@@ -180,14 +186,17 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
+    let delta = receipt2
+        .fee_summary
+        .total_cost()
+        .checked_sub(receipt1.fee_summary.total_cost())
+        .unwrap();
     println!(
         "Asserting worktop contains (fungible resource; asserting amount only): {} XRD",
-        receipt2
-            .fee_summary
-            .total_cost()
-            .checked_sub(receipt1.fee_summary.total_cost())
-            .unwrap()
+        delta
     );
+    // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
+    assert!(delta <= dec!("0.00908532837"));
 }
 
 #[test]
@@ -249,14 +258,17 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
+    let delta = receipt2
+        .fee_summary
+        .total_cost()
+        .checked_sub(receipt1.fee_summary.total_cost())
+        .unwrap();
     println!(
         "Asserting worktop contains (non-fungible resource; asserting amount only): {} XRD",
-        receipt2
-            .fee_summary
-            .total_cost()
-            .checked_sub(receipt1.fee_summary.total_cost())
-            .unwrap()
+        delta
     );
+    // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
+    assert!(delta <= dec!("0.00954602837"));
 }
 
 // ED25519 signature is larger than Secp256k1 due to lack of public key recovery
@@ -317,20 +329,20 @@ fn estimate_adding_signature() {
     receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
-    println!(
-        "Adding a signer signature: {} XRD",
-        receipt2
-            .fee_summary
-            .total_cost()
-            .checked_sub(receipt1.fee_summary.total_cost())
-            .unwrap()
-    );
+    let delta = receipt2
+        .fee_summary
+        .total_cost()
+        .checked_sub(receipt1.fee_summary.total_cost())
+        .unwrap();
+    println!("Adding a signer signature: {} XRD", delta);
+    // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
+    assert!(delta <= dec!("0.01109974758"));
 }
 
 // Different from signer signature, no public key is needed in the notary signature (stored in header instead)
 // Without signature, Secp256k1 signature is larger than ED25519 signature due to recovery byte
 // Thus, we use Secp256k1 when estimating notarization cost
-fn estimate_notarizing(notary_is_signatory: bool) {
+fn estimate_notarizing(notary_is_signatory: bool, max: Decimal) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
@@ -378,23 +390,26 @@ fn estimate_notarizing(notary_is_signatory: bool) {
     receipt2.expect_commit_success();
     println!("\n{:?}", receipt2);
 
+    let delta = receipt2
+        .fee_summary
+        .total_cost()
+        .checked_sub(receipt1.fee_summary.total_cost())
+        .unwrap();
     println!(
         "Notarizing (notary_is_signatory: {}): {} XRD",
-        notary_is_signatory,
-        receipt2
-            .fee_summary
-            .total_cost()
-            .checked_sub(receipt1.fee_summary.total_cost())
-            .unwrap()
+        notary_is_signatory, delta
     );
+    assert!(delta <= max);
 }
 
 #[test]
 fn estimate_notarizing_notary_is_not_signatory() {
-    estimate_notarizing(false);
+    // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
+    estimate_notarizing(false, dec!("0.0081393944"));
 }
 
 #[test]
 fn estimate_notarizing_notary_is_signatory() {
-    estimate_notarizing(true);
+    // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
+    estimate_notarizing(true, dec!("0.0084273944"));
 }
