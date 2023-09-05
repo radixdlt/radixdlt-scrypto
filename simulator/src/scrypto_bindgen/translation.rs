@@ -104,6 +104,7 @@ where
     let type_kind = schema_resolver.resolve_type_kind(type_identifier)?;
     let type_metadata = schema_resolver.resolve_type_metadata(type_identifier)?;
     let type_validation = schema_resolver.resolve_type_validation(type_identifier)?;
+    let type_ident = type_metadata.get_name_string();
 
     let name = match type_kind {
         TypeKind::Any => "ScryptoValue".to_owned(),
@@ -119,37 +120,30 @@ where
         TypeKind::U64 => "u64".to_owned(),
         TypeKind::U128 => "u128".to_owned(),
         TypeKind::String => "String".to_owned(),
-        TypeKind::Array { element_type } => {
+        TypeKind::Array { element_type } => type_ident.unwrap_or(format!(
+            "Vec<{}>",
+            type_name(
+                &ScopedTypeId(type_identifier.0, element_type),
+                blueprint_name,
+                schema_resolver
+            )?
+        )),
+        TypeKind::Tuple { field_types } => type_ident.unwrap_or(if field_types.is_empty() {
+            "()".to_owned()
+        } else {
             format!(
-                "Vec<{}>",
-                type_name(
-                    &ScopedTypeId(type_identifier.0, element_type),
-                    blueprint_name,
-                    schema_resolver
-                )?
+                "({},)",
+                field_types
+                    .iter()
+                    .map(|local_type_index| type_name(
+                        &ScopedTypeId(type_identifier.0, *local_type_index),
+                        blueprint_name,
+                        schema_resolver
+                    ))
+                    .collect::<Result<Vec<String>, _>>()?
+                    .join(", ")
             )
-        }
-        TypeKind::Tuple { field_types } => match type_metadata.get_name_string() {
-            Some(name) => name,
-            None => {
-                if field_types.is_empty() {
-                    "()".to_owned()
-                } else {
-                    format!(
-                        "({},)",
-                        field_types
-                            .iter()
-                            .map(|local_type_index| type_name(
-                                &ScopedTypeId(type_identifier.0, *local_type_index),
-                                blueprint_name,
-                                schema_resolver
-                            ))
-                            .collect::<Result<Vec<String>, _>>()?
-                            .join(", ")
-                    )
-                }
-            }
-        },
+        }),
         TypeKind::Enum { variants } => {
             // There is currently no way to know if this type has generics or not. Thus, we need to
             // deal with generic enums from the standard library in a special way. We determine if
@@ -250,22 +244,16 @@ where
         {
             "GlobalAddressReservation".to_owned()
         }
-        TypeKind::Custom(ScryptoCustomTypeKind::Own)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                    OwnValidation::IsTypedObject(None, blueprint_name.to_owned()),
-                ))
-                || type_validation
-                    == TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                        OwnValidation::IsTypedObject(
-                            Some(schema_resolver.package_address()),
-                            blueprint_name.to_owned(),
-                        ),
-                    )) =>
-        {
-            format!("Owned<{}>", blueprint_name.to_pascal_case())
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Own) => "Own".to_owned(),
+        TypeKind::Custom(ScryptoCustomTypeKind::Own) => match type_validation {
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(package_address, bp_name),
+            )) if package_address.is_none()
+                || package_address == Some(schema_resolver.package_address()) =>
+            {
+                format!("Owned<{}>", bp_name.to_pascal_case())
+            }
+            _ => "Own".to_owned(),
+        },
 
         TypeKind::Custom(ScryptoCustomTypeKind::Reference)
             if type_validation
@@ -307,22 +295,16 @@ where
         {
             "InternalAddress".to_string()
         }
-        TypeKind::Custom(ScryptoCustomTypeKind::Reference)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsGlobalTyped(None, blueprint_name.to_owned()),
-                ))
-                || type_validation
-                    == TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                        ReferenceValidation::IsGlobalTyped(
-                            Some(schema_resolver.package_address()),
-                            blueprint_name.to_owned(),
-                        ),
-                    )) =>
-        {
-            format!("Global<{}>", blueprint_name.to_pascal_case())
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Reference) => "Reference".to_owned(),
+        TypeKind::Custom(ScryptoCustomTypeKind::Reference) => match type_validation {
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                ReferenceValidation::IsGlobalTyped(package_address, bp_name),
+            )) if package_address.is_none()
+                || package_address == Some(schema_resolver.package_address()) =>
+            {
+                format!("Global<{}>", bp_name.to_pascal_case())
+            }
+            _ => "Reference".to_owned(),
+        },
     };
     Ok(name)
 }

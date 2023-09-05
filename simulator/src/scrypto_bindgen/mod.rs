@@ -9,6 +9,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::*;
+use std::io::Write;
 
 use crate::resim::*;
 
@@ -34,6 +35,7 @@ pub enum Error {
     PackageAddressError(ParsePackageAddressError),
     ResimError(crate::resim::Error),
     SchemaError(SchemaError),
+    IOError(std::io::Error),
 }
 
 pub fn run() -> Result<(), Error> {
@@ -48,8 +50,9 @@ pub fn run() -> Result<(), Error> {
 
     // Reset the ledger if required to.
     if args.reset_ledger {
+        let mut buffer = Vec::new();
         crate::resim::Reset {}
-            .run(&mut out)
+            .run(&mut buffer)
             .map_err(Error::ResimError)?;
 
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -90,7 +93,7 @@ pub fn run() -> Result<(), Error> {
     };
 
     for binding in bindings {
-        println!("{}", binding)
+        writeln!(&mut out, "{}", binding).map_err(Error::IOError)?
     }
 
     Ok(())

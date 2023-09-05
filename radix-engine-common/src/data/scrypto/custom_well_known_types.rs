@@ -443,7 +443,7 @@ create_well_known_lookup!(
             ROLE_ASSIGNMENT_TYPES_START + 0,
             named_enum(
                 // This is a clearer name for UIs, but not time to change in the code right now
-                "Rule",
+                "AccessRule",
                 [
                     (0u8, named_tuple("AllowAll", [])),
                     (1u8, named_tuple("DenyAll", [])),
@@ -456,7 +456,7 @@ create_well_known_lookup!(
             ROLE_ASSIGNMENT_TYPES_START + 1,
             named_enum(
                 // This is a clearer name for UIs, but not time to change in the code right now
-                "RuleNode",
+                "AccessRuleNode",
                 [
                     (0u8, named_tuple("ProofRule", [PROOF_RULE_TYPE])),
                     (1u8, named_tuple("AnyOf", [ACCESS_RULE_NODE_LIST_TYPE])),
@@ -537,7 +537,7 @@ create_well_known_lookup!(
             OTHER_MODULE_TYPES_START + 0,
             named_enum(
                 // This is a clearer name for UIs, but not time to change in the code right now
-                "ModuleId",
+                "ObjectModuleId",
                 [
                     (0u8, named_tuple("Main", [])),
                     (1u8, named_tuple("Metadata", [])),
@@ -551,7 +551,7 @@ create_well_known_lookup!(
             OTHER_MODULE_TYPES_START + 1,
             named_enum(
                 // This is a clearer name for UIs, but not time to change in the code right now
-                "NativeModuleId",
+                "ModuleId",
                 [
                     (1u8, named_tuple("Metadata", [])),
                     (2u8, named_tuple("Royalty", [])),
