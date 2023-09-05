@@ -34,7 +34,7 @@ pub struct RoleAssignment(pub ModuleHandle);
 impl RoleAssignment {
     pub fn new<R: Into<OwnerRoleEntry>>(
         owner_role: R,
-        roles: IndexMap<ObjectModuleId, RoleAssignmentInit>,
+        roles: IndexMap<ModuleId, RoleAssignmentInit>,
     ) -> Self {
         let rtn = ScryptoVmV1Api::blueprint_call(
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
@@ -64,7 +64,7 @@ impl RoleAssignment {
         );
     }
 
-    fn internal_set_role<A: Into<AccessRule>>(&self, module: ObjectModuleId, name: &str, rule: A) {
+    fn internal_set_role<A: Into<AccessRule>>(&self, module: ModuleId, name: &str, rule: A) {
         self.call_ignore_rtn(
             ROLE_ASSIGNMENT_SET_IDENT,
             &RoleAssignmentSetInput {
@@ -75,7 +75,7 @@ impl RoleAssignment {
         );
     }
 
-    fn internal_get_role(&self, module: ObjectModuleId, name: &str) -> Option<AccessRule> {
+    fn internal_get_role(&self, module: ModuleId, name: &str) -> Option<AccessRule> {
         self.call(
             ROLE_ASSIGNMENT_GET_IDENT,
             &RoleAssignmentGetInput {
@@ -86,32 +86,32 @@ impl RoleAssignment {
     }
 
     pub fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.internal_set_role(ObjectModuleId::Main, name, rule);
+        self.internal_set_role(ModuleId::Main, name, rule);
     }
 
     pub fn get_role(&self, name: &str) -> Option<AccessRule> {
-        self.internal_get_role(ObjectModuleId::Main, name)
+        self.internal_get_role(ModuleId::Main, name)
     }
 
     pub fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.internal_set_role(ObjectModuleId::Metadata, name, rule);
+        self.internal_set_role(ModuleId::Metadata, name, rule);
     }
 
     pub fn get_metadata_role(&self, name: &str) -> Option<AccessRule> {
-        self.internal_get_role(ObjectModuleId::Metadata, name)
+        self.internal_get_role(ModuleId::Metadata, name)
     }
 
     pub fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.internal_set_role(ObjectModuleId::Royalty, name, rule);
+        self.internal_set_role(ModuleId::Royalty, name, rule);
     }
 
     pub fn get_component_royalties_role(&self, name: &str) -> Option<AccessRule> {
-        self.internal_get_role(ObjectModuleId::Royalty, name)
+        self.internal_get_role(ModuleId::Royalty, name)
     }
 }
 
 impl Attachable for RoleAssignment {
-    const MODULE_ID: ModuleId = ModuleId::RoleAssignment;
+    const MODULE_ID: AttachedModuleId = AttachedModuleId::RoleAssignment;
 
     fn new(handle: ModuleHandle) -> Self {
         Self(handle)

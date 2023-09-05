@@ -70,7 +70,7 @@ use radix_engine::transaction::{execute_and_commit_transaction, CostingParameter
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
 };
@@ -435,7 +435,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let bp_definition: VersionedPackageBlueprintVersionDefinition = system_reader
         .read_object_collection_entry(
             blueprint_id.package_address.as_node_id(),
-            ObjectModuleId::Main,
+            ModuleId::Main,
             ObjectCollectionKey::KeyValue(
                 PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
                 &version_key,
@@ -453,7 +453,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
             let schema: VersionedScryptoSchema = system_reader
                 .read_object_collection_entry(
                     blueprint_id.package_address.as_node_id(),
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     ObjectCollectionKey::KeyValue(
                         PackageCollection::SchemaKeyValue.collection_index(),
                         &type_id.0,
@@ -485,7 +485,7 @@ pub fn db_upsert_timestamps(
     writer
         .write_typed_object_field(
             CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
+            ModuleId::Main,
             ConsensusManagerField::ProposerMilliTimestamp.field_index(),
             ConsensusManagerProposerMilliTimestampFieldPayload::from_content_source(
                 milli_timestamp,
@@ -496,7 +496,7 @@ pub fn db_upsert_timestamps(
     writer
         .write_typed_object_field(
             CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
+            ModuleId::Main,
             ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
             ConsensusManagerProposerMinuteTimestampFieldPayload::from_content_source(
                 minute_timestamp,
@@ -520,7 +520,7 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     let mut consensus_mgr_state = reader
         .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
             CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
+            ModuleId::Main,
             ConsensusManagerField::State.field_index(),
         )
         .unwrap_or_else(|_| {
@@ -542,7 +542,7 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     writer
         .write_typed_object_field(
             CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
+            ModuleId::Main,
             ConsensusManagerField::State.field_index(),
             ConsensusManagerStateFieldPayload::from_content_source(consensus_mgr_state),
         )
