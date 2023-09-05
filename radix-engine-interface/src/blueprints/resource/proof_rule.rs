@@ -1,18 +1,34 @@
 use crate::blueprints::resource::AccessRuleNode::{AllOf, AnyOf};
-use crate::blueprints::resource::*;
-use crate::math::Decimal;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::types::*;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ManifestSbor,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum ResourceOrNonFungible {
     NonFungible(NonFungibleGlobalId),
     Resource(ResourceAddress),
+}
+
+impl Describe<ScryptoCustomTypeKind> for ResourceOrNonFungible {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::RESOURCE_OR_NON_FUNGIBLE_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::resource_or_non_fungible_type_data()
+    }
 }
 
 impl From<NonFungibleGlobalId> for ResourceOrNonFungible {
@@ -44,13 +60,34 @@ where
 
 /// Resource Proof Rules
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ManifestSbor,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum ProofRule {
     Require(ResourceOrNonFungible),
     AmountOf(Decimal, ResourceAddress),
     CountOf(u8, Vec<ResourceOrNonFungible>),
     AllOf(Vec<ResourceOrNonFungible>),
     AnyOf(Vec<ResourceOrNonFungible>),
+}
+
+impl Describe<ScryptoCustomTypeKind> for ProofRule {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::PROOF_RULE_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::proof_rule_type_data()
+    }
 }
 
 impl From<ResourceAddress> for AccessRuleNode {
@@ -72,11 +109,32 @@ impl From<ResourceOrNonFungible> for AccessRuleNode {
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ManifestSbor,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum AccessRuleNode {
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
     AllOf(Vec<AccessRuleNode>),
+}
+
+impl Describe<ScryptoCustomTypeKind> for AccessRuleNode {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_NODE_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::access_rule_node_type_data()
+    }
 }
 
 impl AccessRuleNode {
@@ -154,11 +212,32 @@ where
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ManifestSbor,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum AccessRule {
     AllowAll,
     DenyAll,
     Protected(AccessRuleNode),
+}
+
+impl Describe<ScryptoCustomTypeKind> for AccessRule {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::access_rule_type_data()
+    }
 }
 
 impl From<AccessRuleNode> for AccessRule {

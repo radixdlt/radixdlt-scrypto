@@ -24,11 +24,10 @@ pub fn format_payload_as_nested_string<F: fmt::Write, E: FormattableCustomExtens
     f: &mut F,
     context: &NestedStringDisplayContext<'_, '_, E>,
     payload: &'_ [u8],
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     depth_limit: usize,
 ) -> Result<(), FormattingError> {
-    let mut traverser =
-        traverse_payload_with_types(payload, context.schema, type_index, depth_limit);
+    let mut traverser = traverse_payload_with_types(payload, context.schema, type_id, depth_limit);
     if let PrintMode::MultiLine {
         first_line_indent, ..
     } = &context.print_mode
@@ -50,7 +49,7 @@ pub(crate) fn format_partial_payload_as_nested_string<
     check_exact_end: bool,
     current_depth: usize,
     context: &NestedStringDisplayContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     depth_limit: usize,
 ) -> Result<(), FormattingError> {
     let mut traverser = traverse_partial_payload_with_types(
@@ -59,7 +58,7 @@ pub(crate) fn format_partial_payload_as_nested_string<
         check_exact_end,
         current_depth,
         context.schema,
-        type_index,
+        type_id,
         depth_limit,
     );
     if let PrintMode::MultiLine {
@@ -96,26 +95,24 @@ fn format_value_tree<F: fmt::Write, E: FormattableCustomExtension>(
 ) -> Result<(), FormattingError> {
     let typed_event = traverser.next_event();
     match typed_event.event {
-        ContainerStart(type_index, container_header) => {
+        ContainerStart(type_id, container_header) => {
             let parent_depth = typed_event.location.typed_ancestor_path.len();
             match container_header {
                 ContainerHeader::Tuple(header) => {
-                    format_tuple(f, traverser, context, type_index, header, parent_depth)
+                    format_tuple(f, traverser, context, type_id, header, parent_depth)
                 }
                 ContainerHeader::EnumVariant(header) => {
-                    format_enum_variant(f, traverser, context, type_index, header, parent_depth)
+                    format_enum_variant(f, traverser, context, type_id, header, parent_depth)
                 }
                 ContainerHeader::Array(header) => {
-                    format_array(f, traverser, context, type_index, header, parent_depth)
+                    format_array(f, traverser, context, type_id, header, parent_depth)
                 }
                 ContainerHeader::Map(header) => {
-                    format_map(f, traverser, context, type_index, header, parent_depth)
+                    format_map(f, traverser, context, type_id, header, parent_depth)
                 }
             }
         }
-        TerminalValue(type_index, value_ref) => {
-            format_terminal_value(f, context, type_index, value_ref)
-        }
+        TerminalValue(type_id, value_ref) => format_terminal_value(f, context, type_id, value_ref),
         _ => Err(FormattingError::Sbor(
             typed_event
                 .display_as_unexpected_event("ContainerStart | TerminalValue", &context.schema),
@@ -127,13 +124,13 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
     context: &NestedStringDisplayContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     tuple_header: TupleHeader,
     parent_depth: usize,
 ) -> Result<(), FormattingError> {
     let tuple_data = context
         .schema
-        .resolve_matching_tuple_metadata(type_index, tuple_header.length);
+        .resolve_matching_tuple_metadata(type_id, tuple_header.length);
 
     if let Some(type_name) = tuple_data.name {
         write!(f, "Tuple:{}(", type_name)?;
@@ -210,12 +207,12 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
     context: &NestedStringDisplayContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     variant_header: EnumVariantHeader,
     parent_depth: usize,
 ) -> Result<(), FormattingError> {
     let enum_data = context.schema.resolve_matching_enum_metadata(
-        type_index,
+        type_id,
         variant_header.variant,
         variant_header.length,
     );
@@ -292,11 +289,11 @@ fn format_array<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
     context: &NestedStringDisplayContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     array_header: ArrayHeader<E::CustomValueKind>,
     parent_depth: usize,
 ) -> Result<(), FormattingError> {
-    let array_data = context.schema.resolve_matching_array_metadata(type_index);
+    let array_data = context.schema.resolve_matching_array_metadata(type_id);
 
     // Note - this is (purposefully) subtly different to the implementation in the manifest:
     // We wrap bytes as Array<U8>(Hex("deadbeef")) instead of Bytes("deadbeef") to fit
@@ -383,11 +380,11 @@ fn format_map<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
     context: &NestedStringDisplayContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     map_header: MapHeader<E::CustomValueKind>,
     parent_depth: usize,
 ) -> Result<(), FormattingError> {
-    let map_data = context.schema.resolve_matching_map_metadata(type_index);
+    let map_data = context.schema.resolve_matching_map_metadata(type_id);
 
     match map_data.map_name {
         Some(array_name) => {
@@ -460,12 +457,12 @@ fn format_map<F: fmt::Write, E: FormattableCustomExtension>(
 fn format_terminal_value<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     context: &NestedStringDisplayContext<'_, '_, E>,
-    type_index: LocalTypeIndex,
+    type_id: LocalTypeId,
     value_ref: TerminalValueRef<E::CustomTraversal>,
 ) -> Result<(), FormattingError> {
     let type_name = context
         .schema
-        .resolve_type_metadata(type_index)
+        .resolve_type_metadata(type_id)
         .and_then(|m| m.get_name());
     match value_ref {
         TerminalValueRef::Bool(value) => write!(f, "{}", value)?,
@@ -542,7 +539,7 @@ mod tests {
 
     #[test]
     fn complex_value_formatting() {
-        let (type_index, schema) =
+        let (type_id, schema) =
             generate_full_schema_from_single_type::<MyComplexTupleStruct, NoCustomSchema>();
         let value = MyComplexTupleStruct(
             vec![1, 2, 3],
@@ -590,7 +587,7 @@ mod tests {
             print_mode: PrintMode::SingleLine,
             schema: schema.v1(),
             custom_context: Default::default(),
-            type_index,
+            type_id,
             depth_limit: 64,
         };
         assert_eq!(
@@ -678,7 +675,7 @@ mod tests {
             },
             schema: schema.v1(),
             custom_context: Default::default(),
-            type_index,
+            type_id,
             depth_limit: 64,
         };
         assert_eq!(

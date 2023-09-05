@@ -4,7 +4,7 @@ use crate::blueprints::resource::{
 };
 use crate::system::checkers::ApplicationEventChecker;
 use radix_engine_common::constants::RESOURCE_PACKAGE;
-use radix_engine_common::math::{Decimal, SafeAdd, SafeSub};
+use radix_engine_common::math::{CheckedAdd, CheckedSub, Decimal};
 use radix_engine_common::prelude::{scrypto_decode, ResourceAddress};
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::api::ObjectModuleId;
@@ -52,13 +52,13 @@ impl ApplicationEventChecker for ResourceEventChecker {
                             let event: MintFungibleResourceEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.resource_tracker.entry(address).or_default();
-                            *tracked = tracked.safe_add(event.amount).unwrap();
+                            *tracked = tracked.checked_add(event.amount).unwrap();
                         }
                         BurnFungibleResourceEvent::EVENT_NAME => {
                             let event: BurnFungibleResourceEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.resource_tracker.entry(address).or_default();
-                            *tracked = tracked.safe_sub(event.amount).unwrap();
+                            *tracked = tracked.checked_sub(event.amount).unwrap();
 
                             if tracked.is_negative() {
                                 panic!("Burnt more resources than was minted.");
@@ -78,14 +78,14 @@ impl ApplicationEventChecker for ResourceEventChecker {
                                 scrypto_decode(event_payload).unwrap();
                             let amount: Decimal = event.ids.len().into();
                             let tracked = self.resource_tracker.entry(address).or_default();
-                            *tracked = tracked.safe_add(amount).unwrap();
+                            *tracked = tracked.checked_add(amount).unwrap();
                         }
                         BurnNonFungibleResourceEvent::EVENT_NAME => {
                             let event: BurnNonFungibleResourceEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let amount: Decimal = event.ids.len().into();
                             let tracked = self.resource_tracker.entry(address).or_default();
-                            *tracked = tracked.safe_sub(amount).unwrap();
+                            *tracked = tracked.checked_sub(amount).unwrap();
 
                             if tracked.is_negative() {
                                 panic!("Burnt more resources than was minted.");
@@ -103,13 +103,13 @@ impl ApplicationEventChecker for ResourceEventChecker {
                             let event: fungible_vault::DepositEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
-                            *tracked = tracked.safe_add(event.amount).unwrap();
+                            *tracked = tracked.checked_add(event.amount).unwrap();
                         }
                         fungible_vault::WithdrawEvent::EVENT_NAME => {
                             let event: fungible_vault::WithdrawEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
-                            *tracked = tracked.safe_sub(event.amount).unwrap();
+                            *tracked = tracked.checked_sub(event.amount).unwrap();
                             if tracked.is_negative() {
                                 panic!("Removed more resources than exists.");
                             }
@@ -118,7 +118,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                             let event: fungible_vault::RecallEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
-                            *tracked = tracked.safe_sub(event.amount).unwrap();
+                            *tracked = tracked.checked_sub(event.amount).unwrap();
                             if tracked.is_negative() {
                                 panic!("Removed more resources than exists.");
                             }
@@ -127,7 +127,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                             let event: fungible_vault::PayFeeEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
-                            *tracked = tracked.safe_sub(event.amount).unwrap();
+                            *tracked = tracked.checked_sub(event.amount).unwrap();
                             if tracked.is_negative() {
                                 panic!("Removed more resources than exists.");
                             }
@@ -145,14 +145,14 @@ impl ApplicationEventChecker for ResourceEventChecker {
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             let amount: Decimal = event.ids.len().into();
-                            *tracked = tracked.safe_add(amount).unwrap();
+                            *tracked = tracked.checked_add(amount).unwrap();
                         }
                         non_fungible_vault::WithdrawEvent::EVENT_NAME => {
                             let event: non_fungible_vault::WithdrawEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             let amount: Decimal = event.ids.len().into();
-                            *tracked = tracked.safe_sub(amount).unwrap();
+                            *tracked = tracked.checked_sub(amount).unwrap();
                             if tracked.is_negative() {
                                 panic!("Removed more resources than exists.");
                             }
@@ -162,7 +162,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             let amount: Decimal = event.ids.len().into();
-                            *tracked = tracked.safe_sub(amount).unwrap();
+                            *tracked = tracked.checked_sub(amount).unwrap();
                             if tracked.is_negative() {
                                 panic!("Removed more resources than exists.");
                             }

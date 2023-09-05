@@ -53,8 +53,8 @@ fn test_fee_states() {
     // Therefore, the balance should be between `fee_locked` and `fee_locked + loan_in_xrd`.
     let loan_in_xrd = receipt
         .effective_execution_cost_unit_price()
-        .safe_mul(EXECUTION_COST_UNIT_LOAN)
+        .checked_mul(EXECUTION_COST_UNIT_LOAN)
         .unwrap();
     assert!(fee_locked < remaining_fee_balance);
-    assert!(remaining_fee_balance < fee_locked.safe_add(loan_in_xrd).unwrap());
+    assert!(remaining_fee_balance < fee_locked.checked_add(loan_in_xrd).unwrap());
 }

@@ -17,7 +17,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Enum<1u8>()
     true
-    Tuple(
+    Enum<0u8>(
         Enum<0u8>(
             Tuple(
                 Array<Enum>(
@@ -26,27 +26,17 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                             Enum<0u8>(
                                 10u8
                             ),
-                            Enum<1u8>(
-                                1u64
+                            Enum<0u8>(
+                                195u8
                             ),
                             Enum<0u8>(
                                 12u8
                             ),
                             Enum<1u8>(
-                                2u64
+                                1u64
                             ),
                             Enum<1u8>(
-                                4u64
-                            )
-                        )
-                    ),
-                    Enum<14u8>(
-                        Array<Enum>(
-                            Enum<0u8>(
-                                133u8
-                            ),
-                            Enum<0u8>(
-                                192u8
+                                3u64
                             )
                         )
                     ),
@@ -56,7 +46,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                                 7u8
                             ),
                             Enum<1u8>(
-                                3u64
+                                2u64
                             )
                         )
                     ),
@@ -75,12 +65,12 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                             0u8 => Array<Enum>(),
                             1u8 => Array<Enum>(
                                 Enum<1u8>(
-                                    4u64
+                                    3u64
                                 )
                             ),
                             2u8 => Array<Enum>(
                                 Enum<1u8>(
-                                    2u64
+                                    1u64
                                 )
                             )
                         )
@@ -102,12 +92,6 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                                 )
                             )
                         )
-                    ),
-                    Tuple(
-                        Enum<1u8>(
-                            "NonFungibleGlobalId"
-                        ),
-                        Enum<0u8>()
                     ),
                     Tuple(
                         Enum<1u8>(
@@ -179,7 +163,6 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                     Enum<0u8>(),
                     Enum<0u8>(),
                     Enum<0u8>(),
-                    Enum<0u8>(),
                     Enum<0u8>()
                 )
             )
@@ -196,7 +179,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         NonFungibleLocalId("#1#") => Tuple(
             Tuple(
                 100u64,
-                NonFungibleGlobalId("resource_sim1ng0vqwrngp6864t726q3pmh6x55qatqt5287ne9d6sa6usjg85c3rn:#8#"),
+                NonFungibleGlobalId("resource_sim1nt08wws2c6fjchvmng57cdt004w00epjgsfp7fzl9yamxzj78mj2da:#8#"),
                 "Some string which could be made long for test cases",
                 Tuple(
                     42u8,

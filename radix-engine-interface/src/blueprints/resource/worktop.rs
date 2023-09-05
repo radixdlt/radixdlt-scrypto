@@ -22,10 +22,10 @@ pub struct WorktopDropInput {
 pub struct OwnedWorktop(pub Own);
 
 impl Describe<ScryptoCustomTypeKind> for OwnedWorktop {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::Novel(const_sha1::sha1("OwnedWorktop".as_bytes()).as_bytes());
+    const TYPE_ID: RustTypeId =
+        RustTypeId::Novel(const_sha1::sha1("OwnedWorktop".as_bytes()).as_bytes());
 
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names("OwnedWorktop"),

@@ -1,25 +1,27 @@
 use super::{BalanceChange, CostingParameters, StateUpdateSummary};
 use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
-use crate::system::system_modules::costing::{FeeReserveFinalizationSummary, RoyaltyRecipient};
-use crate::system::system_modules::execution_trace::{
-    ExecutionTrace, ResourceChange, WorktopChange,
-};
+use crate::internal_prelude::*;
+use crate::system::system_modules::costing::*;
+use crate::system::system_modules::execution_trace::*;
 use crate::track::StateUpdates;
 use crate::transaction::SystemStructure;
-use crate::types::*;
 use colored::*;
-use radix_engine_interface::address::AddressDisplayContext;
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::data::scrypto::ScryptoDecode;
-use radix_engine_interface::types::*;
 use sbor::representations::*;
 use transaction::prelude::TransactionCostingParameters;
-use utils::ContextualDisplay;
+
+define_single_versioned! {
+    /// We define a versioned transaction receipt for encoding in the preview API.
+    /// This allows a new toolkit build to be able to handle both current and future
+    /// receipt versions, allowing us to release a wallet ahead-of-time which is forward
+    /// compatible with a new version of the engine (and so a new transaction receipt).
+    #[derive(Clone, ScryptoSbor)]
+    pub enum VersionedTransactionReceipt => TransactionReceipt = TransactionReceiptV1
+}
 
 #[derive(Clone, ScryptoSbor)]
-pub struct TransactionReceipt {
+pub struct TransactionReceiptV1 {
     /// Costing parameters
     pub costing_parameters: CostingParameters,
     /// Transaction costing parameters
@@ -439,17 +441,16 @@ impl TransactionReceipt {
     }
 
     pub fn effective_execution_cost_unit_price(&self) -> Decimal {
-        let dec_100 = dec!(100);
+        let one_percent = Decimal::ONE_HUNDREDTH;
 
         // Below unwraps are safe, no chance to overflow considering current costing parameters
         self.costing_parameters
             .execution_cost_unit_price
-            .safe_mul(
+            .checked_mul(
                 Decimal::ONE
-                    .safe_add(
-                        self.transaction_costing_parameters
-                            .tip_percentage
-                            .safe_div(dec_100)
+                    .checked_add(
+                        one_percent
+                            .checked_mul(self.transaction_costing_parameters.tip_percentage)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -458,17 +459,16 @@ impl TransactionReceipt {
     }
 
     pub fn effective_finalization_cost_unit_price(&self) -> Decimal {
-        let dec_100 = dec!(100);
+        let one_percent = Decimal::ONE_HUNDREDTH;
 
         // Below unwraps are safe, no chance to overflow considering current costing parameters
         self.costing_parameters
             .finalization_cost_unit_price
-            .safe_mul(
+            .checked_mul(
                 Decimal::ONE
-                    .safe_add(
-                        self.transaction_costing_parameters
-                            .tip_percentage
-                            .safe_div(dec_100)
+                    .checked_add(
+                        one_percent
+                            .checked_mul(self.transaction_costing_parameters.tip_percentage)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -501,7 +501,7 @@ impl fmt::Debug for TransactionReceipt {
 pub struct TransactionReceiptDisplayContext<'a> {
     pub encoder: Option<&'a AddressBech32Encoder>,
     pub schema_lookup_callback: Option<
-        Box<dyn Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> + 'a>,
+        Box<dyn Fn(&EventTypeIdentifier) -> Option<(LocalTypeId, VersionedScryptoSchema)> + 'a>,
     >,
 }
 
@@ -519,7 +519,7 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
     pub fn lookup_schema(
         &self,
         event_type_identifier: &EventTypeIdentifier,
-    ) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> {
+    ) -> Option<(LocalTypeId, VersionedScryptoSchema)> {
         match self.schema_lookup_callback {
             Some(ref callback) => {
                 let callback = callback.as_ref();
@@ -565,7 +565,7 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
 
     pub fn schema_lookup_callback<F>(mut self, callback: F) -> Self
     where
-        F: Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> + 'a,
+        F: Fn(&EventTypeIdentifier) -> Option<(LocalTypeId, VersionedScryptoSchema)> + 'a,
     {
         self.0.schema_lookup_callback = Some(Box::new(callback));
         self
@@ -814,7 +814,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
     receipt_context: &TransactionReceiptDisplayContext<'a>,
 ) -> Result<(), fmt::Error> {
     // Given the event type identifier, get the local type index and schema associated with it.
-    let (local_type_index, schema) = receipt_context
+    let (local_type_id, schema) = receipt_context
         .lookup_schema(event_type_identifier)
         .map_or(Err(fmt::Error), Ok)?;
 
@@ -829,7 +829,7 @@ fn display_event_with_network_and_schema_context<'a, F: fmt::Write>(
             },
             custom_context: receipt_context.display_context(),
             schema: schema.v1(),
-            type_index: local_type_index,
+            type_id: local_type_id,
             depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
         },
     );
@@ -864,21 +864,21 @@ impl From<FeeReserveFinalizationSummary> for TransactionFeeSummary {
 impl TransactionFeeSummary {
     pub fn total_cost(&self) -> Decimal {
         self.total_execution_cost_in_xrd
-            .safe_add(self.total_finalization_cost_in_xrd)
+            .checked_add(self.total_finalization_cost_in_xrd)
             .unwrap()
-            .safe_add(self.total_tipping_cost_in_xrd)
+            .checked_add(self.total_tipping_cost_in_xrd)
             .unwrap()
-            .safe_add(self.total_storage_cost_in_xrd)
+            .checked_add(self.total_storage_cost_in_xrd)
             .unwrap()
-            .safe_add(self.total_royalty_cost_in_xrd)
+            .checked_add(self.total_royalty_cost_in_xrd)
             .unwrap()
     }
 
     pub fn network_fees(&self) -> Decimal {
         self.total_execution_cost_in_xrd
-            .safe_add(self.total_finalization_cost_in_xrd)
+            .checked_add(self.total_finalization_cost_in_xrd)
             .unwrap()
-            .safe_add(self.total_storage_cost_in_xrd)
+            .checked_add(self.total_storage_cost_in_xrd)
             .unwrap()
     }
 
@@ -888,26 +888,27 @@ impl TransactionFeeSummary {
 
     pub fn expected_reward_if_single_validator(&self) -> Decimal {
         self.expected_reward_as_proposer_if_single_validator()
-            .safe_add(self.expected_reward_as_active_validator_if_single_validator())
+            .checked_add(self.expected_reward_as_active_validator_if_single_validator())
             .unwrap()
     }
 
     pub fn expected_reward_as_proposer_if_single_validator(&self) -> Decimal {
-        let dec_100 = dec!(100);
-        TIPS_PROPOSER_SHARE_PERCENTAGE
-            .safe_div(dec_100)
+        let one_percent = Decimal::ONE_HUNDREDTH;
+
+        one_percent
+            .checked_mul(TIPS_PROPOSER_SHARE_PERCENTAGE)
             .unwrap()
-            .safe_mul(self.total_tipping_cost_in_xrd)
+            .checked_mul(self.total_tipping_cost_in_xrd)
             .unwrap()
-            .safe_add(
-                NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE
-                    .safe_div(dec_100)
+            .checked_add(
+                one_percent
+                    .checked_mul(NETWORK_FEES_PROPOSER_SHARE_PERCENTAGE)
                     .unwrap()
-                    .safe_mul(
+                    .checked_mul(
                         self.total_execution_cost_in_xrd
-                            .safe_add(self.total_finalization_cost_in_xrd)
+                            .checked_add(self.total_finalization_cost_in_xrd)
                             .unwrap()
-                            .safe_add(self.total_storage_cost_in_xrd)
+                            .checked_add(self.total_storage_cost_in_xrd)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -916,22 +917,22 @@ impl TransactionFeeSummary {
     }
 
     pub fn expected_reward_as_active_validator_if_single_validator(&self) -> Decimal {
-        let dec_100 = dec!(100);
+        let one_percent = Decimal::ONE_HUNDREDTH;
 
-        TIPS_VALIDATOR_SET_SHARE_PERCENTAGE
-            .safe_div(dec_100)
+        one_percent
+            .checked_mul(TIPS_VALIDATOR_SET_SHARE_PERCENTAGE)
             .unwrap()
-            .safe_mul(self.total_tipping_cost_in_xrd)
+            .checked_mul(self.total_tipping_cost_in_xrd)
             .unwrap()
-            .safe_add(
-                NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE
-                    .safe_div(dec_100)
+            .checked_add(
+                one_percent
+                    .checked_mul(NETWORK_FEES_VALIDATOR_SET_SHARE_PERCENTAGE)
                     .unwrap()
-                    .safe_mul(
+                    .checked_mul(
                         self.total_execution_cost_in_xrd
-                            .safe_add(self.total_finalization_cost_in_xrd)
+                            .checked_add(self.total_finalization_cost_in_xrd)
                             .unwrap()
-                            .safe_add(self.total_storage_cost_in_xrd)
+                            .checked_add(self.total_storage_cost_in_xrd)
                             .unwrap(),
                     )
                     .unwrap(),

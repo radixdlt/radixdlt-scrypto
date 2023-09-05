@@ -112,9 +112,9 @@ impl CustomSchema for ScryptoCustomSchema {
     type CustomTypeValidation = ScryptoCustomTypeValidation;
 
     fn linearize_type_kind(
-        type_kind: Self::CustomTypeKind<GlobalTypeId>,
+        type_kind: Self::CustomTypeKind<RustTypeId>,
         _type_indices: &IndexSet<TypeHash>,
-    ) -> Self::CustomTypeKind<LocalTypeIndex> {
+    ) -> Self::CustomTypeKind<LocalTypeId> {
         match type_kind {
             ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
             ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
@@ -125,14 +125,14 @@ impl CustomSchema for ScryptoCustomSchema {
     }
 
     fn resolve_well_known_type(
-        well_known_index: WellKnownTypeIndex,
-    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
-        resolve_scrypto_well_known_type(well_known_index)
+        well_known_id: WellKnownTypeId,
+    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeId>, LocalTypeId>> {
+        resolve_scrypto_well_known_type(well_known_id)
     }
 
     fn validate_custom_type_kind(
         _context: &SchemaContext,
-        type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
+        type_kind: &Self::CustomTypeKind<LocalTypeId>,
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
             ScryptoCustomTypeKind::Reference
@@ -148,7 +148,7 @@ impl CustomSchema for ScryptoCustomSchema {
 
     fn validate_type_metadata_with_custom_type_kind(
         _: &SchemaContext,
-        type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
+        type_kind: &Self::CustomTypeKind<LocalTypeId>,
         type_metadata: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {
         // Even though they all map to the same thing, we keep the explicit match statement so that
@@ -167,7 +167,7 @@ impl CustomSchema for ScryptoCustomSchema {
 
     fn validate_custom_type_validation(
         _context: &SchemaContext,
-        custom_type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
+        custom_type_kind: &Self::CustomTypeKind<LocalTypeId>,
         custom_type_validation: &Self::CustomTypeValidation,
     ) -> Result<(), SchemaValidationError> {
         match custom_type_kind {
@@ -225,8 +225,8 @@ impl CustomExtension for ScryptoCustomExtension {
         _: &Schema<Self::CustomSchema>,
         custom_value_kind: Self::CustomValueKind,
         type_kind: &TypeKind<
-            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
-            LocalTypeIndex,
+            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
+            LocalTypeId,
         >,
     ) -> bool {
         match custom_value_kind {
@@ -253,7 +253,7 @@ impl CustomExtension for ScryptoCustomExtension {
 
     fn custom_type_kind_matches_non_custom_value_kind(
         _: &Schema<Self::CustomSchema>,
-        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
         _: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         // It's not possible for a custom type kind to match a non-custom value kind

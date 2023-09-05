@@ -147,28 +147,28 @@ fn describe_is_correct() {
 fn check_identical_types<T1: Describe<NoCustomTypeKind>, T2: Describe<NoCustomTypeKind>>(
     rename: &'static str,
 ) {
-    let (type_index1, schema1) = generate_full_schema_from_single_type::<T1, NoCustomSchema>();
-    let (type_index2, schema2) = generate_full_schema_from_single_type::<T2, NoCustomSchema>();
+    let (type_id1, schema1) = generate_full_schema_from_single_type::<T1, NoCustomSchema>();
+    let (type_id2, schema2) = generate_full_schema_from_single_type::<T2, NoCustomSchema>();
 
     assert_eq!(
-        schema1.v1().resolve_type_kind(type_index1),
-        schema2.v1().resolve_type_kind(type_index2)
+        schema1.v1().resolve_type_kind(type_id1),
+        schema2.v1().resolve_type_kind(type_id2)
     );
     assert_eq!(
         schema1
             .v1()
-            .resolve_type_metadata(type_index1)
+            .resolve_type_metadata(type_id1)
             .unwrap()
             .clone(),
         schema2
             .v1()
-            .resolve_type_metadata(type_index2)
+            .resolve_type_metadata(type_id2)
             .unwrap()
             .clone()
             .with_name(Some(Cow::Borrowed(rename)))
     );
     assert_eq!(
-        schema1.v1().resolve_type_validation(type_index1),
-        schema2.v1().resolve_type_validation(type_index2)
+        schema1.v1().resolve_type_validation(type_id1),
+        schema2.v1().resolve_type_validation(type_id2)
     );
 }

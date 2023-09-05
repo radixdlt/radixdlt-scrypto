@@ -18,7 +18,7 @@ use sbor::rust::fmt::Debug;
 // Note: ExecutionTrace must not produce any error or transactional side effect!
 //===================================================================================
 
-// TODO: Handle potential Decimal arithmetic operation (saf_add, safe_sub) errors instead of panicking.
+// TODO: Handle potential Decimal arithmetic operation (checked_add, checked_sub) errors instead of panicking.
 // ATM, ExecutionTrace cannot return any errors (as stated above), so it shall be thoroughly
 // designed.
 
@@ -691,7 +691,7 @@ pub fn calculate_resource_changes(
                         .entry(vault_id)
                         .or_insert((resource_address, Decimal::zero()))
                         .1;
-                    *entry = entry.safe_add(amount).unwrap();
+                    *entry = entry.checked_add(amount).unwrap();
                 }
                 VaultOp::Take(resource_address, amount) => {
                     let entry = &mut vault_changes
@@ -702,7 +702,7 @@ pub fn calculate_resource_changes(
                         .entry(vault_id)
                         .or_insert((resource_address, Decimal::zero()))
                         .1;
-                    *entry = entry.safe_sub(amount).unwrap();
+                    *entry = entry.checked_sub(amount).unwrap();
                 }
                 VaultOp::LockFee(..) => {
                     let entry = &mut vault_changes
@@ -714,7 +714,7 @@ pub fn calculate_resource_changes(
                         .or_insert((XRD, Decimal::zero()))
                         .1;
                     *entry = entry
-                        .safe_sub(fee_payments.get(&vault_id).cloned().unwrap_or_default())
+                        .checked_sub(fee_payments.get(&vault_id).cloned().unwrap_or_default())
                         .unwrap();
                 }
             }
@@ -753,9 +753,9 @@ pub fn calculate_fee_locks(vault_ops: &Vec<(TraceActor, NodeId, VaultOp, usize)>
     for (_, _, vault_op, _) in vault_ops {
         if let VaultOp::LockFee(amount, is_contingent) = vault_op {
             if !is_contingent {
-                fee_locks.lock = fee_locks.lock.safe_add(*amount).unwrap()
+                fee_locks.lock = fee_locks.lock.checked_add(*amount).unwrap()
             } else {
-                fee_locks.contingent_lock = fee_locks.contingent_lock.safe_add(*amount).unwrap()
+                fee_locks.contingent_lock = fee_locks.contingent_lock.checked_add(*amount).unwrap()
             }
         };
     }

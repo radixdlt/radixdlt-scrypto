@@ -19,7 +19,7 @@ use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::*;
-use sbor::LocalTypeIndex;
+use sbor::LocalTypeId;
 use syn::Ident;
 
 // Import and re-export substate types
@@ -44,7 +44,7 @@ pub enum PackageError {
     SystemInstructionsNotSupported,
 
     FailedToResolveLocalSchema {
-        local_type_index: LocalTypeIndex,
+        local_type_id: LocalTypeId,
     },
     EventNameMismatch {
         expected: String,
@@ -56,7 +56,7 @@ pub enum PackageError {
     InvalidName(String),
     MissingOuterBlueprint,
     WasmUnsupported(String),
-    InvalidLocalTypeIndex(LocalTypeIndex),
+    InvalidLocalTypeId(LocalTypeId),
     InvalidGenericId(u8),
     EventGenericTypeNotSupported,
 
@@ -71,6 +71,10 @@ pub enum PackageError {
         actual: usize,
     },
     ExceededMaxEventNameLen {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxTypeNameLen {
         limit: usize,
         actual: usize,
     },
@@ -211,19 +215,19 @@ fn validate_package_schema(
 
 fn validate_package_schema_type_ref(
     blueprint_schema_init: &BlueprintSchemaInit,
-    type_ref: TypeRef<LocalTypeIndex>,
+    type_ref: TypeRef<LocalTypeId>,
 ) -> Result<(), PackageError> {
     match type_ref {
-        TypeRef::Static(local_type_index) => {
+        TypeRef::Static(local_type_id) => {
             if blueprint_schema_init
                 .schema
                 .v1()
-                .resolve_type_kind(local_type_index)
+                .resolve_type_kind(local_type_id)
                 .is_some()
             {
                 Ok(())
             } else {
-                Err(PackageError::InvalidLocalTypeIndex(local_type_index))
+                Err(PackageError::InvalidLocalTypeId(local_type_id))
             }
         }
         TypeRef::Generic(generic_id) => {
@@ -236,28 +240,28 @@ fn validate_package_schema_type_ref(
     }
 }
 
-fn extract_package_event_static_type_index(
+fn extract_package_event_static_type_id(
     blueprint_init: &BlueprintSchemaInit,
-    type_ref: TypeRef<LocalTypeIndex>,
-) -> Result<LocalTypeIndex, PackageError> {
+    type_ref: TypeRef<LocalTypeId>,
+) -> Result<LocalTypeId, PackageError> {
     match type_ref {
-        TypeRef::Static(local_type_index) => {
+        TypeRef::Static(local_type_id) => {
             if blueprint_init
                 .schema
                 .v1()
-                .resolve_type_kind(local_type_index)
+                .resolve_type_kind(local_type_id)
                 .is_some()
             {
-                Ok(local_type_index)
+                Ok(local_type_id)
             } else {
-                Err(PackageError::InvalidLocalTypeIndex(local_type_index))
+                Err(PackageError::InvalidLocalTypeId(local_type_id))
             }
         }
         TypeRef::Generic(_) => Err(PackageError::EventGenericTypeNotSupported),
     }
 }
 
-fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
+fn validate_event_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
     for blueprint_init in blueprints {
@@ -265,12 +269,12 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
         let BlueprintSchemaInit { schema, events, .. } = blueprint_schema_init;
 
         for (expected_event_name, type_ref) in events.event_schema.iter() {
-            let local_type_index =
-                extract_package_event_static_type_index(blueprint_schema_init, *type_ref)?;
+            let local_type_id =
+                extract_package_event_static_type_id(blueprint_schema_init, *type_ref)?;
 
             // Checking that the event is either a struct or an enum
-            let type_kind = schema.v1().resolve_type_kind(local_type_index).map_or(
-                Err(PackageError::FailedToResolveLocalSchema { local_type_index }),
+            let type_kind = schema.v1().resolve_type_kind(local_type_id).map_or(
+                Err(PackageError::FailedToResolveLocalSchema { local_type_id }),
                 Ok,
             )?;
             match type_kind {
@@ -280,9 +284,9 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
             }?;
 
             // Checking that the event name is indeed what the user claims it to be
-            let actual_event_name = schema.v1().resolve_type_metadata(local_type_index).map_or(
+            let actual_event_name = schema.v1().resolve_type_metadata(local_type_id).map_or(
                 Err(PackageError::FailedToResolveLocalSchema {
-                    local_type_index: local_type_index,
+                    local_type_id: local_type_id,
                 }),
                 |metadata| Ok(metadata.get_name_string()),
             )?;
@@ -293,6 +297,27 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
                     actual: actual_event_name,
                 })?
             }
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_type_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
+    blueprints: I,
+) -> Result<(), PackageError> {
+    for blueprint_init in blueprints {
+        let blueprint_schema_init = &blueprint_init.schema;
+        let BlueprintSchemaInit { schema, types, .. } = blueprint_schema_init;
+
+        for (_name_ignored, local_type_id) in types.type_schema.iter() {
+            if schema.v1().resolve_type_kind(*local_type_id).is_none() {
+                return Err(PackageError::InvalidLocalTypeId(*local_type_id));
+            }
+
+            // Notes:
+            // - We're not enforcing the "type name" matches the names in type definition
+            // - The "type name" length check is done within `validate_names`
         }
     }
 
@@ -492,6 +517,17 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
             if name.len() > MAX_EVENT_NAME_LEN {
                 return Err(PackageError::ExceededMaxEventNameLen {
                     limit: MAX_EVENT_NAME_LEN,
+                    actual: name.len(),
+                });
+            }
+
+            condition(name)?;
+        }
+
+        for (name, _) in bp_init.schema.types.type_schema.iter() {
+            if name.len() > MAX_TYPE_NAME_LEN {
+                return Err(PackageError::ExceededMaxTypeNameLen {
+                    limit: MAX_TYPE_NAME_LEN,
                     actual: name.len(),
                 });
             }
@@ -808,6 +844,7 @@ impl PackageNativePackage {
                     schema,
                     state,
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
@@ -1054,7 +1091,9 @@ impl PackageNativePackage {
         // Validate schema
         validate_package_schema(&definition.blueprints)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(definition.blueprints.values())
+        validate_event_schemas(definition.blueprints.values())
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_type_schemas(definition.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_auth(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
@@ -1106,7 +1145,7 @@ impl PackageNativePackage {
                 let mut function_exports = index_map_new();
                 for (function, function_schema_init) in definition_init.schema.functions.functions {
                     let input = match function_schema_init.input {
-                        TypeRef::Static(input_type_index) => input_type_index,
+                        TypeRef::Static(input_type_id) => input_type_id,
                         TypeRef::Generic(..) => {
                             return Err(RuntimeError::ApplicationError(
                                 ApplicationError::PackageError(PackageError::WasmUnsupported(
@@ -1116,7 +1155,7 @@ impl PackageNativePackage {
                         }
                     };
                     let output = match function_schema_init.output {
-                        TypeRef::Static(output_type_index) => output_type_index,
+                        TypeRef::Static(output_type_id) => output_type_id,
                         TypeRef::Generic(..) => {
                             return Err(RuntimeError::ApplicationError(
                                 ApplicationError::PackageError(PackageError::WasmUnsupported(
@@ -1129,11 +1168,8 @@ impl PackageNativePackage {
                         function.clone(),
                         FunctionSchema {
                             receiver: function_schema_init.receiver,
-                            input: BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, input)),
-                            output: BlueprintPayloadDef::Static(TypeIdentifier(
-                                schema_hash,
-                                output,
-                            )),
+                            input: BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, input)),
+                            output: BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, output)),
                         },
                     );
                     let export = PackageExport {
@@ -1149,6 +1185,11 @@ impl PackageNativePackage {
                         key,
                         BlueprintPayloadDef::from_type_ref(type_ref, schema_hash),
                     );
+                }
+
+                let mut types = index_map_new();
+                for (key, local_type_id) in definition_init.schema.types.type_schema {
+                    types.insert(key, ScopedTypeId(schema_hash, local_type_id));
                 }
 
                 let system_instructions = system_instructions
@@ -1176,6 +1217,7 @@ impl PackageNativePackage {
                         feature_set: definition_init.feature_set,
                         functions,
                         events,
+                        types,
                         state: IndexedStateSchema::from_schema(
                             schema_hash,
                             definition_init.schema.state,

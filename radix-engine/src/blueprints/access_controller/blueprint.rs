@@ -8,7 +8,6 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::{
     AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
 };
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
@@ -464,6 +463,7 @@ impl AccessControllerBlueprint {
                 schema,
                 state,
                 events,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },
@@ -552,13 +552,8 @@ impl AccessControllerBlueprint {
                 NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
 
             let resource_address = {
-                let (local_type_index, schema) =
-                    generate_full_schema_from_single_type::<(), ScryptoCustomSchema>();
-                let non_fungible_schema = NonFungibleDataSchema {
-                    schema,
-                    non_fungible: local_type_index,
-                    mutable_fields: Default::default(),
-                };
+                let non_fungible_schema =
+                    NonFungibleDataSchema::new_local_without_self_package_replacement::<()>();
 
                 let result = api.call_function(
                     RESOURCE_PACKAGE,
