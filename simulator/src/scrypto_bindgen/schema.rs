@@ -44,6 +44,16 @@ where
                 Err(SchemaError::GenericTypeRefsNotSupported)?
             };
 
+            // Arg types
+            let arg_type_indices = {
+                let args_type_kind = schema_resolver.resolve_type_kind(args_type_identifier)?;
+                if let TypeKind::Tuple { field_types } = args_type_kind {
+                    Ok(field_types)
+                } else {
+                    Err(SchemaError::FunctionInputIsNotATuple(*args_type_identifier))
+                }
+            }?;
+
             // Arg Names
             let arg_names = {
                 let args_type_metadata =
@@ -59,14 +69,7 @@ where
                         ChildNames::EnumVariants(..) => panic!("Impossible Case"),
                     })
             };
-            let arg_type_indices = {
-                let args_type_kind = schema_resolver.resolve_type_kind(args_type_identifier)?;
-                if let TypeKind::Tuple { field_types } = args_type_kind {
-                    Ok(field_types)
-                } else {
-                    Err(SchemaError::FunctionInputIsNotATuple(*args_type_identifier))
-                }
-            }?;
+
             assert_eq!(
                 arg_names.len(),
                 arg_type_indices.len(),
