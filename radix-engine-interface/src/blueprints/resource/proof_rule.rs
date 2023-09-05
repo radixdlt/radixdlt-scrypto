@@ -128,6 +128,7 @@ pub enum RuleNode {
     AllOf(Vec<RuleNode>),
 }
 
+/// Notes: This is to be deprecated, please use `RuleNode` instead
 pub type AccessRuleNode = RuleNode;
 
 impl Describe<ScryptoCustomTypeKind> for RuleNode {
@@ -233,6 +234,7 @@ pub enum Rule {
     Protected(RuleNode),
 }
 
+/// Notes: This is to be deprecated, please use `Rule` instead
 pub type AccessRule = Rule;
 
 impl Describe<ScryptoCustomTypeKind> for Rule {

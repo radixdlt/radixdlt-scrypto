@@ -79,7 +79,7 @@ lazy_static! {
             }
         );
 
-        // TODO: remove
+        // Notes: This is to be deprecated, please use `Rule` instead
         known_enum!(
             m,
             enum AccessRule {
@@ -98,7 +98,7 @@ lazy_static! {
             }
         );
 
-        // TODO: remove
+        // Notes: This is to be deprecated, please use `RuleNode` instead
         known_enum!(
             m,
             enum AccessRuleNode {
@@ -137,7 +137,7 @@ lazy_static! {
             }
         );
 
-        // TODO: remove
+        // Notes: This is to be deprecated, please use `ModuleId` instead
         known_enum!(
             m,
             enum ObjectModuleId {
