@@ -4,7 +4,7 @@ use native_sdk::modules::role_assignment::{
     AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
 };
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::{ClientApi, ObjectModuleId};
+use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::resource::*;
 
 pub trait SecurifiedRoleAssignment {
@@ -20,7 +20,7 @@ pub trait SecurifiedRoleAssignment {
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
-        let roles = indexmap!(ObjectModuleId::Main => roles);
+        let roles = indexmap!(ModuleId::Main => roles);
         let role_assignment = RoleAssignment::create(owner_role, roles, api)?;
         Ok(role_assignment)
     }
@@ -36,7 +36,7 @@ pub trait SecurifiedRoleAssignment {
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
-        let roles = indexmap!(ObjectModuleId::Main => roles);
+        let roles = indexmap!(ModuleId::Main => roles);
         let role_assignment = RoleAssignment::create(OwnerRole::Fixed(owner_role), roles, api)?;
         Ok((role_assignment, bucket))
     }
@@ -77,7 +77,7 @@ pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
         }
 
         let roles = indexmap!(
-            ObjectModuleId::Main => roles,
+            ModuleId::Main => roles,
         );
 
         let role_assignment = RoleAssignment::create(
@@ -100,7 +100,7 @@ pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
         let role_assignment = AttachedRoleAssignment(*receiver);
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             role_assignment.set_role(
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 RoleKey::new(securify_role),
                 AccessRule::DenyAll,
                 api,

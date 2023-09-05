@@ -17,7 +17,7 @@ use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
 };
-use radix_engine_interface::api::ModuleId;
+use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
@@ -260,7 +260,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
                     match &object_info.object_type {
                         ObjectType::Global { modules }
-                            if modules.contains_key(&ModuleId::Royalty) =>
+                            if modules.contains_key(&AttachedModuleId::Royalty) =>
                         {
                             (Some(node_id.clone()), ident)
                         }

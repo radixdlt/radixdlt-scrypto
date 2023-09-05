@@ -15,7 +15,8 @@ use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::UncheckedUrl;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, ModuleId, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
+    AttachedModuleId, ClientApi, FieldValue, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT,
+    ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::{
@@ -1847,8 +1848,8 @@ impl ValidatorCreator {
         api.globalize(
             validator_id,
             indexmap!(
-                ModuleId::RoleAssignment => role_assignment.0.0,
-                ModuleId::Metadata => metadata.0,
+                AttachedModuleId::RoleAssignment => role_assignment.0.0,
+                AttachedModuleId::Metadata => metadata.0,
             ),
             Some(address_reservation),
         )?;

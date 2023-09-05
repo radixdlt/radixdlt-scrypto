@@ -10,8 +10,8 @@ mod globalize_test {
     impl GlobalizeTest {
         pub fn globalize(x: Own) {
             let modules = indexmap!(
-                ModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
-                ModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
+                AttachedModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
+                AttachedModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
             );
 
             ScryptoVmV1Api::object_globalize(x.0, modules, None);

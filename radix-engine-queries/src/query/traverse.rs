@@ -5,7 +5,7 @@ use radix_engine::system::node_modules::royalty::{
 };
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::system::type_info::TypeInfoSubstate;
-use radix_engine_interface::api::{ModuleId, ObjectModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ModuleId};
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
@@ -126,7 +126,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                     let liquid: VersionedFungibleVaultBalance = system_db_reader
                         .read_typed_object_field(
                             &node_id,
-                            ObjectModuleId::Main,
+                            ModuleId::Main,
                             FungibleVaultField::Balance.into(),
                         )
                         .expect("Broken database");
@@ -147,7 +147,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                     let liquid: VersionedNonFungibleVaultBalance = system_db_reader
                         .read_typed_object_field(
                             &node_id,
-                            ObjectModuleId::Main,
+                            ModuleId::Main,
                             NonFungibleVaultField::Balance.into(),
                         )
                         .expect("Broken database");
@@ -165,7 +165,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                     for (key, _value) in system_db_reader
                         .collection_iter(
                             &node_id,
-                            ObjectModuleId::Main,
+                            ModuleId::Main,
                             NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
                         )
                         .unwrap()
@@ -184,7 +184,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                         ObjectType::Global { modules } => {
                             for (module_id, _) in modules {
                                 match &module_id {
-                                    ModuleId::Royalty => {
+                                    AttachedModuleId::Royalty => {
                                         let royalty = system_db_reader
                                             .read_typed_object_field::<ComponentRoyaltyAccumulatorFieldPayload>(
                                                 &node_id,
@@ -224,11 +224,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                         for (index, _field) in fields.iter().enumerate() {
                             // TODO: what if the field is conditional?
                             let (field_value, partition_number) = system_db_reader
-                                .read_object_field_advanced(
-                                    &node_id,
-                                    ObjectModuleId::Main,
-                                    index as u8,
-                                )
+                                .read_object_field_advanced(&node_id, ModuleId::Main, index as u8)
                                 .expect("Broken database");
                             let (_, owned_nodes, _) = field_value.unpack();
                             for child_node_id in owned_nodes {
@@ -252,7 +248,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                         blueprint_def.interface.state.collections.iter().enumerate()
                     {
                         let (iter, partition_number) = system_db_reader
-                            .collection_iter_advanced(&node_id, ObjectModuleId::Main, index as u8)
+                            .collection_iter_advanced(&node_id, ModuleId::Main, index as u8)
                             .unwrap();
 
                         for (substate_key, value) in iter {

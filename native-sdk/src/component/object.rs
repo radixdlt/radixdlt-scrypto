@@ -1,7 +1,7 @@
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataVal, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::{ClientApi, ModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ClientApi};
 use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_engine_interface::types::NodeId;
 use sbor::rust::prelude::{Debug, ToOwned};
@@ -26,7 +26,7 @@ impl BorrowedObject {
     {
         api.call_module_method(
             &self.0,
-            ModuleId::Metadata,
+            AttachedModuleId::Metadata,
             METADATA_SET_IDENT,
             scrypto_encode(&MetadataSetInput {
                 key: key.as_ref().to_owned(),

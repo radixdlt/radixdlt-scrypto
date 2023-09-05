@@ -12,7 +12,7 @@ use native_sdk::resource::NativeFungibleBucket;
 use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
 use native_sdk::runtime::LocalAuthZone;
-use radix_engine_interface::api::{ClientApi, ModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ClientApi};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
@@ -366,7 +366,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_module_method!(
-                        ModuleId::Royalty,
+                        AttachedModuleId::Royalty,
                         address.as_node_id(),
                         method_name,
                         args,
@@ -382,7 +382,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_module_method!(
-                        ModuleId::Metadata,
+                        AttachedModuleId::Metadata,
                         address.as_node_id(),
                         method_name,
                         args,
@@ -398,7 +398,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_module_method!(
-                        ModuleId::RoleAssignment,
+                        AttachedModuleId::RoleAssignment,
                         address.as_node_id(),
                         method_name,
                         args,
