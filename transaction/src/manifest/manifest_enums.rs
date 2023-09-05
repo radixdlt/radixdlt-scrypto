@@ -101,6 +101,14 @@ lazy_static! {
 
         known_enum!(
             m,
+            enum ResourceOrNonFungible {
+                NonFungible = 0;
+                Resource = 1;
+            }
+        );
+
+        known_enum!(
+            m,
             enum ModuleId {
                 Main = 0;
                 Metadata = 1;

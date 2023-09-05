@@ -1,6 +1,4 @@
-use crate::system::system_db_reader::{
-    ObjectPartitionDescriptor, SystemDatabaseReader, SystemPartitionDescriptor,
-};
+use crate::system::system_db_reader::*;
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
@@ -9,10 +7,7 @@ use crate::track::{
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
-use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SubstateSystemStructure {
@@ -39,11 +34,8 @@ pub enum SystemFieldKind {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct KeyValueStoreEntryStructure {
-    pub key_value_store_address: InternalAddress,
-    pub key_schema_hash: SchemaHash,
-    pub key_local_type_index: LocalTypeIndex,
-    pub value_schema_hash: SchemaHash,
-    pub value_local_type_index: LocalTypeIndex,
+    pub key_full_type_id: FullyScopedTypeId<NodeId>,
+    pub value_full_type_id: FullyScopedTypeId<NodeId>,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -77,17 +69,13 @@ pub enum ObjectSubstateTypeReference {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct PackageTypeReference {
-    pub package_address: PackageAddress,
-    pub schema_hash: SchemaHash,
-    pub local_type_index: LocalTypeIndex,
+    pub full_type_id: FullyScopedTypeId<PackageAddress>,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct ObjectInstanceTypeReference {
-    pub entity_address: NodeId,
-    pub schema_hash: SchemaHash,
-    pub instance_type_index: u8,
-    pub local_type_index: LocalTypeIndex,
+    pub instance_type_id: u8,
+    pub resolved_full_type_id: FullyScopedTypeId<NodeId>,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -205,7 +193,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     }
 
     /// A batch `add_substate_structure()` counterpart, tailored for processing all substates that
-    /// were *individually* updated in the given [`SystemUpdates`] (i.e. ignored substates affected
+    /// were *individually* updated in the given [`StateUpdates`] (i.e. ignoring substates affected
     /// as part of a batch, e.g. during a partition deletion).
     pub fn add_for_all_individually_updated(&mut self, updates: &StateUpdates) {
         for update in &updates.updates {
@@ -248,18 +236,15 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     .get_kv_store_type_target(node_id)
                     .expect(&format!("Could not get type info for node {node_id:?}"));
 
-                let key_type_id = match info.kv_store_type.key_generic_substitutions {
-                    GenericSubstitution::Local(type_id) => type_id,
+                let key_full_type_id = match info.kv_store_type.key_generic_substitutions {
+                    GenericSubstitution::Local(type_id) => type_id.under_node(*node_id),
                 };
-                let value_type_id = match info.kv_store_type.value_generic_substitutions {
-                    GenericSubstitution::Local(type_id) => type_id,
+                let value_full_type_id = match info.kv_store_type.value_generic_substitutions {
+                    GenericSubstitution::Local(type_id) => type_id.under_node(*node_id),
                 };
                 SubstateSystemStructure::KeyValueStoreEntry(KeyValueStoreEntryStructure {
-                    key_value_store_address: (*node_id).try_into().unwrap(),
-                    key_schema_hash: key_type_id.0,
-                    key_local_type_index: key_type_id.1,
-                    value_schema_hash: value_type_id.0,
-                    value_local_type_index: value_type_id.1,
+                    key_full_type_id,
+                    value_full_type_id,
                 })
             }
             SystemPartitionDescriptor::Object(module_id, object_partition_descriptor) => {
@@ -425,9 +410,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
 
             let event_system_structure = EventSystemStructure {
                 package_type_reference: PackageTypeReference {
-                    package_address: blueprint_id.package_address,
-                    schema_hash: type_identifier.0,
-                    local_type_index: type_identifier.1,
+                    full_type_id: type_identifier.under_node(blueprint_id.package_address),
                 },
             };
 

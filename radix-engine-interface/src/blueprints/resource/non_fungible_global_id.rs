@@ -1,24 +1,31 @@
-use crate::address::*;
-use crate::constants::*;
-use crate::crypto::*;
-use crate::data::scrypto::model::*;
-use crate::types::BlueprintId;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::data::scrypto::scrypto_encode;
-use radix_engine_common::types::*;
-use sbor::rust::fmt;
-use sbor::rust::format;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use utils::ContextualDisplay;
 
 /// Represents the global id of a non-fungible.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[derive(
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ManifestSbor,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
+
+impl Describe<ScryptoCustomTypeKind> for NonFungibleGlobalId {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::NON_FUNGIBLE_GLOBAL_ID_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::non_fungible_global_id_type_data()
+    }
+}
 
 impl NonFungibleGlobalId {
     pub const fn new(resource_address: ResourceAddress, local_id: NonFungibleLocalId) -> Self {

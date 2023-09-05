@@ -66,13 +66,13 @@ mod max_sbor_depth {
             let schema_hash = schema.generate_schema_hash();
             let kv_store = ScryptoVmV1Api::kv_store_new(KeyValueStoreGenericArgs {
                 additional_schema: Some(schema),
-                key_type: GenericSubstitution::Local(TypeIdentifier(
+                key_type: GenericSubstitution::Local(ScopedTypeId(
                     schema_hash,
-                    LocalTypeIndex::from(ANY_TYPE),
+                    LocalTypeId::from(ANY_TYPE),
                 )),
-                value_type: GenericSubstitution::Local(TypeIdentifier(
+                value_type: GenericSubstitution::Local(ScopedTypeId(
                     schema_hash,
-                    LocalTypeIndex::from(ANY_TYPE),
+                    LocalTypeId::from(ANY_TYPE),
                 )),
                 allow_ownership: false,
             });

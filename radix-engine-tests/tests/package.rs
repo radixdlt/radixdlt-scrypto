@@ -165,9 +165,7 @@ fn test_basic_package_missing_export() {
                     type_validations: vec![],
                 }),
                 state: BlueprintStateSchemaInit {
-                    fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                        UNIT_TYPE,
-                    ))],
+                    fields: vec![FieldSchema::static_field(LocalTypeId::WellKnown(UNIT_TYPE))],
                     collections: vec![],
                 },
                 events: BlueprintEventSchemaInit::default(),
@@ -175,8 +173,8 @@ fn test_basic_package_missing_export() {
                     functions: indexmap!(
                         "f".to_string() => FunctionSchemaInit {
                             receiver: Option::None,
-                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
-                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                            input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                            output: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
                             export: "not_exist".to_string(),
                         }
                     ),
@@ -232,7 +230,7 @@ fn bad_function_schema_should_fail() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidLocalTypeIndex(_)
+                PackageError::InvalidLocalTypeId(_)
             ))
         )
     });
@@ -448,8 +446,8 @@ fn name_validation_function() {
             String::from("self"),
             FunctionSchemaInit {
                 receiver: None,
-                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
-                output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                output: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
                 export: String::from("self"),
             },
         );
@@ -492,7 +490,7 @@ fn well_known_types_in_schema_are_validated() {
         .unwrap();
 
     // Invalid well known type
-    method_definition.input = TypeRef::Static(LocalTypeIndex::WellKnown(WellKnownTypeIndex::of(0)));
+    method_definition.input = TypeRef::Static(LocalTypeId::WellKnown(WellKnownTypeId::of(0)));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -507,7 +505,7 @@ fn well_known_types_in_schema_are_validated() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidLocalTypeIndex(..)
+                PackageError::InvalidLocalTypeId(..)
             ))
         )
     });
