@@ -26,14 +26,14 @@ pub trait PackageSchemaResolver {
     fn package_address(&self) -> PackageAddress;
 }
 
-pub fn generate_blueprint_stubs<S>(
+pub fn derive_blueprint_interfaces<S>(
     package_definition: BTreeMap<BlueprintVersionKey, BlueprintDefinition>,
     schema_resolver: &S,
-) -> Result<Vec<BlueprintStub>, SchemaError>
+) -> Result<Vec<BlueprintInterface>, SchemaError>
 where
     S: PackageSchemaResolver,
 {
-    let mut blueprint_stubs = vec![];
+    let mut blueprint_interfaces = vec![];
 
     for (blueprint_key, blueprint_definition) in package_definition.into_iter() {
         let blueprint_ident = blueprint_key.blueprint;
@@ -92,16 +92,16 @@ where
             };
             functions.push(function);
         }
-        blueprint_stubs.push(BlueprintStub {
+        blueprint_interfaces.push(BlueprintInterface {
             functions,
             blueprint_name: blueprint_ident.to_owned(),
         })
     }
 
-    Ok(blueprint_stubs)
+    Ok(blueprint_interfaces)
 }
 
-pub struct BlueprintStub {
+pub struct BlueprintInterface {
     pub blueprint_name: String,
     pub functions: Vec<Function>,
 }

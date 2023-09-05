@@ -13,38 +13,31 @@ macro_rules! ident {
     };
 }
 
-pub fn blueprint_schema_stub_to_ast_stub<S>(
-    schema_stub: schema::BlueprintStub,
+pub fn blueprint_schema_interface_to_ast_interface<S>(
+    schema_interface: schema::BlueprintInterface,
     schema_resolver: &S,
 ) -> Result<ast::BlueprintStub, schema::SchemaError>
 where
     S: schema::PackageSchemaResolver,
 {
     Ok(ast::BlueprintStub {
-        fn_signatures: schema_stub
+        fn_signatures: schema_interface
             .functions
             .into_iter()
-            .map(|func| {
-                function_schema_stub_to_ast_stub(
-                    func,
-                    schema_stub.blueprint_name.clone(),
-                    schema_resolver,
-                )
-            })
+            .map(|func| function_schema_interface_to_ast_interface(func, schema_resolver))
             .collect::<Result<_, _>>()?,
-        blueprint_name: schema_stub.blueprint_name,
+        blueprint_name: schema_interface.blueprint_name,
     })
 }
 
-pub fn function_schema_stub_to_ast_stub<S>(
-    schema_stub: schema::Function,
-    blueprint_name: String,
+pub fn function_schema_interface_to_ast_interface<S>(
+    schema_interface: schema::Function,
     schema_resolver: &S,
 ) -> Result<ast::FnSignature, schema::SchemaError>
 where
     S: schema::PackageSchemaResolver,
 {
-    let fn_type = match schema_stub.receiver {
+    let fn_type = match schema_interface.receiver {
         Some(ReceiverInfo {
             ref_types: RefTypes::NORMAL | RefTypes::DIRECT_ACCESS,
             receiver: Receiver::SelfRef,
@@ -60,13 +53,13 @@ where
         None => ast::FnType::Function,
         _ => panic!("Invalid BitFlags for RefTypes"),
     };
-    let ident = ident!(&schema_stub.ident);
+    let ident = ident!(&schema_interface.ident);
 
-    let inputs = schema_stub
+    let inputs = schema_interface
         .arguments
         .into_iter()
         .map(|(arg_name, arg_type_index)| {
-            type_name(&arg_type_index, blueprint_name.as_str(), schema_resolver).map(|type_name| {
+            type_name(&arg_type_index, schema_resolver).map(|type_name| {
                 (
                     ident!(&arg_name),
                     syn::parse2(type_name.parse().unwrap()).unwrap(),
@@ -75,13 +68,9 @@ where
         })
         .collect::<Result<_, _>>()?;
     let output = syn::parse2(
-        type_name(
-            &schema_stub.returns,
-            blueprint_name.as_str(),
-            schema_resolver,
-        )?
-        .parse()
-        .unwrap(),
+        type_name(&schema_interface.returns, schema_resolver)?
+            .parse()
+            .unwrap(),
     )
     .unwrap();
 
@@ -95,7 +84,6 @@ where
 
 fn type_name<S>(
     type_identifier: &ScopedTypeId,
-    blueprint_name: &str,
     schema_resolver: &S,
 ) -> Result<String, schema::SchemaError>
 where
@@ -124,7 +112,6 @@ where
             "Vec<{}>",
             type_name(
                 &ScopedTypeId(type_identifier.0, element_type),
-                blueprint_name,
                 schema_resolver
             )?
         )),
@@ -137,7 +124,6 @@ where
                     .iter()
                     .map(|local_type_index| type_name(
                         &ScopedTypeId(type_identifier.0, *local_type_index),
-                        blueprint_name,
                         schema_resolver
                     ))
                     .collect::<Result<Vec<String>, _>>()?
@@ -159,7 +145,6 @@ where
                     "Option<{}>",
                     type_name(
                         &ScopedTypeId(type_identifier.0, *some_type_index),
-                        blueprint_name,
                         schema_resolver
                     )?
                 )),
@@ -168,12 +153,10 @@ where
                         "Result<{}, {}>",
                         type_name(
                             &ScopedTypeId(type_identifier.0, *ok_type_index),
-                            blueprint_name,
                             schema_resolver
                         )?,
                         type_name(
                             &ScopedTypeId(type_identifier.0, *err_type_index),
-                            blueprint_name,
                             schema_resolver
                         )?
                     ))
@@ -187,14 +170,9 @@ where
             value_type,
         } => type_ident.unwrap_or(format!(
             "IndexMap<{}, {}>",
-            type_name(
-                &ScopedTypeId(type_identifier.0, key_type),
-                blueprint_name,
-                schema_resolver
-            )?,
+            type_name(&ScopedTypeId(type_identifier.0, key_type), schema_resolver)?,
             type_name(
                 &ScopedTypeId(type_identifier.0, value_type),
-                blueprint_name,
                 schema_resolver
             )?
         )),

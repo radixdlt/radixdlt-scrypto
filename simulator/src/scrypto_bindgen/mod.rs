@@ -14,9 +14,9 @@ use std::io::Write;
 use crate::resim::*;
 
 use self::schema::*;
-use self::translation::blueprint_schema_stub_to_ast_stub;
+use self::translation::blueprint_schema_interface_to_ast_interface;
 
-/// Generates stubs for Scrypto packages to ease the use of external packages.
+/// Generates interfaces for Scrypto packages to ease the use of external packages.
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None, name = "scrypto-bindgen")]
 pub struct Args {
@@ -81,12 +81,12 @@ pub fn run() -> Result<(), Error> {
         let definition = reader.get_package_definition(package_address);
 
         let schema_resolver = SchemaResolver::new(package_address, reader);
-        generate_blueprint_stubs(definition, &schema_resolver)
+        derive_blueprint_interfaces(definition, &schema_resolver)
             .map_err(Error::SchemaError)?
             .into_iter()
-            .map(|blueprint_stub| {
-                blueprint_schema_stub_to_ast_stub(blueprint_stub, &schema_resolver)
-                    .map(|blueprint_stub| blueprint_stub.to_token_stream(package_address))
+            .map(|blueprint_interface| {
+                blueprint_schema_interface_to_ast_interface(blueprint_interface, &schema_resolver)
+                    .map(|blueprint_interface| blueprint_interface.to_token_stream(package_address))
             })
             .collect::<Result<Vec<_>, _>>()
             .map_err(Error::SchemaError)?
