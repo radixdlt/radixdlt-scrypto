@@ -107,19 +107,19 @@ where
     let type_ident = type_metadata.get_name_string();
 
     let name = match type_kind {
-        TypeKind::Any => "ScryptoValue".to_owned(),
-        TypeKind::Bool => "bool".to_owned(),
-        TypeKind::I8 => "i8".to_owned(),
-        TypeKind::I16 => "i16".to_owned(),
-        TypeKind::I32 => "i32".to_owned(),
-        TypeKind::I64 => "i64".to_owned(),
-        TypeKind::I128 => "i128".to_owned(),
-        TypeKind::U8 => "u8".to_owned(),
-        TypeKind::U16 => "u16".to_owned(),
-        TypeKind::U32 => "u32".to_owned(),
-        TypeKind::U64 => "u64".to_owned(),
-        TypeKind::U128 => "u128".to_owned(),
-        TypeKind::String => "String".to_owned(),
+        TypeKind::Any => type_ident.unwrap_or("ScryptoValue".to_owned()),
+        TypeKind::Bool => type_ident.unwrap_or("bool".to_owned()),
+        TypeKind::I8 => type_ident.unwrap_or("i8".to_owned()),
+        TypeKind::I16 => type_ident.unwrap_or("i16".to_owned()),
+        TypeKind::I32 => type_ident.unwrap_or("i32".to_owned()),
+        TypeKind::I64 => type_ident.unwrap_or("i64".to_owned()),
+        TypeKind::I128 => type_ident.unwrap_or("i128".to_owned()),
+        TypeKind::U8 => type_ident.unwrap_or("u8".to_owned()),
+        TypeKind::U16 => type_ident.unwrap_or("u16".to_owned()),
+        TypeKind::U32 => type_ident.unwrap_or("u32".to_owned()),
+        TypeKind::U64 => type_ident.unwrap_or("u64".to_owned()),
+        TypeKind::U128 => type_ident.unwrap_or("u128".to_owned()),
+        TypeKind::String => type_ident.unwrap_or("String".to_owned()),
         TypeKind::Array { element_type } => type_ident.unwrap_or(format!(
             "Vec<{}>",
             type_name(
@@ -185,7 +185,7 @@ where
         TypeKind::Map {
             key_type,
             value_type,
-        } => format!(
+        } => type_ident.unwrap_or(format!(
             "IndexMap<{}, {}>",
             type_name(
                 &ScopedTypeId(type_identifier.0, key_type),
@@ -197,7 +197,7 @@ where
                 blueprint_name,
                 schema_resolver
             )?
-        ),
+        )),
         TypeKind::Custom(ScryptoCustomTypeKind::Decimal) => "Decimal".to_owned(),
         TypeKind::Custom(ScryptoCustomTypeKind::PreciseDecimal) => "PreciseDecimal".to_owned(),
         TypeKind::Custom(ScryptoCustomTypeKind::NonFungibleLocalId) => {
