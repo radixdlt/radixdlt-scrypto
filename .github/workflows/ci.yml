@@ -198,12 +198,7 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto-tests
-        flags: --features post_run_db_check serde \
-          -p radix-engine-common \
-          -p radix-engine-derive \
-          -p radix-engine-interface \
-          -p radix-engine \
-          -p radix-engine-tests
+        flags: --features post_run_db_check serde -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests
     - name: Check stack usage
       run: ./checkdd_stack_usage.sh
 
