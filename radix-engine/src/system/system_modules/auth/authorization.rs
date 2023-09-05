@@ -11,7 +11,7 @@ use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
-use radix_engine_interface::api::{ClientObjectApi, LockFlags, ObjectModuleId};
+use radix_engine_interface::api::{ClientObjectApi, LockFlags, ModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
@@ -405,7 +405,7 @@ impl Authorization {
     >(
         auth_zone: &NodeId,
         role_assignment_of: &GlobalAddress,
-        module: ObjectModuleId,
+        module: ModuleId,
         role_list: &RoleList,
         api: &mut Y,
     ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {

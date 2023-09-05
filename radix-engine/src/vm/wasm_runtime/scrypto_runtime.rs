@@ -5,7 +5,7 @@ use crate::vm::wasm::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
-use radix_engine_interface::api::{ActorRefHandle, ClientApi, FieldValue, ModuleId};
+use radix_engine_interface::api::{ActorRefHandle, AttachedModuleId, ClientApi, FieldValue};
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
@@ -116,8 +116,8 @@ where
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
         let module_id = u8::try_from(module_id)
             .ok()
-            .and_then(|x| ModuleId::from_repr(x))
-            .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
+            .and_then(|x| AttachedModuleId::from_repr(x))
+            .ok_or(WasmRuntimeError::InvalidAttachedModuleId(module_id))?;
 
         let return_data =
             self.api
@@ -226,7 +226,7 @@ where
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let modules = scrypto_decode::<IndexMap<ModuleId, NodeId>>(&modules)
+        let modules = scrypto_decode::<IndexMap<AttachedModuleId, NodeId>>(&modules)
             .map_err(WasmRuntimeError::InvalidModules)?;
         let address_reservation =
             scrypto_decode::<Option<GlobalAddressReservation>>(&address_reservation)

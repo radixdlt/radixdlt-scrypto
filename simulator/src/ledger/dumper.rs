@@ -4,7 +4,7 @@ use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::types::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
 use radix_engine_queries::typed_substate_layout::*;
@@ -189,7 +189,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         let id_type: VersionedNonFungibleResourceManagerIdType = reader
             .read_typed_object_field(
                 resource_address.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 NonFungibleResourceManagerField::IdType.into(),
             )
             .map_err(|_| EntityDumpError::InvalidStore("Missing NonFungible IdType".to_string()))?;
@@ -209,7 +209,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             let total_supply = reader
                 .read_typed_object_field::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
                     resource_address.as_node_id(),
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     NonFungibleResourceManagerField::TotalSupply.into(),
                 )
                 .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
@@ -226,7 +226,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         let divisibility = reader
             .read_typed_object_field::<FungibleResourceManagerDivisibilityFieldPayload>(
                 resource_address.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 FungibleResourceManagerField::Divisibility.into(),
             )
             .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?
@@ -247,7 +247,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             let total_supply = reader
                 .read_typed_object_field::<FungibleResourceManagerTotalSupplyFieldPayload>(
                     resource_address.as_node_id(),
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     FungibleResourceManagerField::TotalSupply.into(),
                 )
                 .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
@@ -279,7 +279,7 @@ fn get_entity_metadata<T: SubstateDatabase>(
     reader
         .collection_iter(
             entity_node_id,
-            ObjectModuleId::Metadata,
+            ModuleId::Metadata,
             MetadataCollection::EntryKeyValue.collection_index(),
         )
         .unwrap()

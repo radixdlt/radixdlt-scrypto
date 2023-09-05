@@ -14,7 +14,7 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
-use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ModuleId, ObjectModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ClientBlueprintApi, LockFlags, ModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
@@ -63,7 +63,7 @@ pub enum AuthorityListAuthorizationResult {
 pub enum ResolvedPermission {
     RoleList {
         role_assignment_of: GlobalAddress,
-        module_id: ObjectModuleId,
+        module_id: ModuleId,
         role_list: RoleList,
     },
     AccessRule(AccessRule),
@@ -140,7 +140,7 @@ impl AuthModule {
     pub fn on_call_method<V, Y>(
         api: &mut SystemService<Y, V>,
         receiver: &NodeId,
-        obj_module_id: ObjectModuleId,
+        obj_module_id: ModuleId,
         direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
@@ -158,10 +158,10 @@ impl AuthModule {
 
         // Step 1: Resolve method to permission
         let module_id = match obj_module_id {
-            ObjectModuleId::Main => None,
-            ObjectModuleId::Metadata => Some(ModuleId::Metadata),
-            ObjectModuleId::Royalty => Some(ModuleId::Royalty),
-            ObjectModuleId::RoleAssignment => Some(ModuleId::RoleAssignment),
+            ModuleId::Main => None,
+            ModuleId::Metadata => Some(AttachedModuleId::Metadata),
+            ModuleId::Royalty => Some(AttachedModuleId::Royalty),
+            ModuleId::RoleAssignment => Some(AttachedModuleId::RoleAssignment),
         };
 
         let blueprint_id = api.get_blueprint_info(receiver, module_id)?.blueprint_id;
@@ -445,13 +445,13 @@ impl AuthModule {
         api: &mut SystemService<Y, V>,
         blueprint_id: &BlueprintId,
         receiver: &NodeId,
-        module_id: &ObjectModuleId,
+        module_id: &ModuleId,
         ident: &str,
         args: &IndexedScryptoValue,
     ) -> Result<ResolvedPermission, RuntimeError> {
         let method_key = MethodKey::new(ident);
 
-        if let ObjectModuleId::RoleAssignment = module_id {
+        if let ModuleId::RoleAssignment = module_id {
             // Only global objects have role assignment modules
             let global_address = GlobalAddress::new_or_panic(receiver.0);
             return RoleAssignmentNativePackage::authorization(&global_address, ident, args, api);
@@ -494,7 +494,7 @@ impl AuthModule {
                 ))))
             }
             Some(MethodAccessibility::OuterObjectOnly) => match module_id {
-                ObjectModuleId::Main => {
+                ModuleId::Main => {
                     let outer_object_info = &receiver_object_info.blueprint_info.outer_obj_info;
                     match outer_object_info {
                         OuterObjectInfo::Some { outer_object } => {

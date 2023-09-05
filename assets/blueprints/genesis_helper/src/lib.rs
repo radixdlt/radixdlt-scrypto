@@ -133,7 +133,7 @@ mod genesis_helper {
             for (key, value) in validator.metadata {
                 ScryptoVmV1Api::object_call_module(
                     &validator_component.address().into_node_id(),
-                    ModuleId::Metadata,
+                    AttachedModuleId::Metadata,
                     METADATA_SET_IDENT,
                     scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
                 );

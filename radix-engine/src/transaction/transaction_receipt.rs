@@ -189,7 +189,7 @@ impl CommitResult {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             let is_consensus_manager = match &event_type_id.0 {
-                Emitter::Method(node_id, ObjectModuleId::Main)
+                Emitter::Method(node_id, ModuleId::Main)
                     if node_id.entity_type() == Some(EntityType::GlobalConsensusManager) =>
                 {
                     true

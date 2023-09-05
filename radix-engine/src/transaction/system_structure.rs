@@ -1,8 +1,11 @@
-use crate::internal_prelude::*;
 use crate::system::system_db_reader::*;
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::{ReadOnly, SystemUpdates, TrackedNode, TrackedSubstateValue};
+use crate::track::{
+    BatchPartitionUpdate, NodeStateUpdates, PartitionStateUpdates, ReadOnly, StateUpdates,
+    TrackedNode, TrackedSubstateValue,
+};
+use crate::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
 
@@ -189,12 +192,27 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         }
     }
 
-    /// A batch `add_substate_structure()` counterpart, tailored for processing all substates
-    /// captured in the given [`SystemUpdates`].
-    pub fn add_all_system_updates(&mut self, updates: &SystemUpdates) {
-        for ((node_id, partition_num), substate_updates) in updates {
-            for substate_key in substate_updates.keys() {
-                self.add_substate_structure(node_id, partition_num, substate_key);
+    /// A batch `add_substate_structure()` counterpart, tailored for processing all substates that
+    /// were *individually* updated in the given [`StateUpdates`] (i.e. ignoring substates affected
+    /// as part of a batch, e.g. during a partition deletion).
+    pub fn add_for_all_individually_updated(&mut self, updates: &StateUpdates) {
+        for (node_id, node_state_updates) in &updates.by_node {
+            match node_state_updates {
+                NodeStateUpdates::Delta { by_partition } => {
+                    for (partition_num, partition_state_updates) in by_partition {
+                        let substate_keys = match partition_state_updates {
+                            PartitionStateUpdates::Delta { by_substate } => {
+                                by_substate.keys().collect::<Vec<_>>()
+                            }
+                            PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+                                new_substate_values,
+                            }) => new_substate_values.keys().collect::<Vec<_>>(),
+                        };
+                        for substate_key in substate_keys {
+                            self.add_substate_structure(node_id, partition_num, substate_key);
+                        }
+                    }
+                }
             }
         }
     }
@@ -379,7 +397,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
             let blueprint_id = match &event_type_identifier.0 {
                 Emitter::Function(blueprint_id) => blueprint_id.clone(),
                 Emitter::Method(node_id, module_id) => {
-                    if let ObjectModuleId::Main = module_id {
+                    if let ModuleId::Main = module_id {
                         let main_type_info = self.system_reader.get_type_info(node_id).unwrap();
                         match main_type_info {
                             TypeInfoSubstate::Object(info) => info.blueprint_info.blueprint_id,

@@ -273,7 +273,7 @@ impl OneResourcePoolBlueprint {
         let role_assignment = RoleAssignment::create(
             owner_role,
             indexmap! {
-                ObjectModuleId::Main => roles_init! {
+                ModuleId::Main => roles_init! {
                     RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
                 }
             },
@@ -306,9 +306,9 @@ impl OneResourcePoolBlueprint {
         api.globalize(
             object_id,
             indexmap!(
-                ModuleId::RoleAssignment => role_assignment.0,
-                ModuleId::Metadata => metadata.0,
-                ModuleId::Royalty => royalty.0,
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
+                AttachedModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;

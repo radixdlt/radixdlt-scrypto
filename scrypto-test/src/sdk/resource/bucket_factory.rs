@@ -72,7 +72,7 @@ impl BucketFactory {
 
                 env.as_method_actor(
                     resource_address.into_node_id(),
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                     |env| {
                         env.new_simple_object(
@@ -93,7 +93,7 @@ impl BucketFactory {
 
                 env.as_method_actor(
                     resource_address.into_node_id(),
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                     |env| {
                         for (local_id, data) in non_fungibles.iter() {
