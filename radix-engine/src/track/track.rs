@@ -7,9 +7,7 @@ use crate::track::LegacyStateUpdates;
 use crate::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_engine_store_interface::interface::{
-    DatabaseUpdates, DbPartitionKey, DbSubstateValue, PartitionUpdates,
-};
+use radix_engine_store_interface::interface::{DatabaseUpdates, DbPartitionKey, DbSubstateValue};
 use radix_engine_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DatabaseUpdate, DbSortKey, PartitionEntry, SubstateDatabase},
@@ -44,6 +42,10 @@ impl StateUpdates {
                 by_partition: index_map_new(),
             })
     }
+
+    pub fn into_legacy(self) -> LegacyStateUpdates {
+        self.into()
+    }
 }
 
 /// A description of all updates that happened to a state of a single Node.
@@ -59,15 +61,21 @@ pub enum NodeStateUpdates {
     },
 }
 
+impl Default for NodeStateUpdates {
+    fn default() -> Self {
+        NodeStateUpdates::Delta {
+            by_partition: index_map_new(),
+        }
+    }
+}
+
 impl NodeStateUpdates {
     /// Starts a Partition-level update.
     pub fn of_partition(&mut self, partition_num: PartitionNumber) -> &mut PartitionStateUpdates {
         match self {
-            NodeStateUpdates::Delta { by_partition } => by_partition
-                .entry(partition_num)
-                .or_insert_with(|| PartitionStateUpdates::Delta {
-                    by_substate: index_map_new(),
-                }),
+            NodeStateUpdates::Delta { by_partition } => {
+                by_partition.entry(partition_num).or_default()
+            }
         }
     }
 }
@@ -83,6 +91,14 @@ pub enum PartitionStateUpdates {
     },
     /// A batch update.
     Batch(BatchPartitionUpdate),
+}
+
+impl Default for PartitionStateUpdates {
+    fn default() -> Self {
+        PartitionStateUpdates::Delta {
+            by_substate: index_map_new(),
+        }
+    }
 }
 
 impl PartitionStateUpdates {
@@ -149,7 +165,7 @@ impl StateUpdates {
                             PartitionStateUpdates::Delta { by_substate } => {
                                 let partition_updates = database_updates
                                     .entry(M::to_db_partition_key(node_id, *partition_num))
-                                    .or_insert_with(|| PartitionUpdates::default());
+                                    .or_default();
                                 for (substate_key, update) in by_substate {
                                     partition_updates
                                         .insert(M::to_db_sort_key(substate_key), update.clone());

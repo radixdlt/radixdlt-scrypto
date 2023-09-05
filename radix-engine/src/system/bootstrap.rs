@@ -249,13 +249,7 @@ impl FlashReceipt {
 /// will panic if this invariant is broken.
 fn merge_asserting_no_overlap(target: &mut StateUpdates, source: StateUpdates) {
     for (node_id, source_node_state_updates) in source.by_node {
-        let target_node_state_updates =
-            target
-                .by_node
-                .entry(node_id)
-                .or_insert_with(|| NodeStateUpdates::Delta {
-                    by_partition: index_map_new(),
-                });
+        let target_node_state_updates = target.by_node.entry(node_id).or_default();
         let target_by_partition = match target_node_state_updates {
             NodeStateUpdates::Delta { by_partition } => by_partition,
         };
