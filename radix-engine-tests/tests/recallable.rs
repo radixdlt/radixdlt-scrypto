@@ -97,7 +97,7 @@ fn can_take_on_recallable_vault() {
         .cloned()
         .unwrap();
     let mut expected_amount: Decimal = 5u32.into();
-    expected_amount = expected_amount.safe_sub(Decimal::one()).unwrap();
+    expected_amount = expected_amount.checked_sub(Decimal::one()).unwrap();
     assert_eq!(expected_amount, original_account_amount);
 
     let other_amount = test_runner

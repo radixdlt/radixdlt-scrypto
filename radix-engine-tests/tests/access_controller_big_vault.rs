@@ -89,7 +89,12 @@ impl VmInvoke for TestInvoke {
                     scrypto_encode(
                         &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
                             entries,
-                            ..Default::default()
+                            owner_role: Default::default(),
+                            track_total_supply: Default::default(),
+                            non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
+                            resource_roles: Default::default(),
+                            metadata: Default::default(),
+                            address_reservation: Default::default(),
                         },
                     )
                     .unwrap(),

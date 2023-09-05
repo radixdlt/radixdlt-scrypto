@@ -114,7 +114,8 @@ impl ResourceManager {
             roles: RoleAssignmentInit::default(),
         };
 
-        let non_fungible_schema = NonFungibleDataSchema::new_schema::<N>();
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_local_without_self_package_replacement::<N>();
         let result = api.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

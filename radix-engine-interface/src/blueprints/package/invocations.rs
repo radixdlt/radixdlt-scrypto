@@ -6,7 +6,7 @@ use radix_engine_common::data::manifest::model::ManifestBlobRef;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use sbor::basic_well_known_types::ANY_TYPE;
 use sbor::rust::prelude::*;
-use sbor::LocalTypeIndex;
+use sbor::LocalTypeId;
 use scrypto_schema::TypeRef;
 use scrypto_schema::{BlueprintCollectionSchema, BlueprintKeyValueSchema, FunctionSchemaInit};
 use scrypto_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
@@ -245,8 +245,8 @@ impl PackageDefinition {
                                     } else {
                                         None
                                     },
-                                    input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
-                                    output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                                    input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                                    output: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
                                     export: export_name.to_string(),
                                 };
                                 (function_name.to_string(), schema)
@@ -274,7 +274,7 @@ impl PackageDefinition {
                 schema: BlueprintSchemaInit {
                     state: BlueprintStateSchemaInit {
                         fields: (0..num_fields)
-                            .map(|_| FieldSchema::static_field(LocalTypeIndex::WellKnown(ANY_TYPE)))
+                            .map(|_| FieldSchema::static_field(LocalTypeId::WellKnown(ANY_TYPE)))
                             .collect(),
                         ..Default::default()
                     },
@@ -288,8 +288,8 @@ impl PackageDefinition {
                                     } else {
                                         None
                                     },
-                                    input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
-                                    output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                                    input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                                    output: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
                                     export: export_name.to_string(),
                                 };
                                 (function_name.to_string(), schema)
@@ -325,8 +325,8 @@ impl PackageDefinition {
                     state: BlueprintStateSchemaInit {
                         collections: vec![BlueprintCollectionSchema::KeyValueStore(
                             BlueprintKeyValueSchema {
-                                key: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
-                                value: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                                key: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                                value: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
                                 allow_ownership: true,
                             },
                         )],
@@ -342,8 +342,8 @@ impl PackageDefinition {
                                     } else {
                                         None
                                     },
-                                    input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
-                                    output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+                                    input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                                    output: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
                                     export: export_name.to_string(),
                                 };
                                 (function_name.to_string(), schema)

@@ -253,6 +253,7 @@ impl FungibleVaultBlueprint {
                 schema,
                 state,
                 events: event_schema,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },
@@ -333,7 +334,7 @@ impl FungibleVaultBlueprint {
             }
             let vault_amount_plus_one = vault_balance
                 .amount()
-                .safe_add(Decimal::ONE)
+                .checked_add(Decimal::ONE)
                 .ok_or_else(|| VaultError::DecimalOverflow)?;
             if amount > &vault_amount_plus_one {
                 return Err(RuntimeError::ApplicationError(
@@ -406,7 +407,7 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
-            .safe_add(Self::locked_amount(api)?)
+            .checked_add(Self::locked_amount(api)?)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::DecimalOverflow),
             ))
@@ -616,7 +617,7 @@ impl FungibleVaultBlueprint {
         // Take from liquid if needed
         if amount > max_locked {
             let delta = amount
-                .safe_sub(max_locked)
+                .checked_sub(max_locked)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::VaultError(VaultError::DecimalOverflow),
                 ))?;
@@ -663,7 +664,7 @@ impl FungibleVaultBlueprint {
         )?;
 
         let delta = max_locked
-            .safe_sub(locked_amount)
+            .checked_sub(locked_amount)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::DecimalOverflow),
             ))?;

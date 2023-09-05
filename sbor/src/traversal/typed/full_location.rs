@@ -28,8 +28,8 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
             } else {
                 write!(buf, "->").unwrap();
             }
-            let type_index = container_type.self_type();
-            let metadata = schema.resolve_type_metadata(type_index);
+            let type_id = container_type.self_type();
+            let metadata = schema.resolve_type_metadata(type_id);
             let type_name = metadata
                 .and_then(|m| m.get_name())
                 .unwrap_or_else(|| container_state.container_header.value_kind_name());
@@ -102,10 +102,10 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
                 write!(buf, "->").unwrap();
             }
             let type_kind = schema
-                .resolve_type_kind(current_value_info.type_index)
+                .resolve_type_kind(current_value_info.type_id)
                 .expect("Type index not found in given schema");
             let metadata = if !matches!(type_kind, TypeKind::Any) {
-                schema.resolve_type_metadata(current_value_info.type_index)
+                schema.resolve_type_metadata(current_value_info.type_id)
             } else {
                 None
             };

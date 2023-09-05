@@ -418,7 +418,7 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
 pub fn get_event_schema<S: SubstateDatabase>(
     substate_db: &S,
     event_type_identifier: &EventTypeIdentifier,
-) -> Option<(LocalTypeIndex, VersionedScryptoSchema)> {
+) -> Option<(LocalTypeId, VersionedScryptoSchema)> {
     let system_reader = SystemDatabaseReader::new(substate_db);
 
     let (blueprint_id, event_name) = match event_type_identifier {

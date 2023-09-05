@@ -1,20 +1,27 @@
 use super::*;
-use crate::types::*;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::rust::prelude::*;
-use sbor::*;
-use utils::copy_u8_array;
 
 /// Represents an ED25519 public key.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+#[derive(
+    Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode, BasicDescribe,
+)]
 #[sbor(transparent)]
 pub struct Ed25519PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
+
+impl Describe<ScryptoCustomTypeKind> for Ed25519PublicKey {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ED25519_PUBLIC_KEY_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::ed25519_public_key_type_data()
+    }
+}
 
 impl Ed25519PublicKey {
     pub const LENGTH: usize = 32;
@@ -45,11 +52,22 @@ impl TryFrom<&[u8]> for Ed25519PublicKey {
 //======
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Categorize, Encode, Decode, BasicDescribe)]
 #[sbor(transparent)]
-pub struct Ed25519PublicKeyHash(pub [u8; NodeId::RID_LENGTH]);
+pub struct Ed25519PublicKeyHash(pub [u8; Self::LENGTH]);
+
+impl Describe<ScryptoCustomTypeKind> for Ed25519PublicKeyHash {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ED25519_PUBLIC_KEY_HASH_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::ed25519_public_key_hash_type_data()
+    }
+}
 
 impl Ed25519PublicKeyHash {
+    pub const LENGTH: usize = NodeId::RID_LENGTH;
+
     pub fn new_from_public_key(public_key: &Ed25519PublicKey) -> Self {
         Self(hash_public_key_bytes(public_key.0))
     }
@@ -64,7 +82,7 @@ impl HasPublicKeyHash for Ed25519PublicKey {
 }
 
 impl IsPublicKeyHash for Ed25519PublicKeyHash {
-    fn get_hash_bytes(&self) -> &[u8; NodeId::RID_LENGTH] {
+    fn get_hash_bytes(&self) -> &[u8; Self::LENGTH] {
         &self.0
     }
 

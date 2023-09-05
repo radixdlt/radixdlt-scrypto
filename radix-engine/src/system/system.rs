@@ -33,7 +33,7 @@ use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi, KeyValueStoreGenericArgs,
+    ClientKeyValueStoreApi, KeyValueStoreDataSchema,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
@@ -1710,22 +1710,39 @@ where
     #[trace_resources]
     fn key_value_store_new(
         &mut self,
-        generic_args: KeyValueStoreGenericArgs,
+        data_schema: KeyValueStoreDataSchema,
     ) -> Result<NodeId, RuntimeError> {
         let mut additional_schemas = index_map_new();
-        if let Some(schema) = generic_args.additional_schema {
-            validate_schema(schema.v1())
-                .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
-            let schema_hash = schema.generate_schema_hash();
-            additional_schemas.insert(schema_hash, schema);
-        }
+        let (key_type, value_type, allow_ownership) = match data_schema {
+            KeyValueStoreDataSchema::Local {
+                additional_schema,
+                key_type,
+                value_type,
+                allow_ownership,
+            } => {
+                validate_schema(additional_schema.v1())
+                    .map_err(|_| RuntimeError::SystemError(SystemError::InvalidGenericArgs))?;
+                let schema_hash = additional_schema.generate_schema_hash();
+                additional_schemas.insert(schema_hash, additional_schema);
+                (
+                    GenericSubstitution::Local(ScopedTypeId(schema_hash, key_type)),
+                    GenericSubstitution::Local(ScopedTypeId(schema_hash, value_type)),
+                    allow_ownership,
+                )
+            }
+            KeyValueStoreDataSchema::Remote {
+                key_type,
+                value_type,
+                allow_ownership,
+            } => (
+                GenericSubstitution::Remote(key_type),
+                GenericSubstitution::Remote(value_type),
+                allow_ownership,
+            ),
+        };
 
-        self.validate_kv_store_generic_args(
-            &additional_schemas,
-            &generic_args.key_type,
-            &generic_args.value_type,
-        )
-        .map_err(|e| RuntimeError::SystemError(SystemError::TypeCheckError(e)))?;
+        self.validate_kv_store_generic_args(&additional_schemas, &key_type, &value_type)
+            .map_err(|e| RuntimeError::SystemError(SystemError::TypeCheckError(e)))?;
 
         let schema_partition = additional_schemas
             .into_iter()
@@ -1738,9 +1755,9 @@ where
             .collect();
 
         let generic_substitutions = KeyValueStoreGenericSubstitutions {
-            key_generic_substitutions: generic_args.key_type,
-            value_generic_substitutions: generic_args.value_type,
-            allow_ownership: generic_args.allow_ownership,
+            key_generic_substitution: key_type,
+            value_generic_substitution: value_type,
+            allow_ownership: allow_ownership,
         };
 
         let node_id = self
@@ -2128,6 +2145,13 @@ where
         SystemModuleMixer::on_call_function_finish(self, auth_zone)?;
 
         Ok(rtn)
+    }
+
+    fn resolve_blueprint_type(
+        &mut self,
+        blueprint_type_id: &BlueprintTypeIdentifier,
+    ) -> Result<(VersionedScryptoSchema, ScopedTypeId), RuntimeError> {
+        self.get_blueprint_type_schema(blueprint_type_id)
     }
 }
 

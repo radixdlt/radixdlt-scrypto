@@ -251,12 +251,15 @@ fn test_fee_accounting_success() {
     assert_eq!(
         account1_new_balance,
         account1_balance
-            .safe_sub(Decimal::from(66))
+            .checked_sub(Decimal::from(66))
             .unwrap()
-            .safe_sub(receipt.fee_summary.total_cost())
+            .checked_sub(receipt.fee_summary.total_cost())
             .unwrap()
     );
-    assert_eq!(account2_new_balance, account2_balance.safe_add(66).unwrap());
+    assert_eq!(
+        account2_new_balance,
+        account2_balance.checked_add(66).unwrap()
+    );
 }
 
 #[test]
@@ -311,7 +314,7 @@ fn test_fee_accounting_failure() {
     assert_eq!(
         account1_new_balance,
         account1_balance
-            .safe_sub(receipt.fee_summary.total_cost())
+            .checked_sub(receipt.fee_summary.total_cost())
             .unwrap()
     );
     assert_eq!(account2_new_balance, account2_balance);
@@ -393,28 +396,28 @@ fn test_contingent_fee_accounting_success() {
     assert_eq!(
         account1_new_balance,
         account1_balance
-            .safe_sub(
+            .checked_sub(
                 receipt
                     .effective_execution_cost_unit_price()
-                    .safe_mul(receipt.fee_summary.total_execution_cost_units_consumed)
+                    .checked_mul(receipt.fee_summary.total_execution_cost_units_consumed)
                     .unwrap()
             )
             .unwrap()
-            .safe_sub(
+            .checked_sub(
                 receipt
                     .effective_finalization_cost_unit_price()
-                    .safe_mul(receipt.fee_summary.total_finalization_cost_units_consumed)
+                    .checked_mul(receipt.fee_summary.total_finalization_cost_units_consumed)
                     .unwrap()
             )
             .unwrap()
-            .safe_sub(receipt.fee_summary.total_storage_cost_in_xrd)
+            .checked_sub(receipt.fee_summary.total_storage_cost_in_xrd)
             .unwrap()
-            .safe_add(contingent_fee)
+            .checked_add(contingent_fee)
             .unwrap()
     );
     assert_eq!(
         account2_new_balance,
-        account2_balance.safe_sub(contingent_fee).unwrap()
+        account2_balance.checked_sub(contingent_fee).unwrap()
     );
 }
 
@@ -472,7 +475,7 @@ fn test_contingent_fee_accounting_failure() {
     assert_eq!(
         account1_new_balance,
         account1_balance
-            .safe_sub(receipt.fee_summary.total_cost())
+            .checked_sub(receipt.fee_summary.total_cost())
             .unwrap()
     );
     assert_eq!(account2_new_balance, account2_balance);

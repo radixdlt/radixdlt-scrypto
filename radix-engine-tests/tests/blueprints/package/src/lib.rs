@@ -35,7 +35,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+            input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
             output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "LargeReturnSize_f".to_string(),
         },
@@ -49,6 +49,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
+        types: BlueprintTypeSchemaInit::default(),
         functions: BlueprintFunctionsSchemaInit { functions },
         hooks: BlueprintHooksInit::default(),
     };
@@ -85,7 +86,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+            input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
             output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "MaxReturnSize_f".to_string(),
         },
@@ -99,6 +100,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
+        types: BlueprintTypeSchemaInit::default(),
         functions: BlueprintFunctionsSchemaInit { functions },
         hooks: BlueprintHooksInit::default(),
     };
@@ -135,7 +137,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         "f".to_string(),
         FunctionSchemaInit {
             receiver: None,
-            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_TYPE)),
+            input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
             output: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
             export: "ZeroReturnSize_f".to_string(),
         },
@@ -149,6 +151,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
+        types: BlueprintTypeSchemaInit::default(),
         functions: BlueprintFunctionsSchemaInit { functions },
         hooks: BlueprintHooksInit::default(),
     };

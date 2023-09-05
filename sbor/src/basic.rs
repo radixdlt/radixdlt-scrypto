@@ -188,23 +188,23 @@ impl CustomSchema for NoCustomSchema {
     type CustomTypeValidation = NoCustomTypeValidation;
 
     fn linearize_type_kind(
-        _: Self::CustomTypeKind<GlobalTypeId>,
+        _: Self::CustomTypeKind<RustTypeId>,
         _: &IndexSet<TypeHash>,
-    ) -> Self::CustomTypeKind<LocalTypeIndex> {
+    ) -> Self::CustomTypeKind<LocalTypeId> {
         unreachable!("No custom type kinds exist")
     }
 
     fn resolve_well_known_type(
-        well_known_index: WellKnownTypeIndex,
-    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
+        well_known_id: WellKnownTypeId,
+    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeId>, LocalTypeId>> {
         WELL_KNOWN_LOOKUP
-            .get(well_known_index.as_index())
+            .get(well_known_id.as_index())
             .and_then(|x| x.as_ref())
     }
 
     fn validate_custom_type_validation(
         _: &SchemaContext,
-        _: &Self::CustomTypeKind<LocalTypeIndex>,
+        _: &Self::CustomTypeKind<LocalTypeId>,
         _: &Self::CustomTypeValidation,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type validation")
@@ -212,14 +212,14 @@ impl CustomSchema for NoCustomSchema {
 
     fn validate_custom_type_kind(
         _: &SchemaContext,
-        _: &Self::CustomTypeKind<LocalTypeIndex>,
+        _: &Self::CustomTypeKind<LocalTypeId>,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }
 
     fn validate_type_metadata_with_custom_type_kind(
         _: &SchemaContext,
-        _: &Self::CustomTypeKind<LocalTypeIndex>,
+        _: &Self::CustomTypeKind<LocalTypeId>,
         _: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
@@ -250,8 +250,8 @@ impl CustomExtension for NoCustomExtension {
         _: &Schema<Self::CustomSchema>,
         _: Self::CustomValueKind,
         _: &TypeKind<
-            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
-            LocalTypeIndex,
+            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
+            LocalTypeId,
         >,
     ) -> bool {
         unreachable!("No custom value kinds exist")
@@ -259,7 +259,7 @@ impl CustomExtension for NoCustomExtension {
 
     fn custom_type_kind_matches_non_custom_value_kind(
         _: &Schema<Self::CustomSchema>,
-        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
         _: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         unreachable!("No custom type kinds exist")
@@ -295,7 +295,7 @@ impl ValidatableCustomExtension<()> for NoCustomExtension {
     fn apply_validation_for_custom_value<'de>(
         _: &Schema<Self::CustomSchema>,
         _: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
-        _: LocalTypeIndex,
+        _: LocalTypeId,
         _: &(),
     ) -> Result<(), PayloadValidationError<Self>> {
         unreachable!("No custom values exist")
@@ -321,7 +321,7 @@ mod serde_serialization {
     impl SerializableCustomExtension for NoCustomExtension {
         fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
             _: &SerializationContext<'s, 'a, Self>,
-            _: LocalTypeIndex,
+            _: LocalTypeId,
             _: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
         ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
             unreachable!("No custom values exist")
