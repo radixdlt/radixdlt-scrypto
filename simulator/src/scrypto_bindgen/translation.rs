@@ -21,7 +21,7 @@ where
     S: schema::PackageSchemaResolver,
 {
     Ok(ast::BlueprintStub {
-        invocation_fn_signature_items: schema_stub
+        fn_signatures: schema_stub
             .functions
             .into_iter()
             .map(|func| {
@@ -40,7 +40,7 @@ pub fn function_schema_stub_to_ast_stub<S>(
     schema_stub: schema::Function,
     blueprint_name: String,
     schema_resolver: &S,
-) -> Result<ast::InvocationFn, schema::SchemaError>
+) -> Result<ast::FnSignature, schema::SchemaError>
 where
     S: schema::PackageSchemaResolver,
 {
@@ -85,7 +85,7 @@ where
     )
     .unwrap();
 
-    Ok(ast::InvocationFn {
+    Ok(ast::FnSignature {
         inputs,
         fn_type,
         ident,

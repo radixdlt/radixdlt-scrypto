@@ -6,7 +6,7 @@ use radix_engine_interface::types::PackageAddress;
 /// used inside the quote macro and printed out.
 pub struct BlueprintStub {
     pub blueprint_name: String,
-    pub invocation_fn_signature_items: Vec<InvocationFn>,
+    pub fn_signatures: Vec<FnSignature>,
 }
 
 impl BlueprintStub {
@@ -23,12 +23,12 @@ impl BlueprintStub {
         );
 
         let functions = self
-            .invocation_fn_signature_items
+            .fn_signatures
             .iter()
             .filter(|func| matches!(func.fn_type, FnType::Function))
             .collect::<Vec<_>>();
         let methods = self
-            .invocation_fn_signature_items
+            .fn_signatures
             .iter()
             .filter(|func| matches!(func.fn_type, FnType::Method { .. }))
             .collect::<Vec<_>>();
@@ -52,7 +52,7 @@ impl BlueprintStub {
     }
 }
 
-pub struct InvocationFn {
+pub struct FnSignature {
     pub ident: syn::Ident,
     pub inputs: Vec<(syn::Ident, proc_macro2::TokenStream)>,
     pub output: proc_macro2::TokenStream,
@@ -64,7 +64,7 @@ pub enum FnType {
     Method { is_mutable_receiver: bool },
 }
 
-impl ToTokens for InvocationFn {
+impl ToTokens for FnSignature {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let ident = &self.ident;
         let input_names = &self.inputs.iter().map(|(k, _)| k).collect::<Vec<_>>();
