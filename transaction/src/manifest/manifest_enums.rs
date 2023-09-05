@@ -79,9 +79,29 @@ lazy_static! {
             }
         );
 
+        // TODO: remove
+        known_enum!(
+            m,
+            enum AccessRule {
+                AllowAll = 0;
+                DenyAll = 1;
+                Protected = 2;
+            }
+        );
+
         known_enum!(
             m,
             enum RuleNode {
+                ProofRule = 0;
+                AnyOf = 1;
+                AllOf = 2;
+            }
+        );
+
+        // TODO: remove
+        known_enum!(
+            m,
+            enum AccessRuleNode {
                 ProofRule = 0;
                 AnyOf = 1;
                 AllOf = 2;
@@ -109,11 +129,31 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AttachedModuleId {
+            enum ModuleId {
                 Main = 0;
                 Metadata = 1;
                 Royalty = 2;
                 RoleAssignment = 3;
+            }
+        );
+
+        // TODO: remove
+        known_enum!(
+            m,
+            enum ObjectModuleId {
+                Main = 0;
+                Metadata = 1;
+                Royalty = 2;
+                RoleAssignment = 3;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum AttachedModuleId {
+                Metadata = 0;
+                Royalty = 1;
+                RoleAssignment = 2;
             }
         );
 
