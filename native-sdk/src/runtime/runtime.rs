@@ -3,7 +3,7 @@ use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthZoneAssertAccessRuleInput, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+    AuthZoneAssertRuleInput, Rule, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::scrypto::*;
@@ -106,7 +106,7 @@ impl Runtime {
         api.generate_ruid()
     }
 
-    pub fn assert_access_rule<Y, E>(rule: AccessRule, api: &mut Y) -> Result<(), E>
+    pub fn assert_access_rule<Y, E>(rule: Rule, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
@@ -115,7 +115,7 @@ impl Runtime {
         let _rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
-            scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
+            scrypto_encode(&AuthZoneAssertRuleInput { rule }).unwrap(),
         )?;
 
         Ok(())

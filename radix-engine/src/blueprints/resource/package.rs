@@ -1088,12 +1088,10 @@ impl ResourceNativePackage {
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<AuthZoneAssertAccessRuleInput>(),
+                        aggregator.add_child_type_and_descendents::<AuthZoneAssertRuleInput>(),
                     ),
                     output: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<AuthZoneAssertAccessRuleOutput>(),
+                        aggregator.add_child_type_and_descendents::<AuthZoneAssertRuleOutput>(),
                     ),
                     export: AUTH_ZONE_ASSERT_ACCESS_RULE_EXPORT_NAME.to_string(),
                 },
@@ -2052,7 +2050,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&proofs))
             }
             AUTH_ZONE_ASSERT_ACCESS_RULE_EXPORT_NAME => {
-                let input: AuthZoneAssertAccessRuleInput = input.as_typed().map_err(|e| {
+                let input: AuthZoneAssertRuleInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 

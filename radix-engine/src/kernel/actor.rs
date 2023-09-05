@@ -1,6 +1,6 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::types::*;
-use radix_engine_interface::api::{ModuleId, ObjectModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ModuleId};
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 
@@ -13,14 +13,14 @@ pub struct InstanceContext {
 pub enum MethodType {
     Main,
     Direct,
-    Module(ModuleId),
+    Module(AttachedModuleId),
 }
 
 impl MethodType {
-    pub fn module_id(&self) -> ObjectModuleId {
+    pub fn module_id(&self) -> ModuleId {
         match self {
             MethodType::Module(module_id) => module_id.clone().into(),
-            MethodType::Main | MethodType::Direct => ObjectModuleId::Main,
+            MethodType::Main | MethodType::Direct => ModuleId::Main,
         }
     }
 }
@@ -194,7 +194,7 @@ impl Actor {
         }
     }
 
-    pub fn get_object_id(&self) -> Option<(NodeId, Option<ModuleId>)> {
+    pub fn get_object_id(&self) -> Option<(NodeId, Option<AttachedModuleId>)> {
         match self {
             Actor::Method(method_actor) => Some((
                 method_actor.node_id,

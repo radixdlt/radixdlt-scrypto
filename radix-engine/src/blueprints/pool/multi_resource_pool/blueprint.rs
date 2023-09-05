@@ -219,7 +219,7 @@ impl MultiResourcePoolBlueprint {
     pub fn instantiate<Y>(
         resource_addresses: IndexSet<ResourceAddress>,
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule,
+        pool_manager_rule: Rule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<MultiResourcePoolInstantiateOutput, RuntimeError>
@@ -289,7 +289,7 @@ impl MultiResourcePoolBlueprint {
         let role_assignment = RoleAssignment::create(
             owner_role,
             indexmap! {
-                ObjectModuleId::Main => roles_init! {
+                ModuleId::Main => roles_init! {
                     RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
                 }
             },
@@ -326,9 +326,9 @@ impl MultiResourcePoolBlueprint {
         api.globalize(
             object_id,
             indexmap!(
-                ModuleId::RoleAssignment => role_assignment.0,
-                ModuleId::Metadata => metadata.0,
-                ModuleId::Royalty => royalty.0,
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
+                AttachedModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;

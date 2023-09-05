@@ -191,23 +191,23 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         hooks: BlueprintHooksInit::default(),
     };
 
-    let function_auth: IndexMap<String, AccessRule> = indexmap!(
-        "invalid_output".to_string() => AccessRule::AllowAll,
-        "unit".to_string() => AccessRule::AllowAll,
-        "bool".to_string() => AccessRule::AllowAll,
-        "i8".to_string() => AccessRule::AllowAll,
-        "i16".to_string() => AccessRule::AllowAll,
-        "i32".to_string() => AccessRule::AllowAll,
-        "i64".to_string() => AccessRule::AllowAll,
-        "i128".to_string() => AccessRule::AllowAll,
-        "u8".to_string() => AccessRule::AllowAll,
-        "u16".to_string() => AccessRule::AllowAll,
-        "u32".to_string() => AccessRule::AllowAll,
-        "u64".to_string() => AccessRule::AllowAll,
-        "u128".to_string() => AccessRule::AllowAll,
-        "result".to_string() => AccessRule::AllowAll,
-        "tree_map".to_string() => AccessRule::AllowAll,
-        "hash_set".to_string() => AccessRule::AllowAll,
+    let function_auth: IndexMap<String, Rule> = indexmap!(
+        "invalid_output".to_string() => Rule::AllowAll,
+        "unit".to_string() => Rule::AllowAll,
+        "bool".to_string() => Rule::AllowAll,
+        "i8".to_string() => Rule::AllowAll,
+        "i16".to_string() => Rule::AllowAll,
+        "i32".to_string() => Rule::AllowAll,
+        "i64".to_string() => Rule::AllowAll,
+        "i128".to_string() => Rule::AllowAll,
+        "u8".to_string() => Rule::AllowAll,
+        "u16".to_string() => Rule::AllowAll,
+        "u32".to_string() => Rule::AllowAll,
+        "u64".to_string() => Rule::AllowAll,
+        "u128".to_string() => Rule::AllowAll,
+        "result".to_string() => Rule::AllowAll,
+        "tree_map".to_string() => Rule::AllowAll,
+        "hash_set".to_string() => Rule::AllowAll,
     );
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
@@ -218,7 +218,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         schema,
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
-            function_auth: scrypto::blueprints::package::FunctionAuth::AccessRules(function_auth),
+            function_auth: scrypto::blueprints::package::FunctionAuth::Rules(function_auth),
             method_auth: scrypto::blueprints::package::MethodAuthTemplate::AllowAll,
         },
     };

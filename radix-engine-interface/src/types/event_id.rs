@@ -1,4 +1,4 @@
-use crate::api::ObjectModuleId;
+use crate::api::ModuleId;
 use crate::types::BlueprintId;
 use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
@@ -21,7 +21,7 @@ pub struct EventTypeIdentifier(pub Emitter, pub String);
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum Emitter {
     Function(BlueprintId),
-    Method(NodeId, ObjectModuleId),
+    Method(NodeId, ModuleId),
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {

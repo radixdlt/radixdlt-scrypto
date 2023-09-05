@@ -23,16 +23,16 @@ fn generate_deep_access_rules(
     resource_address: ResourceAddress,
     exceed_depth: usize,
 ) -> RoleAssignmentInit {
-    let mut access_rule_node = AccessRuleNode::ProofRule(ProofRule::Require(
+    let mut access_rule_node = RuleNode::ProofRule(ProofRule::Require(
         ResourceOrNonFungible::Resource(resource_address),
     ));
     let mut curr_depth = 6; // The inner bit and the outer mapping
     while curr_depth < exceed_depth {
-        access_rule_node = AccessRuleNode::AllOf(vec![access_rule_node]);
+        access_rule_node = RuleNode::AllOf(vec![access_rule_node]);
         curr_depth += 2;
     }
 
     roles2! {
-        "test" => AccessRule::Protected(access_rule_node.clone()), updatable;
+        "test" => Rule::Protected(access_rule_node.clone()), updatable;
     }
 }

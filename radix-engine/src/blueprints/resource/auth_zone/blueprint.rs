@@ -281,7 +281,7 @@ impl AuthZoneBlueprint {
     }
 
     pub fn assert_access_rule<Y, L: Default>(
-        access_rule: AccessRule,
+        access_rule: Rule,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -293,9 +293,9 @@ impl AuthZoneBlueprint {
 
         match auth_result {
             AuthorizationCheckResult::Authorized => Ok(()),
-            AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(
-                SystemError::AssertAccessRuleFailed,
-            )),
+            AuthorizationCheckResult::Failed(..) => {
+                Err(RuntimeError::SystemError(SystemError::AssertRuleFailed))
+            }
         }
     }
 }

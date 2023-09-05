@@ -21,7 +21,7 @@ mod proofs {
             let superadmin_badge = Self::new_badge("superadmin badge");
 
             // Creating a token which can only be withdrawn and minted when all three of the above badges are present
-            let organizational_access_rule: AccessRule = rule!(
+            let organizational_access_rule: Rule = rule!(
                 require(supervisor_badge.resource_address())
                     && require(admin_badge.resource_address())
                     && require(superadmin_badge.resource_address())

@@ -1623,7 +1623,7 @@ mod tests {
             }
         );
         generate_value_ok!(
-            r#"Enum<AccessRule::AllowAll>()"#,
+            r#"Enum<Rule::AllowAll>()"#,
             Value::Enum {
                 discriminator: 0,
                 fields: vec![]

@@ -1,7 +1,7 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -80,13 +80,13 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 )
                 .set_role(
                     token_address,
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )
                 .set_role(
                     token_address,
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     updater_role_key,
                     rule!(require(admin_auth)),
                 )
@@ -108,13 +108,13 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 )
                 .set_role(
                     token_address,
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )
                 .set_role(
                     token_address,
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     updater_role_key,
                     rule!(require(admin_auth)),
                 )
@@ -134,12 +134,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                         admin_auth,
                         [NonFungibleLocalId::integer(1)],
                     )
-                    .set_role(
-                        token_address,
-                        ObjectModuleId::Main,
-                        role_key,
-                        AccessRule::DenyAll,
-                    )
+                    .set_role(token_address, ModuleId::Main, role_key, Rule::DenyAll)
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&public_key)],
             )
@@ -158,7 +153,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 )
                 .set_role(
                     token_address,
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )
@@ -178,7 +173,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 )
                 .set_role(
                     token_address,
-                    ObjectModuleId::Main,
+                    ModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )

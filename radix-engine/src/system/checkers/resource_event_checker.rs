@@ -7,7 +7,7 @@ use radix_engine_common::constants::RESOURCE_PACKAGE;
 use radix_engine_common::math::{CheckedAdd, CheckedSub, Decimal};
 use radix_engine_common::prelude::{scrypto_decode, ResourceAddress};
 use radix_engine_common::types::NodeId;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
@@ -45,7 +45,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
 
         match info.blueprint_id.blueprint_name.as_str() {
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => match event_id {
-                EventTypeIdentifier(Emitter::Method(node_id, ObjectModuleId::Main), event_name) => {
+                EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), event_name) => {
                     let address = ResourceAddress::new_or_panic(node_id.0);
                     match event_name.as_str() {
                         MintFungibleResourceEvent::EVENT_NAME => {
@@ -70,7 +70,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                 _ => {}
             },
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => match event_id {
-                EventTypeIdentifier(Emitter::Method(node_id, ObjectModuleId::Main), event_name) => {
+                EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), event_name) => {
                     let address = ResourceAddress::new_or_panic(node_id.0);
                     match event_name.as_str() {
                         MintNonFungibleResourceEvent::EVENT_NAME => {
@@ -97,7 +97,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                 _ => {}
             },
             FUNGIBLE_VAULT_BLUEPRINT => match event_id {
-                EventTypeIdentifier(Emitter::Method(node_id, ObjectModuleId::Main), event_name) => {
+                EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), event_name) => {
                     match event_name.as_str() {
                         fungible_vault::DepositEvent::EVENT_NAME => {
                             let event: fungible_vault::DepositEvent =
@@ -138,7 +138,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                 _ => {}
             },
             NON_FUNGIBLE_VAULT_BLUEPRINT => match event_id {
-                EventTypeIdentifier(Emitter::Method(node_id, ObjectModuleId::Main), event_name) => {
+                EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), event_name) => {
                     match event_name.as_str() {
                         non_fungible_vault::DepositEvent::EVENT_NAME => {
                             let event: non_fungible_vault::DepositEvent =

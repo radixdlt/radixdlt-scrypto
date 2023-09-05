@@ -72,6 +72,16 @@ lazy_static! {
 
         known_enum!(
             m,
+            enum Rule {
+                AllowAll = 0;
+                DenyAll = 1;
+                Protected = 2;
+            }
+        );
+
+        // Notes: This is to be deprecated, please use `Rule` instead
+        known_enum!(
+            m,
             enum AccessRule {
                 AllowAll = 0;
                 DenyAll = 1;
@@ -79,6 +89,16 @@ lazy_static! {
             }
         );
 
+        known_enum!(
+            m,
+            enum RuleNode {
+                ProofRule = 0;
+                AnyOf = 1;
+                AllOf = 2;
+            }
+        );
+
+        // Notes: This is to be deprecated, please use `RuleNode` instead
         known_enum!(
             m,
             enum AccessRuleNode {
@@ -114,6 +134,26 @@ lazy_static! {
                 Metadata = 1;
                 Royalty = 2;
                 RoleAssignment = 3;
+            }
+        );
+
+        // Notes: This is to be deprecated, please use `ModuleId` instead
+        known_enum!(
+            m,
+            enum ObjectModuleId {
+                Main = 0;
+                Metadata = 1;
+                Royalty = 2;
+                RoleAssignment = 3;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum AttachedModuleId {
+                Metadata = 0;
+                Royalty = 1;
+                RoleAssignment = 2;
             }
         );
 

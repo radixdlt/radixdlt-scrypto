@@ -14,7 +14,7 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
-use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ModuleId, ObjectModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ClientBlueprintApi, LockFlags, ModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
@@ -34,14 +34,14 @@ pub enum AuthError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum FailedAccessRules {
-    RoleList(Vec<(RoleKey, Vec<AccessRule>)>),
-    AccessRule(Vec<AccessRule>),
+pub enum FailedRules {
+    RoleList(Vec<(RoleKey, Vec<Rule>)>),
+    Rule(Vec<Rule>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
-    pub failed_access_rules: FailedAccessRules,
+    pub failed_access_rules: FailedRules,
     pub fn_identifier: FnIdentifier,
 }
 
@@ -52,21 +52,21 @@ pub struct AuthModule {
 
 pub enum AuthorizationCheckResult {
     Authorized,
-    Failed(Vec<AccessRule>),
+    Failed(Vec<Rule>),
 }
 
 pub enum AuthorityListAuthorizationResult {
     Authorized,
-    Failed(Vec<(RoleKey, Vec<AccessRule>)>),
+    Failed(Vec<(RoleKey, Vec<Rule>)>),
 }
 
 pub enum ResolvedPermission {
     RoleList {
         role_assignment_of: GlobalAddress,
-        module_id: ObjectModuleId,
+        module_id: ModuleId,
         role_list: RoleList,
     },
-    AccessRule(AccessRule),
+    Rule(Rule),
     AllowAll,
 }
 
@@ -140,7 +140,7 @@ impl AuthModule {
     pub fn on_call_method<V, Y>(
         api: &mut SystemService<Y, V>,
         receiver: &NodeId,
-        obj_module_id: ObjectModuleId,
+        obj_module_id: ModuleId,
         direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
@@ -158,10 +158,10 @@ impl AuthModule {
 
         // Step 1: Resolve method to permission
         let module_id = match obj_module_id {
-            ObjectModuleId::Main => None,
-            ObjectModuleId::Metadata => Some(ModuleId::Metadata),
-            ObjectModuleId::Royalty => Some(ModuleId::Royalty),
-            ObjectModuleId::RoleAssignment => Some(ModuleId::RoleAssignment),
+            ModuleId::Main => None,
+            ModuleId::Metadata => Some(AttachedModuleId::Metadata),
+            ModuleId::Royalty => Some(AttachedModuleId::Royalty),
+            ModuleId::RoleAssignment => Some(AttachedModuleId::RoleAssignment),
         };
 
         let blueprint_id = api.get_blueprint_info(receiver, module_id)?.blueprint_id;
@@ -395,7 +395,7 @@ impl AuthModule {
     ) -> Result<(), RuntimeError> {
         match resolved_permission {
             ResolvedPermission::AllowAll => return Ok(()),
-            ResolvedPermission::AccessRule(rule) => {
+            ResolvedPermission::Rule(rule) => {
                 let result =
                     Authorization::check_authorization_against_access_rule(api, &auth_zone, &rule)?;
 
@@ -404,9 +404,7 @@ impl AuthModule {
                     AuthorizationCheckResult::Failed(access_rule_stack) => Err(
                         RuntimeError::SystemModuleError(SystemModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
-                                failed_access_rules: FailedAccessRules::AccessRule(
-                                    access_rule_stack,
-                                ),
+                                failed_access_rules: FailedRules::Rule(access_rule_stack),
                                 fn_identifier,
                             })),
                         )),
@@ -431,7 +429,7 @@ impl AuthModule {
                     AuthorityListAuthorizationResult::Failed(auth_list_fail) => Err(
                         RuntimeError::SystemModuleError(SystemModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
-                                failed_access_rules: FailedAccessRules::RoleList(auth_list_fail),
+                                failed_access_rules: FailedRules::RoleList(auth_list_fail),
                                 fn_identifier,
                             })),
                         )),
@@ -445,13 +443,13 @@ impl AuthModule {
         api: &mut SystemService<Y, V>,
         blueprint_id: &BlueprintId,
         receiver: &NodeId,
-        module_id: &ObjectModuleId,
+        module_id: &ModuleId,
         ident: &str,
         args: &IndexedScryptoValue,
     ) -> Result<ResolvedPermission, RuntimeError> {
         let method_key = MethodKey::new(ident);
 
-        if let ObjectModuleId::RoleAssignment = module_id {
+        if let ModuleId::RoleAssignment = module_id {
             // Only global objects have role assignment modules
             let global_address = GlobalAddress::new_or_panic(receiver.0);
             return RoleAssignmentNativePackage::authorization(&global_address, ident, args, api);
@@ -489,19 +487,17 @@ impl AuthModule {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
             Some(MethodAccessibility::OwnPackageOnly) => {
                 let package = blueprint_id.package_address;
-                Ok(ResolvedPermission::AccessRule(rule!(require(
+                Ok(ResolvedPermission::Rule(rule!(require(
                     package_of_direct_caller(package)
                 ))))
             }
             Some(MethodAccessibility::OuterObjectOnly) => match module_id {
-                ObjectModuleId::Main => {
+                ModuleId::Main => {
                     let outer_object_info = &receiver_object_info.blueprint_info.outer_obj_info;
                     match outer_object_info {
-                        OuterObjectInfo::Some { outer_object } => {
-                            Ok(ResolvedPermission::AccessRule(rule!(require(
-                                global_caller(*outer_object)
-                            ))))
-                        }
+                        OuterObjectInfo::Some { outer_object } => Ok(ResolvedPermission::Rule(
+                            rule!(require(global_caller(*outer_object))),
+                        )),
                         OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
                             SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
                         )),

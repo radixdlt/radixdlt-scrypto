@@ -4,7 +4,7 @@ use native_sdk::modules::role_assignment::{
     AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
 };
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::{ClientApi, ObjectModuleId};
+use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::resource::*;
 
 pub trait SecurifiedRoleAssignment {
@@ -18,9 +18,9 @@ pub trait SecurifiedRoleAssignment {
     ) -> Result<RoleAssignment, RuntimeError> {
         let mut roles = RoleAssignmentInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
+            roles.define_role(RoleKey::new(securify_role), Rule::DenyAll);
         }
-        let roles = indexmap!(ObjectModuleId::Main => roles);
+        let roles = indexmap!(ModuleId::Main => roles);
         let role_assignment = RoleAssignment::create(owner_role, roles, api)?;
         Ok(role_assignment)
     }
@@ -34,9 +34,9 @@ pub trait SecurifiedRoleAssignment {
             Self::mint_securified_badge(owner_badge_data, non_fungible_local_id, api)?;
         let mut roles = RoleAssignmentInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
+            roles.define_role(RoleKey::new(securify_role), Rule::DenyAll);
         }
-        let roles = indexmap!(ObjectModuleId::Main => roles);
+        let roles = indexmap!(ModuleId::Main => roles);
         let role_assignment = RoleAssignment::create(OwnerRole::Fixed(owner_role), roles, api)?;
         Ok((role_assignment, bucket))
     }
@@ -45,7 +45,7 @@ pub trait SecurifiedRoleAssignment {
         owner_badge_data: Self::OwnerBadgeNonFungibleData,
         non_fungible_local_id: Option<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<(Bucket, AccessRule), RuntimeError> {
+    ) -> Result<(Bucket, Rule), RuntimeError> {
         let owner_token = ResourceManager(Self::OWNER_BADGE);
         let (bucket, owner_local_id) = if let Some(owner_local_id) = non_fungible_local_id {
             (
@@ -77,7 +77,7 @@ pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
         }
 
         let roles = indexmap!(
-            ObjectModuleId::Main => roles,
+            ModuleId::Main => roles,
         );
 
         let role_assignment = RoleAssignment::create(
@@ -100,9 +100,9 @@ pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
         let role_assignment = AttachedRoleAssignment(*receiver);
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             role_assignment.set_role(
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 RoleKey::new(securify_role),
-                AccessRule::DenyAll,
+                Rule::DenyAll,
                 api,
             )?;
         }

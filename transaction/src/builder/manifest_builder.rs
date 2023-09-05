@@ -5,7 +5,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -915,7 +915,7 @@ impl ManifestBuilder {
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
-        self.call_module_method(address, ObjectModuleId::Main, method_name, arguments)
+        self.call_module_method(address, ModuleId::Main, method_name, arguments)
     }
 
     pub fn call_metadata_method(
@@ -924,7 +924,7 @@ impl ManifestBuilder {
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
-        self.call_module_method(address, ObjectModuleId::Metadata, method_name, arguments)
+        self.call_module_method(address, ModuleId::Metadata, method_name, arguments)
     }
 
     pub fn call_royalty_method(
@@ -933,17 +933,17 @@ impl ManifestBuilder {
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
-        self.call_module_method(address, ObjectModuleId::Royalty, method_name, arguments)
+        self.call_module_method(address, ModuleId::Royalty, method_name, arguments)
     }
 
     pub fn set_owner_role(
         self,
         address: impl ResolvableGlobalAddress,
-        rule: impl Into<AccessRule>,
+        rule: impl Into<Rule>,
     ) -> Self {
         self.call_module_method(
             address,
-            ObjectModuleId::RoleAssignment,
+            ModuleId::RoleAssignment,
             ROLE_ASSIGNMENT_SET_OWNER_IDENT,
             RoleAssignmentSetOwnerInput { rule: rule.into() },
         )
@@ -952,7 +952,7 @@ impl ManifestBuilder {
     pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
         self.call_module_method(
             address,
-            ObjectModuleId::RoleAssignment,
+            ModuleId::RoleAssignment,
             ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,
             RoleAssignmentLockOwnerInput {},
         )
@@ -962,21 +962,21 @@ impl ManifestBuilder {
         self,
         address: impl ResolvableGlobalAddress,
         role_key: impl Into<RoleKey>,
-        rule: impl Into<AccessRule>,
+        rule: impl Into<Rule>,
     ) -> Self {
-        self.set_role(address, ObjectModuleId::Main, role_key, rule)
+        self.set_role(address, ModuleId::Main, role_key, rule)
     }
 
     pub fn set_role(
         self,
         address: impl ResolvableGlobalAddress,
-        role_module: ObjectModuleId,
+        role_module: ModuleId,
         role_key: impl Into<RoleKey>,
-        rule: impl Into<AccessRule>,
+        rule: impl Into<Rule>,
     ) -> Self {
         self.call_module_method(
             address,
-            ObjectModuleId::RoleAssignment,
+            ModuleId::RoleAssignment,
             ROLE_ASSIGNMENT_SET_IDENT,
             RoleAssignmentSetInput {
                 module: role_module,
@@ -989,12 +989,12 @@ impl ManifestBuilder {
     pub fn get_role(
         self,
         address: impl ResolvableGlobalAddress,
-        role_module: ObjectModuleId,
+        role_module: ModuleId,
         role_key: RoleKey,
     ) -> Self {
         self.call_module_method(
             address,
-            ObjectModuleId::RoleAssignment,
+            ModuleId::RoleAssignment,
             ROLE_ASSIGNMENT_GET_IDENT,
             RoleAssignmentGetInput {
                 module: role_module,
@@ -1009,39 +1009,34 @@ impl ManifestBuilder {
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
-        self.call_module_method(
-            address,
-            ObjectModuleId::RoleAssignment,
-            method_name,
-            arguments,
-        )
+        self.call_module_method(address, ModuleId::RoleAssignment, method_name, arguments)
     }
 
     pub fn call_module_method(
         self,
         address: impl ResolvableGlobalAddress,
-        module_id: ObjectModuleId,
+        module_id: ModuleId,
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
         let address = address.resolve(&self.registrar);
         match module_id {
-            ObjectModuleId::Main => self.add_instruction(InstructionV1::CallMethod {
+            ModuleId::Main => self.add_instruction(InstructionV1::CallMethod {
                 address,
                 method_name: method_name.into(),
                 args: arguments.resolve(),
             }),
-            ObjectModuleId::Metadata => self.add_instruction(InstructionV1::CallMetadataMethod {
+            ModuleId::Metadata => self.add_instruction(InstructionV1::CallMetadataMethod {
                 address,
                 method_name: method_name.into(),
                 args: arguments.resolve(),
             }),
-            ObjectModuleId::Royalty => self.add_instruction(InstructionV1::CallRoyaltyMethod {
+            ModuleId::Royalty => self.add_instruction(InstructionV1::CallRoyaltyMethod {
                 address,
                 method_name: method_name.into(),
                 args: arguments.resolve(),
             }),
-            ObjectModuleId::RoleAssignment => {
+            ModuleId::RoleAssignment => {
                 self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
                     address,
                     method_name: method_name.into(),
@@ -1296,11 +1291,7 @@ impl ManifestBuilder {
     }
 
     /// Creates a token resource with mutable supply.
-    pub fn new_token_mutable(
-        self,
-        metadata: ModuleConfig<MetadataInit>,
-        owner_role: AccessRule,
-    ) -> Self {
+    pub fn new_token_mutable(self, metadata: ModuleConfig<MetadataInit>, owner_role: Rule) -> Self {
         self.create_fungible_resource(
             OwnerRole::Fixed(owner_role),
             true,
@@ -1340,11 +1331,7 @@ impl ManifestBuilder {
     }
 
     /// Creates a badge resource with mutable supply.
-    pub fn new_badge_mutable(
-        self,
-        metadata: ModuleConfig<MetadataInit>,
-        owner_role: AccessRule,
-    ) -> Self {
+    pub fn new_badge_mutable(self, metadata: ModuleConfig<MetadataInit>, owner_role: Rule) -> Self {
         self.create_fungible_resource(
             OwnerRole::Fixed(owner_role),
             false,
@@ -1986,9 +1973,9 @@ impl ManifestBuilder {
     pub fn create_access_controller(
         self,
         controlled_asset: impl ExistingManifestBucket,
-        primary_role: AccessRule,
-        recovery_role: AccessRule,
-        confirmation_role: AccessRule,
+        primary_role: Rule,
+        recovery_role: Rule,
+        confirmation_role: Rule,
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> Self {
         let controlled_asset = controlled_asset.mark_consumed(&self.registrar);

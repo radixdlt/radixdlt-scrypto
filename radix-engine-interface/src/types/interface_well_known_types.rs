@@ -25,9 +25,9 @@ mod tests {
             resource_or_non_fungible_2.clone(),
         ];
         let proof_rule = ProofRule::Require(resource_or_non_fungible_1.clone());
-        let access_rule_node = AccessRuleNode::ProofRule(proof_rule.clone());
+        let access_rule_node = RuleNode::ProofRule(proof_rule.clone());
         let access_rule_node_list = vec![access_rule_node.clone()];
-        let access_rule = AccessRule::Protected(access_rule_node.clone());
+        let access_rule = Rule::Protected(access_rule_node.clone());
 
         test_equivalence(ACCESS_RULE_TYPE, access_rule);
         test_equivalence(ACCESS_RULE_NODE_TYPE, access_rule_node);
@@ -43,8 +43,8 @@ mod tests {
         test_equivalence(ROLE_KEY_TYPE, RoleKey::from("MyRoleName"));
 
         // OTHER MODULE TYPES
-        test_equivalence(OBJECT_MODULE_ID_TYPE, ObjectModuleId::Main);
-        test_equivalence(MODULE_ID_TYPE, ModuleId::Metadata);
+        test_equivalence(MODULE_ID_TYPE, ModuleId::Main);
+        test_equivalence(ATTACHED_MODULE_ID_TYPE, AttachedModuleId::Metadata);
         test_equivalence(ROYALTY_AMOUNT_TYPE, RoyaltyAmount::Free);
         test_equivalence(ROYALTY_AMOUNT_TYPE, RoyaltyAmount::Usd(dec!("1.6")));
         test_equivalence(ROYALTY_AMOUNT_TYPE, RoyaltyAmount::Xrd(dec!("1.6")));

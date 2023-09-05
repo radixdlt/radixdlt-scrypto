@@ -110,9 +110,9 @@ impl VmInvoke for TestInvoke {
                     scrypto_encode(&AccessControllerCreateInput {
                         controlled_asset: bucket,
                         rule_set: RuleSet {
-                            primary_role: AccessRule::AllowAll,
-                            recovery_role: AccessRule::AllowAll,
-                            confirmation_role: AccessRule::AllowAll,
+                            primary_role: Rule::AllowAll,
+                            recovery_role: Rule::AllowAll,
+                            confirmation_role: Rule::AllowAll,
                         },
                         timed_recovery_delay_in_minutes: None,
                         address_reservation: None,

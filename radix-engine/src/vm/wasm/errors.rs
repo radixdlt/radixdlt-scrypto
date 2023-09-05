@@ -122,13 +122,13 @@ pub enum WasmRuntimeError {
     InvalidReferenceType(u32),
 
     /// Invalid RE module ID
-    InvalidModuleId(u32),
+    InvalidAttachedModuleId(u32),
 
     /// Invalid initial app states
     InvalidObjectStates(DecodeError),
 
     /// Invalid access rules
-    InvalidAccessRule(DecodeError),
+    InvalidRule(DecodeError),
 
     /// Invalid modules
     InvalidModules(DecodeError),

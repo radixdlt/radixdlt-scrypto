@@ -346,7 +346,7 @@ fn estimate_notarizing(notary_is_signatory: bool, max: Decimal) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let account1 = test_runner.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
+    let account1 = test_runner.new_account_advanced(OwnerRole::Updatable(Rule::AllowAll));
     let (_pk2, sk2, account2) = test_runner.new_virtual_account();
 
     // Additional signature has an impact on the size of `AuthZone` substate.

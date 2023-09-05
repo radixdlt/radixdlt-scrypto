@@ -5,7 +5,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, ScryptoVm, Vm};
-use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_interface::blueprints::resource::Rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;
 use rand_chacha;
@@ -76,9 +76,9 @@ impl TransactionFuzzer {
         for _ in 0..instruction_count {
             let next = self.rng.gen_range(0u32..4u32);
             builder = match next {
-                0 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None),
-                1 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None),
-                2 => builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None),
+                0 => builder.new_account_advanced(OwnerRole::Fixed(Rule::AllowAll), None),
+                1 => builder.new_account_advanced(OwnerRole::Fixed(Rule::AllowAll), None),
+                2 => builder.new_account_advanced(OwnerRole::Fixed(Rule::AllowAll), None),
                 3 => builder.lock_fee(FAUCET, 100),
                 _ => panic!("Unexpected"),
             }

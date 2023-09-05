@@ -7,9 +7,9 @@ mod function_access_rules {
         public_function => rule!(allow_all);
     }
 
-    struct FunctionAccessRules {}
+    struct FunctionRules {}
 
-    impl FunctionAccessRules {
+    impl FunctionRules {
         pub fn protected_function() {}
 
         pub fn public_function() {}

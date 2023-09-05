@@ -15,10 +15,10 @@ use radix_engine_interface::api::node_modules::metadata::{
     METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{FieldValue, ModuleId};
+use radix_engine_interface::api::object_api::ModuleId;
+use radix_engine_interface::api::{AttachedModuleId, FieldValue};
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
+    Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit, Rule,
 };
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -201,7 +201,7 @@ pub trait FnMapping<T> {
 }
 
 pub trait MethodMapping<T> {
-    const MODULE_ID: ObjectModuleId;
+    const MODULE_ID: ModuleId;
 
     fn to_mapping(self) -> Vec<(String, T)>;
     fn methods() -> Vec<&'static str>;
@@ -214,7 +214,7 @@ pub struct MetadataMethods<T> {
 }
 
 impl<T> MethodMapping<T> for MetadataMethods<T> {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::Metadata;
+    const MODULE_ID: ModuleId = ModuleId::Metadata;
 
     fn to_mapping(self) -> Vec<(String, T)> {
         vec![
@@ -295,7 +295,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
         // Main
         {
-            roles.insert(ObjectModuleId::Main, self.roles);
+            roles.insert(ModuleId::Main, self.roles);
         }
 
         // Metadata
@@ -306,22 +306,28 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
                 .unwrap_or_else(|| Default::default());
 
             let metadata = Metadata::new_with_data(metadata_config.init);
-            modules.insert(ModuleId::Metadata, metadata.handle().as_node_id().clone());
-            roles.insert(ObjectModuleId::Metadata, metadata_config.roles);
+            modules.insert(
+                AttachedModuleId::Metadata,
+                metadata.handle().as_node_id().clone(),
+            );
+            roles.insert(ModuleId::Metadata, metadata_config.roles);
         };
 
         // Royalties
         if let Some(royalty_config) = self.royalty_config {
-            roles.insert(ObjectModuleId::Royalty, royalty_config.roles);
+            roles.insert(ModuleId::Royalty, royalty_config.roles);
             let royalty = Royalty::new(royalty_config.init);
-            modules.insert(ModuleId::Royalty, royalty.handle().as_node_id().clone());
+            modules.insert(
+                AttachedModuleId::Royalty,
+                royalty.handle().as_node_id().clone(),
+            );
         }
 
         // Role Assignment
         {
             let role_assignment = RoleAssignment::new(self.owner_role, roles);
             modules.insert(
-                ModuleId::RoleAssignment,
+                AttachedModuleId::RoleAssignment,
                 role_assignment.handle().as_node_id().clone(),
             );
         }
@@ -415,27 +421,27 @@ impl<O: HasStub> HasMetadata for Global<O> {
 }
 
 impl<O: HasStub> HasRoleAssignment for Global<O> {
-    fn set_owner_role<A: Into<AccessRule>>(&self, rule: A) {
+    fn set_owner_role<A: Into<Rule>>(&self, rule: A) {
         self.role_assignment().set_owner_role(rule)
     }
 
-    fn lock_owner_role<A: Into<AccessRule>>(&self) {
+    fn lock_owner_role<A: Into<Rule>>(&self) {
         self.role_assignment().lock_owner_role()
     }
 
-    fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+    fn set_role<A: Into<Rule>>(&self, name: &str, rule: A) {
         self.role_assignment().set_role(name, rule);
     }
 
-    fn get_role(&self, name: &str) -> Option<AccessRule> {
+    fn get_role(&self, name: &str) -> Option<Rule> {
         self.role_assignment().get_role(name)
     }
 
-    fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+    fn set_metadata_role<A: Into<Rule>>(&self, name: &str, rule: A) {
         self.role_assignment().set_metadata_role(name, rule);
     }
 
-    fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+    fn set_component_royalties_role<A: Into<Rule>>(&self, name: &str, rule: A) {
         self.role_assignment()
             .set_component_royalties_role(name, rule);
     }

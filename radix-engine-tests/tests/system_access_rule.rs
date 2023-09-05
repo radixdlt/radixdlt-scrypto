@@ -5,7 +5,7 @@ use radix_engine::system::node_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ObjectModuleId};
+use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -14,13 +14,13 @@ use transaction::builder::ManifestBuilder;
 fn creating_an_owner_access_rule_which_is_beyond_the_depth_limit_should_error() {
     let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
-        AccessRuleCreation::OwnerCreation,
+        RuleCreation::OwnerCreation,
         access_rule,
         |e| {
             matches!(
                 e,
                 RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                    RoleAssignmentError::ExceededMaxAccessRuleDepth
+                    RoleAssignmentError::ExceededMaxRuleDepth
                 ))
             )
         },
@@ -31,13 +31,13 @@ fn creating_an_owner_access_rule_which_is_beyond_the_depth_limit_should_error() 
 fn creating_a_regular_access_rule_which_is_beyond_the_depth_limit_should_error() {
     let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
-        AccessRuleCreation::RoleCreation,
+        RuleCreation::RoleCreation,
         access_rule,
         |e| {
             matches!(
                 e,
                 RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                    RoleAssignmentError::ExceededMaxAccessRuleDepth
+                    RoleAssignmentError::ExceededMaxRuleDepth
                 ))
             )
         },
@@ -48,13 +48,13 @@ fn creating_a_regular_access_rule_which_is_beyond_the_depth_limit_should_error()
 fn setting_an_owner_access_rule_which_is_beyond_the_depth_limit_should_error() {
     let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
-        AccessRuleCreation::OwnerSet,
+        RuleCreation::OwnerSet,
         access_rule,
         |e| {
             matches!(
                 e,
                 RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                    RoleAssignmentError::ExceededMaxAccessRuleDepth
+                    RoleAssignmentError::ExceededMaxRuleDepth
                 ))
             )
         },
@@ -65,13 +65,13 @@ fn setting_an_owner_access_rule_which_is_beyond_the_depth_limit_should_error() {
 fn setting_a_role_access_rule_which_is_beyond_the_depth_limit_should_error() {
     let access_rule = create_access_rule_of_depth(MAX_ACCESS_RULE_DEPTH + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
-        AccessRuleCreation::RoleSet,
+        RuleCreation::RoleSet,
         access_rule,
         |e| {
             matches!(
                 e,
                 RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                    RoleAssignmentError::ExceededMaxAccessRuleDepth
+                    RoleAssignmentError::ExceededMaxRuleDepth
                 ))
             )
         },
@@ -82,13 +82,13 @@ fn setting_a_role_access_rule_which_is_beyond_the_depth_limit_should_error() {
 fn creating_an_owner_access_rule_which_is_beyond_the_length_limit_should_error() {
     let access_rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
-        AccessRuleCreation::OwnerCreation,
+        RuleCreation::OwnerCreation,
         access_rule,
         |e| {
             matches!(
                 e,
                 RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                    RoleAssignmentError::ExceededMaxAccessRuleNodes
+                    RoleAssignmentError::ExceededMaxRuleNodes
                 ))
             )
         },
@@ -99,13 +99,13 @@ fn creating_an_owner_access_rule_which_is_beyond_the_length_limit_should_error()
 fn creating_a_regular_access_rule_which_is_beyond_the_length_limit_should_error() {
     let access_rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
-        AccessRuleCreation::RoleCreation,
+        RuleCreation::RoleCreation,
         access_rule,
         |e| {
             matches!(
                 e,
                 RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                    RoleAssignmentError::ExceededMaxAccessRuleNodes
+                    RoleAssignmentError::ExceededMaxRuleNodes
                 ))
             )
         },
@@ -116,13 +116,13 @@ fn creating_a_regular_access_rule_which_is_beyond_the_length_limit_should_error(
 fn setting_an_owner_access_rule_which_is_beyond_the_length_limit_should_error() {
     let access_rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
-        AccessRuleCreation::OwnerSet,
+        RuleCreation::OwnerSet,
         access_rule,
         |e| {
             matches!(
                 e,
                 RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                    RoleAssignmentError::ExceededMaxAccessRuleNodes
+                    RoleAssignmentError::ExceededMaxRuleNodes
                 ))
             )
         },
@@ -133,38 +133,38 @@ fn setting_an_owner_access_rule_which_is_beyond_the_length_limit_should_error() 
 fn setting_a_role_access_rule_which_is_beyond_the_length_limit_should_error() {
     let access_rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
-        AccessRuleCreation::RoleSet,
+        RuleCreation::RoleSet,
         access_rule,
         |e| {
             matches!(
                 e,
                 RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                    RoleAssignmentError::ExceededMaxAccessRuleNodes
+                    RoleAssignmentError::ExceededMaxRuleNodes
                 ))
             )
         },
     );
 }
 
-fn create_access_rule_of_depth(depth: usize) -> AccessRule {
-    let mut rule_node = AccessRuleNode::AnyOf(vec![]);
+fn create_access_rule_of_depth(depth: usize) -> Rule {
+    let mut rule_node = RuleNode::AnyOf(vec![]);
     for _ in 0..depth {
-        rule_node = AccessRuleNode::AnyOf(vec![rule_node]);
+        rule_node = RuleNode::AnyOf(vec![rule_node]);
     }
 
-    AccessRule::Protected(rule_node)
+    Rule::Protected(rule_node)
 }
 
-fn create_access_rule_of_length(size: usize) -> AccessRule {
+fn create_access_rule_of_length(size: usize) -> Rule {
     let mut nodes = vec![];
     for _ in 0..size {
-        nodes.push(AccessRuleNode::AnyOf(vec![]));
+        nodes.push(RuleNode::AnyOf(vec![]));
     }
-    AccessRule::Protected(AccessRuleNode::AllOf(nodes))
+    Rule::Protected(RuleNode::AllOf(nodes))
 }
 
 #[derive(Copy, Clone)]
-enum AccessRuleCreation {
+enum RuleCreation {
     OwnerCreation,
     RoleCreation,
     OwnerSet,
@@ -172,8 +172,8 @@ enum AccessRuleCreation {
 }
 
 fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
-    access_rule_creation: AccessRuleCreation,
-    access_rule: AccessRule,
+    access_rule_creation: RuleCreation,
+    access_rule: Rule,
     check_result: F,
 ) where
     F: Fn(&RuntimeError) -> bool,
@@ -182,7 +182,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
     const BLUEPRINT_NAME: &str = "MyBlueprint";
     const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
     #[derive(Clone)]
-    struct TestInvoke(AccessRuleCreation, AccessRule);
+    struct TestInvoke(RuleCreation, Rule);
     impl VmInvoke for TestInvoke {
         fn invoke<Y>(
             &mut self,
@@ -195,32 +195,32 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
         {
             match export_name {
                 "create_access_rule" => match self.0 {
-                    AccessRuleCreation::OwnerCreation => {
+                    RuleCreation::OwnerCreation => {
                         RoleAssignment::create(OwnerRole::Fixed(self.1.clone()), indexmap!(), api)?;
                     }
-                    AccessRuleCreation::RoleCreation => {
+                    RuleCreation::RoleCreation => {
                         RoleAssignment::create(
                             OwnerRole::None,
-                            indexmap!(ObjectModuleId::Main => roles2!("test" => self.1.clone();)),
+                            indexmap!(ModuleId::Main => roles2!("test" => self.1.clone();)),
                             api,
                         )?;
                     }
-                    AccessRuleCreation::OwnerSet => {
+                    RuleCreation::OwnerSet => {
                         let role_assignment = RoleAssignment::create(
-                            OwnerRole::Updatable(AccessRule::AllowAll),
+                            OwnerRole::Updatable(Rule::AllowAll),
                             indexmap!(),
                             api,
                         )?;
                         role_assignment.set_owner_role(self.1.clone(), api)?;
                     }
-                    AccessRuleCreation::RoleSet => {
+                    RuleCreation::RoleSet => {
                         let role_assignment = RoleAssignment::create(
-                            OwnerRole::Updatable(AccessRule::AllowAll),
+                            OwnerRole::Updatable(Rule::AllowAll),
                             indexmap!(),
                             api,
                         )?;
                         role_assignment.set_role(
-                            ObjectModuleId::Main,
+                            ModuleId::Main,
                             RoleKey::new("test"),
                             self.1.clone(),
                             api,

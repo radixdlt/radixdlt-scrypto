@@ -35,7 +35,7 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::{
     ClientKeyValueStoreApi, KeyValueStoreDataSchema,
 };
-use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -94,7 +94,7 @@ impl TryFrom<ActorRefHandle> for ActorObjectRef {
 
 enum EmitterActor {
     CurrentActor,
-    AsObject(NodeId, Option<ModuleId>),
+    AsObject(NodeId, Option<AttachedModuleId>),
 }
 
 impl<'a, Y, V> SystemService<'a, Y, V>
@@ -637,7 +637,7 @@ where
     pub fn get_blueprint_info(
         &mut self,
         node_id: &NodeId,
-        module_id: Option<ModuleId>,
+        module_id: Option<AttachedModuleId>,
     ) -> Result<BlueprintInfo, RuntimeError> {
         let info = match module_id {
             None => self.get_object_info(node_id)?.blueprint_info,
@@ -693,7 +693,7 @@ where
     fn get_actor_object_id(
         &mut self,
         actor_object_type: ActorStateRef,
-    ) -> Result<(NodeId, Option<ModuleId>), RuntimeError> {
+    ) -> Result<(NodeId, Option<AttachedModuleId>), RuntimeError> {
         let actor = self.current_actor()?;
         let object_id = actor
             .get_object_id()
@@ -762,7 +762,7 @@ where
                     let base = match module_id {
                         None => MAIN_BASE_PARTITION,
                         Some(module_id) => {
-                            let object_module: ObjectModuleId = module_id.into();
+                            let object_module: ModuleId = module_id.into();
                             object_module.base_partition_num()
                         }
                     };
@@ -777,7 +777,15 @@ where
     fn get_actor_info(
         &mut self,
         actor_object_type: ActorStateRef,
-    ) -> Result<(NodeId, Option<ModuleId>, BlueprintInterface, BlueprintInfo), RuntimeError> {
+    ) -> Result<
+        (
+            NodeId,
+            Option<AttachedModuleId>,
+            BlueprintInterface,
+            BlueprintInfo,
+        ),
+        RuntimeError,
+    > {
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
         let blueprint_info = self.get_blueprint_info(&node_id, module_id)?;
         let blueprint_interface =
@@ -834,7 +842,7 @@ where
                 let base = match module_id {
                     None => MAIN_BASE_PARTITION,
                     Some(module_id) => {
-                        let object_module: ObjectModuleId = module_id.into();
+                        let object_module: ModuleId = module_id.into();
                         object_module.base_partition_num()
                     }
                 };
@@ -851,7 +859,7 @@ where
     fn globalize_with_address_internal(
         &mut self,
         node_id: NodeId,
-        modules: IndexMap<ModuleId, NodeId>,
+        modules: IndexMap<AttachedModuleId, NodeId>,
         global_address_reservation: GlobalAddressReservation,
     ) -> Result<GlobalAddress, RuntimeError> {
         // Check global address reservation
@@ -907,14 +915,14 @@ where
         }
 
         // Check for required modules
-        if !modules.contains_key(&ModuleId::RoleAssignment) {
+        if !modules.contains_key(&AttachedModuleId::RoleAssignment) {
             return Err(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::RoleAssignment,
+                ModuleId::RoleAssignment,
             )));
         }
-        if !modules.contains_key(&ModuleId::Metadata) {
+        if !modules.contains_key(&AttachedModuleId::Metadata) {
             return Err(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::Metadata,
+                ModuleId::Metadata,
             )));
         }
 
@@ -923,8 +931,8 @@ where
             .system
             .modules
             .add_replacement(
-                (node_id, ObjectModuleId::Main),
-                (*global_address.as_node_id(), ObjectModuleId::Main),
+                (node_id, ModuleId::Main),
+                (*global_address.as_node_id(), ModuleId::Main),
             );
 
         // Read the type info
@@ -999,7 +1007,9 @@ where
         // Move other modules, and drop
         for (module_id, node_id) in modules {
             match module_id {
-                ModuleId::RoleAssignment | ModuleId::Metadata | ModuleId::Royalty => {
+                AttachedModuleId::RoleAssignment
+                | AttachedModuleId::Metadata
+                | AttachedModuleId::Royalty => {
                     let blueprint_id = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
                     let expected_blueprint = module_id.static_blueprint();
                     if !blueprint_id.eq(&expected_blueprint) {
@@ -1016,7 +1026,7 @@ where
                         .system
                         .modules
                         .add_replacement(
-                            (node_id, ObjectModuleId::Main),
+                            (node_id, ModuleId::Main),
                             (*global_address.as_node_id(), module_id.into()),
                         );
 
@@ -1024,8 +1034,8 @@ where
                     let interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
                     let num_logical_partitions = interface.state.num_logical_partitions();
 
-                    let object_module_id: ObjectModuleId = module_id.into();
-                    let module_base_partition = object_module_id.base_partition_num();
+                    let module_id: ModuleId = module_id.into();
+                    let module_base_partition = module_id.base_partition_num();
                     for offset in 0u8..num_logical_partitions {
                         let src = MAIN_BASE_PARTITION
                             .at_offset(PartitionOffset(offset))
@@ -1071,7 +1081,7 @@ where
     pub fn is_feature_enabled(
         &mut self,
         node_id: &NodeId,
-        module_id: Option<ModuleId>,
+        module_id: Option<AttachedModuleId>,
         feature: &str,
     ) -> Result<bool, RuntimeError> {
         match module_id {
@@ -1259,7 +1269,7 @@ where
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: IndexMap<ModuleId, NodeId>,
+        modules: IndexMap<AttachedModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, RuntimeError> {
         // TODO: optimize by skipping address allocation
@@ -1282,7 +1292,7 @@ where
     fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         node_id: NodeId,
-        modules: IndexMap<ModuleId, NodeId>,
+        modules: IndexMap<AttachedModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: IndexMap<u8, FieldValue>,
@@ -1334,7 +1344,7 @@ where
         let auth_actor_info = SystemModuleMixer::on_call_method(
             self,
             receiver,
-            ObjectModuleId::Main,
+            ModuleId::Main,
             false,
             method_name,
             &args,
@@ -1375,7 +1385,7 @@ where
         let auth_actor_info = SystemModuleMixer::on_call_method(
             self,
             receiver,
-            ObjectModuleId::Main,
+            ModuleId::Main,
             true,
             method_name,
             &args,
@@ -1406,7 +1416,7 @@ where
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: ModuleId,
+        module_id: AttachedModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -1414,15 +1424,15 @@ where
         let object_info = self.get_object_info(&receiver)?;
         match &object_info.object_type {
             ObjectType::Owned => {
-                return Err(RuntimeError::SystemError(
-                    SystemError::ObjectModuleDoesNotExist(module_id),
-                ));
+                return Err(RuntimeError::SystemError(SystemError::ModuleDoesNotExist(
+                    module_id,
+                )));
             }
             ObjectType::Global { modules } => {
                 if !modules.contains_key(&module_id) {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectModuleDoesNotExist(module_id),
-                    ));
+                    return Err(RuntimeError::SystemError(SystemError::ModuleDoesNotExist(
+                        module_id,
+                    )));
                 }
             }
         }

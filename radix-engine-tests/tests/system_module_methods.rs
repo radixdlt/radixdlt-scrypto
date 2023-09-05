@@ -8,7 +8,9 @@ use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, ModuleId, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{
+    AttachedModuleId, ClientApi, FieldValue, LockFlags, ACTOR_STATE_SELF,
+};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -34,7 +36,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             let node_id = input.references()[0];
             let _ = api.call_module_method(
                 &node_id,
-                ModuleId::Royalty,
+                AttachedModuleId::Royalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
                 scrypto_encode(&ComponentRoyaltySetInput {
                     method: "some_method".to_string(),
@@ -78,7 +80,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Royalty))
+            RuntimeError::SystemError(SystemError::ModuleDoesNotExist(AttachedModuleId::Royalty))
         )
     });
 }
@@ -116,7 +118,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap![])?;
                     let _ = api.call_module_method(
                         &node_id,
-                        ModuleId::Metadata,
+                        AttachedModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: "key".to_string(),
@@ -155,7 +157,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Metadata))
+            RuntimeError::SystemError(SystemError::ModuleDoesNotExist(AttachedModuleId::Metadata))
         )
     });
 }
@@ -202,8 +204,8 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                         let address = api.globalize(
                             parent,
                             indexmap!(
-                                ModuleId::Metadata => metadata.0,
-                                ModuleId::RoleAssignment => role_assignment.0.0,
+                                AttachedModuleId::Metadata => metadata.0,
+                                AttachedModuleId::RoleAssignment => role_assignment.0.0,
                             ),
                             None,
                         )?;
@@ -223,7 +225,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
 
                     let _ = api.call_module_method(
                         &child.unwrap().0,
-                        ModuleId::Metadata,
+                        AttachedModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: "key".to_string(),
@@ -268,7 +270,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Metadata))
+            RuntimeError::SystemError(SystemError::ModuleDoesNotExist(AttachedModuleId::Metadata))
         )
     });
 }
