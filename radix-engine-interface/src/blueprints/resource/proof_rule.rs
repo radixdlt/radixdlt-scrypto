@@ -128,6 +128,8 @@ pub enum RuleNode {
     AllOf(Vec<RuleNode>),
 }
 
+pub type AccessRuleNode = RuleNode;
+
 impl Describe<ScryptoCustomTypeKind> for RuleNode {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_NODE_TYPE);
@@ -230,6 +232,8 @@ pub enum Rule {
     DenyAll,
     Protected(RuleNode),
 }
+
+pub type AccessRule = Rule;
 
 impl Describe<ScryptoCustomTypeKind> for Rule {
     const TYPE_ID: RustTypeId =

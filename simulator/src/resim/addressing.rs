@@ -3,7 +3,7 @@ use radix_engine::types::{
     PackageAddress, ResourceAddress,
 };
 use radix_engine_interface::{
-    blueprints::resource::{require, Rule, ParseNonFungibleGlobalIdError},
+    blueprints::resource::{require, ParseNonFungibleGlobalIdError, Rule},
     rule,
 };
 use sbor::rust::fmt;
