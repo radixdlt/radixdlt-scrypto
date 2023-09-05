@@ -1,5 +1,5 @@
 use radix_engine::errors::RejectionReason;
-use radix_engine::track::{BatchStateUpdate, StateUpdate};
+use radix_engine::track::{BatchPartitionUpdate, NodeStateUpdates, PartitionStateUpdates};
 use radix_engine::transaction::{CostingParameters, ExecutionConfig};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
@@ -56,19 +56,27 @@ fn test_transaction_replay_protection() {
 
     // 4. Advance to the max epoch (which triggers epoch update)
     let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
-    assert_eq!(
-        receipt
-            .expect_commit_success()
-            .state_updates
-            .updates
-            .iter()
-            .filter(|update| matches!(
-                update,
-                StateUpdate::Batch(BatchStateUpdate::DeletePartition(..))
-            ))
-            .count(),
-        1
-    );
+
+    // assert that precisely 1 partition was deleted:
+    let partition_resets = receipt
+        .expect_commit_success()
+        .state_updates
+        .by_node
+        .values()
+        .flat_map(|node_updates| match node_updates {
+            NodeStateUpdates::Delta { by_partition } => by_partition.values(),
+        })
+        .filter_map(|partition_updates| match partition_updates {
+            PartitionStateUpdates::Delta { .. } => None,
+            PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+                new_substate_values,
+            }) => Some(new_substate_values),
+        })
+        .collect::<Vec<_>>();
+    // ... which means, there was 1x `BatchPartitionUpdate::Reset`...
+    assert_eq!(partition_resets.len(), 1);
+    // ... and it had empty new contents.
+    assert!(partition_resets[0].is_empty());
 
     // 5. Run the transaction the 3rd time (with epoch range check disabled)
     // Note that in production, this won't be possible.

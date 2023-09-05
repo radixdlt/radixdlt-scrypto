@@ -2,7 +2,8 @@ use crate::system::system_db_reader::*;
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
-    ReadOnly, SingleSubstateUpdate, StateUpdate, StateUpdates, TrackedNode, TrackedSubstateValue,
+    BatchPartitionUpdate, NodeStateUpdates, PartitionStateUpdates, ReadOnly, StateUpdates,
+    TrackedNode, TrackedSubstateValue,
 };
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
@@ -196,18 +197,23 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     /// were *individually* updated in the given [`StateUpdates`] (i.e. ignoring substates affected
     /// as part of a batch, e.g. during a partition deletion).
     pub fn add_for_all_individually_updated(&mut self, updates: &StateUpdates) {
-        for update in &updates.updates {
-            match update {
-                StateUpdate::Single(single) => {
-                    let SingleSubstateUpdate {
-                        node_id,
-                        partition_num,
-                        substate_key,
-                        ..
-                    } = single;
-                    self.add_substate_structure(node_id, partition_num, substate_key);
+        for (node_id, node_state_updates) in &updates.by_node {
+            match node_state_updates {
+                NodeStateUpdates::Delta { by_partition } => {
+                    for (partition_num, partition_state_updates) in by_partition {
+                        let substate_keys = match partition_state_updates {
+                            PartitionStateUpdates::Delta { by_substate } => {
+                                by_substate.keys().collect::<Vec<_>>()
+                            }
+                            PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+                                new_substate_values,
+                            }) => new_substate_values.keys().collect::<Vec<_>>(),
+                        };
+                        for substate_key in substate_keys {
+                            self.add_substate_structure(node_id, partition_num, substate_key);
+                        }
+                    }
                 }
-                StateUpdate::Batch(_) => {}
             }
         }
     }

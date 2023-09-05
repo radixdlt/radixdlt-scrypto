@@ -12,7 +12,7 @@ use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
 use radix_engine::system::type_info::TypeInfoSubstate;
-use radix_engine::track::{SingleSubstateUpdate, StateUpdate};
+use radix_engine::track::LegacyStateUpdates;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
     ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
@@ -2468,35 +2468,24 @@ pub fn validate_notarized_transaction<'a>(
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
-    let state_updates = &commit_result.state_updates.updates;
-    for update in state_updates.into_iter() {
-        match update {
-            StateUpdate::Single(single) => {
-                let SingleSubstateUpdate {
-                    node_id,
-                    partition_num,
-                    substate_key,
-                    update,
-                } = single;
-                let typed_substate_key = to_typed_substate_key(
-                    node_id.entity_type().unwrap(),
-                    *partition_num,
-                    substate_key,
-                )
-                .expect("Substate key should be typeable");
-                if !typed_substate_key.value_is_mappable() {
-                    continue;
-                }
-                match update {
-                    DatabaseUpdate::Set(raw_value) => {
-                        // Check that typed value mapping works
-                        to_typed_substate_value(&typed_substate_key, raw_value)
-                            .expect("Substate value should be typeable");
-                    }
-                    DatabaseUpdate::Delete => {}
-                }
+    let system_updates =
+        LegacyStateUpdates::from(commit_result.state_updates.clone()).system_updates;
+    for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
+        for (substate_key, database_update) in partition_updates.into_iter() {
+            let typed_substate_key =
+                to_typed_substate_key(node_id.entity_type().unwrap(), partition_num, &substate_key)
+                    .expect("Substate key should be typeable");
+            if !typed_substate_key.value_is_mappable() {
+                continue;
             }
-            StateUpdate::Batch(_) => {}
+            match database_update {
+                DatabaseUpdate::Set(raw_value) => {
+                    // Check that typed value mapping works
+                    to_typed_substate_value(&typed_substate_key, &raw_value)
+                        .expect("Substate value should be typeable");
+                }
+                DatabaseUpdate::Delete => {}
+            }
         }
     }
 }

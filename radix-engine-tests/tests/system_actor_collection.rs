@@ -3,7 +3,7 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::track::{BatchStateUpdate, SingleSubstateUpdate, StateUpdate};
+use radix_engine::track::LegacyStateUpdates;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::{ClientApi, LockFlags, ModuleId, ACTOR_STATE_SELF};
@@ -87,18 +87,14 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
 
     // Assert
     let result = receipt.expect_commit_success();
-    for update in &result.state_updates.updates {
-        match update {
-            StateUpdate::Single(SingleSubstateUpdate {
-                node_id, update, ..
-            }) => {
-                if matches!(update, DatabaseUpdate::Set(..))
-                    && node_id.eq(component_address.as_node_id())
-                {
-                    panic!("No database writes to the component should have occurred");
-                }
+    let system_updates = LegacyStateUpdates::from(result.state_updates.clone()).system_updates;
+    for ((node_id, _partition_num), updates) in system_updates {
+        for (_key, update) in updates {
+            if matches!(update, DatabaseUpdate::Set(..))
+                && node_id.eq(component_address.as_node_id())
+            {
+                panic!("No database writes to the component should have occurred");
             }
-            StateUpdate::Batch(BatchStateUpdate::DeletePartition(..)) => {}
         }
     }
 }

@@ -3,10 +3,13 @@ use crate::track::interface::{
     CommitableSubstateStore, IOAccess, NodeSubstates, TrackedSubstateInfo,
 };
 use crate::track::utils::OverlayingResultIterator;
+use crate::track::LegacyStateUpdates;
 use crate::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_engine_store_interface::interface::{DatabaseUpdates, DbPartitionKey};
+use radix_engine_store_interface::interface::{
+    DatabaseUpdates, DbPartitionKey, DbSubstateValue, PartitionUpdates,
+};
 use radix_engine_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DatabaseUpdate, DbSortKey, PartitionEntry, SubstateDatabase},
@@ -17,96 +20,155 @@ use sbor::rust::mem;
 
 use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, StoreCommitInfo};
 
-/// A captured sequence of [`StateUpdate`]s to be applied in particular order.
+/// A tree-like description of all updates that happened to a stored state, to be included as a part
+/// of a transaction receipt.
+/// This structure is indexed (i.e. uses [`IndexMap`]s where [`Vec`]s could be used) for convenience
+/// and performance, since both the source (i.e. Track) and the sink (i.e. Database and API) operate
+/// on indexed structures too.
+/// This structure maintains partial information on the order of operations (please see individual
+/// fields for details), since the end users care about it. Please note that this means multiple
+/// instances of [`StateUpdates`] can represent the same transform of state store (i.e. differing
+/// only by order of some operations), and hence it is not 100% "canonical form".
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct StateUpdates {
-    pub updates: Vec<StateUpdate>,
+    /// Indexed Node-level updates, captured in the order of first update operation to a Node.
+    pub by_node: IndexMap<NodeId, NodeStateUpdates>,
 }
 
 impl StateUpdates {
-    /// Creates an instance from the previously used representation, consisting of:
-    /// - partitions to be entirely deleted (applied first),
-    /// - individual substate changes, indexed by partition and substate key.
-    pub fn from_legacy_representation(
-        partition_deletions: IndexSet<(NodeId, PartitionNumber)>,
-        system_updates: IndexMap<(NodeId, PartitionNumber), IndexMap<SubstateKey, DatabaseUpdate>>,
-    ) -> Self {
-        Self {
-            updates: partition_deletions
-                .into_iter()
-                .map(|(node_id, partition_num)| {
-                    StateUpdate::Batch(BatchStateUpdate::DeletePartition(node_id, partition_num))
-                })
-                .chain(system_updates.into_iter().flat_map(
-                    |((node_id, partition_num), by_substate_key)| {
-                        by_substate_key
-                            .into_iter()
-                            .map(move |(substate_key, update)| {
-                                StateUpdate::Single(SingleSubstateUpdate {
-                                    node_id: node_id.clone(),
-                                    partition_num: partition_num.clone(),
-                                    substate_key,
-                                    update,
-                                })
-                            })
-                    },
-                ))
-                .collect(),
+    /// Starts a Node-level update.
+    pub fn of_node(&mut self, node_id: NodeId) -> &mut NodeStateUpdates {
+        self.by_node
+            .entry(node_id)
+            .or_insert_with(|| NodeStateUpdates::Delta {
+                by_partition: index_map_new(),
+            })
+    }
+}
+
+/// A description of all updates that happened to a state of a single Node.
+/// Note: currently, we do not support any Node-wide changes (e.g. deleting entire Node); however,
+/// we use an enum for potential future development.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum NodeStateUpdates {
+    /// A "delta" update to a Node, touching only selected Partitions.
+    /// Contains indexed Partition-level updates, captured in the order of first update operation to
+    /// a Partition.
+    Delta {
+        by_partition: IndexMap<PartitionNumber, PartitionStateUpdates>,
+    },
+}
+
+impl NodeStateUpdates {
+    /// Starts a Partition-level update.
+    pub fn of_partition(&mut self, partition_num: PartitionNumber) -> &mut PartitionStateUpdates {
+        match self {
+            NodeStateUpdates::Delta { by_partition } => by_partition
+                .entry(partition_num)
+                .or_insert_with(|| PartitionStateUpdates::Delta {
+                    by_substate: index_map_new(),
+                }),
         }
     }
+}
 
+/// A description of all updates that happened to a state of a single Partition.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum PartitionStateUpdates {
+    /// A "delta" update to a Partition, touching only selected Substates.
+    /// Contains indexed Substate-level updates, captured in the order of first update operation to
+    /// a Substate.
+    Delta {
+        by_substate: IndexMap<SubstateKey, DatabaseUpdate>,
+    },
+    /// A batch update.
+    Batch(BatchPartitionUpdate),
+}
+
+impl PartitionStateUpdates {
+    /// Resets the partition to an empty state.
+    pub fn delete(&mut self) {
+        *self = PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+            new_substate_values: index_map_new(),
+        });
+    }
+
+    /// Applies the given updates on top of the current updates to the partition.
+    pub fn update_substates(
+        &mut self,
+        updates: impl IntoIterator<Item = (SubstateKey, DatabaseUpdate)>,
+    ) {
+        match self {
+            PartitionStateUpdates::Delta { by_substate } => by_substate.extend(updates),
+            PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+                new_substate_values,
+            }) => {
+                for (substate_key, database_update) in updates {
+                    match database_update {
+                        DatabaseUpdate::Set(new_value) => {
+                            new_substate_values.insert(substate_key, new_value);
+                        }
+                        DatabaseUpdate::Delete => {
+                            let existed = new_substate_values.remove(&substate_key).is_some();
+                            if !existed {
+                                panic!("inconsistent update: delete of substate {:?} not existing in reset partition", substate_key);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// A description of a batch update affecting an entire Partition.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum BatchPartitionUpdate {
+    /// A reset, dropping all Substates of a partition and replacing them with a new set.
+    /// Contains indexed new Substate values, captured in the order of creation of a Substate.
+    Reset {
+        new_substate_values: IndexMap<SubstateKey, DbSubstateValue>,
+    },
+}
+
+impl StateUpdates {
     /// Uses the given [`DatabaseKeyMapper`] to express the contained [`StateUpdate`]s using
     /// database-level key encoding.
-    /// Note: Current implementation disregards all [`BatchStateUpdate`]s (namely: partition delete,
-    /// the only defined one - we are still missing support for this operation in database layer).
+    /// Note: We are still missing support for "delete partition" operation in database layer, so we
+    /// effectively let deleted partition live, assuming they are not touched again. For this
+    /// reason, this method panics if it detects a write to a partition that was deleted.
     pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> DatabaseUpdates {
         // TODO(after RCNet-v3.1): Expand the `DatabaseUpdates` definition in order to capture the
         // `partition_deletions` there as well (preferably using a "canonicalized" representation).
         let mut database_updates = DatabaseUpdates::default();
-        for update in &self.updates {
-            let update = match update {
-                StateUpdate::Single(update) => update,
-                StateUpdate::Batch(BatchStateUpdate::DeletePartition(..)) => continue,
-            };
-            let SingleSubstateUpdate {
-                node_id,
-                partition_num,
-                substate_key,
-                update,
-            } = update;
-            database_updates
-                .entry(M::to_db_partition_key(node_id, *partition_num))
-                .or_insert_with(|| index_map_new())
-                .insert(M::to_db_sort_key(substate_key), update.clone());
+        for (node_id, node_state_updates) in &self.by_node {
+            match node_state_updates {
+                NodeStateUpdates::Delta { by_partition } => {
+                    for (partition_num, partition_state_updates) in by_partition {
+                        match partition_state_updates {
+                            PartitionStateUpdates::Delta { by_substate } => {
+                                let partition_updates = database_updates
+                                    .entry(M::to_db_partition_key(node_id, *partition_num))
+                                    .or_insert_with(|| PartitionUpdates::default());
+                                for (substate_key, update) in by_substate {
+                                    partition_updates
+                                        .insert(M::to_db_sort_key(substate_key), update.clone());
+                                }
+                            }
+                            PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+                                new_substate_values,
+                            }) => {
+                                if !new_substate_values.is_empty() {
+                                    panic!("no support for writing to a deleted partition");
+                                }
+                            }
+                        };
+                    }
+                }
+            }
         }
         database_updates
     }
-}
-
-/// An act of changing a smaller or larger piece of state.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
-pub enum StateUpdate {
-    /// Change to a single substate.
-    Single(SingleSubstateUpdate),
-    /// Batch change.
-    Batch(BatchStateUpdate),
-}
-
-/// An individual substate change.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
-pub struct SingleSubstateUpdate {
-    pub node_id: NodeId,
-    pub partition_num: PartitionNumber,
-    pub substate_key: SubstateKey,
-    pub update: DatabaseUpdate,
-}
-
-/// A batch change, representing a (potentially large) number of [`SingleSubstateUpdate`]s in a more
-/// compact way (primarily for performance reasons).
-#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
-pub enum BatchStateUpdate {
-    /// A deletion of all substates within a specific partition.
-    DeletePartition(NodeId, PartitionNumber),
 }
 
 #[derive(Clone, Debug)]
@@ -392,7 +454,10 @@ pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
         }
     }
 
-    StateUpdates::from_legacy_representation(partition_deletions, system_updates)
+    StateUpdates::from(LegacyStateUpdates {
+        partition_deletions,
+        system_updates,
+    })
 }
 
 struct IterationCountedIter<'a, E> {

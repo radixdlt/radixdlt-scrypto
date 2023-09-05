@@ -20,7 +20,7 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::StateUpdates;
+use crate::track::{LegacyStateUpdates, NodeStateUpdates, StateUpdates};
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
@@ -217,19 +217,7 @@ impl FlashReceipt {
                 result.state_update_summary.new_components = new_components;
                 result.state_update_summary.new_resources = new_resources;
 
-                // A sanity check that the system receipt should not be conflicting with the flash receipt
-                let mut result_state_updates = result
-                    .state_updates
-                    .updates
-                    .drain(..)
-                    .collect::<IndexSet<_>>();
-                for update in self.state_updates.updates {
-                    let added = result_state_updates.insert(update);
-                    if !added {
-                        panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
-                    }
-                }
-                result.state_updates.updates = result_state_updates.into_iter().collect();
+                merge_asserting_no_overlap(&mut result.state_updates, self.state_updates);
 
                 let mut substate_system_structures = self.substate_system_structures;
                 for (node_id, by_partition_num) in
@@ -248,6 +236,37 @@ impl FlashReceipt {
                 result.system_structure.substate_system_structures = substate_system_structures;
             }
             _ => {}
+        }
+    }
+}
+
+/// Merges the given `source` into a `target`, asserting no overlap.
+/// This function is not a method on [`StateUpdates`], since it is only used here locally (called
+/// from a method describing itself as "a hack").
+/// Note: the system receipt should not be conflicting with the flash receipt, and this function
+/// will panic if this invariant is broken.
+fn merge_asserting_no_overlap(target: &mut StateUpdates, source: StateUpdates) {
+    for (node_id, source_node_state_updates) in source.by_node {
+        let target_node_state_updates =
+            target
+                .by_node
+                .entry(node_id)
+                .or_insert_with(|| NodeStateUpdates::Delta {
+                    by_partition: index_map_new(),
+                });
+        let target_by_partition = match target_node_state_updates {
+            NodeStateUpdates::Delta { by_partition } => by_partition,
+        };
+        match source_node_state_updates {
+            NodeStateUpdates::Delta { by_partition } => {
+                for (partition_num, partition_state_updates) in by_partition {
+                    let previous_target_partition_state_updates =
+                        target_by_partition.insert(partition_num, partition_state_updates);
+                    if previous_target_partition_state_updates.is_some() {
+                        panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
+                    }
+                }
+            }
         }
     }
 }
@@ -598,7 +617,10 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         }
     }
 
-    let state_updates = StateUpdates::from_legacy_representation(index_set_new(), system_updates);
+    let state_updates = StateUpdates::from(LegacyStateUpdates {
+        partition_deletions: index_set_new(),
+        system_updates,
+    });
     let flashed_db = FlashedSubstateDatabase {
         flash_updates: state_updates.create_database_updates::<SpreadPrefixKeyMapper>(),
     };
