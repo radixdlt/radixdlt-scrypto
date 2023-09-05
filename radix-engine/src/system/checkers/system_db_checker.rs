@@ -8,7 +8,7 @@ use crate::types::Condition;
 use radix_engine_common::prelude::{
     scrypto_decode, scrypto_encode, Hash, ScryptoValue, VersionedScryptoSchema,
 };
-use radix_engine_interface::api::{FieldIndex, ObjectModuleId};
+use radix_engine_interface::api::{FieldIndex, ModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintPayloadIdentifier, BlueprintType, KeyOrValue,
 };
@@ -28,7 +28,7 @@ pub enum SystemNodeType {
     Object {
         object_info: ObjectInfo,
         bp_definition: BlueprintDefinition,
-        expected_fields: BTreeSet<(ObjectModuleId, FieldIndex)>,
+        expected_fields: BTreeSet<(ModuleId, FieldIndex)>,
         excluded_fields: BTreeSet<FieldIndex>,
     },
     KeyValueStore,
@@ -310,7 +310,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                     for (field_index, field_schema) in fields.iter().enumerate() {
                         match &field_schema.condition {
                             Condition::Always => {
-                                expected_fields.insert((ObjectModuleId::Main, field_index as u8));
+                                expected_fields.insert((ModuleId::Main, field_index as u8));
                             }
                             Condition::IfFeature(feature) => {
                                 if object_info
@@ -318,8 +318,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     .features
                                     .contains(feature.as_str())
                                 {
-                                    expected_fields
-                                        .insert((ObjectModuleId::Main, field_index as u8));
+                                    expected_fields.insert((ModuleId::Main, field_index as u8));
                                 } else {
                                     excluded_fields.insert(field_index as u8);
                                 }
@@ -332,8 +331,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     .features
                                     .contains(feature.as_str())
                                 {
-                                    expected_fields
-                                        .insert((ObjectModuleId::Main, field_index as u8));
+                                    expected_fields.insert((ModuleId::Main, field_index as u8));
                                 } else {
                                     excluded_fields.insert(field_index as u8);
                                 }
@@ -353,10 +351,8 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 for (field_index, field_schema) in fields.iter().enumerate() {
                                     match &field_schema.condition {
                                         Condition::Always => {
-                                            let object_module_id: ObjectModuleId =
-                                                (*module_id).into();
-                                            expected_fields
-                                                .insert((object_module_id, field_index as u8));
+                                            let module_id: ModuleId = (*module_id).into();
+                                            expected_fields.insert((module_id, field_index as u8));
                                         }
                                         _ => {
                                             return Err(SystemNodeCheckError::FoundModuleWithConditionalFields);
@@ -543,7 +539,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 };
 
                                 expected_fields.remove(&(module_id, field_index));
-                                if module_id.eq(&ObjectModuleId::Main)
+                                if module_id.eq(&ModuleId::Main)
                                     && excluded_fields.contains(&field_index)
                                 {
                                     return Err(
@@ -571,7 +567,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
 
                                 match module_id {
-                                    ObjectModuleId::Main => self.application_checker.on_field(
+                                    ModuleId::Main => self.application_checker.on_field(
                                         object_info.blueprint_info.clone(),
                                         node_checker_state.node_id,
                                         field_index,
@@ -656,15 +652,13 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 };
 
                                 match module_id {
-                                    ObjectModuleId::Main => {
-                                        self.application_checker.on_collection_entry(
-                                            object_info.blueprint_info.clone(),
-                                            node_checker_state.node_id,
-                                            collection_index,
-                                            &key,
-                                            &value,
-                                        )
-                                    }
+                                    ModuleId::Main => self.application_checker.on_collection_entry(
+                                        object_info.blueprint_info.clone(),
+                                        node_checker_state.node_id,
+                                        collection_index,
+                                        &key,
+                                        &value,
+                                    ),
                                     _ => {}
                                 }
 
@@ -732,7 +726,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                             .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
 
                                         match module_id {
-                                            ObjectModuleId::Main => {
+                                            ModuleId::Main => {
                                                 self.application_checker.on_collection_entry(
                                                     object_info.blueprint_info.clone(),
                                                     node_checker_state.node_id,
@@ -816,15 +810,13 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                 };
 
                                 match module_id {
-                                    ObjectModuleId::Main => {
-                                        self.application_checker.on_collection_entry(
-                                            object_info.blueprint_info.clone(),
-                                            node_checker_state.node_id,
-                                            collection_index,
-                                            &key,
-                                            &value,
-                                        )
-                                    }
+                                    ModuleId::Main => self.application_checker.on_collection_entry(
+                                        object_info.blueprint_info.clone(),
+                                        node_checker_state.node_id,
+                                        collection_index,
+                                        &key,
+                                        &value,
+                                    ),
                                     _ => {}
                                 }
 

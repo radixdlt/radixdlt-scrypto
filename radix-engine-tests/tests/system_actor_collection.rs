@@ -3,9 +3,10 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
+use radix_engine::track::LegacyStateUpdates;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, LockFlags, ModuleId, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use scrypto_unit::*;
@@ -44,8 +45,8 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
                     api.globalize(
                         node_id,
                         indexmap!(
-                            ModuleId::Metadata => metadata.0,
-                            ModuleId::RoleAssignment => access_rules.0.0,
+                            AttachedModuleId::Metadata => metadata.0,
+                            AttachedModuleId::RoleAssignment => access_rules.0.0,
                         ),
                         None,
                     )?;
@@ -86,7 +87,8 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
 
     // Assert
     let result = receipt.expect_commit_success();
-    for ((node_id, _partition_num), updates) in &result.state_updates.system_updates {
+    let system_updates = result.state_updates.clone().into_legacy().system_updates;
+    for ((node_id, _partition_num), updates) in &system_updates {
         for (_key, update) in updates {
             if matches!(update, DatabaseUpdate::Set(..))
                 && node_id.eq(component_address.as_node_id())

@@ -14,7 +14,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::FieldValue;
-use radix_engine_interface::api::{ClientApi, GenericArgs, ModuleId, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{AttachedModuleId, ClientApi, GenericArgs, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 use radix_engine_interface::hooks::OnVirtualizeInput;
@@ -561,7 +561,7 @@ impl AccountBlueprint {
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
-    ) -> Result<IndexMap<ModuleId, Own>, RuntimeError>
+    ) -> Result<IndexMap<AttachedModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -569,8 +569,8 @@ impl AccountBlueprint {
 
         // No component royalties
         let modules = indexmap!(
-            ModuleId::RoleAssignment => role_assignment.0,
-            ModuleId::Metadata => metadata,
+            AttachedModuleId::RoleAssignment => role_assignment.0,
+            AttachedModuleId::Metadata => metadata,
         );
 
         Ok(modules)

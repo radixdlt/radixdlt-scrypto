@@ -23,7 +23,7 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -548,7 +548,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         reader
             .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                 address.as_node_id(),
-                ObjectModuleId::Metadata,
+                ModuleId::Metadata,
                 ObjectCollectionKey::KeyValue(
                     MetadataCollection::EntryKeyValue.collection_index(),
                     &key.to_string(),
@@ -563,7 +563,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let accumulator = reader
             .read_typed_object_field::<ComponentRoyaltyAccumulatorFieldPayload>(
                 component_address.as_node_id(),
-                ObjectModuleId::Royalty,
+                ModuleId::Royalty,
                 ComponentRoyaltyField::Accumulator.field_index(),
             )
             .unwrap()
@@ -572,7 +572,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let balance = reader
             .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
                 accumulator.royalty_vault.0.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 FungibleVaultField::Balance.field_index(),
             )
             .unwrap()
@@ -586,7 +586,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let accumulator = reader
             .read_typed_object_field::<PackageRoyaltyAccumulatorFieldPayload>(
                 package_address.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 PackageField::RoyaltyAccumulator.field_index(),
             )
             .ok()?
@@ -595,7 +595,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let balance = reader
             .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
                 accumulator.royalty_vault.0.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 FungibleVaultField::Balance.field_index(),
             )
             .unwrap()
@@ -651,7 +651,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         reader
             .collection_iter(
                 package_address.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 PackageCollection::SchemaKeyValue.collection_index(),
             )
             .unwrap()
@@ -672,7 +672,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         reader
             .collection_iter(
                 package_address.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
             )
             .unwrap()
@@ -735,7 +735,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let vault: Option<FungibleVaultBalanceFieldPayload> = reader
             .read_typed_object_field(
                 &vault_id,
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 FungibleVaultField::Balance.into(),
             )
             .ok();
@@ -751,7 +751,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let vault_balance: NonFungibleVaultBalanceFieldPayload = reader
             .read_typed_object_field(
                 &vault_id,
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 NonFungibleVaultField::Balance.into(),
             )
             .ok()?;
@@ -761,7 +761,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let iter: Vec<NonFungibleLocalId> = reader
             .collection_iter(
                 &vault_id,
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
             )
             .unwrap()
@@ -794,7 +794,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let payload = reader
             .read_object_collection_entry::<_, NonFungibleResourceManagerDataEntryPayload>(
                 resource.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 ObjectCollectionKey::KeyValue(
                     NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
                     &non_fungible_id,
@@ -877,7 +877,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let substate = reader
             .read_typed_object_field::<ValidatorStateFieldPayload>(
                 address.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 ValidatorField::State.field_index(),
             )
             .unwrap()
@@ -891,7 +891,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let substate = reader
             .read_typed_object_field::<ConsensusManagerCurrentValidatorSetFieldPayload>(
                 CONSENSUS_MANAGER.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 ConsensusManagerField::CurrentValidatorSet.field_index(),
             )
             .unwrap()
@@ -2015,7 +2015,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let mut substate = reader
             .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
                 CONSENSUS_MANAGER.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 ConsensusManagerField::State.field_index(),
             )
             .unwrap()
@@ -2027,7 +2027,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         writer
             .write_typed_object_field(
                 CONSENSUS_MANAGER.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 ConsensusManagerField::State.field_index(),
                 ConsensusManagerStateFieldPayload::from_content_source(substate),
             )
@@ -2170,7 +2170,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         reader
             .read_typed_object_field::<ConsensusManagerProposerMilliTimestampFieldPayload>(
                 CONSENSUS_MANAGER.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 ConsensusManagerField::ProposerMilliTimestamp.field_index(),
             )
             .unwrap()
@@ -2183,7 +2183,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         reader
             .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
                 CONSENSUS_MANAGER.as_node_id(),
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 ConsensusManagerField::State.field_index(),
             )
             .unwrap()
@@ -2211,7 +2211,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let (blueprint_id, name) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
                 let blueprint_id = match node_module {
-                    ObjectModuleId::Main => {
+                    ModuleId::Main => {
                         let reader = SystemDatabaseReader::new(self.substate_db());
                         let type_info = reader.get_type_info(node_id).unwrap();
                         match type_info {
@@ -2528,8 +2528,12 @@ pub fn validate_notarized_transaction<'a>(
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
-    let system_updates = &commit_result.state_updates.system_updates;
-    for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
+    let system_updates = commit_result
+        .state_updates
+        .clone()
+        .into_legacy()
+        .system_updates;
+    for ((node_id, partition_num), partition_updates) in (&system_updates).into_iter() {
         for (substate_key, database_update) in partition_updates.into_iter() {
             let typed_substate_key =
                 to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)

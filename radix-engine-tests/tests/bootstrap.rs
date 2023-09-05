@@ -6,6 +6,7 @@ use radix_engine::system::checkers::{
 };
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine::track::LegacyStateUpdates;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -180,7 +181,8 @@ fn assert_complete_system_structure(result: &CommitResult) {
         event_system_structures,
     } = &result.system_structure;
 
-    for ((node_id, partition_num), by_substate_key) in &result.state_updates.system_updates {
+    let system_updates = result.state_updates.clone().into_legacy().system_updates;
+    for ((node_id, partition_num), by_substate_key) in &system_updates {
         for substate_key in by_substate_key.keys() {
             let structure = substate_system_structures
                 .get(node_id)
@@ -281,7 +283,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let entry = reader
         .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
             resource_address.as_node_id(),
-            ObjectModuleId::Metadata,
+            ModuleId::Metadata,
             ObjectCollectionKey::KeyValue(
                 MetadataCollection::EntryKeyValue.collection_index(),
                 &"symbol".to_string(),
@@ -442,7 +444,7 @@ fn test_genesis_stake_allocation() {
             let validator_url_entry = reader
                 .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                     &new_validators[index].as_node_id(),
-                    ObjectModuleId::Metadata,
+                    ModuleId::Metadata,
                     ObjectCollectionKey::KeyValue(
                         MetadataCollection::EntryKeyValue.collection_index(),
                         &"url".to_string(),
@@ -487,7 +489,7 @@ fn test_genesis_time() {
     let timestamp = reader
         .read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
             CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
+            ModuleId::Main,
             ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
         )
         .unwrap()

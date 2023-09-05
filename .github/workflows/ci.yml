@@ -160,6 +160,21 @@ jobs:
       run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/everything
 
+  scrypto-stubs:
+    name: Check Scrypto Stubs
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - run: ./check_stubs.sh
+
   radix-engine-build:
     name: Run Radix Engine build (RocksDB)
     runs-on: ${{ matrix.os }}
