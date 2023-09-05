@@ -1,9 +1,12 @@
+use crate::blueprints::component::*;
 use crate::blueprints::macros::*;
 use crate::blueprints::resource::*;
 use radix_engine_common::data::manifest::model::*;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
 use radix_engine_common::*;
+
+define_type_info_marker!(Some(POOL_PACKAGE), OneResourcePool);
 
 define_invocation! {
     blueprint_name: OneResourcePool,
@@ -14,7 +17,7 @@ define_invocation! {
         resource_address: ResourceAddress,
         address_reservation: Option<GlobalAddressReservation>
     },
-    output: type ComponentAddress,
+    output: type Global<OneResourcePoolObjectTypeInfo>,
     manifest_input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,

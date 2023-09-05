@@ -483,6 +483,7 @@ impl ConsensusManagerBlueprint {
                 schema: consensus_manager_schema,
                 state,
                 events: event_schema,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },

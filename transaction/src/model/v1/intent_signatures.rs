@@ -7,7 +7,7 @@ use crate::internal_prelude::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
 pub enum SignatureWithPublicKeyV1 {
     Secp256k1 {
         signature: Secp256k1Signature,

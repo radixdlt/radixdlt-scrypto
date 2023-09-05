@@ -313,7 +313,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
 }
 
 #[test]
-fn local_type_index_with_misleading_name_fails() {
+fn local_type_id_with_misleading_name_fails() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 

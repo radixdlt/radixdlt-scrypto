@@ -4,7 +4,7 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreGenericArgs;
+use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, LockFlags, ACTOR_REF_AUTH_ZONE, ACTOR_STATE_SELF,
 };
@@ -156,10 +156,12 @@ fn cannot_write_reference_in_kv_store() {
         {
             match export_name {
                 "kv_store" => {
-                    let kv_store = api
-                        .key_value_store_new(KeyValueStoreGenericArgs::new::<(), Reference>(
-                            false,
-                        ))?;
+                    let kv_store = api.key_value_store_new(
+                        KeyValueStoreDataSchema::new_local_without_self_package_replacement::<
+                            (),
+                            Reference,
+                        >(false),
+                    )?;
                     let handle = api.key_value_store_open_entry(
                         &kv_store,
                         &scrypto_encode(&()).unwrap(),

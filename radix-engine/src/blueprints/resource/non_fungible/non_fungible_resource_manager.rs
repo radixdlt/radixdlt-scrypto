@@ -111,7 +111,7 @@ pub enum NonFungibleResourceManagerError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InvalidNonFungibleSchema {
     SchemaValidationError(SchemaValidationError),
-    InvalidLocalTypeIndex,
+    InvalidLocalTypeId,
     NotATuple,
     MissingFieldNames,
     MutableFieldDoesNotExist(String),
@@ -446,6 +446,7 @@ impl NonFungibleResourceManagerBlueprint {
                 schema,
                 state,
                 events: event_schema,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },
@@ -491,32 +492,86 @@ impl NonFungibleResourceManagerBlueprint {
         }
     }
 
+    fn resolve_and_validate_non_fungible_schema<Y>(
+        schema: &NonFungibleDataSchema,
+        api: &mut Y,
+    ) -> Result<(GenericArgs, IndexMap<String, usize>), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        match schema {
+            NonFungibleDataSchema::Local {
+                schema,
+                type_id,
+                mutable_fields,
+            } => {
+                let schema_hash = schema.generate_schema_hash();
+                let mutable_indices =
+                    Self::validate_non_fungible_schema(schema, *type_id, mutable_fields, true)?;
+                Ok((
+                    GenericArgs {
+                        additional_schema: Some(schema.clone()),
+                        generic_substitutions: vec![GenericSubstitution::Local(ScopedTypeId(
+                            schema_hash,
+                            *type_id,
+                        ))],
+                    },
+                    mutable_indices,
+                ))
+            }
+            NonFungibleDataSchema::Remote {
+                type_id,
+                mutable_fields,
+            } => {
+                let (schema, scoped_type_id) = api.resolve_blueprint_type(&type_id)?;
+                let mutable_indices = Self::validate_non_fungible_schema(
+                    &schema,
+                    scoped_type_id.1,
+                    mutable_fields,
+                    false,
+                )?;
+                Ok((
+                    GenericArgs {
+                        additional_schema: None,
+                        generic_substitutions: vec![GenericSubstitution::Remote(type_id.clone())],
+                    },
+                    mutable_indices,
+                ))
+            }
+        }
+    }
+
     fn validate_non_fungible_schema(
-        non_fungible_schema: &NonFungibleDataSchema,
+        schema: &VersionedScryptoSchema,
+        local_type_id: LocalTypeId,
+        mutable_fields: &IndexSet<String>,
+        should_validate_schema: bool,
     ) -> Result<IndexMap<String, usize>, RuntimeError> {
         let mut mutable_field_index = indexmap!();
 
         // Validate schema
-        validate_schema(non_fungible_schema.schema.v1()).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
-                NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                    InvalidNonFungibleSchema::SchemaValidationError(e),
-                ),
-            ))
-        })?;
+        if should_validate_schema {
+            validate_schema(schema.v1()).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                        InvalidNonFungibleSchema::SchemaValidationError(e),
+                    ),
+                ))
+            })?;
+        }
 
         // Validate type kind
-        let type_kind = non_fungible_schema
-            .schema
-            .v1()
-            .resolve_type_kind(non_fungible_schema.non_fungible)
-            .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                        InvalidNonFungibleSchema::InvalidLocalTypeIndex,
+        let type_kind =
+            schema
+                .v1()
+                .resolve_type_kind(local_type_id)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::NonFungibleResourceManagerError(
+                        NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                            InvalidNonFungibleSchema::InvalidLocalTypeId,
+                        ),
                     ),
-                ),
-            ))?;
+                ))?;
 
         if !matches!(type_kind, TypeKind::Tuple { .. }) {
             return Err(RuntimeError::ApplicationError(
@@ -529,17 +584,13 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         // Validate names
-        let type_metadata = non_fungible_schema
-            .schema
-            .v1()
-            .resolve_type_metadata(non_fungible_schema.non_fungible)
-            .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                        InvalidNonFungibleSchema::InvalidLocalTypeIndex,
-                    ),
+        let type_metadata = schema.v1().resolve_type_metadata(local_type_id).ok_or(
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                    InvalidNonFungibleSchema::InvalidLocalTypeId,
                 ),
-            ))?;
+            )),
+        )?;
         match &type_metadata.child_names {
             Some(ChildNames::NamedFields(names)) => {
                 let allowed_names: IndexMap<_, _> = names
@@ -547,7 +598,7 @@ impl NonFungibleResourceManagerBlueprint {
                     .enumerate()
                     .map(|(i, x)| (x.as_ref(), i))
                     .collect();
-                for f in &non_fungible_schema.mutable_fields {
+                for f in mutable_fields {
                     if let Some(index) = allowed_names.get(f.as_str()) {
                         mutable_field_index.insert(f.to_string(), *index);
                     } else {
@@ -564,7 +615,7 @@ impl NonFungibleResourceManagerBlueprint {
                 }
             }
             _ => {
-                if !non_fungible_schema.mutable_fields.is_empty() {
+                if !mutable_fields.is_empty() {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::NonFungibleResourceManagerError(
                             NonFungibleResourceManagerError::InvalidNonFungibleSchema(
@@ -592,7 +643,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mutable_field_index = Self::validate_non_fungible_schema(&non_fungible_schema)?;
+        let (generic_args, mutable_field_index) =
+            Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
 
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
@@ -607,16 +659,6 @@ impl NonFungibleResourceManagerBlueprint {
 
         let mutable_fields = NonFungibleResourceManagerMutableFields {
             mutable_field_index,
-        };
-
-        let schema_hash = non_fungible_schema.schema.generate_schema_hash();
-
-        let generic_args = GenericArgs {
-            additional_schema: Some(non_fungible_schema.schema),
-            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
-                schema_hash,
-                non_fungible_schema.non_fungible,
-            ))],
         };
 
         let (mut features, roles) = to_features_and_roles(resource_roles);
@@ -686,7 +728,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let mutable_field_index = Self::validate_non_fungible_schema(&non_fungible_schema)?;
+        let (generic_args, mutable_field_index) =
+            Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
 
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
@@ -736,15 +779,6 @@ impl NonFungibleResourceManagerBlueprint {
 
             non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
         }
-
-        let schema_hash = non_fungible_schema.schema.generate_schema_hash();
-        let generic_args = GenericArgs {
-            additional_schema: Some(non_fungible_schema.schema),
-            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
-                schema_hash,
-                non_fungible_schema.non_fungible,
-            ))],
-        };
 
         let (mut features, roles) = to_features_and_roles(resource_roles);
         features.track_total_supply = track_total_supply;
@@ -804,7 +838,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let mutable_field_index = Self::validate_non_fungible_schema(&non_fungible_schema)?;
+        let (generic_args, mutable_field_index) =
+            Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
 
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
@@ -833,15 +868,6 @@ impl NonFungibleResourceManagerBlueprint {
 
         let mutable_fields = NonFungibleResourceManagerMutableFields {
             mutable_field_index,
-        };
-
-        let schema_hash = non_fungible_schema.schema.generate_schema_hash();
-        let generic_args = GenericArgs {
-            additional_schema: Some(non_fungible_schema.schema),
-            generic_substitutions: vec![GenericSubstitution::Local(TypeIdentifier(
-                schema_hash,
-                non_fungible_schema.non_fungible,
-            ))],
         };
 
         let (mut features, roles) = to_features_and_roles(resource_roles);

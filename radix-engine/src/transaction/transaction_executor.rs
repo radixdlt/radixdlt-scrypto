@@ -1172,7 +1172,11 @@ pub fn execute_and_commit_transaction<
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db.commit(&commit.state_updates.database_updates);
+        substate_db.commit(
+            &commit
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
     }
     receipt
 }

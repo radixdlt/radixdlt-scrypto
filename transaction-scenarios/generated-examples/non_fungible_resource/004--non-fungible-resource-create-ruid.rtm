@@ -9,7 +9,7 @@ CALL_FUNCTION
     "create_ruid_non_fungible_with_initial_supply"
     Enum<0u8>()
     false
-    Tuple(
+    Enum<0u8>(
         Enum<0u8>(
             Tuple(
                 Array<Enum>(
