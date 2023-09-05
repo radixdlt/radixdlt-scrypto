@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-tests"
-version = "0.13.0"
+version = "0.12.1"
 edition = "2021"
 
 [dependencies]
