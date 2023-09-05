@@ -1665,8 +1665,7 @@ fn validator_claim_xrd_emits_correct_events() {
         });
         assert!(match events.get(6) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
