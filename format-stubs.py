@@ -50,8 +50,8 @@ def produce_replacement(line: str) -> str:
     sep: str = "    "
     add_sep: Callable[[str], str] = lambda line: sep + line
     formatted_package_address: str = "\n".join(rustfmt(f'fn x() {{ {package_address} }}').split("\n")[1:-2])
-    formatted_functions: str = "\n".join(map(add_sep, rustfmt(f"trait x {functions}").split("\n")[1:-2]))
-    formatted_methods: str = "\n".join(map(add_sep, rustfmt(f"trait x {methods}").split("\n")[1:-2]))
+    formatted_functions: str = "\n".join(map(add_sep, rustfmt(f"trait x {functions.replace('-> ()', '')}").split("\n")[1:-2]))
+    formatted_methods: str = "\n".join(map(add_sep, rustfmt(f"trait x {methods.replace('-> ()', '')}").split("\n")[1:-2]))
 
     replacement: str = f"extern_blueprint_internal! {{\n{formatted_package_address},\n{sep}{blueprint_ident},\n{sep}{blueprint_name},\n{sep}{owned_name},\n{sep}{global_name},\n{sep}{functions_name} {{\n{formatted_functions}\n{sep}}},\n{sep}{{\n{formatted_methods}\n{sep}}}\n}}"
     return replacement

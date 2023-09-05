@@ -28,7 +28,7 @@ extern_blueprint_internal! {
     },
     {
         fn free(&mut self) -> Bucket;
-        fn lock_fee(&mut self, amount: Decimal) -> ();
+        fn lock_fee(&mut self, amount: Decimal);
     }
 }
 
@@ -50,11 +50,11 @@ extern_blueprint_internal! {
             initial_config: ConsensusManagerConfig,
             initial_time_ms: i64,
             initial_current_leader: Option<u8>,
-        ) -> ();
+        );
     },
     {
         fn get_current_epoch(&self) -> Epoch;
-        fn start(&mut self) -> ();
+        fn start(&mut self);
         fn get_current_time(&self, precision: TimePrecision) -> Instant;
         fn compare_current_time(
             &self,
@@ -67,7 +67,7 @@ extern_blueprint_internal! {
             round: Round,
             proposer_timestamp_ms: i64,
             leader_proposal_history: LeaderProposalHistory,
-        ) -> ();
+        );
         fn create_validator(
             &mut self,
             key: Secp256k1PublicKey,
@@ -90,23 +90,23 @@ extern_blueprint_internal! {
 
     },
     {
-        fn register(&mut self) -> ();
-        fn unregister(&mut self) -> ();
+        fn register(&mut self);
+        fn unregister(&mut self);
         fn stake_as_owner(&mut self, stake: Bucket) -> Bucket;
         fn stake(&mut self, stake: Bucket) -> Bucket;
         fn unstake(&mut self, stake_unit_bucket: Bucket) -> Bucket;
         fn claim_xrd(&mut self, bucket: Bucket) -> Bucket;
-        fn update_key(&mut self, key: Secp256k1PublicKey) -> ();
-        fn update_fee(&mut self, new_fee_factor: Decimal) -> ();
-        fn update_accept_delegated_stake(&mut self, accept_delegated_stake: bool) -> ();
+        fn update_key(&mut self, key: Secp256k1PublicKey);
+        fn update_fee(&mut self, new_fee_factor: Decimal);
+        fn update_accept_delegated_stake(&mut self, accept_delegated_stake: bool);
         fn accepts_delegated_stake(&mut self) -> bool;
         fn total_stake_xrd_amount(&self) -> Decimal;
         fn total_stake_unit_supply(&self) -> Decimal;
         fn get_redemption_value(&self, amount_of_stake_units: Decimal) -> Decimal;
-        fn signal_protocol_update_readiness(&mut self, vote: String) -> ();
+        fn signal_protocol_update_readiness(&mut self, vote: String);
         fn get_protocol_update_readiness(&mut self) -> Option<String>;
-        fn lock_owner_stake_units(&mut self, stake_unit_bucket: Bucket) -> ();
-        fn start_unlock_owner_stake_units(&mut self, requested_stake_unit_amount: Decimal) -> ();
+        fn lock_owner_stake_units(&mut self, stake_unit_bucket: Bucket);
+        fn start_unlock_owner_stake_units(&mut self, requested_stake_unit_amount: Decimal);
         fn finish_unlock_owner_stake_units(&mut self) -> Bucket;
         fn apply_emission(
             &mut self,
@@ -114,8 +114,8 @@ extern_blueprint_internal! {
             epoch: Epoch,
             proposals_made: u64,
             proposals_missed: u64,
-        ) -> ();
-        fn apply_reward(&mut self, xrd_bucket: Bucket, epoch: Epoch) -> ();
+        );
+        fn apply_reward(&mut self, xrd_bucket: Bucket, epoch: Epoch);
     }
 }
 
@@ -157,22 +157,22 @@ extern_blueprint_internal! {
     },
     {
         fn securify(&mut self) -> Bucket;
-        fn lock_fee(&mut self, amount: Decimal) -> ();
-        fn lock_contingent_fee(&mut self, amount: Decimal) -> ();
-        fn deposit(&mut self, bucket: Bucket) -> ();
-        fn deposit_batch(&mut self, buckets: Vec<Bucket>) -> ();
+        fn lock_fee(&mut self, amount: Decimal);
+        fn lock_contingent_fee(&mut self, amount: Decimal);
+        fn deposit(&mut self, bucket: Bucket);
+        fn deposit_batch(&mut self, buckets: Vec<Bucket>);
         fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
         fn withdraw_non_fungibles(
             &mut self,
             resource_address: ResourceAddress,
             ids: Vec<NonFungibleLocalId>,
         ) -> Bucket;
-        fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal) -> ();
+        fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal);
         fn burn_non_fungibles(
             &mut self,
             resource_address: ResourceAddress,
             ids: Vec<NonFungibleLocalId>,
-        ) -> ();
+        );
         fn lock_fee_and_withdraw(
             &mut self,
             amount_to_lock: Decimal,
@@ -191,13 +191,13 @@ extern_blueprint_internal! {
             resource_address: ResourceAddress,
             ids: Vec<NonFungibleLocalId>,
         ) -> Proof;
-        fn set_default_deposit_rule(&self, default: DefaultDepositRule) -> ();
+        fn set_default_deposit_rule(&self, default: DefaultDepositRule);
         fn set_resource_preference(
             &self,
             resource_address: ResourceAddress,
             resource_preference: ResourcePreference,
-        ) -> ();
-        fn remove_resource_preference(&self, resource_address: ResourceAddress) -> ();
+        );
+        fn remove_resource_preference(&self, resource_address: ResourceAddress);
         fn try_deposit_or_refund(
             &mut self,
             bucket: Bucket,
@@ -212,14 +212,14 @@ extern_blueprint_internal! {
             &mut self,
             bucket: Bucket,
             authorized_depositor_badge: Option<ResourceOrNonFungible>,
-        ) -> ();
+        );
         fn try_deposit_batch_or_abort(
             &mut self,
             buckets: Vec<Bucket>,
             authorized_depositor_badge: Option<ResourceOrNonFungible>,
-        ) -> ();
-        fn add_authorized_depositor(&mut self, badge: ResourceOrNonFungible) -> ();
-        fn remove_authorized_depositor(&mut self, badge: ResourceOrNonFungible) -> ();
+        );
+        fn add_authorized_depositor(&mut self, badge: ResourceOrNonFungible);
+        fn remove_authorized_depositor(&mut self, badge: ResourceOrNonFungible);
     }
 }
 
@@ -244,7 +244,7 @@ extern_blueprint_internal! {
     {
         fn contribute(&mut self, buckets: Vec<Bucket>) -> (Bucket, Vec<Bucket>);
         fn redeem(&mut self, bucket: Bucket) -> Vec<Bucket>;
-        fn protected_deposit(&mut self, bucket: Bucket) -> ();
+        fn protected_deposit(&mut self, bucket: Bucket);
         fn protected_withdraw(
             &mut self,
             resource_address: ResourceAddress,
@@ -279,7 +279,7 @@ extern_blueprint_internal! {
     {
         fn contribute(&mut self, bucket: Bucket) -> Bucket;
         fn redeem(&mut self, bucket: Bucket) -> Bucket;
-        fn protected_deposit(&mut self, bucket: Bucket) -> ();
+        fn protected_deposit(&mut self, bucket: Bucket);
         fn protected_withdraw(
             &mut self,
             amount: Decimal,
@@ -310,7 +310,7 @@ extern_blueprint_internal! {
     {
         fn contribute(&mut self, buckets: (Bucket, Bucket)) -> (Bucket, Option<Bucket>);
         fn redeem(&mut self, bucket: Bucket) -> (Bucket, Bucket);
-        fn protected_deposit(&mut self, bucket: Bucket) -> ();
+        fn protected_deposit(&mut self, bucket: Bucket);
         fn protected_withdraw(
             &mut self,
             resource_address: ResourceAddress,
@@ -349,42 +349,42 @@ extern_blueprint_internal! {
             &mut self,
             rule_set: RuleSet,
             timed_recovery_delay_in_minutes: Option<u32>,
-        ) -> ();
+        );
         fn initiate_recovery_as_recovery(
             &mut self,
             rule_set: RuleSet,
             timed_recovery_delay_in_minutes: Option<u32>,
-        ) -> ();
+        );
         fn quick_confirm_primary_role_recovery_proposal(
             &mut self,
             rule_set: RuleSet,
             timed_recovery_delay_in_minutes: Option<u32>,
-        ) -> ();
+        );
         fn quick_confirm_recovery_role_recovery_proposal(
             &mut self,
             rule_set: RuleSet,
             timed_recovery_delay_in_minutes: Option<u32>,
-        ) -> ();
+        );
         fn timed_confirm_recovery(
             &mut self,
             rule_set: RuleSet,
             timed_recovery_delay_in_minutes: Option<u32>,
-        ) -> ();
-        fn cancel_primary_role_recovery_proposal(&mut self) -> ();
-        fn cancel_recovery_role_recovery_proposal(&mut self) -> ();
-        fn lock_primary_role(&mut self) -> ();
-        fn unlock_primary_role(&mut self) -> ();
+        );
+        fn cancel_primary_role_recovery_proposal(&mut self);
+        fn cancel_recovery_role_recovery_proposal(&mut self);
+        fn lock_primary_role(&mut self);
+        fn unlock_primary_role(&mut self);
         fn stop_timed_recovery(
             &mut self,
             rule_set: RuleSet,
             timed_recovery_delay_in_minutes: Option<u32>,
-        ) -> ();
-        fn initiate_badge_withdraw_attempt_as_primary(&mut self) -> ();
-        fn initiate_badge_withdraw_attempt_as_recovery(&mut self) -> ();
+        );
+        fn initiate_badge_withdraw_attempt_as_primary(&mut self);
+        fn initiate_badge_withdraw_attempt_as_recovery(&mut self);
         fn quick_confirm_primary_role_badge_withdraw_attempt(&mut self) -> Bucket;
         fn quick_confirm_recovery_role_badge_withdraw_attempt(&mut self) -> Bucket;
-        fn cancel_primary_role_badge_withdraw_attempt(&mut self) -> ();
-        fn cancel_recovery_role_badge_withdraw_attempt(&mut self) -> ();
+        fn cancel_primary_role_badge_withdraw_attempt(&mut self);
+        fn cancel_recovery_role_badge_withdraw_attempt(&mut self);
         fn mint_recovery_badges(&mut self, non_fungible_local_ids: Vec<NonFungibleLocalId>) -> Bucket;
     }
 }
