@@ -62,7 +62,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn manifest_blob_fail() {
+    fn manifest_blob_parse_fail() {
         let buf = Vec::from_iter(0..32u8);
 
         let blob = ManifestBlobRef(buf.as_slice().try_into().unwrap());

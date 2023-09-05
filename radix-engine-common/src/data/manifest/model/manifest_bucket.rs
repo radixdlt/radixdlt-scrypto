@@ -62,7 +62,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn manifest_bucket_fail() {
+    fn manifest_bucket_parse_fail() {
         let bucket = ManifestBucket(0);
         let mut bucket_vec = bucket.to_vec();
 

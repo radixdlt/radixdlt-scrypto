@@ -110,7 +110,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_static_success() {
+    fn manifest_address_decode_static_success() {
         let node_id = NodeId::new(EntityType::GlobalPackage as u8, &[0; NodeId::RID_LENGTH]);
         let addr_input = ManifestAddress::Static(node_id);
         let addr_output = prepare(&addr_input);
@@ -119,7 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_named_success() {
+    fn manifest_address_decode_named_success() {
         let addr_input = ManifestAddress::Named(1);
         let addr_output = prepare(&addr_input);
         assert!(addr_output.is_ok());
@@ -127,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_static_fail() {
+    fn manifest_address_decode_static_fail() {
         // use invalid entity type (0) to an generate error
         let node_id = NodeId::new(0, &[0; NodeId::RID_LENGTH]);
         let addr_input = ManifestAddress::Static(node_id);
@@ -136,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_named_fail() {
+    fn manifest_address_decode_named_fail() {
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
         encoder
@@ -157,7 +157,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_discriminator_fail() {
+    fn manifest_address_decode_discriminator_fail() {
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
         // use invalid discriminator value

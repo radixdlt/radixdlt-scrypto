@@ -69,7 +69,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn manifest_decimal_fail() {
+    fn manifest_decimal_parse_fail() {
         let buf = Vec::from_iter(0u8..DECIMAL_SIZE as u8);
 
         let dec = ManifestDecimal(buf.as_slice().try_into().unwrap());
