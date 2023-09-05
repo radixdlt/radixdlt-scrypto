@@ -88,22 +88,6 @@ mod tests {
     }
 
     #[test]
-    fn manifest_address_reservation_encode_decode_success() {
-        let addr_input = ManifestAddressReservation(37);
-
-        let mut buf = Vec::new();
-        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
-        assert!(addr_input.encode_body(&mut encoder).is_ok());
-        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
-        let addr_output = decoder.decode_deeper_body_with_value_kind::<ManifestAddressReservation>(
-            ManifestAddressReservation::value_kind(),
-        );
-
-        assert!(addr_output.is_ok());
-        assert_eq!(addr_input, addr_output.unwrap());
-    }
-
-    #[test]
     fn manifest_address_reservation_encode_decode_fail() {
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);

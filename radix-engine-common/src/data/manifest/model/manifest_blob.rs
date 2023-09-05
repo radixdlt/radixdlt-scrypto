@@ -56,3 +56,51 @@ impl ManifestBlobRef {
 }
 
 manifest_type!(ManifestBlobRef, ManifestCustomValueKind::Blob, 32);
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn manifest_blob_fail() {
+        let buf = Vec::from_iter(0..32u8);
+
+        let blob = ManifestBlobRef(buf.as_slice().try_into().unwrap());
+        let mut blob_vec = blob.to_vec();
+
+        assert!(ManifestBlobRef::try_from(blob_vec.as_slice()).is_ok());
+
+        // malform encoded vector
+        blob_vec.push(0);
+        let blob_out = ManifestBlobRef::try_from(blob_vec.as_slice());
+        assert!(matches!(
+            blob_out,
+            Err(ParseManifestBlobRefError::InvalidLength)
+        ));
+
+        println!(
+            "Manifest Blob error: {}",
+            blob_out.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn manifest_blob_encode_decode_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        let malformed_value: u8 = 0;
+        encoder.write_slice(&malformed_value.to_le_bytes()).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let blob_output = decoder.decode_deeper_body_with_value_kind::<ManifestBlobRef>(
+            ManifestBlobRef::value_kind(),
+        );
+
+        // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
+        assert!(matches!(
+            blob_output,
+            Err(DecodeError::BufferUnderflow { .. })
+        ));
+    }
+}
