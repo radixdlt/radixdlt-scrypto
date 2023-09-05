@@ -32,7 +32,7 @@ pub trait HasComponentRoyalties {
 pub struct Royalty(pub ModuleHandle);
 
 impl Attachable for Royalty {
-    const ATTACHED_MODULE_ID: AttachedModuleId = AttachedModuleId::Royalty;
+    const MODULE_ID: AttachedModuleId = AttachedModuleId::Royalty;
 
     fn new(handle: ModuleHandle) -> Self {
         Royalty(handle)

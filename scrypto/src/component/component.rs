@@ -201,7 +201,7 @@ pub trait FnMapping<T> {
 }
 
 pub trait MethodMapping<T> {
-    const ATTACHED_MODULE_ID: ModuleId;
+    const MODULE_ID: ModuleId;
 
     fn to_mapping(self) -> Vec<(String, T)>;
     fn methods() -> Vec<&'static str>;
@@ -214,7 +214,7 @@ pub struct MetadataMethods<T> {
 }
 
 impl<T> MethodMapping<T> for MetadataMethods<T> {
-    const ATTACHED_MODULE_ID: ModuleId = ModuleId::Metadata;
+    const MODULE_ID: ModuleId = ModuleId::Metadata;
 
     fn to_mapping(self) -> Vec<(String, T)> {
         vec![
