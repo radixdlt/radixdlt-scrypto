@@ -379,7 +379,7 @@ impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
             let blueprint_id = match &event_type_identifier.0 {
                 Emitter::Function(blueprint_id) => blueprint_id.clone(),
                 Emitter::Method(node_id, module_id) => {
-                    if let ObjectModuleId::Main = module_id {
+                    if let ModuleId::Main = module_id {
                         let main_type_info = self.system_reader.get_type_info(node_id).unwrap();
                         match main_type_info {
                             TypeInfoSubstate::Object(info) => info.blueprint_info.blueprint_id,

@@ -533,7 +533,7 @@ create_well_known_lookup!(
         ),
         // OTHER MODULE TYPES
         (
-            OBJECT_MODULE_ID,
+            MODULE_ID,
             OTHER_MODULE_TYPES_START + 0,
             named_enum(
                 // This is a clearer name for UIs, but not time to change in the code right now
@@ -547,11 +547,11 @@ create_well_known_lookup!(
             )
         ),
         (
-            MODULE_ID,
+            ATTACHED_MODULE_ID,
             OTHER_MODULE_TYPES_START + 1,
             named_enum(
                 // This is a clearer name for UIs, but not time to change in the code right now
-                "NativeModuleId",
+                "AttachedModuleId",
                 [
                     (1u8, named_tuple("Metadata", [])),
                     (2u8, named_tuple("Royalty", [])),

@@ -281,7 +281,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let entry = reader
         .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
             resource_address.as_node_id(),
-            ObjectModuleId::Metadata,
+            ModuleId::Metadata,
             ObjectCollectionKey::KeyValue(
                 MetadataCollection::EntryKeyValue.collection_index(),
                 &"symbol".to_string(),
@@ -442,7 +442,7 @@ fn test_genesis_stake_allocation() {
             let validator_url_entry = reader
                 .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                     &new_validators[index].as_node_id(),
-                    ObjectModuleId::Metadata,
+                    ModuleId::Metadata,
                     ObjectCollectionKey::KeyValue(
                         MetadataCollection::EntryKeyValue.collection_index(),
                         &"url".to_string(),
@@ -487,7 +487,7 @@ fn test_genesis_time() {
     let timestamp = reader
         .read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
             CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
+            ModuleId::Main,
             ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
         )
         .unwrap()

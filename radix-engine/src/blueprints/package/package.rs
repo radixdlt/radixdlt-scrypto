@@ -710,8 +710,8 @@ pub fn create_bootstrap_package_partitions(
                 },
                 object_type: ObjectType::Global {
                     modules: indexmap!(
-                        ModuleId::Metadata => BlueprintVersion::default(),
-                        ModuleId::RoleAssignment => BlueprintVersion::default(),
+                        AttachedModuleId::Metadata => BlueprintVersion::default(),
+                        AttachedModuleId::RoleAssignment => BlueprintVersion::default(),
                     ),
                 },
             })),
@@ -747,8 +747,8 @@ where
     let address = api.globalize(
         package_object,
         indexmap!(
-            ModuleId::Metadata => metadata.0,
-            ModuleId::RoleAssignment => role_assignment.0.0,
+            AttachedModuleId::Metadata => metadata.0,
+            AttachedModuleId::RoleAssignment => role_assignment.0.0,
         ),
         package_address_reservation,
     )?;

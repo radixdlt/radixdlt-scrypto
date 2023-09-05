@@ -35,69 +35,69 @@ use sbor::rust::vec::Vec;
     ScryptoEncode,
     ScryptoDecode,
 )]
-pub enum ObjectModuleId {
+pub enum ModuleId {
     Main,
     Metadata,
     Royalty,
     RoleAssignment,
 }
 
-impl Describe<ScryptoCustomTypeKind> for ObjectModuleId {
+impl Describe<ScryptoCustomTypeKind> for ModuleId {
     const TYPE_ID: RustTypeId =
-        RustTypeId::WellKnown(well_known_scrypto_custom_types::OBJECT_MODULE_ID_TYPE);
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::MODULE_ID_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::object_module_id_type_data()
+        well_known_scrypto_custom_types::module_id_type_data()
     }
 }
 
-impl From<Option<ModuleId>> for ObjectModuleId {
-    fn from(value: Option<ModuleId>) -> Self {
+impl From<Option<AttachedModuleId>> for ModuleId {
+    fn from(value: Option<AttachedModuleId>) -> Self {
         match value {
-            None => ObjectModuleId::Main,
-            Some(ModuleId::Metadata) => ObjectModuleId::Metadata,
-            Some(ModuleId::Royalty) => ObjectModuleId::Royalty,
-            Some(ModuleId::RoleAssignment) => ObjectModuleId::RoleAssignment,
+            None => ModuleId::Main,
+            Some(AttachedModuleId::Metadata) => ModuleId::Metadata,
+            Some(AttachedModuleId::Royalty) => ModuleId::Royalty,
+            Some(AttachedModuleId::RoleAssignment) => ModuleId::RoleAssignment,
         }
     }
 }
 
-impl Into<Option<ModuleId>> for ObjectModuleId {
-    fn into(self) -> Option<ModuleId> {
+impl Into<Option<AttachedModuleId>> for ModuleId {
+    fn into(self) -> Option<AttachedModuleId> {
         match self {
-            ObjectModuleId::Main => None,
-            ObjectModuleId::Metadata => Some(ModuleId::Metadata),
-            ObjectModuleId::Royalty => Some(ModuleId::Royalty),
-            ObjectModuleId::RoleAssignment => Some(ModuleId::RoleAssignment),
+            ModuleId::Main => None,
+            ModuleId::Metadata => Some(AttachedModuleId::Metadata),
+            ModuleId::Royalty => Some(AttachedModuleId::Royalty),
+            ModuleId::RoleAssignment => Some(AttachedModuleId::RoleAssignment),
         }
     }
 }
 
-impl ObjectModuleId {
+impl ModuleId {
     pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
-            ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
-            ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
-            ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
-            ObjectModuleId::Main => MAIN_BASE_PARTITION,
+            ModuleId::Metadata => METADATA_BASE_PARTITION,
+            ModuleId::Royalty => ROYALTY_BASE_PARTITION,
+            ModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
+            ModuleId::Main => MAIN_BASE_PARTITION,
         }
     }
 
     pub fn static_blueprint(&self) -> Option<BlueprintId> {
         match self {
-            ObjectModuleId::Metadata => Some(BlueprintId::new(
+            ModuleId::Metadata => Some(BlueprintId::new(
                 &METADATA_MODULE_PACKAGE,
                 METADATA_BLUEPRINT,
             )),
-            ObjectModuleId::Royalty => Some(BlueprintId::new(
+            ModuleId::Royalty => Some(BlueprintId::new(
                 &ROYALTY_MODULE_PACKAGE,
                 COMPONENT_ROYALTY_BLUEPRINT,
             )),
-            ObjectModuleId::RoleAssignment => Some(BlueprintId::new(
+            ModuleId::RoleAssignment => Some(BlueprintId::new(
                 &ROLE_ASSIGNMENT_MODULE_PACKAGE,
                 ROLE_ASSIGNMENT_BLUEPRINT,
             )),
-            ObjectModuleId::Main => None,
+            ModuleId::Main => None,
         }
     }
 }
@@ -121,41 +121,43 @@ impl ObjectModuleId {
     ScryptoDecode,
 )]
 #[sbor(use_repr_discriminators)]
-pub enum ModuleId {
+pub enum AttachedModuleId {
     Metadata = 1,
     Royalty = 2,
     RoleAssignment = 3,
 }
 
-impl Describe<ScryptoCustomTypeKind> for ModuleId {
+impl Describe<ScryptoCustomTypeKind> for AttachedModuleId {
     const TYPE_ID: RustTypeId =
-        RustTypeId::WellKnown(well_known_scrypto_custom_types::MODULE_ID_TYPE);
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::ATTACHED_MODULE_ID_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
         well_known_scrypto_custom_types::module_id_type_data()
     }
 }
 
-impl ModuleId {
+impl AttachedModuleId {
     pub fn static_blueprint(&self) -> BlueprintId {
         match self {
-            ModuleId::Metadata => BlueprintId::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT),
-            ModuleId::Royalty => {
+            AttachedModuleId::Metadata => {
+                BlueprintId::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT)
+            }
+            AttachedModuleId::Royalty => {
                 BlueprintId::new(&ROYALTY_MODULE_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
             }
-            ModuleId::RoleAssignment => {
+            AttachedModuleId::RoleAssignment => {
                 BlueprintId::new(&ROLE_ASSIGNMENT_MODULE_PACKAGE, ROLE_ASSIGNMENT_BLUEPRINT)
             }
         }
     }
 }
 
-impl Into<ObjectModuleId> for ModuleId {
-    fn into(self) -> ObjectModuleId {
+impl Into<ModuleId> for AttachedModuleId {
+    fn into(self) -> ModuleId {
         match self {
-            ModuleId::Metadata => ObjectModuleId::Metadata,
-            ModuleId::Royalty => ObjectModuleId::Royalty,
-            ModuleId::RoleAssignment => ObjectModuleId::RoleAssignment,
+            AttachedModuleId::Metadata => ModuleId::Metadata,
+            AttachedModuleId::Royalty => ModuleId::Royalty,
+            AttachedModuleId::RoleAssignment => ModuleId::RoleAssignment,
         }
     }
 }
@@ -249,14 +251,14 @@ pub trait ClientObjectApi<E> {
     fn globalize(
         &mut self,
         node_id: NodeId,
-        modules: IndexMap<ModuleId, NodeId>,
+        modules: IndexMap<AttachedModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, E>;
 
     fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         node_id: NodeId,
-        modules: IndexMap<ModuleId, NodeId>,
+        modules: IndexMap<AttachedModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: IndexMap<u8, FieldValue>,
@@ -283,7 +285,7 @@ pub trait ClientObjectApi<E> {
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: ModuleId,
+        module_id: AttachedModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;

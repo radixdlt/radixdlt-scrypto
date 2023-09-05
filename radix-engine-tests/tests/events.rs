@@ -12,7 +12,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -52,7 +52,7 @@ fn test_events_of_commit_failure() {
     assert_eq!(events.len(), 4);
     assert!(match events.get(0) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
             && is_decoded_equal(
@@ -64,7 +64,7 @@ fn test_events_of_commit_failure() {
     });
     assert!(match events.get(1) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
             && is_decoded_equal(
@@ -78,7 +78,7 @@ fn test_events_of_commit_failure() {
     });
     assert!(match events.get(2) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
             && is_decoded_equal(
@@ -102,7 +102,7 @@ fn test_events_of_commit_failure() {
     });
     assert!(match events.get(3) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
             && is_decoded_equal(
@@ -139,7 +139,7 @@ fn create_proof_emits_correct_events() {
     assert_eq!(events.len(), 4);
     assert!(match events.get(0) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
             && is_decoded_equal(
@@ -151,7 +151,7 @@ fn create_proof_emits_correct_events() {
     });
     assert!(match events.get(1) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
             && is_decoded_equal(
@@ -165,7 +165,7 @@ fn create_proof_emits_correct_events() {
     });
     assert!(match events.get(2) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
             && is_decoded_equal(
@@ -189,7 +189,7 @@ fn create_proof_emits_correct_events() {
     });
     assert!(match events.get(3) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
             && is_decoded_equal(
@@ -264,7 +264,7 @@ fn scrypto_can_emit_registered_events() {
     }
     assert!(match events.get(0) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
             && is_decoded_equal(
@@ -372,8 +372,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -413,8 +412,7 @@ fn vault_fungible_recall_emits_correct_events() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -427,8 +425,7 @@ fn vault_fungible_recall_emits_correct_events() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::RecallEvent>(event_identifier)
@@ -438,8 +435,7 @@ fn vault_fungible_recall_emits_correct_events() {
         });
         assert!(match events.get(2) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
@@ -499,8 +495,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -513,8 +508,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::RecallEvent>(event_identifier)
@@ -529,8 +523,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         });
         assert!(match events.get(2) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
@@ -581,8 +574,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -596,7 +588,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::Main),
+                    Emitter::Method(_node_id, ModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -608,7 +600,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::Main),
+                    Emitter::Method(_node_id, ModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -617,8 +609,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         });
         assert!(match events.get(3) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
@@ -679,8 +670,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -693,8 +683,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier)
@@ -707,8 +696,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         });
         assert!(match events.get(2) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
@@ -773,8 +761,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -787,8 +774,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
@@ -803,8 +789,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         });
         assert!(match events.get(2) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier)
@@ -883,8 +868,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -897,8 +881,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
@@ -913,16 +896,14 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
         });
         assert!(match events.get(2) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 _,
             )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
@@ -935,8 +916,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
         });
         assert!(match events.get(4) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<account::DepositEvent>(event_identifier)
                 && is_decoded_equal(
@@ -951,8 +931,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
         });
         assert!(match events.get(5) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::WithdrawEvent>(event_identifier)
@@ -965,8 +944,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
         });
         assert!(match events.get(7) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
@@ -1020,8 +998,7 @@ fn consensus_manager_round_update_emits_correct_event() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<RoundChangeEvent>(event_identifier)
                 && is_decoded_equal(
@@ -1174,8 +1151,7 @@ fn validator_registration_emits_correct_event() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -1188,8 +1164,7 @@ fn validator_registration_emits_correct_event() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<RegisterValidatorEvent>(event_identifier) =>
                 true,
@@ -1252,8 +1227,7 @@ fn validator_unregistration_emits_correct_event() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -1266,8 +1240,7 @@ fn validator_unregistration_emits_correct_event() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<UnregisterValidatorEvent>(event_identifier) =>
                 true,
@@ -1333,8 +1306,7 @@ fn validator_staking_emits_correct_event() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -1347,8 +1319,7 @@ fn validator_staking_emits_correct_event() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
@@ -1361,8 +1332,7 @@ fn validator_staking_emits_correct_event() {
         });
         assert!(match events.get(2) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
@@ -1374,8 +1344,7 @@ fn validator_staking_emits_correct_event() {
         });
         assert!(match events.get(3) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) =>
@@ -1384,8 +1353,7 @@ fn validator_staking_emits_correct_event() {
         });
         assert!(match events.get(4) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
@@ -1395,8 +1363,7 @@ fn validator_staking_emits_correct_event() {
         });
         assert!(match events.get(5) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<StakeEvent>(event_identifier)
                 && is_decoded_equal(
@@ -1411,7 +1378,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::Main),
+                    Emitter::Method(_node_id, ModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -1420,8 +1387,7 @@ fn validator_staking_emits_correct_event() {
         });
         assert!(match events.get(7) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
@@ -1477,8 +1443,7 @@ fn validator_unstake_emits_correct_events() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -1491,8 +1456,7 @@ fn validator_unstake_emits_correct_events() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
@@ -1502,8 +1466,7 @@ fn validator_unstake_emits_correct_events() {
         });
         assert!(match events.get(2) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
@@ -1518,8 +1481,7 @@ fn validator_unstake_emits_correct_events() {
         });
         assert!(match events.get(3) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
@@ -1532,8 +1494,7 @@ fn validator_unstake_emits_correct_events() {
         });
         assert!(match events.get(4) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
@@ -1542,8 +1503,7 @@ fn validator_unstake_emits_correct_events() {
         });
         assert!(match events.get(5) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
@@ -1552,10 +1512,8 @@ fn validator_unstake_emits_correct_events() {
         });
         assert!(match events.get(6) {
             Some((
-                event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(node_id, ObjectModuleId::Main),
-                    ..,
-                ),
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
@@ -1565,8 +1523,7 @@ fn validator_unstake_emits_correct_events() {
         });
         assert!(match events.get(7) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<UnstakeEvent>(event_identifier) => true,
             _ => false,
@@ -1574,7 +1531,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(8) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::Main),
+                    Emitter::Method(_node_id, ModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -1583,8 +1540,7 @@ fn validator_unstake_emits_correct_events() {
         });
         assert!(match events.get(9) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier) =>
@@ -1651,8 +1607,7 @@ fn validator_claim_xrd_emits_correct_events() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -1665,8 +1620,7 @@ fn validator_claim_xrd_emits_correct_events() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::WithdrawEvent>(event_identifier) =>
@@ -1675,8 +1629,7 @@ fn validator_claim_xrd_emits_correct_events() {
         });
         assert!(match events.get(2) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier) =>
                 true,
@@ -1684,8 +1637,7 @@ fn validator_claim_xrd_emits_correct_events() {
         });
         assert!(match events.get(3) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier) =>
@@ -1694,8 +1646,7 @@ fn validator_claim_xrd_emits_correct_events() {
         });
         assert!(match events.get(4) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
@@ -1704,8 +1655,7 @@ fn validator_claim_xrd_emits_correct_events() {
         });
         assert!(match events.get(5) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<ClaimXrdEvent>(event_identifier) => true,
             _ => false,
@@ -1713,7 +1663,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::Main),
+                    Emitter::Method(_node_id, ModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -1722,8 +1672,7 @@ fn validator_claim_xrd_emits_correct_events() {
         });
         assert!(match events.get(7) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
@@ -1792,8 +1741,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -1806,8 +1754,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<UpdateAcceptingStakeDelegationStateEvent>(
                 event_identifier
@@ -1850,8 +1797,7 @@ fn setting_metadata_emits_correct_events() {
         }
         assert!(match events.get(0) {
             Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
@@ -1864,10 +1810,7 @@ fn setting_metadata_emits_correct_events() {
         });
         assert!(match events.get(1) {
             Some((
-                event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, ObjectModuleId::Metadata),
-                    ..,
-                ),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Metadata), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<SetMetadataEvent>(event_identifier) => true,
             _ => false,
@@ -2425,7 +2368,7 @@ fn account_configuration_emits_expected_events() {
     {
         assert_eq!(
             set_resource_preference_allowed_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&set_resource_preference_allowed_event.0),
@@ -2445,7 +2388,7 @@ fn account_configuration_emits_expected_events() {
     {
         assert_eq!(
             set_resource_preference_disallowed_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&set_resource_preference_disallowed_event.0),
@@ -2465,7 +2408,7 @@ fn account_configuration_emits_expected_events() {
     {
         assert_eq!(
             remove_resource_preference_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&remove_resource_preference_event.0),
@@ -2482,7 +2425,7 @@ fn account_configuration_emits_expected_events() {
     {
         assert_eq!(
             set_default_deposit_rule_accept_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&set_default_deposit_rule_accept_event.0),
@@ -2501,7 +2444,7 @@ fn account_configuration_emits_expected_events() {
     {
         assert_eq!(
             set_default_deposit_rule_reject_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&set_default_deposit_rule_reject_event.0),
@@ -2520,7 +2463,7 @@ fn account_configuration_emits_expected_events() {
     {
         assert_eq!(
             set_default_deposit_rule_allow_existing_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&set_default_deposit_rule_allow_existing_event.0),
@@ -2539,7 +2482,7 @@ fn account_configuration_emits_expected_events() {
     {
         assert_eq!(
             add_authorized_depositor_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&add_authorized_depositor_event.0),
@@ -2558,7 +2501,7 @@ fn account_configuration_emits_expected_events() {
     {
         assert_eq!(
             remove_authorized_depositor_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&remove_authorized_depositor_event.0),
@@ -2635,7 +2578,7 @@ fn account_deposit_batch_emits_expected_events() {
         {
             assert_eq!(
                 xrd_deposit_event.0 .0,
-                Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+                Emitter::Method(account.into_node_id(), ModuleId::Main)
             );
             assert_eq!(
                 test_runner.event_name(&xrd_deposit_event.0),
@@ -2649,7 +2592,7 @@ fn account_deposit_batch_emits_expected_events() {
         {
             assert_eq!(
                 nfts_deposit_event.0 .0,
-                Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+                Emitter::Method(account.into_node_id(), ModuleId::Main)
             );
             assert_eq!(
                 test_runner.event_name(&nfts_deposit_event.0),
@@ -2723,7 +2666,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
     {
         assert_eq!(
             xrd_rejected_deposit_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&xrd_rejected_deposit_event.0),
@@ -2737,7 +2680,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
     {
         assert_eq!(
             nfts_rejected_deposit_event.0 .0,
-            Emitter::Method(account.into_node_id(), ObjectModuleId::Main)
+            Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
             test_runner.event_name(&nfts_rejected_deposit_event.0),

@@ -109,7 +109,7 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum ModuleId {
+            enum AttachedModuleId {
                 Main = 0;
                 Metadata = 1;
                 Royalty = 2;

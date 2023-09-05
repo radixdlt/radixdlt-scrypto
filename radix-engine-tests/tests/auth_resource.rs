@@ -1,7 +1,7 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -16,14 +16,14 @@ enum Action {
 }
 
 impl Action {
-    fn get_role(&self) -> (ObjectModuleId, RoleKey) {
+    fn get_role(&self) -> (ModuleId, RoleKey) {
         match self {
-            Action::Mint => (ObjectModuleId::Main, RoleKey::new(MINTER_ROLE)),
-            Action::Burn => (ObjectModuleId::Main, RoleKey::new(BURNER_ROLE)),
-            Action::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAWER_ROLE)),
-            Action::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_ROLE)),
-            Action::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
-            Action::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
+            Action::Mint => (ModuleId::Main, RoleKey::new(MINTER_ROLE)),
+            Action::Burn => (ModuleId::Main, RoleKey::new(BURNER_ROLE)),
+            Action::Withdraw => (ModuleId::Main, RoleKey::new(WITHDRAWER_ROLE)),
+            Action::Deposit => (ModuleId::Main, RoleKey::new(DEPOSITOR_ROLE)),
+            Action::Recall => (ModuleId::Main, RoleKey::new(RECALLER_ROLE)),
+            Action::Freeze => (ModuleId::Main, RoleKey::new(FREEZER_ROLE)),
         }
     }
 }
