@@ -169,6 +169,7 @@ fn test_basic_package_missing_export() {
                     collections: vec![],
                 },
                 events: BlueprintEventSchemaInit::default(),
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit {
                     functions: indexmap!(
                         "f".to_string() => FunctionSchemaInit {

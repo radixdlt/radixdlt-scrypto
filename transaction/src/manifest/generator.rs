@@ -1754,7 +1754,7 @@ mod tests {
                 Enum<0u8>()
                 Enum<NonFungibleIdType::Integer>()
                 false
-                Tuple(
+                Enum<0u8>(
                     Enum<0u8>(
                         Tuple(
                             Array<Enum>(),
@@ -1793,7 +1793,9 @@ mod tests {
                         owner_role: OwnerRole::None,
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        non_fungible_schema:
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
+                            ),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_string(), locked;
@@ -1834,9 +1836,10 @@ mod tests {
                             owner_role: OwnerRole::None,
                             track_total_supply: false,
                             id_type: NonFungibleIdType::Integer,
-                            non_fungible_schema: NonFungibleDataSchema::new_schema::<
-                                MyNonFungibleData,
-                            >(),
+                            non_fungible_schema:
+                                NonFungibleDataSchema::new_local_without_self_package_replacement::<
+                                    MyNonFungibleData,
+                                >(),
                             resource_roles: NonFungibleResourceRoles::default(),
                             metadata: metadata!(),
                             address_reservation: None,
@@ -1856,7 +1859,7 @@ mod tests {
                 Enum<0u8>()
                 Enum<NonFungibleIdType::Integer>()
                 false
-                Tuple(
+                Enum<0u8>(
                     Enum<0u8>(
                         Tuple(
                             Array<Enum>(),
@@ -1902,7 +1905,9 @@ mod tests {
                         owner_role: OwnerRole::None,
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        non_fungible_schema:
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
+                            ),
                         resource_roles: NonFungibleResourceRoles::default(),
                         metadata: metadata! {
                             init {

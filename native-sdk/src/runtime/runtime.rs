@@ -1,4 +1,4 @@
-use radix_engine_common::types::NodeId;
+use radix_engine_common::types::{NodeId, PackageAddress};
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -127,5 +127,13 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         api.actor_get_node_id(ACTOR_REF_SELF)
+    }
+
+    pub fn package_address<Y, E>(api: &mut Y) -> Result<PackageAddress, E>
+    where
+        Y: ClientApi<E>,
+        E: Debug,
+    {
+        api.actor_get_blueprint_id().map(|x| x.package_address)
     }
 }

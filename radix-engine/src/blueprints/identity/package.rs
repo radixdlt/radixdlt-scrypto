@@ -98,6 +98,7 @@ impl IdentityNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },

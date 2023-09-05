@@ -74,6 +74,10 @@ pub enum PackageError {
         limit: usize,
         actual: usize,
     },
+    ExceededMaxTypeNameLen {
+        limit: usize,
+        actual: usize,
+    },
     ExceededMaxFunctionNameLen {
         limit: usize,
         actual: usize,
@@ -257,7 +261,7 @@ fn extract_package_event_static_type_id(
     }
 }
 
-fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
+fn validate_event_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
     for blueprint_init in blueprints {
@@ -293,6 +297,27 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
                     actual: actual_event_name,
                 })?
             }
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_type_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
+    blueprints: I,
+) -> Result<(), PackageError> {
+    for blueprint_init in blueprints {
+        let blueprint_schema_init = &blueprint_init.schema;
+        let BlueprintSchemaInit { schema, types, .. } = blueprint_schema_init;
+
+        for (_name_ignored, local_type_id) in types.type_schema.iter() {
+            if schema.v1().resolve_type_kind(*local_type_id).is_none() {
+                return Err(PackageError::InvalidLocalTypeId(*local_type_id));
+            }
+
+            // Notes:
+            // - We're not enforcing the "type name" matches the names in type definition
+            // - The "type name" length check is done within `validate_names`
         }
     }
 
@@ -492,6 +517,17 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
             if name.len() > MAX_EVENT_NAME_LEN {
                 return Err(PackageError::ExceededMaxEventNameLen {
                     limit: MAX_EVENT_NAME_LEN,
+                    actual: name.len(),
+                });
+            }
+
+            condition(name)?;
+        }
+
+        for (name, _) in bp_init.schema.types.type_schema.iter() {
+            if name.len() > MAX_TYPE_NAME_LEN {
+                return Err(PackageError::ExceededMaxTypeNameLen {
+                    limit: MAX_TYPE_NAME_LEN,
                     actual: name.len(),
                 });
             }
@@ -808,6 +844,7 @@ impl PackageNativePackage {
                     schema,
                     state,
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
@@ -1054,7 +1091,9 @@ impl PackageNativePackage {
         // Validate schema
         validate_package_schema(&definition.blueprints)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(definition.blueprints.values())
+        validate_event_schemas(definition.blueprints.values())
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_type_schemas(definition.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_auth(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
@@ -1148,6 +1187,11 @@ impl PackageNativePackage {
                     );
                 }
 
+                let mut types = index_map_new();
+                for (key, local_type_id) in definition_init.schema.types.type_schema {
+                    types.insert(key, ScopedTypeId(schema_hash, local_type_id));
+                }
+
                 let system_instructions = system_instructions
                     .get(&blueprint)
                     .cloned()
@@ -1173,6 +1217,7 @@ impl PackageNativePackage {
                         feature_set: definition_init.feature_set,
                         functions,
                         events,
+                        types,
                         state: IndexedStateSchema::from_schema(
                             schema_hash,
                             definition_init.schema.state,

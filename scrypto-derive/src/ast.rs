@@ -103,3 +103,18 @@ impl Parse for EventsInner {
         })
     }
 }
+
+pub struct TypesInner {
+    pub paren_token: Paren,
+    pub paths: Punctuated<Path, Token![,]>,
+}
+
+impl Parse for TypesInner {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let content;
+        Ok(Self {
+            paren_token: parenthesized!(content in input),
+            paths: content.parse_terminated(Path::parse)?,
+        })
+    }
+}

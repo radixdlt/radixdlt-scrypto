@@ -515,12 +515,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         let fn_names = generated_schema_info.fn_names;
         let fn_schemas = generated_schema_info.fn_schemas;
 
-        // Getting the event types if the event attribute is defined for the type
-        let (event_type_names, event_type_paths) = {
-            let mut paths = std::collections::BTreeMap::<String, Path>::new();
+        // Getting the event types and other named types from attribute
+        let (event_type_names, event_type_paths, registered_type_names, registered_type_paths) = {
+            let mut event_type_paths = std::collections::BTreeMap::<String, Path>::new();
+            let mut registered_type_paths = std::collections::BTreeMap::<String, Path>::new();
             for attribute in blueprint.attributes {
                 if attribute.path.is_ident("events") {
-                    let events_inner = parse2::<ast::EventsInner>(attribute.tokens)?;
+                    let events_inner = parse2::<ast::EventsInner>(attribute.tokens.clone())?;
                     for path in events_inner.paths.iter() {
                         let ident_string = quote! { #path }
                             .to_string()
@@ -529,10 +530,27 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                             .unwrap()
                             .trim()
                             .to_owned();
-                        if let Some(..) = paths.insert(ident_string, path.clone()) {
+                        if let Some(..) = event_type_paths.insert(ident_string, path.clone()) {
                             return Err(Error::new(
                                 path.span(),
-                                "An event with an identical name has already been registered",
+                                "An event with an identical name has already been named",
+                            ));
+                        }
+                    }
+                } else if attribute.path.is_ident("experimental_types") {
+                    let types_inner = parse2::<ast::TypesInner>(attribute.tokens.clone())?;
+                    for path in types_inner.paths.iter() {
+                        let ident_string = quote! { #path }
+                            .to_string()
+                            .split(':')
+                            .last()
+                            .unwrap()
+                            .trim()
+                            .to_owned();
+                        if let Some(..) = registered_type_paths.insert(ident_string, path.clone()) {
+                            return Err(Error::new(
+                                path.span(),
+                                "An type with an identical name has already been named",
                             ));
                         }
                     }
@@ -548,8 +566,26 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 }
             }
             (
-                paths.keys().into_iter().cloned().collect::<Vec<_>>(),
-                paths.values().into_iter().cloned().collect::<Vec<_>>(),
+                event_type_paths
+                    .keys()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<_>>(),
+                event_type_paths
+                    .values()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<_>>(),
+                registered_type_paths
+                    .keys()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<_>>(),
+                registered_type_paths
+                    .values()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<_>>(),
             )
         };
 
@@ -570,8 +606,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate fields
                     let mut fields = Vec::new();
-                    let type_id = aggregator.add_child_type_and_descendents::<#bp_ident>();
-                    fields.push(FieldSchema::static_field(type_id));
+                    let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
+                    fields.push(FieldSchema::static_field(type_index));
 
                     let state = BlueprintStateSchemaInit {
                         fields,
@@ -594,11 +630,23 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     let events = {
                         let mut event_schema = index_map_new();
                         #({
-                            let local_type_id = aggregator.add_child_type_and_descendents::<#event_type_paths>();
-                            event_schema.insert(#event_type_names.to_owned(), TypeRef::Static(local_type_id));
+                            let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
+                            event_schema.insert(#event_type_names.to_owned(), TypeRef::Static(local_type_index));
                         })*
                         BlueprintEventSchemaInit {
                             event_schema,
+                        }
+                    };
+
+                    // Aggregate registered types
+                    let types = {
+                        let mut type_schema = index_map_new();
+                        #({
+                            let local_type_index = aggregator.add_child_type_and_descendents::<#registered_type_paths>();
+                            type_schema.insert(#registered_type_names.to_owned(), local_type_index);
+                        })*
+                        BlueprintTypeSchemaInit {
+                            type_schema,
                         }
                     };
 
@@ -609,6 +657,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         schema,
                         state,
                         events,
+                        types,
                         functions,
                         hooks: BlueprintHooksInit::default(),
                     }
@@ -1728,8 +1777,8 @@ mod tests {
                         let schema = {
                             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
                             let mut fields = Vec::new();
-                            let type_id = aggregator.add_child_type_and_descendents::<Test>();
-                            fields.push(FieldSchema::static_field(type_id));
+                            let type_index = aggregator.add_child_type_and_descendents::<Test>();
+                            fields.push(FieldSchema::static_field(type_index));
 
                             let state = BlueprintStateSchemaInit {
                                 fields,
@@ -1769,6 +1818,13 @@ mod tests {
                                 }
                             };
 
+                            let types = {
+                                let mut type_schema = index_map_new();
+                                BlueprintTypeSchemaInit {
+                                    type_schema,
+                                }
+                            };
+
                             let schema = generate_full_schema(aggregator);
 
                             BlueprintSchemaInit {
@@ -1776,6 +1832,7 @@ mod tests {
                                 schema,
                                 state,
                                 events,
+                                types,
                                 functions,
                                 hooks: BlueprintHooksInit::default(),
                             }

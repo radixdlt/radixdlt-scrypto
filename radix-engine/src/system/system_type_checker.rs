@@ -46,6 +46,7 @@ pub struct KVStoreTypeTarget {
 pub enum TypeCheckError {
     InvalidNumberOfGenericArgs { expected: usize, actual: usize },
     InvalidLocalTypeId(LocalTypeId),
+    InvalidBlueprintTypeIdentifier(BlueprintTypeIdentifier),
     InvalidCollectionIndex(Box<BlueprintInfo>, CollectionIndex),
     BlueprintPayloadDoesNotExist(Box<BlueprintInfo>, BlueprintPayloadIdentifier),
     BlueprintPayloadValidationError(Box<BlueprintInfo>, BlueprintPayloadIdentifier, String),
@@ -76,7 +77,7 @@ where
         }
 
         for generic_substitution in generic_substitutions {
-            Self::validate_generic_arg(schemas, generic_substitution)?;
+            Self::validate_generic_substitution(self, schemas, generic_substitution)?;
         }
 
         Ok(())
@@ -89,13 +90,14 @@ where
         key: &GenericSubstitution,
         value: &GenericSubstitution,
     ) -> Result<(), TypeCheckError> {
-        Self::validate_generic_arg(schemas, key)?;
-        Self::validate_generic_arg(schemas, value)?;
+        Self::validate_generic_substitution(self, schemas, key)?;
+        Self::validate_generic_substitution(self, schemas, value)?;
 
         Ok(())
     }
 
-    fn validate_generic_arg(
+    fn validate_generic_substitution(
+        &mut self,
         schemas: &IndexMap<SchemaHash, VersionedScryptoSchema>,
         substitution: &GenericSubstitution,
     ) -> Result<(), TypeCheckError> {
@@ -106,12 +108,16 @@ where
                     .ok_or_else(|| TypeCheckError::MissingSchema)?;
 
                 if schema.v1().resolve_type_kind(type_id.1).is_none() {
-                    return Err(TypeCheckError::InvalidLocalTypeId(type_id.1));
+                    Err(TypeCheckError::InvalidLocalTypeId(type_id.1))
+                } else {
+                    Ok(())
                 }
             }
+            GenericSubstitution::Remote(type_id) => self
+                .get_blueprint_type_schema(type_id)
+                .map(|_| ())
+                .map_err(|_| TypeCheckError::InvalidBlueprintTypeIdentifier(type_id.clone())),
         }
-
-        Ok(())
     }
 
     pub fn get_payload_schema(
@@ -196,6 +202,18 @@ where
                         };
 
                         (schema, type_id.1, SchemaOrigin::Instance)
+                    }
+                    GenericSubstitution::Remote(type_id) => {
+                        let (schema, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
+
+                        (
+                            schema,
+                            scoped_type_id.1,
+                            SchemaOrigin::Blueprint(BlueprintId::new(
+                                &type_id.package_address,
+                                type_id.blueprint_name.clone(),
+                            )),
+                        )
                     }
                 }
             }
@@ -290,9 +308,9 @@ where
         payload_identifier: KeyOrValue,
         payload: &[u8],
     ) -> Result<(), RuntimeError> {
-        let type_substition_ref = match payload_identifier {
-            KeyOrValue::Key => target.kv_store_type.key_generic_substitutions,
-            KeyOrValue::Value => target.kv_store_type.value_generic_substitutions,
+        let type_substitution = match payload_identifier {
+            KeyOrValue::Key => target.kv_store_type.key_generic_substitution.clone(),
+            KeyOrValue::Value => target.kv_store_type.value_generic_substitution.clone(),
         };
 
         let allow_ownership = match payload_identifier {
@@ -300,29 +318,32 @@ where
             KeyOrValue::Value => target.kv_store_type.allow_ownership,
         };
 
-        match type_substition_ref {
+        let (schema, local_type_id) = match type_substitution {
             GenericSubstitution::Local(type_id) => {
-                let schema = self.get_schema(&target.meta, &type_id.0)?;
-
-                self.validate_payload(
-                    payload,
-                    &schema,
-                    type_id.1,
-                    SchemaOrigin::KeyValueStore,
-                    allow_ownership,
-                    false,
-                    KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH,
-                )
-                .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::TypeCheckError(
-                        TypeCheckError::KeyValueStorePayloadValidationError(
-                            payload_identifier,
-                            err.error_message(schema.v1()),
-                        ),
-                    ))
-                })?;
+                (self.get_schema(&target.meta, &type_id.0)?, type_id.1)
             }
-        }
+            GenericSubstitution::Remote(type_id) => self
+                .get_blueprint_type_schema(&type_id)
+                .map(|x| (x.0, x.1 .1))?,
+        };
+
+        self.validate_payload(
+            payload,
+            &schema,
+            local_type_id,
+            SchemaOrigin::KeyValueStore,
+            allow_ownership,
+            false,
+            KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH,
+        )
+        .map_err(|err| {
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::KeyValueStorePayloadValidationError(
+                    payload_identifier,
+                    err.error_message(schema.v1()),
+                ),
+            ))
+        })?;
 
         Ok(())
     }
@@ -393,6 +414,31 @@ where
             .insert(schema_hash.clone(), schema.clone());
 
         Ok(schema)
+    }
+
+    pub fn get_blueprint_type_schema(
+        &mut self,
+        type_id: &BlueprintTypeIdentifier,
+    ) -> Result<(VersionedScryptoSchema, ScopedTypeId), RuntimeError> {
+        let BlueprintTypeIdentifier {
+            package_address,
+            blueprint_name,
+            type_name,
+        } = type_id.clone();
+        let interface = self.get_blueprint_default_interface(BlueprintId {
+            package_address,
+            blueprint_name,
+        })?;
+        let scoped_type_id = interface
+            .types
+            .get(&type_name)
+            .ok_or(RuntimeError::SystemError(
+                SystemError::BlueprintTypeNotFound(type_name.clone()),
+            ))?;
+        Ok((
+            self.get_schema(package_address.as_node_id(), &scoped_type_id.0)?,
+            scoped_type_id.clone(),
+        ))
     }
 }
 
