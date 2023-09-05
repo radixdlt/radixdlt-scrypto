@@ -181,7 +181,7 @@ fn assert_complete_system_structure(result: &CommitResult) {
         event_system_structures,
     } = &result.system_structure;
 
-    for update in &result.state_updates.elements {
+    for update in &result.state_updates.updates {
         match update {
             StateUpdate::Single(single) => {
                 let SingleSubstateUpdate {

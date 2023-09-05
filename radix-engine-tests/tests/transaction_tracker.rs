@@ -60,7 +60,7 @@ fn test_transaction_replay_protection() {
         receipt
             .expect_commit_success()
             .state_updates
-            .elements
+            .updates
             .iter()
             .filter(|update| matches!(
                 update,

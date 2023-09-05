@@ -220,16 +220,16 @@ impl FlashReceipt {
                 // A sanity check that the system receipt should not be conflicting with the flash receipt
                 let mut result_state_updates = result
                     .state_updates
-                    .elements
+                    .updates
                     .drain(..)
                     .collect::<IndexSet<_>>();
-                for update in self.state_updates.elements {
+                for update in self.state_updates.updates {
                     let added = result_state_updates.insert(update);
                     if !added {
                         panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
                     }
                 }
-                result.state_updates.elements = result_state_updates.into_iter().collect();
+                result.state_updates.updates = result_state_updates.into_iter().collect();
 
                 let mut substate_system_structures = self.substate_system_structures;
                 for (node_id, by_partition_num) in

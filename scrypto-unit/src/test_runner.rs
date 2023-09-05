@@ -2468,7 +2468,7 @@ pub fn validate_notarized_transaction<'a>(
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
-    let state_updates = &commit_result.state_updates.elements;
+    let state_updates = &commit_result.state_updates.updates;
     for update in state_updates.into_iter() {
         match update {
             StateUpdate::Single(single) => {

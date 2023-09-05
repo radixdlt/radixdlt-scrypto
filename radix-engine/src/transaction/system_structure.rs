@@ -208,7 +208,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     /// were *individually* updated in the given [`SystemUpdates`] (i.e. ignored substates affected
     /// as part of a batch, e.g. during a partition deletion).
     pub fn add_for_all_individually_updated(&mut self, updates: &StateUpdates) {
-        for update in &updates.elements {
+        for update in &updates.updates {
             match update {
                 StateUpdate::Single(single) => {
                     let SingleSubstateUpdate {

@@ -87,7 +87,7 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
 
     // Assert
     let result = receipt.expect_commit_success();
-    for update in &result.state_updates.elements {
+    for update in &result.state_updates.updates {
         match update {
             StateUpdate::Single(SingleSubstateUpdate {
                 node_id, update, ..

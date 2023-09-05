@@ -20,7 +20,7 @@ use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, St
 /// A captured sequence of [`StateUpdate`]s to be applied in particular order.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct StateUpdates {
-    pub elements: Vec<StateUpdate>,
+    pub updates: Vec<StateUpdate>,
 }
 
 impl StateUpdates {
@@ -32,7 +32,7 @@ impl StateUpdates {
         system_updates: IndexMap<(NodeId, PartitionNumber), IndexMap<SubstateKey, DatabaseUpdate>>,
     ) -> Self {
         Self {
-            elements: partition_deletions
+            updates: partition_deletions
                 .into_iter()
                 .map(|(node_id, partition_num)| {
                     StateUpdate::Batch(BatchStateUpdate::DeletePartition(node_id, partition_num))
@@ -63,7 +63,7 @@ impl StateUpdates {
         // TODO(after RCNet-v3.1): Expand the `DatabaseUpdates` definition in order to capture the
         // `partition_deletions` there as well (preferably using a "canonicalized" representation).
         let mut database_updates = DatabaseUpdates::default();
-        for update in &self.elements {
+        for update in &self.updates {
             let update = match update {
                 StateUpdate::Single(update) => update,
                 StateUpdate::Batch(BatchStateUpdate::DeletePartition(..)) => continue,
