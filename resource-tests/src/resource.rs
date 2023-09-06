@@ -13,7 +13,7 @@ use radix_engine_common::prelude::{
     NonFungibleLocalId, ScryptoValue,
 };
 use radix_engine_common::types::{ComponentAddress, ResourceAddress};
-use radix_engine_interface::api::{ClientApi, LockFlags, ModuleId, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_SELF};
 use radix_engine_interface::data::manifest::ManifestArgs;
 use radix_engine_interface::prelude::{
     Bucket, FieldValue, FungibleResourceManagerMintInput,
@@ -76,8 +76,8 @@ impl VmInvoke for ResourceTestInvoke {
                 api.globalize(
                     node_id,
                     indexmap!(
-                        ModuleId::Metadata => metadata.0,
-                        ModuleId::RoleAssignment => access_rules.0.0,
+                        AttachedModuleId::Metadata => metadata.0,
+                        AttachedModuleId::RoleAssignment => access_rules.0.0,
                     ),
                     None,
                 )?;
@@ -96,8 +96,8 @@ impl VmInvoke for ResourceTestInvoke {
                 api.globalize(
                     node_id,
                     indexmap!(
-                        ModuleId::Metadata => metadata.0,
-                        ModuleId::RoleAssignment => access_rules.0.0,
+                        AttachedModuleId::Metadata => metadata.0,
+                        AttachedModuleId::RoleAssignment => access_rules.0.0,
                     ),
                     None,
                 )?;

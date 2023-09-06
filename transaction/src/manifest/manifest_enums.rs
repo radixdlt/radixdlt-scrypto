@@ -117,6 +117,26 @@ lazy_static! {
             }
         );
 
+        // Notes: This is to be deprecated, please use `ModuleId` instead
+        known_enum!(
+            m,
+            enum ObjectModuleId {
+                Main = 0;
+                Metadata = 1;
+                Royalty = 2;
+                RoleAssignment = 3;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum AttachedModuleId {
+                Metadata = 1;
+                Royalty = 2;
+                RoleAssignment = 3;
+            }
+        );
+
         known_enum!(
             m,
             enum NonFungibleIdType {
@@ -175,6 +195,14 @@ lazy_static! {
                 None = 0;
                 Fixed = 1;
                 Updatable = 2;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum NonFungibleDataSchema {
+                Local = 0;
+                Remote = 1;
             }
         );
 

@@ -28,7 +28,7 @@ use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -760,7 +760,7 @@ where
                 .unwrap();
             events.push((
                 EventTypeIdentifier(
-                    Emitter::Method(node_id, ObjectModuleId::Main),
+                    Emitter::Method(node_id, ModuleId::Main),
                     DepositEvent::EVENT_NAME.to_string(),
                 ),
                 scrypto_encode(&DepositEvent { amount }).unwrap(),
@@ -824,7 +824,7 @@ where
 
             events.push((
                 EventTypeIdentifier(
-                    Emitter::Method(vault_id, ObjectModuleId::Main),
+                    Emitter::Method(vault_id, ModuleId::Main),
                     PayFeeEvent::EVENT_NAME.to_string(),
                 ),
                 scrypto_encode(&PayFeeEvent { amount }).unwrap(),
@@ -941,7 +941,7 @@ where
 
             events.push((
                 EventTypeIdentifier(
-                    Emitter::Method(vault_node_id, ObjectModuleId::Main),
+                    Emitter::Method(vault_node_id, ModuleId::Main),
                     DepositEvent::EVENT_NAME.to_string(),
                 ),
                 scrypto_encode(&DepositEvent {
@@ -954,7 +954,7 @@ where
         if to_burn.is_positive() {
             events.push((
                 EventTypeIdentifier(
-                    Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                    Emitter::Method(XRD.into_node_id(), ModuleId::Main),
                     "BurnFungibleResourceEvent".to_string(),
                 ),
                 scrypto_encode(&BurnFungibleResourceEvent { amount: to_burn }).unwrap(),

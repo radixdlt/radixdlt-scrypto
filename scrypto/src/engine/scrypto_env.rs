@@ -5,7 +5,7 @@ use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{ActorRefHandle, FieldValue};
-use radix_engine_interface::api::{FieldIndex, LockFlags, ModuleId};
+use radix_engine_interface::api::{AttachedModuleId, FieldIndex, LockFlags};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::PackageAddress;
@@ -56,7 +56,7 @@ impl ScryptoVmV1Api {
 
     pub fn object_globalize(
         object_id: NodeId,
-        modules: IndexMap<ModuleId, NodeId>,
+        modules: IndexMap<AttachedModuleId, NodeId>,
         address_reservation: Option<GlobalAddressReservation>,
     ) -> GlobalAddress {
         let modules = scrypto_encode(&modules).unwrap();
@@ -113,7 +113,7 @@ impl ScryptoVmV1Api {
 
     pub fn object_call_module(
         receiver: &NodeId,
-        module_id: ModuleId,
+        module_id: AttachedModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Vec<u8> {

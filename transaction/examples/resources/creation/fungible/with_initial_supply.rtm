@@ -38,7 +38,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Tuple(                                                                   # Metadata initialization
         Map<String, Tuple>(                                                  # Initial metadata values
             "name" => Tuple(
-                Some(Enum<Metadata::String>("MyResource")),    # Resource Name
+                Some(Enum<Metadata::String>("MyResource")),                  # Resource Name
                 true                                                         # Locked
             )
         ),

@@ -64,12 +64,12 @@ impl From<RoleList> for MethodAccessibility {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct ModuleRoleKey {
-    pub module: ObjectModuleId,
+    pub module: ModuleId,
     pub key: RoleKey,
 }
 
 impl ModuleRoleKey {
-    pub fn new<K: Into<RoleKey>>(module: ObjectModuleId, key: K) -> Self {
+    pub fn new<K: Into<RoleKey>>(module: ModuleId, key: K) -> Self {
         Self {
             module,
             key: key.into(),

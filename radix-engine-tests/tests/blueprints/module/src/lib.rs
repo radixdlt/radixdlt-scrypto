@@ -43,9 +43,9 @@ mod component_module {
             let address = ScryptoVmV1Api::object_globalize(
                 *component.0.handle().as_node_id(),
                 indexmap!(
-                    ModuleId::RoleAssignment => metadata.0,
-                    ModuleId::Metadata => royalty.0,
-                    ModuleId::Royalty => role_assignment.0,
+                    AttachedModuleId::RoleAssignment => metadata.0,
+                    AttachedModuleId::Metadata => royalty.0,
+                    AttachedModuleId::Royalty => role_assignment.0,
                 ),
                 None,
             );

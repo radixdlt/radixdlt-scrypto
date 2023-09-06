@@ -43,8 +43,8 @@ mod tests {
         test_equivalence(ROLE_KEY_TYPE, RoleKey::from("MyRoleName"));
 
         // OTHER MODULE TYPES
-        test_equivalence(OBJECT_MODULE_ID_TYPE, ObjectModuleId::Main);
-        test_equivalence(MODULE_ID_TYPE, ModuleId::Metadata);
+        test_equivalence(MODULE_ID_TYPE, ModuleId::Main);
+        test_equivalence(ATTACHED_MODULE_ID_TYPE, AttachedModuleId::Metadata);
         test_equivalence(ROYALTY_AMOUNT_TYPE, RoyaltyAmount::Free);
         test_equivalence(ROYALTY_AMOUNT_TYPE, RoyaltyAmount::Usd(dec!("1.6")));
         test_equivalence(ROYALTY_AMOUNT_TYPE, RoyaltyAmount::Xrd(dec!("1.6")));

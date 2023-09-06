@@ -5,7 +5,9 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, LockFlags, ModuleId, ACTOR_STATE_OUTER_OBJECT};
+use radix_engine_interface::api::{
+    AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_OUTER_OBJECT,
+};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -38,8 +40,8 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
                     api.globalize(
                         node_id,
                         indexmap!(
-                            ModuleId::Metadata => metadata.0,
-                            ModuleId::RoleAssignment => access_rules.0.0,
+                            AttachedModuleId::Metadata => metadata.0,
+                            AttachedModuleId::RoleAssignment => access_rules.0.0,
                         ),
                         None,
                     )?;

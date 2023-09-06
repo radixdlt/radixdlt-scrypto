@@ -409,7 +409,7 @@ impl TestEnvironment {
     ///
     /// * `node_id`: `T` - The node to invoke the method on. This is a generic argument that's
     /// fulfilled by any type that implements [`Into<NodeId>`], thus, any address type can be used.
-    /// * `module`: [`ModuleId`] - The module id.
+    /// * `module`: [`AttachedModuleId`] - The module id.
     /// * `method_name`: [`&str`] - The name of the method to invoke.
     /// * `args`: `&I` - The arguments to invoke the method with. This is a generic arguments that
     /// is fulfilled by any type that implements [`ScryptoEncode`].
@@ -432,7 +432,7 @@ impl TestEnvironment {
     pub fn call_module_method_typed<N, I, O>(
         &mut self,
         node_id: N,
-        module: ModuleId,
+        module: AttachedModuleId,
         method_name: &str,
         args: &I,
     ) -> Result<O, RuntimeError>
@@ -758,7 +758,7 @@ impl TestEnvironment {
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
         self.as_method_actor(
             CONSENSUS_MANAGER,
-            ObjectModuleId::Main,
+            ModuleId::Main,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
             |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
                 let manager_handle = env
@@ -793,7 +793,7 @@ impl TestEnvironment {
     pub fn set_current_time(&mut self, instant: Instant) {
         self.as_method_actor(
             CONSENSUS_MANAGER,
-            ObjectModuleId::Main,
+            ModuleId::Main,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
             |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
                 let handle = env.actor_open_field(
@@ -830,7 +830,7 @@ impl TestEnvironment {
     pub(crate) fn as_method_actor<N, F, O>(
         &mut self,
         node_id: N,
-        module_id: ObjectModuleId,
+        module_id: ModuleId,
         method_ident: &str,
         callback: F,
     ) -> Result<O, RuntimeError>
@@ -860,10 +860,10 @@ impl TestEnvironment {
         })?;
         let actor = Actor::Method(MethodActor {
             method_type: match module_id {
-                ObjectModuleId::Main => MethodType::Main,
-                ObjectModuleId::Royalty => MethodType::Module(ModuleId::Royalty),
-                ObjectModuleId::Metadata => MethodType::Module(ModuleId::Metadata),
-                ObjectModuleId::RoleAssignment => MethodType::Module(ModuleId::RoleAssignment),
+                ModuleId::Main => MethodType::Main,
+                ModuleId::Royalty => MethodType::Module(AttachedModuleId::Royalty),
+                ModuleId::Metadata => MethodType::Module(AttachedModuleId::Metadata),
+                ModuleId::RoleAssignment => MethodType::Module(AttachedModuleId::RoleAssignment),
             },
             ident: method_ident.to_owned(),
             node_id: node_id.into(),
