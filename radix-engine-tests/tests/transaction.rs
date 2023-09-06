@@ -284,3 +284,159 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked2() {
     // Assert
     rtn.expect("Validation of the manifest failed")
 }
+
+#[test]
+fn test_create_proof_from_bucket_of_amount() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(true);
+
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account, XRD, 73)
+        .take_from_worktop(XRD, 73, "XRD")
+        .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
+        .drop_all_proofs()
+        .try_deposit_or_abort(account, None, "XRD")
+        .build();
+
+    // Act
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        Default::default(),
+        Default::default(),
+        PreviewFlags {
+            use_free_credit: true,
+            assume_all_signature_proofs: true,
+            skip_epoch_check: true,
+        },
+    );
+
+    // Assert
+    let execution_trace = receipt
+        .expect_commit_success()
+        .execution_trace
+        .as_ref()
+        .unwrap();
+
+    assert_eq!(
+        execution_trace
+            .execution_traces
+            .get(0)
+            .unwrap()
+            .children
+            .get(3)
+            .unwrap()
+            .output
+            .proofs
+            .values()
+            .next()
+            .unwrap()
+            .clone(),
+        ProofSnapshot::Fungible {
+            resource_address: XRD,
+            total_locked: 73.into()
+        }
+    );
+}
+
+#[test]
+fn test_create_proof_from_bucket_of_non_fungibles() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(true);
+    let nft = test_runner.create_non_fungible_resource(account);
+
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account, nft, 3)
+        .take_from_worktop(nft, 3, "NFT")
+        .create_proof_from_bucket_of_non_fungibles(
+            "NFT",
+            [
+                NonFungibleLocalId::integer(1),
+                NonFungibleLocalId::integer(2),
+                NonFungibleLocalId::integer(3),
+            ],
+            "NFTProof",
+        )
+        .drop_all_proofs()
+        .try_deposit_or_abort(account, None, "NFT")
+        .build();
+
+    // Act
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        Default::default(),
+        Default::default(),
+        PreviewFlags {
+            use_free_credit: true,
+            assume_all_signature_proofs: true,
+            skip_epoch_check: true,
+        },
+    );
+
+    // Assert
+    let execution_trace = receipt
+        .expect_commit_success()
+        .execution_trace
+        .as_ref()
+        .unwrap();
+
+    assert_eq!(
+        execution_trace
+            .execution_traces
+            .get(0)
+            .unwrap()
+            .children
+            .get(3)
+            .unwrap()
+            .output
+            .proofs
+            .values()
+            .next()
+            .unwrap()
+            .clone(),
+        ProofSnapshot::NonFungible {
+            resource_address: nft,
+            total_locked: indexset![
+                NonFungibleLocalId::integer(1),
+                NonFungibleLocalId::integer(2),
+                NonFungibleLocalId::integer(3),
+            ]
+        }
+    );
+}
+
+#[test]
+fn test_drop_auth_zone_regular_proofs() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(true);
+
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_amount(account, XRD, 73)
+        .drop_auth_zone_regular_proofs()
+        .pop_from_auth_zone("proof")
+        .build();
+
+    // Act
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        Default::default(),
+        Default::default(),
+        PreviewFlags {
+            use_free_credit: true,
+            assume_all_signature_proofs: true,
+            skip_epoch_check: true,
+        },
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::AuthZoneIsEmpty
+            ))
+        )
+    })
+}
