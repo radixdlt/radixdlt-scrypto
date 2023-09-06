@@ -4,7 +4,9 @@ use radix_engine_store_interface::interface::{
     DbSubstateValue, ListableSubstateDatabase, PartitionEntry, SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use radix_engine_stores::hash_tree::{
+    list_substate_hashes_at_version, put_at_next_version, SubstateHashChange,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct HashTreeUpdatingDatabase<D> {
@@ -24,8 +26,12 @@ impl<D> HashTreeUpdatingDatabase<D> {
         }
     }
 
-    pub fn get_current(&self) -> Hash {
+    pub fn get_current_root_hash(&self) -> Hash {
         self.current_hash
+    }
+
+    pub fn list_substate_hashes(&mut self) -> IndexMap<DbPartitionKey, IndexMap<DbSortKey, Hash>> {
+        list_substate_hashes_at_version(&mut self.tree_store, self.current_version)
     }
 
     fn update_with(&mut self, db_updates: &DatabaseUpdates) {

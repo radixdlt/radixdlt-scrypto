@@ -1,0 +1,35 @@
+use radix_engine::types::*;
+use scrypto_unit::*;
+use transaction_scenarios::scenario::{NextAction, ScenarioCore};
+use transaction_scenarios::scenarios::get_builder_for_every_scenario;
+
+#[test]
+fn substate_store_matches_hash_tree_after_each_scenario() {
+    let network = NetworkDefinition::simulator();
+    let mut test_runner = TestRunnerBuilder::new().with_state_hashing().build();
+
+    let mut next_nonce: u32 = 0;
+    for scenario_builder in get_builder_for_every_scenario() {
+        let epoch = test_runner.get_current_epoch();
+        let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
+        let mut previous = None;
+        loop {
+            let next = scenario
+                .next(previous.as_ref())
+                .map_err(|err| err.into_full(&scenario))
+                .unwrap();
+            match next {
+                NextAction::Transaction(next) => {
+                    let receipt =
+                        test_runner.execute_raw_transaction(&network, &next.raw_transaction);
+                    test_runner.assert_state_hash_tree_matches_substate_store();
+                    previous = Some(receipt);
+                }
+                NextAction::Completed(end_state) => {
+                    next_nonce = end_state.next_unused_nonce;
+                    break;
+                }
+            }
+        }
+    }
+}
