@@ -447,8 +447,88 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder
     }
 }
 
+impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B> UpdateAuthBuilder
+    for InProgressResourceBuilder<NonFungibleResourceTypeV2<T, D, B>>
+{
+    fn mint_roles(mut self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.mint_roles = mint_roles;
+        self
+    }
+
+    fn burn_roles(mut self, burn_roles: Option<BurnRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.burn_roles = burn_roles;
+        self
+    }
+
+    fn recall_roles(mut self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.recall_roles = recall_roles;
+        self
+    }
+
+    fn freeze_roles(mut self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.freeze_roles = freeze_roles;
+        self
+    }
+
+    fn withdraw_roles(mut self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.withdraw_roles = withdraw_roles;
+        self
+    }
+
+    fn deposit_roles(mut self, deposit_roles: Option<DepositRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.deposit_roles = deposit_roles;
+        self
+    }
+}
+
 impl<T: IsNonFungibleLocalId, D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<T, D>>
+{
+    /// Sets how each non-fungible's mutable data can be updated.
+    ///
+    /// * The first parameter is the access rule which allows updating the mutable data of each non-fungible.
+    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
+    ///
+    /// ### Examples
+    ///
+    /// ```no_run
+    /// use radix_engine_interface::non_fungible_data_update_roles;
+    /// use scrypto::prelude::*;
+    ///
+    /// # let resource_address = XRD;
+    ///
+    /// #[derive(ScryptoSbor, NonFungibleData)]
+    /// struct NFData {
+    ///     pub name: String,
+    ///     #[mutable]
+    ///     pub flag: bool,
+    /// }
+    /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
+    /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
+    ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+    ///        non_fungible_data_updater => rule!(require(resource_address));
+    ///        non_fungible_data_updater_updater => rule!(deny_all);
+    ///    });
+    ///
+    /// # let resource_address = XRD;
+    /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
+    /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
+    ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+    ///        non_fungible_data_updater => rule!(deny_all);
+    ///        non_fungible_data_updater_updater => rule!(require(resource_address));
+    ///    });
+    /// ```
+    pub fn non_fungible_data_update_roles(
+        mut self,
+        non_fungible_data_update_roles: Option<NonFungibleDataUpdateRoles<RoleDefinition>>,
+    ) -> Self {
+        self.resource_roles.non_fungible_data_update_roles = non_fungible_data_update_roles;
+        self
+    }
+}
+
+impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B>
+    InProgressResourceBuilder<NonFungibleResourceTypeV2<T, D, B>>
 {
     /// Sets how each non-fungible's mutable data can be updated.
     ///
@@ -690,6 +770,64 @@ impl<D: NonFungibleData>
     }
 }
 
+impl<D: NonFungibleData + RegisteredType<B>, B>
+    InProgressResourceBuilder<NonFungibleResourceTypeV2<StringNonFungibleLocalId, D, B>>
+{
+    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
+    ///
+    /// ### Example
+    /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
+    /// #[derive(ScryptoSbor, NonFungibleData)]
+    /// struct NFData {
+    ///     pub name: String,
+    ///     #[mutable]
+    ///     pub flag: bool,
+    /// }
+    ///
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
+    ///     .mint_initial_supply([
+    ///         ("One".try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
+    ///         ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
+    ///     ]);
+    /// ```
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
+    where
+        T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
+    {
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
+
+        let metadata = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| Default::default());
+
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(
+                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                    owner_role: self.owner_role,
+                    track_total_supply: true,
+                    id_type: StringNonFungibleLocalId::id_type(),
+                    non_fungible_schema,
+                    resource_roles: self.resource_roles,
+                    metadata,
+                    entries: map_entries(entries),
+                    address_reservation: self.address_reservation,
+                },
+            )
+            .unwrap(),
+        );
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
+            .unwrap()
+            .1
+    }
+}
+
 impl<D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>>
 {
@@ -719,6 +857,64 @@ impl<D: NonFungibleData>
         let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
             Runtime::package_address(),
         );
+
+        let metadata = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| Default::default());
+
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(
+                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                    owner_role: self.owner_role,
+                    track_total_supply: true,
+                    id_type: IntegerNonFungibleLocalId::id_type(),
+                    non_fungible_schema,
+                    resource_roles: self.resource_roles,
+                    metadata,
+                    entries: map_entries(entries),
+                    address_reservation: self.address_reservation,
+                },
+            )
+            .unwrap(),
+        );
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
+            .unwrap()
+            .1
+    }
+}
+
+impl<D: NonFungibleData + RegisteredType<B>, B>
+    InProgressResourceBuilder<NonFungibleResourceTypeV2<IntegerNonFungibleLocalId, D, B>>
+{
+    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
+    ///
+    /// ### Example
+    /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
+    /// #[derive(ScryptoSbor, NonFungibleData)]
+    /// struct NFData {
+    ///     pub name: String,
+    ///     #[mutable]
+    ///     pub flag: bool,
+    /// }
+    ///
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
+    ///     .mint_initial_supply([
+    ///         (1u64.into(), NFData { name: "NF One".to_owned(), flag: true }),
+    ///         (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),
+    ///     ]);
+    /// ```
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
+    where
+        T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
+    {
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
 
         let metadata = self
             .metadata_config
@@ -808,6 +1004,64 @@ impl<D: NonFungibleData>
     }
 }
 
+impl<D: NonFungibleData + RegisteredType<B>, B>
+    InProgressResourceBuilder<NonFungibleResourceTypeV2<BytesNonFungibleLocalId, D, B>>
+{
+    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
+    ///
+    /// ### Example
+    /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
+    /// #[derive(ScryptoSbor, NonFungibleData)]
+    /// struct NFData {
+    ///     pub name: String,
+    ///     #[mutable]
+    ///     pub flag: bool,
+    /// }
+    ///
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
+    ///     .mint_initial_supply([
+    ///         (vec![1u8].try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
+    ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
+    ///     ]);
+    /// ```
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
+    where
+        T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
+    {
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
+
+        let metadata = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| Default::default());
+
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(
+                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                    owner_role: self.owner_role,
+                    id_type: BytesNonFungibleLocalId::id_type(),
+                    track_total_supply: true,
+                    non_fungible_schema,
+                    resource_roles: self.resource_roles,
+                    metadata,
+                    entries: map_entries(entries),
+                    address_reservation: self.address_reservation,
+                },
+            )
+            .unwrap(),
+        );
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
+            .unwrap()
+            .1
+    }
+}
+
 impl<D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>>
 {
@@ -841,6 +1095,67 @@ impl<D: NonFungibleData>
         let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
             Runtime::package_address(),
         );
+
+        let metadata = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| Default::default());
+
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
+            scrypto_encode(
+                &NonFungibleResourceManagerCreateRuidWithInitialSupplyTypedInput {
+                    owner_role: self.owner_role,
+                    non_fungible_schema,
+                    track_total_supply: true,
+                    resource_roles: self.resource_roles,
+                    metadata,
+                    entries: entries.into_iter().map(|data| (data,)).collect(),
+                    address_reservation: self.address_reservation,
+                },
+            )
+            .unwrap(),
+        );
+        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
+            .unwrap()
+            .1
+    }
+}
+
+impl<D: NonFungibleData + RegisteredType<B>, B>
+    InProgressResourceBuilder<NonFungibleResourceTypeV2<RUIDNonFungibleLocalId, D, B>>
+{
+    /// Creates the RUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
+    ///
+    /// The system automatically generates a new RUID `NonFungibleLocalId` for each non-fungible,
+    /// and assigns the given data to each.
+    ///
+    /// ### Example
+    /// ```no_run
+    /// use scrypto::prelude::*;
+    ///
+    /// #[derive(ScryptoSbor, NonFungibleData)]
+    /// struct NFData {
+    ///     pub name: String,
+    ///     #[mutable]
+    ///     pub flag: bool,
+    /// }
+    ///
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
+    ///     .mint_initial_supply([
+    ///         (NFData { name: "NF One".to_owned(), flag: true }),
+    ///         (NFData { name: "NF Two".to_owned(), flag: true }),
+    ///     ]);
+    /// ```
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
+    where
+        T: IntoIterator<Item = D>,
+        D: ScryptoEncode,
+    {
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
 
         let metadata = self
             .metadata_config
