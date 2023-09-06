@@ -463,10 +463,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         import_statements
     };
 
-    let registered_type_ident = format_ident!("{}Type", bp_ident);
-    let registered_type_maker: ItemStruct = parse_quote! {
-        pub struct #registered_type_ident;
-    };
+    let registered_type_ident = bp_ident.clone();
     let mut registered_type_defs = Vec::<ItemStruct>::new();
     let mut registered_type_impls = Vec::<ItemImpl>::new();
 
@@ -927,8 +924,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #output_schema
 
             #output_stubs
-
-            #registered_type_maker
 
             #(#registered_type_defs)*
 
@@ -1990,8 +1985,6 @@ mod tests {
                         }
                     }
 
-                    pub struct TestType;
-
                     #[derive(ScryptoSbor)]
                     #[sbor(transparent)]
                     pub struct Hi(Struct2);
@@ -2000,7 +1993,7 @@ mod tests {
                     #[sbor(transparent)]
                     pub struct GenericAlias(Vec<Bucket>);
 
-                    impl RegisteredType<TestType> for Struct1 {
+                    impl RegisteredType<Test> for Struct1 {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2020,7 +2013,7 @@ mod tests {
                             value.0
                         }
                     }
-                    impl RegisteredType<TestType> for Hi {
+                    impl RegisteredType<Test> for Hi {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2030,7 +2023,7 @@ mod tests {
                         }
                     }
 
-                    impl RegisteredType<TestType> for u32 {
+                    impl RegisteredType<Test> for u32 {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2040,7 +2033,7 @@ mod tests {
                         }
                     }
 
-                    impl RegisteredType<TestType> for NonFungibleGlobalId {
+                    impl RegisteredType<Test> for NonFungibleGlobalId {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2050,7 +2043,7 @@ mod tests {
                         }
                     }
 
-                    impl RegisteredType<TestType> for Vec<Hash> {
+                    impl RegisteredType<Test> for Vec<Hash> {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2070,7 +2063,7 @@ mod tests {
                             value.0
                         }
                     }
-                    impl RegisteredType<TestType> for GenericAlias {
+                    impl RegisteredType<Test> for GenericAlias {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
