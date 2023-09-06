@@ -15,8 +15,6 @@ use sbor::*;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
 
-// TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
-
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<
     K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,

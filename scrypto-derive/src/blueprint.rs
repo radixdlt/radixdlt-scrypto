@@ -463,7 +463,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         import_statements
     };
 
-    let registered_type_ident = format_ident!("{}RegisteredType", bp_ident);
+    let registered_type_ident = format_ident!("{}Type", bp_ident);
     let registered_type_trait: ItemTrait = parse_quote! {
         pub trait #registered_type_ident: ScryptoSbor {
             const BLUEPRINT_NAME: &'static str = #bp_name;
@@ -1976,7 +1976,7 @@ mod tests {
                         }
                     }
 
-                    pub trait TestRegisteredType: ScryptoSbor {
+                    pub trait TestType: ScryptoSbor {
                         const BLUEPRINT_NAME: &'static str = "Test";
                     }
 
@@ -1988,22 +1988,22 @@ mod tests {
                     #[sbor(transparent)]
                     pub struct GenericAlias(Vec<Bucket>);
 
-                    impl TestRegisteredType for Struct1 {}
+                    impl TestType for Struct1 {}
                     impl From<Struct2> for Hi {
                         fn from(value: Struct2) -> Self {
                             Self(value)
                         }
                     }
-                    impl TestRegisteredType for Hi {}
-                    impl TestRegisteredType for u32 {}
-                    impl TestRegisteredType for NonFungibleGlobalId {}
-                    impl TestRegisteredType for Vec<Hash> {}
+                    impl TestType for Hi {}
+                    impl TestType for u32 {}
+                    impl TestType for NonFungibleGlobalId {}
+                    impl TestType for Vec<Hash> {}
                     impl From<Vec<Bucket> > for GenericAlias {
                         fn from(value: Vec<Bucket>) -> Self {
                             Self(value)
                         }
                     }
-                    impl TestRegisteredType for GenericAlias {}
+                    impl TestType for GenericAlias {}
                 }
 
                 #[cfg(feature = "test")]
