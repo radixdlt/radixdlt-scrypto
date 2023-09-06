@@ -3,16 +3,60 @@ run-name: QEMU costing - CPU instructions, branch = ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
-  # pull_request: 
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  cpu-instructions:
-    name: QEMU costing - CPU instructions
+  build-radix-engine-tests:
+    name: Build radix engine tests
     runs-on: ubuntu-22.04
-    timeout-minutes: 720
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Setup dependencies
+        run: rustup target add wasm32-unknown-unknown 
+      - name: Build radix-engine-tests
+        run: |
+             cd radix-engine-tests
+             cargo test --release --no-run --features resource_tracker --test fee
+             rm -f ../target/release/deps/transaction_multi_threaded-*
+             rm -f ../target/release/deps/*.d
+             rm -f ../target/release/deps/*.rlib
+             rm -f ../target/release/deps/*.rmeta
+      - name: Cache build results
+        uses: actions/cache@v3
+        with:
+          path: ./target/release/deps
+          key: ${{ runner.os }}-build-cache-radix-engine-tests-${{ github.run_id }}
+          
+  build-other-tests:          
+    name: Build other tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Setup dependencies
+        run: rustup target add wasm32-unknown-unknown 
+      - name: Build tests
+        run: |
+             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests --test enum
+             rm -f ./target/release/deps/*.d
+             rm -f ./target/release/deps/*.rlib
+             rm -f ./target/release/deps/*.rmeta
+      - name: Cache build results
+        uses: actions/cache@v3
+        with:
+          path: ./target/release/deps
+          key: ${{ runner.os }}-build-cache-radix-tests-${{ github.run_id }}
+
+  qemu-build:
+    name: QEMU build
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -22,8 +66,6 @@ jobs:
         run: |
              sudo apt-get update
              sudo apt-get install build-essential pkg-config ninja-build libglib2.0-dev meson
-             pip3 install lxml tabulate numpy scikit-learn statsmodels
-             rustup target add wasm32-unknown-unknown
       - name: Setup QEMU v8.0.3
         run: |
              cd ..
@@ -38,33 +80,99 @@ jobs:
              cd radix-engine-profiling/qemu-plugin
              sed -i 's/^qemu_source_dir.*/qemu_source_dir=\x27\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/\x27/' ./meson.build
              bash ./build.sh
+      - name: Cache QEMU binary
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/work/radixdlt-scrypto/qemu-8.0.3/build/qemu-x86_64
+          key: ${{ runner.os }}-cache-qemu-bin-${{ github.run_id }}
+      - name: Cache QEMU plugin
+        uses: actions/cache@v3
+        with:
+          path: ./radix-engine-profiling/qemu-plugin/build
+          key: ${{ runner.os }}-cache-qemu-plugin-${{ github.run_id }}
+          
+  qemu-costing-evaluation-run:
+    name: QEMU costing - CPU instructions
+    runs-on: ubuntu-22.04
+    needs: [build-radix-engine-tests, build-other-tests, qemu-build]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Setup dependencies
+        run: rustup target add wasm32-unknown-unknown 
+      - name: Read cache QEMU binary
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/work/radixdlt-scrypto/qemu-8.0.3/build/qemu-x86_64
+          key: ${{ runner.os }}-cache-qemu-bin-${{ github.run_id }}
+          fail-on-cache-miss: true
+      - name: Read cache QEMU plugin
+        uses: actions/cache@v3
+        with:
+          path: ./radix-engine-profiling/qemu-plugin/build
+          key: ${{ runner.os }}-cache-qemu-plugin-${{ github.run_id }}
+          fail-on-cache-miss: true
       - name: Update paths in scripts
         run: |
              cd radix-engine-profiling/resources-tracker-macro/scripts
              sed -i 's/^qemu_app.*/qemu_app=\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/build\/qemu-x86_64/' ./run_tests.sh
              sed -i 's/^qemu_plugin.*/qemu_plugin=\/home\/runner\/work\/radixdlt-scrypto\/radixdlt-scrypto\/radix-engine-profiling\/qemu-plugin\/build\/libscrypto-qemu-plugin.so/' ./run_tests.sh
-      - name: Build radix-engine-tests
-        run: |
-             cd radix-engine-tests
-             cargo test --release --no-run --features resource_tracker
-             rm -f ../target/release/deps/transaction_multi_threaded-*
+      - name: Read cache radix-engine-tests build results
+        uses: actions/cache@v3
+        with:
+          path: ./target/release/deps
+          key: ${{ runner.os }}-build-cache-radix-engine-tests-${{ github.run_id }}
+          fail-on-cache-miss: true
       - name: Run radix-engine-tests using QEMU
         run: |
              cd radix-engine-tests
              bash ../radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ../target/release/deps/
-      - name: Build other tests
-        run: |
-             rm ./target/release/deps/*
-             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-common --exclude radix-engine-tests
+      - name: Prepare for other tests run
+        run: rm -f ./target/release/deps/*    
+      - name: Read cache other tests build results
+        uses: actions/cache@v3
+        with:
+          path: ./target/release/deps
+          key: ${{ runner.os }}-build-cache-radix-tests-${{ github.run_id }}
+          fail-on-cache-miss: true
       - name: Run other tests using QEMU
         run: bash ./radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ./target/release/deps/
+      - name: Cache QEMU run results
+        uses: actions/cache@v3
+        with:
+          path: /tmp/scrypto-resources-usage
+          key: ${{ runner.os }}-cache-qemu-results-${{ github.run_id }}
+          
+  generate-results:
+    name: Generate results
+    runs-on: ubuntu-22.04
+    needs: qemu-costing-evaluation-run
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup dependencies
+        run: pip3 install lxml tabulate numpy scikit-learn statsmodels
+      - name: Read cache QEMU run results
+        uses: actions/cache@v3
+        with:
+          path: /tmp/scrypto-resources-usage
+          key: ${{ runner.os }}-cache-qemu-results-${{ github.run_id }}
+          fail-on-cache-miss: true
       - name: Generate results
         run: python3 ./radix-engine-profiling/resources-tracker-macro/scripts/convert.py /tmp/scrypto-resources-usage
-      - name: Results - table summary
-        run: cat /tmp/_out_table.txt
-      - name: Results - detailed table summary
-        run: cat /tmp/_out_table_detailed.txt
-      - name: Results - linear regression coefficients
-        run: cat /tmp/_out_linear_regression_coeff.txt
-      - name: Results - native blueprints CSV
-        run: cat /tmp/native_function_base_costs.csv
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: Results
+          path: |
+                /tmp/_out_table.txt
+                /tmp/_out_table_detailed.txt
+                /tmp/_out_linear_regression_coeff.txt
+                /tmp/native_function_base_costs.csv
+      - name: Upload xml files
+        uses: actions/upload-artifact@v3
+        with:
+          name: QEMU generated XML files
+          path: /tmp/scrypto-resources-usage
+          
