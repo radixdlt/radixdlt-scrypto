@@ -198,7 +198,7 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: .
-        flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests
+        flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine
     - name: Check stack usage
       run: ./checkdd_stack_usage.sh
 
