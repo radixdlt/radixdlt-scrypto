@@ -72,28 +72,28 @@ impl ResourceBuilder {
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
-    pub fn new_string_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
+    pub fn new_string_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
         owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<StringNonFungibleLocalId, D, B>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
-    pub fn new_integer_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
+    pub fn new_integer_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
         owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<IntegerNonFungibleLocalId, D, B>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
-    pub fn new_bytes_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
+    pub fn new_bytes_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
         owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<BytesNonFungibleLocalId, D, B>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::RUID`
-    pub fn new_ruid_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
+    pub fn new_ruid_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
         owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<RUIDNonFungibleLocalId, D, B>> {
         InProgressResourceBuilder::new(owner_role)
@@ -174,12 +174,12 @@ pub struct NonFungibleResourceTypeV2<
     D: NonFungibleData + RegisteredType<B>,
     B,
 >(PhantomData<T>, PhantomData<D>, PhantomData<B>);
-impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>> AnyResourceType
+impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B> AnyResourceType
     for NonFungibleResourceTypeV2<T, D, B>
 {
     type ResourceRoles = NonFungibleResourceRoles;
 }
-impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>> Default
+impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B> Default
     for NonFungibleResourceTypeV2<T, D, B>
 {
     fn default() -> Self {
@@ -933,7 +933,7 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
     }
 }
 
-impl<Y: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>>
+impl<Y: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B>
     private::CanCreateWithNoSupply
     for InProgressResourceBuilder<NonFungibleResourceTypeV2<Y, D, B>>
 {
