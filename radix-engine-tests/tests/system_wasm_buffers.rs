@@ -14,7 +14,7 @@ fn get_test_runner() -> (
     TestRunner<NoExtension, InMemorySubstateDatabase>,
     ComponentAddress,
 ) {
-    let (code, definition) = Compile::compile("tests/blueprints/wasm_buffers");
+    let (code, definition) = Compile::compile("tests/blueprints/system_wasm_buffers");
 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -95,7 +95,7 @@ macro_rules! test_wasm_buffer_consume {
     }};
 }
 
-fn get_memory_len(buffer_size: u64) -> u64 {
+fn get_sbor_len(buffer_size: u64) -> u64 {
     if buffer_size == 0 {
         buffer_size + 4
     } else if buffer_size < 64 * KB {
@@ -123,7 +123,7 @@ fn test_wasm_buffer_read_write_memory_size_success() {
         let receipt = test_wasm_buffer_read_write!(
             test_runner,
             component_address,
-            read = (buffer_size, 0, get_memory_len(buffer_size)),
+            read = (buffer_size, 0, get_sbor_len(buffer_size)),
             write = (buffer_size, 0)
         );
 
@@ -172,11 +172,11 @@ fn test_wasm_buffers_write_memory_access_error() {
     for ((buffer_size, memory_offs, memory_len), (write_buffer_size, write_memory_offs)) in [
         // Add 128KB to write memory offs to make sure we are accessing beyond WASM memory
         (
-            (10 * KB, 0, get_memory_len(10 * KB)),
+            (10 * KB, 0, get_sbor_len(10 * KB)),
             (10 * KB, 10 * KB + 128 * KB),
         ),
         (
-            (1 * MB, 0, get_memory_len(1 * MB)),
+            (1 * MB, 0, get_sbor_len(1 * MB)),
             (1 * MB, 1 * MB + 128 * KB),
         ),
     ] {
@@ -210,7 +210,7 @@ fn test_wasm_buffer_read_memory_substate_size_exceeded() {
         read = (
             MAX_SUBSTATE_VALUE_SIZE as u64,
             0,
-            get_memory_len(MAX_SUBSTATE_VALUE_SIZE as u64)
+            get_sbor_len(MAX_SUBSTATE_VALUE_SIZE as u64)
         )
     );
 
@@ -234,7 +234,7 @@ fn test_wasm_buffer_read_memory_instruction_trap() {
     let receipt = test_wasm_buffer_read!(
         test_runner,
         component_address,
-        read = (4 * MB, 0, get_memory_len(4 * MB))
+        read = (4 * MB, 0, get_sbor_len(4 * MB))
     );
 
     // Assert
@@ -254,7 +254,7 @@ fn test_wasm_buffer_read_memory_instruction_trap() {
         read = (
             256 * MB - 1, // SBOR max length
             0,
-            get_memory_len(256 * MB - 1)
+            get_sbor_len(256 * MB - 1)
         )
     );
 
@@ -279,7 +279,7 @@ fn test_wasm_buffer_read_memory_size_too_large() {
         read = (
             256 * MB, // SBOR max length exceeded
             0,
-            get_memory_len(256 * MB)
+            get_sbor_len(256 * MB)
         )
     );
 
@@ -342,7 +342,7 @@ fn test_wasm_buffer_invalid_buffer_pointer() {
     test_wasm_buffer_read!(
         test_runner,
         component_address,
-        read = (1 * KB, 0, get_memory_len(1 * KB))
+        read = (1 * KB, 0, get_sbor_len(1 * KB))
     );
 
     // Act
@@ -352,7 +352,7 @@ fn test_wasm_buffer_invalid_buffer_pointer() {
         buffer_ptr = 0 // Invalid pointer
     );
     // Assert
-    receipt.expect_commit_success(); // This is actually success but should be failure
+    receipt.expect_commit_success(); // This is actually success because the WASM memory range is <0, pages_cnt * 64KB>
 
     // Act
     let receipt = test_wasm_buffer_consume!(test_runner, component_address, buffer_ptr = u32::MAX);

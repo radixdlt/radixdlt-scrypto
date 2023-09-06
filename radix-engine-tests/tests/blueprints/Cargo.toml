@@ -59,7 +59,7 @@ members = [
     "logger",
     "validator",
     "wasm_non_mvp",
-    "wasm_buffers"
+    "system_wasm_buffers"
 ]
 
 [profile.release]

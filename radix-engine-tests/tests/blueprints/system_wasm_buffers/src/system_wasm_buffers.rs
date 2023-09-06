@@ -3,7 +3,7 @@ use scrypto::prelude::wasm_api::*;
 use scrypto::prelude::*;
 
 #[blueprint]
-mod wasm_buffers {
+mod system_wasm_buffers {
 
     struct WasmBuffersTest {
         kv_store: KeyValueStore<u32, Vec<u8>>,
