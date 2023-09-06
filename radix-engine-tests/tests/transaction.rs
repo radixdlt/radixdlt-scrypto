@@ -1,14 +1,9 @@
-use radix_engine::blueprints::transaction_processor::TransactionProcessorError;
-use radix_engine::errors::ApplicationError;
-use radix_engine::errors::KernelError;
-use radix_engine::errors::RejectionReason;
-use radix_engine::errors::RuntimeError;
+use radix_engine::blueprints::transaction_processor::*;
+use radix_engine::errors::*;
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::metadata_init;
-use radix_engine_queries::typed_substate_layout::PackagePublishWasmAdvancedManifestInput;
-use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
-use radix_engine_queries::typed_substate_layout::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
+use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -200,4 +195,48 @@ fn test_faucet_drain_attempt_should_fail() {
 
     // Assert
     receipt.expect_commit_failure();
+}
+
+#[test]
+fn transaction_processor_produces_expected_error_for_undecodable_instructions() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let invalid_encoded_instructions = [0xde, 0xad, 0xbe, 0xef];
+    let references = Default::default();
+    let blobs = Default::default();
+
+    let executable = Executable::new(
+        &invalid_encoded_instructions,
+        &references,
+        &blobs,
+        ExecutionContext {
+            intent_hash: TransactionIntentHash::NotToCheck {
+                intent_hash: Hash([0; 32]),
+            },
+            epoch_range: Default::default(),
+            pre_allocated_addresses: Default::default(),
+            payload_size: 4,
+            num_of_signature_validations: 0,
+            auth_zone_params: Default::default(),
+            costing_parameters: Default::default(),
+        },
+    );
+
+    // Act
+    let receipt = test_runner.execute_transaction(
+        executable,
+        Default::default(),
+        ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
+    );
+
+    // Assert
+    receipt.expect_specific_rejection(|error| {
+        matches!(
+            error,
+            RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError::ApplicationError(
+                ApplicationError::InputDecodeError(..)
+            ))
+        )
+    })
 }
