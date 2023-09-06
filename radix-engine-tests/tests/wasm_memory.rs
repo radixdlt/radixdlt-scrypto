@@ -153,3 +153,47 @@ fn test_wasm_memory_grow_read_write() {
         );
     }
 }
+
+#[test]
+fn test_wasm_memory_is_clean() {
+    // Arrange
+    let code = wat2wasm(&include_str!("wasm/memory_boundaries.wat")).unwrap();
+    let wasm_engine = DefaultWasmEngine::default();
+    let mut instance = wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &code);
+
+    let fee_reserve = SystemLoanFeeReserve::new(
+        &CostingParameters::default(),
+        &TransactionCostingParameters::default(),
+        false,
+    );
+    let mut wasm_execution_units_consumed = 0;
+    let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
+        fee_reserve,
+        &mut wasm_execution_units_consumed,
+    ));
+
+    // Initially there is 64KB memory (1 page) available
+    let initial_size = 64 * KB;
+    let mut current_size = initial_size;
+
+    // Act & Assert
+    for size in [
+        current_size,
+        128 * KB,
+        2 * MB,
+        4 * MB, // this is RE memory limit (MAX_MEMORY_SIZE_IN_PAGES) limit
+        5 * MB, // but it is not honored at this level
+    ] {
+        if size != initial_size {
+            grow_memory!(instance, runtime, size - current_size);
+            current_size = size;
+        }
+        // Check if WASM memory is clear after the initialization or growing
+        let result = instance
+            .invoke_export("Test_check_memory_is_clean", vec![], &mut runtime)
+            .unwrap();
+        let clean: bool = scrypto_decode(&result).unwrap();
+
+        assert!(clean);
+    }
+}
