@@ -464,20 +464,22 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     };
 
     let registered_type_ident = format_ident!("{}Type", bp_ident);
-    let registered_type_trait: ItemTrait = parse_quote! {
-        pub trait #registered_type_ident: ScryptoSbor {
-            const BLUEPRINT_NAME: &'static str = #bp_name;
-        }
+    let registered_type_maker: ItemStruct = parse_quote! {
+        pub struct #registered_type_ident;
     };
     let mut registered_type_defs = Vec::<ItemStruct>::new();
     let mut registered_type_impls = Vec::<ItemImpl>::new();
+
+    let mut registered_type_paths = std::collections::BTreeMap::<String, Path>::new();
 
     for attribute in &blueprint.attributes {
         if attribute.path.is_ident("types") {
             let types_inner = parse2::<ast::TypesInner>(attribute.tokens.clone())?;
             for aliasable_type in types_inner.aliasable_types {
                 let path = aliasable_type.path;
+                let type_name;
                 if let Some(alias) = aliasable_type.alias {
+                    type_name = alias.to_string();
                     registered_type_defs.push(parse_quote! {
                         #[derive(ScryptoSbor)]
                         #[sbor(transparent)]
@@ -491,14 +493,49 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         }
                     });
                     registered_type_impls.push(parse_quote! {
-                        impl #registered_type_ident for #alias {
+                        impl From<#alias> for #path {
+                            fn from(value: #alias) -> Self {
+                                value.0
+                            }
+                        }
+                    });
+                    registered_type_impls.push(parse_quote! {
+                        impl RegisteredType<#registered_type_ident> for #alias {
+                            fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                                BlueprintTypeIdentifier {
+                                    package_address: Runtime::package_address(),
+                                    blueprint_name: #bp_name.to_owned(),
+                                    type_name: #type_name.to_owned(),
+                                }
+                            }
                         }
                     });
                 } else {
+                    type_name = quote! { #path }
+                        .to_string()
+                        .split(':')
+                        .last()
+                        .unwrap()
+                        .trim()
+                        .replace(" ", "");
                     registered_type_impls.push(parse_quote! {
-                        impl #registered_type_ident for #path {
+                        impl RegisteredType<#registered_type_ident> for #path {
+                            fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                                BlueprintTypeIdentifier {
+                                    package_address: Runtime::package_address(),
+                                    blueprint_name: #bp_name.to_owned(),
+                                    type_name: #type_name.to_owned(),
+                                }
+                            }
                         }
                     });
+                }
+
+                if let Some(..) = registered_type_paths.insert(type_name, path.clone()) {
+                    return Err(Error::new(
+                        path.span(),
+                        "A type with an identical name has already been registered",
+                    ));
                 }
             }
         }
@@ -559,7 +596,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         // Getting the event types and other named types from attribute
         let (event_type_names, event_type_paths, registered_type_names, registered_type_paths) = {
             let mut event_type_paths = std::collections::BTreeMap::<String, Path>::new();
-            let mut registered_type_paths = std::collections::BTreeMap::<String, Path>::new();
             for attribute in blueprint.attributes {
                 if attribute.path.is_ident("events") {
                     let events_inner = parse2::<ast::EventsInner>(attribute.tokens.clone())?;
@@ -579,28 +615,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         }
                     }
                 } else if attribute.path.is_ident("types") {
-                    let types_inner = parse2::<ast::TypesInner>(attribute.tokens.clone())?;
-                    for aliasable_type in types_inner.aliasable_types {
-                        let path = &aliasable_type.path;
-                        let ident_string = if let Some(alias) = &aliasable_type.alias {
-                            alias.to_string()
-                        } else {
-                            quote! { #path }
-                                .to_string()
-                                .split(':')
-                                .last()
-                                .unwrap()
-                                .trim()
-                                .replace(" ", "")
-                        };
-
-                        if let Some(..) = registered_type_paths.insert(ident_string, path.clone()) {
-                            return Err(Error::new(
-                                path.span(),
-                                "A type with an identical name has already been registered",
-                            ));
-                        }
-                    }
                 }
                 // None of the attributes to apply at the top-level of blueprint macros matched. So,
                 // we provide an error to the user that they're using an incorrect attribute macro
@@ -914,7 +928,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             #output_stubs
 
-            #registered_type_trait
+            #registered_type_maker
 
             #(#registered_type_defs)*
 
@@ -1976,9 +1990,7 @@ mod tests {
                         }
                     }
 
-                    pub trait TestType: ScryptoSbor {
-                        const BLUEPRINT_NAME: &'static str = "Test";
-                    }
+                    pub struct TestType;
 
                     #[derive(ScryptoSbor)]
                     #[sbor(transparent)]
@@ -1988,22 +2000,85 @@ mod tests {
                     #[sbor(transparent)]
                     pub struct GenericAlias(Vec<Bucket>);
 
-                    impl TestType for Struct1 {}
+                    impl RegisteredType<TestType> for Struct1 {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "Struct1".to_owned(),
+                            }
+                        }
+                    }
+
                     impl From<Struct2> for Hi {
                         fn from(value: Struct2) -> Self {
                             Self(value)
                         }
                     }
-                    impl TestType for Hi {}
-                    impl TestType for u32 {}
-                    impl TestType for NonFungibleGlobalId {}
-                    impl TestType for Vec<Hash> {}
+                    impl From<Hi> for Struct2 {
+                        fn from(value: Hi) -> Self {
+                            value.0
+                        }
+                    }
+                    impl RegisteredType<TestType> for Hi {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "Hi".to_owned(),
+                            }
+                        }
+                    }
+
+                    impl RegisteredType<TestType> for u32 {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "u32".to_owned(),
+                            }
+                        }
+                    }
+
+                    impl RegisteredType<TestType> for NonFungibleGlobalId {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "NonFungibleGlobalId".to_owned(),
+                            }
+                        }
+                    }
+
+                    impl RegisteredType<TestType> for Vec<Hash> {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "Vec<Hash>".to_owned(),
+                            }
+                        }
+                    }
+
                     impl From<Vec<Bucket> > for GenericAlias {
                         fn from(value: Vec<Bucket>) -> Self {
                             Self(value)
                         }
                     }
-                    impl TestType for GenericAlias {}
+                    impl From<GenericAlias> for Vec<Bucket> {
+                        fn from(value: GenericAlias) -> Self {
+                            value.0
+                        }
+                    }
+                    impl RegisteredType<TestType> for GenericAlias {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "GenericAlias".to_owned(),
+                            }
+                        }
+                    }
                 }
 
                 #[cfg(feature = "test")]
