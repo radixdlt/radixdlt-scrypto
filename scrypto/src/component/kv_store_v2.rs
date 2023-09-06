@@ -12,7 +12,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::*;
 
 /// A scalable key-value map which loads entries on demand.
-pub struct KeyValueStore<
+pub struct KeyValueStoreV2<
     K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
     V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
 > {
@@ -24,7 +24,7 @@ pub struct KeyValueStore<
 impl<
         K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
-    > KeyValueStore<K, V>
+    > KeyValueStoreV2<K, V>
 {
     /// Creates a new key value store.
     pub fn new() -> Self {
@@ -110,7 +110,7 @@ impl<
 impl<
         K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
-    > Categorize<ScryptoCustomValueKind> for KeyValueStore<K, V>
+    > Categorize<ScryptoCustomValueKind> for KeyValueStoreV2<K, V>
 {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
@@ -122,7 +122,7 @@ impl<
         K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         E: Encoder<ScryptoCustomValueKind>,
-    > Encode<ScryptoCustomValueKind, E> for KeyValueStore<K, V>
+    > Encode<ScryptoCustomValueKind, E> for KeyValueStoreV2<K, V>
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -139,7 +139,7 @@ impl<
         K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         D: Decoder<ScryptoCustomValueKind>,
-    > Decode<ScryptoCustomValueKind, D> for KeyValueStore<K, V>
+    > Decode<ScryptoCustomValueKind, D> for KeyValueStoreV2<K, V>
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -157,7 +157,7 @@ impl<
 impl<
         K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
-    > Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
+    > Describe<ScryptoCustomTypeKind> for KeyValueStoreV2<K, V>
 {
     const TYPE_ID: RustTypeId = RustTypeId::WellKnown(OWN_KEY_VALUE_STORE_TYPE);
 
