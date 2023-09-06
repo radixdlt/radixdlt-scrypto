@@ -1,7 +1,5 @@
 use super::*;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
-use crate::runtime::Runtime;
-use radix_engine_common::types::BlueprintTypeIdentifier;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::data::scrypto::model::*;
@@ -15,42 +13,36 @@ use sbor::*;
 
 /// A scalable key-value map which loads entries on demand.
 ///
-/// Different from V1, this new version requires that the key and value types are registered within a blueprint.
+/// Different from V1, this new version requires that both key and value types are registered under a blueprint.
 ///
-/// This is to reduce the WASM code size and avoid on-chain SBOR schema generation, which helps reduce transaction costs.
+/// This is to reduce WASM code size and avoid on-chain SBOR schema generation, which helps reduce transaction costs.
 ///
 /// Example:
 ///
 /// ```ignore
 /// // You will need to add `#[types(u32, AnotherType)]` below the `#[blueprint]` line
-/// let kv_store = KeyValueStoreV2::<u32, AnotherType>::new();
+/// let kv_store = KeyValueStoreV2::<RadiswapType, u32, AnotherType>::new();
 /// let value: Option<AnotherType> = kv_store.get(1);
 /// ```
-pub struct KeyValueStoreV2<K: RegisteredType, V: RegisteredType> {
+pub struct KeyValueStoreV2<T, K: RegisteredType<T>, V: RegisteredType<T>> {
     pub id: Own,
+    pub marker: PhantomData<T>,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
 
-impl<K: RegisteredType, V: RegisteredType> KeyValueStoreV2<K, V> {
+impl<T, K: RegisteredType<T>, V: RegisteredType<T>> KeyValueStoreV2<T, K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
         let store_schema = KeyValueStoreDataSchema::new_remote(
-            BlueprintTypeIdentifier {
-                package_address: K::PACKAGE_ADDRESS.unwrap_or_else(Runtime::package_address),
-                blueprint_name: K::BLUEPRINT_NAME.to_owned(),
-                type_name: K::TYPE_NAME.to_owned(),
-            },
-            BlueprintTypeIdentifier {
-                package_address: V::PACKAGE_ADDRESS.unwrap_or_else(Runtime::package_address),
-                blueprint_name: V::BLUEPRINT_NAME.to_owned(),
-                type_name: V::TYPE_NAME.to_owned(),
-            },
+            K::blueprint_type_identifier(),
+            V::blueprint_type_identifier(),
             true,
         );
 
         Self {
             id: Own(ScryptoVmV1Api::kv_store_new(store_schema)),
+            marker: PhantomData,
             key: PhantomData,
             value: PhantomData,
         }
@@ -123,8 +115,8 @@ impl<K: RegisteredType, V: RegisteredType> KeyValueStoreV2<K, V> {
 //========
 // binary
 //========
-impl<K: RegisteredType, V: RegisteredType> Categorize<ScryptoCustomValueKind>
-    for KeyValueStoreV2<K, V>
+impl<T, K: RegisteredType<T>, V: RegisteredType<T>> Categorize<ScryptoCustomValueKind>
+    for KeyValueStoreV2<T, K, V>
 {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
@@ -132,8 +124,8 @@ impl<K: RegisteredType, V: RegisteredType> Categorize<ScryptoCustomValueKind>
     }
 }
 
-impl<K: RegisteredType, V: RegisteredType, E: Encoder<ScryptoCustomValueKind>>
-    Encode<ScryptoCustomValueKind, E> for KeyValueStoreV2<K, V>
+impl<T, K: RegisteredType<T>, V: RegisteredType<T>, E: Encoder<ScryptoCustomValueKind>>
+    Encode<ScryptoCustomValueKind, E> for KeyValueStoreV2<T, K, V>
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -146,8 +138,8 @@ impl<K: RegisteredType, V: RegisteredType, E: Encoder<ScryptoCustomValueKind>>
     }
 }
 
-impl<K: RegisteredType, V: RegisteredType, D: Decoder<ScryptoCustomValueKind>>
-    Decode<ScryptoCustomValueKind, D> for KeyValueStoreV2<K, V>
+impl<T, K: RegisteredType<T>, V: RegisteredType<T>, D: Decoder<ScryptoCustomValueKind>>
+    Decode<ScryptoCustomValueKind, D> for KeyValueStoreV2<T, K, V>
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -156,14 +148,15 @@ impl<K: RegisteredType, V: RegisteredType, D: Decoder<ScryptoCustomValueKind>>
         let own = Own::decode_body_with_value_kind(decoder, value_kind)?;
         Ok(Self {
             id: own,
+            marker: PhantomData,
             key: PhantomData,
             value: PhantomData,
         })
     }
 }
 
-impl<K: RegisteredType, V: RegisteredType> Describe<ScryptoCustomTypeKind>
-    for KeyValueStoreV2<K, V>
+impl<T, K: RegisteredType<T>, V: RegisteredType<T>> Describe<ScryptoCustomTypeKind>
+    for KeyValueStoreV2<T, K, V>
 {
     const TYPE_ID: RustTypeId = RustTypeId::WellKnown(OWN_KEY_VALUE_STORE_TYPE);
 
