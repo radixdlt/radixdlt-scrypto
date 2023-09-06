@@ -21,7 +21,7 @@ jobs:
       - name: Build radix-engine-tests
         run: |
              cd radix-engine-tests
-             cargo test --release --no-run --features resource_tracker --test fee
+             cargo test --release --no-run --features resource_tracker
              rm -f ../target/release/deps/transaction_multi_threaded-*
              rm -f ../target/release/deps/*.d
              rm -f ../target/release/deps/*.rlib
@@ -44,7 +44,7 @@ jobs:
         run: rustup target add wasm32-unknown-unknown 
       - name: Build tests
         run: |
-             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests --test enum
+             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests
              rm -f ./target/release/deps/*.d
              rm -f ./target/release/deps/*.rlib
              rm -f ./target/release/deps/*.rmeta
