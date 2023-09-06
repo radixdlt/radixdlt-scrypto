@@ -126,7 +126,6 @@ mod system_wasm_buffers {
         pub fn write_memory_specific_buffer_ptr(&self, buffer_ptr: u32) {
             let handle = self.get_kv_store_handle();
             let buffer = unsafe { kv_entry::kv_entry_read(handle) };
-            let buffer_size = buffer.len() as usize;
 
             // copy buffer
             unsafe {
