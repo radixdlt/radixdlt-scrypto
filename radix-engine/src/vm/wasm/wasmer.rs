@@ -673,11 +673,35 @@ impl WasmerModule {
             // - generate some random data of of given length data_len
             // - attempt to write this data into given memory offset memory_ptr
             let (instance, _runtime) = grab_runtime!(env);
-            let data = vec![!0u8; data_len as usize];
+            let data = vec![0u8; data_len as usize];
 
             let _ = write_memory(&instance, memory_ptr, &data)?;
 
             Ok(())
+        }
+
+        #[cfg(feature = "radix_engine_tests")]
+        pub fn host_check_memory_is_clean(
+            env: &WasmerInstanceEnv,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            // - generate some random data of of given length data_len
+            // - attempt to write this data into given memory offset memory_ptr
+            let (instance, _runtime) = grab_runtime!(env);
+
+            let memory = instance
+                .exports
+                .get_memory(EXPORT_MEMORY)
+                .map_err(|_| WasmRuntimeError::MemoryAccessError)?;
+            let memory_slice = unsafe { memory.data_unchecked() };
+
+            println!(
+                "memory len = {:?} : {:02x?}",
+                memory_slice.len(),
+                memory_slice
+            );
+            let clean = !memory_slice.iter().any(|&x| x != 0x0);
+
+            Ok(clean as u64)
         }
         // native functions ends
 
@@ -732,6 +756,8 @@ impl WasmerModule {
                 "test_host_read_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_read_memory),
                 #[cfg(feature = "radix_engine_tests")]
                 "test_host_write_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_write_memory),
+                #[cfg(feature = "radix_engine_tests")]
+                "test_host_check_memory_is_clean" => Function::new_native_with_env(self.module.store(), env.clone(), host_check_memory_is_clean),
             }
         };
 
