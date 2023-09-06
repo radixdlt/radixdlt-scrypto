@@ -21,7 +21,7 @@ struct Struct2 {
 }
 
 #[blueprint]
-#[types(Struct1, Struct2 as Hi, u32, NonFungibleGlobalId, Vec<Hash>, Vec<Bucket> as GenericAlias)]
+#[types(Struct1, Struct2 as Hi, u32, NonFungibleGlobalId, Vec<Hash>, Vec<Bucket> as GenericAlias, scrypto::prelude::NonFungibleLocalId)]
 mod simple {
     use scrypto::prelude::OwnerRole;
 

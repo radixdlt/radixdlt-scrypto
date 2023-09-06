@@ -570,7 +570,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                             .last()
                             .unwrap()
                             .trim()
-                            .to_owned();
+                            .replace(" ", "");
                         if let Some(..) = event_type_paths.insert(ident_string, path.clone()) {
                             return Err(Error::new(
                                 path.span(),
@@ -591,7 +591,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                                 .last()
                                 .unwrap()
                                 .trim()
-                                .to_owned()
+                                .replace(" ", "")
                         };
 
                         if let Some(..) = registered_type_paths.insert(ident_string, path.clone()) {
@@ -1895,7 +1895,7 @@ mod tests {
                                 }
                                 {
                                     let local_type_index = aggregator.add_child_type_and_descendents::<Vec<Hash> >();
-                                    type_schema.insert("Vec < Hash >".to_owned(), local_type_index);
+                                    type_schema.insert("Vec<Hash>".to_owned(), local_type_index);
                                 }
                                 {
                                     let local_type_index = aggregator.add_child_type_and_descendents::<u32>();
