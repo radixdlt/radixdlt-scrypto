@@ -59,7 +59,7 @@ fn test_balance_changes_when_success() {
         test_runner
             .sum_descendant_balance_changes(result, test_runner.faucet_component().as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap())
+            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap())
         )
     );
     assert_eq!(
@@ -144,7 +144,7 @@ fn test_balance_changes_when_failure() {
         test_runner
             .sum_descendant_balance_changes(result, test_runner.faucet_component().as_node_id(),),
         indexmap!(
-            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap() )
+            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap() )
         )
     );
     assert_eq!(
@@ -184,7 +184,7 @@ fn test_balance_changes_when_recall() {
         test_runner
             .sum_descendant_balance_changes(result, test_runner.faucet_component().as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().safe_neg().unwrap() )
+            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap() )
         )
     );
     assert_eq!(
@@ -263,7 +263,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
     assert_eq!(
         faucet_changes,
         indexmap!(
-            XRD => BalanceChange::Fungible(total_cost_in_xrd.safe_neg().unwrap()),
+            XRD => BalanceChange::Fungible(total_cost_in_xrd.checked_neg().unwrap()),
         ),
     );
 }

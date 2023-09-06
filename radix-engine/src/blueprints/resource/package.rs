@@ -328,6 +328,7 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
                     hooks: BlueprintHooksInit::default(),
                 },
@@ -542,6 +543,7 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
                     hooks: BlueprintHooksInit::default(),
                 },
@@ -655,6 +657,7 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
                     hooks: BlueprintHooksInit {
                         hooks: indexmap!(
@@ -772,6 +775,7 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
                     hooks: BlueprintHooksInit {
                         hooks: indexmap!(
@@ -933,6 +937,7 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
                     hooks: BlueprintHooksInit::default(),
                 },
@@ -1111,6 +1116,7 @@ impl ResourceNativePackage {
                     schema,
                     state: auth_zone_blueprint,
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
                     hooks: BlueprintHooksInit::default(),
                 },

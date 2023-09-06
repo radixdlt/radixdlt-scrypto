@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemMo
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_queries::typed_substate_layout::FungibleResourceManagerError;
 use scrypto::prelude::Pow;
@@ -802,7 +802,9 @@ pub fn test_complete_interactions() {
                 .get(&test_runner.pool_unit_resource_address)
                 .cloned(),
             Some(BalanceChange::Fungible(
-                (dec!("500").safe_mul(dec!("200")).unwrap()).sqrt().unwrap()
+                (dec!("500").checked_mul(dec!("200")).unwrap())
+                    .checked_sqrt()
+                    .unwrap()
             ))
         );
         assert_eq!(
@@ -1016,7 +1018,7 @@ fn contributing_to_a_pool_with_very_large_difference_in_reserves_succeeds() {
 
 fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
     match event_type_identifier.0 {
-        Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type() {
+        Emitter::Method(node_id, ModuleId::Main) => match node_id.entity_type() {
             Some(
                 EntityType::GlobalOneResourcePool
                 | EntityType::GlobalTwoResourcePool

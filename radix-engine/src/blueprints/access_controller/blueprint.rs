@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
@@ -463,6 +463,7 @@ impl AccessControllerBlueprint {
                 schema,
                 state,
                 events,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },
@@ -551,13 +552,8 @@ impl AccessControllerBlueprint {
                 NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
 
             let resource_address = {
-                let (local_type_index, schema) =
-                    generate_full_schema_from_single_type::<(), ScryptoCustomSchema>();
-                let non_fungible_schema = NonFungibleDataSchema {
-                    schema,
-                    non_fungible: local_type_index,
-                    mutable_fields: Default::default(),
-                };
+                let non_fungible_schema =
+                    NonFungibleDataSchema::new_local_without_self_package_replacement::<()>();
 
                 let result = api.call_function(
                     RESOURCE_PACKAGE,
@@ -619,7 +615,7 @@ impl AccessControllerBlueprint {
         )?;
 
         let roles = init_roles_from_rule_set(input.rule_set);
-        let roles = indexmap!(ObjectModuleId::Main => roles);
+        let roles = indexmap!(ModuleId::Main => roles);
         let role_assignment = RoleAssignment::create(OwnerRole::None, roles, api)?.0;
 
         let metadata = Metadata::create_with_data(
@@ -633,8 +629,8 @@ impl AccessControllerBlueprint {
         api.globalize(
             object_id,
             indexmap!(
-                ModuleId::RoleAssignment => role_assignment.0,
-                ModuleId::Metadata => metadata.0,
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
             ),
             Some(address_reservation),
         )?;
@@ -1246,19 +1242,19 @@ where
 {
     let attached = AttachedRoleAssignment(receiver.clone());
     attached.set_role(
-        ObjectModuleId::Main,
+        ModuleId::Main,
         RoleKey::new("primary"),
         rule_set.primary_role.clone(),
         api,
     )?;
     attached.set_role(
-        ObjectModuleId::Main,
+        ModuleId::Main,
         RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
     attached.set_role(
-        ObjectModuleId::Main,
+        ModuleId::Main,
         RoleKey::new("confirmation"),
         rule_set.confirmation_role.clone(),
         api,

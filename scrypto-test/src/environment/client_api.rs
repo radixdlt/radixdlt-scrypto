@@ -153,7 +153,11 @@ implement_client_api! {
             blueprint_name: &str,
             function_name: &str,
             args: Vec<u8>,
-        ) -> Result<Vec<u8>, RuntimeError>
+        ) -> Result<Vec<u8>, RuntimeError>,
+        resolve_blueprint_type: (
+            &mut self,
+            blueprint_type_id: &BlueprintTypeIdentifier,
+        ) -> Result<(VersionedScryptoSchema, ScopedTypeId), RuntimeError>
     },
     ClientFieldApi: {
         field_read: (&mut self, handle: field_api::FieldHandle) -> Result<Vec<u8>, RuntimeError>,
@@ -173,7 +177,7 @@ implement_client_api! {
         key_value_entry_close: (&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError>,
     },
     ClientKeyValueStoreApi: {
-        key_value_store_new: (&mut self, generic_args: KeyValueStoreGenericArgs) -> Result<NodeId, RuntimeError>,
+        key_value_store_new: (&mut self, data_schema: KeyValueStoreDataSchema) -> Result<NodeId, RuntimeError>,
         key_value_store_open_entry: (
             &mut self,
             node_id: &NodeId,
@@ -211,13 +215,13 @@ implement_client_api! {
         globalize: (
             &mut self,
             node_id: NodeId,
-            modules: IndexMap<ModuleId, NodeId>,
+            modules: IndexMap<AttachedModuleId, NodeId>,
             address_reservation: Option<GlobalAddressReservation>,
         ) -> Result<GlobalAddress, RuntimeError>,
         globalize_with_address_and_create_inner_object_and_emit_event: (
             &mut self,
             node_id: NodeId,
-            modules: IndexMap<ModuleId, NodeId>,
+            modules: IndexMap<AttachedModuleId, NodeId>,
             address_reservation: GlobalAddressReservation,
             inner_object_blueprint: &str,
             inner_object_fields: IndexMap<u8, FieldValue>,
@@ -239,7 +243,7 @@ implement_client_api! {
         call_module_method: (
             &mut self,
             receiver: &NodeId,
-            module_id: ModuleId,
+            module_id: AttachedModuleId,
             method_name: &str,
             args: Vec<u8>,
         ) -> Result<Vec<u8>, RuntimeError>,

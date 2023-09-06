@@ -20,7 +20,9 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::SystemUpdates;
+use crate::track::{
+    BatchPartitionUpdate, LegacyStateUpdates, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
+};
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
@@ -44,7 +46,6 @@ use radix_engine_interface::math::traits::*;
 use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{
     DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry,
 };
@@ -62,7 +63,7 @@ lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
     pub static ref DEFAULT_VALIDATOR_USD_COST: Decimal = dec!("100");
     pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal = DEFAULT_VALIDATOR_USD_COST
-        .safe_mul(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
+        .checked_mul(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
         .unwrap();  // NOTE: Decimal arithmetic operation safe unwrap.
                     // No chance to overflow.
                     // The chance to overflow will be decreasing over time since USD price in XRD will only get lower ;)
@@ -184,8 +185,7 @@ pub struct GenesisReceipts {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FlashReceipt {
-    pub database_updates: DatabaseUpdates,
-    pub system_updates: SystemUpdates,
+    pub state_updates: StateUpdates,
     pub state_update_summary: StateUpdateSummary,
     pub substate_system_structures: SubstateSystemStructures,
 }
@@ -219,22 +219,7 @@ impl FlashReceipt {
                 result.state_update_summary.new_components = new_components;
                 result.state_update_summary.new_resources = new_resources;
 
-                // A sanity check that the system receipt should not be conflicting with the flash receipt
-                for (txn_key, txn_updates) in &result.state_updates.system_updates {
-                    for (flash_key, _) in &self.system_updates {
-                        if txn_key.eq(flash_key) && !txn_updates.is_empty() {
-                            panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
-                        }
-                    }
-                }
-
-                let mut system_updates = self.system_updates;
-                system_updates.extend(result.state_updates.system_updates.drain(..));
-                let mut database_updates = self.database_updates;
-                database_updates.extend(result.state_updates.database_updates.drain(..));
-
-                result.state_updates.system_updates = system_updates;
-                result.state_updates.database_updates = database_updates;
+                merge_asserting_no_overlap(&mut result.state_updates, self.state_updates);
 
                 let mut substate_system_structures = self.substate_system_structures;
                 for (node_id, by_partition_num) in
@@ -254,6 +239,45 @@ impl FlashReceipt {
             }
             _ => {}
         }
+    }
+}
+
+/// Merges the given `source` into a `target`, asserting no overlap.
+/// This function is not a method on [`StateUpdates`], since it is only used here locally (called
+/// from a method describing itself as "a hack").
+/// Note: the system receipt should not be conflicting with the flash receipt, and this function
+/// will panic if this invariant is broken.
+fn merge_asserting_no_overlap(target: &mut StateUpdates, source: StateUpdates) {
+    for (node_id, source_node_state_updates) in source.by_node {
+        let target_node_state_updates = target.by_node.entry(node_id).or_default();
+        let target_by_partition = match target_node_state_updates {
+            NodeStateUpdates::Delta { by_partition } => by_partition,
+        };
+        match source_node_state_updates {
+            NodeStateUpdates::Delta { by_partition } => {
+                for (partition_num, partition_state_updates) in by_partition {
+                    let previous_target_partition_state_updates =
+                        target_by_partition.insert(partition_num, partition_state_updates);
+                    if !is_noop_partition_state_updates(&previous_target_partition_state_updates) {
+                        panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Returns true if the given update is effectively no-op (i.e. [`None`] or empty delta).
+/// This check is required since under some circumstances, Track may end up with empty partition
+/// record (in fact, this check was migrated from previous version of the code, from before
+/// [`StateUpdates`] structure refactoring).
+fn is_noop_partition_state_updates(opt_updates: &Option<PartitionStateUpdates>) -> bool {
+    let Some(updates) = opt_updates else {
+        return true;
+    };
+    match updates {
+        PartitionStateUpdates::Delta { by_substate } => by_substate.is_empty(),
+        PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset { .. }) => false,
     }
 }
 
@@ -331,7 +355,11 @@ where
             );
 
         if first_typed_info.is_none() {
-            self.substate_db.commit(&flash_receipt.database_updates);
+            self.substate_db.commit(
+                &flash_receipt
+                    .state_updates
+                    .create_database_updates::<SpreadPrefixKeyMapper>(),
+            );
 
             let mut system_bootstrap_receipt = self.execute_system_bootstrap(
                 genesis_epoch,
@@ -392,8 +420,11 @@ where
 
         let commit_result = receipt.expect_commit(true);
 
-        self.substate_db
-            .commit(&commit_result.state_updates.database_updates);
+        self.substate_db.commit(
+            &commit_result
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
 
         receipt
     }
@@ -418,8 +449,11 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db
-            .commit(&commit_result.state_updates.database_updates);
+        self.substate_db.commit(
+            &commit_result
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
 
         receipt
     }
@@ -440,8 +474,11 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db
-            .commit(&commit_result.state_updates.database_updates);
+        self.substate_db.commit(
+            &commit_result
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
 
         receipt
     }
@@ -563,25 +600,18 @@ pub fn create_system_bootstrap_flash(
 
 pub fn create_substate_flash_for_genesis() -> FlashReceipt {
     let substate_flash = create_system_bootstrap_flash();
-    let mut database_updates = index_map_new();
-    let mut system_updates = SystemUpdates::default();
+    let mut system_updates = index_map_new();
     let mut new_packages = index_set_new();
     let mut new_components = index_set_new();
     let mut new_resources = index_set_new();
     let mut new_vaults = index_set_new();
 
     for ((node_id, partition_num), substates) in substate_flash {
-        let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num);
-        let mut partition_updates = index_map_new();
         let mut substate_updates = index_map_new();
         for (substate_key, value) in substates {
-            let key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
-            let update = DatabaseUpdate::Set(value);
-            partition_updates.insert(key, update.clone());
-            substate_updates.insert(substate_key, update);
+            substate_updates.insert(substate_key, DatabaseUpdate::Set(value));
         }
 
-        database_updates.insert(partition_key, partition_updates);
         system_updates.insert((node_id, partition_num), substate_updates);
         if node_id.is_global_package() {
             new_packages.insert(PackageAddress::new_or_panic(node_id.0));
@@ -597,17 +627,20 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         }
     }
 
+    let state_updates = StateUpdates::from(LegacyStateUpdates {
+        partition_deletions: index_set_new(),
+        system_updates,
+    });
     let flashed_db = FlashedSubstateDatabase {
-        flash_updates: &database_updates,
+        flash_updates: state_updates.create_database_updates::<SpreadPrefixKeyMapper>(),
     };
     let mut substate_schema_mapper =
         SubstateSchemaMapper::new(SystemDatabaseReader::new(&flashed_db));
-    substate_schema_mapper.add_all_system_updates(&system_updates);
+    substate_schema_mapper.add_for_all_individually_updated(&state_updates);
     let substate_system_structures = substate_schema_mapper.done();
 
     FlashReceipt {
-        database_updates,
-        system_updates,
+        state_updates,
         state_update_summary: StateUpdateSummary {
             new_packages,
             new_components,
@@ -621,11 +654,11 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
 
 /// A [`SubstateDatabase`] implementation holding only the initial [`DatabaseUpdates`] from a system
 /// bootstrap flash.
-struct FlashedSubstateDatabase<'a> {
-    flash_updates: &'a DatabaseUpdates,
+struct FlashedSubstateDatabase {
+    flash_updates: DatabaseUpdates,
 }
 
-impl<'a> SubstateDatabase for FlashedSubstateDatabase<'a> {
+impl SubstateDatabase for FlashedSubstateDatabase {
     fn get_substate(
         &self,
         partition_key: &DbPartitionKey,
@@ -731,7 +764,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
                     resource_roles: NonFungibleResourceRoles {
                         withdraw_roles: withdraw_roles! {
                             withdrawer => rule!(deny_all);
@@ -768,7 +801,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
                     resource_roles: NonFungibleResourceRoles {
                         withdraw_roles: withdraw_roles! {
                             withdrawer => rule!(deny_all);
@@ -805,7 +838,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(PACKAGE_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<PackageOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
                             minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE)));
@@ -842,7 +875,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(IDENTITY_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<IdentityOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
                             minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE)));
@@ -920,7 +953,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(ACCOUNT_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<AccountOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
                             minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE)));
@@ -1023,7 +1056,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
                     resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
@@ -1054,7 +1087,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
                     resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
@@ -1085,7 +1118,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
                     resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {

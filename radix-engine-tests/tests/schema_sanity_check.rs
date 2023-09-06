@@ -5,12 +5,11 @@ use radix_engine::{
     },
     types::*,
 };
-use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
 use radix_engine_interface::schema::TypeRef;
-use radix_engine_queries::typed_substate_layout::BlueprintPayloadDef;
+use radix_engine_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
 use sbor::basic_well_known_types::*;
+use scrypto_test::prelude::*;
 use scrypto_unit::*;
-use transaction::prelude::*;
 
 #[test]
 fn check_native_function_base_costs() {
@@ -119,11 +118,17 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
                             println!("Partition {:?} is {:?}", partition, result);
                         }
                     }
-                    BlueprintCollectionSchema::Index(_) => {
-                        // TODO: add check when schema is added
+                    BlueprintCollectionSchema::Index(kv) => {
+                        let result = check_payload_defs(&schemas_by_hash, &[kv.key, kv.value]);
+                        if result.is_not_safe() {
+                            println!("Partition {:?} is {:?}", partition, result);
+                        }
                     }
-                    BlueprintCollectionSchema::SortedIndex(_) => {
-                        // TODO: add check when schema is added
+                    BlueprintCollectionSchema::SortedIndex(kv) => {
+                        let result = check_payload_defs(&schemas_by_hash, &[kv.key, kv.value]);
+                        if result.is_not_safe() {
+                            println!("Partition {:?} is {:?}", partition, result);
+                        }
                     }
                 }
             }
@@ -171,15 +176,15 @@ fn check_payload_def(
     }
 }
 
-fn check_type(schema: &VersionedScryptoSchema, index: LocalTypeIndex) -> CheckResult {
+fn check_type(schema: &VersionedScryptoSchema, type_id: LocalTypeId) -> CheckResult {
     let mut visited_indices = index_set_new();
-    check_type_internal(schema, index, &mut visited_indices)
+    check_type_internal(schema, type_id, &mut visited_indices)
 }
 
 fn check_types_internal(
     schema: &VersionedScryptoSchema,
-    indices: &[LocalTypeIndex],
-    visited_indices: &mut IndexSet<LocalTypeIndex>,
+    indices: &[LocalTypeId],
+    visited_indices: &mut IndexSet<LocalTypeId>,
 ) -> CheckResult {
     for index in indices {
         let result = check_type_internal(schema, *index, visited_indices);
@@ -192,16 +197,16 @@ fn check_types_internal(
 
 fn check_type_internal(
     schema: &VersionedScryptoSchema,
-    index: LocalTypeIndex,
-    visited_indices: &mut IndexSet<LocalTypeIndex>,
+    type_id: LocalTypeId,
+    visited_indices: &mut IndexSet<LocalTypeId>,
 ) -> CheckResult {
-    if visited_indices.contains(&index) {
+    if visited_indices.contains(&type_id) {
         return CheckResult::Safe;
     }
-    visited_indices.insert(index);
-    match index {
-        LocalTypeIndex::WellKnown(x) => return is_safe_well_known_type(schema, x),
-        LocalTypeIndex::SchemaLocalIndex(i) => {
+    visited_indices.insert(type_id);
+    match type_id {
+        LocalTypeId::WellKnown(x) => return is_safe_well_known_type(schema, x),
+        LocalTypeId::SchemaLocalIndex(i) => {
             let type_kind = &schema.v1().type_kinds[i];
             match type_kind {
                 ScryptoTypeKind::Array { element_type } => {
@@ -211,7 +216,7 @@ fn check_type_internal(
                     return check_types_internal(schema, field_types, visited_indices);
                 }
                 ScryptoTypeKind::Enum { variants } => {
-                    let mut indices = Vec::<LocalTypeIndex>::new();
+                    let mut indices = Vec::<LocalTypeId>::new();
                     for v in variants {
                         for ty in v.1 {
                             indices.push(*ty);
@@ -236,11 +241,12 @@ fn check_type_internal(
                                 return CheckResult::Safe;
                             }
                             OwnValidation::IsKeyValueStore => {
-                                // TODO: consider this as unsafe in native blueprints?
-                                return CheckResult::Safe;
+                                return CheckResult::PossiblyUnsafe {
+                                    type_kind: type_kind.clone(),
+                                    type_validation: schema.v1().type_validations[i].clone(),
+                                };
                             }
                             OwnValidation::IsGlobalAddressReservation => {
-                                // TODO: consider this as unsafe in native blueprints?
                                 return CheckResult::Safe;
                             }
                             _ => {
@@ -285,7 +291,7 @@ fn check_type_internal(
 
 fn is_safe_well_known_type(
     schema: &VersionedScryptoSchema,
-    type_id: WellKnownTypeIndex,
+    type_id: WellKnownTypeId,
 ) -> CheckResult {
     let is_safe = match type_id {
         // Basic SBOR
@@ -327,6 +333,28 @@ fn is_safe_well_known_type(
         DECIMAL_TYPE => true,
         PRECISE_DECIMAL_TYPE => true,
         NON_FUNGIBLE_LOCAL_ID_TYPE => true,
+        NON_FUNGIBLE_GLOBAL_ID_TYPE => true,
+        INSTANT_TYPE => true,
+        UTC_DATE_TIME_TYPE => true,
+        URL_TYPE => true,
+        ORIGIN_TYPE => true,
+        PUBLIC_KEY_TYPE => true,
+        SECP256K1_PUBLIC_KEY_TYPE => true,
+        ED25519_PUBLIC_KEY_TYPE => true,
+        PUBLIC_KEY_HASH_TYPE => true,
+        SECP256K1_PUBLIC_KEY_HASH_TYPE => true,
+        ED25519_PUBLIC_KEY_HASH_TYPE => true,
+        ACCESS_RULE_TYPE => true,
+        ACCESS_RULE_NODE_TYPE => true,
+        ACCESS_RULE_NODE_LIST_TYPE => true,
+        PROOF_RULE_TYPE => true,
+        RESOURCE_OR_NON_FUNGIBLE_TYPE => true,
+        RESOURCE_OR_NON_FUNGIBLE_LIST_TYPE => true,
+        OWNER_ROLE_TYPE => true,
+        ROLE_KEY_TYPE => true,
+        MODULE_ID_TYPE => true,
+        ATTACHED_MODULE_ID_TYPE => true,
+        ROYALTY_AMOUNT_TYPE => true,
         t => panic!("Unexpected well-known type id: {:?}", t),
     };
 
@@ -336,12 +364,12 @@ fn is_safe_well_known_type(
         CheckResult::PossiblyUnsafe {
             type_kind: schema
                 .v1()
-                .resolve_type_kind(LocalTypeIndex::WellKnown(type_id))
+                .resolve_type_kind(LocalTypeId::WellKnown(type_id))
                 .unwrap()
                 .clone(),
             type_validation: schema
                 .v1()
-                .resolve_type_validation(LocalTypeIndex::WellKnown(type_id))
+                .resolve_type_validation(LocalTypeId::WellKnown(type_id))
                 .unwrap()
                 .clone(),
         }
@@ -352,7 +380,7 @@ fn is_safe_well_known_type(
 pub enum CheckResult {
     Safe,
     PossiblyUnsafe {
-        type_kind: ScryptoTypeKind<LocalTypeIndex>,
+        type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
     },
 }
@@ -381,7 +409,7 @@ pub fn test_fake_bucket() {
         .schema
         .state
         .fields[0]
-        .field = TypeRef::Static(LocalTypeIndex::WellKnown(DECIMAL_TYPE));
+        .field = TypeRef::Static(LocalTypeId::WellKnown(DECIMAL_TYPE));
     let package_address =
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
@@ -410,4 +438,40 @@ pub fn test_fake_bucket() {
         }
         _ => false,
     });
+}
+
+#[test]
+fn native_blueprints_with_typed_addresses_have_expected_schema() {
+    let mut blueprint_definition = AccountNativePackage::definition()
+        .blueprints
+        .remove("Account")
+        .unwrap();
+    let TypeRef::Static(local_type_index) = blueprint_definition
+        .schema
+        .functions
+        .functions
+        .remove("create_advanced")
+        .unwrap()
+        .output
+    else {
+        panic!("Generic output!")
+    };
+
+    let schema = blueprint_definition.schema.schema.into_latest();
+    let type_kind = schema.resolve_type_kind(local_type_index).unwrap();
+    let type_validation = schema.resolve_type_validation(local_type_index).unwrap();
+
+    assert!(matches!(
+        type_kind,
+        TypeKind::<ScryptoCustomTypeKind, LocalTypeId>::Custom(ScryptoCustomTypeKind::Reference)
+    ));
+    assert!(matches!(
+        type_validation,
+        TypeValidation::<ScryptoCustomTypeValidation>::Custom(
+            ScryptoCustomTypeValidation::Reference(ReferenceValidation::IsGlobalTyped(
+                Some(ACCOUNT_PACKAGE),
+                bp_name
+            ))
+        ) if bp_name == "Account"
+    ));
 }

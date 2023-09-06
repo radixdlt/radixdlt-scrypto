@@ -3,7 +3,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::rule;
@@ -412,7 +412,7 @@ impl MutableRolesTestRunner {
         let manifest = Self::manifest_builder()
             .set_role(
                 self.component_address,
-                ObjectModuleId::Main,
+                ModuleId::Main,
                 role_key,
                 access_rule,
             )
@@ -422,7 +422,7 @@ impl MutableRolesTestRunner {
 
     pub fn get_role(&mut self, role_key: RoleKey) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .get_role(self.component_address, ObjectModuleId::Main, role_key)
+            .get_role(self.component_address, ModuleId::Main, role_key)
             .build();
         self.execute_manifest(manifest)
     }

@@ -1,7 +1,7 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::ModuleId;
+use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -335,7 +335,9 @@ fn cannot_set_royalty_on_accounts() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(ModuleId::Royalty))
+            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(
+                AttachedModuleId::Royalty
+            ))
         )
     });
 }

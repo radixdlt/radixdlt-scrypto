@@ -111,7 +111,7 @@ impl CallMethod {
             })?;
 
         let (schema, index) = match function_schema.input {
-            BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, index)) => {
+            BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, index)) => {
                 let schema = export_schema(bp_id.package_address.as_node_id(), schema_hash)?;
                 (schema, index)
             }
@@ -125,6 +125,9 @@ impl CallMethod {
                     GenericSubstitution::Local(type_id) => {
                         let schema = export_schema(bp_id.package_address.as_node_id(), type_id.0)?;
                         (schema, type_id.1)
+                    }
+                    GenericSubstitution::Remote(_) => {
+                        return Err(Error::RemoteGenericSubstitutionNotSupported);
                     }
                 }
             }

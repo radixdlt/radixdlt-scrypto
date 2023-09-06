@@ -4,7 +4,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::{ClientApi, FieldValue, ModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldValue};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
@@ -42,15 +42,15 @@ pub const EPOCHS_PER_PARTITION: u64 = 100;
 impl TransactionTrackerNativePackage {
     pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let key_type_index = aggregator.add_child_type_and_descendents::<Hash>();
-        let value_type_index = aggregator.add_child_type_and_descendents::<TransactionStatus>();
+        let key_type_id = aggregator.add_child_type_and_descendents::<Hash>();
+        let value_type_id = aggregator.add_child_type_and_descendents::<TransactionStatus>();
 
-        let mut collections: Vec<BlueprintCollectionSchema<TypeRef<LocalTypeIndex>>> = vec![];
+        let mut collections: Vec<BlueprintCollectionSchema<TypeRef<LocalTypeId>>> = vec![];
         for _ in PARTITION_RANGE_START..=PARTITION_RANGE_END {
             collections.push(BlueprintCollectionSchema::KeyValueStore(
                 BlueprintKeyValueSchema {
-                    key: TypeRef::Static(key_type_index),
-                    value: TypeRef::Static(value_type_index),
+                    key: TypeRef::Static(key_type_id),
+                    value: TypeRef::Static(value_type_id),
                     allow_ownership: false,
                 },
             ))
@@ -92,6 +92,7 @@ impl TransactionTrackerNativePackage {
                         collections,
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
@@ -266,8 +267,8 @@ impl TransactionTrackerBlueprint {
         let address = api.globalize(
             intent_store,
             indexmap!(
-                ModuleId::RoleAssignment => role_assignment.0,
-                ModuleId::Metadata => metadata.0,
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
             ),
             Some(address_reservation),
         )?;

@@ -28,7 +28,7 @@ use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -760,7 +760,7 @@ where
                 .unwrap();
             events.push((
                 EventTypeIdentifier(
-                    Emitter::Method(node_id, ObjectModuleId::Main),
+                    Emitter::Method(node_id, ModuleId::Main),
                     DepositEvent::EVENT_NAME.to_string(),
                 ),
                 scrypto_encode(&DepositEvent { amount }).unwrap(),
@@ -790,7 +790,7 @@ where
 
             // Take fees
             collected_fees.put(locked.take_by_amount(amount).unwrap());
-            required = required.safe_sub(amount).unwrap();
+            required = required.checked_sub(amount).unwrap();
 
             // Refund overpayment
             let mut vault_balance = track
@@ -820,11 +820,11 @@ where
 
             // Record final payments
             let entry = fee_payments.entry(vault_id).or_default();
-            *entry = entry.safe_add(amount).unwrap();
+            *entry = entry.checked_add(amount).unwrap();
 
             events.push((
                 EventTypeIdentifier(
-                    Emitter::Method(vault_id, ObjectModuleId::Main),
+                    Emitter::Method(vault_id, ModuleId::Main),
                     PayFeeEvent::EVENT_NAME.to_string(),
                 ),
                 scrypto_encode(&PayFeeEvent { amount }).unwrap(),
@@ -834,7 +834,7 @@ where
         if free_credit.is_positive() {
             let amount = Decimal::min(free_credit, required);
             collected_fees.put(LiquidFungibleResource::new(amount));
-            required = required.safe_sub(amount).unwrap();
+            required = required.checked_sub(amount).unwrap();
         }
 
         let to_proposer = fee_reserve_finalization.to_proposer_amount();
@@ -852,11 +852,11 @@ where
             "Locked fee does not cover transaction cost: {} required",
             required
         );
-        let remaining_collected_fees = collected_fees.amount().safe_sub(fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */).unwrap();
+        let remaining_collected_fees = collected_fees.amount().checked_sub(fee_reserve_finalization.total_royalty_cost_in_xrd /* royalty already distributed */).unwrap();
         let to_distribute = to_proposer
-            .safe_add(to_validator_set)
+            .checked_add(to_validator_set)
             .unwrap()
-            .safe_add(to_burn)
+            .checked_add(to_burn)
             .unwrap();
         assert!(
             remaining_collected_fees  == to_distribute,
@@ -894,7 +894,7 @@ where
 
             if let Some(current_leader) = current_leader {
                 let entry = rewards.proposer_rewards.entry(current_leader).or_default();
-                *entry = entry.safe_add(to_proposer).unwrap()
+                *entry = entry.checked_add(to_proposer).unwrap()
             } else {
                 // If there is no current leader, the rewards go to the pool
             };
@@ -913,7 +913,7 @@ where
                 .unwrap();
 
             // Put validator rewards into the vault
-            let total_amount = to_proposer.safe_add(to_validator_set).unwrap();
+            let total_amount = to_proposer.checked_add(to_validator_set).unwrap();
             let mut vault_balance = track
                 .read_substate(
                     &vault_node_id,
@@ -941,7 +941,7 @@ where
 
             events.push((
                 EventTypeIdentifier(
-                    Emitter::Method(vault_node_id, ObjectModuleId::Main),
+                    Emitter::Method(vault_node_id, ModuleId::Main),
                     DepositEvent::EVENT_NAME.to_string(),
                 ),
                 scrypto_encode(&DepositEvent {
@@ -954,7 +954,7 @@ where
         if to_burn.is_positive() {
             events.push((
                 EventTypeIdentifier(
-                    Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                    Emitter::Method(XRD.into_node_id(), ModuleId::Main),
                     "BurnFungibleResourceEvent".to_string(),
                 ),
                 scrypto_encode(&BurnFungibleResourceEvent { amount: to_burn }).unwrap(),
@@ -1172,7 +1172,11 @@ pub fn execute_and_commit_transaction<
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db.commit(&commit.state_updates.database_updates);
+        substate_db.commit(
+            &commit
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
     }
     receipt
 }

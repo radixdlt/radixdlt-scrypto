@@ -1,6 +1,6 @@
 [package]
 name = "resource-tests"
-version = "0.12.0"
+version = "0.13.0"
 edition = "2021"
 
 [dependencies]
@@ -38,3 +38,6 @@ std = ["sbor/std", "transaction/std", "transaction-scenarios/std", "radix-engine
 alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-store-interface/alloc", "radix-engine-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-unit/alloc"]
 rocksdb = ["scrypto-unit/rocksdb"]
 post_run_db_check = ["scrypto-unit/post_run_db_check"]
+
+[lib]
+bench = false

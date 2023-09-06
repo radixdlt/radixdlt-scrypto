@@ -17,6 +17,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::component::Global;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
 };
@@ -191,6 +192,7 @@ impl MultiResourcePoolBlueprint {
                 schema,
                 state,
                 events: event_schema,
+                types: BlueprintTypeSchemaInit::default(),
                 functions: BlueprintFunctionsSchemaInit { functions },
                 hooks: BlueprintHooksInit::default(),
             },
@@ -287,7 +289,7 @@ impl MultiResourcePoolBlueprint {
         let role_assignment = RoleAssignment::create(
             owner_role,
             indexmap! {
-                ObjectModuleId::Main => roles_init! {
+                ModuleId::Main => roles_init! {
                     RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
                 }
             },
@@ -324,14 +326,16 @@ impl MultiResourcePoolBlueprint {
         api.globalize(
             object_id,
             indexmap!(
-                ModuleId::RoleAssignment => role_assignment.0,
-                ModuleId::Metadata => metadata.0,
-                ModuleId::Royalty => royalty.0,
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
+                AttachedModuleId::Royalty => royalty.0,
             ),
             Some(address_reservation),
         )?;
 
-        Ok(ComponentAddress::new_or_panic(address.as_node_id().0))
+        Ok(Global::new(ComponentAddress::new_or_panic(
+            address.as_node_id().0,
+        )))
     }
 
     /**
@@ -419,7 +423,7 @@ impl MultiResourcePoolBlueprint {
                     resource_bucket_amount_mapping.get_mut(&bucket_resource_address)
                 {
                     *value = value
-                        .safe_add(bucket_amount)
+                        .checked_add(bucket_amount)
                         .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
                     Ok(())
                 } else {
@@ -472,13 +476,13 @@ impl MultiResourcePoolBlueprint {
                         None => Ok(Some(item)),
                         Some(acc) => {
                             let result = acc
-                                .safe_mul(item)
+                                .checked_mul(item)
                                 .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
                             Ok(Some(result))
                         }
                     },
                 )?
-                .and_then(|d| d.sqrt())
+                .and_then(|d| d.checked_sqrt())
                 .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
 
             // The following unwrap is safe to do. We've already checked that all of the buckets
@@ -545,7 +549,7 @@ impl MultiResourcePoolBlueprint {
                     vault.amount(api).and_then(|vault_amount| {
                         bucket.amount(api).and_then(|bucket_amount| {
                             let rtn = bucket_amount
-                                .safe_div(vault_amount)
+                                .checked_div(vault_amount)
                                 .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
                             Ok(rtn)
                         })
@@ -571,13 +575,13 @@ impl MultiResourcePoolBlueprint {
                 let amount_to_contribute = {
                     let amount_to_contribute = vault
                         .amount(api)?
-                        .safe_mul(minimum_ratio)
+                        .checked_mul(minimum_ratio)
                         .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
                     if divisibility == 18 {
                         amount_to_contribute
                     } else {
                         amount_to_contribute
-                            .safe_round(divisibility, RoundingMode::ToNegativeInfinity)
+                            .checked_round(divisibility, RoundingMode::ToNegativeInfinity)
                             .ok_or(MultiResourcePoolError::DecimalOverflowError)?
                     }
                 };
@@ -589,7 +593,7 @@ impl MultiResourcePoolBlueprint {
             }
 
             let pool_units_to_mint = pool_unit_total_supply
-                .safe_mul(minimum_ratio)
+                .checked_mul(minimum_ratio)
                 .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
 
             Runtime::emit_event(
@@ -848,15 +852,15 @@ impl MultiResourcePoolBlueprint {
                     },
                 )| {
                     let amount_owed = pool_units_to_redeem
-                        .safe_div(pool_units_total_supply)
-                        .and_then(|d| d.safe_mul(reserves))
+                        .checked_div(pool_units_total_supply)
+                        .and_then(|d| d.checked_mul(reserves))
                         .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
 
                     let amount_owed = if divisibility == 18 {
                         amount_owed
                     } else {
                         amount_owed
-                            .safe_round(divisibility, RoundingMode::ToNegativeInfinity)
+                            .checked_round(divisibility, RoundingMode::ToNegativeInfinity)
                             .ok_or(MultiResourcePoolError::DecimalOverflowError)?
                     };
 

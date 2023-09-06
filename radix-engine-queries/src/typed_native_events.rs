@@ -25,13 +25,13 @@ fn resolve_typed_event_key_from_event_type_identifier(
 
     match &event_type_identifier.0 {
         /* Method or Function emitter on a known node module */
-        Emitter::Method(_, ObjectModuleId::RoleAssignment) => {
+        Emitter::Method(_, ModuleId::RoleAssignment) => {
             TypedRoleAssignmentBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
         }
-        Emitter::Method(_, ObjectModuleId::Metadata) => {
+        Emitter::Method(_, ModuleId::Metadata) => {
             TypedMetadataBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
         }
-        Emitter::Method(_, ObjectModuleId::Royalty) => {
+        Emitter::Method(_, ModuleId::Royalty) => {
             TypedComponentRoyaltyBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
         }
 
@@ -115,7 +115,7 @@ fn resolve_typed_event_key_from_event_type_identifier(
         },
 
         /* Methods on non-generic components */
-        Emitter::Method(node_id, ObjectModuleId::Main) => match node_id.entity_type().unwrap() {
+        Emitter::Method(node_id, ModuleId::Main) => match node_id.entity_type().unwrap() {
             EntityType::GlobalPackage => {
                 TypedPackageBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
             }
@@ -572,7 +572,7 @@ pub enum TypedNativeEventError {
     TypeHasNoName {
         package_definition: PackageDefinition,
         blueprint_name: String,
-        local_type_index: LocalTypeIndex,
+        local_type_id: LocalTypeId,
     },
     NotANativeBlueprint(EventTypeIdentifier),
     DecodeError(DecodeError),

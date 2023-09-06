@@ -180,7 +180,8 @@ fn assert_complete_system_structure(result: &CommitResult) {
         event_system_structures,
     } = &result.system_structure;
 
-    for ((node_id, partition_num), by_substate_key) in &result.state_updates.system_updates {
+    let system_updates = result.state_updates.clone().into_legacy().system_updates;
+    for ((node_id, partition_num), by_substate_key) in &system_updates {
         for substate_key in by_substate_key.keys() {
             let structure = substate_system_structures
                 .get(node_id)
@@ -281,7 +282,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let entry = reader
         .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
             resource_address.as_node_id(),
-            ObjectModuleId::Metadata,
+            ModuleId::Metadata,
             ObjectCollectionKey::KeyValue(
                 MetadataCollection::EntryKeyValue.collection_index(),
                 &"symbol".to_string(),
@@ -442,7 +443,7 @@ fn test_genesis_stake_allocation() {
             let validator_url_entry = reader
                 .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
                     &new_validators[index].as_node_id(),
-                    ObjectModuleId::Metadata,
+                    ModuleId::Metadata,
                     ObjectCollectionKey::KeyValue(
                         MetadataCollection::EntryKeyValue.collection_index(),
                         &"url".to_string(),
@@ -487,7 +488,7 @@ fn test_genesis_time() {
     let timestamp = reader
         .read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
             CONSENSUS_MANAGER.as_node_id(),
-            ObjectModuleId::Main,
+            ModuleId::Main,
             ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
         )
         .unwrap()
@@ -614,7 +615,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     let mut total_xrd_supply = Decimal::ZERO;
     for component in components {
         let xrd_balance = test_runner.get_component_balance(component, XRD);
-        total_xrd_supply = total_xrd_supply.safe_add(xrd_balance).unwrap();
+        total_xrd_supply = total_xrd_supply.checked_add(xrd_balance).unwrap();
         println!("{:?}, {}", component, xrd_balance);
     }
 
@@ -632,7 +633,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
             match actual_type_name.as_str() {
                 "MintFungibleResourceEvent" => {
                     total_mint_amount = total_mint_amount
-                        .safe_add(
+                        .checked_add(
                             scrypto_decode::<MintFungibleResourceEvent>(&event.1)
                                 .unwrap()
                                 .amount,
@@ -641,7 +642,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
                 }
                 "BurnFungibleResourceEvent" => {
                     total_burn_amount = total_burn_amount
-                        .safe_add(
+                        .checked_add(
                             scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
                                 .unwrap()
                                 .amount,
@@ -657,6 +658,6 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     println!("Total burn amount: {}", total_burn_amount);
     assert_eq!(
         total_xrd_supply,
-        total_mint_amount.safe_sub(total_burn_amount).unwrap()
+        total_mint_amount.checked_sub(total_burn_amount).unwrap()
     );
 }

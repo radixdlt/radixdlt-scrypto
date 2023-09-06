@@ -10,8 +10,8 @@ mod globalize_test {
     impl GlobalizeTest {
         pub fn globalize(x: Own) {
             let modules = indexmap!(
-                ModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
-                ModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
+                AttachedModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
+                AttachedModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
             );
 
             ScryptoVmV1Api::object_globalize(x.0, modules, None);
@@ -188,7 +188,13 @@ mod recursive_test {
     impl RecursiveTest {
         pub fn create_own_at_depth(depth: u32) {
             // Can be further optimized by pre-computation
-            let schema = scrypto_encode(&KeyValueStoreGenericArgs::new::<u32, Own>(true)).unwrap();
+            let schema = scrypto_encode(
+                &KeyValueStoreDataSchema::new_local_with_self_package_replacement::<u32, Own>(
+                    Runtime::package_address(),
+                    true,
+                ),
+            )
+            .unwrap();
             let key_payload = scrypto_encode(&0u32).unwrap();
             let mut value_payload = scrypto_encode(&Own(NodeId([0u8; NodeId::LENGTH]))).unwrap();
 

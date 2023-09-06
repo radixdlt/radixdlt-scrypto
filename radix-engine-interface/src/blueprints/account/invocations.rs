@@ -1,14 +1,12 @@
+use crate::blueprints::component::*;
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::prelude::{ManifestAddressReservation, ManifestBucket};
-use radix_engine_common::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
-use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor, ManifestSbor)]
 pub enum ResourcePreference {
@@ -34,6 +32,8 @@ pub enum DefaultDepositRule {
 
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
+define_type_info_marker!(Some(ACCOUNT_PACKAGE), Account);
+
 //=============
 // Account Create Advanced
 //=============
@@ -54,7 +54,7 @@ pub struct AccountCreateAdvancedManifestInput {
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
-pub type AccountCreateAdvancedOutput = ComponentAddress;
+pub type AccountCreateAdvancedOutput = Global<AccountObjectTypeInfo>;
 
 //================
 // Account Create
@@ -66,7 +66,7 @@ pub const ACCOUNT_CREATE_IDENT: &str = "create";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateInput {}
 
-pub type AccountCreateOutput = (ComponentAddress, Bucket);
+pub type AccountCreateOutput = (Global<AccountObjectTypeInfo>, Bucket);
 
 //==================
 // Account Securify

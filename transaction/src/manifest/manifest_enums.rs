@@ -101,8 +101,36 @@ lazy_static! {
 
         known_enum!(
             m,
+            enum ResourceOrNonFungible {
+                NonFungible = 0;
+                Resource = 1;
+            }
+        );
+
+        known_enum!(
+            m,
             enum ModuleId {
                 Main = 0;
+                Metadata = 1;
+                Royalty = 2;
+                RoleAssignment = 3;
+            }
+        );
+
+        // Notes: This is to be deprecated, please use `ModuleId` instead
+        known_enum!(
+            m,
+            enum ObjectModuleId {
+                Main = 0;
+                Metadata = 1;
+                Royalty = 2;
+                RoleAssignment = 3;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum AttachedModuleId {
                 Metadata = 1;
                 Royalty = 2;
                 RoleAssignment = 3;
@@ -167,6 +195,14 @@ lazy_static! {
                 None = 0;
                 Fixed = 1;
                 Updatable = 2;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum NonFungibleDataSchema {
+                Local = 0;
+                Remote = 1;
             }
         );
 

@@ -8,14 +8,13 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::*;
-use sbor::*;
 use transaction::prelude::*;
 
 pub fn validate_call_arguments_to_native_components(
@@ -41,7 +40,7 @@ pub fn validate_call_arguments_to_native_components(
                 method_name,
                 args,
             } => (
-                Invocation::Method(*address, ObjectModuleId::Main, method_name.to_owned()),
+                Invocation::Method(*address, ModuleId::Main, method_name.to_owned()),
                 args,
             ),
             InstructionV1::CallMetadataMethod {
@@ -49,7 +48,7 @@ pub fn validate_call_arguments_to_native_components(
                 method_name,
                 args,
             } => (
-                Invocation::Method(*address, ObjectModuleId::Metadata, method_name.to_owned()),
+                Invocation::Method(*address, ModuleId::Metadata, method_name.to_owned()),
                 args,
             ),
             InstructionV1::CallRoyaltyMethod {
@@ -57,7 +56,7 @@ pub fn validate_call_arguments_to_native_components(
                 method_name,
                 args,
             } => (
-                Invocation::Method(*address, ObjectModuleId::Royalty, method_name.to_owned()),
+                Invocation::Method(*address, ModuleId::Royalty, method_name.to_owned()),
                 args,
             ),
             InstructionV1::CallRoleAssignmentMethod {
@@ -65,11 +64,7 @@ pub fn validate_call_arguments_to_native_components(
                 method_name,
                 args,
             } => (
-                Invocation::Method(
-                    *address,
-                    ObjectModuleId::RoleAssignment,
-                    method_name.to_owned(),
-                ),
+                Invocation::Method(*address, ModuleId::RoleAssignment, method_name.to_owned()),
                 args,
             ),
             InstructionV1::CallDirectVaultMethod {
@@ -90,11 +85,11 @@ pub fn validate_call_arguments_to_native_components(
             }
         })?;
 
-        if let Some((TypeRef::Static(local_type_index), schema)) = schema {
+        if let Some((TypeRef::Static(local_type_id), schema)) = schema {
             validate_payload_against_schema::<ManifestCustomExtension, _>(
                 &manifest_encode(&args).unwrap(),
                 schema,
-                local_type_index,
+                local_type_id,
                 &(),
                 MANIFEST_SBOR_V1_MAX_DEPTH,
             )
@@ -130,7 +125,7 @@ fn get_blueprint_schema<'p>(
 fn get_arguments_schema<'s>(
     invocation: Invocation,
 ) -> Result<
-    Option<(TypeRef<LocalTypeIndex>, &'s Schema<ScryptoCustomSchema>)>,
+    Option<(TypeRef<LocalTypeId>, &'s Schema<ScryptoCustomSchema>)>,
     InstructionSchemaValidationError,
 > {
     let entity_type = invocation.entity_type();
@@ -198,7 +193,7 @@ fn get_arguments_schema<'s>(
         )
         .map(Some)?,
         Invocation::Function(..) => None,
-        Invocation::Method(_, ObjectModuleId::Main, _) | Invocation::DirectMethod(..) => {
+        Invocation::Method(_, ModuleId::Main, _) | Invocation::DirectMethod(..) => {
             match entity_type {
                 EntityType::GlobalPackage => {
                     PACKAGE_PACKAGE_DEFINITION.blueprints.get(PACKAGE_BLUEPRINT)
@@ -259,15 +254,13 @@ fn get_arguments_schema<'s>(
                 | EntityType::InternalKeyValueStore => None,
             }
         }
-        Invocation::Method(_, ObjectModuleId::Metadata, _) => METADATA_PACKAGE_DEFINITION
+        Invocation::Method(_, ModuleId::Metadata, _) => METADATA_PACKAGE_DEFINITION
             .blueprints
             .get(METADATA_BLUEPRINT),
-        Invocation::Method(_, ObjectModuleId::RoleAssignment, _) => {
-            ROLE_ASSIGNMENT_PACKAGE_DEFINITION
-                .blueprints
-                .get(ROLE_ASSIGNMENT_BLUEPRINT)
-        }
-        Invocation::Method(_, ObjectModuleId::Royalty, _) => ROYALTY_PACKAGE_DEFINITION
+        Invocation::Method(_, ModuleId::RoleAssignment, _) => ROLE_ASSIGNMENT_PACKAGE_DEFINITION
+            .blueprints
+            .get(ROLE_ASSIGNMENT_BLUEPRINT),
+        Invocation::Method(_, ModuleId::Royalty, _) => ROYALTY_PACKAGE_DEFINITION
             .blueprints
             .get(COMPONENT_ROYALTY_BLUEPRINT),
     };
@@ -330,7 +323,7 @@ fn is_function_receiver(receiver: &Option<ReceiverInfo>) -> bool {
 #[derive(Clone, Debug)]
 enum Invocation {
     DirectMethod(InternalAddress, String),
-    Method(GlobalAddress, ObjectModuleId, String),
+    Method(GlobalAddress, ModuleId, String),
     Function(PackageAddress, String, String),
 }
 

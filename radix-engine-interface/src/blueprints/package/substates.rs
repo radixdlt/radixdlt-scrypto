@@ -38,16 +38,16 @@ pub enum VmType {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum BlueprintPayloadDef {
-    Static(TypeIdentifier), // Fully Resolved type is defined in package
-    Generic(u8), // Fully Resolved type is mapped directly to a generic defined by instance
-                 // TODO: How to represent a structure containing a generic?
+    Static(ScopedTypeId), // Fully Resolved type is defined in package
+    Generic(u8),          // Fully Resolved type is mapped directly to a generic defined by instance
+                          // TODO: How to represent a structure containing a generic?
 }
 
 impl BlueprintPayloadDef {
-    pub fn from_type_ref(type_ref: TypeRef<LocalTypeIndex>, schema_hash: SchemaHash) -> Self {
+    pub fn from_type_ref(type_ref: TypeRef<LocalTypeId>, schema_hash: SchemaHash) -> Self {
         match type_ref {
-            TypeRef::Static(type_index) => {
-                BlueprintPayloadDef::Static(TypeIdentifier(schema_hash, type_index))
+            TypeRef::Static(type_id) => {
+                BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, type_id))
             }
             TypeRef::Generic(index) => BlueprintPayloadDef::Generic(index),
         }
@@ -164,6 +164,7 @@ pub struct BlueprintInterface {
     pub state: IndexedStateSchema,
     pub functions: IndexMap<String, FunctionSchema>,
     pub events: IndexMap<String, BlueprintPayloadDef>,
+    pub types: IndexMap<String, ScopedTypeId>,
 }
 
 impl BlueprintInterface {

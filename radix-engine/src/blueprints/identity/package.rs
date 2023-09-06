@@ -7,7 +7,7 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::{ClientApi, ModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ClientApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
@@ -98,6 +98,7 @@ impl IdentityNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    types: BlueprintTypeSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
@@ -274,8 +275,8 @@ impl IdentityBlueprint {
         let owner_badge = {
             let bytes = public_key_hash.get_hash_bytes();
             let entity_type = match public_key_hash {
-                PublicKeyHash::Ed25519(..) => EntityType::GlobalVirtualEd25519Account,
-                PublicKeyHash::Secp256k1(..) => EntityType::GlobalVirtualSecp256k1Account,
+                PublicKeyHash::Ed25519(..) => EntityType::GlobalVirtualEd25519Identity,
+                PublicKeyHash::Secp256k1(..) => EntityType::GlobalVirtualSecp256k1Identity,
             };
 
             let mut id_bytes = vec![entity_type as u8];
@@ -330,7 +331,7 @@ impl IdentityBlueprint {
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
-    ) -> Result<(NodeId, IndexMap<ModuleId, Own>), RuntimeError>
+    ) -> Result<(NodeId, IndexMap<AttachedModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -340,9 +341,9 @@ impl IdentityBlueprint {
         let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, indexmap!())?;
 
         let modules = indexmap!(
-            ModuleId::RoleAssignment => role_assignment.0,
-            ModuleId::Metadata => metadata,
-            ModuleId::Royalty => royalty,
+            AttachedModuleId::RoleAssignment => role_assignment.0,
+            AttachedModuleId::Metadata => metadata,
+            AttachedModuleId::Royalty => royalty,
         );
 
         Ok((object_id, modules))

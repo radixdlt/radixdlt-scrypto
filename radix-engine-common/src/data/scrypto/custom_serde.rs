@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 impl SerializableCustomExtension for ScryptoCustomExtension {
     fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
         context: &SerializationContext<'s, 'a, Self>,
-        _: LocalTypeIndex,
+        _: LocalTypeId,
         custom_value: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
@@ -132,7 +132,7 @@ mod tests {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::Decimal(Decimal::ONE.safe_div(100).unwrap()),
+                    value: ScryptoCustomValue::Decimal(Decimal::ONE.checked_div(100).unwrap()),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),

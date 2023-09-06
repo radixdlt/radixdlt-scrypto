@@ -209,6 +209,22 @@ impl Publish {
                     })
                     .collect();
 
+                let types = blueprint_definition
+                    .schema
+                    .types
+                    .type_schema
+                    .into_iter()
+                    .map(|(key, local_type_id)| {
+                        (
+                            key,
+                            ScopedTypeId(
+                                blueprint_definition.schema.schema.generate_schema_hash(),
+                                local_type_id,
+                            ),
+                        )
+                    })
+                    .collect();
+
                 let state = IndexedStateSchema::from_schema(
                     schema_hash,
                     blueprint_definition.schema.state,
@@ -224,6 +240,7 @@ impl Publish {
                         functions,
                         events,
                         state,
+                        types,
                     },
                     function_exports,
                     hook_exports: index_map_new(),

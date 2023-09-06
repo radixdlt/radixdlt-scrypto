@@ -81,15 +81,15 @@ macro_rules! wasmi_native {
                     "add" => {
                         let b_vec = wasmi_read_memory(caller.as_context(), memory, b_ptr, <$type>::BITS / 8);
                         let b = <$type>::try_from(&b_vec[..]).unwrap();
-                        a.safe_add(b).unwrap()
+                        a.checked_add(b).unwrap()
                     },
                     "mul" => {
                         let b_vec = wasmi_read_memory(caller.as_context(), memory, b_ptr, <$type>::BITS / 8);
                         let b = <$type>::try_from(&b_vec[..]).unwrap();
-                        a.safe_mul(b).unwrap()
+                        a.checked_mul(b).unwrap()
                     },
                     "pow" => {
-                        a.safe_powi(b_ptr.into()).unwrap()
+                        a.checked_powi(b_ptr.into()).unwrap()
                     },
                     _ => panic!("Unsupported operator!"),
                 };
@@ -209,15 +209,15 @@ macro_rules! wasmer_native {
                     "add" => {
                         let b_vec = wasmer_read_memory(&memory, b_ptr, <$type>::BITS / 8);
                         let b = <$type>::try_from(&b_vec[..]).unwrap();
-                        a.safe_add(b).unwrap()
+                        a.checked_add(b).unwrap()
                     },
                     "mul" => {
                         let b_vec = wasmer_read_memory(&memory, b_ptr, <$type>::BITS / 8);
                         let b = <$type>::try_from(&b_vec[..]).unwrap();
-                        a.safe_mul(b).unwrap()
+                        a.checked_mul(b).unwrap()
                     },
                     "pow" => {
-                        a.safe_powi(b_ptr.into()).unwrap()
+                        a.checked_powi(b_ptr.into()).unwrap()
                     }
                     _ => panic!("Unsupported operator!"),
                 };

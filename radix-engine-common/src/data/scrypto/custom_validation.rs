@@ -12,11 +12,11 @@ impl<'a> ValidatableCustomExtension<()> for ScryptoCustomExtension {
     fn apply_validation_for_custom_value<'de>(
         schema: &Schema<Self::CustomSchema>,
         custom_value: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
-        type_index: LocalTypeIndex,
+        type_id: LocalTypeId,
         _: &(),
     ) -> Result<(), PayloadValidationError<Self>> {
         match schema
-            .resolve_type_validation(type_index)
+            .resolve_type_validation(type_id)
             .ok_or(PayloadValidationError::SchemaInconsistency)?
         {
             TypeValidation::None => Ok(()),

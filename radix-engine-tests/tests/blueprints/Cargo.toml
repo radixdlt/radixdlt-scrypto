@@ -39,6 +39,7 @@ members = [
     "recursion",
     "reentrancy",
     "reference",
+    "remote_generic_args",
     "resource",
     "role_assignment",
     "static_dependencies",
