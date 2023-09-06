@@ -70,6 +70,34 @@ impl ResourceBuilder {
     ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>> {
         InProgressResourceBuilder::new(owner_role)
     }
+
+    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
+    pub fn new_string_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
+        owner_role: OwnerRole,
+    ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<StringNonFungibleLocalId, D, B>> {
+        InProgressResourceBuilder::new(owner_role)
+    }
+
+    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
+    pub fn new_integer_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
+        owner_role: OwnerRole,
+    ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<IntegerNonFungibleLocalId, D, B>> {
+        InProgressResourceBuilder::new(owner_role)
+    }
+
+    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
+    pub fn new_bytes_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
+        owner_role: OwnerRole,
+    ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<BytesNonFungibleLocalId, D, B>> {
+        InProgressResourceBuilder::new(owner_role)
+    }
+
+    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::RUID`
+    pub fn new_ruid_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
+        owner_role: OwnerRole,
+    ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<RUIDNonFungibleLocalId, D, B>> {
+        InProgressResourceBuilder::new(owner_role)
+    }
 }
 
 /// Utility for setting up a new resource, which has building in progress.
@@ -138,6 +166,24 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData> AnyResourceType
 impl<T: IsNonFungibleLocalId, D: NonFungibleData> Default for NonFungibleResourceType<T, D> {
     fn default() -> Self {
         Self(PhantomData, PhantomData)
+    }
+}
+
+pub struct NonFungibleResourceTypeV2<
+    T: IsNonFungibleLocalId,
+    D: NonFungibleData + RegisteredType<B>,
+    B,
+>(PhantomData<T>, PhantomData<D>, PhantomData<B>);
+impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B> AnyResourceType
+    for NonFungibleResourceTypeV2<T, D, B>
+{
+    type ResourceRoles = NonFungibleResourceRoles;
+}
+impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B> Default
+    for NonFungibleResourceTypeV2<T, D, B>
+{
+    fn default() -> Self {
+        Self(PhantomData, PhantomData, PhantomData)
     }
 }
 
@@ -875,6 +921,25 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
         let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
             Runtime::package_address(),
         );
+
+        private::CreateWithNoSupply::NonFungible {
+            owner_role: self.owner_role,
+            id_type: Y::id_type(),
+            non_fungible_schema,
+            resource_roles: self.resource_roles,
+            metadata: self.metadata_config,
+            address_reservation: self.address_reservation,
+        }
+    }
+}
+
+impl<Y: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B>
+    private::CanCreateWithNoSupply
+    for InProgressResourceBuilder<NonFungibleResourceTypeV2<Y, D, B>>
+{
+    fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
+        let non_fungible_schema =
+            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
 
         private::CreateWithNoSupply::NonFungible {
             owner_role: self.owner_role,
