@@ -463,6 +463,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         import_statements
     };
 
+    let registered_type_ident = format_ident!("{}RegisteredType", bp_ident);
+    let registered_type_trait: ItemTrait = parse_quote! {
+        pub trait #registered_type_ident: ScryptoSbor {
+            const BLUEPRINT_NAME: &'static str = #bp_name;
+        }
+    };
     let mut registered_type_defs = Vec::<ItemStruct>::new();
     let mut registered_type_impls = Vec::<ItemImpl>::new();
 
@@ -478,14 +484,19 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         pub struct #alias(#path);
                     });
                     registered_type_impls.push(parse_quote! {
-                        impl RegisteredType for #alias {
-                            const BLUEPRINT_NAME: &'static str = #blueprint_name;
+                        impl From<#path> for #alias {
+                            fn from(value: #path) -> Self {
+                                Self(value)
+                            }
+                        }
+                    });
+                    registered_type_impls.push(parse_quote! {
+                        impl #registered_type_ident for #alias {
                         }
                     });
                 } else {
                     registered_type_impls.push(parse_quote! {
-                        impl RegisteredType for #path {
-                            const BLUEPRINT_NAME: &'static str = #blueprint_name;
+                        impl #registered_type_ident for #path {
                         }
                     });
                 }
@@ -682,7 +693,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                             type_schema.insert(#registered_type_names.to_owned(), local_type_index);
                         })*
                         BlueprintTypeSchemaInit {
-                            type_schema,
+                            type_schema
                         }
                     };
 
@@ -902,6 +913,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #output_schema
 
             #output_stubs
+
+            #registered_type_trait
 
             #(#registered_type_defs)*
 
@@ -1650,11 +1663,13 @@ fn type_replacement(ty: &Type, bp_name: &str) -> Type {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::print_generated_code;
     use proc_macro2::TokenStream;
     use std::str::FromStr;
 
-    fn assert_code_eq(a: TokenStream, b: TokenStream) {
-        assert_eq!(a.to_string(), b.to_string());
+    fn assert_code_eq(actual: TokenStream, expected: TokenStream) {
+        print_generated_code("Actual", &actual);
+        assert_eq!(actual.to_string(), expected.to_string());
     }
 
     #[test]
@@ -1666,7 +1681,7 @@ mod tests {
     #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "mod test { struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } } }",
+            "#[types(Struct1, Struct2 as Hi, u32, NonFungibleGlobalId, Vec<Hash>, Vec<Bucket> as GenericAlias)] mod test { struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } } }",
         )
             .unwrap();
         let output = handle_blueprint(input).unwrap();
@@ -1860,9 +1875,33 @@ mod tests {
 
                             let types = {
                                 let mut type_schema = index_map_new();
-                                BlueprintTypeSchemaInit {
-                                    type_schema,
+                                {
+                                    let local_type_index =
+                                        aggregator.add_child_type_and_descendents::<Vec<Bucket> >();
+                                    type_schema.insert("GenericAlias".to_owned(), local_type_index);
                                 }
+                                {
+                                    let local_type_index = aggregator.add_child_type_and_descendents::<Struct2>();
+                                    type_schema.insert("Hi".to_owned(), local_type_index);
+                                }
+                                {
+                                    let local_type_index =
+                                        aggregator.add_child_type_and_descendents::<NonFungibleGlobalId>();
+                                    type_schema.insert("NonFungibleGlobalId".to_owned(), local_type_index);
+                                }
+                                {
+                                    let local_type_index = aggregator.add_child_type_and_descendents::<Struct1>();
+                                    type_schema.insert("Struct1".to_owned(), local_type_index);
+                                }
+                                {
+                                    let local_type_index = aggregator.add_child_type_and_descendents::<Vec<Hash> >();
+                                    type_schema.insert("Vec < Hash >".to_owned(), local_type_index);
+                                }
+                                {
+                                    let local_type_index = aggregator.add_child_type_and_descendents::<u32>();
+                                    type_schema.insert("u32".to_owned(), local_type_index);
+                                }
+                                BlueprintTypeSchemaInit { type_schema }
                             };
 
                             let schema = generate_full_schema(aggregator);
@@ -1936,6 +1975,35 @@ mod tests {
                             Self::call_function_raw("y", scrypto_args!(i))
                         }
                     }
+
+                    pub trait TestRegisteredType: ScryptoSbor {
+                        const BLUEPRINT_NAME: &'static str = "Test";
+                    }
+
+                    #[derive(ScryptoSbor)]
+                    #[sbor(transparent)]
+                    pub struct Hi(Struct2);
+
+                    #[derive(ScryptoSbor)]
+                    #[sbor(transparent)]
+                    pub struct GenericAlias(Vec<Bucket>);
+
+                    impl TestRegisteredType for Struct1 {}
+                    impl From<Struct2> for Hi {
+                        fn from(value: Struct2) -> Self {
+                            Self(value)
+                        }
+                    }
+                    impl TestRegisteredType for Hi {}
+                    impl TestRegisteredType for u32 {}
+                    impl TestRegisteredType for NonFungibleGlobalId {}
+                    impl TestRegisteredType for Vec<Hash> {}
+                    impl From<Vec<Bucket> > for GenericAlias {
+                        fn from(value: Vec<Bucket>) -> Self {
+                            Self(value)
+                        }
+                    }
+                    impl TestRegisteredType for GenericAlias {}
                 }
 
                 #[cfg(feature = "test")]

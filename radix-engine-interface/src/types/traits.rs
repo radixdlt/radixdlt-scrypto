@@ -4,7 +4,3 @@ use radix_engine_common::data::scrypto::ScryptoSbor;
 pub trait NonFungibleData: ScryptoSbor {
     const MUTABLE_FIELDS: &'static [&'static str];
 }
-
-pub trait RegisteredType: ScryptoSbor {
-    const BLUEPRINT_NAME: &'static str;
-}
