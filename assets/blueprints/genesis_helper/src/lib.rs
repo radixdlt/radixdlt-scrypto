@@ -47,6 +47,7 @@ pub enum GenesisDataChunk {
 }
 
 #[blueprint]
+#[types(Secp256k1PublicKey, Global<Validator>)]
 mod genesis_helper {
     enable_function_auth! {
         new => rule!(deny_all); // Genesis skips this
@@ -66,7 +67,7 @@ mod genesis_helper {
 
     struct GenesisHelper {
         consensus_manager: Global<ConsensusManager>,
-        validators: KeyValueStore<Secp256k1PublicKey, Global<Validator>>,
+        validators: KeyValueStoreV2<GenesisHelper, Secp256k1PublicKey, Global<Validator>>,
     }
 
     impl GenesisHelper {
@@ -77,7 +78,7 @@ mod genesis_helper {
         ) -> Global<GenesisHelper> {
             Self {
                 consensus_manager,
-                validators: KeyValueStore::new(),
+                validators: KeyValueStoreV2::new(),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Updatable(rule!(require(system_role.clone()))))

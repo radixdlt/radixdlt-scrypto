@@ -6,6 +6,7 @@ pub struct LoanDue {
 }
 
 #[blueprint]
+#[types(LoanDue)]
 mod basic_flash_loan {
     struct BasicFlashLoan {
         loan_vault: Vault,
@@ -33,7 +34,7 @@ mod basic_flash_loan {
                 .mint_initial_supply(1);
 
             // Define a "transient" resource which can never be deposited once created, only burned
-            let transient_resource_manager = ResourceBuilder::new_ruid_non_fungible::<LoanDue>(OwnerRole::Fixed(rule!(require(auth_token.resource_address()))))
+            let transient_resource_manager = ResourceBuilder::new_ruid_non_fungible_v2::<LoanDue, _>(OwnerRole::Fixed(rule!(require(auth_token.resource_address()))))
                 .metadata(metadata! {
                     init {
                         "name" => "Promise token for BasicFlashLoan - must be returned to be burned!".to_string(), locked;
