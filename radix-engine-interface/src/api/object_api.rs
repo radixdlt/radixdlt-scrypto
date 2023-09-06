@@ -135,7 +135,7 @@ impl Describe<ScryptoCustomTypeKind> for AttachedModuleId {
         RustTypeId::WellKnown(well_known_scrypto_custom_types::ATTACHED_MODULE_ID_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::module_id_type_data()
+        well_known_scrypto_custom_types::attached_module_id_type_data()
     }
 }
 
