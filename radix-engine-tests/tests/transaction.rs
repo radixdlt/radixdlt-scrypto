@@ -4,8 +4,10 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
+use scrypto_test::prelude::ProofSnapshot;
 use scrypto_unit::*;
 use transaction::prelude::*;
+use transaction::validation::NotarizedTransactionValidator;
 
 #[test]
 fn test_manifest_with_non_existent_resource() {
@@ -239,4 +241,46 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
             ))
         )
     })
+}
+
+#[test]
+fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(true);
+
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account, XRD, 73)
+        .take_from_worktop(XRD, 73, "XRD")
+        .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
+        .drop_all_proofs()
+        .try_deposit_or_abort(account, None, "XRD")
+        .build();
+
+    // Act
+    let rtn = NotarizedTransactionValidator::validate_instructions_v1(&manifest.instructions);
+
+    // Assert
+    rtn.expect("Validation of the manifest failed")
+}
+
+#[test]
+fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked2() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(true);
+
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account, XRD, 73)
+        .take_from_worktop(XRD, 73, "XRD")
+        .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
+        .drop_named_proofs()
+        .try_deposit_or_abort(account, None, "XRD")
+        .build();
+
+    // Act
+    let rtn = NotarizedTransactionValidator::validate_instructions_v1(&manifest.instructions);
+
+    // Assert
+    rtn.expect("Validation of the manifest failed")
 }
