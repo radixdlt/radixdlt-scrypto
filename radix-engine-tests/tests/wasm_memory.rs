@@ -186,14 +186,16 @@ fn test_wasm_memory_is_clean() {
     ] {
         if size != initial_size {
             grow_memory!(instance, runtime, size - current_size);
+            // Clear the first byte, it was used to return clean flag in previous step
+            write_memory_ok!(instance, runtime, 0, 1);
             current_size = size;
         }
         // Check if WASM memory is clear after the initialization or growing
         let result = instance
             .invoke_export("Test_check_memory_is_clean", vec![], &mut runtime)
             .unwrap();
-        let clean: bool = scrypto_decode(&result).unwrap();
+        let clean = result[0];
 
-        assert!(clean);
+        assert!(clean == 1);
     }
 }

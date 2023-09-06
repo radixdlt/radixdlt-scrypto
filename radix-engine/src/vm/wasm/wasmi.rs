@@ -682,8 +682,7 @@ fn test_host_check_memory_is_clean(
     let (memory, _runtime) = grab_runtime!(caller);
     let store_ctx = caller.as_context();
 
-    // skip the first bytes, they're used for return codes
-    let data = &memory.data(&store_ctx)[64..];
+    let data = memory.data(&store_ctx);
     let clean = !data.iter().any(|&x| x != 0x0);
 
     Ok(clean as u64)
