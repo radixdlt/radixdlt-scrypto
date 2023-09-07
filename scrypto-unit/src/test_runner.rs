@@ -65,13 +65,31 @@ pub struct Compile;
 
 impl Compile {
     pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
+        Self::compile_with_env_vars(
+            package_dir,
+            btreemap! {
+                "RUSTFLAGS".to_owned() => "".to_owned()
+            },
+        )
+    }
+
+    pub fn compile_with_env_vars<P: AsRef<Path>>(
+        package_dir: P,
+        env_vars: sbor::rust::collections::BTreeMap<String, String>,
+    ) -> (Vec<u8>, PackageDefinition) {
         // Build
         let status = Command::new("cargo")
-            .env("RUSTFLAGS", "")
+            .envs(env_vars)
             .current_dir(package_dir.as_ref())
             .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
             .status()
-            .unwrap();
+            .unwrap_or_else(|error| {
+                panic!(
+                    "Compiling \"{:?}\" failed with \"{:?}\"",
+                    package_dir.as_ref(),
+                    error
+                )
+            });
         if !status.success() {
             panic!("Failed to compile package: {:?}", package_dir.as_ref());
         }

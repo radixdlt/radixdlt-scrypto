@@ -3,13 +3,11 @@ fn main() {}
 
 #[cfg(feature = "compile-blueprints-at-build-time")]
 fn main() {
-    use std::collections::HashMap;
     use std::env;
     use std::path::PathBuf;
-    use std::str::FromStr;
 
     use cargo_toml::{Manifest, Package};
-    use scrypto_test::prelude::scrypto_encode;
+    use scrypto::prelude::*;
 
     let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
     let blueprints_dir = manifest_dir.join("tests").join("blueprints");
@@ -18,8 +16,8 @@ fn main() {
     let mut packages = HashMap::new();
     for entry in walkdir::WalkDir::new(blueprints_dir) {
         let Ok(entry) = entry else {
-            continue;
-        };
+                continue;
+            };
         let path = entry.path();
         if !path
             .file_name()
@@ -38,10 +36,17 @@ fn main() {
         }
 
         let Some(Package { name, .. }) = manifest.package else {
-            continue;
-        };
+                continue;
+            };
 
-        let (code, definition) = scrypto_test::prelude::Package::compile(path.parent().unwrap());
+        let (code, definition) = scrypto_unit::Compile::compile_with_env_vars(
+            path.parent().unwrap(),
+            btreemap! {
+                "RUSTFLAGS".to_owned() => "".to_owned(),
+                "CARGO_ENCODED_RUSTFLAGS".to_owned() => "".to_owned(),
+                "LLVM_PROFILE_FILE".to_owned() => "".to_owned()
+            },
+        );
         packages.insert(name, (code, definition));
     }
 
