@@ -1,12 +1,14 @@
 use super::*;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
     own_key_value_store_type_data, OWN_KEY_VALUE_STORE_TYPE,
 };
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::prelude::{
+    RemoteKeyValueStoreDataSchema, KV_STORE_DATA_SCHEMA_VARIANT_REMOTE,
+};
 use radix_engine_interface::types::RegisteredType;
 use sbor::rust::marker::PhantomData;
 use sbor::*;
@@ -34,14 +36,19 @@ pub struct KeyValueStoreV2<T, K: RegisteredType<T>, V: RegisteredType<T>> {
 impl<T, K: RegisteredType<T>, V: RegisteredType<T>> KeyValueStoreV2<T, K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let store_schema = KeyValueStoreDataSchema::new_remote(
-            K::blueprint_type_identifier(),
-            V::blueprint_type_identifier(),
-            true,
-        );
+        let store_schema = RemoteKeyValueStoreDataSchema {
+            key_type: K::blueprint_type_identifier(),
+            value_type: V::blueprint_type_identifier(),
+            allow_ownership: true,
+        };
 
         Self {
-            id: Own(ScryptoVmV1Api::kv_store_new(store_schema)),
+            id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+                KV_STORE_DATA_SCHEMA_VARIANT_REMOTE,
+                RemoteKeyValueStoreDataSchema,
+            > {
+                fields: store_schema,
+            })),
             marker: PhantomData,
             key: PhantomData,
             value: PhantomData,

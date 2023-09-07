@@ -23,14 +23,14 @@ mod non_fungible_data {
             blueprint_name: String,
             type_name: String,
         ) {
-            let non_fungible_schema = NonFungibleDataSchema::new_remote(
+            let non_fungible_schema = RemoteNonFungibleDataSchema {
                 BlueprintTypeIdentifier {
                     package_address,
                     blueprint_name,
                     type_name,
                 },
                 Vec::<String>::new(),
-            );
+             };
 
             let bytes = ScryptoVmV1Api::blueprint_call(
                 RESOURCE_PACKAGE,

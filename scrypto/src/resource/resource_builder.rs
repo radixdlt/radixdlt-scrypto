@@ -1,5 +1,7 @@
+use self::private::NoNonFungibleDataSchema;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
+use radix_engine_common::prelude::ScryptoCategorize;
 use radix_engine_common::prelude::ScryptoEncode;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
@@ -14,6 +16,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
+use sbor::FixedEnumVariant;
 use scrypto::resource::ResourceManager;
 
 /// Not divisible.
@@ -629,7 +632,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     RESOURCE_PACKAGE,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                    scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                    scrypto_encode(&NonFungibleResourceManagerCreateGenericInput {
                         owner_role,
                         id_type,
                         track_total_supply: true,
@@ -796,8 +799,10 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
     where
         T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
     {
-        let non_fungible_schema =
-            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
+        let non_fungible_schema = RemoteNonFungibleDataSchema {
+            type_id: D::blueprint_type_identifier(),
+            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
+        };
 
         let metadata = self
             .metadata_config
@@ -813,7 +818,12 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
-                    non_fungible_schema,
+                    non_fungible_schema: FixedEnumVariant::<
+                        NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                        RemoteNonFungibleDataSchema,
+                    > {
+                        fields: non_fungible_schema,
+                    },
                     resource_roles: self.resource_roles,
                     metadata,
                     entries: map_entries(entries),
@@ -913,8 +923,10 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
     where
         T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
     {
-        let non_fungible_schema =
-            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
+        let non_fungible_schema = RemoteNonFungibleDataSchema {
+            type_id: D::blueprint_type_identifier(),
+            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
+        };
 
         let metadata = self
             .metadata_config
@@ -930,7 +942,12 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
-                    non_fungible_schema,
+                    non_fungible_schema: FixedEnumVariant::<
+                        NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                        RemoteNonFungibleDataSchema,
+                    > {
+                        fields: non_fungible_schema,
+                    },
                     resource_roles: self.resource_roles,
                     metadata,
                     entries: map_entries(entries),
@@ -1030,8 +1047,10 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
-        let non_fungible_schema =
-            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
+        let non_fungible_schema = RemoteNonFungibleDataSchema {
+            type_id: D::blueprint_type_identifier(),
+            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
+        };
 
         let metadata = self
             .metadata_config
@@ -1047,7 +1066,12 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
                     owner_role: self.owner_role,
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
-                    non_fungible_schema,
+                    non_fungible_schema: FixedEnumVariant::<
+                        NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                        RemoteNonFungibleDataSchema,
+                    > {
+                        fields: non_fungible_schema,
+                    },
                     resource_roles: self.resource_roles,
                     metadata,
                     entries: map_entries(entries),
@@ -1154,8 +1178,10 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
         T: IntoIterator<Item = D>,
         D: ScryptoEncode,
     {
-        let non_fungible_schema =
-            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
+        let non_fungible_schema = RemoteNonFungibleDataSchema {
+            type_id: D::blueprint_type_identifier(),
+            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
+        };
 
         let metadata = self
             .metadata_config
@@ -1169,7 +1195,12 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
             scrypto_encode(
                 &NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
-                    non_fungible_schema,
+                    non_fungible_schema: FixedEnumVariant::<
+                        NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                        RemoteNonFungibleDataSchema,
+                    > {
+                        fields: non_fungible_schema,
+                    },
                     track_total_supply: true,
                     resource_roles: self.resource_roles,
                     metadata,
@@ -1218,7 +1249,11 @@ impl<T: AnyResourceType> private::CanSetAddressReservation for InProgressResourc
 }
 
 impl private::CanCreateWithNoSupply for InProgressResourceBuilder<FungibleResourceType> {
-    fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
+    type NonFungibleDataSchemaType = NoNonFungibleDataSchema;
+
+    fn into_create_with_no_supply_invocation(
+        self,
+    ) -> private::CreateWithNoSupply<Self::NonFungibleDataSchemaType> {
         private::CreateWithNoSupply::Fungible {
             owner_role: self.owner_role,
             divisibility: self.resource_type.divisibility,
@@ -1232,7 +1267,11 @@ impl private::CanCreateWithNoSupply for InProgressResourceBuilder<FungibleResour
 impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
     for InProgressResourceBuilder<NonFungibleResourceType<Y, D>>
 {
-    fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
+    type NonFungibleDataSchemaType = NonFungibleDataSchema;
+
+    fn into_create_with_no_supply_invocation(
+        self,
+    ) -> private::CreateWithNoSupply<Self::NonFungibleDataSchemaType> {
         let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
             Runtime::package_address(),
         );
@@ -1252,14 +1291,26 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B>
     private::CanCreateWithNoSupply
     for InProgressResourceBuilder<NonFungibleResourceTypeV2<Y, D, B>>
 {
-    fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
-        let non_fungible_schema =
-            NonFungibleDataSchema::new_remote(D::blueprint_type_identifier(), D::MUTABLE_FIELDS);
+    type NonFungibleDataSchemaType =
+        FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>;
+
+    fn into_create_with_no_supply_invocation(
+        self,
+    ) -> private::CreateWithNoSupply<Self::NonFungibleDataSchemaType> {
+        let non_fungible_schema = RemoteNonFungibleDataSchema {
+            type_id: D::blueprint_type_identifier(),
+            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
+        };
 
         private::CreateWithNoSupply::NonFungible {
             owner_role: self.owner_role,
             id_type: Y::id_type(),
-            non_fungible_schema,
+            non_fungible_schema: FixedEnumVariant::<
+                NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                RemoteNonFungibleDataSchema,
+            > {
+                fields: non_fungible_schema,
+            },
             resource_roles: self.resource_roles,
             metadata: self.metadata_config,
             address_reservation: self.address_reservation,
@@ -1281,6 +1332,7 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B>
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
+    use radix_engine_common::prelude::ScryptoDecode;
     use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
 
     pub trait CanSetMetadata: Sized {
@@ -1314,10 +1366,14 @@ mod private {
     }
 
     pub trait CanCreateWithNoSupply: Sized {
-        fn into_create_with_no_supply_invocation(self) -> CreateWithNoSupply;
+        type NonFungibleDataSchemaType: ScryptoCategorize + ScryptoEncode + ScryptoDecode;
+
+        fn into_create_with_no_supply_invocation(
+            self,
+        ) -> CreateWithNoSupply<Self::NonFungibleDataSchemaType>;
     }
 
-    pub enum CreateWithNoSupply {
+    pub enum CreateWithNoSupply<S: ScryptoCategorize + ScryptoEncode + ScryptoDecode> {
         Fungible {
             owner_role: OwnerRole,
             divisibility: u8,
@@ -1328,10 +1384,12 @@ mod private {
         NonFungible {
             owner_role: OwnerRole,
             id_type: NonFungibleIdType,
-            non_fungible_schema: NonFungibleDataSchema,
+            non_fungible_schema: S,
             resource_roles: NonFungibleResourceRoles,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
         },
     }
+
+    pub type NoNonFungibleDataSchema = ();
 }

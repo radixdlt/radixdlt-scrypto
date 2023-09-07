@@ -94,6 +94,18 @@ pub struct NonFungibleResourceManagerCreateManifestInput {
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerCreateGenericInput<S> {
+    pub owner_role: OwnerRole,
+    pub id_type: NonFungibleIdType,
+    pub track_total_supply: bool,
+    pub non_fungible_schema: S,
+    pub resource_roles: NonFungibleResourceRoles,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<GlobalAddressReservation>,
+}
+
 pub type NonFungibleResourceManagerCreateOutput = ResourceAddress;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
@@ -128,11 +140,11 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
 
 /// For typed value, to skip any codec
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerCreateWithInitialSupplyGenericInput<T> {
+pub struct NonFungibleResourceManagerCreateWithInitialSupplyGenericInput<S, T> {
     pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
-    pub non_fungible_schema: NonFungibleDataSchema,
+    pub non_fungible_schema: S,
     pub entries: IndexMap<NonFungibleLocalId, (T,)>,
     pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
@@ -172,10 +184,10 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
 /// For typed value, to skip any codec
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput<T> {
+pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput<S, T> {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
-    pub non_fungible_schema: NonFungibleDataSchema,
+    pub non_fungible_schema: S,
     pub entries: Vec<(T,)>,
     pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
@@ -289,6 +301,9 @@ pub struct NonFungibleResourceManagerMintSingleRuidGenericInput<T> {
 
 pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLocalId);
 
+pub const NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL: u8 = 0;
+pub const NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE: u8 = 1;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum NonFungibleDataSchema {
     // TODO: ignore this variant in Scrypto for smaller code size
@@ -301,6 +316,12 @@ pub enum NonFungibleDataSchema {
         type_id: BlueprintTypeIdentifier,
         mutable_fields: IndexSet<String>,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct RemoteNonFungibleDataSchema {
+    pub type_id: BlueprintTypeIdentifier,
+    pub mutable_fields: IndexSet<String>,
 }
 
 impl NonFungibleData for () {

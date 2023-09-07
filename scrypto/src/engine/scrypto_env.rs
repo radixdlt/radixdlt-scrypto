@@ -3,7 +3,6 @@ use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{ActorRefHandle, FieldValue};
 use radix_engine_interface::api::{AttachedModuleId, FieldIndex, LockFlags};
 use radix_engine_interface::crypto::Hash;
@@ -143,7 +142,8 @@ impl ScryptoVmV1Api {
         })
     }
 
-    pub fn kv_store_new(schema: KeyValueStoreDataSchema) -> NodeId {
+    // TODO: dedicated marker trait for key value store schema
+    pub fn kv_store_new<S: ScryptoEncode>(schema: S) -> NodeId {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { kv_store::kv_store_new(schema.as_ptr(), schema.len()) });
         NodeId(bytes.try_into().unwrap())

@@ -9,6 +9,9 @@ use sbor::rust::prelude::*;
 use sbor::LocalTypeId;
 use sbor::{generate_full_schema, TypeAggregator};
 
+pub const KV_STORE_DATA_SCHEMA_VARIANT_LOCAL: u8 = 0;
+pub const KV_STORE_DATA_SCHEMA_VARIANT_REMOTE: u8 = 1;
+
 /// Less flexible than previous revision, as mixed type origin is not allowed, but
 /// better for client-side optimization
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -25,6 +28,13 @@ pub enum KeyValueStoreDataSchema {
         value_type: BlueprintTypeIdentifier,
         allow_ownership: bool,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct RemoteKeyValueStoreDataSchema {
+    pub key_type: BlueprintTypeIdentifier,
+    pub value_type: BlueprintTypeIdentifier,
+    pub allow_ownership: bool,
 }
 
 impl KeyValueStoreDataSchema {
