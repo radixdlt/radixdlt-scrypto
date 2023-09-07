@@ -14,6 +14,6 @@ concurrency:
 jobs:
   radix-engine:
     name: Run Radix Engine tests
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/rust-tests.yml@feature/rust-coverage-workflow
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/rust-tests.yml@chore/rust-tests-deps
     with:
-      flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine
+      flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests
