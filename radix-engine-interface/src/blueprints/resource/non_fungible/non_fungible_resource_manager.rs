@@ -128,7 +128,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
 
 /// For typed value, to skip any codec
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerCreateWithInitialSupplyTypedInput<T> {
+pub struct NonFungibleResourceManagerCreateWithInitialSupplyGenericInput<T> {
     pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
@@ -172,7 +172,7 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
 /// For typed value, to skip any codec
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyTypedInput<T> {
+pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput<T> {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
@@ -204,7 +204,7 @@ pub struct NonFungibleResourceManagerUpdateDataManifestInput {
 
 /// For typed value, to skip any codec
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerUpdateDataTypedInput<T> {
+pub struct NonFungibleResourceManagerUpdateDataGenericInput<T> {
     pub id: NonFungibleLocalId,
     pub field_name: String,
     pub data: T,
@@ -246,7 +246,7 @@ pub struct NonFungibleResourceManagerMintManifestInput {
 
 /// For typed value, to skip any codec
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerMintTypedInput<T> {
+pub struct NonFungibleResourceManagerMintGenericInput<T> {
     pub entries: IndexMap<NonFungibleLocalId, (T,)>,
 }
 
@@ -268,7 +268,7 @@ pub struct NonFungibleResourceManagerMintRuidManifestInput {
 
 /// For typed value, to skip any codec
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerMintRuidTypedInput<T> {
+pub struct NonFungibleResourceManagerMintRuidGenericInput<T> {
     pub entries: Vec<(T,)>,
 }
 
@@ -283,7 +283,7 @@ pub struct NonFungibleResourceManagerMintSingleRuidInput {
 
 /// For typed value, to skip any codec
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerMintSingleRuidTypedInput<T> {
+pub struct NonFungibleResourceManagerMintSingleRuidGenericInput<T> {
     pub entry: T,
 }
 

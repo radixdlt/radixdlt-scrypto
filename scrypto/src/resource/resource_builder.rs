@@ -751,7 +751,7 @@ impl<D: NonFungibleData>
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(
-                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
@@ -809,7 +809,7 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(
-                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
@@ -868,7 +868,7 @@ impl<D: NonFungibleData>
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(
-                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
@@ -926,7 +926,7 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(
-                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
@@ -985,7 +985,7 @@ impl<D: NonFungibleData>
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(
-                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
@@ -1043,7 +1043,7 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(
-                &NonFungibleResourceManagerCreateWithInitialSupplyTypedInput {
+                &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
@@ -1106,7 +1106,7 @@ impl<D: NonFungibleData>
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(
-                &NonFungibleResourceManagerCreateRuidWithInitialSupplyTypedInput {
+                &NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
                     non_fungible_schema,
                     track_total_supply: true,
@@ -1167,7 +1167,7 @@ impl<D: NonFungibleData + RegisteredType<B>, B>
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(
-                &NonFungibleResourceManagerCreateRuidWithInitialSupplyTypedInput {
+                &NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
                     non_fungible_schema,
                     track_total_supply: true,
