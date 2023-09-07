@@ -97,7 +97,7 @@ fn static_component_should_be_callable() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE);
     test_runner
-        .compile_and_publish_at_address(PackageLoader::get("static_dependencies"), package_address);
+        .publish_package_at_address(PackageLoader::get("static_dependencies"), package_address);
     let receipt = test_runner.execute_system_transaction_with_preallocated_addresses(
         vec![InstructionV1::CallFunction {
             package_address: package_address.into(),
@@ -208,7 +208,7 @@ fn static_resource_should_be_callable() {
 fn static_package_should_be_callable() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    test_runner.compile_and_publish_at_address(
+    test_runner.publish_package_at_address(
         PackageLoader::get("static_dependencies"),
         PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE),
     );

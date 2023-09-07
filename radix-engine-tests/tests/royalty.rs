@@ -353,7 +353,7 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let package_address =
-        test_runner.publish_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
+        test_runner.publish_package_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
 
     // Act
     let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
@@ -492,7 +492,7 @@ fn set_up_package_and_component() -> (
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let package_address =
-        test_runner.compile_and_publish_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
+        test_runner.publish_package_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
 
     // Enable package royalty
     let receipt = test_runner.execute_manifest(

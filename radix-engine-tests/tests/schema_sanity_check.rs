@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     system::system_modules::costing::{
