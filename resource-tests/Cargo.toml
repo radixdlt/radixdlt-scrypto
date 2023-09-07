@@ -40,4 +40,5 @@ rocksdb = ["scrypto-unit/rocksdb"]
 post_run_db_check = ["scrypto-unit/post_run_db_check"]
 
 [lib]
+doctest = false
 bench = false

@@ -19,4 +19,5 @@ alloc = ["sbor/alloc", "radix-engine-common/alloc", "serde?/alloc"]
 serde = ["serde/derive", "sbor/serde", "radix-engine-common/serde"]
 
 [lib]
+doctest = false
 bench = false

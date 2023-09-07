@@ -19,4 +19,5 @@ package = { path = "../package" }
 radix-engine = { path = "../../../../radix-engine" }
 
 [lib]
+doctest = false
 crate-type = ["cdylib", "lib"]

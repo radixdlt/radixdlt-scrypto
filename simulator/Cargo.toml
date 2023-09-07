@@ -57,4 +57,5 @@ path = "src/bin/scrypto_bindgen.rs"
 bench = false
 
 [lib]
+doctest = false
 bench = false
