@@ -26,7 +26,7 @@ pub struct ManifestValidator {
     /// Bucket id -> lock count
     bucket_ids: NonIterMap<ManifestBucket, usize>,
     /// Proof id to proof info
-    proof_ids: NonIterMap<ManifestProof, ProofKind>,
+    proof_ids: BTreeMap<ManifestProof, ProofKind>,
     /// Set of active allocated global address reservation ids
     address_reservation_ids: IndexSet<ManifestAddressReservation>,
     /// Set of named global address ids
@@ -119,7 +119,10 @@ impl ManifestValidator {
     }
 
     pub fn drop_all_named_proofs(&mut self) -> Result<(), ManifestIdValidationError> {
-        self.proof_ids.clear();
+        let proof_ids = self.proof_ids.keys().copied().collect::<Vec<_>>();
+        for proof_id in proof_ids {
+            self.drop_proof(&proof_id)?
+        }
         Ok(())
     }
 

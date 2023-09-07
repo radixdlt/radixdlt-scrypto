@@ -215,13 +215,13 @@ implement_client_api! {
         globalize: (
             &mut self,
             node_id: NodeId,
-            modules: IndexMap<ModuleId, NodeId>,
+            modules: IndexMap<AttachedModuleId, NodeId>,
             address_reservation: Option<GlobalAddressReservation>,
         ) -> Result<GlobalAddress, RuntimeError>,
         globalize_with_address_and_create_inner_object_and_emit_event: (
             &mut self,
             node_id: NodeId,
-            modules: IndexMap<ModuleId, NodeId>,
+            modules: IndexMap<AttachedModuleId, NodeId>,
             address_reservation: GlobalAddressReservation,
             inner_object_blueprint: &str,
             inner_object_fields: IndexMap<u8, FieldValue>,
@@ -243,7 +243,7 @@ implement_client_api! {
         call_module_method: (
             &mut self,
             receiver: &NodeId,
-            module_id: ModuleId,
+            module_id: AttachedModuleId,
             method_name: &str,
             args: Vec<u8>,
         ) -> Result<Vec<u8>, RuntimeError>,

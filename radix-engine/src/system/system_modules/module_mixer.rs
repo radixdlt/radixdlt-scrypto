@@ -28,7 +28,7 @@ use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
 use paste::paste;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
@@ -397,7 +397,7 @@ impl SystemModuleMixer {
     pub fn on_call_method<Y, V>(
         api: &mut SystemService<Y, V>,
         receiver: &NodeId,
-        module_id: ObjectModuleId,
+        module_id: ModuleId,
         direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
@@ -549,11 +549,7 @@ impl SystemModuleMixer {
         Ok(())
     }
 
-    pub fn add_replacement(
-        &mut self,
-        old: (NodeId, ObjectModuleId),
-        new: (NodeId, ObjectModuleId),
-    ) {
+    pub fn add_replacement(&mut self, old: (NodeId, ModuleId), new: (NodeId, ModuleId)) {
         if self
             .enabled_modules
             .contains(EnabledModules::TRANSACTION_RUNTIME)

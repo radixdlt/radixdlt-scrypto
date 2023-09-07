@@ -4,7 +4,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::{ClientApi, FieldValue, ModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldValue};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
@@ -267,8 +267,8 @@ impl TransactionTrackerBlueprint {
         let address = api.globalize(
             intent_store,
             indexmap!(
-                ModuleId::RoleAssignment => role_assignment.0,
-                ModuleId::Metadata => metadata.0,
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
             ),
             Some(address_reservation),
         )?;

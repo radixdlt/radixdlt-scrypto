@@ -321,7 +321,7 @@ checksum = "6999dc1837253364c2ebb0704ba97994bd874e8f195d665c50b7548f6ea92764"
 
 [[package]]
 name = "faucet"
-version = "0.1.0"
+version = "0.13.0"
 dependencies = [
  "radix-engine",
  "sbor",
@@ -338,7 +338,7 @@ checksum = "f830c31a9c9fb94e2d27fbc76daf642784ce14eb3910d4719e29b50ccda5d0f0"
 
 [[package]]
 name = "flash_loan"
-version = "0.1.0"
+version = "0.13.0"
 dependencies = [
  "radix-engine",
  "sbor",
@@ -359,7 +359,7 @@ dependencies = [
 
 [[package]]
 name = "genesis-helper"
-version = "0.1.0"
+version = "0.13.0"
 dependencies = [
  "native-sdk",
  "radix-engine",
@@ -405,7 +405,7 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "global_n_owned"
-version = "0.1.0"
+version = "0.13.0"
 dependencies = [
  "radix-engine",
  "sbor",
@@ -571,7 +571,7 @@ dependencies = [
 
 [[package]]
 name = "metadata"
-version = "0.1.0"
+version = "0.13.0"
 dependencies = [
  "native-sdk",
  "radix-engine",
@@ -780,7 +780,7 @@ dependencies = [
 
 [[package]]
 name = "radiswap"
-version = "0.1.0"
+version = "0.13.0"
 dependencies = [
  "native-sdk",
  "radiswap",
@@ -1004,7 +1004,7 @@ checksum = "dbb5fb1acd8a1a18b3dd5be62d25485eb770e05afb408a9627d14d451bae12da"
 
 [[package]]
 name = "resources-tracker-macro"
-version = "0.1.0"
+version = "0.13.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1373,7 +1373,7 @@ dependencies = [
 
 [[package]]
 name = "test_environment"
-version = "0.1.0"
+version = "0.13.0"
 dependencies = [
  "radix-engine",
  "sbor",

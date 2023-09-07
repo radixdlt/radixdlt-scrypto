@@ -352,8 +352,8 @@ fn is_safe_well_known_type(
         RESOURCE_OR_NON_FUNGIBLE_LIST_TYPE => true,
         OWNER_ROLE_TYPE => true,
         ROLE_KEY_TYPE => true,
-        OBJECT_MODULE_ID_TYPE => true,
         MODULE_ID_TYPE => true,
+        ATTACHED_MODULE_ID_TYPE => true,
         ROYALTY_AMOUNT_TYPE => true,
         t => panic!("Unexpected well-known type id: {:?}", t),
     };

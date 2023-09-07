@@ -2,7 +2,7 @@ use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::types::*;
 use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::crypto::Hash;
 
 #[derive(Debug, Clone)]
@@ -25,7 +25,7 @@ pub struct TransactionRuntimeModule {
     pub next_id: u32,
     pub logs: Vec<(Level, String)>,
     pub events: Vec<Event>,
-    pub replacements: IndexMap<(NodeId, ObjectModuleId), (NodeId, ObjectModuleId)>,
+    pub replacements: IndexMap<(NodeId, ModuleId), (NodeId, ModuleId)>,
 }
 
 impl TransactionRuntimeModule {
@@ -51,11 +51,7 @@ impl TransactionRuntimeModule {
         self.events.push(event)
     }
 
-    pub fn add_replacement(
-        &mut self,
-        old: (NodeId, ObjectModuleId),
-        new: (NodeId, ObjectModuleId),
-    ) {
+    pub fn add_replacement(&mut self, old: (NodeId, ModuleId), new: (NodeId, ModuleId)) {
         self.replacements.insert(old, new);
     }
 

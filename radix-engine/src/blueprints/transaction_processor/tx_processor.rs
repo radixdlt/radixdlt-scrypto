@@ -12,7 +12,7 @@ use native_sdk::resource::NativeFungibleBucket;
 use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
 use native_sdk::runtime::LocalAuthZone;
-use radix_engine_interface::api::{ClientApi, ModuleId};
+use radix_engine_interface::api::{AttachedModuleId, ClientApi};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
@@ -59,73 +59,46 @@ pub enum TransactionProcessorError {
     NotPackageAddress(NodeId),
     NotGlobalAddress(NodeId),
     AuthZoneIsEmpty,
+    InvocationOutputDecodeError(DecodeError),
+    ArgsEncodeError(EncodeError),
+}
+
+impl From<TransactionProcessorError> for RuntimeError {
+    fn from(value: TransactionProcessorError) -> Self {
+        Self::ApplicationError(ApplicationError::TransactionProcessorError(value))
+    }
+}
+
+fn handle_invocation<'a, 'p, 'w, F, Y, L>(
+    api: &'a mut Y,
+    processor: &'p mut TransactionProcessor,
+    worktop: &'w mut Worktop,
+    args: ManifestValue,
+    invocation_handler: F,
+) -> Result<InstructionOutput, RuntimeError>
+where
+    Y: ClientApi<RuntimeError> + KernelSubstateApi<L>,
+    F: FnOnce(&mut Y, ScryptoValue) -> Result<Vec<u8>, RuntimeError>,
+    L: Default,
+{
+    let scrypto_value = {
+        let mut processor_with_api = TransactionProcessorWithApi {
+            worktop,
+            processor,
+            api,
+        };
+        transform(args, &mut processor_with_api)?
+    };
+
+    let rtn = invocation_handler(api, scrypto_value)?;
+
+    let result = IndexedScryptoValue::from_vec(rtn)
+        .map_err(|error| TransactionProcessorError::InvocationOutputDecodeError(error))?;
+    processor.handle_call_return_data(&result, &worktop, api)?;
+    Ok(InstructionOutput::CallReturn(result.into()))
 }
 
 pub struct TransactionProcessorBlueprint;
-
-macro_rules! handle_call_method {
-    ($node_id:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
-        let mut processor_with_api = TransactionProcessorWithApi {
-            worktop: $worktop,
-            processor: $processor,
-            api: $api,
-        };
-        let scrypto_value = transform($args, &mut processor_with_api)?;
-        $processor = processor_with_api.processor;
-
-        let rtn = $api.call_method(
-            $node_id,
-            &$method_name,
-            scrypto_encode(&scrypto_value).unwrap(),
-        )?;
-        let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-        $processor.handle_call_return_data(&result, &$worktop, $api)?;
-        InstructionOutput::CallReturn(result.into())
-    }};
-}
-
-macro_rules! handle_call_direct_method {
-    ($node_id:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
-        let mut processor_with_api = TransactionProcessorWithApi {
-            worktop: $worktop,
-            processor: $processor,
-            api: $api,
-        };
-        let scrypto_value = transform($args, &mut processor_with_api)?;
-        $processor = processor_with_api.processor;
-
-        let rtn = $api.call_direct_access_method(
-            $node_id,
-            &$method_name,
-            scrypto_encode(&scrypto_value).unwrap(),
-        )?;
-        let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-        $processor.handle_call_return_data(&result, &$worktop, $api)?;
-        InstructionOutput::CallReturn(result.into())
-    }};
-}
-
-macro_rules! handle_call_module_method {
-    ($module_id:expr, $node_id:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
-        let mut processor_with_api = TransactionProcessorWithApi {
-            worktop: $worktop,
-            processor: $processor,
-            api: $api,
-        };
-        let scrypto_value = transform($args, &mut processor_with_api)?;
-        $processor = processor_with_api.processor;
-
-        let rtn = $api.call_module_method(
-            $node_id,
-            $module_id,
-            &$method_name,
-            scrypto_encode(&scrypto_value).unwrap(),
-        )?;
-        let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-        $processor.handle_call_return_data(&result, &$worktop, $api)?;
-        InstructionOutput::CallReturn(result.into())
-    }};
-}
 
 impl TransactionProcessorBlueprint {
     pub(crate) fn run<Y, L: Default>(
@@ -162,7 +135,7 @@ impl TransactionProcessorBlueprint {
         )?;
         api.kernel_pin_node(worktop_node_id)?;
 
-        let worktop = Worktop(Own(worktop_node_id));
+        let mut worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)
             .map_err(|e| {
                 // This error should never occur if being called from root since this is constructed
@@ -324,25 +297,16 @@ impl TransactionProcessorBlueprint {
                     function_name,
                     args,
                 } => {
-                    let mut processor_with_api = TransactionProcessorWithApi {
-                        worktop,
-                        processor,
-                        api,
-                    };
-                    let scrypto_value = transform(args, &mut processor_with_api)?;
-                    processor = processor_with_api.processor;
-
                     let package_address = processor.resolve_package_address(package_address)?;
-                    let rtn = api.call_function(
-                        package_address,
-                        &blueprint_name,
-                        &function_name,
-                        scrypto_encode(&scrypto_value).unwrap(),
-                    )?;
-
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-                    processor.handle_call_return_data(&result, &worktop, api)?;
-                    InstructionOutput::CallReturn(result.into())
+                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
+                        api.call_function(
+                            package_address,
+                            &blueprint_name,
+                            &function_name,
+                            scrypto_encode(&args)
+                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                        )
+                    })?
                 }
                 InstructionV1::CallMethod {
                     address,
@@ -350,14 +314,14 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_method!(
-                        address.as_node_id(),
-                        method_name,
-                        args,
-                        worktop,
-                        processor,
-                        api
-                    )
+                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
+                        api.call_method(
+                            address.as_node_id(),
+                            &method_name,
+                            scrypto_encode(&args)
+                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                        )
+                    })?
                 }
                 InstructionV1::CallRoyaltyMethod {
                     address,
@@ -365,15 +329,15 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_module_method!(
-                        ModuleId::Royalty,
-                        address.as_node_id(),
-                        method_name,
-                        args,
-                        worktop,
-                        processor,
-                        api
-                    )
+                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
+                        api.call_module_method(
+                            address.as_node_id(),
+                            AttachedModuleId::Royalty,
+                            &method_name,
+                            scrypto_encode(&args)
+                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                        )
+                    })?
                 }
                 InstructionV1::CallMetadataMethod {
                     address,
@@ -381,15 +345,15 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_module_method!(
-                        ModuleId::Metadata,
-                        address.as_node_id(),
-                        method_name,
-                        args,
-                        worktop,
-                        processor,
-                        api
-                    )
+                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
+                        api.call_module_method(
+                            address.as_node_id(),
+                            AttachedModuleId::Metadata,
+                            &method_name,
+                            scrypto_encode(&args)
+                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                        )
+                    })?
                 }
                 InstructionV1::CallRoleAssignmentMethod {
                     address,
@@ -397,30 +361,28 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_call_module_method!(
-                        ModuleId::RoleAssignment,
-                        address.as_node_id(),
-                        method_name,
-                        args,
-                        worktop,
-                        processor,
-                        api
-                    )
+                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
+                        api.call_module_method(
+                            address.as_node_id(),
+                            AttachedModuleId::RoleAssignment,
+                            &method_name,
+                            scrypto_encode(&args)
+                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                        )
+                    })?
                 }
                 InstructionV1::CallDirectVaultMethod {
                     address,
                     method_name,
                     args,
-                } => {
-                    handle_call_direct_method!(
+                } => handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
+                    api.call_direct_access_method(
                         address.as_node_id(),
-                        method_name,
-                        args,
-                        worktop,
-                        processor,
-                        api
+                        &method_name,
+                        scrypto_encode(&args)
+                            .map_err(TransactionProcessorError::ArgsEncodeError)?,
                     )
-                }
+                })?,
                 InstructionV1::DropNamedProofs => {
                     for (_, real_id) in processor.proof_mapping.drain(..) {
                         let proof = Proof(Own(real_id));
@@ -648,7 +610,7 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+        Y: KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for node_id in value.owned_nodes() {
@@ -684,14 +646,14 @@ impl TransactionProcessor {
     }
 }
 
-struct TransactionProcessorWithApi<'a, Y: ClientApi<RuntimeError>> {
-    worktop: Worktop,
-    processor: TransactionProcessor,
+struct TransactionProcessorWithApi<'a, 'p, 'w, Y: ClientApi<RuntimeError>> {
+    worktop: &'w mut Worktop,
+    processor: &'p mut TransactionProcessor,
     api: &'a mut Y,
 }
 
-impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
-    for TransactionProcessorWithApi<'a, Y>
+impl<'a, 'p, 'w, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
+    for TransactionProcessorWithApi<'a, 'p, 'w, Y>
 {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, RuntimeError> {
         self.processor.take_bucket(&b).map(|x| x.0)

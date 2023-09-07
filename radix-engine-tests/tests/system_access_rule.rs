@@ -5,7 +5,7 @@ use radix_engine::system::node_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ObjectModuleId};
+use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -201,7 +201,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
                     AccessRuleCreation::RoleCreation => {
                         RoleAssignment::create(
                             OwnerRole::None,
-                            indexmap!(ObjectModuleId::Main => roles2!("test" => self.1.clone();)),
+                            indexmap!(ModuleId::Main => roles2!("test" => self.1.clone();)),
                             api,
                         )?;
                     }
@@ -220,7 +220,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
                             api,
                         )?;
                         role_assignment.set_role(
-                            ObjectModuleId::Main,
+                            ModuleId::Main,
                             RoleKey::new("test"),
                             self.1.clone(),
                             api,

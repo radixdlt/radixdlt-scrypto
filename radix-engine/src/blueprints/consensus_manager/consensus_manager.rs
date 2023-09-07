@@ -15,9 +15,9 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::UncheckedUrl;
-use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, FieldValue, ModuleId, ACTOR_STATE_SELF,
+    AttachedModuleId, ClientApi, CollectionIndex, FieldValue, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
@@ -601,7 +601,7 @@ impl ConsensusManagerBlueprint {
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
         };
 
-        let roles = indexmap!(ObjectModuleId::Main => role_definitions);
+        let roles = indexmap!(ModuleId::Main => role_definitions);
         let role_assignment = RoleAssignment::create(OwnerRole::None, roles, api)?.0;
         let metadata = Metadata::create_with_data(
             metadata_init! {
@@ -614,8 +614,8 @@ impl ConsensusManagerBlueprint {
         api.globalize(
             consensus_manager_id,
             indexmap!(
-                ModuleId::RoleAssignment => role_assignment.0,
-                ModuleId::Metadata => metadata.0,
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
             ),
             Some(consensus_manager_address_reservation),
         )?;

@@ -3,8 +3,8 @@ use radix_engine_interface::api::node_modules::auth::{
     ROLE_ASSIGNMENT_BLUEPRINT, ROLE_ASSIGNMENT_CREATE_IDENT, ROLE_ASSIGNMENT_SET_IDENT,
     ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, ModuleId};
+use radix_engine_interface::api::object_api::ModuleId;
+use radix_engine_interface::api::{AttachedModuleId, ClientApi};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
 };
@@ -20,7 +20,7 @@ pub struct RoleAssignment(pub Own);
 impl RoleAssignment {
     pub fn create<Y, R: Into<OwnerRoleEntry>, E: Debug + ScryptoDecode>(
         owner_role: R,
-        roles: IndexMap<ObjectModuleId, RoleAssignmentInit>,
+        roles: IndexMap<ModuleId, RoleAssignmentInit>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -44,7 +44,7 @@ impl RoleAssignment {
 }
 
 impl RoleAssignmentObject for RoleAssignment {
-    fn self_id(&self) -> (&NodeId, Option<ModuleId>) {
+    fn self_id(&self) -> (&NodeId, Option<AttachedModuleId>) {
         (&self.0 .0, None)
     }
 }
@@ -52,13 +52,13 @@ impl RoleAssignmentObject for RoleAssignment {
 pub struct AttachedRoleAssignment(pub NodeId);
 
 impl RoleAssignmentObject for AttachedRoleAssignment {
-    fn self_id(&self) -> (&NodeId, Option<ModuleId>) {
-        (&self.0, Some(ModuleId::RoleAssignment))
+    fn self_id(&self) -> (&NodeId, Option<AttachedModuleId>) {
+        (&self.0, Some(AttachedModuleId::RoleAssignment))
     }
 }
 
 pub trait RoleAssignmentObject {
-    fn self_id(&self) -> (&NodeId, Option<ModuleId>);
+    fn self_id(&self) -> (&NodeId, Option<AttachedModuleId>);
 
     fn set_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
         &self,
@@ -94,7 +94,7 @@ pub trait RoleAssignmentObject {
         A: Into<AccessRule>,
     >(
         &self,
-        module: ObjectModuleId,
+        module: ModuleId,
         role_key: R,
         rule: A,
         api: &mut Y,

@@ -4,8 +4,8 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, FieldValue, ModuleId};
+use radix_engine_interface::api::object_api::ModuleId;
+use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldValue};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
@@ -23,8 +23,8 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let roles = indexmap!(
-        ObjectModuleId::Main => main_roles,
-        ObjectModuleId::Metadata => metadata.roles,
+        ModuleId::Main => main_roles,
+        ModuleId::Metadata => metadata.roles,
     );
 
     let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
@@ -34,8 +34,8 @@ where
     let address = api.globalize(
         object_id,
         indexmap!(
-            ModuleId::RoleAssignment => role_assignment.0,
-            ModuleId::Metadata => metadata.0,
+            AttachedModuleId::RoleAssignment => role_assignment.0,
+            AttachedModuleId::Metadata => metadata.0,
         ),
         Some(resource_address_reservation),
     )?;
@@ -56,15 +56,15 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let roles = indexmap!(
-        ObjectModuleId::Main => main_roles,
-        ObjectModuleId::Metadata => metadata.roles,
+        ModuleId::Main => main_roles,
+        ModuleId::Metadata => metadata.roles,
     );
     let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let modules = indexmap!(
-        ModuleId::RoleAssignment => role_assignment.0,
-        ModuleId::Metadata => metadata.0,
+        AttachedModuleId::RoleAssignment => role_assignment.0,
+        AttachedModuleId::Metadata => metadata.0,
     );
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
@@ -102,8 +102,8 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let roles = indexmap!(
-        ObjectModuleId::Main => main_roles,
-        ObjectModuleId::Metadata => metadata.roles,
+        ModuleId::Main => main_roles,
+        ModuleId::Metadata => metadata.roles,
     );
     let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
 
@@ -112,8 +112,8 @@ where
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
         object_id,
         indexmap!(
-            ModuleId::RoleAssignment => role_assignment.0,
-            ModuleId::Metadata => metadata.0,
+            AttachedModuleId::RoleAssignment => role_assignment.0,
+            AttachedModuleId::Metadata => metadata.0,
         ),
         resource_address_reservation,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,
