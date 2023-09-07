@@ -17,17 +17,24 @@ fn main() {
 
     let mut packages = HashMap::new();
     for entry in walkdir::WalkDir::new(blueprints_dir) {
-        let Ok(entry) = entry else { 
-            continue; 
+        let Ok(entry) = entry else {
+            continue;
         };
         let path = entry.path();
-        if !path.file_name().map_or(false, |file_name| file_name == "Cargo.toml") {
-            continue
+        if !path
+            .file_name()
+            .map_or(false, |file_name| file_name == "Cargo.toml")
+        {
+            continue;
         }
 
         let manifest = Manifest::from_path(path).unwrap();
-        if !manifest.dependencies.into_iter().any(|(name, _)| name == "scrypto") {
-            continue
+        if !manifest
+            .dependencies
+            .into_iter()
+            .any(|(name, _)| name == "scrypto")
+        {
+            continue;
         }
 
         let Some(Package { name, .. }) = manifest.package else {
