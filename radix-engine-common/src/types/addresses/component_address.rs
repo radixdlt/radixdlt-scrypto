@@ -268,30 +268,40 @@ mod tests {
     use crate::internal_prelude::Ed25519PublicKey;
 
     #[test]
-    fn component_address_unchecked() {
-        unsafe {
-            ComponentAddress::new_unchecked([0; NodeId::LENGTH]);
-        }
+    fn component_address_initialization() {
+        let node_id = [0; NodeId::LENGTH];
+        let addr = unsafe {
+            ComponentAddress::new_unchecked(node_id)
+        };
+        assert_eq!(node_id, addr.as_node_id().as_bytes());
 
         let public_key = Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]);
         let addr = ComponentAddress::virtual_identity_from_public_key(&PublicKey::Ed25519(public_key));
 
+        // validate conversions
         ComponentAddress::try_from_hex(&addr.to_hex()).unwrap();
-
-        // pass empty string to generate an error
-        assert!(ComponentAddress::try_from_bech32(&AddressBech32Decoder::for_simulator(), "").is_none());
-
-        // pass wrong lenght array to generate an error
-        let v = Vec::from([0u8; NodeId::LENGTH + 1]);
-        assert!(ComponentAddress::try_from(v.as_slice()).is_err());
-
         Reference::try_from(addr).unwrap();
         let _ = ManifestAddress::try_from(addr).unwrap();
 
+        // pass empty string to fail conversion
+        assert!(ComponentAddress::try_from_bech32(&AddressBech32Decoder::for_simulator(), "").is_none());
+
+        // pass wrong length array to generate an error
+        let v = Vec::from([0u8; NodeId::LENGTH + 1]);
+        let addr2 = ComponentAddress::try_from(v.as_slice());
+        assert!(matches!(
+            addr2,
+            Err(ParseComponentAddressError::InvalidLength(..))
+        ));
+
+        // pass wrong node id (bad entity type) to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH]);
-        let addr = ComponentAddress::try_from(v.as_slice());
-        assert!(addr.is_err());
-        println!("Decode error: {}", addr.unwrap_err());
+        let addr3 = ComponentAddress::try_from(v.as_slice());
+        assert!(matches!(
+            addr3,
+            Err(ParseComponentAddressError::InvalidEntityTypeId(..))
+        ));
+        println!("Decode error: {}", addr3.unwrap_err());
     }
 
     #[test]
@@ -302,12 +312,12 @@ mod tests {
         encoder.write_slice(&malformed_value.to_le_bytes()).unwrap();
 
         let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
-        let proof_output = decoder
+        let addr_output = decoder
             .decode_deeper_body_with_value_kind::<ComponentAddress>(ComponentAddress::value_kind());
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
         assert!(matches!(
-            proof_output,
+            addr_output,
             Err(DecodeError::InvalidCustomValue)
         ));
     }
