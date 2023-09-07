@@ -94,8 +94,8 @@ pub enum NonFungibleLocalId {
 }
 
 impl NonFungibleLocalId {
-    pub fn string<T: Into<String>>(value: T) -> Result<Self, ContentValidationError> {
-        value.into().try_into()
+    pub fn string<T: AsRef<[u8]>>(value: T) -> Result<Self, ContentValidationError> {
+        StringNonFungibleLocalId::new(value).map(Self::String)
     }
 
     pub fn integer(value: u64) -> Self {
@@ -141,32 +141,43 @@ impl From<RUIDNonFungibleLocalId> for NonFungibleLocalId {
 
 /// A string matching `[_0-9a-zA-Z]{1,64}`.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct StringNonFungibleLocalId(String);
+pub struct StringNonFungibleLocalId(Vec<u8>);
 
 impl StringNonFungibleLocalId {
-    pub fn new(id: String) -> Result<Self, ContentValidationError> {
-        let new = Self(id);
-        new.validate()?;
-        Ok(new)
+    pub fn new<S: AsRef<[u8]>>(id: S) -> Result<Self, ContentValidationError> {
+        Self::validate_slice(id.as_ref())?;
+        Ok(Self(id.as_ref().to_vec()))
     }
 
-    pub fn validate(&self) -> Result<(), ContentValidationError> {
-        if self.0.len() == 0 {
+    pub fn validate_slice(slice: &[u8]) -> Result<(), ContentValidationError> {
+        if slice.len() == 0 {
             return Err(ContentValidationError::Empty);
         }
-        if self.0.len() > NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
+        if slice.len() > NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
             return Err(ContentValidationError::TooLong);
         }
-        for char in self.0.chars() {
-            if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
-                return Err(ContentValidationError::ContainsBadCharacter(char));
+        for byte in slice {
+            let byte = *byte;
+            if byte >= b'a' && byte <= b'z'
+                || byte >= b'A' && byte <= b'Z'
+                || byte >= b'0' && byte <= b'9'
+                || byte == b'_'
+            {
+                continue;
+            } else {
+                return Err(ContentValidationError::ContainsBadCharacter);
             }
         }
+
         Ok(())
     }
 
     pub fn value(&self) -> &str {
-        &self.0
+        unsafe { core::str::from_utf8_unchecked(self.0.as_slice()) }
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_slice()
     }
 }
 
@@ -180,9 +191,9 @@ impl<'a> Arbitrary<'a> for StringNonFungibleLocalId {
         let len: u8 = u
             .int_in_range(1..=NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
             .unwrap();
-        let s = (0..len).map(|_| *u.choose(&charset[..]).unwrap()).collect();
+        let s: String = (0..len).map(|_| *u.choose(&charset[..]).unwrap()).collect();
 
-        Ok(Self(s))
+        Ok(Self(s.into_bytes()))
     }
 }
 
@@ -198,7 +209,7 @@ impl TryFrom<&str> for StringNonFungibleLocalId {
     type Error = ContentValidationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Self::new(value.into())
+        Self::new(value)
     }
 }
 
@@ -294,7 +305,7 @@ impl From<[u8; 32]> for RUIDNonFungibleLocalId {
 pub enum ContentValidationError {
     TooLong,
     Empty,
-    ContainsBadCharacter(char),
+    ContainsBadCharacter,
 }
 
 impl NonFungibleLocalId {
@@ -315,7 +326,7 @@ impl NonFungibleLocalId {
             NonFungibleLocalId::String(v) => {
                 encoder.write_discriminator(0)?;
                 encoder.write_size(v.0.len())?;
-                encoder.write_slice(v.0.as_bytes())?;
+                encoder.write_slice(v.as_bytes())?;
             }
             NonFungibleLocalId::Integer(v) => {
                 encoder.write_discriminator(1)?;
@@ -347,11 +358,8 @@ impl NonFungibleLocalId {
         match decoder.read_discriminator()? {
             0 => {
                 let size = decoder.read_size()?;
-                Self::string(
-                    String::from_utf8(decoder.read_slice(size)?.to_vec())
-                        .map_err(|_| DecodeError::InvalidCustomValue)?,
-                )
-                .map_err(|_| DecodeError::InvalidCustomValue)
+                let slice = decoder.read_slice(size)?;
+                Self::string(slice).map_err(|_| DecodeError::InvalidCustomValue)
             }
             1 => Ok(Self::integer(u64::from_be_bytes(copy_u8_array(
                 decoder.read_slice(8)?,
@@ -554,7 +562,7 @@ impl FromStr for NonFungibleLocalId {
 impl fmt::Display for NonFungibleLocalId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            NonFungibleLocalId::String(StringNonFungibleLocalId(v)) => write!(f, "<{}>", v),
+            NonFungibleLocalId::String(v) => write!(f, "<{}>", v.value()),
             NonFungibleLocalId::Integer(IntegerNonFungibleLocalId(v)) => write!(f, "#{}#", v),
             NonFungibleLocalId::Bytes(BytesNonFungibleLocalId(v)) => {
                 write!(f, "[{}]", hex::encode(&v))
@@ -648,7 +656,7 @@ mod tests {
         let validation_result = NonFungibleLocalId::string(format!("valid_{}", char));
         assert_eq!(
             validation_result,
-            Err(ContentValidationError::ContainsBadCharacter(char))
+            Err(ContentValidationError::ContainsBadCharacter)
         );
     }
 
