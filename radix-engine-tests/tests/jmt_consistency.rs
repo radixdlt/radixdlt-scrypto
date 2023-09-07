@@ -22,6 +22,9 @@ fn substate_store_matches_hash_tree_after_each_scenario() {
                 NextAction::Transaction(next) => {
                     let receipt =
                         test_runner.execute_raw_transaction(&network, &next.raw_transaction);
+                    // TODO(when figured out): We could run this assert as part of the existing
+                    // `post_run_db_check` feature; however, it is tricky to implement (syntactically),
+                    // due to the assert only being available for certain `TestDatabase` impl.
                     test_runner.assert_state_hash_tree_matches_substate_store();
                     previous = Some(receipt);
                 }
