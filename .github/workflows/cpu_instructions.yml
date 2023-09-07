@@ -34,21 +34,18 @@ jobs:
              count=`ls | wc -l`
              half=`echo $(($count / 2))`
              ls | head -n$half | xargs mv -t ../deps_1
+             cd ..
+             mv deps deps_2
       - name: Cache build results
         uses: actions/cache@v3
         with:
-          path: ./target/release/deps
-          key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}
-      - name: Preapare files for cache 2nd part
-        run: |
-             cd target/release/deps
-             rm -f *.*
-             mv ../deps_1 ./
-      - name: Cache build results
-        uses: actions/cache@v3
-        with:
-          path: ./target/release/deps
+          path: ./target/release/deps_1
           key: ${{ runner.os }}-build-cache-1-radix-engine-tests-${{ github.run_id }}
+      - name: Cache build results
+        uses: actions/cache@v3
+        with:
+          path: ./target/release/deps_2
+          key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}
           
   build-other-tests:          
     name: Build other tests
@@ -66,11 +63,12 @@ jobs:
              rm -f ./target/release/deps/*.d
              rm -f ./target/release/deps/*.rlib
              rm -f ./target/release/deps/*.rmeta
+             mv ./target/release/deps ./target/release/deps_3
       - name: Cache build results
         uses: actions/cache@v3
         with:
-          path: ./target/release/deps
-          key: ${{ runner.os }}-build-cache-radix-tests-${{ github.run_id }}
+          path: ./target/release/deps_3
+          key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}
 
   qemu-build:
     name: QEMU build
@@ -110,12 +108,12 @@ jobs:
           key: ${{ runner.os }}-cache-qemu-plugin-${{ github.run_id }}
           
   qemu-costing-evaluation-run:
-    name: QEMU run
+    name: QEMU costing - CPU instructions
     runs-on: ubuntu-22.04
     needs: [build-radix-engine-tests, build-other-tests, qemu-build]
     strategy:
       matrix:
-        bin-cache: [build-cache-1-radix-engine-tests, build-cache-2-radix-engine-tests, build-cache-radix-tests]
+        bin-cache: [1, 2, 3]
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -143,19 +141,19 @@ jobs:
       - name: Read cache build results
         uses: actions/cache@v3
         with:
-          path: ./target/release/deps
-          key: ${{ format('{0}-{1}-{2}', runner.os, matrix.bin-cache, github.run_id) }}
+          path: ${{ format('./target/release/deps_{0}', matrix.bin-cache) }} 
+          key: ${{ format('{0}-build-cache-{1}-radix-engine-tests-{2}', runner.os, matrix.bin-cache, github.run_id) }}
           fail-on-cache-miss: true
       - name: Run radix-engine-tests using QEMU
         run: |
              mkdir /tmp/scrypto-resources-usage
              cd radix-engine-tests
-             bash ../radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ../target/release/deps/
+             bash ../radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ${{ format('../target/release/deps_{0}', matrix.bin-cache) }} 
       - name: Cache QEMU run results
         uses: actions/cache@v3
         with:
           path: /tmp/scrypto-resources-usage
-          key: ${{ format('{0}-{1}-{2}-qemu-results', runner.os, matrix.bin-cache, github.run_id) }}
+          key: ${{ format('{0}-build-cache-{1}-radix-engine-tests-{2}-qemu-results', runner.os, matrix.bin-cache, github.run_id) }}
           
   generate-results:
     name: Generate results
@@ -181,7 +179,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/scrypto-resources-usage
-          key: ${{ runner.os }}-build-cache-radix-tests-${{ github.run_id }}-qemu-results
+          key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Generate results
         run: python3 ./radix-engine-profiling/resources-tracker-macro/scripts/convert.py /tmp/scrypto-resources-usage
