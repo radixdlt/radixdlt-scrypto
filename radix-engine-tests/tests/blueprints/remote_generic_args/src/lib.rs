@@ -23,31 +23,38 @@ mod non_fungible_data {
             blueprint_name: String,
             type_name: String,
         ) {
-            let non_fungible_schema = RemoteNonFungibleDataSchema {
-                BlueprintTypeIdentifier {
+            let non_fungible_data_schema = RemoteNonFungibleDataSchema {
+                type_id: BlueprintTypeIdentifier {
                     package_address,
                     blueprint_name,
                     type_name,
                 },
-                Vec::<String>::new(),
-             };
+                mutable_fields: index_set_new(),
+            };
 
             let bytes = ScryptoVmV1Api::blueprint_call(
                 RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: Default::default(),
-                    track_total_supply: true,
-                    id_type: IntegerNonFungibleLocalId::id_type(),
-                    non_fungible_schema,
-                    resource_roles: Default::default(),
-                    metadata: Default::default(),
-                    entries: indexmap!(
-                        NonFungibleLocalId::integer(5) => (scrypto_decode(&scrypto_encode(&Type1{a: "a".to_string()}).unwrap()).unwrap(),)
-                    ),
-                    address_reservation: Default::default(),
-                })
+                scrypto_encode(
+                    &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
+                        owner_role: Default::default(),
+                        track_total_supply: true,
+                        id_type: IntegerNonFungibleLocalId::id_type(),
+                        non_fungible_schema: FixedEnumVariant::<
+                            NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                            RemoteNonFungibleDataSchema,
+                        > {
+                            fields: non_fungible_data_schema,
+                        },
+                        resource_roles: Default::default(),
+                        metadata: Default::default(),
+                        entries: indexmap!(
+                            NonFungibleLocalId::integer(5) => (Type1{a: "a".to_string()},)
+                        ),
+                        address_reservation: Default::default(),
+                    },
+                )
                 .unwrap(),
             );
 

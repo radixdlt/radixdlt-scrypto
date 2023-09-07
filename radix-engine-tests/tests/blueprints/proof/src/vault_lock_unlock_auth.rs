@@ -44,9 +44,6 @@ mod vault_lock_unlock_auth {
         }
 
         pub fn new_non_fungible() -> Global<VaultLockUnlockAuth> {
-            let x = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
-                .create_with_no_initial_supply();
-
             let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
                 .mint_initial_supply([(
                     1u64.into(),
