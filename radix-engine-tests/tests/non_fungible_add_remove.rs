@@ -10,7 +10,7 @@ use transaction::prelude::*;
 fn add_and_remove_of_non_fungible_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("non_fungible"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "AddAndRemove", "new", manifest_args!())
@@ -34,7 +34,7 @@ fn add_and_remove_of_non_fungible_should_succeed() {
 fn mint_and_burn_of_non_fungible_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("non_fungible"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "MintAndBurn", "new", manifest_args!())
@@ -58,7 +58,7 @@ fn mint_and_burn_of_non_fungible_should_succeed() {
 fn mint_and_burn_of_non_fungible_2x_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("non_fungible"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "MintAndBurn", "new", manifest_args!())
@@ -87,7 +87,7 @@ fn mint_and_burn_of_non_fungible_2x_should_fail() {
 fn mint_of_previously_minted_burned_non_fungible_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("non_fungible"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "MintAndBurn", "new", manifest_args!())

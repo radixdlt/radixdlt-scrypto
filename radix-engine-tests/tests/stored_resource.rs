@@ -9,7 +9,7 @@ use transaction::prelude::*;
 fn stored_resource_is_invokeable() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("stored_resource"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("stored_resource"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "StoredResource", "create", manifest_args!())

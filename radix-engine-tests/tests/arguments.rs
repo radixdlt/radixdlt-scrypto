@@ -9,7 +9,7 @@ use transaction::prelude::*;
 fn vector_of_buckets_argument_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("arguments"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -35,7 +35,7 @@ fn vector_of_buckets_argument_should_succeed() {
 fn tuple_of_buckets_argument_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("arguments"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -61,7 +61,7 @@ fn tuple_of_buckets_argument_should_succeed() {
 fn treemap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("arguments"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -90,7 +90,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
 fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("arguments"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -119,7 +119,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
 fn some_optional_bucket_argument_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("arguments"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -144,7 +144,7 @@ fn some_optional_bucket_argument_should_succeed() {
 fn none_optional_bucket_argument_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("arguments"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()

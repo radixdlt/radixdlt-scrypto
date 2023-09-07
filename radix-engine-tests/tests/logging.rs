@@ -12,7 +12,7 @@ use transaction::prelude::*;
 
 fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("logger"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("logger"));
 
     let manifest = ManifestBuilder::new()
         .call_function(

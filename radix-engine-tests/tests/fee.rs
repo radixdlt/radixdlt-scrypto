@@ -30,7 +30,7 @@ fn setup_test_runner() -> (DefaultTestRunner, ComponentAddress) {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("fee"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("fee"));
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)

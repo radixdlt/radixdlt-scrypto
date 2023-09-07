@@ -15,7 +15,7 @@ fn test_create_global_node_with_local_ref() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("reference"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("reference"));
 
     // Call function
     let receipt = test_runner.execute_manifest(
@@ -47,7 +47,7 @@ fn test_add_local_ref_to_stored_substate() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("reference"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("reference"));
 
     // Instantiate component
     let component_address = {

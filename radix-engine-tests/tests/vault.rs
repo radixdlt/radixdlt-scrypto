@@ -23,7 +23,7 @@ fn test_deposit_event_when_creating_vault_with_bucket() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -55,7 +55,7 @@ fn test_deposit_event_when_creating_vault_with_bucket() {
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -82,7 +82,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
 fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "NonExistentVault", "new", manifest_args!())
@@ -114,7 +114,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
 fn non_existent_vault_in_kv_store_creation_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -143,7 +143,7 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
 fn non_existent_vault_in_committed_kv_store_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "NonExistentVault", "new", manifest_args!())
@@ -177,7 +177,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
 fn create_mutable_vault_into_map() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -199,7 +199,7 @@ fn create_mutable_vault_into_map() {
 fn invalid_double_ownership_of_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -230,7 +230,7 @@ fn invalid_double_ownership_of_vault() {
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -252,7 +252,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 fn cannot_overwrite_vault_in_map() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -293,7 +293,7 @@ fn cannot_overwrite_vault_in_map() {
 fn create_mutable_vault_into_vector() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -315,7 +315,7 @@ fn create_mutable_vault_into_vector() {
 fn cannot_remove_vaults() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -352,7 +352,7 @@ fn cannot_remove_vaults() {
 fn can_push_vault_into_vector() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -384,7 +384,7 @@ fn can_push_vault_into_vector() {
 fn create_fungible_vault_with_take() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -406,7 +406,7 @@ fn create_fungible_vault_with_take() {
 fn create_non_fungible_vault_with_take() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -428,7 +428,7 @@ fn create_non_fungible_vault_with_take() {
 fn create_non_fungible_vault_with_take_twice() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -450,7 +450,7 @@ fn create_non_fungible_vault_with_take_twice() {
 fn create_non_fungible_vault_with_take_non_fungible() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -472,7 +472,7 @@ fn create_non_fungible_vault_with_take_non_fungible() {
 fn create_mutable_vault_with_get_nonfungible_ids() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -494,7 +494,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 fn create_mutable_vault_with_get_nonfungible_id() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -516,7 +516,7 @@ fn create_mutable_vault_with_get_nonfungible_id() {
 fn create_mutable_vault_with_get_amount() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -538,7 +538,7 @@ fn create_mutable_vault_with_get_amount() {
 fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -560,7 +560,7 @@ fn create_mutable_vault_with_get_resource_manager() {
 fn take_on_non_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -588,7 +588,7 @@ fn take_on_non_fungible_vault() {
 fn take_twice_on_non_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -665,7 +665,7 @@ fn create_proof_with_over_specified_divisibility_should_result_in_error() {
 fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()

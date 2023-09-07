@@ -12,7 +12,7 @@ use transaction::prelude::*;
 fn local_component_should_be_callable_read_only() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("local_component"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -34,7 +34,7 @@ fn local_component_should_be_callable_read_only() {
 fn local_component_should_be_callable_with_write() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("local_component"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -57,7 +57,7 @@ fn recursion_bomb() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("local_recursion"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_recursion"));
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
@@ -89,7 +89,7 @@ fn recursion_bomb_to_failure() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("local_recursion"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_recursion"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -127,7 +127,7 @@ fn recursion_bomb_2() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("local_recursion"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_recursion"));
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
@@ -159,7 +159,7 @@ fn recursion_bomb_2_to_failure() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("local_recursion"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_recursion"));
 
     // Act
     let manifest = ManifestBuilder::new()

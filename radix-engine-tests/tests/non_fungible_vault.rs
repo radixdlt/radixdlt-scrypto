@@ -10,7 +10,7 @@ use transaction::prelude::*;
 fn get_non_fungibles_on_vault(vault_size: usize, non_fungibles_size: u32, expected_size: usize) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("non_fungible"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "BigVault", "new", manifest_args!())
@@ -56,7 +56,7 @@ fn get_non_fungibles_on_vault_with_size_less_than_vault_size_should_return() {
 fn withdraw_1_from_empty_non_fungible_vault_should_return_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()

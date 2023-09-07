@@ -10,7 +10,7 @@ use transaction::prelude::*;
 fn mixed_up_modules_causes_type_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("module"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("module"));
 
     // Act
     let manifest = ManifestBuilder::new()

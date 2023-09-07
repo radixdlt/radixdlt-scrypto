@@ -10,7 +10,7 @@ use transaction::prelude::*;
 fn should_error_if_trying_to_cast_to_invalid_type() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("cast"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("cast"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -37,7 +37,7 @@ fn should_error_if_trying_to_cast_to_invalid_type() {
 fn should_succeed_if_trying_to_cast_to_any() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("cast"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("cast"));
 
     // Act
     let manifest = ManifestBuilder::new()

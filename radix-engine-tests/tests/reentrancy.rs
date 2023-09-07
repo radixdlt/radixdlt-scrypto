@@ -11,7 +11,7 @@ use transaction::prelude::*;
 fn mut_reentrancy_should_not_be_possible() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("reentrancy"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("reentrancy"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -50,7 +50,7 @@ fn mut_reentrancy_should_not_be_possible() {
 fn read_reentrancy_should_be_possible() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("reentrancy"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("reentrancy"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -82,7 +82,7 @@ fn read_reentrancy_should_be_possible() {
 fn read_then_mut_reentrancy_should_not_be_possible() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("reentrancy"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("reentrancy"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(

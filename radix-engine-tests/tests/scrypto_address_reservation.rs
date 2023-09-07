@@ -10,7 +10,7 @@ fn should_be_able_to_get_address_of_an_address_reservation() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("address_reservation"));
+        test_runner.publish_package_simple(PackageLoader::get("address_reservation"));
 
     // Act
     let manifest = ManifestBuilder::new()

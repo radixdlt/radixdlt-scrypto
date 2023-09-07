@@ -59,7 +59,7 @@ fn calling_transaction_processor_from_scrypto_should_not_panic() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("tx_processor_access"));
+        test_runner.publish_package_simple(PackageLoader::get("tx_processor_access"));
 
     // Act
     let manifest_encoded_instructions: Vec<u8> = vec![0u8];
@@ -86,7 +86,7 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     let (pub_key, _, account0) = test_runner.new_account(true);
     let (_, _, account1) = test_runner.new_account(true);
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("tx_processor_access"));
+        test_runner.publish_package_simple(PackageLoader::get("tx_processor_access"));
     let initial_balance = test_runner.get_component_balance(account0, XRD);
     let instructions = ManifestBuilder::new()
         .withdraw_from_account(account0, XRD, 10)

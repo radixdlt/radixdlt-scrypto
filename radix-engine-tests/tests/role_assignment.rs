@@ -17,7 +17,7 @@ use transaction::prelude::*;
 fn can_call_public_function() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("role_assignment"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
     // Act
     let receipt = test_runner.call_function(
@@ -35,7 +35,7 @@ fn can_call_public_function() {
 fn cannot_call_protected_function_without_auth() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("role_assignment"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
     // Act
     let receipt = test_runner.call_function(
@@ -60,7 +60,7 @@ fn cannot_call_protected_function_without_auth() {
 fn can_call_protected_function_with_auth() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("role_assignment"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
     let (key, _priv, account) = test_runner.new_account(true);
 
     // Act
@@ -191,7 +191,7 @@ fn component_role_assignment_can_be_mutated_to_non_fungible_resource_through_man
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("role_assignment"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
     let component_address = {
         let manifest = ManifestBuilder::new()
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
@@ -228,7 +228,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (public_key, _, account) = test_runner.new_account(false);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("role_assignment"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
     let component_address = {
         let manifest = ManifestBuilder::new()
@@ -335,7 +335,7 @@ impl MutableRolesTestRunner {
         test_runner: &mut DefaultTestRunner,
     ) -> TransactionReceipt {
         let package_address =
-            test_runner.publish_package_tuple(PackageLoader::get("role_assignment"));
+            test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
         let manifest = ManifestBuilder::new()
             .call_function(
@@ -353,7 +353,7 @@ impl MutableRolesTestRunner {
         test_runner: &mut DefaultTestRunner,
     ) -> TransactionReceipt {
         let package_address =
-            test_runner.publish_package_tuple(PackageLoader::get("role_assignment"));
+            test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
         let manifest = ManifestBuilder::new()
             .call_function(

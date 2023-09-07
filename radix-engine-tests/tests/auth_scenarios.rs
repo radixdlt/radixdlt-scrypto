@@ -84,7 +84,7 @@ impl AuthScenariosEnv {
         );
 
         let package_address =
-            test_runner.publish_package_tuple(PackageLoader::get("auth_scenarios"));
+            test_runner.publish_package_simple(PackageLoader::get("auth_scenarios"));
 
         let manifest = ManifestBuilder::new()
             .call_function(package_address, "Swappy", "create", manifest_args!(cerb))

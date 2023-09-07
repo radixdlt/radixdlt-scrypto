@@ -16,7 +16,7 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -109,7 +109,7 @@ fn test_bucket_empty_non_fungible() {
 fn test_bucket_of_badges() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
@@ -132,7 +132,7 @@ fn test_take_with_invalid_granularity() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -170,7 +170,7 @@ fn test_take_with_negative_amount() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -238,7 +238,7 @@ fn test_drop_locked_fungible_bucket() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -273,7 +273,7 @@ fn test_drop_locked_non_fungible_bucket() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -308,7 +308,7 @@ fn test_bucket_combine_fungible_invalid() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -339,7 +339,7 @@ fn test_bucket_combine_non_fungible_invalid() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -370,7 +370,7 @@ fn test_vault_combine_fungible_invalid() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -401,7 +401,7 @@ fn test_vault_combine_non_fungible_invalid() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("bucket"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()

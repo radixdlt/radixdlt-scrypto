@@ -68,7 +68,8 @@ impl Compile {
         Self::compile_with_env_vars(
             package_dir,
             btreemap! {
-                "RUSTFLAGS".to_owned() => "".to_owned()
+                "RUSTFLAGS".to_owned() => "".to_owned(),
+                "CARGO_ENCODED_RUSTFLAGS".to_owned() => "".to_owned(),
             },
         )
     }
@@ -1127,12 +1128,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         package_address
     }
 
-    pub fn publish_package_at_address(
+    pub fn publish_package_at_address<P: Into<PackagePublishingSource>>(
         &mut self,
-        code: Vec<u8>,
-        definition: PackageDefinition,
+        source: P,
         address: PackageAddress,
     ) {
+        let (code, definition) = source.into().code_and_definition();
         let code_hash = hash(&code);
         let nonce = self.next_transaction_nonce();
 
@@ -1169,13 +1170,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         receipt.expect_commit_success();
     }
 
-    pub fn publish_package(
+    pub fn publish_package<P: Into<PackagePublishingSource>>(
         &mut self,
-        code: Vec<u8>,
-        definition: PackageDefinition,
+        source: P,
         metadata: BTreeMap<String, MetadataValue>,
         owner_role: OwnerRole,
     ) -> PackageAddress {
+        let (code, definition) = source.into().code_and_definition();
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_advanced(None, code, definition, metadata, owner_role)
@@ -1185,12 +1186,19 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         receipt.expect_commit(true).new_package_addresses()[0]
     }
 
-    pub fn publish_package_with_owner(
+    pub fn publish_package_simple<P: Into<PackagePublishingSource>>(
         &mut self,
-        code: Vec<u8>,
-        definition: PackageDefinition,
+        source: P,
+    ) -> PackageAddress {
+        self.publish_package(source, Default::default(), OwnerRole::None)
+    }
+
+    pub fn publish_package_with_owner<P: Into<PackagePublishingSource>>(
+        &mut self,
+        source: P,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
+        let (code, definition) = source.into().code_and_definition();
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_with_owner(code, definition, owner_badge)
@@ -1204,47 +1212,41 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         Compile::compile(package_dir)
     }
 
+    // Doesn't need to be here - kept for backward compatibility
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
-        let (code, definition) = Compile::compile(package_dir);
-        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
+        self.publish_package(package_dir.as_ref(), BTreeMap::new(), OwnerRole::None)
     }
 
-    pub fn publish_package_tuple(
-        &mut self,
-        (code, definition): (Vec<u8>, PackageDefinition),
-    ) -> PackageAddress {
-        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
-    }
-
+    // Doesn't need to be here - kept for backward compatibility
     pub fn compile_and_publish_at_address<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
         address: PackageAddress,
     ) {
-        let (code, definition) = Compile::compile(package_dir);
-        self.publish_package_at_address(code, definition, address);
+        self.publish_package_at_address(package_dir.as_ref(), address);
     }
 
-    pub fn compile_and_publish_retain_blueprints<
-        P: AsRef<Path>,
+    pub fn publish_retain_blueprints<
+        P: Into<PackagePublishingSource>,
         F: FnMut(&String, &mut BlueprintDefinitionInit) -> bool,
     >(
         &mut self,
-        package_dir: P,
+        source: P,
         retain: F,
     ) -> PackageAddress {
-        let (code, mut definition) = Compile::compile(package_dir);
+        let (code, mut definition) =
+            Into::<PackagePublishingSource>::into(source).code_and_definition();
         definition.blueprints.retain(retain);
-        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
+        self.publish_package((code, definition), BTreeMap::new(), OwnerRole::None)
     }
 
+    // Doesn't need to be here - kept for backward compatibility
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let (code, definition) = Compile::compile(package_dir);
-        self.publish_package_with_owner(code, definition, owner_badge)
+        self.publish_package_with_owner(package_dir.as_ref(), owner_badge)
     }
 
     pub fn execute_unsigned_built_manifest_with_faucet_lock_fee(
@@ -2617,5 +2619,49 @@ pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
             _ => {}
         };
         let _ = to_typed_native_event(event_type_identifier, event_data).unwrap();
+    }
+}
+
+pub enum PackagePublishingSource {
+    CompileAndPublishFromSource(PathBuf),
+    PublishExisting(Vec<u8>, PackageDefinition),
+}
+
+impl From<String> for PackagePublishingSource {
+    fn from(value: String) -> Self {
+        Self::CompileAndPublishFromSource(value.into())
+    }
+}
+
+impl<'g> From<&'g str> for PackagePublishingSource {
+    fn from(value: &'g str) -> Self {
+        Self::CompileAndPublishFromSource(value.into())
+    }
+}
+
+impl From<PathBuf> for PackagePublishingSource {
+    fn from(value: PathBuf) -> Self {
+        Self::CompileAndPublishFromSource(value)
+    }
+}
+
+impl<'g> From<&'g Path> for PackagePublishingSource {
+    fn from(value: &'g Path) -> Self {
+        Self::CompileAndPublishFromSource(value.into())
+    }
+}
+
+impl From<(Vec<u8>, PackageDefinition)> for PackagePublishingSource {
+    fn from(value: (Vec<u8>, PackageDefinition)) -> Self {
+        Self::PublishExisting(value.0, value.1)
+    }
+}
+
+impl PackagePublishingSource {
+    pub fn code_and_definition(self) -> (Vec<u8>, PackageDefinition) {
+        match self {
+            Self::CompileAndPublishFromSource(path) => Compile::compile(path),
+            Self::PublishExisting(code, definition) => (code, definition),
+        }
     }
 }

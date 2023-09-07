@@ -131,7 +131,7 @@ fn get_epoch_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("consensus_manager"));
+        test_runner.publish_package_simple(PackageLoader::get("consensus_manager"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -155,7 +155,7 @@ fn next_round_without_supervisor_auth_fails() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("consensus_manager"));
+        test_runner.publish_package_simple(PackageLoader::get("consensus_manager"));
 
     // Act
     let round = Round::of(9876);

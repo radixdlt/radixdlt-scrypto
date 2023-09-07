@@ -122,7 +122,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
 
     let (public_key, _, account) = test_runner.new_allocated_account();
 
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("recall"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("recall"));
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32)

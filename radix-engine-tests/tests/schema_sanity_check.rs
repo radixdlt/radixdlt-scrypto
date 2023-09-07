@@ -401,7 +401,7 @@ pub fn test_fake_bucket() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let (code, mut definition) = test_runner.compile("./tests/blueprints/fake_bucket");
+    let (code, mut definition) = PackageLoader::get("fake_bucket");
     definition
         .blueprints
         .get_mut("FakeBucket")
@@ -411,7 +411,7 @@ pub fn test_fake_bucket() {
         .fields[0]
         .field = TypeRef::Static(LocalTypeId::WellKnown(DECIMAL_TYPE));
     let package_address =
-        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
 
     // Test abusing vault put method
     let receipt = test_runner.execute_manifest(

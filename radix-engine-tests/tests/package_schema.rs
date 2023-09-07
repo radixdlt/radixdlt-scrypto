@@ -16,7 +16,7 @@ enum ExpectedResult {
 fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedResult) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("package_schema"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("package_schema"));
 
     // Act
     let manifest = ManifestBuilder::new()

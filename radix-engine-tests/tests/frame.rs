@@ -12,7 +12,7 @@ use transaction::prelude::*;
 fn test_max_call_depth_success() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("recursion"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("recursion"));
 
     // Act
     // ============================
@@ -41,7 +41,7 @@ fn test_max_call_depth_success() {
 fn test_max_call_depth_failure() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("recursion"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("recursion"));
 
     // Act
     let manifest = ManifestBuilder::new()

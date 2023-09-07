@@ -12,7 +12,7 @@ fn cannot_create_metadata_with_invalid_value() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("metadata_component"));
+        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -42,7 +42,7 @@ fn cannot_set_metadata_with_invalid_value() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("metadata_component"));
+        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -105,7 +105,7 @@ fn can_globalize_with_component_metadata() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("metadata_component"));
+        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -132,7 +132,7 @@ fn can_set_metadata_after_globalized() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("metadata_component"));
+        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -160,7 +160,7 @@ fn can_remove_metadata() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("metadata_component"));
+        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -195,7 +195,7 @@ fn can_set_metadata_through_manifest(entry: MetadataValue) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("metadata_component"));
+        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -268,7 +268,7 @@ fn can_set_address_metadata_through_manifest() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("metadata_component"));
+        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = test_runner
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
@@ -307,7 +307,7 @@ fn cannot_set_address_metadata_after_freezing() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("metadata_component"));
+        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = test_runner
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));

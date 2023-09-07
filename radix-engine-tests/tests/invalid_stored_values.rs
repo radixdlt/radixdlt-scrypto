@@ -11,7 +11,7 @@ use transaction::prelude::*;
 fn stored_bucket_in_committed_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("stored_values"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("stored_values"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -42,7 +42,7 @@ fn stored_bucket_in_committed_component_should_fail() {
 fn stored_bucket_in_owned_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("stored_values"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("stored_values"));
 
     // Act
     let manifest = ManifestBuilder::new()

@@ -14,7 +14,7 @@ fn test_fee_states() {
 
     // Publish package
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("fee_reserve_states"));
+        test_runner.publish_package_simple(PackageLoader::get("fee_reserve_states"));
 
     // Run test case
     let fee_locked = dec!(500);

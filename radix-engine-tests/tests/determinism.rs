@@ -45,7 +45,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let mut builder = ManifestBuilder::new();

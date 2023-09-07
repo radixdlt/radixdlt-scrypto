@@ -64,7 +64,7 @@ fn missing_memory_should_cause_error() {
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("package"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -87,7 +87,7 @@ fn large_return_len_should_cause_memory_access_error() {
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("package"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -110,7 +110,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("package"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -221,7 +221,7 @@ fn bad_function_schema_should_fail() {
     let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
-    let (code, definition) = Compile::compile("./tests/blueprints/package_invalid");
+    let (code, definition) = PackageLoader::get("package_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
@@ -244,7 +244,7 @@ fn bad_function_schema_should_fail() {
 fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("publish_package"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("publish_package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -274,7 +274,7 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
 fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_processor() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("publish_package"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("publish_package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -337,7 +337,7 @@ fn should_not_be_able_to_publish_native_packages() {
 fn should_not_be_able_to_publish_native_packages_in_scrypto() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("publish_package"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("publish_package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -367,7 +367,7 @@ fn should_not_be_able_to_publish_native_packages_in_scrypto() {
 fn name_validation_blueprint() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+    let (code, mut definition) = PackageLoader::get("publish_package");
 
     definition.blueprints = indexmap![
        String::from("wrong_bluepint_name_*") =>
@@ -402,7 +402,7 @@ fn name_validation_blueprint() {
 fn name_validation_feature_set() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+    let (code, mut definition) = PackageLoader::get("publish_package");
 
     definition
         .blueprints
@@ -436,7 +436,7 @@ fn name_validation_function() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
 
-    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+    let (code, mut definition) = PackageLoader::get("publish_package");
 
     definition
         .blueprints
@@ -480,7 +480,7 @@ fn well_known_types_in_schema_are_validated() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
 
-    let (code, mut definition) = Compile::compile("./tests/blueprints/publish_package");
+    let (code, mut definition) = PackageLoader::get("publish_package");
 
     let method_definition = definition
         .blueprints

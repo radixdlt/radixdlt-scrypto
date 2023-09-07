@@ -53,7 +53,7 @@ fn package_burn_is_only_callable_within_resource_package() {
 fn can_burn_by_amount_from_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -109,7 +109,7 @@ fn can_burn_by_amount_from_fungible_vault() {
 fn can_burn_by_amount_from_non_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -169,7 +169,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
 fn can_burn_by_ids_from_non_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -235,7 +235,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
 fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -295,7 +295,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
 fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -359,7 +359,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
 fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -429,7 +429,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
 fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -488,7 +488,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
 fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -551,7 +551,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
 fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -620,7 +620,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
 fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -676,7 +676,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
 fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -736,7 +736,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
 fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("vault"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(

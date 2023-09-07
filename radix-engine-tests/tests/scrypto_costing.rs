@@ -9,7 +9,7 @@ use transaction::prelude::*;
 fn can_call_usd_price() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("costing"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("costing"));
 
     // Act
     let manifest = ManifestBuilder::new()

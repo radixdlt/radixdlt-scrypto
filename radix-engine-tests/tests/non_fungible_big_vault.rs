@@ -10,7 +10,7 @@ use transaction::prelude::*;
 fn get_non_fungibles_on_big_vault(size: u32, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("non_fungible"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "BigVault", "new", manifest_args!())

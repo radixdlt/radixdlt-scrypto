@@ -101,8 +101,11 @@ fn references_read_from_state_are_visible_in_tests() {
     )
     .unwrap();
 
-    let radiswap_package =
-        Package::compile_and_publish("../assets/blueprints/radiswap", &mut env).unwrap();
+    let code = include_bytes!("../../assets/radiswap.wasm");
+    let definition = scrypto_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+
+    let (radiswap_package, _) =
+        Package::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
 
     let radiswap_component = env
         .call_function_typed::<_, ComponentAddress>(
@@ -154,8 +157,11 @@ fn references_read_from_state_are_visible_in_tests1() {
     )
     .unwrap();
 
-    let radiswap_package =
-        Package::compile_and_publish("../assets/blueprints/radiswap", &mut env).unwrap();
+    let code = include_bytes!("../../assets/radiswap.wasm");
+    let definition = scrypto_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+
+    let (radiswap_package, _) =
+        Package::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
 
     let radiswap_component = env
         .call_function_typed::<_, ComponentAddress>(

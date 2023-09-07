@@ -12,7 +12,7 @@ fn test_query_transaction_runtime_info() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("transaction_runtime"));
+        test_runner.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -39,7 +39,7 @@ fn test_generate_ruid() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("transaction_runtime"));
+        test_runner.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()

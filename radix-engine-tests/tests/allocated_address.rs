@@ -12,7 +12,7 @@ use transaction::prelude::*;
 fn test_create_and_return() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("allocated_address"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("allocated_address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -36,7 +36,7 @@ fn test_create_and_return() {
 fn test_create_and_pass_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("allocated_address"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("allocated_address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -58,7 +58,7 @@ fn test_create_and_pass_address() {
 fn test_create_and_call() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("allocated_address"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("allocated_address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -82,7 +82,7 @@ fn test_create_and_call() {
 fn test_create_and_consume_within_frame() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("allocated_address"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("allocated_address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -104,7 +104,7 @@ fn test_create_and_consume_within_frame() {
 fn test_create_and_consume_with_mismatching_blueprint() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("allocated_address"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("allocated_address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -133,7 +133,7 @@ fn test_create_and_consume_with_mismatching_blueprint() {
 fn test_create_and_consume_in_another_frame() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("allocated_address"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("allocated_address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -155,7 +155,7 @@ fn test_create_and_consume_in_another_frame() {
 fn test_create_and_store_in_key_value_store() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("allocated_address"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("allocated_address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -177,7 +177,7 @@ fn test_create_and_store_in_key_value_store() {
 fn test_create_and_store_in_metadata() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_tuple(PackageLoader::get("allocated_address"));
+    let package = test_runner.publish_package_simple(PackageLoader::get("allocated_address"));
 
     // Act
     let manifest = ManifestBuilder::new()

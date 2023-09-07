@@ -149,7 +149,7 @@ fn test_entire_auth_zone() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()

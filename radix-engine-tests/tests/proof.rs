@@ -15,7 +15,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -52,7 +52,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
@@ -96,7 +96,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
@@ -143,7 +143,7 @@ fn can_use_bucket_for_authorization() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -180,7 +180,7 @@ fn can_use_vault_for_authorization() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
@@ -228,7 +228,7 @@ fn can_create_proof_from_account_and_pass_on() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -261,7 +261,7 @@ fn cant_move_restricted_proof_to_auth_zone() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -300,7 +300,7 @@ fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -339,7 +339,7 @@ fn can_move_restricted_proof_to_proof_function_aka_non_barrier() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -368,7 +368,7 @@ fn can_move_restricted_proof_to_proof_function_aka_non_barrier() {
 fn can_move_restricted_proofs_internally() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let (public_key, _, account) = test_runner.new_allocated_account();
     let component_address = {
         let manifest = ManifestBuilder::new()
@@ -406,7 +406,7 @@ fn can_move_locked_bucket() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -439,7 +439,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
@@ -485,7 +485,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
@@ -555,7 +555,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -610,7 +610,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
 fn can_not_call_vault_lock_fungible_amount_directly() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
@@ -644,7 +644,7 @@ fn can_not_call_vault_lock_fungible_amount_directly() {
 fn can_not_call_vault_unlock_fungible_amount_directly() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
@@ -678,7 +678,7 @@ fn can_not_call_vault_unlock_fungible_amount_directly() {
 fn can_not_call_vault_lock_non_fungibles_directly() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
@@ -712,7 +712,7 @@ fn can_not_call_vault_lock_non_fungibles_directly() {
 fn can_not_call_vault_unlock_non_fungibles_directly() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
@@ -746,7 +746,7 @@ fn can_not_call_vault_unlock_non_fungibles_directly() {
 fn can_not_call_bucket_lock_fungible_amount_directly() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -773,7 +773,7 @@ fn can_not_call_bucket_lock_fungible_amount_directly() {
 fn can_not_call_bucket_unlock_fungible_amount_directly() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -800,7 +800,7 @@ fn can_not_call_bucket_unlock_fungible_amount_directly() {
 fn can_not_call_bucket_lock_non_fungibles_directly() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -827,7 +827,7 @@ fn can_not_call_bucket_lock_non_fungibles_directly() {
 fn can_not_call_bucket_unlock_non_fungibles_directly() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -856,7 +856,7 @@ fn test_proof_check() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(dec!(100), 0, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -890,7 +890,7 @@ fn test_proof_check_with_message() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(dec!(100), 0, account);
-    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()

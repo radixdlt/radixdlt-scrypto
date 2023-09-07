@@ -13,14 +13,14 @@ use transaction::prelude::*;
 
 #[test]
 fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
-    let (code, definition) = Compile::compile("tests/blueprints/transaction_limits");
+    let (code, definition) = PackageLoader::get("transaction_limits");
     let code_len = code.len();
     let definition_len = scrypto_encode(&definition).unwrap().len();
 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
     let component_address = test_runner
         .execute_manifest(
             ManifestBuilder::new()
@@ -71,14 +71,14 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
 
 #[test]
 fn test_write_entries_to_kv_store_exceeding_limit() {
-    let (code, definition) = Compile::compile("tests/blueprints/transaction_limits");
+    let (code, definition) = PackageLoader::get("transaction_limits");
     let code_len = code.len();
     let definition_len = scrypto_encode(&definition).unwrap().len();
 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
     let component_address = test_runner
         .execute_manifest(
             ManifestBuilder::new()
@@ -129,12 +129,12 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
 
 #[test]
 fn test_write_entries_to_heap_kv_store_exceeding_limit() {
-    let (code, definition) = Compile::compile("tests/blueprints/transaction_limits");
+    let (code, definition) = PackageLoader::get("transaction_limits");
 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -174,7 +174,7 @@ fn test_default_substate_size_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("transaction_limits"));
+        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -231,7 +231,7 @@ fn test_default_invoke_payload_size_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("transaction_limits"));
+        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -272,7 +272,7 @@ fn test_default_invoke_payload_size_limit() {
 fn verify_log_size_limit() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("transaction_limits"));
+        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
         .call_function(
@@ -298,7 +298,7 @@ fn verify_log_size_limit() {
 fn verify_event_size_limit() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("transaction_limits"));
+        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
         .call_function(
@@ -324,7 +324,7 @@ fn verify_event_size_limit() {
 fn verify_panic_size_limit() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package_tuple(PackageLoader::get("transaction_limits"));
+        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
         .call_function(
@@ -348,12 +348,12 @@ fn verify_panic_size_limit() {
 
 #[test]
 fn test_allocating_buffers_exceeding_limit() {
-    let (code, definition) = Compile::compile("tests/blueprints/transaction_limits");
+    let (code, definition) = PackageLoader::get("transaction_limits");
 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address =
-        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
     let component_address = test_runner
         .execute_manifest(
             ManifestBuilder::new()
