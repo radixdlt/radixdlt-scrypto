@@ -14,8 +14,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::*;
-use sbor::rust::marker::PhantomData;
+use sbor::rust::prelude::*;
 use sbor::FixedEnumVariant;
 use scrypto::resource::ResourceManager;
 
@@ -75,28 +74,28 @@ impl ResourceBuilder {
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
-    pub fn new_string_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
+    pub fn new_string_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
         owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<StringNonFungibleLocalId, D, B>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
-    pub fn new_integer_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
+    pub fn new_integer_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
         owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<IntegerNonFungibleLocalId, D, B>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
-    pub fn new_bytes_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
+    pub fn new_bytes_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
         owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<BytesNonFungibleLocalId, D, B>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::RUID`
-    pub fn new_ruid_non_fungible_v2<D: NonFungibleData + RegisteredType<B>, B>(
+    pub fn new_ruid_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
         owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<RUIDNonFungibleLocalId, D, B>> {
         InProgressResourceBuilder::new(owner_role)
@@ -177,12 +176,12 @@ pub struct NonFungibleResourceTypeV2<
     D: NonFungibleData + RegisteredType<B>,
     B,
 >(PhantomData<T>, PhantomData<D>, PhantomData<B>);
-impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B> AnyResourceType
+impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>> AnyResourceType
     for NonFungibleResourceTypeV2<T, D, B>
 {
     type ResourceRoles = NonFungibleResourceRoles;
 }
-impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B> Default
+impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>> Default
     for NonFungibleResourceTypeV2<T, D, B>
 {
     fn default() -> Self {
@@ -450,7 +449,7 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder
     }
 }
 
-impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B> UpdateAuthBuilder
+impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>> UpdateAuthBuilder
     for InProgressResourceBuilder<NonFungibleResourceTypeV2<T, D, B>>
 {
     fn mint_roles(mut self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self {
@@ -530,7 +529,7 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData>
     }
 }
 
-impl<T: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B>
+impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>>
     InProgressResourceBuilder<NonFungibleResourceTypeV2<T, D, B>>
 {
     /// Sets how each non-fungible's mutable data can be updated.
@@ -773,7 +772,7 @@ impl<D: NonFungibleData>
     }
 }
 
-impl<D: NonFungibleData + RegisteredType<B>, B>
+impl<B, D: NonFungibleData + RegisteredType<B>>
     InProgressResourceBuilder<NonFungibleResourceTypeV2<StringNonFungibleLocalId, D, B>>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
@@ -897,7 +896,7 @@ impl<D: NonFungibleData>
     }
 }
 
-impl<D: NonFungibleData + RegisteredType<B>, B>
+impl<B, D: NonFungibleData + RegisteredType<B>>
     InProgressResourceBuilder<NonFungibleResourceTypeV2<IntegerNonFungibleLocalId, D, B>>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
@@ -1021,7 +1020,7 @@ impl<D: NonFungibleData>
     }
 }
 
-impl<D: NonFungibleData + RegisteredType<B>, B>
+impl<B, D: NonFungibleData + RegisteredType<B>>
     InProgressResourceBuilder<NonFungibleResourceTypeV2<BytesNonFungibleLocalId, D, B>>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
@@ -1148,7 +1147,7 @@ impl<D: NonFungibleData>
     }
 }
 
-impl<D: NonFungibleData + RegisteredType<B>, B>
+impl<B, D: NonFungibleData + RegisteredType<B>>
     InProgressResourceBuilder<NonFungibleResourceTypeV2<RUIDNonFungibleLocalId, D, B>>
 {
     /// Creates the RUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
@@ -1287,7 +1286,7 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
     }
 }
 
-impl<Y: IsNonFungibleLocalId, D: NonFungibleData + RegisteredType<B>, B>
+impl<Y: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>>
     private::CanCreateWithNoSupply
     for InProgressResourceBuilder<NonFungibleResourceTypeV2<Y, D, B>>
 {
