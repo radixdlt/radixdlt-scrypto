@@ -346,7 +346,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("e9e9400e9827225e1fd9a4902d837ff4cb9c18b9906f65553fe0e4b146449aba")
+    Blob("bbd17a1e15b0aa194b43f97661326c3d4d378cca19821d8cf43ef4f9550f06ba")
     Map<String, Tuple>()
     Enum<1u8>(
         AddressReservation("package_address_reservation")

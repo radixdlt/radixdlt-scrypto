@@ -51,24 +51,30 @@ pub extern crate self as scrypto;
 pub fn set_up_panic_hook() {
     #[cfg(not(feature = "alloc"))]
     std::panic::set_hook(Box::new(|info| {
-        // parse message
-        let payload = info
-            .payload()
-            .downcast_ref::<&str>()
-            .map(ToString::to_string)
-            .or(info
-                .payload()
-                .downcast_ref::<String>()
-                .map(ToString::to_string))
-            .unwrap_or(String::new());
+        let mut message = String::new();
+
+        // parse payload
+        if let Some(s) = info.payload().downcast_ref::<&str>() {
+            message.push_str(s);
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            message.push_str(s);
+        } else {
+            message.push_str("Panic")
+        }
+
+        message.push_str(" @ ");
 
         // parse location
-        let location = if let Some(l) = info.location() {
-            format!("{}:{}:{}", l.file(), l.line(), l.column())
+        if let Some(l) = info.location() {
+            message.push_str(l.file());
+            message.push_str(":");
+            message.push_str(&l.line().to_string());
+            message.push_str(":");
+            message.push_str(&l.column().to_string());
         } else {
-            "<unknown>".to_owned()
+            message.push_str("<unknown>");
         };
 
-        crate::runtime::Runtime::panic(sbor::rust::format!("{} @ {}", payload, location));
+        crate::runtime::Runtime::panic(message);
     }));
 }
