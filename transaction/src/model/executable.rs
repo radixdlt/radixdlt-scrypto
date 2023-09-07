@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct AuthZoneParams {
     pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
     pub virtual_resources: BTreeSet<ResourceAddress>,
