@@ -20,8 +20,11 @@ struct Struct2 {
     a: String,
 }
 
+pub type Array = [u8; 22];
+pub type Tuple = (String, String);
+
 #[blueprint]
-#[types(Struct1, Struct2 as Hi, u32, NonFungibleGlobalId, Vec<Hash>, Vec<Bucket> as GenericAlias, scrypto::prelude::NonFungibleLocalId)]
+#[types(Struct1, Struct2 as Hi, u32, NonFungibleGlobalId, Vec<Hash>, Vec<Bucket> as GenericAlias, scrypto::prelude::NonFungibleLocalId, Array, Tuple)]
 mod simple {
     use scrypto::prelude::OwnerRole;
 

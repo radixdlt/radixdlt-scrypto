@@ -1,3 +1,4 @@
+use crate::ast;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use radix_engine_common::address::AddressBech32Decoder;
@@ -6,8 +7,6 @@ use syn::parse::{Parse, ParseStream, Parser};
 use syn::spanned::Spanned;
 use syn::token::{Brace, Comma};
 use syn::*;
-
-use crate::ast;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -220,6 +219,38 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
     }
 
     Ok(())
+}
+
+/// Derive a sensible type identifier from a path, so to pass Radix Engine's constraints.
+pub fn derive_sensible_identifier_from_path(path: &Path) -> Result<String> {
+    if let Some(segment) = path.segments.last() {
+        let mut result = String::new();
+        let mut with_underscore = false;
+
+        for c in quote! { #segment }.to_string().chars() {
+            if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' {
+                result.push(c);
+                with_underscore = false;
+            } else {
+                if !with_underscore {
+                    result.push('_');
+                    with_underscore = true;
+                }
+            }
+        }
+
+        // Trim
+        if result.len() > 1 && result.ends_with('_') {
+            result.pop();
+        }
+
+        Ok(result)
+    } else {
+        Err(Error::new(
+            path.span(),
+            "Failed to derive sensible identifier",
+        ))
+    }
 }
 
 pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
@@ -508,13 +539,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         }
                     });
                 } else {
-                    type_name = quote! { #path }
-                        .to_string()
-                        .split(':')
-                        .last()
-                        .unwrap()
-                        .trim()
-                        .replace(" ", "");
+                    type_name = derive_sensible_identifier_from_path(&path)?;
                     registered_type_impls.push(parse_quote! {
                         impl RegisteredType<#registered_type_ident> for #path {
                             fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
@@ -597,14 +622,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 if attribute.path.is_ident("events") {
                     let events_inner = parse2::<ast::EventsInner>(attribute.tokens.clone())?;
                     for path in events_inner.paths.iter() {
-                        let ident_string = quote! { #path }
-                            .to_string()
-                            .split(':')
-                            .last()
-                            .unwrap()
-                            .trim()
-                            .replace(" ", "");
-                        if let Some(..) = event_type_paths.insert(ident_string, path.clone()) {
+                        let type_name = derive_sensible_identifier_from_path(&path)?;
+                        if let Some(..) = event_type_paths.insert(type_name, path.clone()) {
                             return Err(Error::new(
                                 path.span(),
                                 "An event with an identical name has already been named",
@@ -1904,7 +1923,7 @@ mod tests {
                                 }
                                 {
                                     let local_type_index = aggregator.add_child_type_and_descendents::<Vec<Hash> >();
-                                    type_schema.insert("Vec<Hash>".to_owned(), local_type_index);
+                                    type_schema.insert("Vec_Hash".to_owned(), local_type_index);
                                 }
                                 {
                                     let local_type_index = aggregator.add_child_type_and_descendents::<u32>();
@@ -2048,7 +2067,7 @@ mod tests {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
                                 blueprint_name: "Test".to_owned(),
-                                type_name: "Vec<Hash>".to_owned(),
+                                type_name: "Vec_Hash".to_owned(),
                             }
                         }
                     }
