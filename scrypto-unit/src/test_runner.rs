@@ -1191,6 +1191,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
     }
 
+    pub fn publish_package_tuple(
+        &mut self,
+        (code, definition): (Vec<u8>, PackageDefinition),
+    ) -> PackageAddress {
+        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
+    }
+
     pub fn compile_and_publish_at_address<P: AsRef<Path>>(
         &mut self,
         package_dir: P,

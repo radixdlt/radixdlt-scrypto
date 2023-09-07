@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -6,7 +9,7 @@ use transaction::prelude::*;
 fn can_call_usd_price() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/costing");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("costing"));
 
     // Act
     let manifest = ManifestBuilder::new()

@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -6,7 +9,8 @@ use transaction::prelude::*;
 fn should_be_able_to_get_address_of_an_address_reservation() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address_reservation");
+    let package_address =
+        test_runner.publish_package_tuple(PackageLoader::get("address_reservation"));
 
     // Act
     let manifest = ManifestBuilder::new()

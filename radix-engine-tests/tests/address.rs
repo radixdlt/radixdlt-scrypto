@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{KernelError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -10,7 +13,7 @@ use transaction::prelude::*;
 fn get_global_address_in_local_in_function_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -48,7 +51,7 @@ fn get_global_address_in_local_in_function_should_fail() {
 fn get_global_address_in_local_in_method_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -97,7 +100,7 @@ fn get_global_address_in_local_in_method_should_fail() {
 fn get_global_address_in_parent_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -139,7 +142,7 @@ fn get_global_address_in_parent_should_succeed() {
 fn get_global_address_in_child_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -180,7 +183,7 @@ fn get_global_address_in_child_should_succeed() {
 fn test_call_component_address_protected_method(caller_child: bool, callee_child: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -250,7 +253,7 @@ enum AssertAgainst {
 fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -377,7 +380,7 @@ mod global_caller_actor_badge {
 fn call_component_address_protected_method_in_parent_with_wrong_address_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -426,7 +429,7 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
 fn can_instantiate_with_preallocated_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
     // Act + Assert
     let manifest = ManifestBuilder::new()
         .call_function(
@@ -444,7 +447,7 @@ fn can_instantiate_with_preallocated_address() {
 fn errors_if_unused_preallocated_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
 
     // Act + Assert 1
     let receipt = test_runner.execute_manifest_ignoring_fee(
@@ -479,7 +482,7 @@ fn errors_if_unused_preallocated_address() {
 fn errors_if_assigns_same_address_to_two_components() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
 
     // Act + Assert
     let receipt = test_runner.execute_manifest_ignoring_fee(
@@ -501,7 +504,7 @@ fn test_pass_named_global_addresses() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -562,7 +565,7 @@ fn test_pass_static_global_addresses() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("address"));
 
     // Act
     let manifest = ManifestBuilder::new()

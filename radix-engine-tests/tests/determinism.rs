@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
@@ -42,7 +45,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("proof"));
 
     // Act
     let mut builder = ManifestBuilder::new();

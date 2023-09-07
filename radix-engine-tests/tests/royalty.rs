@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::node_modules::royalty::ComponentRoyaltyError;
@@ -14,7 +17,7 @@ fn test_component_royalty() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/royalty");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("royalty"));
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
@@ -70,7 +73,7 @@ fn test_component_royalty_in_usd() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/royalty");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("royalty"));
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(

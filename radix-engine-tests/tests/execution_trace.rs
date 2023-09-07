@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, ResourceSpecifier, TraceOrigin, WorktopChange,
 };
@@ -11,7 +14,7 @@ fn test_trace_resource_transfers() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("execution_trace"));
     let transfer_amount = 10u8;
 
     // Act
@@ -129,7 +132,7 @@ fn test_trace_resource_transfers() {
 fn test_trace_fee_payments() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("execution_trace"));
 
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new()
@@ -188,7 +191,7 @@ fn test_trace_fee_payments() {
 fn test_instruction_traces() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("execution_trace"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()

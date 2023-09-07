@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
@@ -771,7 +774,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, Compo
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("fee"));
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)

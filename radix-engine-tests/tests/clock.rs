@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -15,7 +18,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
             CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("clock"));
 
     let time_to_set_ms = 1669663688996;
     let expected_unix_time_rounded_to_minutes = 1669663680;
@@ -49,7 +52,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
 fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("clock"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -77,7 +80,7 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
             CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("clock"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -104,7 +107,7 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
 fn test_date_time_conversions() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("clock"));
 
     // Act
     let manifest = ManifestBuilder::new()

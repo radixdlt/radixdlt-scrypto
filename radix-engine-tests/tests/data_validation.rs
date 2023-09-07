@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError, SystemError},
@@ -9,7 +12,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 fn setup_component(test_runner: &mut DefaultTestRunner) -> ComponentAddress {
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("data_validation"));
 
     let setup_manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -220,7 +223,7 @@ fn cannot_return_bucket_for_proof() {
 fn cannot_create_object_with_mismatching_data() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("data_validation"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -349,7 +352,7 @@ fn test_receive_reference_not_of_specific_blueprint() {
 fn vec_of_u8_underflow_should_not_cause_panic() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("tests/blueprints/data_validation");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("data_validation"));
 
     // Act
     let manifest = ManifestBuilder::new()

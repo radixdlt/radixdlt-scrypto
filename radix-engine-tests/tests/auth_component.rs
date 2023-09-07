@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::rule;
@@ -59,7 +62,7 @@ fn cannot_make_cross_component_call_without_correct_global_caller_authorization(
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("component"));
     let badge =
         NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(account.into()));
     let secured_component = create_secured_component(&mut test_runner, badge, package_address);
@@ -84,7 +87,7 @@ fn cannot_make_cross_component_call_without_correct_global_caller_authorization(
 fn can_make_cross_component_call_with_correct_global_caller_authorization() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("component"));
     let my_component = create_component(&mut test_runner, package_address);
     let badge =
         NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(my_component.into()));
@@ -110,7 +113,7 @@ fn cannot_make_cross_component_call_without_resource_authorization() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("component"));
     let (secured_component, _) =
         create_resource_secured_component(&mut test_runner, account, package_address);
     let my_component = create_component(&mut test_runner, package_address);
@@ -135,7 +138,7 @@ fn can_make_cross_component_call_with_resource_authorization() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("component"));
     let (secured_component, auth_id) =
         create_resource_secured_component(&mut test_runner, account, package_address);
     let my_component = create_component(&mut test_runner, package_address);
@@ -178,7 +181,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("component"));
     let (secured_component, auth_id) =
         create_resource_secured_component(&mut test_runner, account, package_address);
     let my_component = create_component(&mut test_runner, package_address);

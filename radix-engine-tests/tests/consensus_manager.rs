@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
 };
@@ -127,7 +130,8 @@ fn genesis_epoch_has_correct_initial_validators() {
 fn get_epoch_should_succeed() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/consensus_manager");
+    let package_address =
+        test_runner.publish_package_tuple(PackageLoader::get("consensus_manager"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -150,7 +154,8 @@ fn get_epoch_should_succeed() {
 fn next_round_without_supervisor_auth_fails() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/consensus_manager");
+    let package_address =
+        test_runner.publish_package_tuple(PackageLoader::get("consensus_manager"));
 
     // Act
     let round = Round::of(9876);

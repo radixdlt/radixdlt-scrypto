@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError, SystemError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::types::*;
@@ -26,7 +29,7 @@ fn create_payload_of_depth(n: usize) -> Vec<u8> {
 fn test_write_kv_store_entry_within_depth_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -48,7 +51,7 @@ fn test_write_kv_store_entry_within_depth_limit() {
 fn test_write_kv_store_entry_exceeding_depth_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -72,7 +75,7 @@ fn test_write_kv_store_entry_exceeding_depth_limit() {
 fn test_pop_empty_auth_zone() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -97,7 +100,7 @@ fn test_pop_empty_auth_zone() {
 fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -131,7 +134,7 @@ fn should_not_be_able_to_open_mut_substate_twice_if_object_globalized() {
 fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -158,7 +161,7 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
 fn should_be_able_to_bech32_encode_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/scrypto_env");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()

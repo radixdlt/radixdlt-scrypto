@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
@@ -9,7 +12,7 @@ use transaction::prelude::*;
 fn test_max_call_depth_success() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("recursion"));
 
     // Act
     // ============================
@@ -38,7 +41,7 @@ fn test_max_call_depth_success() {
 fn test_max_call_depth_failure() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("recursion"));
 
     // Act
     let manifest = ManifestBuilder::new()

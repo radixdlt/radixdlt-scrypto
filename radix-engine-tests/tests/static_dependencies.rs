@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
@@ -22,7 +25,7 @@ fn test_static_package_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address1 =
-        test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
+        test_runner.publish_package_tuple(PackageLoader::get("static_dependencies"));
 
     let (mut code, mut definition) = Compile::compile("./tests/blueprints/static_dependencies");
     let place_holder: GlobalAddress =
@@ -59,7 +62,8 @@ fn test_static_package_address() {
 fn test_static_component_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
+    let package_address =
+        test_runner.publish_package_tuple(PackageLoader::get("static_dependencies"));
     let (key, _priv, account) = test_runner.new_account(false);
 
     // Act

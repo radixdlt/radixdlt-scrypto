@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -6,7 +9,7 @@ use transaction::prelude::*;
 #[test]
 fn test_component() {
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/component");
+    let package = test_runner.publish_package_tuple(PackageLoader::get("component"));
 
     // Create component
     let manifest1 = ManifestBuilder::new()
@@ -26,7 +29,7 @@ fn test_component() {
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_addr = test_runner.compile_and_publish("./tests/blueprints/component");
+    let package_addr = test_runner.publish_package_tuple(PackageLoader::get("component"));
 
     // Act
     let manifest = ManifestBuilder::new()

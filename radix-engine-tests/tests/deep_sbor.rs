@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -8,7 +11,7 @@ use transaction::prelude::*;
 fn deep_auth_rules_on_component_create_creation_fails() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/deep_sbor");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("deep_sbor"));
 
     // Act 1 - Small Depth
     let depth = 10usize;
@@ -49,7 +52,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
 fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/deep_sbor");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("deep_sbor"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()

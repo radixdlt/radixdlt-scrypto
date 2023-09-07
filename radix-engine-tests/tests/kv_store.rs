@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
     CreateNodeError, OpenSubstateError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
@@ -10,7 +13,7 @@ use transaction::prelude::*;
 fn can_insert_in_child_nodes() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -32,7 +35,7 @@ fn can_insert_in_child_nodes() {
 fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -54,7 +57,7 @@ fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
 fn cyclic_map_fails_execution() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -78,7 +81,7 @@ fn cyclic_map_fails_execution() {
 fn self_cyclic_map_fails_execution() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -109,7 +112,7 @@ fn self_cyclic_map_fails_execution() {
 fn cannot_remove_kv_stores() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -146,7 +149,7 @@ fn cannot_remove_kv_stores() {
 fn cannot_overwrite_kv_stores() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -183,7 +186,7 @@ fn cannot_overwrite_kv_stores() {
 fn create_kv_store_and_get() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -205,7 +208,7 @@ fn create_kv_store_and_get() {
 fn create_kv_store_and_put() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -227,7 +230,7 @@ fn create_kv_store_and_put() {
 fn can_reference_in_memory_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -249,7 +252,7 @@ fn can_reference_in_memory_vault() {
 fn can_reference_deep_in_memory_value() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -271,7 +274,7 @@ fn can_reference_deep_in_memory_value() {
 fn can_reference_deep_in_memory_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -293,7 +296,7 @@ fn can_reference_deep_in_memory_vault() {
 fn cannot_directly_reference_inserted_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -322,7 +325,7 @@ fn cannot_directly_reference_inserted_vault() {
 fn cannot_directly_reference_vault_after_container_moved() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -351,7 +354,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
 fn cannot_directly_reference_vault_after_container_stored() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -380,7 +383,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
 fn multiple_reads_should_work() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -397,7 +400,7 @@ fn multiple_reads_should_work() {
 fn remove_from_local_map_should_work() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -419,7 +422,7 @@ fn remove_from_local_map_should_work() {
 fn remove_from_stored_map_when_empty_should_work() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Basic", "new", manifest_args!())
@@ -449,7 +452,7 @@ fn remove_from_stored_map_when_empty_should_work() {
 fn remove_from_stored_map_when_not_empty_should_work() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -480,7 +483,7 @@ fn remove_from_stored_map_when_not_empty_should_work() {
 fn remove_from_stored_map_when_contain_vault_should_not_work() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "KVVault", "new", manifest_args!())
@@ -512,7 +515,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
 fn nested_kv_stores_works() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()

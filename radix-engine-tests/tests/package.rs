@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError, VmError};
 use radix_engine::system::system_modules::auth::AuthError;
@@ -61,7 +64,7 @@ fn missing_memory_should_cause_error() {
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/package");
+    let package = test_runner.publish_package_tuple(PackageLoader::get("package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -84,7 +87,7 @@ fn large_return_len_should_cause_memory_access_error() {
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/package");
+    let package = test_runner.publish_package_tuple(PackageLoader::get("package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -107,7 +110,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/package");
+    let package = test_runner.publish_package_tuple(PackageLoader::get("package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -241,7 +244,7 @@ fn bad_function_schema_should_fail() {
 fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
+    let package = test_runner.publish_package_tuple(PackageLoader::get("publish_package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -271,7 +274,7 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
 fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_processor() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
+    let package = test_runner.publish_package_tuple(PackageLoader::get("publish_package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -334,7 +337,7 @@ fn should_not_be_able_to_publish_native_packages() {
 fn should_not_be_able_to_publish_native_packages_in_scrypto() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
+    let package = test_runner.publish_package_tuple(PackageLoader::get("publish_package"));
 
     // Act
     let manifest = ManifestBuilder::new()

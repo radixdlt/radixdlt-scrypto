@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
@@ -211,7 +214,7 @@ fn create_proof_emits_correct_events() {
 fn scrypto_cant_emit_unregistered_event() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
         .call_function(
@@ -241,7 +244,7 @@ fn scrypto_cant_emit_unregistered_event() {
 fn scrypto_can_emit_registered_events() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)

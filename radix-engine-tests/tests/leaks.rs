@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
@@ -8,7 +11,7 @@ use transaction::prelude::*;
 fn dangling_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("leaks"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -32,7 +35,7 @@ fn dangling_component_should_fail() {
 fn dangling_bucket_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("leaks"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -56,7 +59,7 @@ fn dangling_bucket_should_fail() {
 fn dangling_vault_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("leaks"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -75,7 +78,7 @@ fn dangling_vault_should_fail() {
 fn dangling_worktop_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("leaks"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -99,7 +102,7 @@ fn dangling_worktop_should_fail() {
 fn dangling_kv_store_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("leaks"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -123,7 +126,7 @@ fn dangling_kv_store_should_fail() {
 fn dangling_bucket_with_proof_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
+    let package_address = test_runner.publish_package_tuple(PackageLoader::get("leaks"));
 
     // Act
     let manifest = ManifestBuilder::new()
