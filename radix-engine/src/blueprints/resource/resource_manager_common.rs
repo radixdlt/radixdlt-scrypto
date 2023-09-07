@@ -9,40 +9,7 @@ use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldValue};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
-use super::{MintFungibleResourceEvent, MintNonFungibleResourceEvent};
-
-pub fn globalize_resource_manager<Y>(
-    object_id: NodeId,
-    owner_role: OwnerRole,
-    resource_address_reservation: GlobalAddressReservation,
-    main_roles: RoleAssignmentInit,
-    metadata: ModuleConfig<MetadataInit>,
-    api: &mut Y,
-) -> Result<ResourceAddress, RuntimeError>
-where
-    Y: ClientApi<RuntimeError>,
-{
-    let role_assignment = {
-        let roles = indexmap!(
-            ModuleId::Main => main_roles,
-            ModuleId::Metadata => metadata.roles,
-        );
-        RoleAssignment::create(owner_role, roles, api)?.0 .0
-    };
-
-    let metadata = Metadata::create_with_data(metadata.init, api)?.0;
-
-    let address = api.globalize(
-        object_id,
-        indexmap!(
-            AttachedModuleId::RoleAssignment => role_assignment,
-            AttachedModuleId::Metadata => metadata,
-        ),
-        Some(resource_address_reservation),
-    )?;
-
-    Ok(ResourceAddress::new_or_panic(address.into()))
-}
+use super::{MintNonFungibleResourceEvent};
 
 pub fn globalize_non_fungible_with_initial_supply<Y>(
     owner_role: OwnerRole,
@@ -76,7 +43,7 @@ where
             0u8 => FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
             1u8 => FieldValue::new(&LockedNonFungibleResource::default()),
         },
-        MintNonFungibleResourceEvent::EVENT_NAME.to_string(),
+        MintNonFungibleResourceEvent::EVENT_NAME,
         scrypto_encode(&MintNonFungibleResourceEvent { ids }).unwrap(),
     )?;
 

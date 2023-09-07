@@ -5,10 +5,9 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use lazy_static::lazy_static;
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::runtime::Runtime;
 use num_traits::pow::Pow;
+use native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -415,7 +414,7 @@ impl FungibleResourceManagerBlueprint {
         )?;
         let address_reservation = Self::create_address_reservation(address_reservation, api)?;
 
-        let resource_address = globalize_resource_manager(
+        let address = globalize_object(
             object_id,
             owner_role,
             address_reservation,
@@ -424,7 +423,7 @@ impl FungibleResourceManagerBlueprint {
             api,
         )?;
 
-        Ok(resource_address)
+        Ok(ResourceAddress::new_or_panic(address.into()))
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
@@ -452,37 +451,27 @@ impl FungibleResourceManagerBlueprint {
         check_mint_amount(divisibility, initial_supply)?;
 
         let (resource_address, bucket) = {
-            let roles = indexmap!(
-                ModuleId::Main => roles,
-                ModuleId::Metadata => metadata.roles,
-            );
-            let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
-            let metadata = Metadata::create_with_data(metadata.init, api)?;
-
-            let modules = indexmap!(
-                AttachedModuleId::RoleAssignment => role_assignment.0,
-                AttachedModuleId::Metadata => metadata.0,
-            );
-
-            let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
+            let (address, inner_object) = globalize_object_with_inner_object_and_event(
                 object_id,
-                modules,
-                resource_address_reservation,
+                owner_role,
+                address_reservation,
+                roles,
+                metadata,
                 FUNGIBLE_BUCKET_BLUEPRINT,
                 indexmap! {
                     FungibleBucketField::Liquid.field_index() => FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
                     FungibleBucketField::Locked.field_index() => FieldValue::new(&LockedFungibleResource::default()),
                 },
-                MintFungibleResourceEvent::EVENT_NAME.to_string(),
-                scrypto_encode(&MintFungibleResourceEvent {
+                MintFungibleResourceEvent::EVENT_NAME,
+                MintFungibleResourceEvent {
                     amount: initial_supply,
-                })
-                    .unwrap(),
+                },
+                api,
             )?;
 
             (
                 ResourceAddress::new_or_panic(address.into()),
-                Bucket(Own(bucket_id)),
+                Bucket(Own(inner_object)),
             )
         };
 

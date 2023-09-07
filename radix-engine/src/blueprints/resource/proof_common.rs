@@ -1,5 +1,4 @@
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 pub enum LocalRef {
@@ -29,10 +28,6 @@ pub struct ProofMoveableSubstate {
 }
 
 impl ProofMoveableSubstate {
-    pub fn change_to_unrestricted(&mut self) {
-        self.restricted = false;
-    }
-
     pub fn change_to_restricted(&mut self) {
         self.restricted = true;
     }

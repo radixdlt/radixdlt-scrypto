@@ -1296,7 +1296,7 @@ where
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: IndexMap<u8, FieldValue>,
-        event_name: String,
+        event_name: &str,
         event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
         let actor_blueprint = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
@@ -1320,7 +1320,7 @@ where
 
         self.emit_event_internal(
             EmitterActor::AsObject(global_address.as_node_id().clone(), None),
-            event_name,
+            event_name.to_string(),
             event_data,
             EventFlags::empty(),
         )?;

@@ -1,3 +1,4 @@
+use native_sdk::component::globalize_object;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -704,14 +705,16 @@ impl NonFungibleResourceManagerBlueprint {
             indexmap!(),
         )?;
 
-        globalize_resource_manager(
+        let address = globalize_object(
             object_id,
             owner_role,
             address_reservation,
             roles,
             metadata,
             api,
-        )
+        )?;
+
+        Ok(ResourceAddress::new_or_panic(address.into()))
     }
 
     pub(crate) fn create_with_initial_supply<Y>(

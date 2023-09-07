@@ -20,11 +20,6 @@ impl From<BucketError> for RuntimeError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct BucketInfoSubstate {
-    pub resource_type: ResourceType,
-}
-
 pub fn drop_fungible_bucket<Y>(
     bucket_node_id: &NodeId,
     api: &mut Y,

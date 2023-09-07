@@ -423,7 +423,6 @@ impl FungibleVaultBlueprint {
         // Keep changes
         if !changes.is_empty() {
             vault.put(changes);
-            panic!("oops");
         }
 
         // Flush updates
