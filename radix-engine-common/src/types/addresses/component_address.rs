@@ -261,7 +261,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -270,13 +269,12 @@ mod tests {
     #[test]
     fn component_address_initialization() {
         let node_id = [0; NodeId::LENGTH];
-        let addr = unsafe {
-            ComponentAddress::new_unchecked(node_id)
-        };
+        let addr = unsafe { ComponentAddress::new_unchecked(node_id) };
         assert_eq!(node_id, addr.as_node_id().as_bytes());
 
         let public_key = Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]);
-        let addr = ComponentAddress::virtual_identity_from_public_key(&PublicKey::Ed25519(public_key));
+        let addr =
+            ComponentAddress::virtual_identity_from_public_key(&PublicKey::Ed25519(public_key));
 
         // validate conversions
         ComponentAddress::try_from_hex(&addr.to_hex()).unwrap();
@@ -284,7 +282,9 @@ mod tests {
         let _ = ManifestAddress::try_from(addr).unwrap();
 
         // pass empty string to fail conversion
-        assert!(ComponentAddress::try_from_bech32(&AddressBech32Decoder::for_simulator(), "").is_none());
+        assert!(
+            ComponentAddress::try_from_bech32(&AddressBech32Decoder::for_simulator(), "").is_none()
+        );
 
         // pass wrong length array to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH + 1]);
@@ -316,10 +316,7 @@ mod tests {
             .decode_deeper_body_with_value_kind::<ComponentAddress>(ComponentAddress::value_kind());
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
-        assert!(matches!(
-            addr_output,
-            Err(DecodeError::InvalidCustomValue)
-        ));
+        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
     }
 
     #[test]
@@ -339,13 +336,15 @@ mod tests {
     #[test]
     fn component_address_decode_success() {
         let public_key = Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]);
-        let addr_input = ComponentAddress::virtual_identity_from_public_key(&PublicKey::Ed25519(public_key));
+        let addr_input =
+            ComponentAddress::virtual_identity_from_public_key(&PublicKey::Ed25519(public_key));
 
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
         assert!(addr_input.encode_body(&mut encoder).is_ok());
         let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
-        let addr_output = decoder.decode_deeper_body_with_value_kind::<ComponentAddress>(ComponentAddress::value_kind());
+        let addr_output = decoder
+            .decode_deeper_body_with_value_kind::<ComponentAddress>(ComponentAddress::value_kind());
 
         assert!(addr_output.is_ok());
         assert_eq!(addr_input, addr_output.unwrap());

@@ -245,7 +245,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for GlobalAddress {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,9 +252,7 @@ mod tests {
     #[test]
     fn global_address_initialization() {
         let node_id = [0; NodeId::LENGTH];
-        let addr = unsafe {
-            GlobalAddress::new_unchecked(node_id)
-        };
+        let addr = unsafe { GlobalAddress::new_unchecked(node_id) };
         assert_eq!(node_id, addr.as_node_id().as_bytes());
 
         let addr = GlobalAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]);
@@ -265,7 +262,9 @@ mod tests {
         let _ = ManifestAddress::try_from(addr).unwrap();
 
         // pass empty string to fail conversion
-        assert!(GlobalAddress::try_from_bech32(&AddressBech32Decoder::for_simulator(), "").is_none());
+        assert!(
+            GlobalAddress::try_from_bech32(&AddressBech32Decoder::for_simulator(), "").is_none()
+        );
 
         // pass wrong length array to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH + 1]);
@@ -298,5 +297,4 @@ mod tests {
 
         assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
     }
-
 }

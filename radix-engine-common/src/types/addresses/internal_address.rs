@@ -235,3 +235,63 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for InternalAddress {
             .map_err(AddressBech32EncodeError::FormatError)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn internal_address_initialization() {
+        let node_id = [0; NodeId::LENGTH];
+        let addr = unsafe { InternalAddress::new_unchecked(node_id) };
+        assert_eq!(node_id, addr.as_node_id().as_bytes());
+        assert_eq!(node_id, addr.to_vec().as_slice());
+
+        let addr = InternalAddress::new_or_panic(
+            [EntityType::InternalGenericComponent as u8; NodeId::LENGTH],
+        );
+        // validate conversions
+        InternalAddress::try_from_hex(&addr.to_hex()).unwrap();
+        Reference::try_from(addr).unwrap();
+        let _ = ManifestAddress::try_from(addr).unwrap();
+        let _: [u8; NodeId::LENGTH] = addr.try_into().unwrap();
+
+        println!("Address: {:?}", addr);
+
+        // pass empty string to fail conversion
+        assert!(
+            InternalAddress::try_from_bech32(&AddressBech32Decoder::for_simulator(), "").is_none()
+        );
+
+        // pass wrong length array to generate an error
+        let v = Vec::from([0u8; NodeId::LENGTH + 1]);
+        let addr2 = InternalAddress::try_from(v.as_slice());
+        assert!(matches!(
+            addr2,
+            Err(ParseInternalAddressError::InvalidLength(..))
+        ));
+
+        // pass wrong node id (bad entity type) to generate an error
+        let v = Vec::from([0u8; NodeId::LENGTH]);
+        let addr3 = InternalAddress::try_from(v.as_slice());
+        assert!(matches!(
+            addr3,
+            Err(ParseInternalAddressError::InvalidEntityTypeId(..))
+        ));
+        println!("Decode error: {}", addr3.unwrap_err());
+    }
+
+    #[test]
+    fn internal_address_decode_discriminator_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        // use invalid discriminator value
+        encoder.write_discriminator(0xff).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let addr_output = decoder
+            .decode_deeper_body_with_value_kind::<InternalAddress>(InternalAddress::value_kind());
+
+        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+    }
+}
