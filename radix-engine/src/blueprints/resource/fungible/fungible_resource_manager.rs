@@ -5,6 +5,8 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use lazy_static::lazy_static;
+use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::runtime::Runtime;
 use num_traits::pow::Pow;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -70,7 +72,6 @@ pub type FungibleResourceManagerTotalSupplyV1 = Decimal;
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FungibleResourceManagerError {
-    InvalidRole(String),
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,
     InvalidDivisibility(u8),
@@ -113,12 +114,13 @@ fn check_mint_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeErr
 }
 
 fn to_features_and_roles(
+    track_total_supply: bool,
     role_init: FungibleResourceRoles,
 ) -> (FungibleResourceManagerFeatureSet, RoleAssignmentInit) {
     let mut roles = RoleAssignmentInit::new();
 
     let features = FungibleResourceManagerFeatureSet {
-        track_total_supply: false, // Will be set later
+        track_total_supply,
         vault_freeze: role_init.freeze_roles.is_some(),
         vault_recall: role_init.recall_roles.is_some(),
         mint: role_init.mint_roles.is_some(),
@@ -404,62 +406,18 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        verify_divisibility(divisibility)?;
-
-        let address_reservation = match address_reservation {
-            Some(address_reservation) => address_reservation,
-            None => {
-                let (reservation, _) = api.allocate_global_address(BlueprintId {
-                    package_address: RESOURCE_PACKAGE,
-                    blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                })?;
-                reservation
-            }
-        };
-
-        let mut fields = indexmap! {
-            FungibleResourceManagerField::Divisibility.into() => FieldValue::immutable(
-                    &FungibleResourceManagerDivisibilityFieldPayload::from_content_source(
-                        divisibility,
-                    ),
-                )
-        };
-
-        let (mut features, roles) = to_features_and_roles(resource_roles);
-        features.track_total_supply = track_total_supply;
-
-        if track_total_supply {
-            let total_supply_field = if features.mint || features.burn {
-                FieldValue::new(
-                    &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                        Decimal::zero(),
-                    ),
-                )
-            } else {
-                FieldValue::immutable(
-                    &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                        Decimal::zero(),
-                    ),
-                )
-            };
-
-            fields.insert(
-                FungibleResourceManagerField::TotalSupply.into(),
-                total_supply_field,
-            );
-        }
-
-        let object_id = api.new_object(
-            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.feature_names_str(),
-            GenericArgs::default(),
-            fields,
-            indexmap!(),
+        let (object_id, roles) = Self::create_object(
+            Decimal::ZERO,
+            track_total_supply,
+            divisibility,
+            resource_roles,
+            api,
         )?;
+        let address_reservation = Self::create_address_reservation(address_reservation, api)?;
 
         let resource_address = globalize_resource_manager(
-            owner_role,
             object_id,
+            owner_role,
             address_reservation,
             roles,
             metadata,
@@ -482,8 +440,62 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        verify_divisibility(divisibility)?;
+        let (object_id, roles) = Self::create_object(
+            initial_supply,
+            track_total_supply,
+            divisibility,
+            resource_roles,
+            api,
+        )?;
+        let address_reservation = Self::create_address_reservation(address_reservation, api)?;
 
+        check_mint_amount(divisibility, initial_supply)?;
+
+        let (resource_address, bucket) = {
+            let roles = indexmap!(
+                ModuleId::Main => roles,
+                ModuleId::Metadata => metadata.roles,
+            );
+            let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
+            let metadata = Metadata::create_with_data(metadata.init, api)?;
+
+            let modules = indexmap!(
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
+            );
+
+            let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
+                object_id,
+                modules,
+                resource_address_reservation,
+                FUNGIBLE_BUCKET_BLUEPRINT,
+                indexmap! {
+                    FungibleBucketField::Liquid.field_index() => FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
+                    FungibleBucketField::Locked.field_index() => FieldValue::new(&LockedFungibleResource::default()),
+                },
+                MintFungibleResourceEvent::EVENT_NAME.to_string(),
+                scrypto_encode(&MintFungibleResourceEvent {
+                    amount: initial_supply,
+                })
+                    .unwrap(),
+            )?;
+
+            (
+                ResourceAddress::new_or_panic(address.into()),
+                Bucket(Own(bucket_id)),
+            )
+        };
+
+        Ok((resource_address, bucket))
+    }
+
+    fn create_address_reservation<Y>(
+        address_reservation: Option<GlobalAddressReservation>,
+        api: &mut Y,
+    ) -> Result<GlobalAddressReservation, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
             None => {
@@ -495,6 +507,21 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
+        Ok(address_reservation)
+    }
+
+    fn create_object<Y>(
+        initial_supply: Decimal,
+        track_total_supply: bool,
+        divisibility: u8,
+        resource_roles: FungibleResourceRoles,
+        api: &mut Y,
+    ) -> Result<(NodeId, RoleAssignmentInit), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        verify_divisibility(divisibility)?;
+
         let mut fields = indexmap! {
             FungibleResourceManagerField::Divisibility.into() => FieldValue::immutable(
                     &FungibleResourceManagerDivisibilityFieldPayload::from_content_source(
@@ -503,10 +530,9 @@ impl FungibleResourceManagerBlueprint {
                 )
         };
 
-        let (mut features, roles) = to_features_and_roles(resource_roles);
-        features.track_total_supply = track_total_supply;
+        let (features, roles) = to_features_and_roles(track_total_supply, resource_roles);
 
-        if track_total_supply {
+        if features.track_total_supply {
             let total_supply_field = if features.mint || features.burn {
                 FieldValue::new(
                     &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
@@ -535,19 +561,7 @@ impl FungibleResourceManagerBlueprint {
             indexmap!(),
         )?;
 
-        check_mint_amount(divisibility, initial_supply)?;
-
-        let (resource_address, bucket) = globalize_fungible_with_initial_supply(
-            owner_role,
-            object_id,
-            address_reservation,
-            roles,
-            metadata,
-            initial_supply,
-            api,
-        )?;
-
-        Ok((resource_address, bucket))
+        Ok((object_id, roles))
     }
 
     pub(crate) fn mint<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
@@ -575,7 +589,6 @@ impl FungibleResourceManagerBlueprint {
         Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
 
         // Update total supply
-        // TODO: Could be further cleaned up by using event
         if api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
             FungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
@@ -590,6 +603,9 @@ impl FungibleResourceManagerBlueprint {
                     total_supply_handle,
                 )?
                 .into_latest();
+            // This should never overflow due to the 2^152 limit we place on mints.
+            // Since Decimal have 2^192 max we would need to mint 2^40 times before
+            // an overflow occurs.
             total_supply =
                 total_supply
                     .checked_add(amount)
@@ -630,6 +646,7 @@ impl FungibleResourceManagerBlueprint {
         Self::assert_burnable(api)?;
 
         // Drop other bucket
+        // This will fail if bucket is not an inner object of the current fungible resource
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Construct the event and only emit it once all of the operations are done.
@@ -641,7 +658,6 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         // Update total supply
-        // TODO: Could be further cleaned up by using event
         if api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
             FungibleResourceManagerFeature::TrackTotalSupply.feature_name(),

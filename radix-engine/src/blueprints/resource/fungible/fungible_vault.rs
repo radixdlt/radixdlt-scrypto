@@ -2,7 +2,6 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
@@ -299,7 +298,7 @@ impl FungibleVaultBlueprint {
 
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::take_advanced(amount, WithdrawStrategy::Exact, api)
     }
@@ -310,7 +309,7 @@ impl FungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
@@ -351,7 +350,7 @@ impl FungibleVaultBlueprint {
     {
         Self::assert_not_frozen(VaultFreezeFlags::DEPOSIT, api)?;
 
-        // Drop other bucket
+        // This will fail if bucket is not an inner object of the current fungible resource
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
         let amount = other_bucket.liquid.amount();
 
@@ -379,9 +378,9 @@ impl FungibleVaultBlueprint {
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
@@ -424,6 +423,7 @@ impl FungibleVaultBlueprint {
         // Keep changes
         if !changes.is_empty() {
             vault.put(changes);
+            panic!("oops");
         }
 
         // Flush updates
@@ -436,12 +436,12 @@ impl FungibleVaultBlueprint {
         // Emitting an event once the fee has been locked
         Runtime::emit_event_no_revert(api, events::fungible_vault::LockFeeEvent { amount })?;
 
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(())
     }
 
     pub fn recall<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_recallable(api)?;
 
@@ -463,7 +463,7 @@ impl FungibleVaultBlueprint {
 
     pub fn freeze<Y>(to_freeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_freezable(api)?;
 
@@ -487,7 +487,7 @@ impl FungibleVaultBlueprint {
 
     pub fn unfreeze<Y>(to_unfreeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_freezable(api)?;
 
@@ -508,13 +508,9 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn create_proof_of_amount<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
+    pub fn create_proof_of_amount<Y>(amount: Decimal, api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
@@ -524,6 +520,8 @@ impl FungibleVaultBlueprint {
         }
 
         Self::lock_amount(amount, api)?;
+
+        let receiver = Runtime::get_node_id(api)?;
 
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof_evidence = FungibleProofSubstate::new(
@@ -539,8 +537,8 @@ impl FungibleVaultBlueprint {
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                0u8 => FieldValue::new(&proof_info),
-                1u8 => FieldValue::new(&proof_evidence),
+                FungibleProofField::Moveable.field_index() => FieldValue::new(&proof_info),
+                FungibleProofField::ProofRefs.field_index() => FieldValue::new(&proof_evidence),
             },
         )?;
 
@@ -549,7 +547,7 @@ impl FungibleVaultBlueprint {
 
     pub fn burn<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
 
@@ -563,7 +561,7 @@ impl FungibleVaultBlueprint {
 
     pub fn lock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -774,13 +772,13 @@ impl FungibleVaultBlueprint {
             FungibleVaultField::Balance.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api
+        let mut vault_balance = api
             .field_read_typed::<FungibleVaultBalanceFieldPayload>(handle)?
             .into_latest();
-        substate_ref.put(resource);
+        vault_balance.put(resource);
         api.field_write_typed(
             handle,
-            &FungibleVaultBalanceFieldPayload::from_content_source(substate_ref),
+            &FungibleVaultBalanceFieldPayload::from_content_source(vault_balance),
         )?;
         api.field_close(handle)?;
 

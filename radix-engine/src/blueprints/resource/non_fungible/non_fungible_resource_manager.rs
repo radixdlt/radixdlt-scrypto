@@ -705,8 +705,8 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         globalize_resource_manager(
-            owner_role,
             object_id,
+            owner_role,
             address_reservation,
             roles,
             metadata,

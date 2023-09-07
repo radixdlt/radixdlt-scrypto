@@ -10,7 +10,6 @@ pub enum BucketError {
     ResourceError(ResourceError),
     ProofError(ProofError),
     Locked(NodeId),
-    MismatchingResource,
     InvalidAmount(Decimal),
     DecimalOverflow,
 }

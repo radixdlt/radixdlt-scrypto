@@ -18,12 +18,8 @@ impl LocalRef {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProofError {
-    /// Error produced by a resource container.
-    ResourceError(ResourceError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
     EmptyProofNotAllowed,
-    /// Can't apply a non-fungible operation on fungible proofs.
-    NonFungibleOperationNotSupported,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
