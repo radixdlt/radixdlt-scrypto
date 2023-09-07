@@ -2,6 +2,7 @@ use crate::ast;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use radix_engine_common::address::AddressBech32Decoder;
+use std::collections::BTreeMap;
 use std::str::FromStr;
 use syn::parse::{Parse, ParseStream, Parser};
 use syn::spanned::Spanned;
@@ -497,8 +498,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let registered_type_ident = bp_ident.clone();
     let mut registered_type_defs = Vec::<ItemStruct>::new();
     let mut registered_type_impls = Vec::<ItemImpl>::new();
-
-    let mut registered_type_paths = std::collections::BTreeMap::<String, Path>::new();
+    let mut registered_type_paths = BTreeMap::<String, Path>::new();
 
     for attribute in &blueprint.attributes {
         if attribute.path.is_ident("types") {
@@ -617,7 +617,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         // Getting the event types and other named types from attribute
         let (event_type_names, event_type_paths, registered_type_names, registered_type_paths) = {
-            let mut event_type_paths = std::collections::BTreeMap::<String, Path>::new();
+            let mut event_type_paths = BTreeMap::<String, Path>::new();
             for attribute in blueprint.attributes {
                 if attribute.path.is_ident("events") {
                     let events_inner = parse2::<ast::EventsInner>(attribute.tokens.clone())?;
