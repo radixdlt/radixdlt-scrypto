@@ -7,7 +7,6 @@ use crate::blueprints::resource::{
     BurnFungibleResourceEvent, DepositEvent, FungibleVaultBalanceFieldPayload,
     FungibleVaultBalanceFieldSubstate, FungibleVaultField, PayFeeEvent,
 };
-use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{
     TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate,
 };
@@ -672,33 +671,6 @@ where
 
         // First - check for required rejections from explicit invoke result errors
         match &interpretation_result {
-            Err(RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                err,
-            ))) => match err {
-                TransactionProcessorError::TransactionEpochNotYetValid {
-                    valid_from,
-                    current_epoch,
-                } => {
-                    return TransactionResultType::Reject(
-                        RejectionReason::TransactionEpochNotYetValid {
-                            valid_from: *valid_from,
-                            current_epoch: *current_epoch,
-                        },
-                    )
-                }
-                TransactionProcessorError::TransactionEpochNoLongerValid {
-                    valid_until,
-                    current_epoch,
-                } => {
-                    return TransactionResultType::Reject(
-                        RejectionReason::TransactionEpochNoLongerValid {
-                            valid_until: *valid_until,
-                            current_epoch: *current_epoch,
-                        },
-                    )
-                }
-                _ => {}
-            },
             Err(err) => {
                 if let Some(abort_reason) = err.abortion() {
                     return TransactionResultType::Abort(abort_reason.clone());

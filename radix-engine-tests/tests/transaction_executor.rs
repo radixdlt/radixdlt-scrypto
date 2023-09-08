@@ -25,7 +25,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     let transaction = create_notarized_transaction(
         TransactionParams {
             start_epoch_inclusive: valid_from_epoch,
-            end_epoch_exclusive: valid_until_epoch.next(),
+            end_epoch_exclusive: valid_until_epoch.next().unwrap(),
         },
         ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -65,7 +65,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     let transaction = create_notarized_transaction(
         TransactionParams {
             start_epoch_inclusive: valid_from_epoch,
-            end_epoch_exclusive: valid_until_epoch.next(),
+            end_epoch_exclusive: valid_until_epoch.next().unwrap(),
         },
         ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -85,7 +85,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     assert_eq!(
         rejection_error,
         &RejectionReason::TransactionEpochNoLongerValid {
-            valid_until: valid_until_epoch,
+            valid_until: Some(valid_until_epoch),
             current_epoch
         }
     );

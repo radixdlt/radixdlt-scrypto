@@ -1450,7 +1450,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     header: TransactionHeaderV1 {
                         network_id: NetworkDefinition::simulator().id,
                         start_epoch_inclusive: epoch,
-                        end_epoch_exclusive: epoch.after(10),
+                        end_epoch_exclusive: epoch.after(10).unwrap(),
                         nonce: 0,
                         notary_public_key: PublicKey::Secp256k1(Secp256k1PublicKey([0u8; 33])),
                         notary_is_signatory: false,

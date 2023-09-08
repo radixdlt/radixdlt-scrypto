@@ -163,6 +163,7 @@ pub enum ValidatorError {
     InvalidValidatorFeeFactor,
     ValidatorIsNotAcceptingDelegatedStake,
     InvalidProtocolVersionNameLength { expected: usize, actual: usize },
+    EpochMathOverflow,
 }
 
 declare_native_blueprint_state! {
@@ -675,7 +676,11 @@ impl ValidatorBlueprint {
                 .into_latest();
             api.field_close(config_handle)?;
 
-            let claim_epoch = current_epoch.after(config_substate.config.num_unstake_epochs);
+            let claim_epoch = current_epoch
+                .after(config_substate.config.num_unstake_epochs)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ValidatorError(ValidatorError::EpochMathOverflow),
+                ))?;
             let data = UnstakeData {
                 name: "Stake Claim".into(),
                 claim_epoch,
@@ -1013,7 +1018,10 @@ impl ValidatorBlueprint {
             current_epoch.after(config_substate.config.num_fee_increase_delay_epochs)
         } else {
             current_epoch.next() // make it effective on the *beginning* of next epoch
-        };
+        }
+        .ok_or(RuntimeError::ApplicationError(
+            ApplicationError::ValidatorError(ValidatorError::EpochMathOverflow),
+        ))?;
 
         // ...end the read+modify+write of the validator substate
         substate.validator_fee_change_request = Some(ValidatorFeeChangeRequest {
@@ -1233,7 +1241,13 @@ impl ValidatorBlueprint {
         // - insert the requested withdrawal as pending
         substate
             .pending_owner_stake_unit_withdrawals
-            .entry(current_epoch.after(config_substate.config.num_owner_stake_units_unlock_epochs))
+            .entry(
+                current_epoch
+                    .after(config_substate.config.num_owner_stake_units_unlock_epochs)
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::ValidatorError(ValidatorError::EpochMathOverflow),
+                    ))?,
+            )
             .and_modify(|pending_amount| {
                 *pending_amount = pending_amount
                     .checked_add(requested_stake_unit_amount)
