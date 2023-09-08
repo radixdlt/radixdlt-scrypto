@@ -43,21 +43,42 @@ impl SubstateDatabase for InMemorySubstateDatabase {
 
 impl CommittableSubstateDatabase for InMemorySubstateDatabase {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
-        for (partition_key, partition_updates) in database_updates {
-            let partition = self
-                .partitions
-                .entry(partition_key.clone())
-                .or_insert_with(|| BTreeMap::new());
-            for (sort_key, update) in partition_updates {
-                match update {
-                    DatabaseUpdate::Set(substate_value) => {
-                        partition.insert(sort_key.clone(), substate_value.clone())
-                    }
-                    DatabaseUpdate::Delete => partition.remove(sort_key),
+        for (node_key, node_updates) in &database_updates.node_updates {
+            for (partition_num, partition_updates) in &node_updates.partition_updates {
+                let partition_key = DbPartitionKey {
+                    node_key: node_key.clone(),
+                    partition_num: partition_num.clone(),
                 };
-            }
-            if partition.is_empty() {
-                self.partitions.remove(partition_key);
+                let partition = self
+                    .partitions
+                    .entry(partition_key.clone())
+                    .or_insert_with(|| BTreeMap::new());
+                match partition_updates {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => {
+                        for (sort_key, update) in substate_updates {
+                            match update {
+                                DatabaseUpdate::Set(substate_value) => {
+                                    partition.insert(sort_key.clone(), substate_value.clone())
+                                }
+                                DatabaseUpdate::Delete => partition.remove(sort_key),
+                            };
+                        }
+                    }
+                    PartitionDatabaseUpdates::Batch(batch) => match batch {
+                        BatchPartitionDatabaseUpdate::Reset {
+                            new_substate_values,
+                        } => {
+                            *partition = BTreeMap::from_iter(
+                                new_substate_values
+                                    .iter()
+                                    .map(|(sort_key, value)| (sort_key.clone(), value.clone())),
+                            )
+                        }
+                    },
+                }
+                if partition.is_empty() {
+                    self.partitions.remove(&partition_key);
+                }
             }
         }
     }

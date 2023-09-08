@@ -4,7 +4,7 @@ use linreg::linear_regression_of;
 use radix_engine_store_interface::{
     db_key_mapper::*,
     interface::{
-        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, PartitionUpdates,
+        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, PartitionDatabaseUpdates,
         SubstateDatabase,
     },
 };
@@ -262,7 +262,7 @@ where
     for (partition_key, sort_key, _usize) in data {
         let mut input_data = DatabaseUpdates::new();
 
-        let mut partition = PartitionUpdates::new();
+        let mut partition = PartitionDatabaseUpdates::new();
         partition.insert(sort_key, DatabaseUpdate::Delete);
 
         input_data.insert(partition_key, partition);
@@ -330,7 +330,7 @@ where
 
                 let partition_key =
                     SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
-                let mut partition = PartitionUpdates::new();
+                let mut partition = PartitionDatabaseUpdates::new();
 
                 let mut sort_key_data = Vec::new();
                 for _ in 0..i {
@@ -382,7 +382,7 @@ where
             idx_vector_output.push(idx);
 
             let mut input_data = DatabaseUpdates::new();
-            let mut partition = PartitionUpdates::new();
+            let mut partition = PartitionDatabaseUpdates::new();
 
             for key in sort_keys {
                 partition.insert(key.clone(), DatabaseUpdate::Delete);

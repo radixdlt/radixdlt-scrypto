@@ -4,7 +4,7 @@ use linreg::linear_regression_of;
 use radix_engine_store_interface::{
     db_key_mapper::*,
     interface::{
-        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, PartitionUpdates,
+        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, PartitionDatabaseUpdates,
         SubstateDatabase,
     },
 };
@@ -267,7 +267,7 @@ where
         let value_size = 100;
         for n in 1..=n_value {
             let mut input_data = DatabaseUpdates::new();
-            let mut partition = PartitionUpdates::new();
+            let mut partition = PartitionDatabaseUpdates::new();
 
             for j in 0..n {
                 let mut value_data: DbSubstateValue = vec![0u8; value_size];
@@ -372,7 +372,7 @@ where
 
         for substate_size in size_vector.iter() {
             let mut input_data = DatabaseUpdates::new();
-            let mut partition = PartitionUpdates::new();
+            let mut partition = PartitionDatabaseUpdates::new();
 
             generate_commit_data(&mut partition, &mut rng, *substate_size);
 

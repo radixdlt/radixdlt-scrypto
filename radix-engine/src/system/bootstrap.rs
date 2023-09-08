@@ -21,7 +21,8 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
-    BatchPartitionUpdate, LegacyStateUpdates, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
+    BatchPartitionStateUpdate, LegacyStateUpdates, NodeStateUpdates, PartitionStateUpdates,
+    StateUpdates,
 };
 use crate::transaction::{
     execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
@@ -47,7 +48,8 @@ use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
 use radix_engine_store_interface::interface::{
-    DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry,
+    BatchPartitionDatabaseUpdate, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
+    DbSubstateValue, PartitionDatabaseUpdates, PartitionEntry,
 };
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
@@ -277,7 +279,7 @@ fn is_noop_partition_state_updates(opt_updates: &Option<PartitionStateUpdates>) 
     };
     match updates {
         PartitionStateUpdates::Delta { by_substate } => by_substate.is_empty(),
-        PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset { .. }) => false,
+        PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset { .. }) => false,
     }
 }
 
@@ -664,12 +666,26 @@ impl SubstateDatabase for FlashedSubstateDatabase {
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
+        let DbPartitionKey {
+            node_key,
+            partition_num,
+        } = partition_key;
         self.flash_updates
-            .get(partition_key)
-            .and_then(|partition_updates| partition_updates.get(sort_key))
-            .and_then(|update| match update {
-                DatabaseUpdate::Set(value) => Some(value.clone()),
-                DatabaseUpdate::Delete => None,
+            .node_updates
+            .get(node_key)
+            .and_then(|node_updates| node_updates.partition_updates.get(partition_num))
+            .and_then(|partition_updates| match partition_updates {
+                PartitionDatabaseUpdates::Delta { substate_updates } => substate_updates
+                    .get(sort_key)
+                    .and_then(|update| match update {
+                        DatabaseUpdate::Set(value) => Some(value.clone()),
+                        DatabaseUpdate::Delete => None,
+                    }),
+                PartitionDatabaseUpdates::Batch(batch) => match batch {
+                    BatchPartitionDatabaseUpdate::Reset {
+                        new_substate_values,
+                    } => new_substate_values.get(sort_key).cloned(),
+                },
             })
     }
 
@@ -677,17 +693,33 @@ impl SubstateDatabase for FlashedSubstateDatabase {
         &self,
         partition_key: &DbPartitionKey,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        let DbPartitionKey {
+            node_key,
+            partition_num,
+        } = partition_key;
         Box::new(
             self.flash_updates
-                .get(partition_key)
+                .node_updates
+                .get(node_key)
+                .and_then(|node_updates| node_updates.partition_updates.get(partition_num))
                 .into_iter()
                 .flat_map(|partition_updates| {
-                    partition_updates
-                        .iter()
-                        .filter_map(|(sort_key, update)| match update {
-                            DatabaseUpdate::Set(value) => Some((sort_key.clone(), value.clone())),
-                            DatabaseUpdate::Delete => None,
-                        })
+                    let effective_entries = match partition_updates {
+                        PartitionDatabaseUpdates::Delta { substate_updates } => {
+                            Box::new(substate_updates.iter().filter_map(|(sort_key, update)| {
+                                match update {
+                                    DatabaseUpdate::Set(value) => Some((sort_key, value)),
+                                    DatabaseUpdate::Delete => None,
+                                }
+                            })) as Box<dyn Iterator<Item = _>>
+                        }
+                        PartitionDatabaseUpdates::Batch(batch) => Box::new(match batch {
+                            BatchPartitionDatabaseUpdate::Reset {
+                                new_substate_values,
+                            } => new_substate_values.iter(),
+                        }),
+                    };
+                    effective_entries.map(|(sort_key, value)| (sort_key.clone(), value.clone()))
                 }),
         )
     }

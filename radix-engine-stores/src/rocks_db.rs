@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use radix_engine_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
-use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
+use rocksdb::{ColumnFamily, DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
 use utils::copy_u8_array;
@@ -12,14 +12,18 @@ pub struct RocksdbSubstateStore {
 
 impl RocksdbSubstateStore {
     pub fn standard(root: PathBuf) -> Self {
-        let db = DB::open_default(root.as_path()).expect("IO Error");
-
-        Self { db }
+        let mut options = Options::default();
+        options.create_missing_column_families(true);
+        Self::with_options(&options, root)
     }
     pub fn with_options(options: &Options, root: PathBuf) -> Self {
         let db = DB::open(options, root.as_path()).expect("IO Error");
 
         Self { db }
+    }
+
+    fn cf(&self) -> &ColumnFamily {
+        self.db.cf_handle("the_only_cf").unwrap()
     }
 }
 
@@ -30,7 +34,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
         let key_bytes = encode_to_rocksdb_bytes(partition_key, sort_key);
-        self.db.get(&key_bytes).expect("IO Error")
+        self.db.get_cf(self.cf(), &key_bytes).expect("IO Error")
     }
 
     fn list_entries(
@@ -41,7 +45,10 @@ impl SubstateDatabase for RocksdbSubstateStore {
         let start_key_bytes = encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![]));
         let iter = self
             .db
-            .iterator(IteratorMode::From(&start_key_bytes, Direction::Forward))
+            .iterator_cf(
+                self.cf(),
+                IteratorMode::From(&start_key_bytes, Direction::Forward),
+            )
             .map(|kv| {
                 let (iter_key_bytes, iter_value) = kv.as_ref().unwrap();
                 let iter_key = decode_from_rocksdb_bytes(iter_key_bytes);
@@ -56,14 +63,53 @@ impl SubstateDatabase for RocksdbSubstateStore {
 
 impl CommittableSubstateDatabase for RocksdbSubstateStore {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
-        for (patrition_key, partition_updates) in database_updates {
-            for (sort_key, database_update) in partition_updates {
-                let key_bytes = encode_to_rocksdb_bytes(patrition_key, sort_key);
-                let result = match database_update {
-                    DatabaseUpdate::Set(value_bytes) => self.db.put(key_bytes, value_bytes),
-                    DatabaseUpdate::Delete => self.db.delete(key_bytes),
+        for (node_key, node_updates) in &database_updates.node_updates {
+            for (partition_num, partition_updates) in &node_updates.partition_updates {
+                let partition_key = DbPartitionKey {
+                    node_key: node_key.clone(),
+                    partition_num: *partition_num,
                 };
-                result.expect("IO error");
+                match partition_updates {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => {
+                        for (sort_key, update) in substate_updates {
+                            let key_bytes = encode_to_rocksdb_bytes(&partition_key, sort_key);
+                            match update {
+                                DatabaseUpdate::Set(value_bytes) => {
+                                    self.db.put_cf(self.cf(), key_bytes, value_bytes)
+                                }
+                                DatabaseUpdate::Delete => self.db.delete_cf(self.cf(), key_bytes),
+                            }
+                            .expect("IO error");
+                        }
+                    }
+                    PartitionDatabaseUpdates::Batch(batch) => {
+                        match batch {
+                            BatchPartitionDatabaseUpdate::Reset {
+                                new_substate_values,
+                            } => {
+                                // Note: a plain `delete_range()` is missing from rocksdb's API, and
+                                // (at the moment of writing) this is the only reason of having CF.
+                                self.db
+                                    .delete_range_cf(
+                                        self.cf(),
+                                        encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
+                                        encode_to_rocksdb_bytes(
+                                            &partition_key.next(),
+                                            &DbSortKey(vec![]),
+                                        ),
+                                    )
+                                    .expect("IO error");
+                                for (sort_key, value_bytes) in new_substate_values {
+                                    let key_bytes =
+                                        encode_to_rocksdb_bytes(&partition_key, sort_key);
+                                    self.db
+                                        .put_cf(self.cf(), key_bytes, value_bytes)
+                                        .expect("IO error");
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -5,7 +5,7 @@ use radix_engine_store_interface::{
     db_key_mapper::*,
     interface::{
         CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
-        PartitionUpdates, SubstateDatabase,
+        PartitionDatabaseUpdates, SubstateDatabase,
     },
 };
 use rand::{rngs::ThreadRng, Rng};
@@ -103,7 +103,7 @@ pub fn discard_spikes(data: &mut BTreeMap<usize, Vec<Duration>>, delta_range: f3
 }
 
 pub fn generate_commit_data(
-    partition: &mut PartitionUpdates,
+    partition: &mut PartitionDatabaseUpdates,
     rng: &mut ThreadRng,
     value_size: usize,
 ) -> DbSortKey {
@@ -150,7 +150,7 @@ pub fn prepare_db<S: SubstateDatabase + CommittableSubstateDatabase>(
         let node_id = NodeId::new(EntityType::InternalKeyValueStore as u8, &node_id_value);
         let partition_key =
             SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
-        let mut partition = PartitionUpdates::new();
+        let mut partition = PartitionDatabaseUpdates::new();
 
         for size in substate_size_list.iter() {
             let sort_key = generate_commit_data(&mut partition, &mut rng, *size);
