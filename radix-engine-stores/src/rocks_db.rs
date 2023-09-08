@@ -22,6 +22,7 @@ impl RocksdbSubstateStore {
     }
     pub fn with_options(options: &Options, root: PathBuf) -> Self {
         let mut options = options.clone();
+        options.create_if_missing(true);
         options.create_missing_column_families(true);
         let db = DB::open_cf_descriptors(
             &options,
