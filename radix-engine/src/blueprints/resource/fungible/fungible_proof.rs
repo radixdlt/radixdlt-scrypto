@@ -97,8 +97,8 @@ impl FungibleProofBlueprint {
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                0u8 => FieldValue::new(&moveable),
-                1u8 => FieldValue::new(&clone),
+                FungibleProofField::Moveable.field_index() => FieldValue::new(&moveable),
+                FungibleProofField::ProofRefs.field_index() => FieldValue::new(&clone),
             },
         )?;
 

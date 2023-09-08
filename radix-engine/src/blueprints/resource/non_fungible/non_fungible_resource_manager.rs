@@ -4,6 +4,7 @@ use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
+use native_sdk::component::globalize_object;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
@@ -704,14 +705,16 @@ impl NonFungibleResourceManagerBlueprint {
             indexmap!(),
         )?;
 
-        globalize_resource_manager(
-            owner_role,
+        let address = globalize_object(
             object_id,
+            owner_role,
             address_reservation,
             roles,
             metadata,
             api,
-        )
+        )?;
+
+        Ok(ResourceAddress::new_or_panic(address.into()))
     }
 
     pub(crate) fn create_with_initial_supply<Y>(

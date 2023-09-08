@@ -1444,7 +1444,13 @@ impl ResourceNativePackage {
                 let input: FungibleVaultLockFeeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                FungibleVaultBlueprint::lock_fee(&receiver, input.amount, input.contingent, api)
+                let rtn = FungibleVaultBlueprint::lock_fee(
+                    &receiver,
+                    input.amount,
+                    input.contingent,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 let input: VaultTakeInput = input.as_typed().map_err(|e| {
@@ -1500,13 +1506,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: FungibleVaultCreateProofOfAmountInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn =
-                    FungibleVaultBlueprint::create_proof_of_amount(&receiver, input.amount, api)?;
+                let rtn = FungibleVaultBlueprint::create_proof_of_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {
