@@ -124,6 +124,7 @@ pub enum PackageError {
     InvalidMetadataKey(String),
 
     RoyaltiesNotEnabled,
+    RoyaltyAmountIsNegative(RoyaltyAmount),
 }
 
 fn validate_package_schema(

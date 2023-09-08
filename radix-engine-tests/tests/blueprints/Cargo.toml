@@ -59,7 +59,8 @@ members = [
     "events_invalid",
     "logger",
     "validator",
-    "wasm_non_mvp"
+    "wasm_non_mvp",
+    "royalty-edge-cases"
 ]
 
 [profile.release]
