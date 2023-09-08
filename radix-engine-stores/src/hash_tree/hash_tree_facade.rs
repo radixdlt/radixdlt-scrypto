@@ -88,7 +88,7 @@ impl Node<Version> {
 }
 
 impl LeafNode<Version> {
-    fn from(key: &NodeKey, leaf_node: &TreeLeafNode) -> Self {
+    pub fn from(key: &NodeKey, leaf_node: &TreeLeafNode) -> Self {
         let full_key = NibblePath::from_iter(
             key.nibble_path()
                 .nibbles()
