@@ -1,4 +1,7 @@
+mod package_loader;
+
 use crate::node_modules::auth::RoleDefinition;
+use package_loader::PackageLoader;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::node_modules::auth::ToRoleEntry;
@@ -80,7 +83,8 @@ impl AuthScenariosEnv {
             vec![],
         );
 
-        let package_address = test_runner.compile_and_publish("./tests/blueprints/auth_scenarios");
+        let package_address =
+            test_runner.publish_package_simple(PackageLoader::get("auth_scenarios"));
 
         let manifest = ManifestBuilder::new()
             .call_function(package_address, "Swappy", "create", manifest_args!(cerb))

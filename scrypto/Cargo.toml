@@ -33,4 +33,5 @@ trace = ["scrypto-derive/trace"]
 no-schema = ["scrypto-derive/no-schema"]
 
 [lib]
+doctest = false
 bench = false

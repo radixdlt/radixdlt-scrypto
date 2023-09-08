@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     types::*,
@@ -10,7 +13,7 @@ use transaction::prelude::*;
 fn test_call() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -28,8 +31,8 @@ fn test_call() {
 #[test]
 fn cant_globalize_in_another_package() {
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address1 = test_runner.compile_and_publish("./tests/blueprints/core");
-    let package_address2 = test_runner.compile_and_publish("./tests/blueprints/core");
+    let package_address1 = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let package_address2 = test_runner.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -51,7 +54,7 @@ fn cant_globalize_in_another_package() {
 
 fn call_function_and_assert_error(blueprint: &str, function: &str, expected_error: &str) {
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -139,7 +142,7 @@ fn cant_store_role_assignment() {
 #[test]
 fn test_globalize_with_very_deep_own() {
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()

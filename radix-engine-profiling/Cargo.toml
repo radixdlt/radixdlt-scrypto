@@ -15,6 +15,7 @@ blake2 = { version = "0.10.6", default-features = false, optional = true }
 rand = { version = "0.8.5", optional = true }
 
 [lib]
+doctest = false
 bench = false
 
 [features]

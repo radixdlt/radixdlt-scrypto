@@ -33,8 +33,7 @@ macro_rules! assert_sign_extensions {
 
                 let mut test_runner = TestRunnerBuilder::new().build();
                 let package_address = test_runner.publish_package(
-                    code,
-                    single_function_package_definition("Test", "f"),
+                    (code, single_function_package_definition("Test", "f")),
                     BTreeMap::new(),
                     OwnerRole::None,
                 );
@@ -94,8 +93,7 @@ fn test_wasm_non_mvp_mutable_globals_export() {
     // Act
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );

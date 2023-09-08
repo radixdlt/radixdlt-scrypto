@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -6,7 +9,7 @@ use transaction::prelude::*;
 fn test_kv_store_with_many_large_keys() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let package_address = test_runner.compile_and_publish("tests/blueprints/storage");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("storage"));
 
     // Act
     let manifest = ManifestBuilder::new()

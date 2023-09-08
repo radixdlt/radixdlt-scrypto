@@ -1,13 +1,15 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::transaction_processor::*;
 use radix_engine::errors::*;
-use radix_engine::transaction::ExecutionConfig;
+use radix_engine::transaction::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
-use scrypto_test::prelude::ProofSnapshot;
+use scrypto_test::prelude::*;
 use scrypto_unit::*;
-use transaction::prelude::*;
-use transaction::validation::NotarizedTransactionValidator;
+use transaction::validation::*;
 
 #[test]
 fn test_manifest_with_non_existent_resource() {
@@ -147,7 +149,7 @@ fn test_entire_auth_zone() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()

@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
@@ -211,7 +214,7 @@ fn create_proof_emits_correct_events() {
 fn scrypto_cant_emit_unregistered_event() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
         .call_function(
@@ -241,7 +244,7 @@ fn scrypto_cant_emit_unregistered_event() {
 fn scrypto_can_emit_registered_events() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
@@ -292,7 +295,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
-    let (code, definition) = Compile::compile("./tests/blueprints/events_invalid");
+    let (code, definition) = PackageLoader::get("events_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
@@ -317,7 +320,7 @@ fn local_type_id_with_misleading_name_fails() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
-    let (code, mut definition) = Compile::compile("./tests/blueprints/events");
+    let (code, mut definition) = PackageLoader::get("events");
     let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
     blueprint_setup.schema.events.event_schema.insert(
         "HelloHelloEvent".to_string(),

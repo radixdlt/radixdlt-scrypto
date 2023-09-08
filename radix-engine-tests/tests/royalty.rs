@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::node_modules::royalty::ComponentRoyaltyError;
@@ -14,7 +17,7 @@ fn test_component_royalty() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/royalty");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("royalty"));
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
@@ -70,7 +73,7 @@ fn test_component_royalty_in_usd() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/royalty");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("royalty"));
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
@@ -295,7 +298,7 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: Roy
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
 
     // Act
-    let (code, mut definition) = Compile::compile("./tests/blueprints/royalty");
+    let (code, mut definition) = PackageLoader::get("royalty");
     let blueprint_def = definition.blueprints.get_mut("RoyaltyTest").unwrap();
     match &mut blueprint_def.royalty_config {
         PackageRoyaltyConfig::Enabled(royalties) => {
@@ -350,7 +353,7 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let package_address =
-        test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
+        test_runner.publish_package_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
 
     // Act
     let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
@@ -489,7 +492,7 @@ fn set_up_package_and_component() -> (
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let package_address =
-        test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
+        test_runner.publish_package_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
 
     // Enable package royalty
     let receipt = test_runner.execute_manifest(

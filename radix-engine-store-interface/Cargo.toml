@@ -20,4 +20,5 @@ alloc = ["hex/alloc", "utils/alloc", "sbor/alloc", "radix-engine-derive/alloc", 
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]
+doctest = false
 bench = false

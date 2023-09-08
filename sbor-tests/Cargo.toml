@@ -20,4 +20,5 @@ std = ["serde/std", "serde_json/std", "bincode/std", "sbor/std", "sbor/std", "sb
 alloc = ["serde/alloc", "serde_json/alloc", "bincode/alloc", "sbor/alloc", "sbor/alloc", "sbor/serde"]
 
 [lib]
+doctest = false
 bench = false

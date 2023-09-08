@@ -200,8 +200,7 @@ fn bench_prepare_wasm(c: &mut Criterion) {
         b.iter(|| {
             let (pk1, _, _) = test_runner.new_allocated_account();
             test_runner.publish_package(
-                code.clone(),
-                package_definition.clone(),
+                (code.clone(), package_definition.clone()),
                 btreemap!(),
                 OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
             );

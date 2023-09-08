@@ -13,4 +13,5 @@ radix-engine = { path = "../../../radix-engine" }
 scrypto-unit = { path = "../../../scrypto-unit" }
 
 [lib]
+doctest = false
 crate-type = ["cdylib", "lib"]
