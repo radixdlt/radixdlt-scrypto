@@ -845,20 +845,22 @@ impl From<Decimal> for PreciseDecimal {
     }
 }
 
-pub trait Truncate<T> {
+pub trait CheckedTruncate<T> {
     type Output;
-    fn truncate(self) -> Self::Output;
+    fn checked_truncate(self, mode: RoundingMode) -> Option<Self::Output>;
 }
 
-impl Truncate<Decimal> for PreciseDecimal {
+impl CheckedTruncate<Decimal> for PreciseDecimal {
     type Output = Decimal;
 
-    fn truncate(self) -> Self::Output {
-        Decimal(
-            (self.0 / I256::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE))
-                .try_into()
-                .expect("Overflow"),
-        )
+    fn checked_truncate(self, mode: RoundingMode) -> Option<Self::Output> {
+        let rounded = self.checked_round(Decimal::SCALE as i32, mode)?;
+
+        let a_256 = rounded
+            .0
+            .checked_div(I256::TEN.pow(Self::SCALE - Decimal::SCALE))?;
+
+        Some(Decimal(a_256.try_into().ok()?))
     }
 }
 
@@ -1747,21 +1749,50 @@ mod tests {
     }
 
     #[test]
-    fn test_truncate_precise_decimal() {
-        let pdec = pdec!("12345678.123456789012345678901234567890123456");
-        assert_eq!(pdec.truncate().to_string(), "12345678.123456789012345678");
+    fn test_truncate_precise_decimal_towards_zero() {
+        for (pdec, dec) in [
+            (
+                pdec!("12345678.123456789012345678901234567890123456"),
+                dec!("12345678.123456789012345678"),
+            ),
+            (pdec!(1), dec!(1)),
+            (pdec!("123.5"), dec!("123.5")),
+            (
+                pdec!("-12345678.123456789012345678901234567890123456"),
+                dec!("-12345678.123456789012345678"),
+            ),
+            (
+                pdec!("-12345678.123456789012345678101234567890123456"),
+                dec!("-12345678.123456789012345678"),
+            ),
+        ] {
+            assert_eq!(pdec.checked_truncate(RoundingMode::ToZero).unwrap(), dec);
+        }
     }
 
     #[test]
-    fn test_truncate_1_precise_decimal() {
-        let pdec = pdec!(1);
-        assert_eq!(pdec.truncate().to_string(), "1");
-    }
-
-    #[test]
-    fn test_truncate_123_5_precise_decimal() {
-        let pdec = pdec!("123.5");
-        assert_eq!(pdec.truncate().to_string(), "123.5");
+    fn test_truncate_precise_decimal_away_from_zero() {
+        for (pdec, dec) in [
+            (
+                pdec!("12345678.123456789012345678901234567890123456"),
+                dec!("12345678.123456789012345679"),
+            ),
+            (pdec!(1), dec!(1)),
+            (pdec!("123.5"), dec!("123.5")),
+            (
+                pdec!("-12345678.123456789012345678901234567890123456"),
+                dec!("-12345678.123456789012345679"),
+            ),
+            (
+                pdec!("-12345678.123456789012345678101234567890123456"),
+                dec!("-12345678.123456789012345679"),
+            ),
+        ] {
+            assert_eq!(
+                pdec.checked_truncate(RoundingMode::AwayFromZero).unwrap(),
+                dec
+            );
+        }
     }
 
     #[test]
