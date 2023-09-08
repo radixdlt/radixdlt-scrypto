@@ -257,6 +257,72 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
 }
 
 #[test]
+fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
+    // Basic setup
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource = test_runner.create_recallable_token(account);
+
+    // Publish package
+    let (code, mut package_def) = PackageLoader::get("reference");
+    package_def
+        .blueprints
+        .values_mut()
+        .next()
+        .unwrap()
+        .is_transient = true;
+    let package_address = test_runner.publish_package_simple((code, package_def));
+
+    // Instantiate component
+    let component_address = {
+        let manifest = ManifestBuilder::new()
+            .withdraw_from_account(account, resource, dec!(1))
+            .take_all_from_worktop(resource, "bucket")
+            .call_function_with_name_lookup(
+                package_address,
+                "ReferenceTest",
+                "new_with_bucket",
+                |lookup| manifest_args!(lookup.bucket("bucket")),
+            )
+            .build();
+
+        let receipt = test_runner.execute_manifest_ignoring_fee(
+            manifest,
+            [NonFungibleGlobalId::from_public_key(&public_key)],
+        );
+        receipt.expect_commit_success();
+
+        receipt.expect_commit(true).new_component_addresses()[0]
+    };
+
+    let vault_id = test_runner
+        .get_component_vaults(component_address, resource)
+        .pop()
+        .unwrap();
+    println!("Recallable vault id: {:?}", vault_id);
+
+    // Call function
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_standard_test_fee(account)
+            .call_method(
+                component_address,
+                "add_direct_access_ref_to_kv_store_substate",
+                manifest_args!(InternalAddress::try_from(vault_id).unwrap()),
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        e.to_string()
+            .contains("Non Global Reference is not allowed")
+    });
+}
+
+#[test]
 fn test_create_global_node_with_local_ref() {
     // Basic setup
     let mut test_runner = TestRunnerBuilder::new().build();

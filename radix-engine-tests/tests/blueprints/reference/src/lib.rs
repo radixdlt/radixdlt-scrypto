@@ -5,6 +5,7 @@ mod reference_test {
     struct ReferenceTest {
         reference: Option<Reference>,
         vault: Option<Vault>,
+        kv_store: Option<KeyValueStore<u32, Reference>>,
     }
 
     impl ReferenceTest {
@@ -14,6 +15,7 @@ mod reference_test {
             Self {
                 reference: Some(Reference(bucket.0.as_node_id().clone())),
                 vault: None,
+                kv_store: None,
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -26,6 +28,7 @@ mod reference_test {
             Self {
                 reference: Some(Reference(XRD.as_node_id().clone())),
                 vault: None,
+                kv_store: None,
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -36,6 +39,7 @@ mod reference_test {
             Self {
                 reference: Some(Reference(XRD.as_node_id().clone())),
                 vault: Some(Vault::with_bucket(bucket)),
+                kv_store: None,
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -56,12 +60,28 @@ mod reference_test {
             let instance = Self {
                 reference: None,
                 vault: None,
+                kv_store: None,
             }
             .instantiate();
 
             instance.add_direct_access_ref_to_stored_substate(address);
 
             instance.prepare_to_globalize(OwnerRole::None).globalize();
+        }
+
+        pub fn add_direct_access_ref_to_kv_store_substate(&self, address: InternalAddress) {
+            let kv_store = KeyValueStore::new();
+
+            kv_store.insert(1, address.into());
+
+            Self {
+                reference: None,
+                vault: None,
+                kv_store: Some(kv_store),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
         }
     }
 }
