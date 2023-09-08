@@ -89,7 +89,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         .next_epoch()
         .expect("There should be a new epoch.");
 
-    assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next());
+    assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next().unwrap());
 
     let mut checker = SystemDatabaseChecker::<ResourceDatabaseChecker>::new();
     let db_results = checker

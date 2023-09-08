@@ -34,41 +34,23 @@ impl Epoch {
     /// Panics if this epoch's number is [`u64::MAX`] (such situation would indicate a bug or a
     /// deliberate harm meant by byzantine actors, since regular epoch progression should not reach
     /// such numbers within next thousands of years).
-    pub fn next(&self) -> Self {
-        self.after(1)
+    pub fn next(&self) -> Option<Self> {
+        self.0.checked_add(1).map(|x| Self(x))
     }
 
     /// Creates an epoch following this one after the given number of epochs.
     /// Panics if the resulting number is greater than [`u64::MAX`] (such situation would indicate a
     /// bug or a deliberate harm meant by byzantine actors, since regular epoch delays configured by
     /// a network should not span thousands of years).
-    pub fn after(&self, epoch_count: u64) -> Self {
-        self.relative(epoch_count as i128)
+    pub fn after(&self, epoch_count: u64) -> Option<Self> {
+        self.0.checked_add(epoch_count).map(|x| Self(x))
     }
 
     /// Creates an epoch immediately preceding this one.
     /// Panics if this epoch's number is 0 (such situation would indicate a bug or a deliberate
     /// harm, since a legitimate genesis should not reference previous epochs).
-    pub fn previous(&self) -> Self {
-        self.relative(-1)
-    }
-
-    /// Creates an epoch of a number relative to this one.
-    /// Panics if the resulting number does not fit within `u64` - please see the documentation of
-    /// the callers for reasoning on why this should be safe in practice.
-    /// Note: the internal callers of this private method only use [`epoch_count`]s representable
-    /// by a signed 65-digits number (e.g. by casting `u64` as `i128`).
-    fn relative(&self, epoch_count: i128) -> Self {
-        let epoch_number = self.0 as i128; // every u64 is safe to represent as i128
-        let relative_number = epoch_number
-            .checked_add(epoch_count)
-            .expect("both operands are representable by i65, so their sum must fit in i128");
-        Self(u64::try_from(relative_number).unwrap_or_else(|error| {
-            panic!(
-                "cannot reference epoch {} + {} ({:?})",
-                self.0, epoch_count, error
-            )
-        }))
+    pub fn previous(&self) -> Option<Self> {
+        self.0.checked_sub(1).map(|x| Self(x))
     }
 }
 
