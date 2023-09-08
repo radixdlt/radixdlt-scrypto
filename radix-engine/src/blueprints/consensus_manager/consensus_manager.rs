@@ -222,6 +222,7 @@ pub enum ConsensusManagerError {
     AlreadyStarted,
     NotXrd,
     UnexpectedDecimalComputationError,
+    EpochMathOverflow,
 }
 
 declare_native_blueprint_state! {
@@ -671,7 +672,15 @@ impl ConsensusManagerBlueprint {
                 ApplicationError::ConsensusManagerError(ConsensusManagerError::AlreadyStarted),
             ));
         }
-        let post_genesis_epoch = manager_substate.epoch.next();
+        let post_genesis_epoch =
+            manager_substate
+                .epoch
+                .next()
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::EpochMathOverflow,
+                    ),
+                ))?;
 
         Self::epoch_change(post_genesis_epoch, &config_substate.config, api)?;
         manager_substate.started = true;
@@ -817,7 +826,15 @@ impl ConsensusManagerBlueprint {
             EpochChangeOutcome::Change {
                 next_epoch_effective_start_millis: next_epoch_effective_start,
             } => {
-                let next_epoch = manager_substate.epoch.next();
+                let next_epoch =
+                    manager_substate
+                        .epoch
+                        .next()
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::ConsensusManagerError(
+                                ConsensusManagerError::EpochMathOverflow,
+                            ),
+                        ))?;
                 Self::epoch_change(next_epoch, config, api)?;
                 manager_substate.epoch = next_epoch;
                 manager_substate.round = Round::zero();
@@ -1059,7 +1076,9 @@ impl ConsensusManagerBlueprint {
             previous_statistics,
             config,
             &mut rewards_substate,
-            next_epoch.previous(),
+            next_epoch.previous().ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(ConsensusManagerError::EpochMathOverflow),
+            ))?,
             api,
         )?;
 

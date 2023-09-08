@@ -296,9 +296,10 @@ impl NotarizedTransactionValidator {
         }
         let max_end_epoch = header
             .start_epoch_inclusive
-            .after(self.config.max_epoch_range);
+            .after(self.config.max_epoch_range)
+            .ok_or(HeaderValidationError::InvalidEpochRange)?;
         if header.end_epoch_exclusive > max_end_epoch {
-            return Err(HeaderValidationError::EpochRangeTooLarge);
+            return Err(HeaderValidationError::InvalidEpochRange);
         }
 
         // tip percentage
@@ -471,7 +472,7 @@ mod tests {
         );
         assert_invalid_tx!(
             TransactionValidationError::HeaderValidationError(
-                HeaderValidationError::EpochRangeTooLarge
+                HeaderValidationError::InvalidEpochRange
             ),
             (Epoch::zero(), Epoch::of(MAX_EPOCH_RANGE + 1), 5, vec![1], 2)
         );
