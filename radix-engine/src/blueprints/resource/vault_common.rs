@@ -12,10 +12,8 @@ pub enum VaultError {
     NotFreezable,
     NotRecallable,
     VaultIsFrozen,
-
     LockFeeNotRadixToken,
     LockFeeInsufficientBalance { requested: Decimal, actual: Decimal },
-
     DecimalOverflow,
 }
 
