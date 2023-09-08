@@ -526,26 +526,12 @@ impl<S: TreeStore> HashTreeTester<S> {
 
     fn index_to_delta_maps(
         changes: impl IntoIterator<Item = SingleSubstateChange>,
-    ) -> IndexMap<DbNodeKey, IndexMap<DbPartitionNum, IndexMap<DbSortKey, DatabaseUpdate>>> {
-        let mut delta_maps = index_map_new::<
-            DbNodeKey,
-            IndexMap<DbPartitionNum, IndexMap<DbSortKey, DatabaseUpdate>>,
-        >();
+    ) -> IndexMap<DbPartitionKey, IndexMap<DbSortKey, DatabaseUpdate>> {
+        let mut delta_maps = index_map_new::<DbPartitionKey, IndexMap<DbSortKey, DatabaseUpdate>>();
         for change in changes {
-            let (
-                (
-                    DbPartitionKey {
-                        node_key,
-                        partition_num,
-                    },
-                    sort_key,
-                ),
-                update,
-            ) = change;
+            let ((partition_key, sort_key), update) = change;
             delta_maps
-                .entry(node_key)
-                .or_default()
-                .entry(partition_num)
+                .entry(partition_key)
                 .or_default()
                 .insert(sort_key, update);
         }

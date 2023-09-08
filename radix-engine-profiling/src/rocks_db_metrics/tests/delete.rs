@@ -3,10 +3,7 @@ use super::common::*;
 use linreg::linear_regression_of;
 use radix_engine_store_interface::{
     db_key_mapper::*,
-    interface::{
-        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, PartitionDatabaseUpdates,
-        SubstateDatabase,
-    },
+    interface::{CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase},
 };
 use rand::{seq::SliceRandom, Rng};
 use std::{io::Write, path::PathBuf};
@@ -260,14 +257,14 @@ where
     data.shuffle(&mut rng);
 
     for (partition_key, sort_key, _usize) in data {
-        let mut input_data = DatabaseUpdates::new();
+        let mut input_data = index_map_new();
 
-        let mut partition = PartitionDatabaseUpdates::new();
+        let mut partition = index_map_new();
         partition.insert(sort_key, DatabaseUpdate::Delete);
 
         input_data.insert(partition_key, partition);
 
-        substate_db.commit(&input_data);
+        substate_db.commit(&DatabaseUpdates::from_delta_maps(input_data));
     }
 
     discard_spikes(&mut substate_db.commit_delete_metrics.borrow_mut(), 100f32);
@@ -322,7 +319,7 @@ where
         for _ in 0..rounds_count {
             let mut data: Vec<(DbPartitionKey, Vec<DbSortKey>)> = Vec::new();
 
-            let mut input_data = DatabaseUpdates::new();
+            let mut input_data = index_map_new();
             for i in 1..=n_value {
                 let mut node_id_value = [0u8; NodeId::RID_LENGTH];
                 rng.fill(&mut node_id_value);
@@ -330,7 +327,7 @@ where
 
                 let partition_key =
                     SpreadPrefixKeyMapper::to_db_partition_key(&node_id, PartitionNumber(0u8));
-                let mut partition = PartitionDatabaseUpdates::new();
+                let mut partition = index_map_new();
 
                 let mut sort_key_data = Vec::new();
                 for _ in 0..i {
@@ -351,7 +348,7 @@ where
                 data.push((partition_key.clone(), sort_key_data));
                 input_data.insert(partition_key, partition);
             }
-            substate_db.commit(&input_data);
+            substate_db.commit(&DatabaseUpdates::from_delta_maps(input_data));
 
             data_per_round.push(data);
         }
@@ -381,8 +378,8 @@ where
             // store sequence of indices for intermediate data
             idx_vector_output.push(idx);
 
-            let mut input_data = DatabaseUpdates::new();
-            let mut partition = PartitionDatabaseUpdates::new();
+            let mut input_data = index_map_new();
+            let mut partition = index_map_new();
 
             for key in sort_keys {
                 partition.insert(key.clone(), DatabaseUpdate::Delete);
@@ -390,7 +387,7 @@ where
 
             input_data.insert(partition_key.clone(), partition);
 
-            substate_db.commit(&input_data);
+            substate_db.commit(&DatabaseUpdates::from_delta_maps(input_data));
         }
 
         // prepare intermediate data

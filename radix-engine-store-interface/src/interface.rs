@@ -1,4 +1,5 @@
 use radix_engine_common::Sbor;
+use utils::prelude::index_map_new;
 use utils::rust::boxed::Box;
 use utils::rust::collections::IndexMap;
 use utils::rust::vec::Vec;
@@ -53,7 +54,7 @@ pub type PartitionEntry = (DbSortKey, DbSubstateValue);
 /// A canonical description of all database updates to be applied.
 /// Note: this struct can be migrated to an enum if we ever have a need for database-wide batch
 /// changes (see [`PartitionDatabaseUpdates`] enum).
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, Default)]
 pub struct DatabaseUpdates {
     /// Node-level updates.
     pub node_updates: IndexMap<DbNodeKey, NodeDatabaseUpdates>,
@@ -62,7 +63,7 @@ pub struct DatabaseUpdates {
 /// A canonical description of specific Node's updates to be applied.
 /// Note: this struct can be migrated to an enum if we ever have a need for Node-wide batch changes
 /// (see [`PartitionDatabaseUpdates`] enum).
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, Default)]
 pub struct NodeDatabaseUpdates {
     /// Partition-level updates.
     pub partition_updates: IndexMap<DbPartitionNum, PartitionDatabaseUpdates>,
@@ -77,6 +78,14 @@ pub enum PartitionDatabaseUpdates {
     },
     /// A batch change.
     Batch(BatchPartitionDatabaseUpdate),
+}
+
+impl Default for PartitionDatabaseUpdates {
+    fn default() -> Self {
+        Self::Delta {
+            substate_updates: index_map_new(),
+        }
+    }
 }
 
 /// An update affecting entire Partition at once.
@@ -101,34 +110,28 @@ impl DatabaseUpdates {
     /// Note: This method is only meant for tests/demos - with regular Engine usage, the
     /// [`DatabaseUpdates`] can be obtained directly from the receipt.
     pub fn from_delta_maps(
-        maps: IndexMap<DbNodeKey, IndexMap<DbPartitionNum, IndexMap<DbSortKey, DatabaseUpdate>>>,
+        maps: IndexMap<DbPartitionKey, IndexMap<DbSortKey, DatabaseUpdate>>,
     ) -> DatabaseUpdates {
-        DatabaseUpdates {
-            node_updates: maps
-                .into_iter()
-                .map(|(node_key, node_updates)| {
-                    (node_key, NodeDatabaseUpdates::from_delta_maps(node_updates))
-                })
-                .collect(),
+        let mut database_updates = DatabaseUpdates::default();
+        for (
+            DbPartitionKey {
+                node_key,
+                partition_num,
+            },
+            substate_updates,
+        ) in maps
+        {
+            database_updates
+                .node_updates
+                .entry(node_key)
+                .or_default()
+                .partition_updates
+                .insert(
+                    partition_num,
+                    PartitionDatabaseUpdates::Delta { substate_updates },
+                );
         }
-    }
-}
-
-impl NodeDatabaseUpdates {
-    fn from_delta_maps(
-        maps: IndexMap<DbPartitionNum, IndexMap<DbSortKey, DatabaseUpdate>>,
-    ) -> NodeDatabaseUpdates {
-        NodeDatabaseUpdates {
-            partition_updates: maps
-                .into_iter()
-                .map(|(partition_num, substate_updates)| {
-                    (
-                        partition_num,
-                        PartitionDatabaseUpdates::Delta { substate_updates },
-                    )
-                })
-                .collect(),
-        }
+        database_updates
     }
 }
 

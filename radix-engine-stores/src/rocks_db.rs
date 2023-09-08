@@ -1,7 +1,10 @@
 use itertools::Itertools;
 use radix_engine_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
-use rocksdb::{ColumnFamily, DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
+use rocksdb::{
+    ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Direction, IteratorMode,
+    SingleThreaded, DB,
+};
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
 use utils::copy_u8_array;
@@ -11,19 +14,29 @@ pub struct RocksdbSubstateStore {
 }
 
 impl RocksdbSubstateStore {
+    // Techincally we don't need CFs here at all; however, delete range API is only available for CF
+    const THE_ONLY_CF: &str = "the_only";
+
     pub fn standard(root: PathBuf) -> Self {
-        let mut options = Options::default();
-        options.create_missing_column_families(true);
-        Self::with_options(&options, root)
+        Self::with_options(&Options::default(), root)
     }
     pub fn with_options(options: &Options, root: PathBuf) -> Self {
-        let db = DB::open(options, root.as_path()).expect("IO Error");
-
+        let mut options = options.clone();
+        options.create_missing_column_families(true);
+        let db = DB::open_cf_descriptors(
+            &options,
+            root.as_path(),
+            vec![ColumnFamilyDescriptor::new(
+                Self::THE_ONLY_CF,
+                Options::default(),
+            )],
+        )
+        .unwrap();
         Self { db }
     }
 
     fn cf(&self) -> &ColumnFamily {
-        self.db.cf_handle("the_only_cf").unwrap()
+        self.db.cf_handle(Self::THE_ONLY_CF).unwrap()
     }
 }
 

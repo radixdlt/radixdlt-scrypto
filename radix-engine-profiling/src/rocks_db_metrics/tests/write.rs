@@ -3,10 +3,7 @@ use super::common::*;
 use linreg::linear_regression_of;
 use radix_engine_store_interface::{
     db_key_mapper::*,
-    interface::{
-        CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, PartitionDatabaseUpdates,
-        SubstateDatabase,
-    },
+    interface::{CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase},
 };
 use rand::{seq::SliceRandom, Rng};
 use std::{io::Write, path::PathBuf};
@@ -266,8 +263,8 @@ where
 
         let value_size = 100;
         for n in 1..=n_value {
-            let mut input_data = DatabaseUpdates::new();
-            let mut partition = PartitionDatabaseUpdates::new();
+            let mut input_data = index_map_new();
+            let mut partition = index_map_new();
 
             for j in 0..n {
                 let mut value_data: DbSubstateValue = vec![0u8; value_size];
@@ -286,7 +283,7 @@ where
 
             input_data.insert(partition_key, partition);
 
-            substate_db.commit(&input_data);
+            substate_db.commit(&DatabaseUpdates::from_delta_maps(input_data));
         }
 
         // prepare intermediate data
@@ -371,14 +368,14 @@ where
         size_vector.shuffle(&mut rng);
 
         for substate_size in size_vector.iter() {
-            let mut input_data = DatabaseUpdates::new();
-            let mut partition = PartitionDatabaseUpdates::new();
+            let mut input_data = index_map_new();
+            let mut partition = index_map_new();
 
             generate_commit_data(&mut partition, &mut rng, *substate_size);
 
             input_data.insert(partition_key.clone(), partition);
 
-            substate_db.commit(&input_data);
+            substate_db.commit(&DatabaseUpdates::from_delta_maps(input_data));
         }
     }
 

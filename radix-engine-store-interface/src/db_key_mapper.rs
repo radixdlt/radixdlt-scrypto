@@ -227,11 +227,9 @@ impl<S: CommittableSubstateDatabase> MappedCommittableSubstateDatabase for S {
         value: &E,
     ) {
         self.commit(&DatabaseUpdates::from_delta_maps(indexmap!(
-            M::to_db_node_key(node_id) => indexmap!(
-                M::to_db_partition_num(partition_num) => indexmap!(
-                    M::to_db_sort_key(substate_key) => DatabaseUpdate::Set(
-                        scrypto_encode(value).unwrap()
-                    )
+            M::to_db_partition_key(node_id, partition_num) => indexmap!(
+                M::to_db_sort_key(substate_key) => DatabaseUpdate::Set(
+                    scrypto_encode(value).unwrap()
                 )
             )
         )))
