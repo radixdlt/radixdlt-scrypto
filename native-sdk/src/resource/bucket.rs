@@ -258,10 +258,7 @@ impl NativeBucket for Bucket {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let resource_address = ResourceAddress::new_or_panic(
-            api.get_outer_object(self.0.as_node_id())
-                .unwrap()
-                .as_node_id()
-                .0,
+            api.get_outer_object(self.0.as_node_id())?.as_node_id().0,
         );
 
         Ok(resource_address)
