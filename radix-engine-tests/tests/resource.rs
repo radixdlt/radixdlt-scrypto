@@ -8,11 +8,11 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::{metadata, metadata_init};
+use scrypto::prelude::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-#[ignore]
 fn cannot_get_total_supply_of_xrd() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

@@ -11,6 +11,35 @@ mod bucket_test {
     }
 
     impl BucketTest {
+        pub fn create_proof_of_amount(amount: Decimal) {
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .divisibility(1)
+                .burn_roles(burn_roles! {
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
+                })
+                .mint_initial_supply(2)
+                .into();
+            let proof = bucket.as_fungible().create_proof_of_amount(amount);
+            proof.drop();
+            bucket.burn();
+        }
+
+        pub fn create_vault_proof_of_amount(amount: Decimal) {
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .divisibility(1)
+                .burn_roles(burn_roles! {
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
+                })
+                .mint_initial_supply(2)
+                .into();
+
+            let vault = Vault::with_bucket(bucket);
+            let proof = vault.as_fungible().create_proof_of_amount(amount);
+            proof.drop();
+        }
+
         fn create_test_token(amount: u32) -> Bucket {
             let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)

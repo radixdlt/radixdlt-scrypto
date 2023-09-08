@@ -1,7 +1,7 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
-use radix_engine::blueprints::resource::VaultError;
+use radix_engine::blueprints::resource::{ProofError, VaultError};
 use radix_engine::errors::SystemError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::{
@@ -266,6 +266,142 @@ fn test_drop_locked_fungible_bucket() {
             RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::DropNodeError(
                 DropNodeError::NodeBorrowed(..)
             )))
+        )
+    });
+}
+
+#[test]
+fn create_proof_of_invalid_amount_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "BucketTest",
+            "create_proof_of_amount",
+            manifest_args!(dec!("1.01")),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::InvalidAmount(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn create_proof_of_zero_amount_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "BucketTest",
+            "create_proof_of_amount",
+            manifest_args!(Decimal::ZERO),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
+                ProofError::EmptyProofNotAllowed
+            )))
+        )
+    });
+}
+
+#[test]
+fn create_vault_proof_of_invalid_amount_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "BucketTest",
+            "create_vault_proof_of_amount",
+            manifest_args!(dec!("1.01")),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::InvalidAmount(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn create_vault_proof_of_zero_amount_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "BucketTest",
+            "create_vault_proof_of_amount",
+            manifest_args!(Decimal::ZERO),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::InvalidAmount(..)
+            ))
         )
     });
 }
