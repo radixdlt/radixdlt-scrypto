@@ -26,7 +26,7 @@ jobs:
              rm -f ../target/release/deps/*.d
              rm -f ../target/release/deps/*.rlib
              rm -f ../target/release/deps/*.rmeta
-      - name: Preapare files for cache 1st part
+      - name: Preapare files for cache
         run: |
              cd target/release
              mkdir deps_1
@@ -181,6 +181,11 @@ jobs:
           path: /tmp/scrypto-resources-usage
           key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
+      - name: Upload xml files
+        uses: actions/upload-artifact@v3
+        with:
+          name: QEMU generated XML files
+          path: /tmp/scrypto-resources-usage
       - name: Generate results
         run: python3 ./radix-engine-profiling/resources-tracker-macro/scripts/convert.py /tmp/scrypto-resources-usage
       - name: Upload results
@@ -192,8 +197,3 @@ jobs:
                 /tmp/_out_table_detailed.txt
                 /tmp/_out_linear_regression_coeff.txt
                 /tmp/native_function_base_costs.csv
-      - name: Upload xml files
-        uses: actions/upload-artifact@v3
-        with:
-          name: QEMU generated XML files
-          path: /tmp/scrypto-resources-usage
