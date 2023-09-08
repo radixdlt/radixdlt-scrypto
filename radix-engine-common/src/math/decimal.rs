@@ -266,27 +266,50 @@ impl Decimal {
     }
 }
 
-macro_rules! from_int {
-    ($type:ident) => {
-        impl From<$type> for Decimal {
-            fn from(val: $type) -> Self {
-                Self(I192::from(val) * Self::ONE.0)
+macro_rules! from_primitive_type {
+    ($($type:ident),*) => {
+        $(
+            impl From<$type> for Decimal {
+                fn from(val: $type) -> Self {
+                    Self(I192::from(val) * Self::ONE.0)
+                }
             }
-        }
+        )*
     };
 }
-from_int!(u8);
-from_int!(u16);
-from_int!(u32);
-from_int!(u64);
-from_int!(u128);
-from_int!(usize);
-from_int!(i8);
-from_int!(i16);
-from_int!(i32);
-from_int!(i64);
-from_int!(i128);
-from_int!(isize);
+macro_rules! to_primitive_type {
+    ($($type:ident),*) => {
+        $(
+            impl TryFrom<Decimal> for $type {
+                type Error = ParseDecimalError;
+
+                fn try_from(val: Decimal) -> Result<Self, Self::Error> {
+                    let rounded = val.checked_round(0, RoundingMode::ToZero).ok_or(ParseDecimalError::Overflow)?;
+                    let fraction = val.checked_sub(rounded).ok_or(Self::Error::Overflow)?;
+                    if !fraction.is_zero() {
+                        Err(Self::Error::InvalidDigit)
+                    }
+                    else {
+                        let i_192 = rounded.0 / I192::TEN.pow(Decimal::SCALE);
+                        $type::try_from(i_192)
+                            .map_err(|_| Self::Error::Overflow)
+                    }
+                }
+            }
+
+            impl TryFrom<&Decimal> for $type {
+                type Error = ParseDecimalError;
+
+                fn try_from(val: &Decimal) -> Result<Self, Self::Error> {
+                    $type::try_from(*val)
+                }
+            }
+        )*
+    }
+}
+
+from_primitive_type!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+to_primitive_type!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
 
 // from_str() should be enough, but we want to have try_from() to simplify dec! macro
 impl TryFrom<&str> for Decimal {
@@ -1987,4 +2010,61 @@ mod tests {
     test_math_operands_decimal!(U320);
     test_math_operands_decimal!(U448);
     test_math_operands_decimal!(U512);
+
+    macro_rules! test_to_primitive_type {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_decimal_to_primitive_$type>]() {
+                    let d = dec!(1);
+                    let v = $type::try_from(1).unwrap();
+                    assert_eq!($type::try_from(d).unwrap(), v);
+
+                    if $type::MIN != 0 {
+                        let d = dec!(-1);
+                        let v = $type::try_from(-1).unwrap();
+                        assert_eq!($type::try_from(d).unwrap(), v);
+                    }
+
+                    let v = $type::MAX;
+                    let d = Decimal::from(v);
+                    assert_eq!($type::try_from(d).unwrap(), v);
+
+                    let v = $type::MIN;
+                    let d = Decimal::from(v);
+                    assert_eq!($type::try_from(d).unwrap(), v);
+
+                    let d = Decimal::MAX;
+                    let err = $type::try_from(d).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::InvalidDigit);
+
+                    let v = $type::MAX;
+                    let d = Decimal::from(v).checked_add(1).unwrap();
+                    let err = $type::try_from(d).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::Overflow);
+
+                    let v = $type::MIN;
+                    let d = Decimal::from(v).checked_sub(1).unwrap();
+                    let err = $type::try_from(d).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::Overflow);
+
+                    let d = dec!("1.1");
+                    let err = $type::try_from(d).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::InvalidDigit);
+                }
+            }
+        };
+    }
+    test_to_primitive_type!(u8);
+    test_to_primitive_type!(u16);
+    test_to_primitive_type!(u32);
+    test_to_primitive_type!(u64);
+    test_to_primitive_type!(u128);
+    test_to_primitive_type!(usize);
+    test_to_primitive_type!(i8);
+    test_to_primitive_type!(i16);
+    test_to_primitive_type!(i32);
+    test_to_primitive_type!(i64);
+    test_to_primitive_type!(i128);
+    test_to_primitive_type!(isize);
 }
