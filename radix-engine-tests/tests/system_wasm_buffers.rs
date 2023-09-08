@@ -18,8 +18,9 @@ fn get_test_runner() -> (
 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
+
     let package_address =
-        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
     let component_address = test_runner
         .execute_manifest(
             ManifestBuilder::new()
