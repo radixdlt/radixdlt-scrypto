@@ -60,3 +60,48 @@ manifest_type!(
     ManifestCustomValueKind::AddressReservation,
     4
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn manifest_address_reservation_fail() {
+        let address = ManifestAddressReservation(0);
+        let mut address_vec = address.to_vec();
+
+        assert!(ManifestAddressReservation::try_from(address_vec.as_slice()).is_ok());
+
+        // malform encoded vector
+        address_vec.push(0);
+        let address_out = ManifestAddressReservation::try_from(address_vec.as_slice());
+        assert!(matches!(
+            address_out,
+            Err(ParseManifestAddressReservationError::InvalidLength)
+        ));
+
+        println!(
+            "Manifest Address Reservation error: {}",
+            address_out.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn manifest_address_reservation_encode_decode_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        let malformed_value: u8 = 1; // use u8 instead of u32 should inovke an error
+        encoder.write_slice(&malformed_value.to_le_bytes()).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let addr_output = decoder.decode_deeper_body_with_value_kind::<ManifestAddressReservation>(
+            ManifestAddressReservation::value_kind(),
+        );
+
+        // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
+        assert!(matches!(
+            addr_output,
+            Err(DecodeError::BufferUnderflow { .. })
+        ));
+    }
+}

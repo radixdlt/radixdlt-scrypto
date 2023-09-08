@@ -72,3 +72,45 @@ impl ManifestExpression {
 }
 
 manifest_type!(ManifestExpression, ManifestCustomValueKind::Expression, 1);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn manifest_expression_parse_fail() {
+        // wrong lenght
+        let vec_err_1 = vec![1u8, 2];
+        // wrong variant id
+        let vec_err_2 = vec![10u8];
+
+        let err1 = ManifestExpression::try_from(vec_err_1.as_slice());
+        assert!(matches!(
+            err1,
+            Err(ParseManifestExpressionError::InvalidLength)
+        ));
+        println!("Decoding manifest expression error: {}", err1.unwrap_err());
+
+        let err2 = ManifestExpression::try_from(vec_err_2.as_slice());
+        assert!(matches!(
+            err2,
+            Err(ParseManifestExpressionError::UnknownExpression)
+        ));
+        println!("Decoding manifest expression error: {}", err2.unwrap_err());
+    }
+
+    #[test]
+    fn manifest_expression_discriminator_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        // use invalid discriminator value
+        encoder.write_discriminator(0xff).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let addr_output = decoder.decode_deeper_body_with_value_kind::<ManifestExpression>(
+            ManifestExpression::value_kind(),
+        );
+
+        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+    }
+}

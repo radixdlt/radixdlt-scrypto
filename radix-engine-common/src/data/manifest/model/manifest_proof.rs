@@ -56,3 +56,44 @@ impl ManifestProof {
 }
 
 manifest_type!(ManifestProof, ManifestCustomValueKind::Proof, 4);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn manifest_proof_fail() {
+        let proof = ManifestProof(37);
+        let mut proof_vec = proof.to_vec();
+
+        assert!(ManifestProof::try_from(proof_vec.as_slice()).is_ok());
+
+        // malform encoded vector
+        proof_vec.push(0);
+        let proof_out = ManifestProof::try_from(proof_vec.as_slice());
+        assert!(matches!(
+            proof_out,
+            Err(ParseManifestProofError::InvalidLength)
+        ));
+
+        println!("Manifest Proof error: {}", proof_out.unwrap_err());
+    }
+
+    #[test]
+    fn manifest_proof_encode_decode_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        let malformed_value: u8 = 1; // use u8 instead of u32 should inovke an error
+        encoder.write_slice(&malformed_value.to_le_bytes()).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let proof_output = decoder
+            .decode_deeper_body_with_value_kind::<ManifestProof>(ManifestProof::value_kind());
+
+        // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
+        assert!(matches!(
+            proof_output,
+            Err(DecodeError::BufferUnderflow { .. })
+        ));
+    }
+}
