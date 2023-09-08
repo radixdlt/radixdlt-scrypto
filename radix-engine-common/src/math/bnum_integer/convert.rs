@@ -683,10 +683,6 @@ macro_rules! impl_to_bytes {
                         }
                         bytes
                     }
-
-                    pub fn to_vec(&self) -> Vec<u8> {
-                        self.to_le_bytes().to_vec()
-                    }
                 }
             )*
         }
