@@ -52,7 +52,7 @@ mod reference_test {
             self.reference = Some(Reference(address.as_node_id().clone()));
         }
 
-        pub fn add_direct_access_ref_to_heap_substate(&mut self, address: InternalAddress) {
+        pub fn add_direct_access_ref_to_heap_substate(&self, address: InternalAddress) {
             let instance = Self {
                 reference: None,
                 vault: None,
