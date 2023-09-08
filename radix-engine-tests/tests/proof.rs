@@ -876,7 +876,7 @@ fn test_proof_check() {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) if e.eq("Invalid proof: Expected ResourceAddress(5d6e626b0d521607529efc9b16b5f1384ea711199676c9eaf9c7409b7181), but got ResourceAddress(5dc78a43cf2b06c67b71f68ab81aa004a8ea8a08ef73ceceba02e33059d7)") => true,
+        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5d6e626b0d521607529efc9b16b5f1384ea711199676c9eaf9c7409b7181)") => true,
         _ => false,
     });
 }

@@ -9,7 +9,7 @@ use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldValue};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
-use super::{MintNonFungibleResourceEvent};
+use super::MintNonFungibleResourceEvent;
 
 pub fn globalize_non_fungible_with_initial_supply<Y>(
     owner_role: OwnerRole,

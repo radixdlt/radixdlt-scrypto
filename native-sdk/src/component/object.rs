@@ -1,3 +1,5 @@
+use crate::modules::metadata::Metadata;
+use crate::modules::role_assignment::RoleAssignment;
 use radix_engine_common::prelude::ScryptoEncode;
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_interface::api::node_modules::metadata::{
@@ -5,15 +7,13 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldIndex, ModuleId};
 use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
+use radix_engine_interface::prelude::node_modules::ModuleConfig;
+use radix_engine_interface::prelude::GlobalAddressReservation;
+use radix_engine_interface::prelude::OwnerRole;
+use radix_engine_interface::prelude::RoleAssignmentInit;
 use radix_engine_interface::prelude::{FieldValue, MetadataInit};
 use radix_engine_interface::types::NodeId;
 use sbor::rust::prelude::{Debug, ToOwned};
-use crate::modules::metadata::Metadata;
-use radix_engine_interface::prelude::OwnerRole;
-use radix_engine_interface::prelude::GlobalAddressReservation;
-use crate::modules::role_assignment::RoleAssignment;
-use radix_engine_interface::prelude::node_modules::ModuleConfig;
-use radix_engine_interface::prelude::RoleAssignmentInit;
 use utils::indexmap;
 use utils::prelude::indexmap::IndexMap;
 
@@ -58,9 +58,9 @@ pub fn globalize_object<Y, E>(
     metadata: ModuleConfig<MetadataInit>,
     api: &mut Y,
 ) -> Result<GlobalAddress, E>
-    where
-        Y: ClientApi<E>,
-        E: Debug + ScryptoDecode,
+where
+    Y: ClientApi<E>,
+    E: Debug + ScryptoDecode,
 {
     let role_assignment = {
         let roles = indexmap!(
@@ -96,32 +96,33 @@ pub fn globalize_object_with_inner_object_and_event<Y, E, V>(
     event: V,
     api: &mut Y,
 ) -> Result<(GlobalAddress, NodeId), E>
-    where
-        Y: ClientApi<E>,
-        E: Debug + ScryptoDecode,
-        V: ScryptoEncode,
+where
+    Y: ClientApi<E>,
+    E: Debug + ScryptoDecode,
+    V: ScryptoEncode,
 {
     let role_assignment = {
         let roles = indexmap!(
-                ModuleId::Main => main_roles,
-                ModuleId::Metadata => metadata.roles,
-            );
-        RoleAssignment::create(owner_role, roles, api)?.0.0
+            ModuleId::Main => main_roles,
+            ModuleId::Metadata => metadata.roles,
+        );
+        RoleAssignment::create(owner_role, roles, api)?.0 .0
     };
     let metadata = Metadata::create_with_data(metadata.init, api)?.0;
 
-    let (address, inner_object) = api.globalize_with_address_and_create_inner_object_and_emit_event(
-        object_id,
-        indexmap!(
-            AttachedModuleId::RoleAssignment => role_assignment,
-            AttachedModuleId::Metadata => metadata,
-        ),
-        address_reservation,
-        inner_object_bp,
-        inner_object_fields,
-        event_name,
-        scrypto_encode(&event).unwrap(),
-    )?;
+    let (address, inner_object) = api
+        .globalize_with_address_and_create_inner_object_and_emit_event(
+            object_id,
+            indexmap!(
+                AttachedModuleId::RoleAssignment => role_assignment,
+                AttachedModuleId::Metadata => metadata,
+            ),
+            address_reservation,
+            inner_object_bp,
+            inner_object_fields,
+            event_name,
+            scrypto_encode(&event).unwrap(),
+        )?;
 
     Ok((address, inner_object))
 }
