@@ -42,14 +42,7 @@ pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
 
 pub fn check_non_fungible_amount(amount: &Decimal) -> Result<u32, ()> {
     // Integers between [0..u32::MAX]
-    if amount >= &Decimal::from(u32::MIN)
-        && amount <= &Decimal::from(u32::MAX)
-        && amount.0 % I192::from(10i128.pow(18)) == I192::from(0)
-    {
-        Ok(u32::from_str(&amount.to_string()).unwrap())
-    } else {
-        Err(())
-    }
+    u32::try_from(amount).map_err(|_| ())
 }
 
 #[macro_export]
