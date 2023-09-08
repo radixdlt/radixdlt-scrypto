@@ -2226,6 +2226,41 @@ mod tests {
     test_math_operands_decimal!(U448);
     test_math_operands_decimal!(U512);
 
+    macro_rules! test_from_primitive_type {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_precise_decimal_from_primitive_$type>]() {
+                    let v = $type::try_from(1).unwrap();
+                    assert_eq!(PreciseDecimal::from(v), pdec!(1));
+
+                    if $type::MIN != 0 {
+                        let v = $type::try_from(-1).unwrap();
+                        assert_eq!(PreciseDecimal::from(v), pdec!(-1));
+                    }
+
+                    let v = $type::MAX;
+                    assert_eq!(PreciseDecimal::from(v), PreciseDecimal::from_str(&v.to_string()).unwrap());
+
+                    let v = $type::MIN;
+                    assert_eq!(PreciseDecimal::from(v), PreciseDecimal::from_str(&v.to_string()).unwrap());
+                }
+            }
+        };
+    }
+    test_from_primitive_type!(u8);
+    test_from_primitive_type!(u16);
+    test_from_primitive_type!(u32);
+    test_from_primitive_type!(u64);
+    test_from_primitive_type!(u128);
+    test_from_primitive_type!(usize);
+    test_from_primitive_type!(i8);
+    test_from_primitive_type!(i16);
+    test_from_primitive_type!(i32);
+    test_from_primitive_type!(i64);
+    test_from_primitive_type!(i128);
+    test_from_primitive_type!(isize);
+
     macro_rules! test_to_primitive_type {
         ($type:ident) => {
             paste! {
