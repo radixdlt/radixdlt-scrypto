@@ -172,6 +172,82 @@ fn test_package_royalty_edge_cases_at_interactions() {
     }
 }
 
+#[test]
+fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let (code, mut definition) = PackageLoader::get("royalty-edge-cases");
+
+    for blueprint_definition in definition.blueprints.values_mut() {
+        blueprint_definition.royalty_config = PackageRoyaltyConfig::Enabled(IndexMap::new())
+    }
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code.clone(),
+            definition.clone(),
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::UnexpectedNumberOfFunctionRoyalties { .. }
+            ))
+        )
+    });
+}
+
+/// This test is here to check if the following bit of code can cause a panic in the Royalty module:
+/// https://github.com/radixdlt/radixdlt-scrypto/blob/v0.12.1/radix-engine/src/system/node_modules/royalty/package.rs#L455
+/// I suspected that this could cause a panic since we're defaulting to one type and then calling
+/// `.as_typed` with a different type later down in the code. It turns out that this bit doesn't
+/// panic since all [`KeyValueEntrySubstate::<T>::default()`] are equal when we scrypto encode them,
+/// so decoding as a different type is no issue. I've still went ahead and changed the type there as
+/// I believe that it's better.
+#[test]
+fn test_component_with_missing_method_royalty() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("royalty-edge-cases"));
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoyaltyEdgeCases",
+            "instantiate_with_missing_method_royalty",
+            manifest_args!(),
+        )
+        .build();
+    let component_address = *test_runner
+        .execute_manifest(manifest, vec![])
+        .expect_commit_success()
+        .new_component_addresses()
+        .first()
+        .unwrap();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(component_address, "method", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(receipt.fee_summary.total_royalty_cost_in_xrd, dec!("0"))
+}
+
 fn royalty_amount_to_xrd(royalty_amount: &RoyaltyAmount) -> Decimal {
     match royalty_amount {
         RoyaltyAmount::Free => Decimal::zero(),
