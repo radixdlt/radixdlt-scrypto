@@ -133,7 +133,7 @@ impl ListableSubstateDatabase for RocksdbSubstateStore {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
         Box::new(
             self.db
-                .iterator(IteratorMode::Start)
+                .iterator_cf(self.cf(), IteratorMode::Start)
                 .map(|kv| {
                     let (iter_key_bytes, _) = kv.as_ref().unwrap();
                     let (iter_key, _) = decode_from_rocksdb_bytes(iter_key_bytes);
