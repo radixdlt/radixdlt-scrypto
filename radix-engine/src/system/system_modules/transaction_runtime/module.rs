@@ -14,7 +14,7 @@ pub struct Event {
 
 impl Event {
     pub fn len(&self) -> usize {
-        self.type_identifier.0.get_length()
+        self.type_identifier.len() + self.payload.len()
     }
 }
 
