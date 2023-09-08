@@ -64,10 +64,11 @@ impl Decimal {
 
     pub const ZERO: Self = Self(I192::ZERO);
 
+    pub const ONE_HUNDREDTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 2), 0, 0]));
+    pub const ONE_TENTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 1), 0, 0]));
     pub const ONE: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE), 0, 0]));
     pub const TEN: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE + 1), 0, 0]));
     pub const ONE_HUNDRED: Self = Self(I192::from_digits([7766279631452241920, 0x5, 0]));
-    pub const ONE_HUNDREDTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 2), 0, 0]));
 
     /// Returns `Decimal` of 0.
     pub const fn zero() -> Self {
@@ -897,6 +898,7 @@ mod tests {
             Decimal::MIN,
         );
 
+        assert_eq!(dec!("0.1"), Decimal::ONE_TENTH);
         assert_eq!(dec!("10"), Decimal::TEN);
         assert_eq!(dec!("100"), Decimal::ONE_HUNDRED);
         assert_eq!(dec!("0.01"), Decimal::ONE_HUNDREDTH);

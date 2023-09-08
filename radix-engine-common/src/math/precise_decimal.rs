@@ -65,6 +65,18 @@ impl PreciseDecimal {
 
     pub const ZERO: Self = Self(I256::ZERO);
 
+    pub const ONE_HUNDREDTH: Self = Self(I256::from_digits([
+        4003012203950112768,
+        542101086242752,
+        0,
+        0,
+    ]));
+    pub const ONE_TENTH: Self = Self(I256::from_digits([
+        3136633892082024448,
+        5421010862427522,
+        0,
+        0,
+    ]));
     pub const ONE: Self = Self(I256::from_digits([
         12919594847110692864,
         54210108624275221,
@@ -80,12 +92,6 @@ impl PreciseDecimal {
     pub const ONE_HUNDRED: Self = Self(I256::from_digits([
         687399551400673280,
         5421010862427522170,
-        0,
-        0,
-    ]));
-    pub const ONE_HUNDREDTH: Self = Self(I256::from_digits([
-        4003012203950112768,
-        542101086242752,
         0,
         0,
     ]));
@@ -968,6 +974,7 @@ mod tests {
             PreciseDecimal::MIN,
         );
 
+        assert_eq!(pdec!("0.1"), PreciseDecimal::ONE_TENTH);
         assert_eq!(pdec!("10"), PreciseDecimal::TEN);
         assert_eq!(pdec!("100"), PreciseDecimal::ONE_HUNDRED);
         assert_eq!(pdec!("0.01"), PreciseDecimal::ONE_HUNDREDTH);
