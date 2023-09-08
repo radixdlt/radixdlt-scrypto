@@ -1,5 +1,6 @@
 use radix_engine_common::Sbor;
 use utils::prelude::index_map_new;
+use utils::prelude::vec;
 use utils::rust::boxed::Box;
 use utils::rust::collections::IndexMap;
 use utils::rust::vec::Vec;
