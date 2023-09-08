@@ -193,6 +193,24 @@ mod invalid_combine_test {
     }
 
     impl InvalidCombine {
+        pub fn new() -> Global<InvalidCombine> {
+            let bucket = Self::create_test_token();
+            Self {
+                vault: Vault::with_bucket(bucket),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize()
+        }
+
+        pub fn lock_fee(&mut self, amount: Decimal) {
+            self.vault.as_fungible().lock_fee(amount);
+        }
+
+        pub fn lock_contingent_fee(&mut self, amount: Decimal) {
+            self.vault.as_fungible().lock_contingent_fee(amount);
+        }
+
         fn create_test_token() -> Bucket {
             let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)

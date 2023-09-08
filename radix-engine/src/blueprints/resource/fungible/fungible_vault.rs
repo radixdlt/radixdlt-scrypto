@@ -411,10 +411,15 @@ impl FungibleVaultBlueprint {
         let mut vault = api
             .field_read_typed::<FungibleVaultBalanceFieldPayload>(vault_handle)?
             .into_latest();
-        let fee = vault.take_by_amount(amount).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::LockFeeInsufficientBalance,
-            ))
+        let fee = vault.take_by_amount(amount).map_err(|e| {
+            let vault_error = match e {
+                ResourceError::InsufficientBalance { requested, actual } => {
+                    VaultError::LockFeeInsufficientBalance { requested, actual }
+                }
+                _ => VaultError::ResourceError(e),
+            };
+
+            RuntimeError::ApplicationError(ApplicationError::VaultError(vault_error))
         })?;
 
         // Credit cost units
