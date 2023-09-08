@@ -307,9 +307,9 @@ impl TryFrom<String> for Decimal {
 impl From<bool> for Decimal {
     fn from(val: bool) -> Self {
         if val {
-            Self::from(1u8)
+            Self::ONE
         } else {
-            Self::from(0u8)
+            Self::ZERO
         }
     }
 }
@@ -718,7 +718,7 @@ impl FromStr for Decimal {
     type Err = ParseDecimalError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tens = I192::from(10);
+        let tens = I192::TEN;
         let v: Vec<&str> = s.split('.').collect();
 
         let mut int = match I192::from_str(v[0]) {

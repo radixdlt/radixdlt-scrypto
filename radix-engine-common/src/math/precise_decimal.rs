@@ -331,9 +331,9 @@ impl TryFrom<String> for PreciseDecimal {
 impl From<bool> for PreciseDecimal {
     fn from(val: bool) -> Self {
         if val {
-            Self::from(1u8)
+            Self::ONE
         } else {
-            Self::from(0u8)
+            Self::ZERO
         }
     }
 }
@@ -750,7 +750,7 @@ impl FromStr for PreciseDecimal {
     type Err = ParsePreciseDecimalError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tens = I256::from(10);
+        let tens = I256::TEN;
         let v: Vec<&str> = s.split('.').collect();
 
         let mut int = match I256::from_str(v[0]) {
@@ -841,7 +841,7 @@ impl fmt::Display for ParsePreciseDecimalError {
 
 impl From<Decimal> for PreciseDecimal {
     fn from(val: Decimal) -> Self {
-        Self(I256::try_from(val.0).unwrap() * I256::from(10i8).pow(Self::SCALE - Decimal::SCALE))
+        Self(I256::try_from(val.0).unwrap() * I256::TEN.pow(Self::SCALE - Decimal::SCALE))
     }
 }
 
