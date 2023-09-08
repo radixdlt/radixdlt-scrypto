@@ -426,3 +426,65 @@ fn test_vault_combine_non_fungible_invalid() {
         )
     });
 }
+
+#[test]
+fn burn_invalid_fungible_bucket_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "InvalidCombine",
+            "burn_fungible_invalid",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
+        )
+    });
+}
+
+#[test]
+fn burn_invalid_non_fungible_bucket_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "InvalidCombine",
+            "burn_non_fungible_invalid",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
+        )
+    });
+}

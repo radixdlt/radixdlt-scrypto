@@ -196,6 +196,10 @@ mod invalid_combine_test {
         fn create_test_token() -> Bucket {
             let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
+                .burn_roles(burn_roles! {
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
+                })
                 .mint_initial_supply(100)
                 .into();
             bucket
@@ -203,6 +207,10 @@ mod invalid_combine_test {
 
         fn create_non_fungible_test_token() -> Bucket {
             let bucket: Bucket = ResourceBuilder::new_ruid_non_fungible(OwnerRole::None)
+                .burn_roles(burn_roles! {
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
+                })
                 .mint_initial_supply(vec![()])
                 .into();
             bucket
@@ -248,6 +256,22 @@ mod invalid_combine_test {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize()
+        }
+
+        pub fn burn_fungible_invalid() {
+            let bucket1 = Self::create_test_token();
+            let bucket2 = Self::create_test_token();
+
+            let resource1: ResourceManager = bucket1.resource_address().into();
+            resource1.burn(bucket2);
+        }
+
+        pub fn burn_non_fungible_invalid() {
+            let bucket1 = Self::create_non_fungible_test_token();
+            let bucket2 = Self::create_non_fungible_test_token();
+
+            let resource1: ResourceManager = bucket1.resource_address().into();
+            resource1.burn(bucket2);
         }
     }
 }
