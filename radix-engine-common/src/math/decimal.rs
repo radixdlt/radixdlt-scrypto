@@ -19,6 +19,8 @@ use crate::math::PreciseDecimal;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
 
+use super::CheckedTruncate;
+
 /// `Decimal` represents a 192 bit representation of a fixed-scale decimal number.
 ///
 /// The finite set of values are of the form `m / 10^18`, where `m` is
@@ -808,12 +810,8 @@ impl TryFrom<PreciseDecimal> for Decimal {
     type Error = ParseDecimalError;
 
     fn try_from(val: PreciseDecimal) -> Result<Self, Self::Error> {
-        let val_i256 = val.0 / I256::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE);
-        let result = I192::try_from(val_i256);
-        match result {
-            Ok(val_i192) => Ok(Self(val_i192)),
-            Err(_) => Err(ParseDecimalError::Overflow),
-        }
+        val.checked_truncate(RoundingMode::ToZero)
+            .ok_or(ParseDecimalError::Overflow)
     }
 }
 
@@ -1554,10 +1552,13 @@ mod tests {
 
     test_from_into_precise_decimal_decimal! {
         ("12345678.123456789012345678901234567890123456", "12345678.123456789012345678", 1),
-        ("0.000000000000000000000000008901234567", "0", 2),
-        ("-0.000000000000000000000000008901234567", "0", 3),
-        ("5", "5", 4),
-        ("12345678.1", "12345678.1", 5)
+        ("12345678.123456789012345678101234567890123456", "12345678.123456789012345678", 2),
+        ("-12345678.123456789012345678901234567890123456", "-12345678.123456789012345678", 3),
+        ("-12345678.123456789012345678101234567890123456", "-12345678.123456789012345678", 4),
+        ("0.000000000000000000000000008901234567", "0", 5),
+        ("-0.000000000000000000000000008901234567", "0", 6),
+        ("5", "5", 7),
+        ("12345678.1", "12345678.1", 8)
     }
 
     macro_rules! test_from_precise_decimal_decimal_overflow {
