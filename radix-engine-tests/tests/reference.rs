@@ -9,6 +9,122 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
+fn add_direct_access_ref_to_stored_substate_external_vault() {
+    // Basic setup
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource = test_runner.create_recallable_token(account);
+    let vault_id = test_runner
+        .get_component_vaults(account, resource)
+        .pop()
+        .unwrap();
+    println!("Recallable vault id: {:?}", vault_id);
+
+    // Publish package
+    let (code, mut package_def) = PackageLoader::get("reference");
+    package_def
+        .blueprints
+        .values_mut()
+        .next()
+        .unwrap()
+        .is_transient = true;
+    let package_address = test_runner.publish_package_simple((code, package_def));
+
+    // Instantiate component
+    let component_address = {
+        let manifest = ManifestBuilder::new()
+            .call_function(package_address, "ReferenceTest", "new", manifest_args!())
+            .build();
+
+        let receipt = test_runner.execute_manifest_ignoring_fee(
+            manifest,
+            [NonFungibleGlobalId::from_public_key(&public_key)],
+        );
+        receipt.expect_commit_success();
+
+        receipt.expect_commit(true).new_component_addresses()[0]
+    };
+
+    // Call method
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_standard_test_fee(account)
+            .call_method(
+                component_address,
+                "add_direct_access_ref_to_stored_substate",
+                manifest_args!(InternalAddress::try_from(vault_id).unwrap()),
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        e.to_string().contains("RefNotFound")
+            && e.to_string().contains(&hex::encode(vault_id.as_bytes()))
+    });
+}
+
+#[test]
+fn add_direct_access_ref_to_heap_substate_external_vault() {
+    // Basic setup
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource = test_runner.create_recallable_token(account);
+    let vault_id = test_runner
+        .get_component_vaults(account, resource)
+        .pop()
+        .unwrap();
+    println!("Recallable vault id: {:?}", vault_id);
+
+    // Publish package
+    let (code, mut package_def) = PackageLoader::get("reference");
+    package_def
+        .blueprints
+        .values_mut()
+        .next()
+        .unwrap()
+        .is_transient = true;
+    let package_address = test_runner.publish_package_simple((code, package_def));
+
+    // Instantiate component
+    let component_address = {
+        let manifest = ManifestBuilder::new()
+            .call_function(package_address, "ReferenceTest", "new", manifest_args!())
+            .build();
+
+        let receipt = test_runner.execute_manifest_ignoring_fee(
+            manifest,
+            [NonFungibleGlobalId::from_public_key(&public_key)],
+        );
+        receipt.expect_commit_success();
+
+        receipt.expect_commit(true).new_component_addresses()[0]
+    };
+
+    // Call method
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_standard_test_fee(account)
+            .call_method(
+                component_address,
+                "add_direct_access_ref_to_heap_substate",
+                manifest_args!(InternalAddress::try_from(vault_id).unwrap()),
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        e.to_string().contains("RefNotFound")
+            && e.to_string().contains(&hex::encode(vault_id.as_bytes()))
+    });
+}
+
+#[test]
 fn test_create_global_node_with_local_ref() {
     // Basic setup
     let mut test_runner = TestRunnerBuilder::new().build();
