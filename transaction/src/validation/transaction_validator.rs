@@ -478,6 +478,16 @@ mod tests {
     }
 
     #[test]
+    fn test_epoch_overflow() {
+        assert_invalid_tx!(
+            TransactionValidationError::HeaderValidationError(
+                HeaderValidationError::InvalidEpochRange
+            ),
+            (Epoch::of(u64::MAX - 5), Epoch::of(u64::MAX), 5, vec![1], 2)
+        );
+    }
+
+    #[test]
     fn test_invalid_signatures() {
         assert_invalid_tx!(
             TransactionValidationError::SignatureValidationError(
