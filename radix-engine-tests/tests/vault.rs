@@ -744,5 +744,32 @@ fn get_vault_id(
     receipt.expect_commit_success().output(1)
 }
 
+#[test]
+fn withdraw_with_invalid_amount_from_non_fungible() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+    let resource_address = test_runner.create_non_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, dec!("-1")) // [0-u32::MAX] is expected
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::InvalidAmount(_)
+            ))
+        )
+    });
+}
+
 #[derive(NonFungibleData, ScryptoSbor, ManifestSbor)]
 struct EmptyStruct {}
