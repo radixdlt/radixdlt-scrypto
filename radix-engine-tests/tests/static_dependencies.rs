@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
@@ -22,9 +25,9 @@ fn test_static_package_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address1 =
-        test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
+        test_runner.publish_package_simple(PackageLoader::get("static_dependencies"));
 
-    let (mut code, mut definition) = Compile::compile("./tests/blueprints/static_dependencies");
+    let (mut code, mut definition) = PackageLoader::get("static_dependencies");
     let place_holder: GlobalAddress =
         PackageAddress::new_or_panic(PACKAGE_ADDRESS_PLACE_HOLDER).into();
     for (_, blueprint) in &mut definition.blueprints {
@@ -38,7 +41,7 @@ fn test_static_package_address() {
     code[start..start + PACKAGE_ADDRESS_PLACE_HOLDER.len()]
         .copy_from_slice(package_address1.as_ref());
     let package_address2 =
-        test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -59,7 +62,8 @@ fn test_static_package_address() {
 fn test_static_component_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/static_dependencies");
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("static_dependencies"));
     let (key, _priv, account) = test_runner.new_account(false);
 
     // Act
@@ -93,7 +97,7 @@ fn static_component_should_be_callable() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE);
     test_runner
-        .compile_and_publish_at_address("./tests/blueprints/static_dependencies", package_address);
+        .publish_package_at_address(PackageLoader::get("static_dependencies"), package_address);
     let receipt = test_runner.execute_system_transaction_with_preallocated_addresses(
         vec![InstructionV1::CallFunction {
             package_address: package_address.into(),
@@ -111,8 +115,8 @@ fn static_component_should_be_callable() {
     receipt.expect_commit_success();
 
     // Act
-    let package_address2 = test_runner.compile_and_publish_retain_blueprints(
-        "./tests/blueprints/static_dependencies2",
+    let package_address2 = test_runner.publish_retain_blueprints(
+        PackageLoader::get("static_dependencies2"),
         |blueprint, _| blueprint.eq("PreallocatedCall"),
     );
     let manifest = ManifestBuilder::new()
@@ -179,8 +183,8 @@ fn static_resource_should_be_callable() {
     receipt.expect_commit_success();
 
     // Act
-    let package_address2 = test_runner.compile_and_publish_retain_blueprints(
-        "./tests/blueprints/static_dependencies2",
+    let package_address2 = test_runner.publish_retain_blueprints(
+        PackageLoader::get("static_dependencies2"),
         |blueprint, _| blueprint.eq("SomeResource"),
     );
     let manifest = ManifestBuilder::new()
@@ -204,14 +208,14 @@ fn static_resource_should_be_callable() {
 fn static_package_should_be_callable() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    test_runner.compile_and_publish_at_address(
-        "./tests/blueprints/static_dependencies",
+    test_runner.publish_package_at_address(
+        PackageLoader::get("static_dependencies"),
         PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE),
     );
 
     // Act
-    let package_address2 = test_runner.compile_and_publish_retain_blueprints(
-        "./tests/blueprints/static_dependencies2",
+    let package_address2 = test_runner.publish_retain_blueprints(
+        PackageLoader::get("static_dependencies2"),
         |blueprint, _| blueprint.eq("SomePackage"),
     );
     let manifest = ManifestBuilder::new()

@@ -14,4 +14,5 @@ itertools = { version = "0.10.3" }
 trace = []
 
 [lib]
+doctest = false
 bench = false

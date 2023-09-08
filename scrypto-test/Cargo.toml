@@ -34,4 +34,5 @@ moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]
 
 [lib]
+doctest = false
 bench = false

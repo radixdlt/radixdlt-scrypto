@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -6,7 +9,8 @@ use transaction::prelude::*;
 fn test_same_package_remote_generic_arg_for_non_fungible_data() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -24,7 +28,8 @@ fn test_same_package_remote_generic_arg_for_non_fungible_data() {
 fn test_same_package_remote_generic_arg_for_key_value_store() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -43,9 +48,9 @@ fn test_different_package_remote_generic_arg_for_non_fungible_data() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address1 =
-        test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let package_address2 =
-        test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -64,9 +69,9 @@ fn test_different_package_remote_generic_arg_for_key_value_store() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address1 =
-        test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let package_address2 =
-        test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -85,9 +90,9 @@ fn test_invalid_remote_types_for_non_fungible_data() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address1 =
-        test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let package_address2 =
-        test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -106,9 +111,9 @@ fn test_invalid_remote_types_for_key_value_store() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address1 =
-        test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let package_address2 =
-        test_runner.compile_and_publish("./tests/blueprints/remote_generic_args");
+        test_runner.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(

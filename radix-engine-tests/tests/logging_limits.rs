@@ -70,8 +70,7 @@ fn test_emit_log(message_size: usize, iterations: usize, expected_err: Option<Ru
     let code = prepare_code(message_size, iterations);
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );

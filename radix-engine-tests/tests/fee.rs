@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
@@ -27,7 +30,7 @@ fn setup_test_runner() -> (DefaultTestRunner, ComponentAddress) {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("fee"));
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)

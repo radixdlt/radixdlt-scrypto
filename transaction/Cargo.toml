@@ -34,4 +34,5 @@ dump_manifest_to_file = []
 radix_engine_fuzzing = []
 
 [lib]
+doctest = false
 bench = false

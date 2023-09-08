@@ -22,4 +22,5 @@ serde = ["serde/derive", "indexmap/serde"]
 radix_engine_fuzzing= ["indexmap/arbitrary"]
 
 [lib]
+doctest = false
 bench = false

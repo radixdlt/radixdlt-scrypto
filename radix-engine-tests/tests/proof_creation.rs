@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::{
     errors::{ApplicationError, RuntimeError},
     types::*,
@@ -9,7 +12,7 @@ use transaction::prelude::*;
 fn create_proof_internal(function_name: &str, error: Option<&str>) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof_creation");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof_creation"));
 
     // Act
     let manifest = ManifestBuilder::new()

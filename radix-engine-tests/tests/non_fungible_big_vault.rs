@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::costing::CostingError;
 use radix_engine::types::*;
@@ -7,7 +10,7 @@ use transaction::prelude::*;
 fn get_non_fungibles_on_big_vault(size: u32, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "BigVault", "new", manifest_args!())

@@ -95,3 +95,78 @@ impl fmt::Debug for ManifestAddress {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn prepare(addr_input: &ManifestAddress) -> Result<ManifestAddress, sbor::DecodeError> {
+        println!("Encoding manifest address: {:?}", addr_input);
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        assert!(addr_input.encode_body(&mut encoder).is_ok());
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        decoder.decode_deeper_body_with_value_kind::<ManifestAddress>(ManifestAddress::value_kind())
+    }
+
+    #[test]
+    fn manifest_address_decode_static_success() {
+        let node_id = NodeId::new(EntityType::GlobalPackage as u8, &[0; NodeId::RID_LENGTH]);
+        let addr_input = ManifestAddress::Static(node_id);
+        let addr_output = prepare(&addr_input);
+        assert!(addr_output.is_ok());
+        assert_eq!(addr_input, addr_output.unwrap());
+    }
+
+    #[test]
+    fn manifest_address_decode_named_success() {
+        let addr_input = ManifestAddress::Named(1);
+        let addr_output = prepare(&addr_input);
+        assert!(addr_output.is_ok());
+        assert_eq!(addr_input, addr_output.unwrap());
+    }
+
+    #[test]
+    fn manifest_address_decode_static_fail() {
+        // use invalid entity type (0) to an generate error
+        let node_id = NodeId::new(0, &[0; NodeId::RID_LENGTH]);
+        let addr_input = ManifestAddress::Static(node_id);
+        let addr_output = prepare(&addr_input);
+        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+    }
+
+    #[test]
+    fn manifest_address_decode_named_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        encoder
+            .write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED)
+            .unwrap();
+        let malformed_value: u8 = 1; // use u8 instead of u32 should inovke an error
+        encoder.write_slice(&malformed_value.to_le_bytes()).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let addr_output = decoder
+            .decode_deeper_body_with_value_kind::<ManifestAddress>(ManifestAddress::value_kind());
+
+        // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
+        assert!(matches!(
+            addr_output,
+            Err(DecodeError::BufferUnderflow { .. })
+        ));
+    }
+
+    #[test]
+    fn manifest_address_decode_discriminator_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        // use invalid discriminator value
+        encoder.write_discriminator(0xff).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let addr_output = decoder
+            .decode_deeper_body_with_value_kind::<ManifestAddress>(ManifestAddress::value_kind());
+
+        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+    }
+}

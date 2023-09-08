@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
@@ -410,8 +413,10 @@ fn run_radiswap(mode: Mode) {
 
     // Publish package
     let package_address = test_runner.publish_package(
-        include_bytes!("../../assets/radiswap.wasm").to_vec(),
-        manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap(),
+        (
+            include_bytes!("../../assets/radiswap.wasm").to_vec(),
+            manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap(),
+        ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -510,8 +515,10 @@ fn run_flash_loan(mode: Mode) {
 
     // Publish package
     let package_address = test_runner.publish_package(
-        include_bytes!("../../assets/flash_loan.wasm").to_vec(),
-        manifest_decode(include_bytes!("../../assets/flash_loan.rpd")).unwrap(),
+        (
+            include_bytes!("../../assets/flash_loan.wasm").to_vec(),
+            manifest_decode(include_bytes!("../../assets/flash_loan.rpd")).unwrap(),
+        ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -771,7 +778,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, Compo
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("fee"));
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -837,13 +844,13 @@ impl NonFungibleData for TestNonFungibleData {
 #[test]
 fn publish_package_1mib() {
     let mut test_runner = TestRunnerBuilder::new().build();
-    let (code, definition) = Compile::compile("./tests/blueprints/large_package");
+    let (code, definition) = PackageLoader::get("large_package");
     println!("Code size: {}", code.len());
     assert!(code.len() <= 1000 * 1024);
     assert!(code.len() >= 900 * 1024);
 
     // internally validates if publish succeeded
-    test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
+    test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
 }
 
 /// Based on product requirements, system loan should be just enough to cover:

@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -7,7 +10,7 @@ use transaction::prelude::*;
 fn mixed_up_modules_causes_type_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/module");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("module"));
 
     // Act
     let manifest = ManifestBuilder::new()

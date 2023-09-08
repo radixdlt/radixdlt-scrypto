@@ -4,6 +4,7 @@ version = "0.13.0"
 edition = "2021"
 
 [lib]
+doctest = false
 proc-macro = true
 bench = false
 

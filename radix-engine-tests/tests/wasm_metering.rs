@@ -14,8 +14,7 @@ fn test_loop() {
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "1000"));
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );
@@ -38,8 +37,7 @@ fn test_finish_before_system_loan_limit() {
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "1"));
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );
@@ -61,8 +59,7 @@ fn test_loop_out_of_cost_unit() {
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );
@@ -86,8 +83,7 @@ fn test_recursion() {
     // In this test case, each call frame costs 4 stack units
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "256"));
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );
@@ -109,8 +105,7 @@ fn test_recursion_stack_overflow() {
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );
@@ -136,8 +131,7 @@ fn test_grow_memory_within_limit() {
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );
@@ -163,8 +157,7 @@ fn test_grow_memory_beyond_limit() {
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );
@@ -196,8 +189,7 @@ fn test_grow_memory_by_more_than_65536() {
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
-        code,
-        single_function_package_definition("Test", "f"),
+        (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
     );

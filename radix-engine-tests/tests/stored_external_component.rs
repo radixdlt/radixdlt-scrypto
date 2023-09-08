@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -7,7 +10,8 @@ use transaction::prelude::*;
 fn stored_component_addresses_in_non_globalized_component_are_invokable() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
+    let package =
+        test_runner.publish_package_simple(PackageLoader::get("stored_external_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -29,7 +33,8 @@ fn stored_component_addresses_are_invokable() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
-    let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
+    let package =
+        test_runner.publish_package_simple(PackageLoader::get("stored_external_component"));
     let manifest1 = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "ExternalComponent", "create", manifest_args!())

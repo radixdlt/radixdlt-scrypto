@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -8,7 +11,8 @@ fn test_query_transaction_runtime_info() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_runtime");
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -34,7 +38,8 @@ fn test_generate_ruid() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_runtime");
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()

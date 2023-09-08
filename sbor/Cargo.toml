@@ -33,4 +33,5 @@ trace = ["sbor-derive/trace"]
 radix_engine_fuzzing = ["arbitrary"]
 
 [lib]
+doctest = false
 bench = false
