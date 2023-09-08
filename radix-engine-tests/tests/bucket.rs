@@ -399,9 +399,9 @@ fn create_vault_proof_of_zero_amount_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ProofError(ProofError::EmptyProofNotAllowed)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(
+                ProofError::EmptyProofNotAllowed
+            )))
         )
     });
 }
