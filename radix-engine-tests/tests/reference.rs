@@ -61,7 +61,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        e.to_string().contains("RefNotFound")
+        e.to_string().contains("RefCantBeAddedToSubstate")
             && e.to_string().contains(&hex::encode(vault_id.as_bytes()))
     });
 }
@@ -119,7 +119,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        e.to_string().contains("RefNotFound")
+        e.to_string().contains("RefCantBeAddedToSubstate")
             && e.to_string().contains(&hex::encode(vault_id.as_bytes()))
     });
 }
@@ -251,7 +251,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        e.to_string().contains("RefNotFound")
+        e.to_string().contains("RefCantBeAddedToSubstate")
             && e.to_string().contains(&hex::encode(vault_id.as_bytes()))
     });
 }
