@@ -400,7 +400,7 @@ fn create_vault_proof_of_zero_amount_should_fail() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::InvalidAmount(..)
+                VaultError::ProofError(ProofError::EmptyProofNotAllowed)
             ))
         )
     });
