@@ -60,7 +60,8 @@ members = [
     "logger",
     "validator",
     "wasm_non_mvp",
-    "royalty-edge-cases"
+    "royalty-edge-cases",
+    "system_wasm_buffers"
 ]
 
 [profile.release]

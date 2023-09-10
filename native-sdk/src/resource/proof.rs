@@ -71,7 +71,7 @@ impl NativeProof for Proof {
     where
         Y: ClientObjectApi<E>,
     {
-        let address = api.get_outer_object(self.0.as_node_id()).unwrap();
+        let address = api.get_outer_object(self.0.as_node_id())?;
         Ok(ResourceAddress::try_from(address).unwrap())
     }
 
