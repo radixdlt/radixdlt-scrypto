@@ -206,6 +206,44 @@ fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
     });
 }
 
+#[test]
+fn component_and_package_royalties_are_both_applied() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let (code, mut definition) = PackageLoader::get("royalty-edge-cases");
+    let royalty_amount = RoyaltyAmount::Xrd(10.into());
+    update_package_royalties(&mut definition, royalty_amount);
+
+    let package_address = test_runner.publish_package_simple((code, definition));
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoyaltyEdgeCases",
+            "instantiate",
+            manifest_args!(royalty_amount),
+        )
+        .build();
+    let component_address = *test_runner
+        .execute_manifest(manifest, vec![])
+        .expect_commit_success()
+        .new_component_addresses()
+        .first()
+        .unwrap();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(component_address, "method", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(receipt.fee_summary.total_royalty_cost_in_xrd, dec!("20"));
+}
+
 /// This test is here to check if the following bit of code can cause a panic in the Royalty module:
 /// https://github.com/radixdlt/radixdlt-scrypto/blob/v0.12.1/radix-engine/src/system/node_modules/royalty/package.rs#L455
 /// I suspected that this could cause a panic since we're defaulting to one type and then calling
