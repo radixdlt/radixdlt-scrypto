@@ -59,6 +59,10 @@ pub enum PackageError {
     InvalidLocalTypeId(LocalTypeId),
     InvalidGenericId(u8),
     EventGenericTypeNotSupported,
+    OuterBlueprintCantBeAnInnerBlueprint {
+        inner: String,
+        violating_outer: String,
+    },
 
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
@@ -133,8 +137,28 @@ pub enum PackageError {
 fn validate_package_schema(
     blueprints: &IndexMap<String, BlueprintDefinitionInit>,
 ) -> Result<(), PackageError> {
-    for bp_def in blueprints.values() {
+    for (bp_name, bp_def) in blueprints.iter() {
         let bp_schema = &bp_def.schema;
+
+        match &bp_def.blueprint_type {
+            BlueprintType::Outer => Ok(()),
+            BlueprintType::Inner { outer_blueprint } if outer_blueprint != bp_name => {
+                match blueprints
+                    .get(outer_blueprint)
+                    .map(|bp_def| &bp_def.blueprint_type)
+                {
+                    Some(BlueprintType::Outer) => Ok(()),
+                    Some(BlueprintType::Inner { .. }) => {
+                        Err(PackageError::OuterBlueprintCantBeAnInnerBlueprint {
+                            inner: bp_name.clone(),
+                            violating_outer: outer_blueprint.clone(),
+                        })
+                    }
+                    None => Err(PackageError::MissingOuterBlueprint),
+                }
+            }
+            BlueprintType::Inner { .. } => Err(PackageError::MissingOuterBlueprint),
+        }?;
 
         validate_schema(bp_schema.schema.v1())
             .map_err(|e| PackageError::InvalidBlueprintSchema(e))?;

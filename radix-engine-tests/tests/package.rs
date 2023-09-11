@@ -553,6 +553,85 @@ fn publishing_of_package_with_blueprint_name_exceeding_length_limit_fails() {
     })
 }
 
+#[test]
+fn publishing_of_package_where_outer_blueprint_is_inner_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    let (bp_name1, mut bp_definition1) = definition.blueprints.pop().unwrap();
+    let (bp_name2, mut bp_definition2) = definition.blueprints.pop().unwrap();
+
+    bp_definition1.blueprint_type = BlueprintType::Inner {
+        outer_blueprint: "NoneExistent".to_owned(),
+    };
+    bp_definition2.blueprint_type = BlueprintType::Inner {
+        outer_blueprint: bp_name1.clone(),
+    };
+
+    definition.blueprints.insert(bp_name2, bp_definition2);
+    definition.blueprints.insert(bp_name1, bp_definition1);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::OuterBlueprintCantBeAnInnerBlueprint { .. }
+            ))
+        )
+    })
+}
+
+#[test]
+fn publishing_of_package_where_outer_blueprint_is_self_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    let (bp_name, mut bp_definition) = definition.blueprints.pop().unwrap();
+    bp_definition.blueprint_type = BlueprintType::Inner {
+        outer_blueprint: bp_name.clone(),
+    };
+    definition.blueprints.insert(bp_name, bp_definition);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::MissingOuterBlueprint
+            ))
+        )
+    })
+}
+
 fn name(len: usize) -> String {
     (0..len).map(|_| 'A').collect()
 }
