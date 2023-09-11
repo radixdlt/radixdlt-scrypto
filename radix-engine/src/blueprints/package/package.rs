@@ -70,6 +70,10 @@ pub enum PackageError {
         limit: usize,
         actual: usize,
     },
+    ExceededMaxBlueprintNameLen {
+        limit: usize,
+        actual: usize,
+    },
     ExceededMaxEventNameLen {
         limit: usize,
         actual: usize,
@@ -512,6 +516,12 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
 
     for (bp_name, bp_init) in definition.blueprints.iter() {
         condition(bp_name)?;
+        if bp_name.len() > MAX_BLUEPRINT_NAME_LEN {
+            return Err(PackageError::ExceededMaxBlueprintNameLen {
+                limit: MAX_BLUEPRINT_NAME_LEN,
+                actual: bp_name.len(),
+            });
+        }
 
         for (name, _) in bp_init.schema.events.event_schema.iter() {
             if name.len() > MAX_EVENT_NAME_LEN {

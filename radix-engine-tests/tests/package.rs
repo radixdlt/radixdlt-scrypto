@@ -514,3 +514,45 @@ fn well_known_types_in_schema_are_validated() {
         )
     });
 }
+
+#[test]
+fn publishing_of_package_with_blueprint_name_exceeding_length_limit_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    let (_, value) = definition.blueprints.pop().unwrap();
+    definition
+        .blueprints
+        .insert(name(MAX_BLUEPRINT_NAME_LEN + 1), value);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::ExceededMaxBlueprintNameLen {
+                    limit: 100,
+                    actual: 101
+                }
+            ))
+        )
+    })
+}
+
+fn name(len: usize) -> String {
+    (0..len).map(|_| 'A').collect()
+}
