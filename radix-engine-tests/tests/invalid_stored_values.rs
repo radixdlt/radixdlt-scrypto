@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{MovePartitionError, PersistNodeError};
 use radix_engine::types::*;
@@ -8,7 +11,7 @@ use transaction::prelude::*;
 fn stored_bucket_in_committed_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("stored_values"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -39,7 +42,7 @@ fn stored_bucket_in_committed_component_should_fail() {
 fn stored_bucket_in_owned_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("stored_values"));
 
     // Act
     let manifest = ManifestBuilder::new()

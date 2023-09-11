@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -13,7 +16,7 @@ enum ExpectedResult {
 fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedResult) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/package_schema");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("package_schema"));
 
     // Act
     let manifest = ManifestBuilder::new()

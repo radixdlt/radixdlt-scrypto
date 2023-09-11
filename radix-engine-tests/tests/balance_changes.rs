@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::{transaction::BalanceChange, types::*};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -13,8 +16,8 @@ fn test_balance_changes_when_success() {
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
-    let package_address = test_runner.compile_and_publish_with_owner(
-        "./tests/blueprints/balance_changes",
+    let package_address = test_runner.publish_package_with_owner(
+        PackageLoader::get("balance_changes"),
         owner_badge_addr.clone(),
     );
 
@@ -98,8 +101,8 @@ fn test_balance_changes_when_failure() {
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
-    let package_address = test_runner.compile_and_publish_with_owner(
-        "./tests/blueprints/balance_changes",
+    let package_address = test_runner.publish_package_with_owner(
+        PackageLoader::get("balance_changes"),
         owner_badge_addr.clone(),
     );
 

@@ -21,6 +21,7 @@ strip = true           # Strip the symbols.
 overflow-checks = true # Panic in the case of an overflow.
 
 [lib]
+doctest = false
 crate-type = ["cdylib", "lib"]
 
 [workspace]

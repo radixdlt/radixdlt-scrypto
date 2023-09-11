@@ -161,7 +161,7 @@ use crate::prelude::*;
 /// would be through simple factory and destructor methods.
 ///
 /// ## Full Examples
-/// ```
+/// ```norun
 #[doc = include_str!("../../../assets/blueprints/radiswap/tests/lib.rs")]
 /// ```
 pub struct TestEnvironment(pub(super) EncapsulatedRadixEngine);

@@ -72,7 +72,7 @@ impl FungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Drop other bucket
+        // This will fail if bucket is not an inner object of the current fungible resource
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
         let resource = other_bucket.liquid;
 
@@ -143,8 +143,8 @@ impl FungibleBucketBlueprint {
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                0u8 => FieldValue::new(&proof_info),
-                1u8 => FieldValue::new(&proof_evidence),
+                FungibleProofField::Moveable.field_index() => FieldValue::new(&proof_info),
+                FungibleProofField::ProofRefs.field_index() => FieldValue::new(&proof_evidence),
             },
         )?;
 

@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
@@ -9,7 +12,6 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-#[ignore]
 fn cannot_get_total_supply_of_xrd() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -36,7 +38,7 @@ fn test_set_mintable_with_self_resource_address() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -62,7 +64,7 @@ fn test_resource_manager() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -97,7 +99,7 @@ fn mint_with_bad_granularity_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -133,7 +135,7 @@ fn create_fungible_too_high_granularity_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
-    let _package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let _package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -170,7 +172,7 @@ fn mint_too_much_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -208,7 +210,7 @@ fn can_mint_with_proof_in_root() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
@@ -242,7 +244,7 @@ fn cannot_mint_in_component_with_proof_in_root() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
@@ -283,7 +285,7 @@ fn can_burn_with_proof_in_root() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
@@ -317,7 +319,7 @@ fn cannot_burn_in_component_with_proof_in_root() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
@@ -361,7 +363,7 @@ fn test_fungible_resource_amount_for_withdrawal() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -385,7 +387,7 @@ fn test_non_fungible_resource_amount_for_withdrawal() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -409,7 +411,7 @@ fn test_fungible_resource_take_advanced() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -432,7 +434,7 @@ fn test_fungible_resource_take_advanced() {
 fn fungible_bucket_take_advanced_max_should_not_panic() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -454,7 +456,7 @@ fn fungible_bucket_take_advanced_max_should_not_panic() {
 fn fungible_vault_take_advanced_max_should_not_panic() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -476,7 +478,7 @@ fn fungible_vault_take_advanced_max_should_not_panic() {
 fn non_fungible_bucket_take_advanced_max_should_not_panic() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -498,7 +500,7 @@ fn non_fungible_bucket_take_advanced_max_should_not_panic() {
 fn non_fungible_vault_take_advanced_max_should_not_panic() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -521,7 +523,7 @@ fn test_non_fungible_resource_take_advanced() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -545,7 +547,7 @@ fn can_use_fungible_types_in_interface() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -569,7 +571,7 @@ fn can_use_non_fungible_types_in_interface() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()

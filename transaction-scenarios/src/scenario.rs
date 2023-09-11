@@ -161,7 +161,7 @@ impl ScenarioCore {
             .header(TransactionHeaderV1 {
                 network_id: self.network.id,
                 start_epoch_inclusive: self.epoch,
-                end_epoch_exclusive: self.epoch.next(),
+                end_epoch_exclusive: self.epoch.next().unwrap(),
                 nonce,
                 notary_public_key: self.default_notary.public_key(),
                 notary_is_signatory: false,

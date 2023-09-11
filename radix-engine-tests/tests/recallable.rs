@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{
     CallFrameError, KernelError, RejectionReason, RuntimeError, SystemModuleError,
 };
@@ -115,7 +118,7 @@ fn test_recall_on_internal_vault() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/recall");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("recall"));
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
@@ -159,7 +162,7 @@ fn test_recall_on_received_direct_access_reference() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let recallable_token_address = test_runner.create_recallable_token(account);
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/recall");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("recall"));
     let vault_id = test_runner.get_component_vaults(account, recallable_token_address)[0];
 
     // Act
@@ -187,7 +190,7 @@ fn test_recall_on_received_direct_access_reference_which_is_same_as_self() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/recall");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("recall"));
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32)

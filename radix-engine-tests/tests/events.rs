@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
@@ -211,7 +214,7 @@ fn create_proof_emits_correct_events() {
 fn scrypto_cant_emit_unregistered_event() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
         .call_function(
@@ -241,7 +244,7 @@ fn scrypto_cant_emit_unregistered_event() {
 fn scrypto_can_emit_registered_events() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
@@ -292,7 +295,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
-    let (code, definition) = Compile::compile("./tests/blueprints/events_invalid");
+    let (code, definition) = PackageLoader::get("events_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
@@ -317,7 +320,7 @@ fn local_type_id_with_misleading_name_fails() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
-    let (code, mut definition) = Compile::compile("./tests/blueprints/events");
+    let (code, mut definition) = PackageLoader::get("events");
     let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
     blueprint_setup.schema.events.event_schema.insert(
         "HelloHelloEvent".to_string(),
@@ -1016,7 +1019,7 @@ fn consensus_manager_round_update_emits_correct_event() {
 #[test]
 fn consensus_manager_epoch_update_emits_epoch_change_event() {
     let genesis_epoch = Epoch::of(3);
-    let initial_epoch = genesis_epoch.next();
+    let initial_epoch = genesis_epoch.next().unwrap();
     let rounds_per_epoch = 5;
     let genesis = CustomGenesis::default(
         genesis_epoch,
@@ -1056,7 +1059,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
             .collect::<Vec<_>>();
         assert_eq!(epoch_change_events.len(), 1);
         let event = epoch_change_events.first().unwrap();
-        assert_eq!(event.epoch, initial_epoch.next());
+        assert_eq!(event.epoch, initial_epoch.next().unwrap());
     }
 }
 
@@ -1434,7 +1437,7 @@ fn validator_unstake_emits_correct_events() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs));
+    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
 
     // Assert
     {
@@ -1586,7 +1589,7 @@ fn validator_claim_xrd_emits_correct_events() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs));
+    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
 
     // Act
     let manifest = ManifestBuilder::new()

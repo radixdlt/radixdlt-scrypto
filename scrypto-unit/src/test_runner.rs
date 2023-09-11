@@ -3,6 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use crate::HashTreeUpdatingDatabase;
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
@@ -48,11 +49,8 @@ use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
-    SubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase, SubstateDatabase,
 };
-use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto::prelude::*;
 use transaction::prelude::*;
@@ -65,13 +63,32 @@ pub struct Compile;
 
 impl Compile {
     pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
+        Self::compile_with_env_vars(
+            package_dir,
+            btreemap! {
+                "RUSTFLAGS".to_owned() => "".to_owned(),
+                "CARGO_ENCODED_RUSTFLAGS".to_owned() => "".to_owned(),
+            },
+        )
+    }
+
+    pub fn compile_with_env_vars<P: AsRef<Path>>(
+        package_dir: P,
+        env_vars: sbor::rust::collections::BTreeMap<String, String>,
+    ) -> (Vec<u8>, PackageDefinition) {
         // Build
         let status = Command::new("cargo")
-            .env("RUSTFLAGS", "")
+            .envs(env_vars)
             .current_dir(package_dir.as_ref())
             .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
             .status()
-            .unwrap();
+            .unwrap_or_else(|error| {
+                panic!(
+                    "Compiling \"{:?}\" failed with \"{:?}\"",
+                    package_dir.as_ref(),
+                    error
+                )
+            });
         if !status.success() {
             panic!("Failed to compile package: {:?}", package_dir.as_ref());
         }
@@ -266,7 +283,6 @@ pub struct TestRunnerBuilder<E, D> {
     custom_extension: E,
     custom_database: D,
     trace: bool,
-    state_hashing: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -276,7 +292,6 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
-            state_hashing: false,
         }
     }
 }
@@ -287,9 +302,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         self
     }
 
-    pub fn with_state_hashing(mut self) -> Self {
-        self.state_hashing = true;
-        self
+    pub fn with_state_hashing(self) -> TestRunnerBuilder<E, HashTreeUpdatingDatabase<D>> {
+        TestRunnerBuilder {
+            custom_genesis: self.custom_genesis,
+            custom_extension: self.custom_extension,
+            custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
+            trace: self.trace,
+        }
     }
 
     pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
@@ -306,7 +325,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: extension,
             custom_database: self.custom_database,
             trace: self.trace,
-            state_hashing: self.state_hashing,
         }
     }
 
@@ -316,7 +334,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: self.custom_extension,
             custom_database: database,
             trace: self.trace,
-            state_hashing: self.state_hashing,
         }
     }
 
@@ -389,9 +406,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             scrypto_vm,
             native_vm,
             database: substate_db,
-            state_hash_support: Some(self.state_hashing)
-                .filter(|x| *x)
-                .map(|_| StateHashSupport::new()),
             next_private_key,
             next_transaction_nonce,
             trace,
@@ -418,7 +432,6 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     next_private_key: u64,
     next_transaction_nonce: u32,
     trace: bool,
-    state_hash_support: Option<StateHashSupport>,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
     xrd_free_credits_used: bool,
 }
@@ -450,7 +463,6 @@ pub struct TestRunnerSnapshot {
     database: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
-    state_hash_support: Option<StateHashSupport>,
 }
 
 impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
@@ -459,7 +471,6 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
             database: self.database.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
-            state_hash_support: self.state_hash_support.clone(),
         }
     }
 
@@ -467,7 +478,6 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
         self.database = snapshot.database;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
-        self.state_hash_support = snapshot.state_hash_support;
     }
 }
 
@@ -1109,12 +1119,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         package_address
     }
 
-    pub fn publish_package_at_address(
+    pub fn publish_package_at_address<P: Into<PackagePublishingSource>>(
         &mut self,
-        code: Vec<u8>,
-        definition: PackageDefinition,
+        source: P,
         address: PackageAddress,
     ) {
+        let (code, definition) = source.into().code_and_definition();
         let code_hash = hash(&code);
         let nonce = self.next_transaction_nonce();
 
@@ -1151,13 +1161,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         receipt.expect_commit_success();
     }
 
-    pub fn publish_package(
+    pub fn publish_package<P: Into<PackagePublishingSource>>(
         &mut self,
-        code: Vec<u8>,
-        definition: PackageDefinition,
+        source: P,
         metadata: BTreeMap<String, MetadataValue>,
         owner_role: OwnerRole,
     ) -> PackageAddress {
+        let (code, definition) = source.into().code_and_definition();
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_advanced(None, code, definition, metadata, owner_role)
@@ -1167,12 +1177,19 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         receipt.expect_commit(true).new_package_addresses()[0]
     }
 
-    pub fn publish_package_with_owner(
+    pub fn publish_package_simple<P: Into<PackagePublishingSource>>(
         &mut self,
-        code: Vec<u8>,
-        definition: PackageDefinition,
+        source: P,
+    ) -> PackageAddress {
+        self.publish_package(source, Default::default(), OwnerRole::None)
+    }
+
+    pub fn publish_package_with_owner<P: Into<PackagePublishingSource>>(
+        &mut self,
+        source: P,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
+        let (code, definition) = source.into().code_and_definition();
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_with_owner(code, definition, owner_badge)
@@ -1186,40 +1203,41 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         Compile::compile(package_dir)
     }
 
+    // Doesn't need to be here - kept for backward compatibility
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
-        let (code, definition) = Compile::compile(package_dir);
-        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
+        self.publish_package(package_dir.as_ref(), BTreeMap::new(), OwnerRole::None)
     }
 
+    // Doesn't need to be here - kept for backward compatibility
     pub fn compile_and_publish_at_address<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
         address: PackageAddress,
     ) {
-        let (code, definition) = Compile::compile(package_dir);
-        self.publish_package_at_address(code, definition, address);
+        self.publish_package_at_address(package_dir.as_ref(), address);
     }
 
-    pub fn compile_and_publish_retain_blueprints<
-        P: AsRef<Path>,
+    pub fn publish_retain_blueprints<
+        P: Into<PackagePublishingSource>,
         F: FnMut(&String, &mut BlueprintDefinitionInit) -> bool,
     >(
         &mut self,
-        package_dir: P,
+        source: P,
         retain: F,
     ) -> PackageAddress {
-        let (code, mut definition) = Compile::compile(package_dir);
+        let (code, mut definition) =
+            Into::<PackagePublishingSource>::into(source).code_and_definition();
         definition.blueprints.retain(retain);
-        self.publish_package(code, definition, BTreeMap::new(), OwnerRole::None)
+        self.publish_package((code, definition), BTreeMap::new(), OwnerRole::None)
     }
 
+    // Doesn't need to be here - kept for backward compatibility
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let (code, definition) = Compile::compile(package_dir);
-        self.publish_package_with_owner(code, definition, owner_badge)
+        self.publish_package_with_owner(package_dir.as_ref(), owner_badge)
     }
 
     pub fn execute_unsigned_built_manifest_with_faucet_lock_fee(
@@ -1265,6 +1283,26 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             ManifestBuilder::new().then(create_manifest).build(),
             signatures.resolve(),
         )
+    }
+
+    pub fn execute_manifest_with_fee_from_faucet<T>(
+        &mut self,
+        mut manifest: TransactionManifestV1,
+        amount: Decimal,
+        initial_proofs: T,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        manifest.instructions.insert(
+            0,
+            transaction::model::InstructionV1::CallMethod {
+                address: self.faucet_component().into(),
+                method_name: "lock_fee".to_string(),
+                args: manifest_args!(amount).into(),
+            },
+        );
+        self.execute_manifest(manifest, initial_proofs)
     }
 
     pub fn execute_manifest_ignoring_fee<T>(
@@ -1391,13 +1429,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 .state_updates
                 .create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&database_updates);
-            if let Some(state_hash_support) = &mut self.state_hash_support {
-                state_hash_support.update_with(&database_updates);
-            }
-
             self.collected_events
                 .push(commit.application_events.clone());
-
             assert_receipt_substate_changes_can_be_typed(commit);
         }
         transaction_receipt
@@ -1437,7 +1470,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     header: TransactionHeaderV1 {
                         network_id: NetworkDefinition::simulator().id,
                         start_epoch_inclusive: epoch,
-                        end_epoch_exclusive: epoch.after(10),
+                        end_epoch_exclusive: epoch.after(10).unwrap(),
                         nonce: 0,
                         notary_public_key: PublicKey::Secp256k1(Secp256k1PublicKey([0u8; 33])),
                         notary_is_signatory: false,
@@ -2046,13 +2079,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         receipt.expect_commit(true).output(0)
     }
 
-    pub fn get_state_hash(&self) -> Hash {
-        self.state_hash_support
-            .as_ref()
-            .expect("state hashing not enabled")
-            .get_current()
-    }
-
     pub fn execute_system_transaction_with_preallocation(
         &mut self,
         instructions: Vec<InstructionV1>,
@@ -2314,6 +2340,31 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 }
 
+impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, HashTreeUpdatingDatabase<D>> {
+    pub fn get_state_hash(&self) -> Hash {
+        self.database.get_current_root_hash()
+    }
+
+    pub fn assert_state_hash_tree_matches_substate_store(&mut self) {
+        let hashes_from_tree = self.database.list_substate_hashes();
+        assert_eq!(
+            hashes_from_tree.keys().cloned().collect::<HashSet<_>>(),
+            self.database.list_partition_keys().collect::<HashSet<_>>(),
+            "partitions captured in the state hash tree should match those in the substate store"
+        );
+        for (db_partition_key, by_db_sort_key) in hashes_from_tree {
+            assert_eq!(
+                by_db_sort_key.into_iter().collect::<HashMap<_, _>>(),
+                self.database.list_entries(&db_partition_key)
+                    .map(|(db_sort_key, substate_value)| (db_sort_key, hash(substate_value)))
+                    .collect::<HashMap<_, _>>(),
+                "partition's {:?} substates in the state hash tree should match those in the substate store",
+                db_partition_key,
+            )
+        }
+    }
+}
+
 pub struct SubtreeVaults<'d, D> {
     database: &'d D,
 }
@@ -2349,50 +2400,6 @@ impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
                     .map(|change| (traversed_resource, change))
             })
             .collect()
-    }
-}
-
-#[derive(Clone)]
-pub struct StateHashSupport {
-    tree_store: TypedInMemoryTreeStore,
-    current_version: Version,
-    current_hash: Hash,
-}
-
-impl StateHashSupport {
-    fn new() -> Self {
-        StateHashSupport {
-            tree_store: TypedInMemoryTreeStore::new(),
-            current_version: 0,
-            current_hash: Hash([0; Hash::LENGTH]),
-        }
-    }
-
-    pub fn update_with(&mut self, db_updates: &DatabaseUpdates) {
-        let mut hash_changes = Vec::new();
-        for (db_partition_key, partition_update) in db_updates {
-            for (db_sort_key, db_update) in partition_update {
-                let hash_change = SubstateHashChange::new(
-                    (db_partition_key.clone(), db_sort_key.clone()),
-                    match db_update {
-                        DatabaseUpdate::Set(v) => Some(hash(v)),
-                        DatabaseUpdate::Delete => None,
-                    },
-                );
-                hash_changes.push(hash_change);
-            }
-        }
-
-        self.current_hash = put_at_next_version(
-            &mut self.tree_store,
-            Some(self.current_version).filter(|version| *version > 0),
-            hash_changes,
-        );
-        self.current_version += 1;
-    }
-
-    pub fn get_current(&self) -> Hash {
-        self.current_hash
     }
 }
 
@@ -2592,5 +2599,49 @@ pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
             _ => {}
         };
         let _ = to_typed_native_event(event_type_identifier, event_data).unwrap();
+    }
+}
+
+pub enum PackagePublishingSource {
+    CompileAndPublishFromSource(PathBuf),
+    PublishExisting(Vec<u8>, PackageDefinition),
+}
+
+impl From<String> for PackagePublishingSource {
+    fn from(value: String) -> Self {
+        Self::CompileAndPublishFromSource(value.into())
+    }
+}
+
+impl<'g> From<&'g str> for PackagePublishingSource {
+    fn from(value: &'g str) -> Self {
+        Self::CompileAndPublishFromSource(value.into())
+    }
+}
+
+impl From<PathBuf> for PackagePublishingSource {
+    fn from(value: PathBuf) -> Self {
+        Self::CompileAndPublishFromSource(value)
+    }
+}
+
+impl<'g> From<&'g Path> for PackagePublishingSource {
+    fn from(value: &'g Path) -> Self {
+        Self::CompileAndPublishFromSource(value.into())
+    }
+}
+
+impl From<(Vec<u8>, PackageDefinition)> for PackagePublishingSource {
+    fn from(value: (Vec<u8>, PackageDefinition)) -> Self {
+        Self::PublishExisting(value.0, value.1)
+    }
+}
+
+impl PackagePublishingSource {
+    pub fn code_and_definition(self) -> (Vec<u8>, PackageDefinition) {
+        match self {
+            Self::CompileAndPublishFromSource(path) => Compile::compile(path),
+            Self::PublishExisting(code, definition) => (code, definition),
+        }
     }
 }

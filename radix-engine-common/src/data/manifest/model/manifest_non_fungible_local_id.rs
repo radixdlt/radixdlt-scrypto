@@ -24,7 +24,6 @@ pub enum ManifestNonFungibleLocalIdValidationError {
     TooLong,
     Empty,
     ContainsBadCharacter(char),
-    NotRuidV4Variant1,
 }
 
 impl ManifestNonFungibleLocalId {
@@ -171,5 +170,60 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
             3 => Ok(Self::ruid(decoder.read_slice(32)?.try_into().unwrap())),
             _ => Err(DecodeError::InvalidCustomValue),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn manifest_non_fungible_local_id_from_string_fail() {
+        let too_long_string = ['a' as u8; MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH + 1];
+
+        assert!(matches!(
+            ManifestNonFungibleLocalId::string(String::new()).unwrap_err(),
+            ManifestNonFungibleLocalIdValidationError::Empty
+        ));
+        assert!(matches!(
+            ManifestNonFungibleLocalId::string(
+                String::from_utf8(too_long_string.to_vec()).unwrap()
+            )
+            .unwrap_err(),
+            ManifestNonFungibleLocalIdValidationError::TooLong
+        ));
+        assert!(matches!(
+            ManifestNonFungibleLocalId::string(String::from("$@!")).unwrap_err(),
+            ManifestNonFungibleLocalIdValidationError::ContainsBadCharacter(..)
+        ));
+    }
+
+    #[test]
+    fn manifest_non_fungible_local_id_from_bytes_fail() {
+        let too_long_buffer = [0u8; MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH + 1];
+
+        assert!(matches!(
+            ManifestNonFungibleLocalId::bytes(Vec::<u8>::new()).unwrap_err(),
+            ManifestNonFungibleLocalIdValidationError::Empty
+        ));
+        assert!(matches!(
+            ManifestNonFungibleLocalId::bytes(too_long_buffer.to_vec()).unwrap_err(),
+            ManifestNonFungibleLocalIdValidationError::TooLong
+        ));
+    }
+
+    #[test]
+    fn manifest_non_fungible_local_id_discriminator_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        // use invalid discriminator value
+        encoder.write_discriminator(0xff).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let id_output = decoder.decode_deeper_body_with_value_kind::<ManifestNonFungibleLocalId>(
+            ManifestNonFungibleLocalId::value_kind(),
+        );
+
+        assert!(matches!(id_output, Err(DecodeError::InvalidCustomValue)));
     }
 }

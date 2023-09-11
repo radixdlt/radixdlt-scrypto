@@ -8,15 +8,12 @@ use radix_engine_interface::types::*;
 pub enum VaultError {
     ResourceError(ResourceError),
     ProofError(ProofError),
-    MismatchingResource,
-    InvalidAmount,
+    InvalidAmount(Decimal),
     NotFreezable,
     NotRecallable,
     VaultIsFrozen,
-
     LockFeeNotRadixToken,
-    LockFeeInsufficientBalance,
-
+    LockFeeInsufficientBalance { requested: Decimal, actual: Decimal },
     DecimalOverflow,
 }
 

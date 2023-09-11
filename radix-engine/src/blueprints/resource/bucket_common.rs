@@ -10,7 +10,6 @@ pub enum BucketError {
     ResourceError(ResourceError),
     ProofError(ProofError),
     Locked(NodeId),
-    MismatchingResource,
     InvalidAmount(Decimal),
     DecimalOverflow,
 }
@@ -19,11 +18,6 @@ impl From<BucketError> for RuntimeError {
     fn from(bucket_error: BucketError) -> Self {
         RuntimeError::ApplicationError(ApplicationError::BucketError(bucket_error))
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct BucketInfoSubstate {
-    pub resource_type: ResourceType,
 }
 
 pub fn drop_fungible_bucket<Y>(

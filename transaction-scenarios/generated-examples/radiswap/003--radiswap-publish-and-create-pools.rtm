@@ -528,7 +528,7 @@ CALL_FUNCTION
         )
     )
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Address("resource_sim1t5pj98uqzu7k6w68wcme5hz59udcmh07qwxar36032mftdwna85mn2")
+    Address("resource_sim1t4qdxqlkd0a78h89ugnc2t73upk89y4m0rymza4zst2gj8e5lj9l7q")
 ;
 CALL_FUNCTION
     NamedAddress("radiswap_package")
@@ -545,8 +545,8 @@ CALL_FUNCTION
             )
         )
     )
-    Address("resource_sim1thfpe3dlszf5ahpxaj46f9ndwk7mx42jnn23wsj4zrzdhwwekt25g0")
-    Address("resource_sim1tkqte60nkrw896whyqc4lk36gluedk229uky0eax2axa3ul02kak5n")
+    Address("resource_sim1t4tzmdekyeq0ylqcn7preshg4kp6vapd9xhfrsuw6ffduk4geff78m")
+    Address("resource_sim1tkfj764awkv5mqu20xynp0dw3ps475djjzfzzsd72qjsd7wuk29dpr")
 ;
 CALL_METHOD
     Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")

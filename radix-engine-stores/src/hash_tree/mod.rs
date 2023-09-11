@@ -1,4 +1,4 @@
-use crate::hash_tree::types::{LeafKey, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use crate::hash_tree::types::{LeafKey, LeafNode, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_common::crypto::Hash;
 use radix_engine_store_interface::interface::{
@@ -6,6 +6,7 @@ use radix_engine_store_interface::interface::{
 };
 use tree_store::{ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
+use utils::copy_u8_array;
 use utils::prelude::vec;
 use utils::rust::collections::{index_map_new, IndexMap};
 use utils::rust::vec::Vec;
@@ -114,7 +115,78 @@ pub fn put_at_next_version<S: TreeStore>(
     .unwrap_or(SPARSE_MERKLE_PLACEHOLDER_HASH)
 }
 
+pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
+    node_tier_store: &mut S,
+    node_root_version: Version,
+) -> IndexMap<DbPartitionKey, IndexMap<DbSortKey, Hash>> {
+    let mut by_db_partition = index_map_new();
+    for node_tier_leaf in list_leaves(node_tier_store, node_root_version) {
+        let db_node_key = node_tier_leaf.leaf_key().bytes.clone();
+        let mut partition_tier_store = NestedTreeStore::new(node_tier_store, db_node_key.clone());
+        for partition_tier_leaf in
+            list_leaves(&mut partition_tier_store, node_tier_leaf.payload().clone())
+        {
+            let db_partition_num =
+                DbPartitionNum::from_be_bytes(copy_u8_array(&partition_tier_leaf.leaf_key().bytes));
+            let mut substate_tier_store =
+                NestedTreeStore::new(&mut partition_tier_store, vec![db_partition_num]);
+            let mut by_db_sort_key = index_map_new();
+            for substate_tier_leaf in list_leaves(
+                &mut substate_tier_store,
+                partition_tier_leaf.payload().clone(),
+            ) {
+                by_db_sort_key.insert(
+                    DbSortKey(substate_tier_leaf.leaf_key().bytes.clone()),
+                    substate_tier_leaf.value_hash(),
+                );
+            }
+            by_db_partition.insert(
+                DbPartitionKey {
+                    node_key: db_node_key.clone(),
+                    partition_num: db_partition_num,
+                },
+                by_db_sort_key,
+            );
+        }
+    }
+    by_db_partition
+}
+
 // only internals below
+
+fn list_leaves<S: ReadableTreeStore>(
+    tree_store: &mut S,
+    version: Version,
+) -> Vec<LeafNode<Version>> {
+    let mut leaves = Vec::new();
+    list_leaves_recursively(tree_store, NodeKey::new_empty_path(version), &mut leaves);
+    leaves
+}
+
+fn list_leaves_recursively<S: ReadableTreeStore>(
+    tree_store: &mut S,
+    key: NodeKey,
+    results: &mut Vec<LeafNode<Version>>,
+) {
+    let Some(node) = tree_store.get_node(&key) else {
+        panic!("{:?} referenced but not found in the storage", key);
+    };
+    match node {
+        TreeNode::Internal(internal) => {
+            for child in internal.children {
+                list_leaves_recursively(
+                    tree_store,
+                    key.gen_child_node_key(child.version, child.nibble),
+                    results,
+                );
+            }
+        }
+        TreeNode::Leaf(leaf) => {
+            results.push(LeafNode::from(&key, &leaf));
+        }
+        TreeNode::Null => {}
+    };
+}
 
 fn get_lower_tier_root_version<S: ReadableTreeStore>(
     store: &S,

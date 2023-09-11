@@ -135,7 +135,7 @@ impl Describe<ScryptoCustomTypeKind> for AttachedModuleId {
         RustTypeId::WellKnown(well_known_scrypto_custom_types::ATTACHED_MODULE_ID_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::module_id_type_data()
+        well_known_scrypto_custom_types::attached_module_id_type_data()
     }
 }
 
@@ -265,7 +265,7 @@ pub trait ClientObjectApi<E> {
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: IndexMap<u8, FieldValue>,
-        event_name: String,
+        event_name: &str,
         event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), E>;
 

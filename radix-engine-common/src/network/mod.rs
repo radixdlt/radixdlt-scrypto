@@ -96,3 +96,33 @@ impl FromStr for NetworkDefinition {
 pub enum ParseNetworkError {
     InvalidNetworkString,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn network_from_string_fail() {
+        assert!(matches!(
+            NetworkDefinition::from_str("non_existing_network").unwrap_err(),
+            ParseNetworkError::InvalidNetworkString
+        ));
+    }
+
+    #[test]
+    fn network_ids() {
+        let array = [
+            ("mainnet", 1),
+            ("Simulator", 242),
+            ("Adapanet", 10),
+            ("NEBUNET", 11),
+            ("Kisharnet", 12),
+            ("ansharnet", 13),
+            ("zabanet", 14),
+        ];
+
+        for (name, id) in array {
+            assert_eq!(NetworkDefinition::from_str(name).unwrap().id, id)
+        }
+    }
+}

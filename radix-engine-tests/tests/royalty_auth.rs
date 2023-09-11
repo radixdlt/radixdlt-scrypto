@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -184,7 +187,7 @@ fn set_up_package_and_component() -> (
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
 
     // Publish package
-    let (code, definition) = Compile::compile("./tests/blueprints/royalty-auth");
+    let (code, definition) = PackageLoader::get("royalty-auth");
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)

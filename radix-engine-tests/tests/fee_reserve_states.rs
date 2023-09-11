@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -10,7 +13,8 @@ fn test_fee_states() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/fee_reserve_states");
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("fee_reserve_states"));
 
     // Run test case
     let fee_locked = dec!(500);

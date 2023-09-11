@@ -5,7 +5,6 @@ use sbor::*;
 pub enum HeaderValidationError {
     UnknownVersion(u8),
     InvalidEpochRange,
-    EpochRangeTooLarge,
     InvalidNetwork,
     InvalidCostUnitLimit,
     InvalidTipPercentage,

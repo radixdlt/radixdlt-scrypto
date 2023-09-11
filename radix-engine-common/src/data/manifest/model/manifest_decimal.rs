@@ -63,3 +63,46 @@ manifest_type!(
     ManifestCustomValueKind::Decimal,
     DECIMAL_SIZE
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn manifest_decimal_parse_fail() {
+        let buf = Vec::from_iter(0u8..DECIMAL_SIZE as u8);
+
+        let dec = ManifestDecimal(buf.as_slice().try_into().unwrap());
+        let mut dec_vec = dec.to_vec();
+
+        assert!(ManifestDecimal::try_from(dec_vec.as_slice()).is_ok());
+
+        // malform encoded vector
+        dec_vec.push(0);
+        let dec_out = ManifestDecimal::try_from(dec_vec.as_slice());
+        assert!(matches!(
+            dec_out,
+            Err(ParseManifestDecimalError::InvalidLength)
+        ));
+
+        println!("Manifest Decimal error: {}", dec_out.unwrap_err());
+    }
+
+    #[test]
+    fn manifest_decimal_encode_decode_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        let malformed_value: u8 = 0;
+        encoder.write_slice(&malformed_value.to_le_bytes()).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let dec_output = decoder
+            .decode_deeper_body_with_value_kind::<ManifestDecimal>(ManifestDecimal::value_kind());
+
+        // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
+        assert!(matches!(
+            dec_output,
+            Err(DecodeError::BufferUnderflow { .. })
+        ));
+    }
+}
