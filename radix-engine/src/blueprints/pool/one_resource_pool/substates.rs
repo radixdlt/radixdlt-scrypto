@@ -11,12 +11,3 @@ pub struct OneResourcePoolSubstate {
     /// The resource manager of the pool unit resource that the pool works with.
     pub pool_unit_resource_manager: ResourceManager,
 }
-
-impl Clone for OneResourcePoolSubstate {
-    fn clone(&self) -> Self {
-        Self {
-            vault: Vault(self.vault.0.clone()),
-            pool_unit_resource_manager: self.pool_unit_resource_manager.clone(),
-        }
-    }
-}
