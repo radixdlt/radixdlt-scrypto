@@ -367,7 +367,8 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: transaction
+        flags: -p transaction
+        coverage_report_name: transaction-coverage
   
   transaction-scenarios:
     name: Run transaction scenarios
@@ -382,7 +383,8 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: transaction-scenarios
+        flags: -p transaction-scenarios
+        coverage_report_name: transaction-scenarios-coverage
   
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
