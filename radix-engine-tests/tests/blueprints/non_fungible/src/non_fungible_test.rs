@@ -278,6 +278,42 @@ mod non_fungible_test {
             (mint_badge, bucket)
         }
 
+        pub fn mint_non_fungible_with_different_id_type() -> (Bucket, Bucket) {
+            let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
+            // Mint a non-fungible
+            let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
+                resource_manager.mint_non_fungible(
+                    &NonFungibleLocalId::string("id_0").unwrap(),
+                    Sandwich {
+                        name: "Test2".to_owned(),
+                        available: false,
+                        tastes_great: true,
+                        reference: None,
+                        own: None,
+                    },
+                )
+            });
+            (mint_badge, bucket)
+        }
+
+        pub fn mint_non_fungible_that_already_exists() -> (Bucket, Bucket) {
+            let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
+            // Mint a non-fungible
+            let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
+                resource_manager.mint_non_fungible(
+                    &NonFungibleLocalId::integer(0),
+                    Sandwich {
+                        name: "Test2".to_owned(),
+                        available: false,
+                        tastes_great: true,
+                        reference: None,
+                        own: None,
+                    },
+                )
+            });
+            (mint_badge, bucket)
+        }
+
         pub fn take_and_put_bucket() -> Bucket {
             let mut bucket = Self::create_non_fungible_fixed();
             assert_eq!(bucket.amount(), 3.into());

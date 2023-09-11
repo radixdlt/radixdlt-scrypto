@@ -865,3 +865,59 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     // Assert
     receipt.expect_commit_failure();
 }
+
+#[test]
+fn cant_mint_non_fungible_with_different_id_type() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, _) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "mint_non_fungible_with_different_id_type",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn cant_mint_non_fungible_that_already_exists() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, _) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "mint_non_fungible_that_already_exists",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::NonFungibleAlreadyExists(..)
+            ))
+        )
+    });
+}
