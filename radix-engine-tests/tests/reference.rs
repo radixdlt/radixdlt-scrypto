@@ -457,3 +457,35 @@ fn test_add_local_ref_to_stored_substate() {
         _ => false,
     });
 }
+
+#[test]
+fn test_internal_typed_reference() {
+    // Basic setup
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource = test_runner.create_recallable_token(account);
+    let vault_id = test_runner
+        .get_component_vaults(account, resource)
+        .pop()
+        .unwrap();
+
+    // Publish package
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("reference"));
+
+    // Instantiate component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_standard_test_fee(account)
+            .call_function(
+                package_address,
+                "ReferenceTest",
+                "recall",
+                manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
+            )
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    receipt.expect_commit_success();
+}
