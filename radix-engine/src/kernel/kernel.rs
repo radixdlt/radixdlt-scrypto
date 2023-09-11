@@ -374,7 +374,10 @@ where
     }
 
     #[trace_resources(log=node_id.entity_type())]
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<(NodeSubstates, bool), RuntimeError> {
+    fn kernel_drop_node(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<(NodeSubstates, bool), RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
 

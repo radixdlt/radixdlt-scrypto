@@ -37,7 +37,8 @@ pub trait KernelNodeApi {
     ///
     /// Dropped substates can't necessary be added back due to visibility loss.
     /// Clients should consider the return value as "raw data".
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<(NodeSubstates, bool), RuntimeError>;
+    fn kernel_drop_node(&mut self, node_id: &NodeId)
+        -> Result<(NodeSubstates, bool), RuntimeError>;
 
     /// Moves module substates from one node to another node.
     ///
