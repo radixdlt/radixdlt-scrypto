@@ -54,7 +54,7 @@ jobs:
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           tests-dir: sbor
-          flags: --no-default-features --features alloc
+          flags: --no-default-features --features "alloc"
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           tests-dir: sbor-derive-common
@@ -76,7 +76,7 @@ jobs:
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           tests-dir: sbor-tests
-          flags: --no-default-features --features alloc
+          flags: --no-default-features --features "alloc"
       - name: Run bench
         run: cargo bench
         working-directory: sbor-tests
@@ -98,14 +98,14 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
-        flags: --no-default-features --features alloc
+        flags: --no-default-features --features "alloc"
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto-schema
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto-derive
-  
+
   scrypto-integration-tests:
     name: Run Scrypto integration tests
     runs-on: ${{ matrix.os }}
@@ -123,8 +123,8 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto-derive-tests
-        flags: --no-default-features --features alloc
-  
+        flags: --no-default-features --features "alloc"
+
   scrypto-examples:
     name: Run Scrypto examples
     runs-on: ${{ matrix.os }}
@@ -193,11 +193,11 @@ jobs:
     - name: Install dependency
       run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
     - name: Build with resource tracking
-      run: cargo build --features resource_tracker
+      run: cargo build --features "resource_tracker"
     - name: Build with rocksdb
-      run: cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb --release --no-run -- --nocapture
+      run: cargo test -p radix-engine-profiling -p radix-engine-stores --features "rocksdb" --release --no-run -- --nocapture
     - name: Build bench with rocksdb
-      run: cargo bench --features rocksdb --no-run
+      run: cargo bench --features "rocksdb" --no-run
 
   radix-engine:
     name: Run Radix Engine tests
@@ -221,13 +221,12 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --features post_run_db_check serde \
+          --features "post_run_db_check serde compile-blueprints-at-build-time" \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests \
-          --features compile-blueprints-at-build-time
         ./check_stack_usage.sh
 
   radix-engine-release:
@@ -258,13 +257,12 @@ jobs:
       run: |
         cargo nextest run \
           --release \
-          --features post_run_db_check serde \
+          --features "post_run_db_check serde compile-blueprints-at-build-time" \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests \
-          --features compile-blueprints-at-build-time
         ./check_stack_usage.sh
 
   radix-engine-no-std:
@@ -289,11 +287,9 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --no-default-features --features alloc \
+          --no-default-features --features "alloc compile-blueprints-at-build-time" \
           -p radix-engine \
           -p radix-engine-tests \
-          --features compile-blueprints-at-build-time
-  
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
     runs-on: ${{ matrix.os }}
@@ -316,11 +312,9 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --features wasmer \
+          --features "wasmer compile-blueprints-at-build-time" \
           -p radix-engine \
-          -p radix-engine-tests \
-          --features compile-blueprints-at-build-time
-  
+          -p radix-engine-tests
   radix-engine-bench:
     name: Run Radix Engine benchmarks
     runs-on: ${{ matrix.os }}
@@ -341,7 +335,7 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine-tests
-  
+
   radix-engine-common-bench:
     name: Run Radix Engine common benchmarks
     runs-on: ${{ matrix.os }}
@@ -362,7 +356,7 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine-common
-  
+
   transaction:
     name: Run transaction tests
     runs-on: ${{ matrix.os }}
@@ -377,7 +371,7 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: transaction
-  
+
   transaction-scenarios:
     name: Run transaction scenarios
     runs-on: ${{ matrix.os }}
@@ -392,7 +386,7 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: transaction-scenarios
-  
+
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
     runs-on: ${{ matrix.os }}
@@ -431,7 +425,7 @@ jobs:
     - name: Run tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
-  
+
   cli-scrypto:
     name: Run CLI tests (scrypto)
     runs-on: ${{ matrix.os }}
@@ -464,7 +458,7 @@ jobs:
     - name: Run tests
       run: bash ./tests/scrypto.sh
       working-directory: simulator
-  
+
   fuzzer-check:
     name: Build fuzzer
     runs-on: ${{ matrix.os }}
