@@ -419,9 +419,6 @@ pub enum PassMessageError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateNodeError {
     ProcessSubstateError(ProcessSubstateError),
-    ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
-    NonGlobalRefNotAllowed(NodeId),
-    PersistNodeError(PersistNodeError),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
     SubstateDiffError(SubstateDiffError),
 }
@@ -447,7 +444,6 @@ pub enum PersistNodeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TakeNodeError {
     OwnNotFound(NodeId),
-    OwnLocked(NodeId),
     SubstateBorrowed(NodeId),
 }
 
@@ -487,26 +483,22 @@ pub enum OpenSubstateError {
 /// Represents an error when reading substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ReadSubstateError {
-    LockNotFound(SubstateHandle),
+    HandleNotFound(SubstateHandle),
 }
 
 /// Represents an error when writing substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WriteSubstateError {
-    LockNotFound(SubstateHandle),
-    ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
+    HandleNotFound(SubstateHandle),
     ProcessSubstateError(ProcessSubstateError),
     NoWritePermission,
-    PersistNodeError(PersistNodeError),
-    NonGlobalRefNotAllowed(NodeId),
-    ContainsDuplicatedOwns,
     SubstateDiffError(SubstateDiffError),
 }
 
 /// Represents an error when dropping a substate lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CloseSubstateError {
-    LockNotFound(SubstateHandle),
+    HandleNotFound(SubstateHandle),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -526,7 +518,6 @@ pub enum CallFrameRemoveSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanKeysError {
     NodeNotVisible(NodeId),
-    OwnedNodeNotSupported(NodeId),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
@@ -546,8 +537,8 @@ pub enum CallFrameScanSortedSubstatesError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProcessSubstateKeyError {
-    DecodeError(DecodeError),
     NodeNotVisible(NodeId),
+    DecodeError(DecodeError),
     OwnedNodeNotSupported,
 }
 
@@ -984,7 +975,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         } = self
             .open_substates
             .get(&lock_handle)
-            .ok_or(CallbackError::Error(ReadSubstateError::LockNotFound(
+            .ok_or(CallbackError::Error(ReadSubstateError::HandleNotFound(
                 lock_handle,
             )))?;
 
@@ -1011,7 +1002,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         let mut opened_substate =
             self.open_substates
                 .remove(&lock_handle)
-                .ok_or(CallbackError::Error(WriteSubstateError::LockNotFound(
+                .ok_or(CallbackError::Error(WriteSubstateError::HandleNotFound(
                     lock_handle,
                 )))?;
 
@@ -1061,7 +1052,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         let mut open_substate = self
             .open_substates
             .remove(&lock_handle)
-            .ok_or_else(|| CloseSubstateError::LockNotFound(lock_handle))?;
+            .ok_or_else(|| CloseSubstateError::HandleNotFound(lock_handle))?;
 
         substate_io.close_substate(open_substate.global_substate_handle)?;
 
