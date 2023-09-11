@@ -176,7 +176,7 @@ impl TestEnvironment {
 
         // Adding references to all of the well-known global nodes.
         env.0.with_kernel_mut(|kernel| {
-            let current_frame = kernel.kernel_current_frame_mut();
+            let (_, current_frame) = kernel.kernel_current_frame_mut();
             for node_id in GLOBAL_VISIBLE_NODES {
                 let Ok(global_address) = GlobalAddress::try_from(node_id.0) else {
                     continue;
@@ -244,8 +244,8 @@ impl TestEnvironment {
                 message
             };
             env.0.with_kernel_mut(|kernel| {
-                let current_frame = kernel.kernel_current_frame_mut();
-                let new_frame = CallFrame::new_child_from_parent(current_frame, actor, message)
+                let (substate_io, current_frame) = kernel.kernel_current_frame_mut();
+                let new_frame = CallFrame::new_child_from_parent(substate_io, current_frame, actor, message)
                     .expect("Must succeed.");
                 let previous_frame = core::mem::replace(current_frame, new_frame);
                 kernel.kernel_prev_frame_stack_mut().push(previous_frame)
@@ -886,12 +886,12 @@ impl TestEnvironment {
         let mut message =
             CallFrameMessage::from_input(&IndexedScryptoValue::from_typed(&()), &actor);
         self.0.with_kernel_mut(|kernel| {
-            let current_frame = kernel.kernel_current_frame_mut();
+            let (substate_io, current_frame) = kernel.kernel_current_frame_mut();
             message
                 .copy_global_references
                 .extend(current_frame.stable_references().keys());
             let new_frame =
-                CallFrame::new_child_from_parent(current_frame, actor, message).unwrap();
+                CallFrame::new_child_from_parent(substate_io, current_frame, actor, message).unwrap();
             let old = core::mem::replace(current_frame, new_frame);
             kernel.kernel_prev_frame_stack_mut().push(old);
         });
@@ -913,16 +913,18 @@ impl TestEnvironment {
         self.0
             .with_kernel_mut(|kernel| -> Result<(), RuntimeError> {
                 let mut previous_frame = kernel.kernel_prev_frame_stack_mut().pop().unwrap();
+                let (substate_io, current_frame) = kernel.kernel_current_frame_mut();
 
                 CallFrame::pass_message(
-                    kernel.kernel_current_frame_mut(),
+                    substate_io,
+                    current_frame,
                     &mut previous_frame,
                     message.clone(),
                 )
                 .map_err(CallFrameError::PassMessageError)
                 .map_err(KernelError::CallFrameError)?;
 
-                *kernel.kernel_current_frame_mut() = previous_frame;
+                *current_frame = previous_frame;
                 Ok(())
             })?;
 

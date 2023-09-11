@@ -1085,7 +1085,7 @@ where
 
         // Push call frame
         {
-            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, callee, message)
+            let frame = CallFrame::new_child_from_parent(&self.substate_io, &mut self.current_frame, callee, message)
                 .map_err(CallFrameError::CreateFrameError)
                 .map_err(KernelError::CallFrameError)?;
             let parent = mem::replace(&mut self.current_frame, frame);
@@ -1130,7 +1130,7 @@ where
             let parent = self.prev_frame_stack.last_mut().unwrap();
 
             // Move resource
-            CallFrame::pass_message(&mut self.current_frame, parent, message.clone())
+            CallFrame::pass_message(&self.substate_io, &mut self.current_frame, parent, message.clone())
                 .map_err(CallFrameError::PassMessageError)
                 .map_err(KernelError::CallFrameError)?;
 
@@ -1197,11 +1197,11 @@ where
 
     pub fn kernel_current_frame_mut(
         &mut self,
-    ) -> &mut CallFrame<
+    ) -> (&SubstateIO<S>, &mut CallFrame<
         <M as KernelCallbackObject>::CallFrameData,
         <M as KernelCallbackObject>::LockData,
-    > {
-        &mut self.current_frame
+    >) {
+        (&self.substate_io, &mut self.current_frame)
     }
 
     pub fn kernel_prev_frame_stack(

@@ -448,6 +448,7 @@ pub enum PersistNodeError {
 pub enum TakeNodeError {
     OwnNotFound(NodeId),
     OwnLocked(NodeId),
+    SubstateBorrowed(NodeId),
 }
 
 /// Represents an error when moving modules from one node to another.
@@ -558,7 +559,6 @@ pub enum ProcessSubstateError {
     RefCantBeAddedToSubstate(NodeId),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
-    SubstateBorrowed(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -579,7 +579,8 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
     }
 
-    pub fn new_child_from_parent(
+    pub fn new_child_from_parent<S: CommitableSubstateStore>(
+        substate_io: &SubstateIO<S>,
         parent: &mut CallFrame<C, L>,
         call_frame_data: C,
         message: CallFrameMessage,
@@ -595,13 +596,14 @@ impl<C, L: Clone> CallFrame<C, L> {
         };
 
         // Copy references and move nodes
-        Self::pass_message(parent, &mut frame, message)
+        Self::pass_message(substate_io, parent, &mut frame, message)
             .map_err(CreateFrameError::PassMessageError)?;
 
         Ok(frame)
     }
 
-    pub fn pass_message(
+    pub fn pass_message<S: CommitableSubstateStore>(
+        substate_io: &SubstateIO<S>,
         from: &mut CallFrame<C, L>,
         to: &mut CallFrame<C, L>,
         message: CallFrameMessage,
@@ -609,7 +611,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         for node_id in message.move_nodes {
             // Note that this has no impact on the `transient_references` because
             // we don't allow move of "locked nodes".
-            from.take_node_internal(&node_id)
+            from.take_node_internal(substate_io, &node_id)
                 .map_err(PassMessageError::TakeNodeError)?;
             to.owned_root_nodes.insert(node_id);
         }
@@ -780,7 +782,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         node_id: &NodeId,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
     ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
-        self.take_node_internal(node_id)
+        self.take_node_internal(substate_io, node_id)
             .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
         let mut adapter = CallFrameToIOAccessAdapter {
@@ -1358,12 +1360,8 @@ impl<C, L: Clone> CallFrame<C, L> {
         // Verify and Update call frame state based on diff
         {
             for added_own in &diff.added_owns {
-                if substate_io.substate_locks.node_is_locked(added_own) {
-                    return Err(CallbackError::Error(ProcessSubstateError::SubstateBorrowed(*added_own)));
-                }
-
                 // Node no longer owned by frame
-                self.take_node_internal(added_own)
+                self.take_node_internal(substate_io, added_own)
                     .map_err(|e| CallbackError::Error(ProcessSubstateError::TakeNodeError(e)))?;
             }
 
@@ -1512,7 +1510,15 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
     }
 
-    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
+    fn take_node_internal<S: CommitableSubstateStore>(
+        &mut self,
+        substate_io: &SubstateIO<S>,
+        node_id: &NodeId,
+    ) -> Result<(), TakeNodeError> {
+        if substate_io.substate_locks.node_is_locked(node_id) {
+            return Err(TakeNodeError::SubstateBorrowed(*node_id));
+        }
+
         if self.owned_root_nodes.remove(node_id) {
             Ok(())
         } else {
