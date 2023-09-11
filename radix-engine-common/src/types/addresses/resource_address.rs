@@ -251,3 +251,45 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
             .map_err(|err| AddressBech32EncodeError::FormatError(err))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resource_address_initialization() {
+        let node_id = [0; NodeId::LENGTH];
+        let addr = unsafe { ResourceAddress::new_unchecked(node_id) };
+        assert_eq!(node_id, addr.as_node_id().as_bytes());
+
+        let addr = ResourceAddress::new_or_panic(
+            [EntityType::GlobalNonFungibleResourceManager as u8; NodeId::LENGTH],
+        );
+        // validate conversions
+        ResourceAddress::try_from_hex(&addr.to_hex()).unwrap();
+        let _ = ManifestAddress::try_from(addr).unwrap();
+
+        // pass wrong length array to generate an error
+        let v = Vec::from([0u8; NodeId::LENGTH + 1]);
+        let addr2 = ResourceAddress::try_from(v.as_slice());
+        assert!(matches!(
+            addr2,
+            Err(ParseResourceAddressError::InvalidLength(..))
+        ));
+        println!("Error: {}", addr2.unwrap_err());
+    }
+
+    #[test]
+    fn resource_address_decode_discriminator_fail() {
+        let mut buf = Vec::new();
+        let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
+        // use invalid discriminator value
+        encoder.write_discriminator(0xff).unwrap();
+
+        let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
+        let addr_output = decoder
+            .decode_deeper_body_with_value_kind::<ResourceAddress>(ResourceAddress::value_kind());
+
+        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+    }
+}
