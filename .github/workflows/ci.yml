@@ -221,12 +221,13 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --features="post_run_db_check,serde compile-blueprints-at-build-time" \
+          --features="post_run_db_check,serde" \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests \
+          --features="compile-blueprints-at-build-time" \
         ./check_stack_usage.sh
 
   radix-engine-release:
