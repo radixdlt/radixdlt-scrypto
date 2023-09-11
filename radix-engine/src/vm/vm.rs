@@ -189,6 +189,7 @@ impl VmPackageValidation {
 
                 for BlueprintDefinitionInit {
                     blueprint_type,
+                    is_transient,
                     feature_set,
                     schema:
                         BlueprintSchemaInit {
@@ -214,6 +215,14 @@ impl VmPackageValidation {
                                 )),
                             ));
                         }
+                    }
+
+                    if *is_transient {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "Transient Scrypto blueprints are not supported".to_string(),
+                            )),
+                        ));
                     }
 
                     if !feature_set.is_empty() {

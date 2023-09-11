@@ -57,6 +57,7 @@ pub enum PackageError {
     InvalidTypeParent,
     InvalidName(String),
     MissingOuterBlueprint,
+    OuterBlueprintCantBeAnInnerBlueprint,
     WasmUnsupported(String),
     InvalidLocalTypeId(LocalTypeId),
     InvalidGenericId(u8),
@@ -133,8 +134,22 @@ fn validate_package_schema(
     blueprints: &IndexMap<String, BlueprintDefinitionInit>,
 ) -> Result<(), PackageError> {
     for bp_def in blueprints.values() {
-        let bp_schema = &bp_def.schema;
+        match &bp_def.blueprint_type {
+            BlueprintType::Outer => Ok(()),
+            BlueprintType::Inner { outer_blueprint } => match blueprints.get(outer_blueprint) {
+                Some(BlueprintDefinitionInit {
+                    blueprint_type: BlueprintType::Outer,
+                    ..
+                }) => Ok(()),
+                Some(BlueprintDefinitionInit {
+                    blueprint_type: BlueprintType::Inner { .. },
+                    ..
+                }) => Err(PackageError::OuterBlueprintCantBeAnInnerBlueprint),
+                None => Err(PackageError::MissingOuterBlueprint),
+            },
+        }?;
 
+        let bp_schema = &bp_def.schema;
         validate_schema(bp_schema.schema.v1())
             .map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
