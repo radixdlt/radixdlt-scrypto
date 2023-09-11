@@ -19,7 +19,7 @@ use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::prelude::node_modules::ModuleConfig;
-use radix_engine::transaction::TransactionOutcome;
+use radix_engine::transaction::{TransactionOutcome, TransactionResult};
 use radix_engine::types::*;
 use radix_engine::vm::OverridePackageCode;
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -87,6 +87,14 @@ impl TestFuzzer {
                 self.rng.fill_bytes(&mut bytes);
                 Decimal(I192::from_le_bytes(&bytes))
             }
+        }
+    }
+
+    pub fn next_fee(&mut self) -> Decimal {
+        let next_amount = self.rng.gen_range(0u32..=7u32);
+        match next_amount {
+            0u32 => self.next_amount(),
+            _ => Decimal::from(500),
         }
     }
 
@@ -243,6 +251,7 @@ pub enum FuzzTxnResult {
     Success,
     TrivialFailure,
     Failure,
+    Reject,
 }
 
 impl FuzzTxnResult {
@@ -699,33 +708,40 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 let manifest = builder
                     .deposit_batch(self.validators[0].account_address)
                     .build();
-                let receipt = self.test_runner.execute_manifest_ignoring_fee(
+                let receipt = self.test_runner.execute_manifest_with_fee_from_faucet(
                     manifest,
+                    self.fuzzer.next_fee(),
                     vec![NonFungibleGlobalId::from_public_key(
                         &self.account_public_key,
                     )],
                 );
-                let result = receipt.expect_commit_ignore_outcome();
 
-                result
-                    .new_component_addresses()
-                    .iter()
-                    .filter(|a| a.as_node_id().is_global_validator())
-                    .for_each(|validator_address| {
-                        let validator_substate =
-                            self.test_runner.get_validator_info(*validator_address);
-                        let stake_unit_resource = validator_substate.stake_unit_resource;
-                        let claim_resource = validator_substate.claim_nft;
+                let result = receipt.result;
+                match result {
+                    TransactionResult::Commit(commit_result) => {
+                        commit_result
+                            .new_component_addresses()
+                            .iter()
+                            .filter(|a| a.as_node_id().is_global_validator())
+                            .for_each(|validator_address| {
+                                let validator_substate =
+                                    self.test_runner.get_validator_info(*validator_address);
+                                let stake_unit_resource = validator_substate.stake_unit_resource;
+                                let claim_resource = validator_substate.claim_nft;
 
-                        self.validators.push(ValidatorMeta {
-                            account_address: self.validators[0].account_address,
-                            stake_unit_resource,
-                            claim_resource,
-                            validator_address: *validator_address,
-                        });
-                    });
+                                self.validators.push(ValidatorMeta {
+                                    account_address: self.validators[0].account_address,
+                                    stake_unit_resource,
+                                    claim_resource,
+                                    validator_address: *validator_address,
+                                });
+                            });
 
-                FuzzTxnResult::from_outcome(&result.outcome, trivial)
+                        FuzzTxnResult::from_outcome(&commit_result.outcome, trivial)
+                    }
+                    TransactionResult::Reject(_) => FuzzTxnResult::Reject,
+                    TransactionResult::Abort(_) => panic!("Transaction was aborted"),
+                }
             };
 
             // Execute a consensus round around every 4 transactions

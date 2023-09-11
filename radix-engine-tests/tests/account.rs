@@ -1,5 +1,5 @@
-use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
+use radix_engine::blueprints::resource::{NonFungibleResourceManagerError, VaultError};
+use radix_engine::errors::{ApplicationError, RejectionReason, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
@@ -308,4 +308,52 @@ fn is_metadata_empty(metadata_value: &Option<MetadataValue>) -> bool {
     } else {
         false
     }
+}
+
+#[test]
+fn cannot_lock_fee_if_not_enough_funds() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_account(true);
+
+    // Act
+    let manifest = ManifestBuilder::new().lock_fee(account, 1000000000).build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    let reason = receipt.expect_rejection();
+    assert!(matches!(
+        reason,
+        RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError::ApplicationError(
+            ApplicationError::VaultError(VaultError::LockFeeInsufficientBalance { .. })
+        ))
+    ));
+}
+
+#[test]
+fn cannot_lock_contingent_fee_if_not_enough_funds() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_account(true);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_contingent_fee(account, 1000000000)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    let reason = receipt.expect_rejection();
+    assert!(matches!(
+        reason,
+        RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError::ApplicationError(
+            ApplicationError::VaultError(VaultError::LockFeeInsufficientBalance { .. })
+        ))
+    ));
 }

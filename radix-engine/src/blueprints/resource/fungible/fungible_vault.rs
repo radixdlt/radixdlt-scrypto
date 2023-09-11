@@ -324,7 +324,7 @@ impl FungibleVaultBlueprint {
 
             if !check_fungible_amount(&amount, divisibility) {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::VaultError(VaultError::InvalidAmount),
+                    ApplicationError::VaultError(VaultError::InvalidAmount(amount)),
                 ));
             }
 
@@ -396,7 +396,7 @@ impl FungibleVaultBlueprint {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::InvalidAmount),
+                ApplicationError::VaultError(VaultError::InvalidAmount(amount)),
             ));
         }
 
@@ -411,10 +411,15 @@ impl FungibleVaultBlueprint {
         let mut vault = api
             .field_read_typed::<FungibleVaultBalanceFieldPayload>(vault_handle)?
             .into_latest();
-        let fee = vault.take_by_amount(amount).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::LockFeeInsufficientBalance,
-            ))
+        let fee = vault.take_by_amount(amount).map_err(|e| {
+            let vault_error = match e {
+                ResourceError::InsufficientBalance { requested, actual } => {
+                    VaultError::LockFeeInsufficientBalance { requested, actual }
+                }
+                _ => VaultError::ResourceError(e),
+            };
+
+            RuntimeError::ApplicationError(ApplicationError::VaultError(vault_error))
         })?;
 
         // Credit cost units
@@ -422,6 +427,9 @@ impl FungibleVaultBlueprint {
 
         // Keep changes
         if !changes.is_empty() {
+            // This will only occur if costing module is turned off for whatever reason.
+            // There is probably a nicer interface which doesn't require this sort of logic but
+            // this is good enough for now.
             vault.put(changes);
         }
 
@@ -447,7 +455,7 @@ impl FungibleVaultBlueprint {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::InvalidAmount),
+                ApplicationError::VaultError(VaultError::InvalidAmount(amount)),
             ));
         }
 
@@ -514,7 +522,7 @@ impl FungibleVaultBlueprint {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::InvalidAmount),
+                ApplicationError::VaultError(VaultError::InvalidAmount(amount)),
             ));
         }
 
@@ -671,6 +679,10 @@ impl FungibleVaultBlueprint {
             ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerFeature::VaultFreeze.feature_name(),
         )? {
+            // This should never be hit since the auth layer will prevent
+            // any freeze call from even getting to this point but this is useful
+            // if the Auth layer is ever disabled for whatever reason.
+            // We still want to maintain these invariants.
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotFreezable),
             ));
@@ -687,6 +699,10 @@ impl FungibleVaultBlueprint {
             ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerFeature::VaultRecall.feature_name(),
         )? {
+            // This should never be hit since the auth layer will prevent
+            // any recall call from even getting to this point but this is useful
+            // if the Auth layer is ever disabled for whatever reason.
+            // We still want to maintain these invariants.
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotRecallable),
             ));
