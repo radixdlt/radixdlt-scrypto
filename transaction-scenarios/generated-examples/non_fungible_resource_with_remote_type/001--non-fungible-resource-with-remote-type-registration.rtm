@@ -3,10 +3,6 @@ CALL_METHOD
     "lock_fee"
     Decimal("5000")
 ;
-CALL_METHOD
-    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
-    "free"
-;
 PUBLISH_PACKAGE_ADVANCED
     Enum<0u8>()
     Tuple(
@@ -470,7 +466,7 @@ PUBLISH_PACKAGE_ADVANCED
         "name" => Tuple(
             Enum<1u8>(
                 Enum<0u8>(
-                    "Radiswap Package (with type registration)"
+                    "Radiswap Package (for the non-fungible resource with remote type scenario)"
                 )
             ),
             true
@@ -480,7 +476,6 @@ PUBLISH_PACKAGE_ADVANCED
 ;
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
-    "try_deposit_batch_or_abort"
+    "deposit_batch"
     Expression("ENTIRE_WORKTOP")
-    Enum<0u8>()
 ;

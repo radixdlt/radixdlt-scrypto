@@ -18,7 +18,7 @@ impl ScenarioCreator for KVStoreScenarioCreator {
         start_state: Self::State,
     ) -> Box<dyn ScenarioInstance> {
         let metadata = ScenarioMetadata {
-            logical_name: "kv_store",
+            logical_name: "kv_store_with_remote_type",
         };
 
         #[allow(unused_variables)]
@@ -32,7 +32,7 @@ impl ScenarioCreator for KVStoreScenarioCreator {
                     .unwrap();
 
                     core.next_transaction_with_faucet_lock_fee(
-                        "kv_store_publish_package",
+                        "kv-store-with-remote-type",
                         |builder| {
                             builder
                                 .allocate_global_address(

@@ -9,7 +9,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     true
     Enum<1u8>(
         Tuple(
-            Address("package_sim1phqz4280ssp7g7092jgudsle0lf5a5dlcy8fn6dunll3d4d2jrnd8s"),
+            Address("package_sim1p5na59370d9azatyvf9ds7gwqpj73rtherfl6xseyuwtfw9vkvva93"),
             "Radiswap",
             "TestType"
         ),
@@ -112,7 +112,6 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
 ;
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
-    "try_deposit_batch_or_abort"
+    "deposit_batch"
     Expression("ENTIRE_WORKTOP")
-    Enum<0u8>()
 ;
