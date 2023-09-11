@@ -227,7 +227,6 @@ jobs:
           -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests \
-          --features="compile-blueprints-at-build-time" \
         ./check_stack_usage.sh
 
   radix-engine-release:
