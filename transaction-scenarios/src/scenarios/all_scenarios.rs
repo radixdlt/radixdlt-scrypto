@@ -36,6 +36,9 @@ impl Iterator for AllScenariosIterator {
             7 => Some(Box::new(|core| {
                 global_n_owned::GlobalNOwnedScenarioCreator::create(core)
             })),
+            8 => Some(Box::new(|core| {
+                kv_store::KVStoreScenarioCreator::create(core)
+            })),
             _ => None,
         }
     }
