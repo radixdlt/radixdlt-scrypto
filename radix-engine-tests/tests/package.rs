@@ -632,6 +632,41 @@ fn publishing_of_package_where_outer_blueprint_is_self_fails() {
     })
 }
 
+#[test]
+fn publishing_of_package_with_transient_blueprints_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    definition
+        .blueprints
+        .values_mut()
+        .for_each(|def| def.is_transient = true);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::WasmUnsupported(..)
+            ))
+        )
+    })
+}
+
 fn name(len: usize) -> String {
     (0..len).map(|_| 'A').collect()
 }
