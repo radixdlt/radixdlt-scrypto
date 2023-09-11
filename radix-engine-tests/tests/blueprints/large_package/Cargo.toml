@@ -14,6 +14,8 @@ bucket = { path = "../bucket" }
 address = { path = "../address" }
 allocated_address = { path = "../allocated_address" }
 package = { path = "../package" }
+auth_scenarios = { path = "../auth_scenarios" }
+proof = { path = "../proof" }
 
 [dev-dependencies]
 radix-engine = { path = "../../../../radix-engine" }

@@ -844,7 +844,8 @@ impl NonFungibleData for TestNonFungibleData {
 #[test]
 fn publish_package_1mib() {
     let mut test_runner = TestRunnerBuilder::new().build();
-    let (code, definition) = PackageLoader::get("large_package");
+    let code = include_bytes!("../../assets/large_package.wasm").to_vec();
+    let definition = manifest_decode(include_bytes!("../../assets/large_package.rpd")).unwrap();
     println!("Code size: {}", code.len());
     assert!(code.len() <= 1000 * 1024);
     assert!(code.len() >= 900 * 1024);
