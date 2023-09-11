@@ -67,15 +67,6 @@ pub struct ValidatorRewardsSubstate {
     pub rewards_vault: Vault,
 }
 
-impl Clone for ValidatorRewardsSubstate {
-    fn clone(&self) -> Self {
-        Self {
-            proposer_rewards: self.proposer_rewards.clone(),
-            rewards_vault: Vault(self.rewards_vault.0.clone()),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CurrentValidatorSetSubstate {
     pub validator_set: ActiveValidatorSet,
