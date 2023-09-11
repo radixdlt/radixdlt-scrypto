@@ -221,7 +221,7 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --features "post_run_db_check serde compile-blueprints-at-build-time" \
+          --features "post_run_db_check,serde,compile-blueprints-at-build-time" \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
@@ -257,7 +257,7 @@ jobs:
       run: |
         cargo nextest run \
           --release \
-          --features "post_run_db_check serde compile-blueprints-at-build-time" \
+          --features "post_run_db_check,serde,compile-blueprints-at-build-time" \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
@@ -287,7 +287,7 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --no-default-features --features "alloc compile-blueprints-at-build-time" \
+          --no-default-features --features "alloc,compile-blueprints-at-build-time" \
           -p radix-engine \
           -p radix-engine-tests \
   radix-engine-wasmer:
@@ -312,7 +312,7 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --features "wasmer compile-blueprints-at-build-time" \
+          --features "wasmer,compile-blueprints-at-build-time" \
           -p radix-engine \
           -p radix-engine-tests
   radix-engine-bench:
