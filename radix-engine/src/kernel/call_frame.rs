@@ -616,7 +616,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             to.owned_root_nodes.insert(node_id);
         }
 
-        // Only allow move of `Global` and `DirectAccess` references
+        // Only allow copy of `Global` and `DirectAccess` references
         for node_id in message.copy_global_references {
             if from.get_node_visibility(&node_id).is_global() {
                 // Note that GLOBAL and DirectAccess references are mutually exclusive,
@@ -1515,6 +1515,10 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &SubstateIO<S>,
         node_id: &NodeId,
     ) -> Result<(), TakeNodeError> {
+        // If there exists a non-global node-ref we still allow the node to be
+        // taken. We prevent substate locked nodes from being taken though.
+        // We do not need to check children of the node as a node must be
+        // substate locked in order to access any of it's children.
         if substate_io.substate_locks.node_is_locked(node_id) {
             return Err(TakeNodeError::SubstateBorrowed(*node_id));
         }

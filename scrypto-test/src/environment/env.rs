@@ -245,8 +245,9 @@ impl TestEnvironment {
             };
             env.0.with_kernel_mut(|kernel| {
                 let (substate_io, current_frame) = kernel.kernel_current_frame_mut();
-                let new_frame = CallFrame::new_child_from_parent(substate_io, current_frame, actor, message)
-                    .expect("Must succeed.");
+                let new_frame =
+                    CallFrame::new_child_from_parent(substate_io, current_frame, actor, message)
+                        .expect("Must succeed.");
                 let previous_frame = core::mem::replace(current_frame, new_frame);
                 kernel.kernel_prev_frame_stack_mut().push(previous_frame)
             });
@@ -891,7 +892,8 @@ impl TestEnvironment {
                 .copy_global_references
                 .extend(current_frame.stable_references().keys());
             let new_frame =
-                CallFrame::new_child_from_parent(substate_io, current_frame, actor, message).unwrap();
+                CallFrame::new_child_from_parent(substate_io, current_frame, actor, message)
+                    .unwrap();
             let old = core::mem::replace(current_frame, new_frame);
             kernel.kernel_prev_frame_stack_mut().push(old);
         });

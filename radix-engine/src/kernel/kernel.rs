@@ -1085,9 +1085,14 @@ where
 
         // Push call frame
         {
-            let frame = CallFrame::new_child_from_parent(&self.substate_io, &mut self.current_frame, callee, message)
-                .map_err(CallFrameError::CreateFrameError)
-                .map_err(KernelError::CallFrameError)?;
+            let frame = CallFrame::new_child_from_parent(
+                &self.substate_io,
+                &mut self.current_frame,
+                callee,
+                message,
+            )
+            .map_err(CallFrameError::CreateFrameError)
+            .map_err(KernelError::CallFrameError)?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
         }
@@ -1130,9 +1135,14 @@ where
             let parent = self.prev_frame_stack.last_mut().unwrap();
 
             // Move resource
-            CallFrame::pass_message(&self.substate_io, &mut self.current_frame, parent, message.clone())
-                .map_err(CallFrameError::PassMessageError)
-                .map_err(KernelError::CallFrameError)?;
+            CallFrame::pass_message(
+                &self.substate_io,
+                &mut self.current_frame,
+                parent,
+                message.clone(),
+            )
+            .map_err(CallFrameError::PassMessageError)
+            .map_err(KernelError::CallFrameError)?;
 
             // Auto-drop
             let owned_nodes = self.current_frame.owned_nodes();
@@ -1197,10 +1207,13 @@ where
 
     pub fn kernel_current_frame_mut(
         &mut self,
-    ) -> (&SubstateIO<S>, &mut CallFrame<
-        <M as KernelCallbackObject>::CallFrameData,
-        <M as KernelCallbackObject>::LockData,
-    >) {
+    ) -> (
+        &SubstateIO<S>,
+        &mut CallFrame<
+            <M as KernelCallbackObject>::CallFrameData,
+            <M as KernelCallbackObject>::LockData,
+        >,
+    ) {
         (&self.substate_io, &mut self.current_frame)
     }
 

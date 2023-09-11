@@ -1,6 +1,8 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
+use radix_engine::errors::{CallFrameError, KernelError};
+use radix_engine::kernel::call_frame::{CreateNodeError, ProcessSubstateError, TakeNodeError};
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     types::*,
@@ -57,10 +59,12 @@ fn test_globalize_with_unflushed_kv_store_self_own() {
 
 #[test]
 fn test_globalize_with_unflushed_another_transient_own() {
+    // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
 
+    // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -75,15 +79,28 @@ fn test_globalize_with_unflushed_another_transient_own() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_failure();
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
+                    ProcessSubstateError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
+                ))
+            ))
+        )
+    });
 }
 
 #[test]
 fn test_globalize_with_unflushed_another_own() {
+    // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
 
+    // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -98,7 +115,18 @@ fn test_globalize_with_unflushed_another_own() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_failure();
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
+                    ProcessSubstateError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
+                ))
+            ))
+        )
+    });
 }
 
 #[test]
