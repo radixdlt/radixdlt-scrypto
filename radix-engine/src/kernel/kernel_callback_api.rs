@@ -8,6 +8,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
 pub trait CallFrameReferences {
+    fn root() -> Self;
     fn global_references(&self) -> Vec<NodeId>;
     fn direct_access_references(&self) -> Vec<NodeId>;
     fn stable_transient_references(&self) -> Vec<NodeId>;

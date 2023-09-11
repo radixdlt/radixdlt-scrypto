@@ -36,16 +36,17 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
+use crate::kernel::kernel_callback_api::CallFrameReferences;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct KernelBoot<'g, V: SystemCallbackObject, S: CommitableSubstateStore> {
+pub struct KernelBoot<'g, M: KernelCallbackObject, S: CommitableSubstateStore> {
     pub id_allocator: &'g mut IdAllocator,
-    pub callback: &'g mut SystemConfig<V>,
+    pub callback: &'g mut M,
     pub store: &'g mut S,
 }
 
-impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, V, S> {
-    pub fn create_kernel_for_test_only(&mut self) -> Kernel<SystemConfig<V>, S> {
+impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
+    pub fn create_kernel_for_test_only(&mut self) -> Kernel<M, S> {
         Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
@@ -56,12 +57,14 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
                 pinned_nodes: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
-            current_frame: CallFrame::new_root(Actor::Root),
+            current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
             callback: self.callback,
         }
     }
+}
 
+impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, SystemConfig<V>, S> {
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
         self,
