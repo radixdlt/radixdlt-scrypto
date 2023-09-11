@@ -179,7 +179,7 @@ fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
     let (code, mut definition) = PackageLoader::get("royalty-edge-cases");
 
     for blueprint_definition in definition.blueprints.values_mut() {
-        blueprint_definition.royalty_config = PackageRoyaltyConfig::Enabled(IndexMap::new())
+        blueprint_definition.royalty_config = PackageRoyaltyConfig::Enabled(Default::default())
     }
 
     // Act
