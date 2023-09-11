@@ -64,7 +64,8 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         delta
     );
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
-    assert!(delta <= dec!("0.08581566997"));
+    // 2023-09-08: updated from 0.08581566997 to 0.09277749236 (+7.6% < 50%), due to a bug in event size counting
+    assert!(delta <= dec!("0.09277749236"));
 }
 
 #[test]

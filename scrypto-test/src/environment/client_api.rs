@@ -225,7 +225,7 @@ implement_client_api! {
             address_reservation: GlobalAddressReservation,
             inner_object_blueprint: &str,
             inner_object_fields: IndexMap<u8, FieldValue>,
-            event_name: String,
+            event_name: &str,
             event_data: Vec<u8>,
         ) -> Result<(GlobalAddress, NodeId), RuntimeError>,
         call_method: (

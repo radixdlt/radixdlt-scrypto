@@ -555,6 +555,7 @@ pub enum ProcessSubstateError {
     TakeNodeError(TakeNodeError),
     CantDropNodeInStore(NodeId),
     RefNotFound(NodeId),
+    RefCantBeAddedToSubstate(NodeId),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
 }
@@ -1369,10 +1370,15 @@ impl<C, L: Clone> CallFrame<C, L> {
 
             for added_ref in &diff.added_refs {
                 let node_visibility = self.get_node_visibility(added_ref);
-                if !node_visibility.can_be_referenced_in_substate() {
+                if !node_visibility.is_visible() {
                     return Err(CallbackError::Error(ProcessSubstateError::RefNotFound(
                         added_ref.clone(),
                     )));
+                }
+                if !node_visibility.can_be_referenced_in_substate() {
+                    return Err(CallbackError::Error(
+                        ProcessSubstateError::RefCantBeAddedToSubstate(added_ref.clone()),
+                    ));
                 }
             }
 

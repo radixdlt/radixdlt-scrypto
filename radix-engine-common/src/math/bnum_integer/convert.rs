@@ -1,13 +1,6 @@
 use super::*;
 use bnum::cast::CastFrom;
 
-/// Trait for short hand notation for try_from().unwrap()
-/// As opposed to `try_from(x).unwrap()` this will panic if the conversion fails.
-pub trait By<T> {
-    type Output;
-    fn by(val: T) -> Self::Output;
-}
-
 macro_rules! impl_from_primitive {
     ($t:ident, $wrapped:ty, ($($type:ident),*)) => {
         paste! {
@@ -73,12 +66,6 @@ macro_rules! impl_from_builtin{
                     fn from(val: $o) -> Self {
                         Self::[<from_$o>](val).unwrap()
 
-                    }
-                }
-                impl By<$o> for $t {
-                    type Output = $t;
-                    fn by(val: $o) -> Self::Output {
-                        Self::Output::try_from(val).unwrap()
                     }
                 }
             )*
@@ -682,10 +669,6 @@ macro_rules! impl_to_bytes {
                             shift += 64;
                         }
                         bytes
-                    }
-
-                    pub fn to_vec(&self) -> Vec<u8> {
-                        self.to_le_bytes().to_vec()
                     }
                 }
             )*

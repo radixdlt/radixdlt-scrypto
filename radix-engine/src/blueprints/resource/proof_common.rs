@@ -1,5 +1,4 @@
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 pub enum LocalRef {
@@ -18,12 +17,8 @@ impl LocalRef {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProofError {
-    /// Error produced by a resource container.
-    ResourceError(ResourceError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
     EmptyProofNotAllowed,
-    /// Can't apply a non-fungible operation on fungible proofs.
-    NonFungibleOperationNotSupported,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -33,10 +28,6 @@ pub struct ProofMoveableSubstate {
 }
 
 impl ProofMoveableSubstate {
-    pub fn change_to_unrestricted(&mut self) {
-        self.restricted = false;
-    }
-
     pub fn change_to_restricted(&mut self) {
         self.restricted = true;
     }

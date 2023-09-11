@@ -59,7 +59,8 @@ members = [
     "events_invalid",
     "logger",
     "validator",
-    "wasm_non_mvp"
+    "wasm_non_mvp",
+    "system_wasm_buffers"
 ]
 
 [profile.release]

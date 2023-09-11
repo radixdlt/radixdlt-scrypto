@@ -41,14 +41,6 @@ pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionProcessorError {
-    TransactionEpochNotYetValid {
-        valid_from: Epoch,
-        current_epoch: Epoch,
-    },
-    TransactionEpochNoLongerValid {
-        valid_until: Epoch,
-        current_epoch: Epoch,
-    },
     BucketNotFound(u32),
     ProofNotFound(u32),
     AddressReservationNotFound(u32),

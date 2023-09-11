@@ -51,7 +51,7 @@ pub enum RejectionReason {
         current_epoch: Epoch,
     },
     TransactionEpochNoLongerValid {
-        valid_until: Epoch,
+        valid_until: Option<Epoch>,
         current_epoch: Epoch,
     },
     IntentHashPreviouslyCommitted,

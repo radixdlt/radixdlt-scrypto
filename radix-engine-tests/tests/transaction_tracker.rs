@@ -29,7 +29,7 @@ fn test_transaction_replay_protection() {
     // 1. Run a notarized transaction
     let transaction = create_notarized_transaction(TransactionParams {
         start_epoch_inclusive: init_epoch,
-        end_epoch_exclusive: init_epoch.after(MAX_EPOCH_RANGE),
+        end_epoch_exclusive: init_epoch.after(MAX_EPOCH_RANGE).unwrap(),
     });
     let validated = get_validated(&transaction).unwrap();
     let receipt = test_runner.execute_transaction(
@@ -40,7 +40,11 @@ fn test_transaction_replay_protection() {
     receipt.expect_commit_success();
 
     // 2. Force update the epoch (through database layer)
-    let new_epoch = init_epoch.after(MAX_EPOCH_RANGE).previous();
+    let new_epoch = init_epoch
+        .after(MAX_EPOCH_RANGE)
+        .unwrap()
+        .previous()
+        .unwrap();
     test_runner.set_current_epoch(new_epoch);
 
     // 3. Run the transaction again

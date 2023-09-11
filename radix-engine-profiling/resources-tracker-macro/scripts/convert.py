@@ -56,7 +56,11 @@ for path in file_list:
         continue
 
     # Look for all "kernel..." calls
-    root = tree.xpath(".//*[starts-with(local-name(), 'kernel') or starts-with(local-name(), 'before_invoke') or starts-with(local-name(), 'after_invoke')]")
+    try:
+        root = tree.xpath(".//*[starts-with(local-name(), 'kernel') or starts-with(local-name(), 'before_invoke') or starts-with(local-name(), 'after_invoke')]")
+    except:
+        print("Cannot apply xpath expression", file=sys.stderr)
+        continue
     for child in root:
 
         key = child.tag

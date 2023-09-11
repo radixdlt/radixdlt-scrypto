@@ -632,7 +632,9 @@ fn withdraw_with_over_specified_divisibility_should_result_in_error() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::InvalidAmount(..)
+            ))
         )
     });
 }
@@ -656,7 +658,9 @@ fn create_proof_with_over_specified_divisibility_should_result_in_error() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::InvalidAmount(..)
+            ))
         )
     });
 }
