@@ -34,6 +34,6 @@ jobs:
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
         with:
           flags: -p sbor --no-default-features --features alloc
-      - usues: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
         with:
           flags: -p sbor-derive-common
