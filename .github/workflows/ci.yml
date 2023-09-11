@@ -208,7 +208,6 @@ jobs:
       run: cargo bench --features rocksdb --no-run
 
   radix-engine:
-    radix-engine:
     name: Run Radix Engine tests
     runs-on: k8s-linux-runner
     steps:
