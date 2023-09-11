@@ -12,9 +12,12 @@ pub struct Event {
     pub flags: EventFlags,
 }
 
+/// Size of event flags when calculating event storage cost.
+pub const EVENT_FLAGS_LEN: usize = 4;
+
 impl Event {
     pub fn len(&self) -> usize {
-        self.type_identifier.len() + self.payload.len() + 4
+        self.type_identifier.len() + self.payload.len() + EVENT_FLAGS_LEN
     }
 }
 
