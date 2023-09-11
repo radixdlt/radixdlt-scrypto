@@ -130,7 +130,7 @@ jobs:
         coverage_report_name: scrypto-derive-tests-coverage
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        flags: -p scrypto-derive-tests--no-default-features --features alloc
+        flags: -p scrypto-derive-tests --no-default-features --features alloc
         coverage_report_name: scrypto-derive-tests-coverage
   
   scrypto-examples:
