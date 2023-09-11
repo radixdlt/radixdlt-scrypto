@@ -3,8 +3,8 @@ use crate::hash_tree::types::{LeafKey, LeafNode, SPARSE_MERKLE_PLACEHOLDER_HASH}
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_store_interface::interface::{
-    BatchPartitionDatabaseUpdate, DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey,
-    DbPartitionNum, DbSortKey, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
+    DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
+    DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
 };
 use tree_store::{ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
@@ -198,26 +198,24 @@ fn apply_partition_database_updates<S: TreeStore>(
                 .map(|(sort_key, update)| LeafHashChange::from_update(sort_key, update))
                 .collect(),
         ),
-        PartitionDatabaseUpdates::Batch(batch) => match batch {
-            BatchPartitionDatabaseUpdate::Reset {
-                new_substate_values,
-            } => {
-                if let Some(substate_root_version) = substate_root_version {
-                    substate_tier_store.record_stale_tree_part(StaleTreePart::Subtree(
-                        NodeKey::new_empty_path(substate_root_version),
-                    ));
-                }
-                put_leaf_hash_changes(
-                    &mut substate_tier_store,
-                    None,
-                    next_version,
-                    new_substate_values
-                        .into_iter()
-                        .map(|(sort_key, value)| LeafHashChange::from_value(sort_key, value))
-                        .collect(),
-                )
+        PartitionDatabaseUpdates::Reset {
+            new_substate_values,
+        } => {
+            if let Some(substate_root_version) = substate_root_version {
+                substate_tier_store.record_stale_tree_part(StaleTreePart::Subtree(
+                    NodeKey::new_empty_path(substate_root_version),
+                ));
             }
-        },
+            put_leaf_hash_changes(
+                &mut substate_tier_store,
+                None,
+                next_version,
+                new_substate_values
+                    .into_iter()
+                    .map(|(sort_key, value)| LeafHashChange::from_value(sort_key, value))
+                    .collect(),
+            )
+        }
     }
 }
 

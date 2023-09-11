@@ -77,8 +77,11 @@ pub enum PartitionDatabaseUpdates {
     Delta {
         substate_updates: IndexMap<DbSortKey, DatabaseUpdate>,
     },
-    /// A batch change.
-    Batch(BatchPartitionDatabaseUpdate),
+
+    /// A reset, dropping all Substates of a partition and replacing them with a new set.
+    Reset {
+        new_substate_values: IndexMap<DbSortKey, DbSubstateValue>,
+    },
 }
 
 impl Default for PartitionDatabaseUpdates {
@@ -87,14 +90,6 @@ impl Default for PartitionDatabaseUpdates {
             substate_updates: index_map_new(),
         }
     }
-}
-
-/// An update affecting entire Partition at once.
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum BatchPartitionDatabaseUpdate {
-    Reset {
-        new_substate_values: IndexMap<DbSortKey, DbSubstateValue>,
-    },
 }
 
 /// An update of a single substate's value.

@@ -64,17 +64,15 @@ impl CommittableSubstateDatabase for InMemorySubstateDatabase {
                             };
                         }
                     }
-                    PartitionDatabaseUpdates::Batch(batch) => match batch {
-                        BatchPartitionDatabaseUpdate::Reset {
-                            new_substate_values,
-                        } => {
-                            *partition = BTreeMap::from_iter(
-                                new_substate_values
-                                    .iter()
-                                    .map(|(sort_key, value)| (sort_key.clone(), value.clone())),
-                            )
-                        }
-                    },
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => {
+                        *partition = BTreeMap::from_iter(
+                            new_substate_values
+                                .iter()
+                                .map(|(sort_key, value)| (sort_key.clone(), value.clone())),
+                        )
+                    }
                 }
                 if partition.is_empty() {
                     self.partitions.remove(&partition_key);

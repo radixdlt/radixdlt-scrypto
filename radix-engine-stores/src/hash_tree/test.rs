@@ -10,9 +10,8 @@ use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_store_interface::interface::{
-    BatchPartitionDatabaseUpdate, DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey,
-    DbPartitionNum, DbSortKey, DbSubstateKey, DbSubstateValue, NodeDatabaseUpdates,
-    PartitionDatabaseUpdates,
+    DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
+    DbSubstateKey, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
 };
 use sbor::prelude::indexmap::indexmap;
 use utils::prelude::{index_map_new, IndexMap};
@@ -507,11 +506,9 @@ impl<S: TreeStore> HashTreeTester<S> {
             node_updates: indexmap!(
                 node_key => NodeDatabaseUpdates {
                     partition_updates: indexmap!(
-                        partition_num => PartitionDatabaseUpdates::Batch(
-                            BatchPartitionDatabaseUpdate::Reset {
-                                new_substate_values: values.into_iter().collect()
-                            }
-                        )
+                        partition_num => PartitionDatabaseUpdates::Reset {
+                            new_substate_values: values.into_iter().collect()
+                        }
                     )
                 }
             ),

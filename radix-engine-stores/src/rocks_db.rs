@@ -96,31 +96,23 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
                             .expect("IO error");
                         }
                     }
-                    PartitionDatabaseUpdates::Batch(batch) => {
-                        match batch {
-                            BatchPartitionDatabaseUpdate::Reset {
-                                new_substate_values,
-                            } => {
-                                // Note: a plain `delete_range()` is missing from rocksdb's API, and
-                                // (at the moment of writing) this is the only reason of having CF.
-                                self.db
-                                    .delete_range_cf(
-                                        self.cf(),
-                                        encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
-                                        encode_to_rocksdb_bytes(
-                                            &partition_key.next(),
-                                            &DbSortKey(vec![]),
-                                        ),
-                                    )
-                                    .expect("IO error");
-                                for (sort_key, value_bytes) in new_substate_values {
-                                    let key_bytes =
-                                        encode_to_rocksdb_bytes(&partition_key, sort_key);
-                                    self.db
-                                        .put_cf(self.cf(), key_bytes, value_bytes)
-                                        .expect("IO error");
-                                }
-                            }
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => {
+                        // Note: a plain `delete_range()` is missing from rocksdb's API, and
+                        // (at the moment of writing) this is the only reason of having CF.
+                        self.db
+                            .delete_range_cf(
+                                self.cf(),
+                                encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
+                                encode_to_rocksdb_bytes(&partition_key.next(), &DbSortKey(vec![])),
+                            )
+                            .expect("IO error");
+                        for (sort_key, value_bytes) in new_substate_values {
+                            let key_bytes = encode_to_rocksdb_bytes(&partition_key, sort_key);
+                            self.db
+                                .put_cf(self.cf(), key_bytes, value_bytes)
+                                .expect("IO error");
                         }
                     }
                 }

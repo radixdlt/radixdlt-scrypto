@@ -48,8 +48,8 @@ use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
 use radix_engine_store_interface::interface::{
-    BatchPartitionDatabaseUpdate, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
-    DbSubstateValue, PartitionDatabaseUpdates, PartitionEntry,
+    DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
+    PartitionDatabaseUpdates, PartitionEntry,
 };
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
@@ -681,11 +681,9 @@ impl SubstateDatabase for FlashedSubstateDatabase {
                         DatabaseUpdate::Set(value) => Some(value.clone()),
                         DatabaseUpdate::Delete => None,
                     }),
-                PartitionDatabaseUpdates::Batch(batch) => match batch {
-                    BatchPartitionDatabaseUpdate::Reset {
-                        new_substate_values,
-                    } => new_substate_values.get(sort_key).cloned(),
-                },
+                PartitionDatabaseUpdates::Reset {
+                    new_substate_values,
+                } => new_substate_values.get(sort_key).cloned(),
             })
     }
 
@@ -713,11 +711,9 @@ impl SubstateDatabase for FlashedSubstateDatabase {
                                 }
                             })) as Box<dyn Iterator<Item = _>>
                         }
-                        PartitionDatabaseUpdates::Batch(batch) => Box::new(match batch {
-                            BatchPartitionDatabaseUpdate::Reset {
-                                new_substate_values,
-                            } => new_substate_values.iter(),
-                        }),
+                        PartitionDatabaseUpdates::Reset {
+                            new_substate_values,
+                        } => Box::new(new_substate_values.iter()),
                     };
                     effective_entries.map(|(sort_key, value)| (sort_key.clone(), value.clone()))
                 }),

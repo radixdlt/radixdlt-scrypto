@@ -8,8 +8,7 @@ use crate::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_engine_store_interface::interface::{
-    BatchPartitionDatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSubstateValue,
-    NodeDatabaseUpdates, PartitionDatabaseUpdates,
+    DatabaseUpdates, DbPartitionKey, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
 };
 use radix_engine_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
@@ -197,20 +196,18 @@ impl PartitionStateUpdates {
                     .map(|(key, update)| (M::to_db_sort_key(key), update.clone()))
                     .collect(),
             },
-            PartitionStateUpdates::Batch(batch) => {
-                PartitionDatabaseUpdates::Batch(batch.create_database_updates::<M>())
-            }
+            PartitionStateUpdates::Batch(batch) => batch.create_database_updates::<M>(),
         }
     }
 }
 
 impl BatchPartitionStateUpdate {
     /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
-    pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> BatchPartitionDatabaseUpdate {
+    pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> PartitionDatabaseUpdates {
         match self {
             BatchPartitionStateUpdate::Reset {
                 new_substate_values,
-            } => BatchPartitionDatabaseUpdate::Reset {
+            } => PartitionDatabaseUpdates::Reset {
                 new_substate_values: new_substate_values
                     .iter()
                     .map(|(key, value)| (M::to_db_sort_key(key), value.clone()))
