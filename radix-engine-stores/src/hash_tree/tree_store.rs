@@ -3,13 +3,12 @@ pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_derive::ScryptoSbor;
 use sbor::*;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
 
 /// A physical tree node, to be used in the storage.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 pub enum TreeNode {
     /// Internal node - always metadata-only, as per JMT design.
     Internal(TreeInternalNode),
@@ -20,14 +19,14 @@ pub enum TreeNode {
 }
 
 /// Internal node.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 pub struct TreeInternalNode {
     /// Metadata of each existing child.
     pub children: Vec<TreeChildEntry>,
 }
 
 /// Child node metadata.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 pub struct TreeChildEntry {
     /// First of the remaining nibbles in the key.
     pub nibble: Nibble,
@@ -40,7 +39,7 @@ pub struct TreeChildEntry {
 }
 
 /// Leaf node.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 pub struct TreeLeafNode {
     /// All the remaining nibbles in the _hashed_ payload's key.
     pub key_suffix: NibblePath,
@@ -51,7 +50,7 @@ pub struct TreeLeafNode {
 }
 
 /// A part of a tree that may become stale (i.e. need eventual pruning).
-#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 pub enum StaleTreePart {
     /// A single node to be removed.
     Node(NodeKey),
