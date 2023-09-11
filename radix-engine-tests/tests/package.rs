@@ -524,7 +524,7 @@ fn publishing_of_package_with_blueprint_name_exceeding_length_limit_fails() {
     let (_, value) = definition.blueprints.pop().unwrap();
     definition
         .blueprints
-        .insert(name(MAX_BLUEPRINT_NAME_LEN + 1), value);
+        .insert(name(MAX_BLUEPRINT_NAME_LEN + 1, 'A'), value);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -667,6 +667,58 @@ fn publishing_of_package_with_transient_blueprints_fails() {
     })
 }
 
-fn name(len: usize) -> String {
-    (0..len).map(|_| 'A').collect()
+#[test]
+fn publishing_of_package_with_whitespace_in_blueprint_name_fails() {
+    test_publishing_of_packages_with_invalid_names("\nHelloWorld")
+}
+
+#[test]
+fn publishing_of_package_with_number_at_start_of_blueprint_name_fails() {
+    test_publishing_of_packages_with_invalid_names("1000HelloWorld")
+}
+
+#[test]
+fn publishing_of_package_with_a_hidden_ascii_character_fails() {
+    test_publishing_of_packages_with_invalid_names("World")
+}
+
+#[test]
+fn publishing_of_package_with_a_lookalike_character_fails() {
+    test_publishing_of_packages_with_invalid_names("depοsit")
+}
+
+fn test_publishing_of_packages_with_invalid_names(name: &str) {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    let (_, value) = definition.blueprints.pop().unwrap();
+    definition.blueprints.insert(name.to_owned(), value);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidName(..)
+            ))
+        )
+    })
+}
+
+fn name(len: usize, chr: char) -> String {
+    (0..len).map(|_| chr).collect()
 }

@@ -20,7 +20,6 @@ pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::*;
 use sbor::LocalTypeId;
-use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
@@ -533,9 +532,16 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
 }
 
 fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
-    // All names should follow Rust Identifier specification
-    let condition = |name| {
-        syn::parse_str::<Ident>(name).map_err(|_| PackageError::InvalidName(name.to_string()))
+    let condition = |name: &str| {
+        let mut iter = name.chars();
+        match iter.next() {
+            Some('A'..='Z' | 'a'..='z' | '_')
+                if iter.all(|char| matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_')) =>
+            {
+                Ok(())
+            }
+            Some(_) | None => Err(PackageError::InvalidName(name.to_owned())),
+        }
     };
 
     for (bp_name, bp_init) in definition.blueprints.iter() {
