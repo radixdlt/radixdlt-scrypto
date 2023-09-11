@@ -100,8 +100,8 @@ fn self_cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
-                    ProcessSubstateError::TakeNodeError(TakeNodeError::OwnNotFound(_))
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
+                    ProcessSubstateError::SubstateBorrowed(..)
                 ))
             ))
         )

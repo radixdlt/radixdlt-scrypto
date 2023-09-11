@@ -558,6 +558,7 @@ pub enum ProcessSubstateError {
     RefCantBeAddedToSubstate(NodeId),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
+    SubstateBorrowed(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -1357,6 +1358,10 @@ impl<C, L: Clone> CallFrame<C, L> {
         // Verify and Update call frame state based on diff
         {
             for added_own in &diff.added_owns {
+                if substate_io.substate_locks.node_is_locked(added_own) {
+                    return Err(CallbackError::Error(ProcessSubstateError::SubstateBorrowed(*added_own)));
+                }
+
                 // Node no longer owned by frame
                 self.take_node_internal(added_own)
                     .map_err(|e| CallbackError::Error(ProcessSubstateError::TakeNodeError(e)))?;
