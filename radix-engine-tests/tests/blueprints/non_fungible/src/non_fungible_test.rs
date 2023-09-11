@@ -199,18 +199,27 @@ mod non_fungible_test {
             mint_badge
         }
 
-        pub fn update_non_fungible(field: String, value: bool) -> (Bucket, Bucket) {
+        pub fn update_non_fungible(id: u64, field: String, value: bool) -> (Bucket, Bucket) {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
 
             mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.update_non_fungible_data(
-                    &NonFungibleLocalId::integer(0),
+                    &NonFungibleLocalId::integer(id),
                     &field,
                     value,
                 );
             });
 
             (mint_badge, bucket)
+        }
+
+        pub fn get_non_fungible(id: u64) -> Sandwich {
+            let (_mint_badge, resource_manager, _bucket) = Self::create_non_fungible_mutable();
+
+            let data: Sandwich =
+                resource_manager.get_non_fungible_data(&NonFungibleLocalId::integer(id));
+            assert_eq!(data.available, true);
+            data
         }
 
         pub fn update_and_get_non_fungible_reference(
@@ -252,6 +261,28 @@ mod non_fungible_test {
             (mint_badge, bucket)
         }
 
+        pub fn get_total_supply_when_track_total_supply_disabled() {
+            let bytes = ScryptoVmV1Api::blueprint_call(
+                RESOURCE_PACKAGE,
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                    owner_role: OwnerRole::None,
+                    id_type: NonFungibleIdType::Integer,
+                    track_total_supply: false,
+                    non_fungible_schema:
+                        NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
+                    resource_roles: NonFungibleResourceRoles::default(),
+                    metadata: metadata! {},
+                    address_reservation: None,
+                })
+                .unwrap(),
+            );
+            let resource_manager: ResourceManager = scrypto_decode(&bytes).unwrap();
+
+            assert!(resource_manager.total_supply().is_none());
+        }
+
         pub fn get_total_supply() {
             let resource_manager =
                 ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
@@ -279,7 +310,7 @@ mod non_fungible_test {
         }
 
         pub fn mint_non_fungible_with_different_id_type() -> (Bucket, Bucket) {
-            let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
+            let (mint_badge, resource_manager, _bucket) = Self::create_non_fungible_mutable();
             // Mint a non-fungible
             let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.mint_non_fungible(
@@ -293,11 +324,44 @@ mod non_fungible_test {
                     },
                 )
             });
-            (mint_badge, bucket)
+            (mint_badge, non_fungible)
+        }
+
+        pub fn mint_non_fungible_with_ruid_id_type() -> (Bucket, Bucket) {
+            let (mint_badge, resource_manager, _bucket) = Self::create_non_fungible_mutable();
+            // Mint a non-fungible
+            let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
+                resource_manager.mint_non_fungible(
+                    &NonFungibleLocalId::ruid([0x11; 32]),
+                    Sandwich {
+                        name: "Test2".to_owned(),
+                        available: false,
+                        tastes_great: true,
+                        reference: None,
+                        own: None,
+                    },
+                )
+            });
+            (mint_badge, non_fungible)
+        }
+
+        pub fn mint_ruid_non_fungible_for_non_ruid_non_fungible_resource() -> (Bucket, Bucket) {
+            let (mint_badge, resource_manager, _bucket) = Self::create_non_fungible_mutable();
+            // Mint a non-fungible
+            let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
+                resource_manager.mint_ruid_non_fungible(Sandwich {
+                    name: "Test".to_owned(),
+                    available: false,
+                    tastes_great: true,
+                    reference: None,
+                    own: None,
+                })
+            });
+            (mint_badge, non_fungible)
         }
 
         pub fn mint_non_fungible_that_already_exists() -> (Bucket, Bucket) {
-            let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
+            let (mint_badge, resource_manager, _bucket) = Self::create_non_fungible_mutable();
             // Mint a non-fungible
             let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.mint_non_fungible(
@@ -311,7 +375,7 @@ mod non_fungible_test {
                     },
                 )
             });
-            (mint_badge, bucket)
+            (mint_badge, non_fungible)
         }
 
         pub fn take_and_put_bucket() -> Bucket {
@@ -512,6 +576,64 @@ mod non_fungible_test {
                 .globalize();
         }
 
+        fn create_non_fungible_with_given_type(
+            func_name: &str,
+            id_type: NonFungibleIdType,
+            entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+            address_reservation: Option<GlobalAddressReservation>,
+        ) -> Bucket {
+            let rtn = match func_name {
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT => {
+                    // convert entries to vector of values
+                    let entries = entries
+                        .into_iter()
+                        .map(|(_, v)| v)
+                        .collect::<Vec<(ScryptoValue,)>>();
+
+                    ScryptoVmV1Api::blueprint_call(
+                    RESOURCE_PACKAGE,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
+                    scrypto_encode(&NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+                        owner_role: OwnerRole::None,
+                        track_total_supply: false,
+                        resource_roles: NonFungibleResourceRoles::default(),
+                        metadata: metadata! {},
+                        non_fungible_schema:
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
+                            ),
+                        entries,
+                        address_reservation,
+                    })
+                    .unwrap()
+                )
+                }
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT => ScryptoVmV1Api::blueprint_call(
+                    RESOURCE_PACKAGE,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                    scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                        owner_role: OwnerRole::None,
+                        id_type,
+                        track_total_supply: false,
+                        resource_roles: NonFungibleResourceRoles::default(),
+                        metadata: metadata! {},
+                        non_fungible_schema:
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
+                            ),
+                        entries,
+                        address_reservation,
+                    })
+                    .unwrap(),
+                ),
+                _ => panic!("Not supported function name {:?} provided", func_name),
+            };
+            let (_resource_address, bucket): (ResourceAddress, Bucket) =
+                scrypto_decode(&rtn).unwrap();
+
+            bucket
+        }
+
         pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
             let mut entries = index_map_new();
             entries.insert(
@@ -519,28 +641,59 @@ mod non_fungible_test {
                 (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
             );
 
-            // creating non-fungible id with id type set to default (RUID)
-            let rtn = ScryptoVmV1Api::blueprint_call(
-                RESOURCE_PACKAGE,
-                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            Self::create_non_fungible_with_given_type(
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    owner_role: OwnerRole::None,
-                    id_type: NonFungibleIdType::RUID,
-                    track_total_supply: false,
-                    resource_roles: NonFungibleResourceRoles::default(),
-                    metadata: metadata! {},
-                    non_fungible_schema:
-                        NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                    entries,
-                    address_reservation: None,
-                })
-                .unwrap(),
-            );
-            let (_resource_address, bucket): (ResourceAddress, Bucket) =
-                scrypto_decode(&rtn).unwrap();
+                NonFungibleIdType::RUID,
+                entries,
+                None,
+            )
+        }
 
-            bucket
+        pub fn create_non_fungible_integer_with_address_reservation() -> Bucket {
+            let (reservation, _address) = Runtime::allocate_non_fungible_address();
+            let mut entries = index_map_new();
+            entries.insert(
+                NonFungibleLocalId::integer(0),
+                (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+            );
+
+            Self::create_non_fungible_with_given_type(
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                NonFungibleIdType::Integer,
+                entries,
+                Some(reservation),
+            )
+        }
+
+        pub fn create_non_fungible_ruid_with_address_reservation() -> Bucket {
+            let (reservation, _address) = Runtime::allocate_non_fungible_address();
+            let mut entries = index_map_new();
+            entries.insert(
+                NonFungibleLocalId::ruid([0x11; 32]),
+                (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+            );
+
+            Self::create_non_fungible_with_given_type(
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
+                NonFungibleIdType::RUID,
+                entries,
+                Some(reservation),
+            )
+        }
+
+        pub fn create_non_fungible_with_id_type_does_not_match() -> Bucket {
+            let mut entries = index_map_new();
+            entries.insert(
+                NonFungibleLocalId::integer(0),
+                (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+            );
+
+            Self::create_non_fungible_with_given_type(
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                NonFungibleIdType::String,
+                entries,
+                None,
+            )
         }
 
         pub fn create_string_non_fungible() -> Bucket {

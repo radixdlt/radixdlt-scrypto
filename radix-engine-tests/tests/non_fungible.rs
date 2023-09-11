@@ -174,7 +174,7 @@ fn can_update_non_fungible_when_mutable() {
             package_address,
             "NonFungibleTest",
             "update_non_fungible",
-            manifest_args!("available".to_string(), true),
+            manifest_args!(0_u64, "available".to_string(), true),
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
@@ -196,7 +196,7 @@ fn cannot_update_non_fungible_when_not_mutable() {
             package_address,
             "NonFungibleTest",
             "update_non_fungible",
-            manifest_args!("tastes_great".to_string(), false),
+            manifest_args!(0_u64, "tastes_great".to_string(), false),
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
@@ -215,7 +215,7 @@ fn cannot_update_non_fungible_when_not_mutable() {
 }
 
 #[test]
-fn cannot_update_non_fungible_when_does_not_exist() {
+fn cannot_update_non_fungible_when_field_does_not_exist() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
@@ -225,7 +225,7 @@ fn cannot_update_non_fungible_when_does_not_exist() {
             package_address,
             "NonFungibleTest",
             "update_non_fungible",
-            manifest_args!("does_not_exist".to_string(), false),
+            manifest_args!(0_u64, "does_not_exist".to_string(), false),
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
@@ -238,6 +238,64 @@ fn cannot_update_non_fungible_when_does_not_exist() {
             e,
             RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
                 NonFungibleResourceManagerError::UnknownMutableFieldName(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn cannot_update_non_fungible_when_id_does_not_exist() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "update_non_fungible",
+            manifest_args!(666_u64, "available".to_string(), true),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::NonFungibleNotFound(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn cannot_get_non_fungible_when_id_does_not_exist() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "get_non_fungible",
+            manifest_args!(666_u64),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::NonFungibleNotFound(..)
             ))
         )
     });
@@ -712,6 +770,29 @@ fn can_get_total_supply() {
 }
 
 #[test]
+fn cannot_get_total_supply_when_track_total_supply_disable() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "get_total_supply_when_track_total_supply_disabled",
+            manifest_args!(),
+        )
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn can_mint_ruid_non_fungible_in_scrypto() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -895,6 +976,89 @@ fn cant_mint_non_fungible_with_different_id_type() {
 }
 
 #[test]
+fn cant_mint_non_fungible_with_ruid_id_type() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, _) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "mint_non_fungible_with_ruid_id_type",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn cant_mint_ruid_non_fungible_for_non_ruid_non_fungible_resource() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, _) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "mint_ruid_non_fungible_for_non_ruid_non_fungible_resource",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidNonFungibleIdType
+            ))
+        )
+    });
+}
+
+#[test]
+fn cant_mint_single_ruid_non_fungible_for_non_ruid_non_fungible_resource() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, _) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "mint_single_ruid_non_fungible_for_non_ruid_non_fungible_resource",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidNonFungibleIdType
+            ))
+        )
+    });
+}
+#[test]
 fn cant_mint_non_fungible_that_already_exists() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -917,6 +1081,94 @@ fn cant_mint_non_fungible_that_already_exists() {
             e,
             RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
                 NonFungibleResourceManagerError::NonFungibleAlreadyExists(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn create_non_fungible_with_address_reservation() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_non_fungible_integer_with_address_reservation",
+            manifest_args!(),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn create_non_fungible_ruid_with_address_reservation() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_non_fungible_ruid_with_address_reservation",
+            manifest_args!(),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn cant_create_non_fungible_with_id_type_does_not_match() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_non_fungible_with_id_type_does_not_match",
+            manifest_args!(),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(..)
             ))
         )
     });
