@@ -429,6 +429,51 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
     assert!(result.next_epoch().is_none());
 }
 
+#[test]
+fn create_validator_twice() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_standard_test_fee(account)
+            .withdraw_from_account(
+                account,
+                XRD,
+                DEFAULT_VALIDATOR_XRD_COST.checked_add(dec!(1)).unwrap(),
+            )
+            .take_all_from_worktop(XRD, "creation_fee")
+            .create_validator(public_key, Decimal::ONE, "creation_fee")
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    println!("{:?}", receipt);
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_standard_test_fee(account)
+            .withdraw_from_account(
+                account,
+                XRD,
+                DEFAULT_VALIDATOR_XRD_COST.checked_add(dec!(1)).unwrap(),
+            )
+            .take_all_from_worktop(XRD, "creation_fee")
+            .create_validator(public_key, Decimal::ONE, "creation_fee")
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    println!("{:?}", receipt);
+}
+
 fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
