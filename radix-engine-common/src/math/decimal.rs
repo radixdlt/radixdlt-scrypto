@@ -19,6 +19,8 @@ use crate::math::PreciseDecimal;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
 
+use super::CheckedTruncate;
+
 /// `Decimal` represents a 192 bit representation of a fixed-scale decimal number.
 ///
 /// The finite set of values are of the form `m / 10^18`, where `m` is
@@ -62,10 +64,11 @@ impl Decimal {
 
     pub const ZERO: Self = Self(I192::ZERO);
 
+    pub const ONE_HUNDREDTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 2), 0, 0]));
+    pub const ONE_TENTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 1), 0, 0]));
     pub const ONE: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE), 0, 0]));
     pub const TEN: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE + 1), 0, 0]));
     pub const ONE_HUNDRED: Self = Self(I192::from_digits([7766279631452241920, 0x5, 0]));
-    pub const ONE_HUNDREDTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 2), 0, 0]));
 
     /// Returns `Decimal` of 0.
     pub const fn zero() -> Self {
@@ -263,27 +266,50 @@ impl Decimal {
     }
 }
 
-macro_rules! from_int {
-    ($type:ident) => {
-        impl From<$type> for Decimal {
-            fn from(val: $type) -> Self {
-                Self(I192::from(val) * Self::ONE.0)
+macro_rules! from_primitive_type {
+    ($($type:ident),*) => {
+        $(
+            impl From<$type> for Decimal {
+                fn from(val: $type) -> Self {
+                    Self(I192::from(val) * Self::ONE.0)
+                }
             }
-        }
+        )*
     };
 }
-from_int!(u8);
-from_int!(u16);
-from_int!(u32);
-from_int!(u64);
-from_int!(u128);
-from_int!(usize);
-from_int!(i8);
-from_int!(i16);
-from_int!(i32);
-from_int!(i64);
-from_int!(i128);
-from_int!(isize);
+macro_rules! to_primitive_type {
+    ($($type:ident),*) => {
+        $(
+            impl TryFrom<Decimal> for $type {
+                type Error = ParseDecimalError;
+
+                fn try_from(val: Decimal) -> Result<Self, Self::Error> {
+                    let rounded = val.checked_round(0, RoundingMode::ToZero).ok_or(ParseDecimalError::Overflow)?;
+                    let fraction = val.checked_sub(rounded).ok_or(Self::Error::Overflow)?;
+                    if !fraction.is_zero() {
+                        Err(Self::Error::InvalidDigit)
+                    }
+                    else {
+                        let i_192 = rounded.0 / I192::TEN.pow(Decimal::SCALE);
+                        $type::try_from(i_192)
+                            .map_err(|_| Self::Error::Overflow)
+                    }
+                }
+            }
+
+            impl TryFrom<&Decimal> for $type {
+                type Error = ParseDecimalError;
+
+                fn try_from(val: &Decimal) -> Result<Self, Self::Error> {
+                    $type::try_from(*val)
+                }
+            }
+        )*
+    }
+}
+
+from_primitive_type!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+to_primitive_type!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
 
 // from_str() should be enough, but we want to have try_from() to simplify dec! macro
 impl TryFrom<&str> for Decimal {
@@ -305,9 +331,9 @@ impl TryFrom<String> for Decimal {
 impl From<bool> for Decimal {
     fn from(val: bool) -> Self {
         if val {
-            Self::from(1u8)
+            Self::ONE
         } else {
-            Self::from(0u8)
+            Self::ZERO
         }
     }
 }
@@ -716,7 +742,7 @@ impl FromStr for Decimal {
     type Err = ParseDecimalError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tens = I192::from(10);
+        let tens = I192::TEN;
         let v: Vec<&str> = s.split('.').collect();
 
         let mut int = match I192::from_str(v[0]) {
@@ -808,12 +834,8 @@ impl TryFrom<PreciseDecimal> for Decimal {
     type Error = ParseDecimalError;
 
     fn try_from(val: PreciseDecimal) -> Result<Self, Self::Error> {
-        let val_i256 = val.0 / I256::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE);
-        let result = I192::try_from(val_i256);
-        match result {
-            Ok(val_i192) => Ok(Self(val_i192)),
-            Err(_) => Err(ParseDecimalError::Overflow),
-        }
+        val.checked_truncate(RoundingMode::ToZero)
+            .ok_or(ParseDecimalError::Overflow)
     }
 }
 
@@ -899,9 +921,19 @@ mod tests {
             Decimal::MIN,
         );
 
+        assert_eq!(dec!("0"), Decimal::ZERO);
+        assert_eq!(dec!("1"), Decimal::ONE);
+        assert_eq!(dec!("0.1"), Decimal::ONE_TENTH);
         assert_eq!(dec!("10"), Decimal::TEN);
         assert_eq!(dec!("100"), Decimal::ONE_HUNDRED);
         assert_eq!(dec!("0.01"), Decimal::ONE_HUNDREDTH);
+
+        assert_eq!("0", Decimal::ZERO.to_string());
+        assert_eq!("1", Decimal::ONE.to_string());
+        assert_eq!("0.1", Decimal::ONE_TENTH.to_string());
+        assert_eq!("10", Decimal::TEN.to_string());
+        assert_eq!("100", Decimal::ONE_HUNDRED.to_string());
+        assert_eq!("0.01", Decimal::ONE_HUNDREDTH.to_string());
     }
 
     #[test]
@@ -1554,10 +1586,13 @@ mod tests {
 
     test_from_into_precise_decimal_decimal! {
         ("12345678.123456789012345678901234567890123456", "12345678.123456789012345678", 1),
-        ("0.000000000000000000000000008901234567", "0", 2),
-        ("-0.000000000000000000000000008901234567", "0", 3),
-        ("5", "5", 4),
-        ("12345678.1", "12345678.1", 5)
+        ("12345678.123456789012345678101234567890123456", "12345678.123456789012345678", 2),
+        ("-12345678.123456789012345678901234567890123456", "-12345678.123456789012345678", 3),
+        ("-12345678.123456789012345678101234567890123456", "-12345678.123456789012345678", 4),
+        ("0.000000000000000000000000008901234567", "0", 5),
+        ("-0.000000000000000000000000008901234567", "0", 6),
+        ("5", "5", 7),
+        ("12345678.1", "12345678.1", 8)
     }
 
     macro_rules! test_from_precise_decimal_decimal_overflow {
@@ -1984,4 +2019,96 @@ mod tests {
     test_math_operands_decimal!(U320);
     test_math_operands_decimal!(U448);
     test_math_operands_decimal!(U512);
+
+    macro_rules! test_from_primitive_type {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_decimal_from_primitive_$type>]() {
+                    let v = $type::try_from(1).unwrap();
+                    assert_eq!(Decimal::from(v), dec!(1));
+
+                    if $type::MIN != 0 {
+                        let v = $type::try_from(-1).unwrap();
+                        assert_eq!(Decimal::from(v), dec!(-1));
+                    }
+
+                    let v = $type::MAX;
+                    assert_eq!(Decimal::from(v), Decimal::from_str(&v.to_string()).unwrap());
+
+                    let v = $type::MIN;
+                    assert_eq!(Decimal::from(v), Decimal::from_str(&v.to_string()).unwrap());
+                }
+            }
+        };
+    }
+    test_from_primitive_type!(u8);
+    test_from_primitive_type!(u16);
+    test_from_primitive_type!(u32);
+    test_from_primitive_type!(u64);
+    test_from_primitive_type!(u128);
+    test_from_primitive_type!(usize);
+    test_from_primitive_type!(i8);
+    test_from_primitive_type!(i16);
+    test_from_primitive_type!(i32);
+    test_from_primitive_type!(i64);
+    test_from_primitive_type!(i128);
+    test_from_primitive_type!(isize);
+
+    macro_rules! test_to_primitive_type {
+        ($type:ident) => {
+            paste! {
+                #[test]
+                fn [<test_decimal_to_primitive_$type>]() {
+                    let d = dec!(1);
+                    let v = $type::try_from(1).unwrap();
+                    assert_eq!($type::try_from(d).unwrap(), v);
+
+                    if $type::MIN != 0 {
+                        let d = dec!(-1);
+                        let v = $type::try_from(-1).unwrap();
+                        assert_eq!($type::try_from(d).unwrap(), v);
+                    }
+
+                    let v = $type::MAX;
+                    let d = Decimal::from(v);
+                    assert_eq!($type::try_from(d).unwrap(), v);
+
+                    let v = $type::MIN;
+                    let d = Decimal::from(v);
+                    assert_eq!($type::try_from(d).unwrap(), v);
+
+                    let d = Decimal::MAX;
+                    let err = $type::try_from(d).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::InvalidDigit);
+
+                    let v = $type::MAX;
+                    let d = Decimal::from(v).checked_add(1).unwrap();
+                    let err = $type::try_from(d).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::Overflow);
+
+                    let v = $type::MIN;
+                    let d = Decimal::from(v).checked_sub(1).unwrap();
+                    let err = $type::try_from(d).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::Overflow);
+
+                    let d = dec!("1.1");
+                    let err = $type::try_from(d).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::InvalidDigit);
+                }
+            }
+        };
+    }
+    test_to_primitive_type!(u8);
+    test_to_primitive_type!(u16);
+    test_to_primitive_type!(u32);
+    test_to_primitive_type!(u64);
+    test_to_primitive_type!(u128);
+    test_to_primitive_type!(usize);
+    test_to_primitive_type!(i8);
+    test_to_primitive_type!(i16);
+    test_to_primitive_type!(i32);
+    test_to_primitive_type!(i64);
+    test_to_primitive_type!(i128);
+    test_to_primitive_type!(isize);
 }
