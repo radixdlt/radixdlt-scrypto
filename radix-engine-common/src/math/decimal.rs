@@ -921,10 +921,19 @@ mod tests {
             Decimal::MIN,
         );
 
+        assert_eq!(dec!("0"), Decimal::ZERO);
+        assert_eq!(dec!("1"), Decimal::ONE);
         assert_eq!(dec!("0.1"), Decimal::ONE_TENTH);
         assert_eq!(dec!("10"), Decimal::TEN);
         assert_eq!(dec!("100"), Decimal::ONE_HUNDRED);
         assert_eq!(dec!("0.01"), Decimal::ONE_HUNDREDTH);
+
+        assert_eq!("0", Decimal::ZERO.to_string());
+        assert_eq!("1", Decimal::ONE.to_string());
+        assert_eq!("0.1", Decimal::ONE_TENTH.to_string());
+        assert_eq!("10", Decimal::TEN.to_string());
+        assert_eq!("100", Decimal::ONE_HUNDRED.to_string());
+        assert_eq!("0.01", Decimal::ONE_HUNDREDTH.to_string());
     }
 
     #[test]

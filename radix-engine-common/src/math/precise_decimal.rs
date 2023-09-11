@@ -996,10 +996,19 @@ mod tests {
             PreciseDecimal::MIN,
         );
 
+        assert_eq!(pdec!("0"), PreciseDecimal::ZERO);
+        assert_eq!(pdec!("1"), PreciseDecimal::ONE);
         assert_eq!(pdec!("0.1"), PreciseDecimal::ONE_TENTH);
         assert_eq!(pdec!("10"), PreciseDecimal::TEN);
         assert_eq!(pdec!("100"), PreciseDecimal::ONE_HUNDRED);
         assert_eq!(pdec!("0.01"), PreciseDecimal::ONE_HUNDREDTH);
+
+        assert_eq!("0", PreciseDecimal::ZERO.to_string());
+        assert_eq!("1", PreciseDecimal::ONE.to_string());
+        assert_eq!("0.1", PreciseDecimal::ONE_TENTH.to_string());
+        assert_eq!("10", PreciseDecimal::TEN.to_string());
+        assert_eq!("100", PreciseDecimal::ONE_HUNDRED.to_string());
+        assert_eq!("0.01", PreciseDecimal::ONE_HUNDREDTH.to_string());
     }
 
     #[test]
