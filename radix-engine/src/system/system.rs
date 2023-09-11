@@ -864,7 +864,7 @@ where
     ) -> Result<GlobalAddress, RuntimeError> {
         // Check global address reservation
         let global_address = {
-            let substates = self.kernel_drop_node(global_address_reservation.0.as_node_id())?;
+            let (substates, _) = self.kernel_drop_node(global_address_reservation.0.as_node_id())?;
 
             let type_info: Option<TypeInfoSubstate> = substates
                 .get(&TYPE_INFO_FIELD_PARTITION)
@@ -1002,7 +1002,10 @@ where
             )?;
         }
 
-        self.kernel_drop_node(&node_id)?;
+        let (_, pinned) = self.kernel_drop_node(&node_id)?;
+        if pinned {
+            return Err(RuntimeError::SystemError(SystemError::GlobalizingTransientBlueprint));
+        }
 
         // Move other modules, and drop
         for (module_id, node_id) in modules {
@@ -1559,7 +1562,7 @@ where
             }
         }
 
-        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
+        let (mut node_substates, _) = self.api.kernel_drop_node(&node_id)?;
         let fields = if let Some(user_substates) = node_substates.remove(&MAIN_BASE_PARTITION) {
             user_substates
                 .into_iter()
@@ -2799,7 +2802,7 @@ where
             .kernel_mark_substate_as_transient(node_id, partition_num, key)
     }
 
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<(NodeSubstates, bool), RuntimeError> {
         self.api.kernel_drop_node(node_id)
     }
 

@@ -374,7 +374,7 @@ where
     }
 
     #[trace_resources(log=node_id.entity_type())]
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<(NodeSubstates, bool), RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
 
@@ -387,7 +387,7 @@ where
                 M::on_drop_node(api, DropNodeEvent::IOAccess(&io_access))
             },
         };
-        let node_substates = self
+        let (node_substates, pinned) = self
             .current_frame
             .drop_node(&mut self.substate_io, node_id, &mut handler)
             .map_err(|e| match e {
@@ -400,7 +400,7 @@ where
         let mut read_only = as_read_only!(self);
         M::on_drop_node(&mut read_only, DropNodeEvent::End(node_id, &node_substates))?;
 
-        Ok(node_substates)
+        Ok((node_substates, pinned))
     }
 
     #[trace_resources]

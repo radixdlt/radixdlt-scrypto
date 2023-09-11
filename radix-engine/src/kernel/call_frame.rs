@@ -778,7 +778,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
-    ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
+    ) -> Result<(NodeSubstates, bool), CallbackError<DropNodeError, E>> {
         self.take_node_internal(node_id)
             .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
@@ -813,7 +813,9 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        Ok(node_substates)
+        let pinned = substate_io.pinned_nodes.remove(node_id);
+
+        Ok((node_substates, pinned))
     }
 
     pub fn move_partition<'f, S: CommitableSubstateStore, E>(

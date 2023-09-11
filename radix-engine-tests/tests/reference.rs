@@ -21,13 +21,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
     println!("Recallable vault id: {:?}", vault_id);
 
     // Publish package
-    let (code, mut package_def) = PackageLoader::get("reference");
-    package_def
-        .blueprints
-        .values_mut()
-        .next()
-        .unwrap()
-        .is_transient = true;
+    let (code, package_def) = PackageLoader::get("reference");
     let package_address = test_runner.publish_package_simple((code, package_def));
 
     // Instantiate component
@@ -61,8 +55,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        e.to_string().contains("RefCantBeAddedToSubstate")
-            && e.to_string().contains(&hex::encode(vault_id.as_bytes()))
+        e.to_string().contains("Non Global Reference is not allowed")
     });
 }
 
@@ -79,13 +72,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
     println!("Recallable vault id: {:?}", vault_id);
 
     // Publish package
-    let (code, mut package_def) = PackageLoader::get("reference");
-    package_def
-        .blueprints
-        .values_mut()
-        .next()
-        .unwrap()
-        .is_transient = true;
+    let (code, package_def) = PackageLoader::get("reference");
     let package_address = test_runner.publish_package_simple((code, package_def));
 
     // Instantiate component
@@ -119,8 +106,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        e.to_string().contains("RefCantBeAddedToSubstate")
-            && e.to_string().contains(&hex::encode(vault_id.as_bytes()))
+        e.to_string().contains("Non Global Reference is not allowed")
     });
 }
 
@@ -137,13 +123,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
     println!("Recallable vault id: {:?}", vault_id);
 
     // Publish package
-    let (code, mut package_def) = PackageLoader::get("reference");
-    package_def
-        .blueprints
-        .values_mut()
-        .next()
-        .unwrap()
-        .is_transient = true;
+    let (code, package_def) = PackageLoader::get("reference");
     let package_address = test_runner.publish_package_simple((code, package_def));
 
     // Instantiate component
@@ -190,13 +170,7 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
     let resource = test_runner.create_recallable_token(account);
 
     // Publish package
-    let (code, mut package_def) = PackageLoader::get("reference");
-    package_def
-        .blueprints
-        .values_mut()
-        .next()
-        .unwrap()
-        .is_transient = true;
+    let (code, package_def) = PackageLoader::get("reference");
     let package_address = test_runner.publish_package_simple((code, package_def));
 
     // Instantiate component
@@ -243,8 +217,7 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        e.to_string().contains("NonGlobalRefNotAllowed")
-            && e.to_string().contains(&hex::encode(vault_id.as_bytes()))
+        e.to_string().contains("Non Global Reference is not allowed")
     });
 }
 
@@ -256,13 +229,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
     let resource = test_runner.create_recallable_token(account);
 
     // Publish package
-    let (code, mut package_def) = PackageLoader::get("reference");
-    package_def
-        .blueprints
-        .values_mut()
-        .next()
-        .unwrap()
-        .is_transient = true;
+    let (code, package_def) = PackageLoader::get("reference");
     let package_address = test_runner.publish_package_simple((code, package_def));
 
     // Instantiate component
@@ -309,8 +276,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        e.to_string().contains("RefCantBeAddedToSubstate")
-            && e.to_string().contains(&hex::encode(vault_id.as_bytes()))
+        e.to_string().contains("Non Global Reference is not allowed")
     });
 }
 
@@ -322,13 +288,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
     let resource = test_runner.create_recallable_token(account);
 
     // Publish package
-    let (code, mut package_def) = PackageLoader::get("reference");
-    package_def
-        .blueprints
-        .values_mut()
-        .next()
-        .unwrap()
-        .is_transient = true;
+    let (code, package_def) = PackageLoader::get("reference");
     let package_address = test_runner.publish_package_simple((code, package_def));
 
     // Instantiate component

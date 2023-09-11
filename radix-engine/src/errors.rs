@@ -212,6 +212,7 @@ pub enum SystemError {
     InvalidActorStateHandle,
     InvalidActorRefHandle,
 
+    GlobalizingTransientBlueprint,
     GlobalAddressDoesNotExist,
     NotAnAddressReservation,
     NotAnObject,
