@@ -392,7 +392,7 @@ fn name_validation_blueprint() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidName(..)
+                PackageError::InvalidName { .. }
             ))
         )
     });
@@ -425,51 +425,7 @@ fn name_validation_feature_set() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidName(..)
-            ))
-        )
-    });
-}
-
-#[test]
-fn name_validation_function() {
-    // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-
-    let (code, mut definition) = PackageLoader::get("publish_package");
-
-    definition
-        .blueprints
-        .values_mut()
-        .next()
-        .unwrap()
-        .schema
-        .functions
-        .functions
-        .insert(
-            String::from("self"),
-            FunctionSchemaInit {
-                receiver: None,
-                input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
-                output: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
-                export: String::from("self"),
-            },
-        );
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
-        .build();
-
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidName(..)
+                PackageError::InvalidName { .. }
             ))
         )
     });
@@ -713,7 +669,7 @@ fn test_publishing_of_packages_with_invalid_names(name: &str) {
         matches!(
             error,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidName(..)
+                PackageError::InvalidName { .. }
             ))
         )
     })

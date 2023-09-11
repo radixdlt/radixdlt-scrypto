@@ -52,7 +52,10 @@ pub enum PackageError {
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
-    InvalidName(String),
+    InvalidName {
+        name: String,
+        violating_char: Option<String>,
+    },
     MissingOuterBlueprint,
     WasmUnsupported(String),
     InvalidLocalTypeId(LocalTypeId),
@@ -535,12 +538,25 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
     let condition = |name: &str| {
         let mut iter = name.chars();
         match iter.next() {
-            Some('A'..='Z' | 'a'..='z' | '_')
-                if iter.all(|char| matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_')) =>
-            {
+            Some('A'..='Z' | 'a'..='z' | '_') => {
+                for char in iter {
+                    if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
+                        return Err(PackageError::InvalidName {
+                            name: name.to_owned(),
+                            violating_char: Some(char.to_string()),
+                        });
+                    }
+                }
                 Ok(())
             }
-            Some(_) | None => Err(PackageError::InvalidName(name.to_owned())),
+            Some(char) => Err(PackageError::InvalidName {
+                name: name.to_owned(),
+                violating_char: Some(char.to_string()),
+            }),
+            None => Err(PackageError::InvalidName {
+                name: name.to_owned(),
+                violating_char: None,
+            }),
         }
     };
 
