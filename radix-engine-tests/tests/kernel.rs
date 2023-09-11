@@ -1,11 +1,13 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
-    CallFrameMessage, CreateNodeError, ProcessSubstateError, TakeNodeError,
+    CallFrameMessage, CreateFrameError, CreateNodeError, PassMessageError, ProcessSubstateError,
+    TakeNodeError,
 };
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::kernel::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvocation, KernelNodeApi, KernelSubstateApi,
+    KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
+    KernelSubstateApi,
 };
 use radix_engine::kernel::kernel_callback_api::{
     CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
@@ -176,13 +178,13 @@ impl KernelCallbackObject for TestCallbackObject {
     }
 
     fn invoke_upstream<Y>(
-        _args: &IndexedScryptoValue,
+        args: &IndexedScryptoValue,
         _api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        todo!()
+        Ok(args.clone())
     }
 
     fn auto_drop<Y>(_nodes: Vec<NodeId>, _api: &mut Y) -> Result<(), RuntimeError>
@@ -234,9 +236,16 @@ impl KernelCallbackObject for TestCallbackObject {
     }
 }
 
-fn kernel_move_node_with_opened_substate() -> Result<(), RuntimeError> {
+enum MoveNodeVariation {
+    Create,
+    Invoke,
+}
+
+fn kernel_move_node_via_create_with_opened_substate(
+    variation: MoveNodeVariation,
+) -> Result<(), RuntimeError> {
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
-    let mut database = InMemorySubstateDatabase::standard();
+    let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut callback = TestCallbackObject;
     let mut kernel_boot = KernelBoot {
@@ -268,30 +277,52 @@ fn kernel_move_node_with_opened_substate() -> Result<(), RuntimeError> {
         (child_id, handle)
     };
 
-    let node_id = kernel
-        .kernel_allocate_node_id(EntityType::GlobalAccount)
-        .unwrap();
-    let substates = btreemap!(
-        PartitionNumber(0u8) => btreemap!(
-            SubstateKey::Field(0u8) => IndexedScryptoValue::from_typed(&Own(child_id))
-        )
-    );
-    kernel.kernel_create_node(node_id, substates)?;
-
-    kernel.kernel_read_substate(handle)?;
+    match variation {
+        MoveNodeVariation::Create => {
+            let node_id = kernel
+                .kernel_allocate_node_id(EntityType::GlobalAccount)
+                .unwrap();
+            let substates = btreemap!(
+                PartitionNumber(0u8) => btreemap!(
+                    SubstateKey::Field(0u8) => IndexedScryptoValue::from_typed(&Own(child_id))
+                )
+            );
+            kernel.kernel_create_node(node_id, substates)?;
+            kernel.kernel_read_substate(handle)?;
+        }
+        MoveNodeVariation::Invoke => {
+            let invocation = KernelInvocation {
+                call_frame_data: TestCallFrameData,
+                args: IndexedScryptoValue::from_typed(&Own(child_id)),
+            };
+            kernel.kernel_invoke(Box::new(invocation))?;
+        }
+    }
 
     Ok(())
 }
 
 #[test]
-fn test_kernel_move_node_with_opened_substate() {
-    let result = kernel_move_node_with_opened_substate();
-    println!("{:?}", result);
+fn test_kernel_move_node_via_create_with_opened_substate() {
+    let result = kernel_move_node_via_create_with_opened_substate(MoveNodeVariation::Create);
     assert!(matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
                 ProcessSubstateError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
+            ))
+        )))
+    ));
+}
+
+#[test]
+fn test_kernel_move_node_via_invoke_with_opened_substate() {
+    let result = kernel_move_node_via_create_with_opened_substate(MoveNodeVariation::Invoke);
+    assert!(matches!(
+        result,
+        Err(RuntimeError::KernelError(KernelError::CallFrameError(
+            CallFrameError::CreateFrameError(CreateFrameError::PassMessageError(
+                PassMessageError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
             ))
         )))
     ));
