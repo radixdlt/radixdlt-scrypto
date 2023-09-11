@@ -20,6 +20,7 @@ jobs:
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
         with:
           flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+          coverage_report_name: radix-engine-coverage
   sbor-unit-tests:
     name: Run SBOR unit tests
     runs-on: ${{ matrix.os }}
