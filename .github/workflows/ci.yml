@@ -46,11 +46,9 @@ jobs:
         run: |
           apt update && apt install -y clang llvm cmake build-essential
           rustup component add llvm-tools
-          cargo install cargo-llvm-cov
           curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
-      - name: build
-        run: cargo build
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           flags: -p sbor
@@ -77,10 +75,9 @@ jobs:
         run: |
           apt update && apt install -y clang llvm cmake build-essential
           rustup component add llvm-tools
-          cargo install cargo-llvm-cov
           curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - name: build
-        run: cargo build
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           flags: -p sbor-tests
@@ -106,10 +103,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: build
-      run: cargo build
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
@@ -141,10 +137,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: build
-      run: cargo build
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p scrypto-derive-tests
@@ -167,9 +162,7 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        rustup toolchain install nightly
-        rustup update
-        rustup target add wasm32-unknown-unknown --toolchain nightly
+        rustup target add wasm32-unknown-unknown
     - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/blueprints/faucet
@@ -334,10 +327,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: build
-      run: cargo build
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p transaction
@@ -356,10 +348,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: build
-      run: cargo build
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p transaction-scenarios
@@ -450,7 +441,6 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
 
     - name: Setup AFL
