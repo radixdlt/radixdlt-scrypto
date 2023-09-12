@@ -1,7 +1,8 @@
-use crate::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore};
-use crate::hash_tree::{put_at_next_version, SubstateHashChange};
-use radix_engine_common::crypto::hash;
-use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
+use crate::hash_tree::put_at_next_version;
+use crate::hash_tree::tree_store::{
+    NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, WriteableTreeStore,
+};
+use radix_engine_store_interface::interface::DatabaseUpdates;
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
@@ -32,22 +33,22 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         self.diff.new_nodes.push((key, node));
     }
 
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key);
+    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+        self.diff.stale_tree_parts.push(part);
     }
 }
 
 #[derive(Clone)]
 pub struct StateHashTreeDiff {
     pub new_nodes: Vec<(NodeKey, TreeNode)>,
-    pub stale_hash_tree_node_keys: Vec<NodeKey>,
+    pub stale_tree_parts: Vec<StaleTreePart>,
 }
 
 impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
             new_nodes: Vec::new(),
-            stale_hash_tree_node_keys: Vec::new(),
+            stale_tree_parts: Vec::new(),
         }
     }
 }
@@ -57,27 +58,11 @@ pub fn compute_state_tree_update<S: ReadableTreeStore>(
     parent_state_version: u64,
     database_updates: &DatabaseUpdates,
 ) -> StateHashTreeDiff {
-    let mut hash_changes = Vec::new();
-    for (db_partition_key, partition_updates) in database_updates {
-        for (db_sort_key, database_update) in partition_updates {
-            match database_update {
-                DatabaseUpdate::Set(value) => hash_changes.push(SubstateHashChange::new(
-                    (db_partition_key.clone(), db_sort_key.clone()),
-                    Some(hash(value)),
-                )),
-                DatabaseUpdate::Delete => hash_changes.push(SubstateHashChange::new(
-                    (db_partition_key.clone(), db_sort_key.clone()),
-                    None,
-                )),
-            }
-        }
-    }
-
     let mut collector = CollectingTreeStore::new(store);
     put_at_next_version(
         &mut collector,
         Some(parent_state_version).filter(|v| *v > 0),
-        hash_changes,
+        database_updates,
     );
     collector.into_diff()
 }

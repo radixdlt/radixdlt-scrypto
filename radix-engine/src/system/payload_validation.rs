@@ -247,7 +247,7 @@ fn apply_custom_validation_to_custom_value<E: ToString>(
                 }
                 ReferenceValidation::IsInternal => node_id.is_internal(),
                 ReferenceValidation::IsInternalTyped(expected_package, expected_blueprint) => {
-                    node_id.is_global()
+                    node_id.is_internal()
                         && type_info.matches_with_origin(
                             expected_package,
                             expected_blueprint,

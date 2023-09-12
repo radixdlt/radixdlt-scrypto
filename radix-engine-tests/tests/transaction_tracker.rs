@@ -1,5 +1,5 @@
 use radix_engine::errors::RejectionReason;
-use radix_engine::track::{BatchPartitionUpdate, NodeStateUpdates, PartitionStateUpdates};
+use radix_engine::track::{BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates};
 use radix_engine::transaction::{CostingParameters, ExecutionConfig};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
@@ -72,7 +72,7 @@ fn test_transaction_replay_protection() {
         })
         .filter_map(|partition_updates| match partition_updates {
             PartitionStateUpdates::Delta { .. } => None,
-            PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
                 new_substate_values,
             }) => Some(new_substate_values),
         })

@@ -60,6 +60,7 @@ members = [
     "logger",
     "validator",
     "wasm_non_mvp",
+    "royalty-edge-cases",
     "system_wasm_buffers"
 ]
 
