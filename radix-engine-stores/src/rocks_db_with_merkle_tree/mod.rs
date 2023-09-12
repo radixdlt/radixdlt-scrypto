@@ -10,8 +10,7 @@ use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Direction, IteratorMode,
     SingleThreaded, WriteBatch, DB,
 };
-use sbor::rust::prelude::*;
-use sbor::HasLatestVersion;
+use sbor::prelude::*;
 use std::path::PathBuf;
 
 mod state_tree;
