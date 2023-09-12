@@ -427,13 +427,24 @@ impl WasmerModule {
             runtime.key_value_entry_set(handle, data)
         }
 
+        pub fn key_value_entry_remove(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .key_value_entry_remove(handle)
+                .map(|buffer| buffer.0)
+        }
+
         pub fn key_value_entry_close(
             env: &WasmerInstanceEnv,
             handle: u32,
         ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            runtime.key_value_entry_release(handle)
+            runtime.key_value_entry_close(handle)
         }
 
         pub fn field_entry_read(
@@ -729,6 +740,7 @@ impl WasmerModule {
                 KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_remove_entry),
                 KEY_VALUE_ENTRY_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_read),
                 KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_write),
+                KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_remove),
                 KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_close),
                 FIELD_ENTRY_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_entry_read),
                 FIELD_ENTRY_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_entry_write),
