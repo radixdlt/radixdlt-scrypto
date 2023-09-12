@@ -2,7 +2,6 @@
 mod package_loader {
     use radix_engine_common::prelude::*;
     use radix_engine_queries::typed_substate_layout::*;
-    use sbor::prelude::*;
 
     const PACKAGES_BINARY: &[u8] =
         include_bytes!(concat!(env!("OUT_DIR"), "/compiled_packages.bin"));

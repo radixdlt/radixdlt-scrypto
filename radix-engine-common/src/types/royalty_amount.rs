@@ -4,7 +4,7 @@ use arbitrary::Arbitrary;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(
-    Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+    Debug, Clone, Copy, PartialEq, Eq, ManifestSbor, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
 )]
 pub enum RoyaltyAmount {
     Free,
@@ -32,5 +32,12 @@ impl RoyaltyAmount {
 
     pub fn is_non_zero(&self) -> bool {
         !self.is_zero()
+    }
+
+    pub fn is_negative(&self) -> bool {
+        match self {
+            Self::Free => false,
+            Self::Usd(amount) | Self::Xrd(amount) => amount.is_negative(),
+        }
     }
 }
