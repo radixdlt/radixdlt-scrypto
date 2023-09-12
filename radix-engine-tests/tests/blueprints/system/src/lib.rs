@@ -55,5 +55,13 @@ mod address_reservation_test {
             .prepare_to_globalize(OwnerRole::None)
             .globalize();
         }
+
+        pub fn globalize_address_reservation(reservation: GlobalAddressReservation) {
+            ScryptoVmV1Api::object_globalize(
+                reservation.0.as_node_id().clone(),
+                index_map_new(),
+                None,
+            );
+        }
     }
 }

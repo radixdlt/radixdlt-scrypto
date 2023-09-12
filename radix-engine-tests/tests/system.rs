@@ -12,7 +12,7 @@ use transaction::prelude::*;
 #[test]
 fn test_handle_mismatch() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -52,8 +52,10 @@ fn test_handle_mismatch() {
 #[test]
 fn test_put_address_reservation_into_component_state() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+
+    // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .allocate_global_address(PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, "reservation", "address")
@@ -64,16 +66,19 @@ fn test_put_address_reservation_into_component_state() {
             |lookup| manifest_args!(lookup.address_reservation("reservation")),
         )
         .build();
-    test_runner
-        .execute_manifest(manifest, vec![])
-        .expect_commit_failure();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_failure();
 }
 
 #[test]
 fn test_put_address_reservation_into_kv_store() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+
+    // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .allocate_global_address(PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, "reservation", "address")
@@ -84,7 +89,31 @@ fn test_put_address_reservation_into_kv_store() {
             |lookup| manifest_args!(lookup.address_reservation("reservation")),
         )
         .build();
-    test_runner
-        .execute_manifest(manifest, vec![])
-        .expect_commit_failure();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_failure();
+}
+
+#[test]
+fn test_globalize_address_reservation() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .allocate_global_address(PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, "reservation", "address")
+        .call_function_with_name_lookup(
+            package_address,
+            "AddressReservationTest",
+            "globalize_address_reservation",
+            |lookup| manifest_args!(lookup.address_reservation("reservation")),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_failure();
 }
