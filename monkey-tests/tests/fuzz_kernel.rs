@@ -12,14 +12,15 @@ use radix_engine::kernel::kernel_callback_api::{
     RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
     WriteSubstateEvent,
 };
-use radix_engine::track::{CommitableSubstateStore, Track};
+use radix_engine::system::checkers::KernelDatabaseChecker;
+use radix_engine::track::{to_state_updates, CommitableSubstateStore, Track};
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_engine_store_interface::interface::CommittableSubstateDatabase;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use std::cmp::max;
 
 struct TestCallFrameData;
 
@@ -291,6 +292,15 @@ impl KernelFuzzer {
         }
     }
 
+    fn remove_next_handle(&mut self) -> Option<SubstateHandle> {
+        if self.handles.is_empty() {
+            None
+        } else {
+            let index = self.rng.gen_range(0usize..self.handles.len());
+            Some(self.handles.remove(index))
+        }
+    }
+
     fn next_value(&mut self) -> IndexedScryptoValue {
         let mut owned = Vec::new();
         let mut refs = Vec::new();
@@ -350,10 +360,14 @@ impl KernelFuzzAction {
             KernelFuzzAction::CreateNode => {
                 if let Some(node_id) = fuzzer.next_allocated_node() {
                     let value = fuzzer.next_value();
+                    let value2 = fuzzer.next_value();
                     let substates = btreemap!(
                         PartitionNumber(0u8) => btreemap!(
                             SubstateKey::Field(0u8) => value
-                        )
+                        ),
+                        PartitionNumber(1u8) => btreemap!(
+                            SubstateKey::Field(0u8) => value2
+                        ),
                     );
                     kernel.kernel_create_node(node_id, substates)?;
                     return Ok(false);
@@ -381,9 +395,9 @@ impl KernelFuzzAction {
                     if let Some(dest) = fuzzer.next_node() {
                         kernel.kernel_move_partition(
                             &src,
-                            PartitionNumber(0u8),
+                            PartitionNumber(1u8),
                             &dest,
-                            PartitionNumber(0u8),
+                            PartitionNumber(1u8),
                         )?;
 
                         return Ok(false);
@@ -418,9 +432,10 @@ impl KernelFuzzAction {
             }
             KernelFuzzAction::OpenSubstate => {
                 if let Some(node_id) = fuzzer.next_node() {
+                    let partition = fuzzer.rng.gen_range(0u8..1u8);
                     let handle = kernel.kernel_open_substate(
                         &node_id,
-                        PartitionNumber(0u8),
+                        PartitionNumber(partition),
                         &SubstateKey::Field(0u8),
                         LockFlags::read_only(),
                         (),
@@ -449,7 +464,7 @@ impl KernelFuzzAction {
                 Ok(true)
             }
             KernelFuzzAction::CloseSubstate => {
-                if let Some(handle) = fuzzer.next_handle() {
+                if let Some(handle) = fuzzer.remove_next_handle() {
                     kernel.kernel_close_substate(handle)?;
                     return Ok(false);
                 }
@@ -460,10 +475,13 @@ impl KernelFuzzAction {
     }
 }
 
-fn kernel_fuzz(seed: u64) -> u32 {
-    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
-    let database = InMemorySubstateDatabase::standard();
-    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
+fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
+    println!("Run: {:?}", seed);
+
+    let txn_hash = &seed.to_be_bytes().repeat(4)[..];
+    let mut id_allocator = IdAllocator::new(Hash(txn_hash.try_into().unwrap()));
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let mut callback = TestCallbackObject;
     let mut kernel_boot = KernelBoot {
         id_allocator: &mut id_allocator,
@@ -473,30 +491,51 @@ fn kernel_fuzz(seed: u64) -> u32 {
     let mut kernel = kernel_boot.create_kernel_for_test_only();
 
     let mut fuzzer = KernelFuzzer::new(seed);
-    let mut success_count = 0u32;
+
+    let num_actions = fuzzer.rng.gen_range(1usize..20usize);
+
+    let mut actions = Vec::new();
 
     loop {
         let action = KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=10u8)).unwrap();
         match action.execute(&mut fuzzer, &mut kernel) {
             Ok(trivial) => {
                 if !trivial {
-                    success_count += 1;
+                    actions.push(action);
+                    if actions.len() == num_actions {
+                        break;
+                    }
                 }
             }
-            Err(..) => {
-                return success_count;
+            Err(e) => {
+                return Err(e);
             }
         }
     }
+
+    let (tracked_nodes, deleted_partitions) = track.finalize();
+    let state_updates =
+        to_state_updates::<SpreadPrefixKeyMapper>(tracked_nodes, deleted_partitions);
+
+    let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+    substate_db.commit(&database_updates);
+    let mut checker = KernelDatabaseChecker::new();
+    checker
+        .check_db(&substate_db)
+        .expect(&format!("Database should be consistent: {:?}", actions));
+
+    Ok(())
 }
 
 #[test]
 fn test_kernel_fuzz() {
-    let mut highest_success_count = 0u32;
+    let mut success_count = 0usize;
     for seed in 0u64..1000000u64 {
-        let success_count = kernel_fuzz(seed);
-        highest_success_count = max(success_count, highest_success_count);
+        let result = kernel_fuzz(seed);
+        if result.is_ok() {
+            success_count += 1;
+        }
     }
 
-    println!("Highest success count: {:?}", highest_success_count);
+    println!("Success Count: {:?}", success_count);
 }
