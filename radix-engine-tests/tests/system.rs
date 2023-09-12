@@ -5,6 +5,7 @@ use radix_engine::{
     errors::{RuntimeError, SystemError},
     types::*,
 };
+use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -46,4 +47,44 @@ fn test_handle_mismatch() {
             RuntimeError::SystemError(SystemError::NotAKeyValueEntryWriteHandle)
         )
     });
+}
+
+#[test]
+fn test_put_address_reservation_into_component_state() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .allocate_global_address(PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, "reservation", "address")
+        .call_function_with_name_lookup(
+            package_address,
+            "AddressReservationTest",
+            "put_address_reservation_into_component_state",
+            |lookup| manifest_args!(lookup.address_reservation("reservation")),
+        )
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![])
+        .expect_commit_failure();
+}
+
+#[test]
+fn test_put_address_reservation_into_kv_store() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .allocate_global_address(PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, "reservation", "address")
+        .call_function_with_name_lookup(
+            package_address,
+            "AddressReservationTest",
+            "put_address_reservation_into_kv_store",
+            |lookup| manifest_args!(lookup.address_reservation("reservation")),
+        )
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![])
+        .expect_commit_failure();
 }
