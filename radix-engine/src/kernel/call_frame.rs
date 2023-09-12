@@ -1,3 +1,4 @@
+use crate::kernel::kernel_api::DroppedNode;
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
     IOAccessHandler, ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateReadHandler,
@@ -681,7 +682,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         match device {
             SubstateDevice::Heap => {
-                substate_io.pinned_nodes.insert(node_id);
+                substate_io.pinned_to_heap.insert(node_id);
             }
             SubstateDevice::Store => {
                 // Nodes in store are always pinned
@@ -778,7 +779,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
-    ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
+    ) -> Result<DroppedNode, CallbackError<DropNodeError, E>> {
         self.take_node_internal(node_id)
             .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
@@ -787,13 +788,13 @@ impl<C, L: Clone> CallFrame<C, L> {
             handler,
             phantom: PhantomData::default(),
         };
-        let node_substates = substate_io
+        let substates = substate_io
             .drop_node(SubstateDevice::Heap, node_id, &mut adapter)
             .map_err(|e| match e {
                 CallbackError::Error(e) => CallbackError::Error(e),
                 CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
             })?;
-        for (_partition_number, module) in &node_substates {
+        for (_partition_number, module) in &substates {
             for (_substate_key, substate_value) in module {
                 let diff = SubstateDiff::from_drop_substate(&substate_value);
                 adapter
@@ -813,7 +814,12 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        Ok(node_substates)
+        let pinned_to_heap = substate_io.pinned_to_heap.remove(node_id);
+
+        Ok(DroppedNode {
+            substates,
+            pinned_to_heap,
+        })
     }
 
     pub fn move_partition<'f, S: CommitableSubstateStore, E>(
