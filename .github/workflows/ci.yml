@@ -218,7 +218,7 @@ jobs:
           install_simulator: "true"
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
         with:
-          flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+          flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time post_run_db_check
           coverage_report_name: radix-engine-coverage
 
   radix-engine-release:
@@ -235,28 +235,15 @@ jobs:
       matrix:
         os: [k8s-linux-runner]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: 1.70.0
-    - name: reset registry
-      run: rm -fr ~/.cargo/registry
-    - name: Install nextest
-      uses: taiki-e/install-action@nextest
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run tests
-      run: |
-        cargo nextest run \
-          --release \
-          --features post_run_db_check serde \
-          -p radix-engine-common \
-          -p radix-engine-derive \
-          -p radix-engine-interface \
-          -p radix-engine \
-          -p radix-engine-tests \
-          --features compile-blueprints-at-build-time
-        ./check_stack_usage.sh
+      - uses: actions/checkout@v3
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+        with:
+          install_wasm: "true"
+          install_simulator: "true"
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+        with:
+          flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time post_run_db_check --release
+          coverage_report_name: radix-engine-release-coverage 
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
