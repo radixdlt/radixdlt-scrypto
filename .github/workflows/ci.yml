@@ -121,7 +121,7 @@ jobs:
         coverage_report_name: scrypto-schema-coverage
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        flags: scrypto-derive
+        flags: -p scrypto-derive
         coverage_report_name: scrypto-derive-coverage
   
   scrypto-integration-tests:
