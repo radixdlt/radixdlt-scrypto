@@ -1,6 +1,6 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
-    IOAccessHandler, ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateReadHandler,
+    IOAccessHandler, SubstateDevice, SubstateIO, SubstateReadHandler,
 };
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
 use crate::types::*;

@@ -40,14 +40,14 @@ use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
 
-pub struct TestFuzzer {
+pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
     resources: Vec<ResourceAddress>,
     non_fungibles: Vec<ResourceAddress>,
     fungibles: Vec<ResourceAddress>,
 }
 
-impl TestFuzzer {
+impl SystemTestFuzzer {
     pub fn new(seed: u64) -> Self {
         let rng = ChaCha8Rng::seed_from_u64(seed);
         Self {
@@ -193,7 +193,7 @@ impl FuzzAction {
         &self,
         uuid: u64,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         validators: &Vec<ValidatorMeta>,
         one_resource_pool: &OnePoolMeta,
         two_resource_pool: &TwoPoolMeta,
@@ -268,7 +268,7 @@ impl FuzzTxnResult {
 pub type FuzzTxnIntent = Vec<FuzzAction>;
 
 pub trait TxnFuzzer {
-    fn next_txn_intent(fuzzer: &mut TestFuzzer) -> FuzzTxnIntent;
+    fn next_txn_intent(fuzzer: &mut SystemTestFuzzer) -> FuzzTxnIntent;
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -310,7 +310,7 @@ pub struct ResourceComponentMeta {
 
 pub struct FuzzTest<T: TxnFuzzer> {
     test_runner: TestRunner<OverridePackageCode<ResourceTestInvoke>, InMemorySubstateDatabase>,
-    fuzzer: TestFuzzer,
+    fuzzer: SystemTestFuzzer,
     validators: Vec<ValidatorMeta>,
     one_resource_pool: OnePoolMeta,
     two_resource_pool: TwoPoolMeta,
@@ -325,7 +325,7 @@ pub struct FuzzTest<T: TxnFuzzer> {
 
 impl<T: TxnFuzzer> FuzzTest<T> {
     fn new(seed: u64) -> Self {
-        let mut fuzzer = TestFuzzer::new(seed);
+        let mut fuzzer = SystemTestFuzzer::new(seed);
         let initial_epoch = Epoch::of(5);
         let genesis = CustomGenesis::default_with_xrd_amount(
             Decimal::from(24_000_000_000u64),
