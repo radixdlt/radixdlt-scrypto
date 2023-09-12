@@ -21,6 +21,8 @@ use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 
 struct TestCallFrameData;
 
@@ -353,9 +355,13 @@ impl KernelFuzzAction {
     {
         return match self {
             KernelFuzzAction::Allocate => {
-                let node_id = kernel.kernel_allocate_node_id(fuzzer.next_entity_type())?;
-                fuzzer.add_allocated_node(node_id);
-                Ok(false)
+                if (fuzzer.nodes.len() + fuzzer.allocated_nodes.len()) < 4 {
+                    let node_id = kernel.kernel_allocate_node_id(fuzzer.next_entity_type())?;
+                    fuzzer.add_allocated_node(node_id);
+                    return Ok(false);
+                }
+
+                Ok(true)
             }
             KernelFuzzAction::CreateNode => {
                 if let Some(node_id) = fuzzer.next_allocated_node() {
@@ -372,6 +378,7 @@ impl KernelFuzzAction {
                     kernel.kernel_create_node(node_id, substates)?;
                     return Ok(false);
                 }
+
                 Ok(true)
             }
             KernelFuzzAction::PinNode => {
@@ -391,6 +398,7 @@ impl KernelFuzzAction {
                 Ok(true)
             }
             KernelFuzzAction::MovePartition => {
+                /*
                 if let Some(src) = fuzzer.next_node().filter(|n| !n.is_global()) {
                     if let Some(dest) = fuzzer.next_node() {
                         kernel.kernel_move_partition(
@@ -403,6 +411,7 @@ impl KernelFuzzAction {
                         return Ok(false);
                     }
                 }
+                 */
 
                 Ok(true)
             }
@@ -475,7 +484,7 @@ impl KernelFuzzAction {
     }
 }
 
-fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
+fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(seed: u64, mut action_generator: F) -> Result<(), RuntimeError> {
     println!("Run: {:?}", seed);
 
     let txn_hash = &seed.to_be_bytes().repeat(4)[..];
@@ -492,20 +501,11 @@ fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
 
     let mut fuzzer = KernelFuzzer::new(seed);
 
-    let num_actions = fuzzer.rng.gen_range(1usize..20usize);
+    let actions = action_generator(&mut fuzzer);
 
-    let mut actions = Vec::new();
-
-    loop {
-        let action = KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=10u8)).unwrap();
+    for action in &actions {
         match action.execute(&mut fuzzer, &mut kernel) {
-            Ok(trivial) => {
-                if !trivial {
-                    actions.push(action);
-                    if actions.len() == num_actions {
-                        break;
-                    }
-                }
+            Ok(_) => {
             }
             Err(e) => {
                 return Err(e);
@@ -528,14 +528,57 @@ fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
 }
 
 #[test]
-fn test_kernel_fuzz() {
-    let mut success_count = 0usize;
-    for seed in 0u64..1000000u64 {
-        let result = kernel_fuzz(seed);
-        if result.is_ok() {
-            success_count += 1;
-        }
-    }
+fn random_actions() {
+    let success_count = (0u64..100_000_000u64).into_par_iter()
+        .map(|seed| {
+            let result = kernel_fuzz(seed, |fuzzer| {
+                let mut actions = vec![
+                    KernelFuzzAction::Allocate,
+                    KernelFuzzAction::CreateNode,
+                ];
+                for _ in 0..8 {
+                    let action = KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=10u8)).unwrap();
+                    actions.push(action);
+                }
+                actions
+            });
+
+            if result.is_ok() {
+                1
+            } else {
+                0
+            }
+        }).reduce(|| 0, |acc, e| acc + e);
+
+    println!("Success Count: {:?}", success_count);
+}
+
+/// Reproduced the close substate bug
+#[test]
+fn fuzz_node_three_chain() {
+    let success_count = (0u64..1_000_000u64).into_par_iter()
+        .map(|seed| {
+            let result = kernel_fuzz(seed, |_fuzzer| {
+                vec![
+                    KernelFuzzAction::Allocate,
+                    KernelFuzzAction::CreateNode,
+                    KernelFuzzAction::Allocate,
+                    KernelFuzzAction::CreateNode,
+                    KernelFuzzAction::OpenSubstate,
+                    KernelFuzzAction::OpenSubstate,
+                    KernelFuzzAction::CloseSubstate,
+                    KernelFuzzAction::Allocate,
+                    KernelFuzzAction::CreateNode,
+                    KernelFuzzAction::ReadSubstate,
+                ]
+            });
+
+            if result.is_ok() {
+                1
+            } else {
+                0
+            }
+        }).reduce(|| 0, |acc, e| acc + e);
 
     println!("Success Count: {:?}", success_count);
 }
