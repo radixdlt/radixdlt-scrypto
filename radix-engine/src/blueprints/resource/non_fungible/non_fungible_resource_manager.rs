@@ -1499,6 +1499,10 @@ impl NonFungibleResourceManagerBlueprint {
             ACTOR_STATE_SELF,
             NonFungibleResourceManagerFeature::Mint.feature_name(),
         )? {
+            // This should never be hit since the auth layer will prevent
+            // any mint call from even getting to this point but this is useful
+            // if the Auth layer is ever disabled for whatever reason.
+            // We still want to maintain these invariants.
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
                     NonFungibleResourceManagerError::NotMintable,
@@ -1517,6 +1521,10 @@ impl NonFungibleResourceManagerBlueprint {
             ACTOR_STATE_SELF,
             NonFungibleResourceManagerFeature::Burn.feature_name(),
         )? {
+            // This should never be hit since the auth layer will prevent
+            // any burn call from even getting to this point but this is useful
+            // if the Auth layer is ever disabled for whatever reason.
+            // We still want to maintain these invariants.
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
                     NonFungibleResourceManagerError::NotBurnable,
