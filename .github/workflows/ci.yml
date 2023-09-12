@@ -29,7 +29,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Check format
-      run: bash ./check.sh
+      run: |
+        rustup component add rustfmt
+        bash ./check.sh
 
   sbor-unit-tests:
     name: Run SBOR unit tests
