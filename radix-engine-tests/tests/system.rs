@@ -1,7 +1,10 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
-use radix_engine::types::*;
+use radix_engine::{
+    errors::{RuntimeError, SystemError},
+    types::*,
+};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -37,5 +40,7 @@ fn test_handle_mismatch() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+    });
 }

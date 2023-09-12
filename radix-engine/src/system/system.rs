@@ -1633,6 +1633,11 @@ where
         &mut self,
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
+        let data = self.api.kernel_get_lock_data(handle)?;
+        if !data.is_kv_entry() {
+            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
+        }
+
         let current_value = self
             .api
             .kernel_read_substate(handle)
