@@ -238,9 +238,9 @@ jobs:
       with:
         install_wasm: "true"
         install_simulator: "true"
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
-        with:
-          flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time --release
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+      with:
+        flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time --release
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
@@ -253,9 +253,9 @@ jobs:
       with:
         install_wasm: "true"
         install_simulator: "true"
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
-        with:
-          flags: --no-default-features --features alloc -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+      with:
+        flags: --no-default-features --features alloc -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
 
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
@@ -268,8 +268,9 @@ jobs:
       with:
         install_wasm: "true"
         install_simulator: "true"
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
-        with: --features wasmer -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+      with: 
+        flags: --features wasmer -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
 
   radix-engine-bench:
     name: Run Radix Engine benchmarks
