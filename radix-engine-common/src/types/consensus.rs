@@ -31,24 +31,24 @@ impl Epoch {
     }
 
     /// Creates an epoch immediately following this one.
-    /// Panics if this epoch's number is [`u64::MAX`] (such situation would indicate a bug or a
-    /// deliberate harm meant by byzantine actors, since regular epoch progression should not reach
-    /// such numbers within next thousands of years).
+    /// Returns `None` if this epoch's number is [`u64::MAX`] (such situation would indicate a bug
+    /// or a deliberate harm meant by byzantine actors, since regular epoch progression should not
+    /// reach such numbers within next thousands of years).
     pub fn next(&self) -> Option<Self> {
         self.0.checked_add(1).map(|x| Self(x))
     }
 
     /// Creates an epoch following this one after the given number of epochs.
-    /// Panics if the resulting number is greater than [`u64::MAX`] (such situation would indicate a
-    /// bug or a deliberate harm meant by byzantine actors, since regular epoch delays configured by
-    /// a network should not span thousands of years).
+    /// Returns `None` if the resulting number is greater than [`u64::MAX`] (such situation would
+    /// indicate a bug or a deliberate harm meant by byzantine actors, since regular epoch delays
+    /// configured by a network should not span thousands of years).
     pub fn after(&self, epoch_count: u64) -> Option<Self> {
         self.0.checked_add(epoch_count).map(|x| Self(x))
     }
 
     /// Creates an epoch immediately preceding this one.
-    /// Panics if this epoch's number is 0 (such situation would indicate a bug or a deliberate
-    /// harm, since a legitimate genesis should not reference previous epochs).
+    /// Returns `None` if this epoch's number is 0 (such situation would indicate a bug or a
+    /// deliberate harm, since a legitimate genesis should not reference previous epochs).
     pub fn previous(&self) -> Option<Self> {
         self.0.checked_sub(1).map(|x| Self(x))
     }

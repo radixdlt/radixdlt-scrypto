@@ -1,8 +1,10 @@
+use crate::hash_tree::tree_store::StaleTreePart;
 use crate::hash_tree::types::{LeafKey, LeafNode, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use jellyfish::JellyfishMerkleTree;
-use radix_engine_common::crypto::Hash;
+use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_store_interface::interface::{
-    DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey, DbSubstateKey,
+    DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
+    DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
 };
 use tree_store::{ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
@@ -25,26 +27,6 @@ mod test;
 #[allow(dead_code)]
 mod types;
 
-/// A change of a hash of value associated with some ID.
-/// External API only uses it for hashes of substates (see `SubstateHashChange`), but internally we
-/// also use it for lower-level hashes of JMT nodes of different tiers.
-#[derive(Debug)]
-pub struct IdHashChange<I> {
-    /// ID.
-    id: I,
-    /// A hash after the change, or `None` if this change denotes a delete.
-    hash_change: Option<Hash>,
-}
-
-impl<I> IdHashChange<I> {
-    pub fn new(id: I, hash_change: Option<Hash>) -> Self {
-        Self { id, hash_change }
-    }
-}
-
-/// A top-level `IdHashChange`, representing an actual change of a specific substate's hash.
-pub type SubstateHashChange = IdHashChange<DbSubstateKey>;
-
 /// Inserts a new set of nodes at version `node_root_version` + 1 into the "3-Tier JMT" persisted
 /// within the given `TreeStore`.
 /// In a traditional JMT, this inserts a new leaf node for each given "change", together with an
@@ -62,55 +44,28 @@ pub type SubstateHashChange = IdHashChange<DbSubstateKey>;
 pub fn put_at_next_version<S: TreeStore>(
     node_tier_store: &mut S,
     node_root_version: Option<Version>,
-    changes: Vec<SubstateHashChange>,
+    database_updates: &DatabaseUpdates,
 ) -> Hash {
     let next_version = node_root_version.unwrap_or(0) + 1;
-    let node_changes = index_by_node_key_and_partition_num(changes)
-        .into_iter()
-        .map(|(node_key, substate_changes_by_partition)| {
-            let partition_root_version =
-                get_lower_tier_root_version(node_tier_store, node_root_version, &node_key);
-            let mut partition_tier_store = NestedTreeStore::new(node_tier_store, node_key.clone());
-            let partition_changes = substate_changes_by_partition
-                .into_iter()
-                .map(|(partition_num, substate_changes)| {
-                    let partition_key = vec![partition_num];
-                    let substate_root_version = get_lower_tier_root_version(
-                        &partition_tier_store,
-                        partition_root_version,
-                        &partition_key,
-                    );
-                    let mut substate_tier_store =
-                        NestedTreeStore::new(&mut partition_tier_store, partition_key);
-                    let partition_hash = put_id_hash_changes(
-                        &mut substate_tier_store,
-                        substate_root_version,
-                        next_version,
-                        substate_changes
-                            .into_iter()
-                            .map(|change| IdHashChange::new(change.id.0, change.hash_change))
-                            .collect(),
-                    );
-                    IdHashChange::new(partition_num, partition_hash)
-                })
-                .collect::<Vec<_>>();
-            let node_hash_change = put_id_hash_changes(
-                &mut partition_tier_store,
-                partition_root_version,
+    let node_hash_changes = database_updates
+        .node_updates
+        .iter()
+        .map(|(node_key, node_database_updates)| LeafHashChange {
+            key_bytes: node_key.clone(),
+            hash_change: apply_node_database_updates(
+                node_tier_store,
+                node_root_version,
+                node_key,
+                node_database_updates,
                 next_version,
-                partition_changes
-                    .into_iter()
-                    .map(|change| IdHashChange::new(vec![change.id], change.hash_change))
-                    .collect(),
-            );
-            IdHashChange::new(node_key, node_hash_change)
+            ),
         })
         .collect::<Vec<_>>();
-    put_id_hash_changes(
+    put_leaf_hash_changes(
         node_tier_store,
         node_root_version,
         next_version,
-        node_changes,
+        node_hash_changes,
     )
     .unwrap_or(SPARSE_MERKLE_PLACEHOLDER_HASH)
 }
@@ -188,6 +143,82 @@ fn list_leaves_recursively<S: ReadableTreeStore>(
     };
 }
 
+fn apply_node_database_updates<S: TreeStore>(
+    node_tier_store: &mut S,
+    node_root_version: Option<Version>,
+    node_key: &DbNodeKey,
+    node_database_updates: &NodeDatabaseUpdates,
+    next_version: Version,
+) -> Option<Hash> {
+    let partition_root_version =
+        get_lower_tier_root_version(node_tier_store, node_root_version, node_key);
+    let mut partition_tier_store = NestedTreeStore::new(node_tier_store, node_key.clone());
+    let partition_hash_changes = node_database_updates
+        .partition_updates
+        .iter()
+        .map(
+            |(partition_num, partition_database_updates)| LeafHashChange {
+                key_bytes: vec![*partition_num],
+                hash_change: apply_partition_database_updates(
+                    &mut partition_tier_store,
+                    partition_root_version,
+                    partition_num,
+                    partition_database_updates,
+                    next_version,
+                ),
+            },
+        )
+        .collect::<Vec<_>>();
+    put_leaf_hash_changes(
+        &mut partition_tier_store,
+        partition_root_version,
+        next_version,
+        partition_hash_changes,
+    )
+}
+
+fn apply_partition_database_updates<S: TreeStore>(
+    partition_tier_store: &mut S,
+    partition_root_version: Option<Version>,
+    partition_num: &DbPartitionNum,
+    partition_database_updates: &PartitionDatabaseUpdates,
+    next_version: Version,
+) -> Option<Hash> {
+    let partition_key = vec![*partition_num];
+    let substate_root_version =
+        get_lower_tier_root_version(partition_tier_store, partition_root_version, &partition_key);
+    let mut substate_tier_store = NestedTreeStore::new(partition_tier_store, partition_key);
+    match partition_database_updates {
+        PartitionDatabaseUpdates::Delta { substate_updates } => put_leaf_hash_changes(
+            &mut substate_tier_store,
+            substate_root_version,
+            next_version,
+            substate_updates
+                .into_iter()
+                .map(|(sort_key, update)| LeafHashChange::from_update(sort_key, update))
+                .collect(),
+        ),
+        PartitionDatabaseUpdates::Reset {
+            new_substate_values,
+        } => {
+            if let Some(substate_root_version) = substate_root_version {
+                substate_tier_store.record_stale_tree_part(StaleTreePart::Subtree(
+                    NodeKey::new_empty_path(substate_root_version),
+                ));
+            }
+            put_leaf_hash_changes(
+                &mut substate_tier_store,
+                None,
+                next_version,
+                new_substate_values
+                    .into_iter()
+                    .map(|(sort_key, value)| LeafHashChange::from_value(sort_key, value))
+                    .collect(),
+            )
+        }
+    }
+}
+
 fn get_lower_tier_root_version<S: ReadableTreeStore>(
     store: &S,
     version: Option<Version>,
@@ -202,33 +233,44 @@ fn get_lower_tier_root_version<S: ReadableTreeStore>(
     })
 }
 
-fn index_by_node_key_and_partition_num(
-    changes: Vec<SubstateHashChange>,
-) -> IndexMap<DbNodeKey, IndexMap<DbPartitionNum, Vec<IdHashChange<DbSortKey>>>> {
-    let mut by_db_node_key = index_map_new();
-    for IdHashChange { id, hash_change } in changes {
-        let (
-            DbPartitionKey {
-                node_key,
-                partition_num,
-            },
-            sort_key,
-        ) = id;
-        by_db_node_key
-            .entry(node_key)
-            .or_insert_with(|| index_map_new())
-            .entry(partition_num)
-            .or_insert_with(|| Vec::new())
-            .push(IdHashChange::new(sort_key, hash_change));
-    }
-    by_db_node_key
+struct LeafHashChange {
+    key_bytes: Vec<u8>,
+    hash_change: Option<Hash>,
 }
 
-fn put_id_hash_changes<S: TreeStore>(
+impl LeafHashChange {
+    pub fn from_update(sort_key: &DbSortKey, update: &DatabaseUpdate) -> Self {
+        Self {
+            key_bytes: sort_key.0.clone(),
+            hash_change: match update {
+                DatabaseUpdate::Set(value) => Some(hash(value)),
+                DatabaseUpdate::Delete => None,
+            },
+        }
+    }
+
+    pub fn from_value(sort_key: &DbSortKey, value: &DbSubstateValue) -> Self {
+        Self {
+            key_bytes: sort_key.0.clone(),
+            hash_change: Some(hash(value)),
+        }
+    }
+
+    pub fn to_leaf_change(self, version: Version) -> LeafChange {
+        LeafChange {
+            key: LeafKey {
+                bytes: self.key_bytes,
+            },
+            new_payload: self.hash_change.map(|value_hash| (value_hash, version)),
+        }
+    }
+}
+
+fn put_leaf_hash_changes<S: TreeStore>(
     store: &mut S,
     current_version: Option<Version>,
     next_version: Version,
-    changes: Vec<IdHashChange<Vec<u8>>>,
+    changes: Vec<LeafHashChange>,
 ) -> Option<Hash> {
     let root_hash = put_leaf_changes(
         store,
@@ -236,20 +278,13 @@ fn put_id_hash_changes<S: TreeStore>(
         next_version,
         changes
             .into_iter()
-            .map(|change| to_leaf_change(change, next_version))
+            .map(|change| change.to_leaf_change(next_version))
             .collect(),
     );
     if root_hash == SPARSE_MERKLE_PLACEHOLDER_HASH {
         None
     } else {
         Some(root_hash)
-    }
-}
-
-fn to_leaf_change(change: IdHashChange<Vec<u8>>, version: Version) -> LeafChange {
-    LeafChange {
-        key: LeafKey { bytes: change.id },
-        new_payload: change.hash_change.map(|value_hash| (value_hash, version)),
     }
 }
 
@@ -280,7 +315,7 @@ fn put_leaf_changes<S: TreeStore>(
         store.insert_node(key, node)
     }
     for key in update_result.stale_node_index_batch.into_iter().flatten() {
-        store.record_stale_node(key.node_key);
+        store.record_stale_tree_part(StaleTreePart::Node(key.node_key));
     }
     root_hash
 }
@@ -325,7 +360,10 @@ impl<'s, S: WriteableTreeStore> WriteableTreeStore for NestedTreeStore<'s, S> {
         self.underlying.insert_node(self.prefixed(&key), node);
     }
 
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.underlying.record_stale_node(self.prefixed(&key));
+    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+        self.underlying.record_stale_tree_part(match part {
+            StaleTreePart::Node(key) => StaleTreePart::Node(self.prefixed(&key)),
+            StaleTreePart::Subtree(key) => StaleTreePart::Subtree(self.prefixed(&key)),
+        });
     }
 }

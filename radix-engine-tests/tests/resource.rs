@@ -8,7 +8,6 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::{metadata, metadata_init};
-use scrypto::prelude::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
