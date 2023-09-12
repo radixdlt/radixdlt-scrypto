@@ -106,7 +106,7 @@ impl EncapsulatedRadixEngine {
                 heap_transient_substates: TransientSubstates {
                     transient_substates: Default::default(),
                 },
-                pinned_nodes: Default::default(),
+                pinned_to_heap: Default::default(),
             },
             id_allocator,
             CallFrame::new_root(Actor::Root),

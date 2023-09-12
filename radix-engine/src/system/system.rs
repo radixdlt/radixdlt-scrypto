@@ -864,10 +864,10 @@ where
     ) -> Result<GlobalAddress, RuntimeError> {
         // Check global address reservation
         let global_address = {
-            let (substates, _) =
-                self.kernel_drop_node(global_address_reservation.0.as_node_id())?;
+            let dropped_node = self.kernel_drop_node(global_address_reservation.0.as_node_id())?;
 
-            let type_info: Option<TypeInfoSubstate> = substates
+            let type_info: Option<TypeInfoSubstate> = dropped_node
+                .substates
                 .get(&TYPE_INFO_FIELD_PARTITION)
                 .and_then(|x| x.get(&TypeInfoField::TypeInfo.into()))
                 .and_then(|x| x.as_typed().ok());
@@ -1003,8 +1003,8 @@ where
             )?;
         }
 
-        let (_, pinned) = self.kernel_drop_node(&node_id)?;
-        if pinned {
+        let dropped_node = self.kernel_drop_node(&node_id)?;
+        if dropped_node.pinned_to_heap {
             return Err(RuntimeError::SystemError(
                 SystemError::GlobalizingTransientBlueprint,
             ));
@@ -1565,18 +1565,19 @@ where
             }
         }
 
-        let (mut node_substates, _) = self.api.kernel_drop_node(&node_id)?;
-        let fields = if let Some(user_substates) = node_substates.remove(&MAIN_BASE_PARTITION) {
-            user_substates
-                .into_iter()
-                .map(|(_key, v)| {
-                    let substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
-                    scrypto_encode(&substate.into_payload()).unwrap()
-                })
-                .collect()
-        } else {
-            vec![]
-        };
+        let mut dropped_node = self.api.kernel_drop_node(&node_id)?;
+        let fields =
+            if let Some(user_substates) = dropped_node.substates.remove(&MAIN_BASE_PARTITION) {
+                user_substates
+                    .into_iter()
+                    .map(|(_key, v)| {
+                        let substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+                        scrypto_encode(&substate.into_payload()).unwrap()
+                    })
+                    .collect()
+            } else {
+                vec![]
+            };
 
         Ok(fields)
     }
@@ -2805,10 +2806,7 @@ where
             .kernel_mark_substate_as_transient(node_id, partition_num, key)
     }
 
-    fn kernel_drop_node(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<(NodeSubstates, bool), RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<DroppedNode, RuntimeError> {
         self.api.kernel_drop_node(node_id)
     }
 

@@ -53,7 +53,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
                 heap_transient_substates: TransientSubstates::new(),
-                pinned_nodes: BTreeSet::new(),
+                pinned_to_heap: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -82,7 +82,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
                 heap_transient_substates: TransientSubstates::new(),
-                pinned_nodes: BTreeSet::new(),
+                pinned_to_heap: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -374,10 +374,7 @@ where
     }
 
     #[trace_resources(log=node_id.entity_type())]
-    fn kernel_drop_node(
-        &mut self,
-        node_id: &NodeId,
-    ) -> Result<(NodeSubstates, bool), RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<DroppedNode, RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
 
@@ -390,7 +387,7 @@ where
                 M::on_drop_node(api, DropNodeEvent::IOAccess(&io_access))
             },
         };
-        let (node_substates, pinned) = self
+        let dropped_node = self
             .current_frame
             .drop_node(&mut self.substate_io, node_id, &mut handler)
             .map_err(|e| match e {
@@ -401,9 +398,12 @@ where
             })?;
 
         let mut read_only = as_read_only!(self);
-        M::on_drop_node(&mut read_only, DropNodeEvent::End(node_id, &node_substates))?;
+        M::on_drop_node(
+            &mut read_only,
+            DropNodeEvent::End(node_id, &dropped_node.substates),
+        )?;
 
-        Ok((node_substates, pinned))
+        Ok(dropped_node)
     }
 
     #[trace_resources]
