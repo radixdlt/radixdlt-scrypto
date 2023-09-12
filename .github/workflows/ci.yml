@@ -42,7 +42,11 @@ jobs:
       CARGO_LOG: info
     steps:
       - uses: actions/checkout@v3
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@remove-sudo
+      - name: setup the container
+        run: |
+          apt update && apt install -y clang llvm cmake build-essential
+          rustup component add llvm-tools
+          cargo install cargo-llvm-cov cargo-nextest
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           flags: -p sbor
@@ -65,7 +69,11 @@ jobs:
       CARGO_LOG: info
     steps:
       - uses: actions/checkout@v3
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@remove-sudo
+      - name: setup the container
+        run: |
+          apt update && apt install -y clang llvm cmake build-essential
+          rustup component add llvm-tools
+          cargo install cargo-llvm-cov cargo-nextest
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           flags: -p sbor-tests
@@ -87,7 +95,11 @@ jobs:
       CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@remove-sudo
+    - name: setup the container
+        run: |
+          apt update && apt install -y clang llvm cmake build-essential
+          rustup component add llvm-tools
+          cargo install cargo-llvm-cov cargo-nextest
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
@@ -115,7 +127,11 @@ jobs:
       CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@remove-sudo
+    - name: setup the container
+        run: |
+          apt update && apt install -y clang llvm cmake build-essential
+          rustup component add llvm-tools
+          cargo install cargo-llvm-cov cargo-nextest
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p scrypto-derive-tests
