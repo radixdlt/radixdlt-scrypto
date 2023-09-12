@@ -83,5 +83,37 @@ mod reference_test {
             .prepare_to_globalize(OwnerRole::None)
             .globalize();
         }
+
+        pub fn recall(reference: TypedInternalReference) -> Bucket {
+            scrypto_decode(&ScryptoVmV1Api::object_call_direct(
+                &reference.0.as_node_id(),
+                VAULT_RECALL_IDENT,
+                scrypto_args!(Decimal::ONE),
+            ))
+            .unwrap()
+        }
     }
+}
+
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[sbor(transparent)]
+pub struct TypedInternalReference(Reference);
+
+impl Describe<ScryptoCustomTypeKind> for TypedInternalReference {
+    const TYPE_ID: RustTypeId = RustTypeId::Novel([123u8; 20]);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
+        TypeData {
+            kind: TypeKind::Custom(ScryptoCustomTypeKind::Reference),
+            metadata: TypeMetadata::no_child_names("TypedInternalReference"),
+            validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                ReferenceValidation::IsInternalTyped(
+                    Some(RESOURCE_PACKAGE),
+                    FUNGIBLE_VAULT_BLUEPRINT.to_string(),
+                ),
+            )),
+        }
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }

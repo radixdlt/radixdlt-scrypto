@@ -1,7 +1,7 @@
 use radix_engine_interface::prelude::*;
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
-    DbSubstateValue, PartitionEntry, SubstateDatabase,
+    DbSubstateValue, PartitionDatabaseUpdates, PartitionEntry, SubstateDatabase,
 };
 use radix_engine_stores::{
     memory_db::InMemorySubstateDatabase,
@@ -115,44 +115,58 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
 {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
         // Validate if commit call with database_updates parameter fulfills test framework requirements
-        assert!(!database_updates.is_empty());
+        let updated_partitions_count: usize = database_updates
+            .node_updates
+            .values()
+            .map(|node_updates| node_updates.partition_updates.len())
+            .sum();
+        assert!(updated_partitions_count > 0);
         let mut set_found = false;
         let mut delete_found = false;
-        let multiple_updates = database_updates.len() > 1;
+        let multiple_updates = updated_partitions_count > 1;
         let mut old_value_len: Option<usize> = None;
         let mut delete_value_len: usize = 0;
-        for partition_update in database_updates {
-            for db_update in partition_update.1 {
-                match db_update.1 {
-                    DatabaseUpdate::Set(value) => {
-                        if delete_found {
-                            panic!(
-                                "Mixed DatabaseUpdate (Set & Delete) not supported while profiling"
-                            )
-                        } else {
-                            set_found = true;
-                            if multiple_updates {
-                                if old_value_len.is_some() {
-                                    if old_value_len.unwrap() != value.len() {
-                                        panic!("For multiple DatabaseUpdate value size must be the same");
+        for (node_key, node_updates) in &database_updates.node_updates {
+            for (partition_num, partition_updates) in &node_updates.partition_updates {
+                let PartitionDatabaseUpdates::Delta {substate_updates} = partition_updates else {
+                    panic!("Deletes not supported while profiling")
+                };
+                for db_update in substate_updates {
+                    match db_update.1 {
+                        DatabaseUpdate::Set(value) => {
+                            if delete_found {
+                                panic!(
+                                    "Mixed DatabaseUpdate (Set & Delete) not supported while profiling"
+                                )
+                            } else {
+                                set_found = true;
+                                if multiple_updates {
+                                    if old_value_len.is_some() {
+                                        if old_value_len.unwrap() != value.len() {
+                                            panic!("For multiple DatabaseUpdate value size must be the same");
+                                        }
+                                    } else {
+                                        old_value_len = Some(value.len());
                                     }
-                                } else {
-                                    old_value_len = Some(value.len());
                                 }
                             }
                         }
-                    }
-                    DatabaseUpdate::Delete => {
-                        if set_found {
-                            panic!(
-                                "Mixed DatabaseUpdate (Set & Delete) not supported while profiling"
-                            )
-                        } else {
-                            delete_found = true;
-                            if let Some(value) =
-                                self.get_substate(&partition_update.0, &db_update.0)
-                            {
-                                delete_value_len = value.len();
+                        DatabaseUpdate::Delete => {
+                            if set_found {
+                                panic!(
+                                    "Mixed DatabaseUpdate (Set & Delete) not supported while profiling"
+                                )
+                            } else {
+                                delete_found = true;
+                                if let Some(value) = self.get_substate(
+                                    &DbPartitionKey {
+                                        node_key: node_key.clone(),
+                                        partition_num: *partition_num,
+                                    },
+                                    &db_update.0,
+                                ) {
+                                    delete_value_len = value.len();
+                                }
                             }
                         }
                     }
@@ -168,22 +182,25 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
         // Commit profiling tests are divided to two types:
         // - per size - test invokes only database_update per commit (that is why we can use 1st item only here)
         // - per partition - test invokes commits for particular partition size, so value length is not important here (still it is safe to use 1st item only)
-        let partition_update = &database_updates[0];
-        let db_update = &partition_update[0];
+        let partition_updates = &database_updates.node_updates[0].partition_updates[0];
+        let PartitionDatabaseUpdates::Delta {substate_updates} = partition_updates else {
+            panic!("Deletes not supported while profiling")
+        };
+        let db_update = &substate_updates[0];
         match db_update {
             DatabaseUpdate::Set(value) => {
                 self.commit_set_metrics
                     .borrow_mut()
                     .entry(value.len())
                     .or_default()
-                    .push(duration / database_updates.len() as u32);
+                    .push(duration / updated_partitions_count as u32);
             }
             DatabaseUpdate::Delete => {
                 self.commit_delete_metrics
                     .borrow_mut()
                     .entry(delete_value_len)
                     .or_default()
-                    .push(duration / database_updates.len() as u32);
+                    .push(duration / updated_partitions_count as u32);
             }
         }
     }

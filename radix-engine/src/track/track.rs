@@ -7,7 +7,9 @@ use crate::track::LegacyStateUpdates;
 use crate::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_engine_store_interface::interface::{DatabaseUpdates, DbPartitionKey, DbSubstateValue};
+use radix_engine_store_interface::interface::{
+    DatabaseUpdates, DbPartitionKey, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
+};
 use radix_engine_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DatabaseUpdate, DbSortKey, PartitionEntry, SubstateDatabase},
@@ -90,7 +92,7 @@ pub enum PartitionStateUpdates {
         by_substate: IndexMap<SubstateKey, DatabaseUpdate>,
     },
     /// A batch update.
-    Batch(BatchPartitionUpdate),
+    Batch(BatchPartitionStateUpdate),
 }
 
 impl Default for PartitionStateUpdates {
@@ -104,7 +106,7 @@ impl Default for PartitionStateUpdates {
 impl PartitionStateUpdates {
     /// Resets the partition to an empty state.
     pub fn delete(&mut self) {
-        *self = PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+        *self = PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
             new_substate_values: index_map_new(),
         });
     }
@@ -116,7 +118,7 @@ impl PartitionStateUpdates {
     ) {
         match self {
             PartitionStateUpdates::Delta { by_substate } => by_substate.extend(updates),
-            PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
                 new_substate_values,
             }) => {
                 for (substate_key, database_update) in updates {
@@ -139,7 +141,7 @@ impl PartitionStateUpdates {
 
 /// A description of a batch update affecting an entire Partition.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum BatchPartitionUpdate {
+pub enum BatchPartitionStateUpdate {
     /// A reset, dropping all Substates of a partition and replacing them with a new set.
     /// Contains indexed new Substate values, captured in the order of creation of a Substate.
     Reset {
@@ -148,42 +150,70 @@ pub enum BatchPartitionUpdate {
 }
 
 impl StateUpdates {
-    /// Uses the given [`DatabaseKeyMapper`] to express the contained [`StateUpdate`]s using
-    /// database-level key encoding.
-    /// Note: We are still missing support for "delete partition" operation in database layer, so we
-    /// effectively let deleted partition live, assuming they are not touched again. For this
-    /// reason, this method panics if it detects a write to a partition that was deleted.
+    /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
     pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> DatabaseUpdates {
-        // TODO(after RCNet-v3.1): Expand the `DatabaseUpdates` definition in order to capture the
-        // `partition_deletions` there as well (preferably using a "canonicalized" representation).
-        let mut database_updates = DatabaseUpdates::default();
-        for (node_id, node_state_updates) in &self.by_node {
-            match node_state_updates {
-                NodeStateUpdates::Delta { by_partition } => {
-                    for (partition_num, partition_state_updates) in by_partition {
-                        match partition_state_updates {
-                            PartitionStateUpdates::Delta { by_substate } => {
-                                let partition_updates = database_updates
-                                    .entry(M::to_db_partition_key(node_id, *partition_num))
-                                    .or_default();
-                                for (substate_key, update) in by_substate {
-                                    partition_updates
-                                        .insert(M::to_db_sort_key(substate_key), update.clone());
-                                }
-                            }
-                            PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
-                                new_substate_values,
-                            }) => {
-                                if !new_substate_values.is_empty() {
-                                    panic!("no support for writing to a deleted partition");
-                                }
-                            }
-                        };
-                    }
-                }
-            }
+        DatabaseUpdates {
+            node_updates: self
+                .by_node
+                .iter()
+                .map(|(node_id, node_state_updates)| {
+                    (
+                        M::to_db_node_key(node_id),
+                        node_state_updates.create_database_updates::<M>(),
+                    )
+                })
+                .collect(),
         }
-        database_updates
+    }
+}
+
+impl NodeStateUpdates {
+    /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
+    pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> NodeDatabaseUpdates {
+        match self {
+            NodeStateUpdates::Delta { by_partition } => NodeDatabaseUpdates {
+                partition_updates: by_partition
+                    .iter()
+                    .map(|(partition_num, partition_state_updates)| {
+                        (
+                            M::to_db_partition_num(*partition_num),
+                            partition_state_updates.create_database_updates::<M>(),
+                        )
+                    })
+                    .collect(),
+            },
+        }
+    }
+}
+
+impl PartitionStateUpdates {
+    /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
+    pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> PartitionDatabaseUpdates {
+        match self {
+            PartitionStateUpdates::Delta { by_substate } => PartitionDatabaseUpdates::Delta {
+                substate_updates: by_substate
+                    .iter()
+                    .map(|(key, update)| (M::to_db_sort_key(key), update.clone()))
+                    .collect(),
+            },
+            PartitionStateUpdates::Batch(batch) => batch.create_database_updates::<M>(),
+        }
+    }
+}
+
+impl BatchPartitionStateUpdate {
+    /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
+    pub fn create_database_updates<M: DatabaseKeyMapper>(&self) -> PartitionDatabaseUpdates {
+        match self {
+            BatchPartitionStateUpdate::Reset {
+                new_substate_values,
+            } => PartitionDatabaseUpdates::Reset {
+                new_substate_values: new_substate_values
+                    .iter()
+                    .map(|(key, value)| (M::to_db_sort_key(key), value.clone()))
+                    .collect(),
+            },
+        }
     }
 }
 
