@@ -1,8 +1,5 @@
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::{
-    CallFrameMessage, CreateFrameError, CreateNodeError, PassMessageError, ProcessSubstateError,
-    TakeNodeError,
-};
+use radix_engine::errors::RuntimeError;
+use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::{Kernel, KernelBoot};
 use radix_engine::kernel::kernel_api::{
@@ -259,10 +256,6 @@ impl KernelFuzzer {
 
     fn add_allocated_node(&mut self, node_id: NodeId) {
         self.allocated_nodes.push(node_id);
-    }
-
-    fn add_node(&mut self, node_id: NodeId) {
-        self.nodes.push(node_id);
     }
 
     fn next_allocated_node(&mut self) -> Option<NodeId> {

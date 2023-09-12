@@ -47,15 +47,6 @@ impl KernelNodeApi for MockKernel {
         panic1!()
     }
 
-    fn kernel_mark_substate_as_transient(
-        &mut self,
-        _: NodeId,
-        _: PartitionNumber,
-        _: SubstateKey,
-    ) -> Result<(), RuntimeError> {
-        panic1!()
-    }
-
     fn kernel_allocate_node_id(&mut self, _: EntityType) -> Result<NodeId, RuntimeError> {
         panic1!()
     }
@@ -80,6 +71,15 @@ impl KernelNodeApi for MockKernel {
 }
 
 impl KernelSubstateApi<SystemLockData> for MockKernel {
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        _: NodeId,
+        _: PartitionNumber,
+        _: SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        panic1!()
+    }
+
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         _: &NodeId,
