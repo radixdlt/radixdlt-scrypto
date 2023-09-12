@@ -1,5 +1,7 @@
 //use super::compute_state_tree_update;
-use crate::hash_tree::tree_store::{encode_key, NodeKey, ReadableTreeStore, TreeNode};
+use crate::hash_tree::tree_store::{
+    encode_key, NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
+};
 use itertools::Itertools;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_derive::ScryptoSbor;
@@ -10,7 +12,9 @@ use rocksdb::{
     SingleThreaded, WriteBatch, DB,
 };
 use sbor::rust::prelude::*;
+use sbor::HasLatestVersion;
 use std::path::PathBuf;
+
 mod state_tree;
 use crate::rocks_db::{decode_from_rocksdb_bytes, encode_to_rocksdb_bytes};
 use state_tree::*;
@@ -137,7 +141,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             batch.put_cf(
                 self.cf(MERKLE_NODES_CF),
                 encode_key(&key),
-                scrypto_encode(&node).unwrap(),
+                scrypto_encode(&VersionedTreeNode::new_latest(node)).unwrap(),
             );
         }
         let encoded_node_keys = state_hash_tree_update
@@ -188,7 +192,8 @@ impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
         self.db
             .get_cf(self.cf(MERKLE_NODES_CF), &encode_key(key))
             .unwrap()
-            .map(|bytes| scrypto_decode(&bytes).unwrap())
+            .map(|bytes| scrypto_decode::<VersionedTreeNode>(&bytes).unwrap())
+            .map(|versioned| versioned.into_latest())
     }
 }
 

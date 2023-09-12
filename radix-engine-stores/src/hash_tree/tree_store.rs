@@ -8,9 +8,14 @@ use sbor::*;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
 
+define_single_versioned! {
+    #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+    pub enum VersionedTreeNode => TreeNode = TreeNodeV1
+}
+
 /// A physical tree node, to be used in the storage.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
-pub enum TreeNode {
+pub enum TreeNodeV1 {
     /// Internal node - always metadata-only, as per JMT design.
     Internal(TreeInternalNode),
     /// Leaf node.
