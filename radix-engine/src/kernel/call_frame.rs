@@ -1087,7 +1087,6 @@ impl<C, L: Clone> CallFrame<C, L> {
         &mut self,
         substate_io: &mut SubstateIO<S>,
     ) -> Result<(), CloseSubstateError> {
-
         // Closing of all substates should always be possible as no invariant needs to be maintained
         for (_lock_handle, mut open_substate) in self.open_substates.drain(..) {
             substate_io.close_substate(open_substate.global_substate_handle)?;
@@ -1321,7 +1320,6 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         Ok(substates)
     }
-
 
     pub fn owned_nodes(&self) -> Vec<NodeId> {
         self.owned_root_nodes.clone().into_iter().collect()
