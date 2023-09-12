@@ -117,3 +117,25 @@ fn test_globalize_address_reservation() {
     // Assert
     receipt.expect_commit_failure();
 }
+
+#[test]
+fn test_write_after_lock() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "WriteAfterLockingTest",
+            "write_after_locking",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_failure();
+}

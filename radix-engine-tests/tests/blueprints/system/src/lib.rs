@@ -65,3 +65,23 @@ mod address_reservation_test {
         }
     }
 }
+
+#[blueprint]
+mod write_after_locking_test {
+    struct WriteAfterLockingTest {}
+
+    impl WriteAfterLockingTest {
+        /// Currently, substate locking API isn't exposed to Scrypto, so testing OwnerRole instead.
+        pub fn write_after_locking() {
+            let owner_role = OwnerRole::Updatable(rule!(allow_all));
+            let global = WriteAfterLockingTest {}
+                .instantiate()
+                .prepare_to_globalize(owner_role)
+                .globalize();
+
+            global.lock_owner_role();
+
+            global.set_owner_role(rule!(deny_all));
+        }
+    }
+}

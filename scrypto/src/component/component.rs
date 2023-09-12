@@ -425,7 +425,7 @@ impl<O: HasStub> HasRoleAssignment for Global<O> {
         self.role_assignment().set_owner_role(rule)
     }
 
-    fn lock_owner_role<A: Into<AccessRule>>(&self) {
+    fn lock_owner_role(&self) {
         self.role_assignment().lock_owner_role()
     }
 
