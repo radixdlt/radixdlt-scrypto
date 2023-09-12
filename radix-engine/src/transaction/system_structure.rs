@@ -2,7 +2,7 @@ use crate::system::system_db_reader::*;
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
-    BatchPartitionUpdate, NodeStateUpdates, PartitionStateUpdates, ReadOnly, StateUpdates,
+    BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, ReadOnly, StateUpdates,
     TrackedNode, TrackedSubstateValue,
 };
 use crate::types::*;
@@ -204,7 +204,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                             PartitionStateUpdates::Delta { by_substate } => {
                                 by_substate.keys().collect::<Vec<_>>()
                             }
-                            PartitionStateUpdates::Batch(BatchPartitionUpdate::Reset {
+                            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
                                 new_substate_values,
                             }) => new_substate_values.keys().collect::<Vec<_>>(),
                         };

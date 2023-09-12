@@ -515,6 +515,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 
 [[package]]
+name = "kv_store"
+version = "0.1.0"
+dependencies = [
+ "radix-engine",
+ "sbor",
+ "scrypto",
+ "scrypto-unit",
+ "transaction",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

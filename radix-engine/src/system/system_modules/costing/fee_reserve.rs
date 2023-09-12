@@ -26,6 +26,7 @@ pub enum FeeReserveError {
         xrd_owed: Decimal,
     },
     Abort(AbortReason),
+    RoyaltyAmountIsNegative(RoyaltyAmount),
 }
 
 #[derive(Copy, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
@@ -507,6 +508,9 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
     ) -> Result<(), FeeReserveError> {
         if royalty_amount.is_zero() {
             return Ok(());
+        }
+        if royalty_amount.is_negative() {
+            return Err(FeeReserveError::RoyaltyAmountIsNegative(royalty_amount));
         }
 
         self.consume_royalty_internal(royalty_amount, recipient)?;

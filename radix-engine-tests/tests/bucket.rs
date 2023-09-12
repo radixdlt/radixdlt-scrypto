@@ -1,7 +1,9 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
+use radix_engine::blueprints::resource::{ProofError, VaultError};
 use radix_engine::errors::SystemError;
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::{
     blueprints::resource::BucketError,
     errors::{ApplicationError, CallFrameError, KernelError, RuntimeError},
@@ -269,6 +271,142 @@ fn test_drop_locked_fungible_bucket() {
 }
 
 #[test]
+fn create_proof_of_invalid_amount_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "BucketTest",
+            "create_proof_of_amount",
+            manifest_args!(dec!("1.01")),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::InvalidAmount(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn create_proof_of_zero_amount_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "BucketTest",
+            "create_proof_of_amount",
+            manifest_args!(Decimal::ZERO),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
+                ProofError::EmptyProofNotAllowed
+            )))
+        )
+    });
+}
+
+#[test]
+fn create_vault_proof_of_invalid_amount_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "BucketTest",
+            "create_vault_proof_of_amount",
+            manifest_args!(dec!("1.01")),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                VaultError::InvalidAmount(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn create_vault_proof_of_zero_amount_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "BucketTest",
+            "create_vault_proof_of_amount",
+            manifest_args!(Decimal::ZERO),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(
+                ProofError::EmptyProofNotAllowed
+            )))
+        )
+    });
+}
+
+#[test]
 fn test_drop_locked_non_fungible_bucket() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -424,5 +562,137 @@ fn test_vault_combine_non_fungible_invalid() {
             e,
             RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
         )
+    });
+}
+
+#[test]
+fn burn_invalid_fungible_bucket_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "InvalidCombine",
+            "burn_fungible_invalid",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
+        )
+    });
+}
+
+#[test]
+fn burn_invalid_non_fungible_bucket_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(
+            package_address,
+            "InvalidCombine",
+            "burn_non_fungible_invalid",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
+        )
+    });
+}
+
+fn should_not_be_able_to_lock_fee_with_non_xrd<F: FnOnce(TransactionReceipt) -> ()>(
+    contingent: bool,
+    amount: Decimal,
+    on_receipt: F,
+) {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function(package_address, "InvalidCombine", "new", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    let result = receipt.expect_commit_success();
+    let component = result.new_component_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_method(
+            component,
+            if contingent {
+                "lock_contingent_fee"
+            } else {
+                "lock_fee"
+            },
+            manifest_args!(amount),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    on_receipt(receipt);
+}
+
+#[test]
+fn should_not_be_able_to_lock_non_contingent_fee_with_non_xrd() {
+    should_not_be_able_to_lock_fee_with_non_xrd(false, 1.into(), |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::VaultError(
+                    VaultError::LockFeeNotRadixToken
+                ))
+            )
+        });
+    });
+}
+
+#[test]
+fn should_not_be_able_to_lock_contingent_fee_with_non_xrd() {
+    should_not_be_able_to_lock_fee_with_non_xrd(true, 1.into(), |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::VaultError(
+                    VaultError::LockFeeNotRadixToken
+                ))
+            )
+        });
     });
 }

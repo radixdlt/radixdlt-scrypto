@@ -1285,6 +1285,26 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         )
     }
 
+    pub fn execute_manifest_with_fee_from_faucet<T>(
+        &mut self,
+        mut manifest: TransactionManifestV1,
+        amount: Decimal,
+        initial_proofs: T,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        manifest.instructions.insert(
+            0,
+            transaction::model::InstructionV1::CallMethod {
+                address: self.faucet_component().into(),
+                method_name: "lock_fee".to_string(),
+                args: manifest_args!(amount).into(),
+            },
+        );
+        self.execute_manifest(manifest, initial_proofs)
+    }
+
     pub fn execute_manifest_ignoring_fee<T>(
         &mut self,
         mut manifest: TransactionManifestV1,
@@ -1450,7 +1470,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     header: TransactionHeaderV1 {
                         network_id: NetworkDefinition::simulator().id,
                         start_epoch_inclusive: epoch,
-                        end_epoch_exclusive: epoch.after(10),
+                        end_epoch_exclusive: epoch.after(10).unwrap(),
                         nonce: 0,
                         notary_public_key: PublicKey::Secp256k1(Secp256k1PublicKey([0u8; 33])),
                         notary_is_signatory: false,

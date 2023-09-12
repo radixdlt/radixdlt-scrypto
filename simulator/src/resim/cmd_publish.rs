@@ -7,6 +7,7 @@ use radix_engine_interface::blueprints::package::{
     IndexedStateSchema, PackageExport, VmType, *,
 };
 use radix_engine_queries::typed_substate_layout::*;
+use radix_engine_store_interface::interface::DatabaseUpdates;
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
@@ -296,7 +297,7 @@ impl Publish {
                 instrumented_code_partition_key => instrumented_code_updates,
             );
 
-            substate_db.commit(&database_updates);
+            substate_db.commit(&DatabaseUpdates::from_delta_maps(database_updates));
 
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {

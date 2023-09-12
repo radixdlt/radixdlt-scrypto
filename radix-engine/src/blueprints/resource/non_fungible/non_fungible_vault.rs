@@ -389,7 +389,7 @@ impl NonFungibleVaultBlueprint {
 
             let n = check_non_fungible_amount(&amount).map_err(|_| {
                 RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::InvalidAmount,
+                    VaultError::InvalidAmount(amount),
                 ))
             })?;
 
@@ -512,7 +512,9 @@ impl NonFungibleVaultBlueprint {
         Self::assert_recallable(api)?;
 
         let n = check_non_fungible_amount(&amount).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount(
+                amount,
+            )))
         })?;
 
         let taken = Self::internal_take_by_amount(n, api)?;

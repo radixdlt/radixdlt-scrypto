@@ -1019,7 +1019,7 @@ fn consensus_manager_round_update_emits_correct_event() {
 #[test]
 fn consensus_manager_epoch_update_emits_epoch_change_event() {
     let genesis_epoch = Epoch::of(3);
-    let initial_epoch = genesis_epoch.next();
+    let initial_epoch = genesis_epoch.next().unwrap();
     let rounds_per_epoch = 5;
     let genesis = CustomGenesis::default(
         genesis_epoch,
@@ -1059,7 +1059,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
             .collect::<Vec<_>>();
         assert_eq!(epoch_change_events.len(), 1);
         let event = epoch_change_events.first().unwrap();
-        assert_eq!(event.epoch, initial_epoch.next());
+        assert_eq!(event.epoch, initial_epoch.next().unwrap());
     }
 }
 
@@ -1437,7 +1437,7 @@ fn validator_unstake_emits_correct_events() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs));
+    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
 
     // Assert
     {
@@ -1589,7 +1589,7 @@ fn validator_claim_xrd_emits_correct_events() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs));
+    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
 
     // Act
     let manifest = ManifestBuilder::new()

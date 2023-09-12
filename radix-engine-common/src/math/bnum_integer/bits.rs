@@ -61,37 +61,6 @@ macro_rules! impl_bits {
                         self.0.leading_zeros()
                     }
 
-                    /// Shifts the bits to the left by a specified amount, `n`,
-                    /// wrapping the truncated bits to the end of the resulting
-                    /// integer.
-                    ///
-                    /// Please note this isn't the same operation as the `<<` shifting
-                    /// operator! This method can not overflow as opposed to '<<'.
-                    ///
-                    /// Please note that this example is shared between integer types.
-                    /// Which explains why `I128` is used here.
-                    ///
-                    #[inline]
-                    #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                    pub fn rotate_left(self, other: Self) -> Self {
-                        Self(self.0.rotate_left(u32::try_from(other).unwrap()))
-                    }
-
-                    /// Shifts the bits to the right by a specified amount, `n`,
-                    /// wrapping the truncated bits to the beginning of the resulting
-                    /// integer.
-                    ///
-                    /// Please note this isn't the same operation as the `>>` shifting
-                    /// operator! This method can not overflow as opposed to '>>'.
-                    ///
-                    #[inline]
-                    #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                    pub fn rotate_right(self, other: Self) -> Self {
-                        Self(self.0.rotate_right(u32::try_from(other).unwrap()))
-                    }
-
                     /// Converts an integer from big endian to the target's endianness.
                     ///
                     /// On big endian this is a no-op. On little endian the bytes are

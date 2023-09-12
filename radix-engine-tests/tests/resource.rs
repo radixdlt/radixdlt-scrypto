@@ -12,7 +12,6 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-#[ignore]
 fn cannot_get_total_supply_of_xrd() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
