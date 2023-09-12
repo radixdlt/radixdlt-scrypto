@@ -2789,16 +2789,6 @@ where
         self.api.kernel_pin_node(node_id)
     }
 
-    fn kernel_mark_substate_as_transient(
-        &mut self,
-        node_id: NodeId,
-        partition_num: PartitionNumber,
-        key: SubstateKey,
-    ) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_mark_substate_as_transient(node_id, partition_num, key)
-    }
-
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         self.api.kernel_drop_node(node_id)
     }
@@ -2840,6 +2830,16 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        self.api
+            .kernel_mark_substate_as_transient(node_id, partition_num, key)
+    }
+
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,

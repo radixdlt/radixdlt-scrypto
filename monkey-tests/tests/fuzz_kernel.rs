@@ -1,7 +1,3 @@
-use std::cmp::max;
-use rand::Rng;
-use rand_chacha::ChaCha8Rng;
-use rand_chacha::rand_core::SeedableRng;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
     CallFrameMessage, CreateFrameError, CreateNodeError, PassMessageError, ProcessSubstateError,
@@ -23,6 +19,10 @@ use radix_engine::track::{CommitableSubstateStore, Track};
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use rand::Rng;
+use rand_chacha::rand_core::SeedableRng;
+use rand_chacha::ChaCha8Rng;
+use std::cmp::max;
 
 struct TestCallFrameData;
 
@@ -54,15 +54,15 @@ impl KernelCallbackObject for TestCallbackObject {
     type CallFrameData = TestCallFrameData;
 
     fn on_init<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
 
     fn on_teardown<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
@@ -72,50 +72,50 @@ impl KernelCallbackObject for TestCallbackObject {
     }
 
     fn on_create_node<Y>(_api: &mut Y, _event: CreateNodeEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         Ok(())
     }
 
     fn on_drop_node<Y>(_api: &mut Y, _event: DropNodeEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         Ok(())
     }
 
     fn on_move_module<Y>(_api: &mut Y, _event: MoveModuleEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         Ok(())
     }
 
     fn on_open_substate<Y>(_api: &mut Y, _event: OpenSubstateEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         Ok(())
     }
 
     fn on_close_substate<Y>(_api: &mut Y, _event: CloseSubstateEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         Ok(())
     }
 
     fn on_read_substate<Y>(_api: &mut Y, _event: ReadSubstateEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         Ok(())
     }
 
     fn on_write_substate<Y>(_api: &mut Y, _event: WriteSubstateEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         Ok(())
     }
@@ -147,36 +147,36 @@ impl KernelCallbackObject for TestCallbackObject {
         _invocation: &KernelInvocation<Self::CallFrameData>,
         _api: &mut Y,
     ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
 
     fn after_invoke<Y>(_output: &IndexedScryptoValue, _api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
 
     fn on_execution_start<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
 
     fn on_execution_finish<Y>(_message: &CallFrameMessage, _api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
 
     fn on_allocate_node_id<Y>(_entity_type: EntityType, _api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
@@ -185,15 +185,15 @@ impl KernelCallbackObject for TestCallbackObject {
         args: &IndexedScryptoValue,
         _api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(args.clone())
     }
 
     fn auto_drop<Y>(_nodes: Vec<NodeId>, _api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
@@ -213,15 +213,15 @@ impl KernelCallbackObject for TestCallbackObject {
         _offset: &SubstateKey,
         _api: &mut Y,
     ) -> Result<bool, RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(false)
     }
 
     fn on_drop_node_mut<Y>(_node_id: &NodeId, _api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
@@ -233,8 +233,8 @@ impl KernelCallbackObject for TestCallbackObject {
         _destination_blueprint_id: Option<BlueprintId>,
         _api: &mut Y,
     ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         Ok(())
     }
@@ -277,15 +277,11 @@ impl KernelFuzzer {
     }
 
     fn next_node(&mut self) -> Option<NodeId> {
-        if self.rng.gen_bool(0.5) {
-            if self.nodes.is_empty() {
-                None
-            } else {
-                let index = self.rng.gen_range(0usize..self.nodes.len());
-                Some(self.nodes[index])
-            }
+        if self.nodes.is_empty() {
+            None
         } else {
-            self.next_allocated_node()
+            let index = self.rng.gen_range(0usize..self.nodes.len());
+            Some(self.nodes[index])
         }
     }
 
@@ -303,11 +299,19 @@ impl KernelFuzzer {
     }
 
     fn next_value(&mut self) -> IndexedScryptoValue {
-        if let Some(child_id) = self.next_node() {
-            IndexedScryptoValue::from_typed(&Own(child_id))
-        } else {
-            IndexedScryptoValue::from_typed(&())
+        let mut owned = Vec::new();
+        let mut refs = Vec::new();
+        let num_children = self.rng.gen_range(0usize..self.nodes.len());
+        for _ in 0usize..num_children {
+            let index = self.rng.gen_range(0usize..self.nodes.len());
+            if self.rng.gen_bool(0.5) {
+                owned.push(Own(self.nodes[index]));
+            } else {
+                refs.push(Reference(self.nodes[index]));
+            }
         }
+
+        IndexedScryptoValue::from_typed(&(owned, refs))
     }
 
     fn next_entity_type(&mut self) -> EntityType {
@@ -328,24 +332,27 @@ enum KernelFuzzAction {
     DropNode,
     Invoke,
     MovePartition,
+    MarkSubstateAsTransient,
     OpenSubstate,
     ReadSubstate,
     WriteSubstate,
-    CloseSubstate
+    CloseSubstate,
 }
 
 impl KernelFuzzAction {
-    fn execute<S>(&self, fuzzer: &mut KernelFuzzer, kernel: &mut Kernel<'_, TestCallbackObject, S>)
-    -> Result<bool, RuntimeError>
+    fn execute<S>(
+        &self,
+        fuzzer: &mut KernelFuzzer,
+        kernel: &mut Kernel<'_, TestCallbackObject, S>,
+    ) -> Result<bool, RuntimeError>
     where
         S: CommitableSubstateStore,
     {
-        match self {
+        return match self {
             KernelFuzzAction::Allocate => {
-                let node_id = kernel
-                    .kernel_allocate_node_id(fuzzer.next_entity_type())?;
+                let node_id = kernel.kernel_allocate_node_id(fuzzer.next_entity_type())?;
                 fuzzer.add_allocated_node(node_id);
-                return Ok(false);
+                Ok(false)
             }
             KernelFuzzAction::CreateNode => {
                 if let Some(node_id) = fuzzer.next_allocated_node() {
@@ -358,7 +365,7 @@ impl KernelFuzzAction {
                     kernel.kernel_create_node(node_id, substates)?;
                     return Ok(false);
                 }
-                return Ok(true);
+                Ok(true)
             }
             KernelFuzzAction::PinNode => {
                 if let Some(node_id) = fuzzer.next_node() {
@@ -366,7 +373,7 @@ impl KernelFuzzAction {
                     return Ok(false);
                 }
 
-                return Ok(true);
+                Ok(true)
             }
             KernelFuzzAction::DropNode => {
                 if let Some(node_id) = fuzzer.next_node() {
@@ -374,7 +381,7 @@ impl KernelFuzzAction {
                     return Ok(false);
                 }
 
-                return Ok(true);
+                Ok(true)
             }
             KernelFuzzAction::MovePartition => {
                 if let Some(src) = fuzzer.next_node().filter(|n| !n.is_global()) {
@@ -390,7 +397,7 @@ impl KernelFuzzAction {
                     }
                 }
 
-                return Ok(true);
+                Ok(true)
             }
             KernelFuzzAction::Invoke => {
                 if let Some(node_id) = fuzzer.next_node() {
@@ -402,23 +409,34 @@ impl KernelFuzzAction {
                     return Ok(false);
                 }
 
-                return Ok(true);
+                Ok(true)
+            }
+            KernelFuzzAction::MarkSubstateAsTransient => {
+                if let Some(node_id) = fuzzer.next_node() {
+                    kernel.kernel_mark_substate_as_transient(
+                        node_id,
+                        PartitionNumber(0u8),
+                        SubstateKey::Field(0u8),
+                    )?;
+                    return Ok(false);
+                }
+
+                Ok(true)
             }
             KernelFuzzAction::OpenSubstate => {
                 if let Some(node_id) = fuzzer.next_node() {
-                    let handle = kernel
-                        .kernel_open_substate(
-                            &node_id,
-                            PartitionNumber(0u8),
-                            &SubstateKey::Field(0u8),
-                            LockFlags::read_only(),
-                            (),
-                        )?;
+                    let handle = kernel.kernel_open_substate(
+                        &node_id,
+                        PartitionNumber(0u8),
+                        &SubstateKey::Field(0u8),
+                        LockFlags::read_only(),
+                        (),
+                    )?;
                     fuzzer.add_handle(handle);
                     return Ok(false);
                 }
 
-                return Ok(true);
+                Ok(true)
             }
             KernelFuzzAction::ReadSubstate => {
                 if let Some(handle) = fuzzer.next_handle() {
@@ -426,7 +444,7 @@ impl KernelFuzzAction {
                     return Ok(false);
                 }
 
-                return Ok(true);
+                Ok(true)
             }
             KernelFuzzAction::WriteSubstate => {
                 if let Some(handle) = fuzzer.next_handle() {
@@ -435,7 +453,7 @@ impl KernelFuzzAction {
                     return Ok(false);
                 }
 
-                return Ok(true);
+                Ok(true)
             }
             KernelFuzzAction::CloseSubstate => {
                 if let Some(handle) = fuzzer.next_handle() {
@@ -443,9 +461,9 @@ impl KernelFuzzAction {
                     return Ok(false);
                 }
 
-                return Ok(true);
+                Ok(true)
             }
-        }
+        };
     }
 }
 
@@ -465,7 +483,7 @@ fn kernel_fuzz(seed: u64) -> u32 {
     let mut success_count = 0u32;
 
     loop {
-        let action = KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=9u8)).unwrap();
+        let action = KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=10u8)).unwrap();
         match action.execute(&mut fuzzer, &mut kernel) {
             Ok(trivial) => {
                 if !trivial {

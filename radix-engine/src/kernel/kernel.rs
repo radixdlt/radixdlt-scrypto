@@ -317,25 +317,6 @@ where
             })
     }
 
-    #[trace_resources]
-    fn kernel_mark_substate_as_transient(
-        &mut self,
-        node_id: NodeId,
-        partition_num: PartitionNumber,
-        key: SubstateKey,
-    ) -> Result<(), RuntimeError> {
-        self.callback
-            .on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
-
-        self.current_frame
-            .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)
-            .map_err(|e| {
-                RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::MarkTransientSubstateError(e),
-                ))
-            })
-    }
-
     #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         M::on_allocate_node_id(entity_type, self)?;
@@ -675,6 +656,25 @@ where
     M: KernelCallbackObject,
     S: CommitableSubstateStore,
 {
+    #[trace_resources]
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        self.callback
+            .on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
+
+        self.current_frame
+            .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::MarkTransientSubstateError(e),
+                ))
+            })
+    }
+
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,

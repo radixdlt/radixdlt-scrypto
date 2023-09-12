@@ -253,7 +253,9 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                     CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
                 })?,
             SubstateDevice::Store => {
-                return Err(CallbackError::Error(MovePartitionError::MoveFromStoreNotPermitted));
+                return Err(CallbackError::Error(
+                    MovePartitionError::MoveFromStoreNotPermitted,
+                ));
             }
         };
 
