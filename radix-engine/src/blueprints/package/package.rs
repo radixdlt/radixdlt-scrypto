@@ -4,7 +4,9 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::metadata::MetadataNativePackage;
-use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
+use crate::system::system_modules::costing::{
+    apply_royalty_cost, CostingError, FeeReserveError, RoyaltyRecipient,
+};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -23,7 +25,7 @@ use sbor::LocalTypeId;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::system::node_modules::role_assignment::*;
 use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::*;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -65,6 +67,7 @@ pub enum PackageError {
         inner: String,
         violating_outer: String,
     },
+    RoleAssignmentError(RoleAssignmentError),
 
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
@@ -134,6 +137,7 @@ pub enum PackageError {
     InvalidMetadataKey(String),
 
     RoyaltiesNotEnabled,
+    RoyaltyAmountIsNegative(RoyaltyAmount),
 }
 
 fn validate_package_schema(
@@ -424,6 +428,12 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                         });
                     }
                 }
+
+                functions
+                    .values()
+                    .map(RoleAssignmentNativePackage::verify_access_rule)
+                    .collect::<Result<_, _>>()
+                    .map_err(PackageError::RoleAssignmentError)?;
             }
         }
 
@@ -1482,6 +1492,15 @@ impl PackageRoyaltyNativeBlueprint {
             })
             .unwrap_or(RoyaltyAmount::Free);
 
+        // This should always be false and this code path should never be visited. This is because
+        // we check for negative royalties at the instantiation time of the royalty module.
+        if royalty_charge.is_negative() {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::CostingError(CostingError::FeeReserveError(
+                    FeeReserveError::RoyaltyAmountIsNegative(royalty_charge),
+                )),
+            ));
+        }
         if royalty_charge.is_non_zero() {
             let handle = api.kernel_open_substate(
                 receiver,

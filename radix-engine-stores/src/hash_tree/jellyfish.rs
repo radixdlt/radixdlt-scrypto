@@ -617,9 +617,9 @@ impl<'a, R: 'a + TreeReader<P>, P: Clone> JellyfishMerkleTree<'a, R, P> {
         self.get_root_node(version).map(|n| n.leaf_count())
     }
 
-    pub fn get_all_nodes_referenced(&self, version: Version) -> Result<Vec<NodeKey>, StorageError> {
+    pub fn get_all_nodes_referenced(&self, key: NodeKey) -> Result<Vec<NodeKey>, StorageError> {
         let mut out_keys = vec![];
-        self.get_all_nodes_referenced_impl(NodeKey::new_empty_path(version), &mut out_keys)?;
+        self.get_all_nodes_referenced_impl(key, &mut out_keys)?;
         Ok(out_keys)
     }
 

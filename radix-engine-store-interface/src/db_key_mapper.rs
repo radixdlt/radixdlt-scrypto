@@ -1,5 +1,6 @@
 use crate::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DbPartitionKey, DbSortKey, SubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey,
+    DbPartitionNum, DbSortKey, SubstateDatabase,
 };
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
@@ -12,8 +13,19 @@ use utils::copy_u8_array;
 
 /// A mapper between the business ReNode / Partition / Substate IDs and database keys.
 pub trait DatabaseKeyMapper {
-    /// Converts the given ReNode ID and Partition number to the database partition's key.
-    fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey;
+    /// Converts the given Node ID and Partition number to the database partition's key.
+    fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey {
+        DbPartitionKey {
+            node_key: Self::to_db_node_key(node_id),
+            partition_num: Self::to_db_partition_num(partition_num),
+        }
+    }
+
+    /// Converts the given Node ID to the database Node key.
+    fn to_db_node_key(node_id: &NodeId) -> DbNodeKey;
+
+    /// Converts the given Partition number to the database Partition number.
+    fn to_db_partition_num(partition_num: PartitionNumber) -> DbPartitionNum;
 
     /// Converts database partition's key back to ReNode ID and Partition number.
     fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber);
@@ -72,11 +84,12 @@ pub trait DatabaseKeyMapper {
 pub struct SpreadPrefixKeyMapper;
 
 impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
-    fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey {
-        DbPartitionKey {
-            node_key: SpreadPrefixKeyMapper::to_hash_prefixed(node_id.as_bytes()),
-            partition_num: partition_num.0,
-        }
+    fn to_db_node_key(node_id: &NodeId) -> DbNodeKey {
+        SpreadPrefixKeyMapper::to_hash_prefixed(node_id.as_bytes())
+    }
+
+    fn to_db_partition_num(partition_num: PartitionNumber) -> DbPartitionNum {
+        partition_num.0
     }
 
     fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
@@ -213,13 +226,13 @@ impl<S: CommittableSubstateDatabase> MappedCommittableSubstateDatabase for S {
         substate_key: &SubstateKey,
         value: &E,
     ) {
-        self.commit(&indexmap!(
+        self.commit(&DatabaseUpdates::from_delta_maps(indexmap!(
             M::to_db_partition_key(node_id, partition_num) => indexmap!(
                 M::to_db_sort_key(substate_key) => DatabaseUpdate::Set(
                     scrypto_encode(value).unwrap()
                 )
             )
-        ))
+        )))
     }
 }
 
