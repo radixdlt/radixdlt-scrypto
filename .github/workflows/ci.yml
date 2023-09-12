@@ -46,7 +46,9 @@ jobs:
         run: |
           apt update && apt install -y clang llvm cmake build-essential
           rustup component add llvm-tools
-          cargo install cargo-llvm-cov cargo-nextest
+          cargo install cargo-llvm-cov
+          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
       - name: build
         run: cargo build
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
@@ -75,7 +77,9 @@ jobs:
         run: |
           apt update && apt install -y clang llvm cmake build-essential
           rustup component add llvm-tools
-          cargo install cargo-llvm-cov cargo-nextest
+          cargo install cargo-llvm-cov
+          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           flags: -p sbor-tests
@@ -101,7 +105,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov cargo-nextest
+        cargo install cargo-llvm-cov
+        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
@@ -133,7 +139,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov cargo-nextest
+        cargo install cargo-llvm-cov
+        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p scrypto-derive-tests
@@ -323,7 +331,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov cargo-nextest
+        cargo install cargo-llvm-cov
+        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p transaction
@@ -342,7 +352,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov cargo-nextest
+        cargo install cargo-llvm-cov
+        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p transaction-scenarios
@@ -433,7 +445,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov cargo-nextest 
+        cargo install cargo-llvm-cov
+        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
     - name: Setup AFL
       run: bash ./install_afl.sh
       working-directory: fuzz-tests
