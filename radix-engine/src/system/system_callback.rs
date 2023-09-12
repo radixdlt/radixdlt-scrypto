@@ -75,6 +75,14 @@ impl SystemLockData {
     pub fn is_kv_entry(&self) -> bool {
         matches!(self, SystemLockData::KeyValueEntry(..))
     }
+
+    pub fn is_kv_entry_with_write(&self) -> bool {
+        match self {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVCollectionWrite { .. })
+            | SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVStoreWrite { .. }) => true,
+            _ => false,
+        }
+    }
 }
 
 pub struct SystemConfig<C: SystemCallbackObject> {

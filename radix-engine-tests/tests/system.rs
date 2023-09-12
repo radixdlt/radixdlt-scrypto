@@ -41,6 +41,9 @@ fn test_handle_mismatch() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::NotAKeyValueEntryWriteHandle)
+        )
     });
 }
