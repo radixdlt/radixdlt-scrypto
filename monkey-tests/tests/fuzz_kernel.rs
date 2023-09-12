@@ -323,7 +323,10 @@ impl KernelFuzzer {
 enum KernelFuzzAction {
     Allocate,
     CreateNode,
+    PinNode,
+    DropNode,
     Invoke,
+    MovePartition,
     OpenSubstate,
     ReadSubstate,
     WriteSubstate,
@@ -345,7 +348,7 @@ fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
     let mut fuzzer = KernelFuzzer::new(seed);
 
     loop {
-        let action = KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=6u8)).unwrap();
+        let action = KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=9u8)).unwrap();
         match action {
             KernelFuzzAction::Allocate => {
                 let node_id = kernel
@@ -361,6 +364,28 @@ fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
                         )
                     );
                     kernel.kernel_create_node(node_id, substates)?;
+                }
+            }
+            KernelFuzzAction::PinNode => {
+                if let Some(node_id) = fuzzer.next_node() {
+                    kernel.kernel_pin_node(node_id)?;
+                }
+            }
+            KernelFuzzAction::DropNode => {
+                if let Some(node_id) = fuzzer.next_node() {
+                    kernel.kernel_drop_node(&node_id)?;
+                }
+            }
+            KernelFuzzAction::MovePartition => {
+                if let Some(src) = fuzzer.next_node().filter(|n| !n.is_global()) {
+                    if let Some(dest) = fuzzer.next_node() {
+                        kernel.kernel_move_partition(
+                            &src,
+                            PartitionNumber(0u8),
+                            &dest,
+                            PartitionNumber(0u8),
+                        )?;
+                    }
                 }
             }
             KernelFuzzAction::Invoke => {
