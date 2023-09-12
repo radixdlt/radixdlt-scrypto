@@ -64,7 +64,7 @@ impl KernelNodeApi for MockKernel {
         panic1!()
     }
 
-    fn kernel_drop_node(&mut self, _: &NodeId) -> Result<NodeSubstates, RuntimeError> {
+    fn kernel_drop_node(&mut self, _: &NodeId) -> Result<DroppedNode, RuntimeError> {
         panic1!()
     }
 
