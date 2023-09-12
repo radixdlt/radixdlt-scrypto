@@ -1,3 +1,4 @@
+use std::cmp::max;
 use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 use rand_chacha::rand_core::SeedableRng;
@@ -18,7 +19,7 @@ use radix_engine::kernel::kernel_callback_api::{
     RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
     WriteSubstateEvent,
 };
-use radix_engine::track::Track;
+use radix_engine::track::{CommitableSubstateStore, Track};
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -333,27 +334,18 @@ enum KernelFuzzAction {
     CloseSubstate
 }
 
-fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
-    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
-    let database = InMemorySubstateDatabase::standard();
-    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
-    let mut callback = TestCallbackObject;
-    let mut kernel_boot = KernelBoot {
-        id_allocator: &mut id_allocator,
-        callback: &mut callback,
-        store: &mut track,
-    };
-    let mut kernel = kernel_boot.create_kernel_for_test_only();
-
-    let mut fuzzer = KernelFuzzer::new(seed);
-
-    loop {
-        let action = KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=9u8)).unwrap();
-        match action {
+impl KernelFuzzAction {
+    fn execute<S>(&self, fuzzer: &mut KernelFuzzer, kernel: &mut Kernel<'_, TestCallbackObject, S>)
+    -> Result<bool, RuntimeError>
+    where
+        S: CommitableSubstateStore,
+    {
+        match self {
             KernelFuzzAction::Allocate => {
                 let node_id = kernel
                     .kernel_allocate_node_id(fuzzer.next_entity_type())?;
                 fuzzer.add_allocated_node(node_id);
+                return Ok(false);
             }
             KernelFuzzAction::CreateNode => {
                 if let Some(node_id) = fuzzer.next_allocated_node() {
@@ -364,17 +356,25 @@ fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
                         )
                     );
                     kernel.kernel_create_node(node_id, substates)?;
+                    return Ok(false);
                 }
+                return Ok(true);
             }
             KernelFuzzAction::PinNode => {
                 if let Some(node_id) = fuzzer.next_node() {
                     kernel.kernel_pin_node(node_id)?;
+                    return Ok(false);
                 }
+
+                return Ok(true);
             }
             KernelFuzzAction::DropNode => {
                 if let Some(node_id) = fuzzer.next_node() {
                     kernel.kernel_drop_node(&node_id)?;
+                    return Ok(false);
                 }
+
+                return Ok(true);
             }
             KernelFuzzAction::MovePartition => {
                 if let Some(src) = fuzzer.next_node().filter(|n| !n.is_global()) {
@@ -385,8 +385,12 @@ fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
                             &dest,
                             PartitionNumber(0u8),
                         )?;
+
+                        return Ok(false);
                     }
                 }
+
+                return Ok(true);
             }
             KernelFuzzAction::Invoke => {
                 if let Some(node_id) = fuzzer.next_node() {
@@ -395,7 +399,10 @@ fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
                         args: IndexedScryptoValue::from_typed(&Own(node_id)),
                     };
                     kernel.kernel_invoke(Box::new(invocation))?;
+                    return Ok(false);
                 }
+
+                return Ok(true);
             }
             KernelFuzzAction::OpenSubstate => {
                 if let Some(node_id) = fuzzer.next_node() {
@@ -408,23 +415,65 @@ fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
                             (),
                         )?;
                     fuzzer.add_handle(handle);
+                    return Ok(false);
                 }
+
+                return Ok(true);
             }
             KernelFuzzAction::ReadSubstate => {
                 if let Some(handle) = fuzzer.next_handle() {
                     kernel.kernel_read_substate(handle)?;
+                    return Ok(false);
                 }
+
+                return Ok(true);
             }
             KernelFuzzAction::WriteSubstate => {
                 if let Some(handle) = fuzzer.next_handle() {
                     let value = fuzzer.next_value();
                     kernel.kernel_write_substate(handle, value)?;
+                    return Ok(false);
                 }
+
+                return Ok(true);
             }
             KernelFuzzAction::CloseSubstate => {
                 if let Some(handle) = fuzzer.next_handle() {
                     kernel.kernel_close_substate(handle)?;
+                    return Ok(false);
                 }
+
+                return Ok(true);
+            }
+        }
+    }
+}
+
+fn kernel_fuzz(seed: u64) -> u32 {
+    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
+    let database = InMemorySubstateDatabase::standard();
+    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
+    let mut callback = TestCallbackObject;
+    let mut kernel_boot = KernelBoot {
+        id_allocator: &mut id_allocator,
+        callback: &mut callback,
+        store: &mut track,
+    };
+    let mut kernel = kernel_boot.create_kernel_for_test_only();
+
+    let mut fuzzer = KernelFuzzer::new(seed);
+    let mut success_count = 0u32;
+
+    loop {
+        let action = KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=9u8)).unwrap();
+        match action.execute(&mut fuzzer, &mut kernel) {
+            Ok(trivial) => {
+                if !trivial {
+                    success_count += 1;
+                }
+            }
+            Err(..) => {
+                return success_count;
             }
         }
     }
@@ -432,7 +481,11 @@ fn kernel_fuzz(seed: u64) -> Result<(), RuntimeError> {
 
 #[test]
 fn test_kernel_fuzz() {
+    let mut highest_success_count = 0u32;
     for seed in 0u64..1000000u64 {
-        let _ = kernel_fuzz(seed);
+        let success_count = kernel_fuzz(seed);
+        highest_success_count = max(success_count, highest_success_count);
     }
+
+    println!("Highest success count: {:?}", highest_success_count);
 }
