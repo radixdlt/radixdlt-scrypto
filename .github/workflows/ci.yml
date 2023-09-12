@@ -96,10 +96,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
-        run: |
-          apt update && apt install -y clang llvm cmake build-essential
-          rustup component add llvm-tools
-          cargo install cargo-llvm-cov cargo-nextest
+      run: |
+        apt update && apt install -y clang llvm cmake build-essential
+        rustup component add llvm-tools
+        cargo install cargo-llvm-cov cargo-nextest
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
@@ -128,10 +128,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
-        run: |
-          apt update && apt install -y clang llvm cmake build-essential
-          rustup component add llvm-tools
-          cargo install cargo-llvm-cov cargo-nextest
+      run: |
+        apt update && apt install -y clang llvm cmake build-essential
+        rustup component add llvm-tools
+        cargo install cargo-llvm-cov cargo-nextest
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p scrypto-derive-tests
