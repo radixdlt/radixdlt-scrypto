@@ -79,7 +79,8 @@ jobs:
           rustup component add llvm-tools
           cargo install cargo-llvm-cov
           curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
+      - name: build
+        run: cargo build
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           flags: -p sbor-tests
@@ -107,7 +108,8 @@ jobs:
         rustup component add llvm-tools
         cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
+    - name: build
+        run: cargo build
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
@@ -141,7 +143,8 @@ jobs:
         rustup component add llvm-tools
         cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
+    - name: build
+        run: cargo build
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p scrypto-derive-tests
@@ -164,9 +167,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        cargo install cargo-llvm-cov cargo-nextest
-        rustup target add wasm32-unknown-unknown
-        rustup +nightly target add wasm32-unknown-unknown
+        rustup toolchain install nightly
+        rustup update
+        rustup target add wasm32-unknown-unknown --toolchain nightly
     - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/blueprints/faucet
@@ -195,7 +198,7 @@ jobs:
     - name: setup the container
       run: |
         apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
+        rustup component add llvm-tools rustfmt
     - run: ./check_stubs.sh
 
   radix-engine-build:
