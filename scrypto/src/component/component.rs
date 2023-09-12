@@ -418,6 +418,10 @@ impl<O: HasStub> HasMetadata for Global<O> {
     fn remove_metadata<K: ToString>(&self, name: K) -> bool {
         self.metadata().remove(name)
     }
+
+    fn lock_metadata<K: ToString>(&self, name: K) {
+        self.metadata().lock(name)
+    }
 }
 
 impl<O: HasStub> HasRoleAssignment for Global<O> {

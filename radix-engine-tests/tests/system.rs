@@ -2,7 +2,7 @@ mod package_loader;
 
 use package_loader::PackageLoader;
 use radix_engine::{
-    errors::{RuntimeError, SystemError},
+    errors::{RuntimeError, SystemError, SystemModuleError},
     types::*,
 };
 use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
@@ -119,7 +119,7 @@ fn test_globalize_address_reservation() {
 }
 
 #[test]
-fn test_write_after_lock() {
+fn test_write_after_locking_field_substate() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
@@ -130,12 +130,71 @@ fn test_write_after_lock() {
         .call_function(
             package_address,
             "WriteAfterLockingTest",
-            "write_after_locking",
+            "write_after_locking_field_substate",
             manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(_))
+        )
+    })
+}
+
+#[test]
+fn test_write_after_locking_key_value_store_entry() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "WriteAfterLockingTest",
+            "write_after_locking_key_value_store_entry",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+        )
+    })
+}
+
+#[test]
+fn test_write_after_locking_key_value_collection_entry() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "WriteAfterLockingTest",
+            "write_after_locking_key_value_collection_entry",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+        )
+    })
 }

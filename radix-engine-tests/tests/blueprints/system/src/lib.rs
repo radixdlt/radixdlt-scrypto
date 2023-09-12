@@ -67,12 +67,13 @@ mod address_reservation_test {
 }
 
 #[blueprint]
-mod write_after_locking_test {
+mod write_after_locking_field_substate_test {
     struct WriteAfterLockingTest {}
 
     impl WriteAfterLockingTest {
-        /// Currently, substate locking API isn't exposed to Scrypto, so testing OwnerRole instead.
-        pub fn write_after_locking() {
+        // Currently, substate locking API isn't exposed to Scrypto, so testing through native blueprints or object modules.
+
+        pub fn write_after_locking_field_substate() {
             let owner_role = OwnerRole::Updatable(rule!(allow_all));
             let global = WriteAfterLockingTest {}
                 .instantiate()
@@ -83,5 +84,59 @@ mod write_after_locking_test {
 
             global.set_owner_role(rule!(deny_all));
         }
+
+        pub fn write_after_locking_key_value_store_entry() {
+            let owner_role = OwnerRole::Updatable(rule!(allow_all));
+            let global = WriteAfterLockingTest {}
+                .instantiate()
+                .prepare_to_globalize(owner_role)
+                .globalize();
+
+            global.set_metadata("key", "value".to_owned());
+            global.lock_metadata("key");
+            global.set_metadata("key", "value2".to_owned());
+        }
+
+        pub fn write_after_locking_key_value_collection_entry() {
+            let bucket = ResourceBuilder::new_ruid_non_fungible(OwnerRole::None)
+                .metadata(metadata! {
+                    init {
+                        "name" => "Katz's Sandwiches".to_owned(), locked;
+                    }
+                })
+                .burn_roles(burn_roles! {
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
+                })
+                .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+                    non_fungible_data_updater => rule!(allow_all);
+                    non_fungible_data_updater_updater => rule!(allow_all);
+                })
+                .mint_initial_supply([Sandwich {
+                    name: "Zero".to_owned(),
+                    available: true,
+                    tastes_great: true,
+                    reference: None,
+                    own: None,
+                }]);
+            let non_fungible_local_id = bucket.non_fungible_local_id();
+            let resource_manager = bucket.resource_manager();
+
+            bucket.burn();
+
+            resource_manager.update_non_fungible_data(&non_fungible_local_id, "available", false);
+        }
     }
+}
+
+#[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
+pub struct Sandwich {
+    pub name: String,
+    #[mutable]
+    pub available: bool,
+    pub tastes_great: bool,
+    #[mutable]
+    pub reference: Option<ComponentAddress>,
+    #[mutable]
+    pub own: Option<Own>,
 }
