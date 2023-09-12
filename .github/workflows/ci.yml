@@ -187,3 +187,161 @@ jobs:
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
     - run: ./check_stubs.sh
+
+  radix-engine-build:
+    name: Run Radix Engine build (RocksDB)
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.70.0-bullseye
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - name: setup the container
+      run: |
+        apt update && apt install -y clang llvm cmake build-essential pkg-config libfreetype6-dev libfontconfig1-dev
+        rustup component add llvm-tools
+    - name: Build with resource tracking
+      run: cargo build --features resource_tracker
+    - name: Build with rocksdb
+      run: cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb --release --no-run -- --nocapture
+    - name: Build bench with rocksdb
+      run: cargo bench --features rocksdb --no-run
+
+  radix-engine:
+    name: Run Radix Engine tests
+    runs-on: k8s-linux-runner
+    steps:
+      - uses: actions/checkout@v3
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+        with:
+          install_wasm: "true"
+          install_simulator: "true"
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+        with:
+          flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+          coverage_report_name: radix-engine-coverage
+
+  radix-engine-release:
+    # Run tests in release variant.
+    # We are particularly interested with the flags:
+    # - debug-assertions,
+    # - overflow-checks
+    # which are false for release variant
+    name: Run Radix Engine tests (release)
+    runs-on: k8s-linux-runner
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+        with:
+          install_wasm: "true"
+          install_simulator: "true"
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+        with:
+          flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time --release
+
+  radix-engine-no-std:
+    name: Run Radix Engine tests (no_std)
+    runs-on: k8s-linux-runner
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+        with:
+          install_wasm: "true"
+          install_simulator: "true"
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+        with:
+          flags: --no-default-features --features alloc -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+
+  radix-engine-wasmer:
+    name: Run Radix Engine tests (wasmer)
+    runs-on: k8s-linux-runner
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+        with:
+          install_wasm: "true"
+          install_simulator: "true"
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+        with: --features wasmer -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+
+  radix-engine-bench:
+    name: Run Radix Engine benchmarks
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.70.0-bullseye
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - name: setup the container
+      run: |
+        apt update && apt install -y clang llvm cmake build-essential
+        rustup component add llvm-tools
+        rustup target add wasm32-unknown-unknown
+    - name: Run bench
+      run: cargo bench
+      working-directory: radix-engine-tests
+
+  radix-engine-common-bench:
+    name: Run Radix Engine common benchmarks
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.70.0-bullseye
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - name: setup the container
+      run: |
+        apt update && apt install -y clang llvm cmake build-essential
+        rustup component add llvm-tools
+        rustup target add wasm32-unknown-unknown
+    - name: Run bench
+      run: cargo bench
+      working-directory: radix-engine-common
+
+  transaction:
+    name: Run transaction tests
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.70.0-bullseye
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - name: setup the container
+      run: |
+        apt update && apt install -y clang llvm cmake build-essential
+        rustup component add llvm-tools
+        cargo install cargo-llvm-cov cargo-nextest
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
+      with:
+        flags: -p transaction
+        coverage_report_name: transaction-coverage
+
+  transaction-scenarios:
+    name: Run transaction scenarios
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.70.0-bullseye
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - name: setup the container
+      run: |
+        apt update && apt install -y clang llvm cmake build-essential
+        rustup component add llvm-tools
+        cargo install cargo-llvm-cov cargo-nextest
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
+      with:
+        flags: -p transaction-scenarios
+        coverage_report_name: transaction-scenarios-coverage
+
