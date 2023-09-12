@@ -269,7 +269,8 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         delta
     );
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
-    assert!(delta <= dec!("0.00954602837"));
+    // 2023-09-12: updated from 0.00954602837 to 0.00956282837 (0.17% < 50%) due to failure to cost call returns
+    assert!(delta <= dec!("0.00956282837"));
 }
 
 // ED25519 signature is larger than Secp256k1 due to lack of public key recovery
