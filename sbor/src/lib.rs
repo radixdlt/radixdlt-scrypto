@@ -97,11 +97,11 @@ pub mod prelude {
     pub use crate::schema::prelude::*;
     pub use crate::value::{CustomValue as SborCustomValue, Value as SborValue};
     pub use crate::value_kind::*;
+    pub use crate::versioned::{CloneIntoLatest, HasLatestVersion, UpdateResult};
     pub use crate::{
         basic_decode, basic_encode, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode,
         BasicSbor,
     };
     pub use crate::{Categorize, Decode, Encode, Sbor, SborEnum, SborTuple};
     pub use crate::{DecodeError, EncodeError};
-    pub use crate::versioned::{HasLatestVersion, CloneIntoLatest, UpdateResult};
 }
