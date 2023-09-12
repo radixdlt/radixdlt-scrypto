@@ -1,3 +1,4 @@
+use crate::kernel::kernel_api::DroppedNode;
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
     IOAccessHandler, SubstateDevice, SubstateIO, SubstateReadHandler,
@@ -500,6 +501,7 @@ pub enum WriteSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CloseSubstateError {
     HandleNotFound(SubstateHandle),
+    SubstateBorrowed(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -676,7 +678,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         match device {
             SubstateDevice::Heap => {
-                substate_io.pinned_nodes.insert(node_id);
+                substate_io.pinned_to_heap.insert(node_id);
             }
             SubstateDevice::Store => {
                 // Nodes in store are always pinned
@@ -773,7 +775,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
-    ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
+    ) -> Result<DroppedNode, CallbackError<DropNodeError, E>> {
         self.take_node_internal(substate_io, node_id)
             .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
@@ -782,13 +784,13 @@ impl<C, L: Clone> CallFrame<C, L> {
             handler,
             phantom: PhantomData::default(),
         };
-        let node_substates = substate_io
+        let substates = substate_io
             .drop_node(SubstateDevice::Heap, node_id, &mut adapter)
             .map_err(|e| match e {
                 CallbackError::Error(e) => CallbackError::Error(e),
                 CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
             })?;
-        for (_partition_number, module) in &node_substates {
+        for (_partition_number, module) in &substates {
             for (_substate_key, substate_value) in module {
                 let diff = SubstateDiff::from_drop_substate(&substate_value);
                 adapter
@@ -808,7 +810,12 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        Ok(node_substates)
+        let pinned_to_heap = substate_io.pinned_to_heap.remove(node_id);
+
+        Ok(DroppedNode {
+            substates,
+            pinned_to_heap,
+        })
     }
 
     pub fn move_partition<'f, S: CommitableSubstateStore, E>(
@@ -1055,6 +1062,15 @@ impl<C, L: Clone> CallFrame<C, L> {
             .remove(&lock_handle)
             .ok_or_else(|| CloseSubstateError::HandleNotFound(lock_handle))?;
 
+        for node_id in open_substate.owned_nodes.iter() {
+            // We must maintain the invariant that opened substates must always
+            // be from a visible node. Thus, we cannot close a substate if there is a
+            // child opened substate.
+            if substate_io.substate_locks.node_is_locked(node_id) {
+                return Err(CloseSubstateError::SubstateBorrowed(*node_id));
+            }
+        }
+
         substate_io.close_substate(open_substate.global_substate_handle)?;
 
         let diff = open_substate.diff_on_close();
@@ -1064,6 +1080,25 @@ impl<C, L: Clone> CallFrame<C, L> {
             &mut open_substate,
             &diff,
         );
+
+        Ok(())
+    }
+
+    pub fn close_all_substates<S: CommitableSubstateStore>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+    ) -> Result<(), CloseSubstateError> {
+        // Closing of all substates should always be possible as no invariant needs to be maintained
+        for (_lock_handle, mut open_substate) in self.open_substates.drain(..) {
+            substate_io.close_substate(open_substate.global_substate_handle)?;
+            let diff = open_substate.diff_on_close();
+            Self::apply_diff_to_open_substate(
+                &mut self.transient_references,
+                substate_io,
+                &mut open_substate,
+                &diff,
+            );
+        }
 
         Ok(())
     }
@@ -1285,19 +1320,6 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         Ok(substates)
-    }
-
-    pub fn close_all_substates<S: CommitableSubstateStore>(
-        &mut self,
-        substate_io: &mut SubstateIO<S>,
-    ) -> Result<(), CloseSubstateError> {
-        let lock_handles: Vec<SubstateHandle> = self.open_substates.keys().cloned().collect();
-
-        for lock_handle in lock_handles {
-            self.close_substate(substate_io, lock_handle)?;
-        }
-
-        Ok(())
     }
 
     pub fn owned_nodes(&self) -> Vec<NodeId> {
