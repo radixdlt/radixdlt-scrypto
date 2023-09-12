@@ -357,9 +357,9 @@ mod globalize_unflushed {
             Self {
                 garbage: Own(store1.id.0),
             }
-                .instantiate()
-                .prepare_to_globalize(OwnerRole::None)
-                .globalize();
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
 
             ScryptoVmV1Api::kv_entry_read(handle);
         }

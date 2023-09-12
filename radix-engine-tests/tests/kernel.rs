@@ -1,7 +1,7 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
-    CallFrameMessage, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError,
-    ProcessSubstateError, TakeNodeError, WriteSubstateError,
+    CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError,
+    PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
@@ -236,7 +236,7 @@ impl KernelCallbackObject for TestCallbackObject {
     }
 }
 
-enum MoveNodeVariation {
+enum MoveVariation {
     Create,
     Write,
     MovePartition,
@@ -244,7 +244,7 @@ enum MoveNodeVariation {
 }
 
 fn kernel_move_node_via_create_with_opened_substate(
-    variation: MoveNodeVariation,
+    variation: MoveVariation,
 ) -> Result<(), RuntimeError> {
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let database = InMemorySubstateDatabase::standard();
@@ -257,7 +257,7 @@ fn kernel_move_node_via_create_with_opened_substate(
     };
     let mut kernel = kernel_boot.create_kernel_for_test_only();
 
-    let (child_id, _handle) = {
+    let child_id = {
         let child_id = kernel
             .kernel_allocate_node_id(EntityType::InternalKeyValueStore)
             .unwrap();
@@ -267,7 +267,7 @@ fn kernel_move_node_via_create_with_opened_substate(
             )
         );
         kernel.kernel_create_node(child_id, substates).unwrap();
-        let handle = kernel
+        kernel
             .kernel_open_substate(
                 &child_id,
                 PartitionNumber(0u8),
@@ -276,11 +276,11 @@ fn kernel_move_node_via_create_with_opened_substate(
                 (),
             )
             .unwrap();
-        (child_id, handle)
+        child_id
     };
 
     match variation {
-        MoveNodeVariation::Create => {
+        MoveVariation::Create => {
             let node_id = kernel
                 .kernel_allocate_node_id(EntityType::GlobalAccount)
                 .unwrap();
@@ -291,7 +291,7 @@ fn kernel_move_node_via_create_with_opened_substate(
             );
             kernel.kernel_create_node(node_id, substates)?;
         }
-        MoveNodeVariation::Write => {
+        MoveVariation::Write => {
             let node_id = kernel
                 .kernel_allocate_node_id(EntityType::GlobalAccount)
                 .unwrap();
@@ -311,7 +311,7 @@ fn kernel_move_node_via_create_with_opened_substate(
             kernel
                 .kernel_write_substate(handle, IndexedScryptoValue::from_typed(&Own(child_id)))?;
         }
-        MoveNodeVariation::MovePartition => {
+        MoveVariation::MovePartition => {
             let node_id = kernel
                 .kernel_allocate_node_id(EntityType::GlobalAccount)
                 .unwrap();
@@ -328,7 +328,7 @@ fn kernel_move_node_via_create_with_opened_substate(
                 PartitionNumber(0u8),
             )?;
         }
-        MoveNodeVariation::Invoke => {
+        MoveVariation::Invoke => {
             let invocation = KernelInvocation {
                 call_frame_data: TestCallFrameData,
                 args: IndexedScryptoValue::from_typed(&Own(child_id)),
@@ -342,7 +342,7 @@ fn kernel_move_node_via_create_with_opened_substate(
 
 #[test]
 fn test_kernel_move_node_via_create_with_opened_substate() {
-    let result = kernel_move_node_via_create_with_opened_substate(MoveNodeVariation::Create);
+    let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::Create);
     assert!(matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
@@ -355,7 +355,7 @@ fn test_kernel_move_node_via_create_with_opened_substate() {
 
 #[test]
 fn test_kernel_move_node_via_write_with_opened_substate() {
-    let result = kernel_move_node_via_create_with_opened_substate(MoveNodeVariation::Write);
+    let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::Write);
     assert!(matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
@@ -368,7 +368,7 @@ fn test_kernel_move_node_via_write_with_opened_substate() {
 
 #[test]
 fn test_kernel_move_node_via_move_partition_with_opened_substate() {
-    let result = kernel_move_node_via_create_with_opened_substate(MoveNodeVariation::MovePartition);
+    let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::MovePartition);
     println!("{:?}", result);
     assert!(matches!(
         result,
@@ -380,7 +380,7 @@ fn test_kernel_move_node_via_move_partition_with_opened_substate() {
 
 #[test]
 fn test_kernel_move_node_via_invoke_with_opened_substate() {
-    let result = kernel_move_node_via_create_with_opened_substate(MoveNodeVariation::Invoke);
+    let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::Invoke);
     assert!(matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
@@ -388,5 +388,65 @@ fn test_kernel_move_node_via_invoke_with_opened_substate() {
                 PassMessageError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
             ))
         )))
+    ));
+}
+
+#[test]
+fn kernel_close_substate_should_fail_if_opened_child_exists() {
+    // Arrange
+    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
+    let database = InMemorySubstateDatabase::standard();
+    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
+    let mut callback = TestCallbackObject;
+    let mut kernel_boot = KernelBoot {
+        id_allocator: &mut id_allocator,
+        callback: &mut callback,
+        store: &mut track,
+    };
+    let mut kernel = kernel_boot.create_kernel_for_test_only();
+    let mut create_node = || {
+        let id = kernel
+            .kernel_allocate_node_id(EntityType::InternalKeyValueStore)
+            .unwrap();
+        let substates = btreemap!(
+            PartitionNumber(0u8) => btreemap!(
+                SubstateKey::Field(0u8) => IndexedScryptoValue::from_typed(&())
+            )
+        );
+        kernel.kernel_create_node(id, substates).unwrap();
+        id
+    };
+    let node1 = create_node();
+    let node2 = create_node();
+    let handle1 = kernel
+        .kernel_open_substate(
+            &node1,
+            PartitionNumber(0u8),
+            &SubstateKey::Field(0u8),
+            LockFlags::MUTABLE,
+            (),
+        )
+        .unwrap();
+    kernel
+        .kernel_write_substate(handle1, IndexedScryptoValue::from_typed(&Own(node2)))
+        .unwrap();
+    kernel
+        .kernel_open_substate(
+            &node2,
+            PartitionNumber(0u8),
+            &SubstateKey::Field(0u8),
+            LockFlags::MUTABLE,
+            (),
+        )
+        .unwrap();
+
+    // Act
+    let result = kernel.kernel_close_substate(handle1);
+    let error = result.expect_err("Should be an error");
+    assert!(matches!(
+        error,
+        RuntimeError::KernelError(KernelError::CallFrameError(
+            CallFrameError::CloseSubstateError(CloseSubstateError::SubstateBorrowed(..))
+        ))
     ));
 }

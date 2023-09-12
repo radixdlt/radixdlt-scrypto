@@ -499,6 +499,7 @@ pub enum WriteSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CloseSubstateError {
     HandleNotFound(SubstateHandle),
+    SubstateBorrowed(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -1053,6 +1054,15 @@ impl<C, L: Clone> CallFrame<C, L> {
             .open_substates
             .remove(&lock_handle)
             .ok_or_else(|| CloseSubstateError::HandleNotFound(lock_handle))?;
+
+        for node_id in open_substate.owned_nodes.iter() {
+            // We must maintain the invariant that opened substates must always
+            // be from a visible node. Thus, we cannot close a substate if there is a
+            // child opened substate.
+            if substate_io.substate_locks.node_is_locked(node_id) {
+                return Err(CloseSubstateError::SubstateBorrowed(*node_id));
+            }
+        }
 
         substate_io.close_substate(open_substate.global_substate_handle)?;
 

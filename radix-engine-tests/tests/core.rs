@@ -2,7 +2,9 @@ mod package_loader;
 
 use package_loader::PackageLoader;
 use radix_engine::errors::{CallFrameError, KernelError};
-use radix_engine::kernel::call_frame::{CreateNodeError, ProcessSubstateError, TakeNodeError};
+use radix_engine::kernel::call_frame::{
+    CloseSubstateError, CreateNodeError, ProcessSubstateError, TakeNodeError,
+};
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     types::*,
@@ -157,9 +159,7 @@ fn test_globalize_with_unflushed_another_own_v2() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
-                    ProcessSubstateError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
-                ))
+                CallFrameError::CloseSubstateError(CloseSubstateError::SubstateBorrowed(..))
             ))
         )
     });
