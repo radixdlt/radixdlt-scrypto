@@ -665,6 +665,21 @@ mod non_fungible_test {
             )
         }
 
+        pub fn create_non_fungible_integer() -> Bucket {
+            let mut entries = index_map_new();
+            entries.insert(
+                NonFungibleLocalId::integer(0),
+                (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+            );
+
+            Self::create_non_fungible_with_given_type(
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                NonFungibleIdType::Integer,
+                entries,
+                None,
+            )
+        }
+
         pub fn create_non_fungible_ruid_with_address_reservation() -> Bucket {
             let (reservation, _address) = Runtime::allocate_non_fungible_address();
             let mut entries = index_map_new();
@@ -678,6 +693,21 @@ mod non_fungible_test {
                 NonFungibleIdType::RUID,
                 entries,
                 Some(reservation),
+            )
+        }
+
+        pub fn create_non_fungible_ruid() -> Bucket {
+            let mut entries = index_map_new();
+            entries.insert(
+                NonFungibleLocalId::ruid([0x11; 32]),
+                (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+            );
+
+            Self::create_non_fungible_with_given_type(
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
+                NonFungibleIdType::RUID,
+                entries,
+                None,
             )
         }
 
@@ -794,6 +824,33 @@ mod non_fungible_test {
                 reference: None,
                 own: None,
             })
+        }
+
+        pub fn create_ruid_non_fungible_and_mint_non_ruid() -> Bucket {
+            // creating non-fungible id with id type set to default (RUID)
+            let resource_manager =
+                ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
+                    .mint_roles(mint_roles! {
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
+                    })
+                    .metadata(metadata! {
+                        init {
+                            "name" => "Katz's Sandwiches".to_owned(), locked;
+                        }
+                    })
+                    .create_with_no_initial_supply();
+
+            resource_manager.mint_non_fungible(
+                &NonFungibleLocalId::integer(0),
+                Sandwich {
+                    name: "Test2".to_owned(),
+                    available: false,
+                    tastes_great: true,
+                    reference: None,
+                    own: None,
+                },
+            )
         }
     }
 }

@@ -819,6 +819,40 @@ fn can_mint_ruid_non_fungible_in_scrypto() {
     receipt.expect_commit_success();
 }
 
+#[test]
+fn cannot_create_ruid_non_fungible_and_mint_non_ruid() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_ruid_non_fungible_and_mint_non_ruid",
+            manifest_args!(),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidNonFungibleIdType
+            ))
+        )
+    });
+}
+
 #[derive(ManifestSbor, ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
@@ -1060,7 +1094,7 @@ fn cant_mint_non_fungible_that_already_exists() {
 }
 
 #[test]
-fn create_non_fungible_with_address_reservation() {
+fn create_non_fungible_with_integer_address_reservation() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -1073,6 +1107,33 @@ fn create_non_fungible_with_address_reservation() {
             package,
             "NonFungibleTest",
             "create_non_fungible_integer_with_address_reservation",
+            manifest_args!(),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn create_non_fungible_integer() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_non_fungible_integer",
             manifest_args!(),
         )
         .try_deposit_entire_worktop_or_abort(account, None)
@@ -1100,6 +1161,33 @@ fn create_non_fungible_ruid_with_address_reservation() {
             package,
             "NonFungibleTest",
             "create_non_fungible_ruid_with_address_reservation",
+            manifest_args!(),
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn create_non_fungible_ruid() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_non_fungible_ruid",
             manifest_args!(),
         )
         .try_deposit_entire_worktop_or_abort(account, None)
