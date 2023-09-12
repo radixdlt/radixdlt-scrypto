@@ -1083,6 +1083,26 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
+    pub fn close_all_substates<S: CommitableSubstateStore>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+    ) -> Result<(), CloseSubstateError> {
+
+        // Closing of all substates should always be possible as no invariant needs to be maintained
+        for (_lock_handle, mut open_substate) in self.open_substates.drain(..) {
+            substate_io.close_substate(open_substate.global_substate_handle)?;
+            let diff = open_substate.diff_on_close();
+            Self::apply_diff_to_open_substate(
+                &mut self.transient_references,
+                substate_io,
+                &mut open_substate,
+                &diff,
+            );
+        }
+
+        Ok(())
+    }
+
     pub fn get_handle_info(&self, lock_handle: SubstateHandle) -> Option<L> {
         self.open_substates
             .get(&lock_handle)
@@ -1302,18 +1322,6 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(substates)
     }
 
-    pub fn close_all_substates<S: CommitableSubstateStore>(
-        &mut self,
-        substate_io: &mut SubstateIO<S>,
-    ) -> Result<(), CloseSubstateError> {
-        let lock_handles: Vec<SubstateHandle> = self.open_substates.keys().cloned().collect();
-
-        for lock_handle in lock_handles {
-            self.close_substate(substate_io, lock_handle)?;
-        }
-
-        Ok(())
-    }
 
     pub fn owned_nodes(&self) -> Vec<NodeId> {
         self.owned_root_nodes.clone().into_iter().collect()
