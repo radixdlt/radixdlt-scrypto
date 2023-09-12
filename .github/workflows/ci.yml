@@ -109,7 +109,7 @@ jobs:
         cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
     - name: build
-        run: cargo build
+      run: cargo build
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
@@ -144,7 +144,7 @@ jobs:
         cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
     - name: build
-        run: cargo build
+      run: cargo build
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p scrypto-derive-tests
@@ -336,7 +336,8 @@ jobs:
         rustup component add llvm-tools
         cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
+    - name: build
+      run: cargo build
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p transaction
@@ -357,7 +358,8 @@ jobs:
         rustup component add llvm-tools
         cargo install cargo-llvm-cov
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
+    - name: build
+      run: cargo build
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p transaction-scenarios
