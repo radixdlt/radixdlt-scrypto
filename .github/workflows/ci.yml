@@ -140,4 +140,50 @@ jobs:
       with:
         flags: -p scrypto-derive-tests --no-default-features --features alloc
         coverage_report_name: scrypto-derive-tests-coverage
-  
+ 
+  scrypto-examples:
+    name: Run Scrypto examples
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.70.0-bullseye
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - name: setup the container
+      run: |
+        apt update && apt install -y clang llvm cmake build-essential
+        rustup component add llvm-tools
+        cargo install cargo-llvm-cov cargo-nextest
+        rustup target add wasm32-unknown-unknown
+        rustup +nightly target add wasm32-unknown-unknown
+    - name: Build faucet
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: assets/blueprints/faucet
+    - name: Build radiswap
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: assets/blueprints/radiswap
+    - name: Build no-std
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/no-std
+    - name: Build and test hello-world
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+      working-directory: examples/hello-world
+    - name: Build and test everything
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+      working-directory: examples/everything
+
+  scrypto-stubs:
+    name: Check Scrypto Stubs
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.70.0-bullseye
+    env:
+      CARGO_LOG: info
+    steps:
+    - uses: actions/checkout@v3
+    - name: setup the container
+      run: |
+        apt update && apt install -y clang llvm cmake build-essential
+        rustup component add llvm-tools
+    - run: ./check_stubs.sh
