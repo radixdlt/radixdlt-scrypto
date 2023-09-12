@@ -1,4 +1,3 @@
-//use super::compute_state_tree_update;
 use crate::hash_tree::tree_store::{
     encode_key, NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
 };
@@ -11,7 +10,8 @@ use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Direction, IteratorMode,
     SingleThreaded, WriteBatch, DB,
 };
-use sbor::prelude::*;
+use sbor::rust::prelude::*;
+use sbor::HasLatestVersion;
 use std::path::PathBuf;
 
 mod state_tree;
