@@ -91,6 +91,9 @@ pub const MAX_EVENT_NAME_LEN: usize = 100;
 /// The max length of a registered type name
 pub const MAX_TYPE_NAME_LEN: usize = 100;
 
+/// The max length of a blueprint identifier
+pub const MAX_BLUEPRINT_NAME_LEN: usize = 100;
+
 /// The max length of a function name
 pub const MAX_FUNCTION_NAME_LEN: usize = 256;
 

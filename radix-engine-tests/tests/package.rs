@@ -392,7 +392,7 @@ fn name_validation_blueprint() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidName(..)
+                PackageError::InvalidName { .. }
             ))
         )
     });
@@ -425,51 +425,7 @@ fn name_validation_feature_set() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidName(..)
-            ))
-        )
-    });
-}
-
-#[test]
-fn name_validation_function() {
-    // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-
-    let (code, mut definition) = PackageLoader::get("publish_package");
-
-    definition
-        .blueprints
-        .values_mut()
-        .next()
-        .unwrap()
-        .schema
-        .functions
-        .functions
-        .insert(
-            String::from("self"),
-            FunctionSchemaInit {
-                receiver: None,
-                input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
-                output: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
-                export: String::from("self"),
-            },
-        );
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
-        .build();
-
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidName(..)
+                PackageError::InvalidName { .. }
             ))
         )
     });
@@ -513,4 +469,212 @@ fn well_known_types_in_schema_are_validated() {
             ))
         )
     });
+}
+
+#[test]
+fn publishing_of_package_with_blueprint_name_exceeding_length_limit_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    let (_, value) = definition.blueprints.pop().unwrap();
+    definition
+        .blueprints
+        .insert(name(MAX_BLUEPRINT_NAME_LEN + 1, 'A'), value);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::ExceededMaxBlueprintNameLen {
+                    limit: 100,
+                    actual: 101
+                }
+            ))
+        )
+    })
+}
+
+#[test]
+fn publishing_of_package_where_outer_blueprint_is_inner_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    let (bp_name1, mut bp_definition1) = definition.blueprints.pop().unwrap();
+    let (bp_name2, mut bp_definition2) = definition.blueprints.pop().unwrap();
+
+    bp_definition1.blueprint_type = BlueprintType::Inner {
+        outer_blueprint: "NoneExistent".to_owned(),
+    };
+    bp_definition2.blueprint_type = BlueprintType::Inner {
+        outer_blueprint: bp_name1.clone(),
+    };
+
+    definition.blueprints.insert(bp_name2, bp_definition2);
+    definition.blueprints.insert(bp_name1, bp_definition1);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::OuterBlueprintCantBeAnInnerBlueprint { .. }
+            ))
+        )
+    })
+}
+
+#[test]
+fn publishing_of_package_where_outer_blueprint_is_self_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    let (bp_name, mut bp_definition) = definition.blueprints.pop().unwrap();
+    bp_definition.blueprint_type = BlueprintType::Inner {
+        outer_blueprint: bp_name.clone(),
+    };
+    definition.blueprints.insert(bp_name, bp_definition);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::MissingOuterBlueprint
+            ))
+        )
+    })
+}
+
+#[test]
+fn publishing_of_package_with_transient_blueprints_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    definition
+        .blueprints
+        .values_mut()
+        .for_each(|def| def.is_transient = true);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::WasmUnsupported(..)
+            ))
+        )
+    })
+}
+
+#[test]
+fn publishing_of_package_with_whitespace_in_blueprint_name_fails() {
+    test_publishing_of_packages_with_invalid_names("\nHelloWorld")
+}
+
+#[test]
+fn publishing_of_package_with_number_at_start_of_blueprint_name_fails() {
+    test_publishing_of_packages_with_invalid_names("1000HelloWorld")
+}
+
+#[test]
+fn publishing_of_package_with_a_hidden_ascii_character_fails() {
+    test_publishing_of_packages_with_invalid_names("World")
+}
+
+#[test]
+fn publishing_of_package_with_a_lookalike_character_fails() {
+    test_publishing_of_packages_with_invalid_names("depοsit")
+}
+
+fn test_publishing_of_packages_with_invalid_names(name: &str) {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+
+    let (_, value) = definition.blueprints.pop().unwrap();
+    definition.blueprints.insert(name.to_owned(), value);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidName { .. }
+            ))
+        )
+    })
+}
+
+fn name(len: usize, chr: char) -> String {
+    (0..len).map(|_| chr).collect()
 }
