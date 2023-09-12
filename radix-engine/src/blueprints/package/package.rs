@@ -24,7 +24,7 @@ use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::system::node_modules::role_assignment::*;
 use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::*;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -59,6 +59,7 @@ pub enum PackageError {
     InvalidLocalTypeId(LocalTypeId),
     InvalidGenericId(u8),
     EventGenericTypeNotSupported,
+    RoleAssignmentError(RoleAssignmentError),
 
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
@@ -394,6 +395,12 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                         });
                     }
                 }
+
+                functions
+                    .values()
+                    .map(RoleAssignmentNativePackage::verify_access_rule)
+                    .collect::<Result<_, _>>()
+                    .map_err(PackageError::RoleAssignmentError)?;
             }
         }
 
