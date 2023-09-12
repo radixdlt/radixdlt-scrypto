@@ -140,3 +140,24 @@ pub struct Sandwich {
     #[mutable]
     pub own: Option<Own>,
 }
+
+#[blueprint]
+mod role_assignment_of_role_assignment {
+    struct RoleAndRole {}
+
+    impl RoleAndRole {
+        pub fn set_role_of_role_assignment() {
+            let mut init = RoleAssignmentInit::new();
+            init.define_role("test", rule!(allow_all));
+
+            let role_assignment = RoleAssignment::new(
+                OwnerRole::Updatable(rule!(allow_all)),
+                indexmap!(
+                    ModuleId::RoleAssignment => init,
+                ),
+            );
+
+            role_assignment.set_role("test", rule!(deny_all));
+        }
+    }
+}

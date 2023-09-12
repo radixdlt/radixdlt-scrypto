@@ -108,6 +108,14 @@ impl RoleAssignment {
     pub fn get_component_royalties_role(&self, name: &str) -> Option<AccessRule> {
         self.internal_get_role(ModuleId::Royalty, name)
     }
+
+    pub fn set_role_assignment_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.internal_set_role(ModuleId::RoleAssignment, name, rule);
+    }
+
+    pub fn get_role_assignment_role(&self, name: &str) -> Option<AccessRule> {
+        self.internal_get_role(ModuleId::RoleAssignment, name)
+    }
 }
 
 impl Attachable for RoleAssignment {
