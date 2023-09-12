@@ -1,7 +1,7 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
-    CallFrameMessage, CreateFrameError, CreateNodeError, PassMessageError, ProcessSubstateError,
-    TakeNodeError,
+    CallFrameMessage, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError,
+    ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
@@ -238,6 +238,8 @@ impl KernelCallbackObject for TestCallbackObject {
 
 enum MoveNodeVariation {
     Create,
+    Write,
+    MovePartition,
     Invoke,
 }
 
@@ -255,7 +257,7 @@ fn kernel_move_node_via_create_with_opened_substate(
     };
     let mut kernel = kernel_boot.create_kernel_for_test_only();
 
-    let (child_id, handle) = {
+    let (child_id, _handle) = {
         let child_id = kernel
             .kernel_allocate_node_id(EntityType::InternalKeyValueStore)
             .unwrap();
@@ -288,7 +290,43 @@ fn kernel_move_node_via_create_with_opened_substate(
                 )
             );
             kernel.kernel_create_node(node_id, substates)?;
-            kernel.kernel_read_substate(handle)?;
+        }
+        MoveNodeVariation::Write => {
+            let node_id = kernel
+                .kernel_allocate_node_id(EntityType::GlobalAccount)
+                .unwrap();
+            let substates = btreemap!(
+                PartitionNumber(0u8) => btreemap!(
+                    SubstateKey::Field(0u8) => IndexedScryptoValue::from_typed(&())
+                )
+            );
+            kernel.kernel_create_node(node_id, substates)?;
+            let handle = kernel.kernel_open_substate(
+                &node_id,
+                PartitionNumber(0u8),
+                &SubstateKey::Field(0u8),
+                LockFlags::MUTABLE,
+                (),
+            )?;
+            kernel
+                .kernel_write_substate(handle, IndexedScryptoValue::from_typed(&Own(child_id)))?;
+        }
+        MoveNodeVariation::MovePartition => {
+            let node_id = kernel
+                .kernel_allocate_node_id(EntityType::GlobalAccount)
+                .unwrap();
+            let substates = btreemap!(
+                PartitionNumber(0u8) => btreemap!(
+                    SubstateKey::Field(0u8) => IndexedScryptoValue::from_typed(&())
+                )
+            );
+            kernel.kernel_create_node(node_id, substates)?;
+            kernel.kernel_move_partition(
+                &child_id,
+                PartitionNumber(0u8),
+                &node_id,
+                PartitionNumber(0u8),
+            )?;
         }
         MoveNodeVariation::Invoke => {
             let invocation = KernelInvocation {
@@ -311,6 +349,31 @@ fn test_kernel_move_node_via_create_with_opened_substate() {
             CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
                 ProcessSubstateError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
             ))
+        )))
+    ));
+}
+
+#[test]
+fn test_kernel_move_node_via_write_with_opened_substate() {
+    let result = kernel_move_node_via_create_with_opened_substate(MoveNodeVariation::Write);
+    assert!(matches!(
+        result,
+        Err(RuntimeError::KernelError(KernelError::CallFrameError(
+            CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
+                ProcessSubstateError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
+            ))
+        )))
+    ));
+}
+
+#[test]
+fn test_kernel_move_node_via_move_partition_with_opened_substate() {
+    let result = kernel_move_node_via_create_with_opened_substate(MoveNodeVariation::MovePartition);
+    println!("{:?}", result);
+    assert!(matches!(
+        result,
+        Err(RuntimeError::KernelError(KernelError::CallFrameError(
+            CallFrameError::MovePartitionError(MovePartitionError::SubstateBorrowed(..))
         )))
     ));
 }
