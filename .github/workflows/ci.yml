@@ -223,11 +223,11 @@ jobs:
     runs-on: k8s-linux-runner
     steps:
       - uses: actions/checkout@v3
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
         with:
           install_wasm: "true"
           install_simulator: "true"
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
           coverage_report_name: radix-engine-coverage
@@ -244,13 +244,14 @@ jobs:
       CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
       with:
         install_wasm: "true"
         install_simulator: "true"
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time --release
+        coverage_report_name: radix-engine-release-coverage
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
@@ -259,13 +260,14 @@ jobs:
       CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
       with:
         install_wasm: "true"
         install_simulator: "true"
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: --no-default-features --features alloc -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+        coverage_report_name: radix-engine-no-std-coverage
 
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
@@ -274,13 +276,14 @@ jobs:
       CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
       with:
         install_wasm: "true"
         install_simulator: "true"
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with: 
         flags: --features wasmer -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+        coverage_report_name: radix-engine-wasmer-coverage
 
   radix-engine-bench:
     name: Run Radix Engine benchmarks
