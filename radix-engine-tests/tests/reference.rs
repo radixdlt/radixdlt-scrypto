@@ -460,7 +460,7 @@ fn test_add_local_ref_to_stored_substate() {
 
 #[test]
 fn test_internal_typed_reference() {
-    // Basic setup
+    // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource = test_runner.create_recallable_token(account);
@@ -468,11 +468,9 @@ fn test_internal_typed_reference() {
         .get_component_vaults(account, resource)
         .pop()
         .unwrap();
-
-    // Publish package
     let package_address = test_runner.publish_package_simple(PackageLoader::get("reference"));
 
-    // Instantiate component
+    // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -487,5 +485,6 @@ fn test_internal_typed_reference() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
+    // Assert
     receipt.expect_commit_success();
 }
