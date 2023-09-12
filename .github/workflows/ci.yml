@@ -196,17 +196,21 @@ jobs:
 
   radix-engine-build:
     name: Run Radix Engine build (RocksDB)
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential pkg-config libfreetype6-dev libfontconfig1-dev
-        rustup component add llvm-tools
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
+    - name: Install dependency
+      run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
     - name: Build with resource tracking
       run: cargo build --features resource_tracker
     - name: Build with rocksdb
