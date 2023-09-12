@@ -114,7 +114,7 @@ pub enum SystemNodeCheckError {
     InvalidCondition,
     MissingBlueprint(SystemReaderError),
     InvalidOuterObject,
-    TransientObjectFound,
+    TransientObjectFound(BlueprintId),
     FoundModuleWithConditionalFields,
     FoundGlobalAddressPhantom,
     FoundGlobalAddressReservation,
@@ -300,7 +300,9 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                 };
 
                 if bp_definition.interface.is_transient {
-                    return Err(SystemNodeCheckError::TransientObjectFound);
+                    return Err(SystemNodeCheckError::TransientObjectFound(
+                        object_info.blueprint_info.blueprint_id,
+                    ));
                 }
 
                 let mut expected_fields = BTreeSet::new();

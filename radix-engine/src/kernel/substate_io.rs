@@ -61,7 +61,7 @@ pub struct SubstateIO<'g, S: CommitableSubstateStore> {
     pub non_global_node_refs: NonGlobalNodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
     pub heap_transient_substates: TransientSubstates,
-    pub pinned_nodes: BTreeSet<NodeId>,
+    pub pinned_to_heap: BTreeSet<NodeId>,
 }
 
 impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
@@ -72,7 +72,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
             non_global_node_refs: NonGlobalNodeRefs::new(),
             substate_locks: SubstateLocks::new(),
             heap_transient_substates: TransientSubstates::new(),
-            pinned_nodes: BTreeSet::new(),
+            pinned_to_heap: BTreeSet::new(),
         }
     }
 
@@ -162,7 +162,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                 )));
             }
 
-            if self.pinned_nodes.contains(&node_id) {
+            if self.pinned_to_heap.contains(&node_id) {
                 return Err(CallbackError::Error(
                     PersistNodeError::CannotPersistPinnedNode(node_id),
                 ));
