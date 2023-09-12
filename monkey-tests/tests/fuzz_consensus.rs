@@ -1,6 +1,6 @@
-use resource_tests::consensus_manager::ConsensusManagerFuzzAction;
-use resource_tests::validator::ValidatorFuzzAction;
-use resource_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
+use monkey_tests::consensus_manager::ConsensusManagerFuzzAction;
+use monkey_tests::validator::ValidatorFuzzAction;
+use monkey_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
 
 #[test]
 fn fuzz_consensus() {

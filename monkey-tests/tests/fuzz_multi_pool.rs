@@ -1,6 +1,6 @@
+use monkey_tests::multi_pool::MultiPoolFuzzAction;
+use monkey_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
 use radix_engine::types::*;
-use resource_tests::multi_pool::MultiPoolFuzzAction;
-use resource_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
 
 #[test]
 fn fuzz_multi_pool() {

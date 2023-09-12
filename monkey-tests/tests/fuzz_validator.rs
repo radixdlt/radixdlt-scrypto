@@ -1,6 +1,6 @@
+use monkey_tests::validator::ValidatorFuzzAction;
+use monkey_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
 use radix_engine::types::*;
-use resource_tests::validator::ValidatorFuzzAction;
-use resource_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
 
 #[test]
 fn fuzz_validator() {

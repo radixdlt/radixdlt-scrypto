@@ -1,9 +1,9 @@
-use radix_engine::types::*;
-use resource_tests::resource::{
+use monkey_tests::resource::{
     FungibleResourceFuzzGetBucketAction, ResourceFuzzTransformBucketAction,
     ResourceFuzzUseBucketAction,
 };
-use resource_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
+use monkey_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
+use radix_engine::types::*;
 
 #[test]
 fn fuzz_fungible_resource() {
