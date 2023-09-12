@@ -130,6 +130,42 @@ fn test_globalize_with_unflushed_another_own() {
 }
 
 #[test]
+fn test_globalize_with_unflushed_another_own_v2() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "GlobalizeUnflushed",
+            "globalize_with_unflushed_another_own_v2",
+            manifest_args![],
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
+                    ProcessSubstateError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
+                ))
+            ))
+        )
+    });
+}
+
+#[test]
 fn test_call() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
