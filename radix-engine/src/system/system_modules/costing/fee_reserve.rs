@@ -297,10 +297,6 @@ impl SystemLoanFeeReserve {
         transmute_u128_as_decimal(self.usd_price)
     }
 
-    pub fn state_storage_price(&self) -> Decimal {
-        transmute_u128_as_decimal(self.state_storage_price)
-    }
-
     pub fn tip_percentage(&self) -> u32 {
         self.tip_percentage.into()
     }
