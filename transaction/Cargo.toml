@@ -31,7 +31,12 @@ serde = ["serde/derive"]
 dump_manifest_to_file = []
 
 # This flag is set by fuzz-tests framework
-radix_engine_fuzzing = []
+radix_engine_fuzzing = [
+    "sbor/radix_engine_fuzzing",
+    "utils/radix_engine_fuzzing",
+    "radix-engine-interface/radix_engine_fuzzing",
+    "radix-engine-common/radix_engine_fuzzing",
+]
 
 [lib]
 doctest = false

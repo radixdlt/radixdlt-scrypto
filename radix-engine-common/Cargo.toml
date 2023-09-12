@@ -46,7 +46,7 @@ alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", 
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
-radix_engine_fuzzing = ["arbitrary", "bnum/arbitrary"]
+radix_engine_fuzzing = ["arbitrary", "bnum/arbitrary", "sbor/radix_engine_fuzzing", "utils/radix_engine_fuzzing"]
 
 resource_tracker=[]
 full_math_benches = [ "dep:rug", "dep:ethnum"]
