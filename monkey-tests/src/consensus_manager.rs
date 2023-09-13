@@ -1,4 +1,4 @@
-use crate::{TestFuzzer, ValidatorMeta};
+use crate::{SystemTestFuzzer, ValidatorMeta};
 use radix_engine_common::constants::{CONSENSUS_MANAGER, XRD};
 use radix_engine_common::prelude::ComponentAddress;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -19,7 +19,7 @@ impl ConsensusManagerFuzzAction {
         &self,
         uuid: u64,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         _validators: &Vec<ValidatorMeta>,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {

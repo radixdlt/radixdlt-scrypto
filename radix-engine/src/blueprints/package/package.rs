@@ -51,6 +51,10 @@ pub enum PackageError {
         expected: String,
         actual: Option<String>,
     },
+    TypeNameMismatch {
+        expected: String,
+        actual: Option<String>,
+    },
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
@@ -169,7 +173,7 @@ fn validate_package_schema(
         validate_schema(bp_schema.schema.v1())
             .map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
-        if bp_schema.state.fields.len() > 0xff {
+        if bp_schema.state.fields.len() > MAX_NUMBER_OF_BLUEPRINT_FIELDS {
             return Err(PackageError::TooManySubstateSchemas);
         }
 
@@ -189,6 +193,10 @@ fn validate_package_schema(
                                 return Err(PackageError::FeatureDoesNotExist(feature.clone()));
                             }
                         } else {
+                            // It's impossible for us to get to this point here. We have checked
+                            // earlier in this same function that each inner blueprint has an outer
+                            // blueprint. Thus, we can't get to this point if this invariant was not
+                            // upheld.
                             return Err(PackageError::FeatureDoesNotExist(feature.clone()));
                         }
                     }
@@ -344,13 +352,27 @@ fn validate_type_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
         let blueprint_schema_init = &blueprint_init.schema;
         let BlueprintSchemaInit { schema, types, .. } = blueprint_schema_init;
 
-        for (_name_ignored, local_type_id) in types.type_schema.iter() {
+        for (expected_type_name, local_type_id) in types.type_schema.iter() {
             if schema.v1().resolve_type_kind(*local_type_id).is_none() {
                 return Err(PackageError::InvalidLocalTypeId(*local_type_id));
             }
 
+            // Checking that the type name is indeed what the user claims it to be
+            let actual_type_name = schema.v1().resolve_type_metadata(*local_type_id).map_or(
+                Err(PackageError::FailedToResolveLocalSchema {
+                    local_type_id: *local_type_id,
+                }),
+                |metadata| Ok(metadata.get_name_string()),
+            )?;
+
+            if Some(expected_type_name) != actual_type_name.as_ref() {
+                Err(PackageError::TypeNameMismatch {
+                    expected: expected_type_name.to_string(),
+                    actual: actual_type_name,
+                })?
+            }
+
             // Notes:
-            // - We're not enforcing the "type name" matches the names in type definition
             // - The "type name" length check is done within `validate_names`
         }
     }

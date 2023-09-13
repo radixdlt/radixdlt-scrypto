@@ -20,6 +20,7 @@ pub trait HasMetadata {
         name: K,
     ) -> Result<Option<V>, MetadataConversionError>;
     fn remove_metadata<K: ToString>(&self, name: K) -> bool;
+    fn lock_metadata<K: ToString>(&self, name: K);
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -145,5 +146,14 @@ impl Metadata {
         );
 
         rtn
+    }
+
+    pub fn lock<K: ToString>(&self, name: K) {
+        let _: () = self.call(
+            METADATA_LOCK_IDENT,
+            &MetadataLockInput {
+                key: name.to_string(),
+            },
+        );
     }
 }

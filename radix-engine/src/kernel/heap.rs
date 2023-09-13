@@ -32,7 +32,7 @@ impl Heap {
         self.nodes.is_empty()
     }
 
-    pub fn remove_module<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
+    pub fn remove_partition<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
@@ -41,14 +41,14 @@ impl Heap {
         BTreeMap<SubstateKey, IndexedScryptoValue>,
         CallbackError<HeapRemovePartitionError, E>,
     > {
-        if let Some(modules) = self.nodes.get_mut(node_id) {
-            let module = modules
+        if let Some(substates) = self.nodes.get_mut(node_id) {
+            let partition = substates
                 .remove(&partition_number)
                 .ok_or(CallbackError::Error(
                     HeapRemovePartitionError::ModuleNotFound(partition_number),
                 ))?;
 
-            for (substate_key, substate_value) in &module {
+            for (substate_key, substate_value) in &partition {
                 on_io_access(
                     self,
                     IOAccess::HeapSubstateUpdated {
@@ -64,7 +64,7 @@ impl Heap {
                 .map_err(CallbackError::CallbackError)?;
             }
 
-            Ok(module)
+            Ok(partition)
         } else {
             Err(CallbackError::Error(
                 HeapRemovePartitionError::NodeNotFound(node_id.clone()),
@@ -82,7 +82,7 @@ impl Heap {
         self.nodes
             .get(node_id)
             .and_then(|node| node.get(&partition_num))
-            .and_then(|module_substates| module_substates.get(substate_key))
+            .and_then(|partition_substates| partition_substates.get(substate_key))
     }
 
     /// Inserts or overwrites a substate
@@ -444,7 +444,7 @@ mod tests {
             .unwrap();
         heap.remove_substate(&node_id, partition_number2, &key2, &mut on_io_access)
             .unwrap();
-        heap.remove_module(&node_id, partition_number2, &mut on_io_access)
+        heap.remove_partition(&node_id, partition_number2, &mut on_io_access)
             .unwrap();
         heap.remove_node(&node_id, &mut on_io_access).unwrap();
         assert_eq!(total_size, 0);

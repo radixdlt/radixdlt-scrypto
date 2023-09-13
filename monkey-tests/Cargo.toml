@@ -1,5 +1,5 @@
 [package]
-name = "resource-tests"
+name = "monkey-tests"
 version = "0.13.0"
 edition = "2021"
 

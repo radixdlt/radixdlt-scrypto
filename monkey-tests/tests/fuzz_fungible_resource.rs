@@ -1,15 +1,15 @@
-use radix_engine::types::*;
-use resource_tests::resource::{
+use monkey_tests::resource::{
     FungibleResourceFuzzGetBucketAction, ResourceFuzzTransformBucketAction,
     ResourceFuzzUseBucketAction,
 };
-use resource_tests::{FuzzAction, FuzzTest, TestFuzzer, TxnFuzzer};
+use monkey_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
+use radix_engine::types::*;
 
 #[test]
 fn fuzz_fungible_resource() {
     struct FungibleResourceFuzzer;
     impl TxnFuzzer for FungibleResourceFuzzer {
-        fn next_txn_intent(fuzzer: &mut TestFuzzer) -> Vec<FuzzAction> {
+        fn next_txn_intent(fuzzer: &mut SystemTestFuzzer) -> Vec<FuzzAction> {
             let action1: FungibleResourceFuzzGetBucketAction =
                 FungibleResourceFuzzGetBucketAction::from_repr(fuzzer.next_u8(4u8)).unwrap();
 
