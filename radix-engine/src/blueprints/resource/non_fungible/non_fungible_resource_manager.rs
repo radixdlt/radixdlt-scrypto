@@ -699,69 +699,15 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let (generic_args, mutable_field_index) =
-            Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
-
-        let mutable_fields = NonFungibleResourceManagerMutableFields {
-            mutable_field_index,
-        };
-
-        let supply: Decimal = Decimal::from(entries.len());
-
         let ids: IndexSet<NonFungibleLocalId> = entries.keys().cloned().collect();
 
-        let mut non_fungibles = index_map_new();
-        for (id, (value,)) in entries {
-            if id.id_type() != id_type {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                            id.id_type(),
-                            id_type,
-                        ),
-                    ),
-                ));
-            }
-
-            let kv_entry = KVEntry {
-                value: Some(scrypto_encode(&value).unwrap()),
-                locked: false,
-            };
-
-            non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
-        }
-
-        let (mut features, roles) = to_features_and_roles(resource_roles);
-        features.track_total_supply = track_total_supply;
-
-        let mut fields = indexmap! {
-            NonFungibleResourceManagerField::IdType.into() => FieldValue::immutable(&NonFungibleResourceManagerIdTypeFieldPayload::from_content_source(id_type)),
-            NonFungibleResourceManagerField::MutableFields.into() => FieldValue::immutable(&NonFungibleResourceManagerMutableFieldsFieldPayload::from_content_source(mutable_fields)),
-        };
-
-        if track_total_supply {
-            let total_supply_field = if features.mint || features.burn {
-                FieldValue::new(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
-                )
-            } else {
-                FieldValue::immutable(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
-                )
-            };
-
-            fields.insert(
-                NonFungibleResourceManagerField::TotalSupply.into(),
-                total_supply_field,
-            );
-        }
-
-        let object_id = api.new_object(
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.feature_names_str(),
-            generic_args,
-            fields,
-            indexmap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
+        let (object_id, roles) = Self::create_object(
+            id_type,
+            entries,
+            track_total_supply,
+            non_fungible_schema,
+            resource_roles,
+            api,
         )?;
 
         let address_reservation = match address_reservation {
@@ -810,8 +756,26 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let (generic_args, mutable_field_index) =
-            Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
+        let entries: Result<IndexMap<NonFungibleLocalId, (ScryptoValue,)>, RuntimeError> = entries
+            .into_iter()
+            .map(|e| {
+                let ruid = Runtime::generate_ruid(api)?;
+                let id = NonFungibleLocalId::ruid(ruid);
+                Ok((id, e))
+            })
+            .collect();
+        let entries = entries?;
+
+        let ids: IndexSet<NonFungibleLocalId> = entries.keys().cloned().collect();
+
+        let (object_id, roles) = Self::create_object(
+            NonFungibleIdType::RUID,
+            entries,
+            track_total_supply,
+            non_fungible_schema,
+            resource_roles,
+            api,
+        )?;
 
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
@@ -823,57 +787,6 @@ impl NonFungibleResourceManagerBlueprint {
                 reservation
             }
         };
-
-        let mut ids = index_set_new();
-        let mut non_fungibles = index_map_new();
-        let supply = Decimal::from(entries.len());
-        for (entry,) in entries {
-            let ruid = Runtime::generate_ruid(api)?;
-            let id = NonFungibleLocalId::ruid(ruid);
-            ids.insert(id.clone());
-            let kv_entry = KVEntry {
-                value: Some(scrypto_encode(&entry).unwrap()),
-                locked: false,
-            };
-            non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
-        }
-
-        let mutable_fields = NonFungibleResourceManagerMutableFields {
-            mutable_field_index,
-        };
-
-        let (mut features, roles) = to_features_and_roles(resource_roles);
-        features.track_total_supply = track_total_supply;
-
-        let mut fields = indexmap! {
-            NonFungibleResourceManagerField::IdType.into() => FieldValue::immutable(&NonFungibleResourceManagerIdTypeFieldPayload::from_content_source(NonFungibleIdType::RUID)),
-            NonFungibleResourceManagerField::MutableFields.into() => FieldValue::immutable(&NonFungibleResourceManagerMutableFieldsFieldPayload::from_content_source(mutable_fields)),
-        };
-
-        if track_total_supply {
-            let total_supply_field = if features.mint || features.burn {
-                FieldValue::new(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
-                )
-            } else {
-                FieldValue::immutable(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
-                )
-            };
-
-            fields.insert(
-                NonFungibleResourceManagerField::TotalSupply.into(),
-                total_supply_field,
-            );
-        }
-
-        let object_id = api.new_object(
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.feature_names_str(),
-            generic_args,
-            fields,
-            indexmap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
-        )?;
 
         let (resource_address, bucket) = globalize_object_with_inner_object_and_event(
             object_id,
@@ -1351,15 +1264,11 @@ impl NonFungibleResourceManagerBlueprint {
         if track_total_supply {
             let total_supply_field = if features.mint || features.burn {
                 FieldValue::new(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                        supply,
-                    ),
+                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
                 )
             } else {
                 FieldValue::immutable(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                        supply,
-                    ),
+                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
                 )
             };
 
