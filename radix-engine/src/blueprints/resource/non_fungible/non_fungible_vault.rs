@@ -594,7 +594,6 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn create_proof_of_non_fungibles<Y>(
-        receiver: &NodeId,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
@@ -604,10 +603,11 @@ impl NonFungibleVaultBlueprint {
         Self::lock_non_fungibles(&ids, api)?;
 
         let proof_info = ProofMoveableSubstate { restricted: false };
+        let receiver = Runtime::get_node_id(api)?;
         let proof_evidence = NonFungibleProofSubstate::new(
             ids.clone(),
             indexmap!(
-                LocalRef::Vault(Reference(receiver.clone().into()))=> ids
+                LocalRef::Vault(Reference(receiver.into()))=> ids
             ),
         )
         .map_err(|e| {

@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
@@ -127,7 +128,6 @@ impl NonFungibleBucketBlueprint {
     }
 
     pub fn create_proof_of_non_fungibles<Y>(
-        receiver: &NodeId,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
@@ -137,10 +137,11 @@ impl NonFungibleBucketBlueprint {
         Self::lock_non_fungibles(&ids, api)?;
 
         let proof_info = ProofMoveableSubstate { restricted: false };
+        let receiver = Runtime::get_node_id(api)?;
         let proof_evidence = NonFungibleProofSubstate::new(
             ids.clone(),
             indexmap!(
-                LocalRef::Bucket(Reference(receiver.clone())) => ids
+                LocalRef::Bucket(Reference(receiver)) => ids
             ),
         )
         .map_err(|e| {
@@ -158,11 +159,11 @@ impl NonFungibleBucketBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-    pub fn create_proof_of_all<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
+    pub fn create_proof_of_all<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        Self::create_proof_of_non_fungibles(receiver, Self::get_non_fungible_local_ids(api)?, api)
+        Self::create_proof_of_non_fungibles(Self::get_non_fungible_local_ids(api)?, api)
     }
 
     //===================
