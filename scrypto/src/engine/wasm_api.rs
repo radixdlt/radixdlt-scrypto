@@ -101,7 +101,7 @@ pub mod object {
         ) -> u32;
 
          /// Get the Blueprint Identifier of a given object
-         pub fn object_blueprint_id(
+         pub fn object_get_blueprint_id(
             obj_id_ptr: *const u8,
             obj_id_len: usize,
         ) -> Buffer;

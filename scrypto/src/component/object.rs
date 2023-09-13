@@ -55,6 +55,6 @@ pub trait ObjectStub: Copy {
     }
 
     fn blueprint_id(&self) -> BlueprintId {
-        ScryptoVmV1Api::object_blueprint_id(self.handle().as_node_id())
+        ScryptoVmV1Api::object_get_blueprint_id(self.handle().as_node_id())
     }
 }

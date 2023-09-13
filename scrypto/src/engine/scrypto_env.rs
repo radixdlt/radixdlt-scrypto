@@ -89,9 +89,9 @@ impl ScryptoVmV1Api {
         rtn == 1
     }
 
-    pub fn object_blueprint_id(node_id: &NodeId) -> BlueprintId {
+    pub fn object_get_blueprint_id(node_id: &NodeId) -> BlueprintId {
         let bytes = copy_buffer(unsafe {
-            object::object_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+            object::object_get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
 
         BlueprintId {

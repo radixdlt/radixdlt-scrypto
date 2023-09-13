@@ -1006,7 +1006,7 @@ impl WasmiModule {
             },
         );
 
-        let host_blueprint_id = Func::wrap(
+        let host_get_blueprint_id = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              object_id_ptr: u32,
@@ -1288,7 +1288,11 @@ impl WasmiModule {
             host_globalize_object
         );
         linker_define!(linker, OBJECT_INSTANCE_OF_FUNCTION_NAME, host_instance_of);
-        linker_define!(linker, OBJECT_BLUEPRINT_ID_FUNCTION_NAME, host_blueprint_id);
+        linker_define!(
+            linker,
+            OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME,
+            host_get_blueprint_id
+        );
         linker_define!(
             linker,
             OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME,
