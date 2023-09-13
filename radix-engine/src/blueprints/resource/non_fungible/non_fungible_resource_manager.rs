@@ -4,6 +4,7 @@ use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
+use core::ops::Neg;
 use native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -15,7 +16,6 @@ use radix_engine_interface::api::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
-use std::ops::Neg;
 
 declare_native_blueprint_state! {
     blueprint_ident: NonFungibleResourceManager,
