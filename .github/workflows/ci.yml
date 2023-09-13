@@ -10,6 +10,7 @@ on:
       - betanet
       - release\/*
   pull_request:
+    # Run on PR against any branch
 
 env:
   CARGO_TERM_COLOR: always
@@ -36,7 +37,6 @@ jobs:
       run: rm -fr ~/.cargo/registry
     - name: Check format
       run: bash ./check.sh
-
   sbor-unit-tests:
     name: Run SBOR unit tests
     runs-on: ${{ matrix.os }}
@@ -46,19 +46,19 @@ jobs:
       matrix:
         os: [k8s-linux-runner]
     steps:
-      - uses: actions/checkout@v3
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-        with:
-          tests-dir: sbor
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-        with:
-          tests-dir: sbor
-          flags: --no-default-features --features alloc
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-        with:
-          tests-dir: sbor-derive-common
-
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: Run tests
+      run: cargo test
+      working-directory: sbor
+    - name: Run tests (no_std)
+      run: cargo test --no-default-features --features alloc
+      working-directory: sbor
+    - name: Run derive tests
+      run: cargo test
+      working-directory: sbor-derive-common
   sbor-integration-tests:
     name: Run SBOR integration tests
     runs-on: ${{ matrix.os }}
@@ -68,19 +68,19 @@ jobs:
       matrix:
         os: [k8s-linux-runner]
     steps:
-      - uses: actions/checkout@v3
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-        with:
-          tests-dir: sbor-tests
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-        with:
-          tests-dir: sbor-tests
-          flags: --no-default-features --features alloc
-      - name: Run bench
-        run: cargo bench
-        working-directory: sbor-tests
-
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: Run tests
+      run: cargo test
+      working-directory: sbor-tests
+    - name: Run tests (no_std)
+      run: cargo test --no-default-features --features alloc
+      working-directory: sbor-tests
+    - name: Run bench
+      run: cargo bench
+      working-directory: sbor-tests
   scrypto-unit-tests:
     name: Run Scrypto unit tests
     runs-on: ${{ matrix.os }}
@@ -91,21 +91,21 @@ jobs:
         os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
+    - uses: actions-rs/toolchain@v1
       with:
-        tests-dir: scrypto
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-      with:
-        tests-dir: scrypto
-        flags: --no-default-features --features alloc
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-      with:
-        tests-dir: scrypto-schema
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-      with:
-        tests-dir: scrypto-derive
-  
+        toolchain: 1.70.0
+    - name: Run tests
+      run: cargo test
+      working-directory: scrypto
+    - name: Run tests (no_std)
+      run: cargo test --no-default-features --features alloc
+      working-directory: scrypto
+    - name: Run abi tests
+      run: cargo test
+      working-directory: scrypto-schema
+    - name: Run derive tests
+      run: cargo test
+      working-directory: scrypto-derive
   scrypto-integration-tests:
     name: Run Scrypto integration tests
     runs-on: ${{ matrix.os }}
@@ -116,15 +116,15 @@ jobs:
         os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
+    - uses: actions-rs/toolchain@v1
       with:
-        tests-dir: scrypto-derive-tests
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-      with:
-        tests-dir: scrypto-derive-tests
-        flags: --no-default-features --features alloc
-  
+        toolchain: 1.70.0
+    - name: Run tests
+      run: cargo test
+      working-directory: scrypto-tests
+    - name: Run tests with no_std
+      run: cargo test --no-default-features --features alloc
+      working-directory: scrypto-tests
   scrypto-examples:
     name: Run Scrypto examples
     runs-on: ${{ matrix.os }}
@@ -293,7 +293,6 @@ jobs:
           -p radix-engine \
           -p radix-engine-tests \
           --features compile-blueprints-at-build-time
-  
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
     runs-on: ${{ matrix.os }}
@@ -320,7 +319,6 @@ jobs:
           -p radix-engine \
           -p radix-engine-tests \
           --features compile-blueprints-at-build-time
-  
   radix-engine-bench:
     name: Run Radix Engine benchmarks
     runs-on: ${{ matrix.os }}
@@ -341,7 +339,6 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine-tests
-  
   radix-engine-common-bench:
     name: Run Radix Engine common benchmarks
     runs-on: ${{ matrix.os }}
@@ -362,7 +359,6 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine-common
-  
   transaction:
     name: Run transaction tests
     runs-on: ${{ matrix.os }}
@@ -373,11 +369,12 @@ jobs:
         os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
+    - uses: actions-rs/toolchain@v1
       with:
-        tests-dir: transaction
-  
+        toolchain: 1.70.0
+    - name: Run tests
+      run: cargo test
+      working-directory: transaction
   transaction-scenarios:
     name: Run transaction scenarios
     runs-on: ${{ matrix.os }}
@@ -388,11 +385,12 @@ jobs:
         os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
+    - uses: actions-rs/toolchain@v1
       with:
-        tests-dir: transaction-scenarios
-  
+        toolchain: 1.69.0
+    - name: Run tests
+      run: cargo test
+      working-directory: transaction-scenarios
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
     runs-on: ${{ matrix.os }}
@@ -431,7 +429,6 @@ jobs:
     - name: Run tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
-  
   cli-scrypto:
     name: Run CLI tests (scrypto)
     runs-on: ${{ matrix.os }}
@@ -464,7 +461,6 @@ jobs:
     - name: Run tests
       run: bash ./tests/scrypto.sh
       working-directory: simulator
-  
   fuzzer-check:
     name: Build fuzzer
     runs-on: ${{ matrix.os }}

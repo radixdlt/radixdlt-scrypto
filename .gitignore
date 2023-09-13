@@ -74,5 +74,3 @@ perf.data
 # Rusty-tags
 *.vi
 
-# Source based coverage
-*.profraw
