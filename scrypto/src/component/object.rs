@@ -49,4 +49,12 @@ pub trait ObjectStub: Copy {
         let output = ScryptoVmV1Api::object_call(self.handle().as_node_id(), method, args);
         scrypto_decode(&output).unwrap()
     }
+
+    fn instance_of(&self, blueprint_id: &BlueprintId) -> bool {
+        ScryptoVmV1Api::object_instance_of(self.handle().as_node_id(), blueprint_id)
+    }
+
+    fn blueprint_id(&self) -> BlueprintId {
+        ScryptoVmV1Api::object_blueprint_id(self.handle().as_node_id())
+    }
 }

@@ -89,6 +89,21 @@ impl ScryptoVmV1Api {
         rtn == 1
     }
 
+    pub fn object_blueprint_id(node_id: &NodeId) -> BlueprintId {
+        let bytes = copy_buffer(unsafe {
+            object::object_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+
+        BlueprintId {
+            package_address: PackageAddress::new_or_panic(
+                bytes[0..NodeId::LENGTH].try_into().unwrap(),
+            ),
+            blueprint_name: unsafe {
+                String::from_utf8_unchecked(bytes[NodeId::LENGTH..].to_vec())
+            },
+        }
+    }
+
     pub fn object_get_outer_object(node_id: &NodeId) -> GlobalAddress {
         let bytes = copy_buffer(unsafe {
             object::object_get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())

@@ -90,7 +90,7 @@ pub mod object {
             address_id_len: usize,
         ) -> Buffer;
 
-        /// Get the Blueprint Identifier of a given object
+        /// Check if an object is an instance of blueprint
         pub fn object_instance_of(
             obj_id_ptr: *const u8,
             obj_id_len: usize,
@@ -99,6 +99,12 @@ pub mod object {
             blueprint_name_ptr: *const u8,
             blueprint_name_len: usize,
         ) -> u32;
+
+         /// Get the Blueprint Identifier of a given object
+         pub fn object_blueprint_id(
+            obj_id_ptr: *const u8,
+            obj_id_len: usize,
+        ) -> Buffer;
 
         /// Get the address of the outer object of a given object
         pub fn object_get_outer_object(obj_id_ptr: *const u8, obj_id_len: usize) -> Buffer;
