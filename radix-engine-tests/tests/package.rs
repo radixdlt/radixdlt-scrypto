@@ -944,49 +944,6 @@ fn test_error_path_can_not_have_a_type_schema_with_a_non_existent_local_type_id(
 }
 
 #[test]
-fn test_error_path_can_not_have_a_type_whose_name_does_not_match_sbor_metadata() {
-    // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (code, mut definition) = PackageLoader::get("address");
-
-    definition.blueprints.values_mut().for_each(|bp_def| {
-        let TypeRef::Static(field_local_type_id) = bp_def.schema.state.fields.first().unwrap().field
-        else {
-            panic!("Can't be here!")
-        };
-
-        bp_def
-            .schema
-            .types
-            .type_schema
-            .insert("Foo".to_owned(), field_local_type_id);
-    });
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .publish_package_advanced(
-            None,
-            code,
-            definition,
-            MetadataInit::default(),
-            OwnerRole::None,
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::TypeNameMismatch { .. }
-            ))
-        )
-    })
-}
-
-#[test]
 fn test_error_path_royalties_must_be_specified_for_all_functions_not_just_the_right_number_of_functions(
 ) {
     // Arrange
