@@ -1831,6 +1831,38 @@ mod tests {
     }
 
     #[test]
+    fn test_derive_sensible_identifier_from_path() {
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { Struct1 }).unwrap(),
+            "Struct1"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { std::test::Struct1 }).unwrap(),
+            "Struct1"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { Vec<u8> }).unwrap(),
+            "Vec_u8"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { Generic<'lifetime, u8> }).unwrap(),
+            "Generic_lifetime_u8"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { Generic::<'lifetime, u8> })
+                .unwrap(),
+            "Generic_lifetime_u8"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(
+                &parse_quote! { HashMap<String, std::rust::Test> }
+            )
+            .unwrap(),
+            "HashMap_String_std_rust_Test"
+        );
+    }
+
+    #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
             "#[types(Struct1, Struct2 as Hi, u32, NonFungibleGlobalId, Vec<Hash>, Vec<Bucket> as GenericAlias)] mod test { struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } } }",
