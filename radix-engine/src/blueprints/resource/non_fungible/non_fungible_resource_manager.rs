@@ -1069,7 +1069,7 @@ impl NonFungibleResourceManagerBlueprint {
         Self::assert_burnable(api)?;
 
         // Drop the bucket
-        // This will fail if bucket is not an inner object of the current fungible resource
+        // This will fail if bucket is not an inner object of the current non-fungible resource
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         Self::update_total_supply(api, other_bucket.liquid.amount().neg())?;

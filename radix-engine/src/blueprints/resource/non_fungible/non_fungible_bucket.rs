@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
@@ -66,6 +65,7 @@ impl NonFungibleBucketBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // Drop other bucket
+        // This will fail if bucket is not an inner object of the current non-fungible resource
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Put
@@ -90,7 +90,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let ids = Self::liquid_non_fungible_local_ids(api)?;
         if ids.contains(&id) {
@@ -107,7 +107,7 @@ impl NonFungibleBucketBlueprint {
 
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
             .checked_add(Self::locked_amount(api)?)
@@ -132,7 +132,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_non_fungibles(&ids, api)?;
 
@@ -151,8 +151,8 @@ impl NonFungibleBucketBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                0u8 => FieldValue::new(&proof_info),
-                1u8 => FieldValue::new(&proof_evidence),
+                NonFungibleProofField::Moveable.field_index() => FieldValue::new(&proof_info),
+                NonFungibleProofField::ProofRefs.field_index() => FieldValue::new(&proof_evidence),
             },
         )?;
         Ok(Proof(Own(proof_id)))
@@ -160,7 +160,7 @@ impl NonFungibleBucketBlueprint {
 
     pub fn create_proof_of_all<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::create_proof_of_non_fungibles(receiver, Self::get_non_fungible_local_ids(api)?, api)
     }
@@ -174,7 +174,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -207,7 +207,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
