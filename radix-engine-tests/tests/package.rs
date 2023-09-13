@@ -7,6 +7,7 @@ use radix_engine::system::system_modules::auth::*;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::PrepareError;
 use radix_engine::vm::wasm::*;
+use radix_engine_common::constants::MAX_NUMBER_OF_BLUEPRINT_FIELDS;
 use radix_engine_interface::*;
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
@@ -643,7 +644,9 @@ fn test_error_path_when_package_definition_has_too_many_fields() {
 
     definition.blueprints.values_mut().for_each(|bp_def| {
         if let Some(field) = bp_def.schema.state.fields.first() {
-            bp_def.schema.state.fields = (0..300).map(|_| field.clone()).collect::<Vec<_>>();
+            bp_def.schema.state.fields = (0..MAX_NUMBER_OF_BLUEPRINT_FIELDS + 1)
+                .map(|_| field.clone())
+                .collect::<Vec<_>>();
         }
     });
 

@@ -173,7 +173,7 @@ fn validate_package_schema(
         validate_schema(bp_schema.schema.v1())
             .map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
-        if bp_schema.state.fields.len() > 0xff {
+        if bp_schema.state.fields.len() > MAX_NUMBER_OF_BLUEPRINT_FIELDS {
             return Err(PackageError::TooManySubstateSchemas);
         }
 
