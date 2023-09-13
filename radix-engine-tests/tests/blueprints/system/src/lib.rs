@@ -20,3 +20,48 @@ mod recursive_test {
         }
     }
 }
+
+#[blueprint]
+mod address_reservation_test {
+    struct AddressReservationTest {
+        own: ScryptoValue,
+    }
+
+    impl AddressReservationTest {
+        pub fn drop_address_reservation(_reservation: GlobalAddressReservation) {
+            // No longer works as object dropping API has been removed for WASM
+        }
+
+        pub fn put_address_reservation_into_component_state(reservation: GlobalAddressReservation) {
+            Self {
+                own: scrypto_decode(&scrypto_encode(&reservation).unwrap()).unwrap(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
+        pub fn put_address_reservation_into_kv_store(reservation: GlobalAddressReservation) {
+            let kv_store = KeyValueStore::<u32, ScryptoValue>::new();
+            kv_store.insert(
+                1u32,
+                scrypto_decode(&scrypto_encode(&reservation).unwrap()).unwrap(),
+            );
+
+            Self {
+                own: scrypto_decode(&scrypto_encode(&kv_store).unwrap()).unwrap(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
+        pub fn globalize_address_reservation(reservation: GlobalAddressReservation) {
+            ScryptoVmV1Api::object_globalize(
+                reservation.0.as_node_id().clone(),
+                index_map_new(),
+                None,
+            );
+        }
+    }
+}
