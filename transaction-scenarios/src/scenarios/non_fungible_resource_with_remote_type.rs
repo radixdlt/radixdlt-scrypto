@@ -61,7 +61,7 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                             } else {
                                 unreachable!()
                             };
-                            schema.blueprints.values_mut().next().unwrap().schema.types.type_schema.insert("TestType".to_owned(), type_id);
+                            schema.blueprints.values_mut().next().unwrap().schema.types.type_schema.insert("RemoveLiquidityEvent".to_owned(), type_id);
 
                             // Build manifest for publishing the package
                             builder
@@ -110,7 +110,7 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                                             type_id: BlueprintTypeIdentifier {
                                                 package_address: state.package_with_registered_types.unwrap(),
                                                 blueprint_name: state.blueprint_with_registered_types.clone().unwrap(),
-                                                type_name: "TestType".to_owned(),
+                                                type_name: "RemoveLiquidityEvent".to_owned(),
                                             },
                                             mutable_fields: index_set_new()
                                         },
