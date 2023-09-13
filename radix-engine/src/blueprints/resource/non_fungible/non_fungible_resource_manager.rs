@@ -945,65 +945,47 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         Self::assert_mintable(api)?;
-
-        let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
-        let id_type = {
-            let handle = api.actor_open_field(
-                ACTOR_STATE_SELF,
-                NonFungibleResourceManagerField::IdType.into(),
-                LockFlags::read_only(),
-            )?;
-            let id_type = api
-                .field_read_typed::<NonFungibleResourceManagerIdTypeFieldPayload>(handle)?
-                .into_latest();
-            api.field_close(handle)?;
-            if id_type == NonFungibleIdType::RUID {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::InvalidNonFungibleIdType,
-                    ),
-                ));
-            }
-            id_type
-        };
-
-        // Update total supply
-        // TODO: Could be further cleaned up by using event
-        if api.actor_is_feature_enabled(
-            ACTOR_STATE_SELF,
-            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
-        )? {
-            let total_supply_handle = api.actor_open_field(
-                ACTOR_STATE_SELF,
-                NonFungibleResourceManagerField::TotalSupply.into(),
-                LockFlags::MUTABLE,
-            )?;
-            let mut total_supply: Decimal = api
-                .field_read_typed::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
-                    total_supply_handle,
-                )?
-                .into_latest();
-            total_supply =
-                total_supply
-                    .checked_add(entries.len())
-                    .ok_or(RuntimeError::ApplicationError(
-                        ApplicationError::NonFungibleResourceManagerError(
-                            NonFungibleResourceManagerError::UnexpectedDecimalComputationError,
-                        ),
-                    ))?;
-            api.field_write_typed(
-                total_supply_handle,
-                &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                    total_supply,
-                ),
-            )?;
-        }
+        let id_type = Self::assert_is_not_ruid(api)?;
+        Self::update_total_supply(api, entries.len().into())?;
 
         let ids = {
+            let resource_address =
+                ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
             let ids: IndexSet<NonFungibleLocalId> = entries.keys().cloned().collect();
             let non_fungibles = entries.into_iter().map(|(k, v)| (k, v.0)).collect();
             create_non_fungibles(resource_address, id_type, non_fungibles, true, api)?;
+
+            ids
+        };
+
+        let bucket = Self::create_bucket(ids.clone(), api)?;
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
+
+        Ok(bucket)
+    }
+
+    pub(crate) fn mint_ruid_non_fungible<Y>(
+        entries: Vec<(ScryptoValue,)>,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::assert_mintable(api)?;
+        Self::assert_is_ruid(api)?;
+        Self::update_total_supply(api, entries.len().into())?;
+
+        let ids = {
+            let resource_address =
+                ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
+            let mut ids = index_set_new();
+            let mut non_fungibles = index_map_new();
+            for value in entries {
+                let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
+                ids.insert(id.clone());
+                non_fungibles.insert(id, value.0);
+            }
+            create_non_fungibles(resource_address, NonFungibleIdType::RUID, non_fungibles, false, api)?;
 
             ids
         };
@@ -1018,73 +1000,20 @@ impl NonFungibleResourceManagerBlueprint {
         value: ScryptoValue,
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+        where
+            Y: ClientApi<RuntimeError>,
     {
         Self::assert_mintable(api)?;
-
-        let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
-
-        // Check id_type
-        let id_type = {
-            let id_type_handle = api.actor_open_field(
-                ACTOR_STATE_SELF,
-                NonFungibleResourceManagerField::IdType.into(),
-                LockFlags::read_only(),
-            )?;
-            let id_type: NonFungibleIdType = api
-                .field_read_typed::<NonFungibleResourceManagerIdTypeFieldPayload>(id_type_handle)?
-                .into_latest();
-            api.field_close(id_type_handle)?;
-
-            if id_type != NonFungibleIdType::RUID {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::InvalidNonFungibleIdType,
-                    ),
-                ));
-            }
-
-            id_type
-        };
-
-        // Update Total Supply
-        // TODO: Could be further cleaned up by using event
-        if api.actor_is_feature_enabled(
-            ACTOR_STATE_SELF,
-            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
-        )? {
-            let total_supply_handle = api.actor_open_field(
-                ACTOR_STATE_SELF,
-                NonFungibleResourceManagerField::TotalSupply.into(),
-                LockFlags::MUTABLE,
-            )?;
-            let mut total_supply = api
-                .field_read_typed::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
-                    total_supply_handle,
-                )?
-                .into_latest();
-            total_supply = total_supply
-                .checked_add(1)
-                .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::UnexpectedDecimalComputationError,
-                    ),
-                ))?;
-            api.field_write_typed(
-                total_supply_handle,
-                &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                    total_supply,
-                ),
-            )?;
-        }
+        Self::assert_is_ruid(api)?;
+        Self::update_total_supply(api, Decimal::ONE)?;
 
         let id = {
+            let resource_address =
+                ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
             let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
             let non_fungibles = indexmap!(id.clone() => value);
 
-            create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
+            create_non_fungibles(resource_address, NonFungibleIdType::RUID, non_fungibles, false, api)?;
 
             id
         };
@@ -1094,92 +1023,6 @@ impl NonFungibleResourceManagerBlueprint {
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
         Ok((bucket, id))
-    }
-
-    pub(crate) fn mint_ruid_non_fungible<Y>(
-        entries: Vec<(ScryptoValue,)>,
-        api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        Self::assert_mintable(api)?;
-
-        let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
-
-        // Check type
-        let id_type = {
-            let handle = api.actor_open_field(
-                ACTOR_STATE_SELF,
-                NonFungibleResourceManagerField::IdType.into(),
-                LockFlags::read_only(),
-            )?;
-            let id_type = api
-                .field_read_typed::<NonFungibleResourceManagerIdTypeFieldPayload>(handle)?
-                .into_latest();
-            api.field_close(handle)?;
-
-            if id_type != NonFungibleIdType::RUID {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::InvalidNonFungibleIdType,
-                    ),
-                ));
-            }
-            id_type
-        };
-
-        // Update total supply
-        // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        if api.actor_is_feature_enabled(
-            ACTOR_STATE_SELF,
-            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
-        )? {
-            let total_supply_handle = api.actor_open_field(
-                ACTOR_STATE_SELF,
-                NonFungibleResourceManagerField::TotalSupply.into(),
-                LockFlags::MUTABLE,
-            )?;
-            let mut total_supply = api
-                .field_read_typed::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
-                    total_supply_handle,
-                )?
-                .into_latest();
-            total_supply =
-                total_supply
-                    .checked_add(entries.len())
-                    .ok_or(RuntimeError::ApplicationError(
-                        ApplicationError::NonFungibleResourceManagerError(
-                            NonFungibleResourceManagerError::UnexpectedDecimalComputationError,
-                        ),
-                    ))?;
-            api.field_write_typed(
-                total_supply_handle,
-                &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                    total_supply,
-                ),
-            )?;
-        }
-
-        // Update data
-        let ids = {
-            let mut ids = index_set_new();
-            let mut non_fungibles = index_map_new();
-            for value in entries {
-                let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
-                ids.insert(id.clone());
-                non_fungibles.insert(id, value.0);
-            }
-            create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
-
-            ids
-        };
-
-        let bucket = Self::create_bucket(ids.clone(), api)?;
-        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
-
-        Ok(bucket)
     }
 
     pub(crate) fn update_non_fungible_data<Y>(
@@ -1510,6 +1353,55 @@ impl NonFungibleResourceManagerBlueprint {
         }
     }
 
+    fn assert_is_not_ruid<Y>(api: &mut Y) -> Result<NonFungibleIdType, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            NonFungibleResourceManagerField::IdType.into(),
+            LockFlags::read_only(),
+        )?;
+        let id_type = api
+            .field_read_typed::<NonFungibleResourceManagerIdTypeFieldPayload>(handle)?
+            .into_latest();
+        api.field_close(handle)?;
+        if id_type == NonFungibleIdType::RUID {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleIdType,
+                ),
+            ));
+        }
+        id_type
+    }
+
+    fn assert_is_ruid<Y>(api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        // Check type
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            NonFungibleResourceManagerField::IdType.into(),
+            LockFlags::read_only(),
+        )?;
+        let id_type = api
+            .field_read_typed::<NonFungibleResourceManagerIdTypeFieldPayload>(handle)?
+            .into_latest();
+        api.field_close(handle)?;
+
+        if id_type != NonFungibleIdType::RUID {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleIdType,
+                ),
+            ));
+        }
+
+        Ok(())
+    }
+
     fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -1552,6 +1444,43 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         return Ok(());
+    }
+
+    fn update_total_supply<Y>(api: &mut Y, amount: Decimal) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        if api.actor_is_feature_enabled(
+            ACTOR_STATE_SELF,
+            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
+        )? {
+            let total_supply_handle = api.actor_open_field(
+                ACTOR_STATE_SELF,
+                NonFungibleResourceManagerField::TotalSupply.into(),
+                LockFlags::MUTABLE,
+            )?;
+            let mut total_supply = api
+                .field_read_typed::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
+                    total_supply_handle,
+                )?
+                .into_latest();
+            total_supply =
+                total_supply
+                    .checked_add(amount)
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::NonFungibleResourceManagerError(
+                            NonFungibleResourceManagerError::UnexpectedDecimalComputationError,
+                        ),
+                    ))?;
+            api.field_write_typed(
+                total_supply_handle,
+                &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
+                    total_supply,
+                ),
+            )?;
+        }
+
+        Ok(())
     }
 
     pub(crate) fn amount_for_withdrawal<Y>(
