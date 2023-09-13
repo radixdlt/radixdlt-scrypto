@@ -140,3 +140,68 @@ pub struct Sandwich {
     #[mutable]
     pub own: Option<Own>,
 }
+
+#[blueprint]
+mod role_assignment_of_role_assignment {
+    struct RoleAndRole {}
+
+    impl RoleAndRole {
+        pub fn set_role_of_role_assignment() {
+            let mut init = RoleAssignmentInit::new();
+            init.define_role("test", rule!(allow_all));
+
+            let role_assignment = RoleAssignment::new(
+                OwnerRole::Updatable(rule!(allow_all)),
+                indexmap!(
+                    ModuleId::RoleAssignment => init,
+                ),
+            );
+
+            role_assignment.set_role_assignment_role("test", rule!(deny_all));
+        }
+
+        pub fn set_role_of_role_assignment_v2() {
+            let role_assignment =
+                RoleAssignment::new(OwnerRole::Updatable(rule!(allow_all)), indexmap!());
+
+            // We can set any role under RoleAssignment, including reserved ones.
+            role_assignment.set_role_assignment_role("_reserved_key", rule!(deny_all));
+
+            // Clean up
+            let object = RoleAndRole {}.instantiate();
+            let metadata = Metadata::new();
+            ScryptoVmV1Api::object_globalize(
+                object.0.handle.as_node_id().clone(),
+                indexmap!(
+                    AttachedModuleId::RoleAssignment => role_assignment.0.as_node_id().clone(),
+                    AttachedModuleId::Metadata => metadata.0.as_node_id().clone()
+                ),
+                None,
+            );
+        }
+
+        pub fn call_role_assignment_method_of_role_assignment() {
+            let role_assignment =
+                RoleAssignment::new(OwnerRole::Updatable(rule!(allow_all)), indexmap!());
+
+            ScryptoVmV1Api::object_call_module(
+                role_assignment.0.as_node_id(),
+                AttachedModuleId::RoleAssignment,
+                ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,
+                scrypto_encode(&()).unwrap(),
+            );
+
+            // Clean up
+            let object = RoleAndRole {}.instantiate();
+            let metadata = Metadata::new();
+            ScryptoVmV1Api::object_globalize(
+                object.0.handle.as_node_id().clone(),
+                indexmap!(
+                    AttachedModuleId::RoleAssignment => role_assignment.0.as_node_id().clone(),
+                    AttachedModuleId::Metadata => metadata.0.as_node_id().clone()
+                ),
+                None,
+            );
+        }
+    }
+}

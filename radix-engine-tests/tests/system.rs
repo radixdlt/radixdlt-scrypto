@@ -2,10 +2,10 @@ mod package_loader;
 
 use package_loader::PackageLoader;
 use radix_engine::{
-    errors::{RuntimeError, SystemError, SystemModuleError},
+    errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError},
     types::*,
 };
-use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
+use radix_engine_queries::typed_substate_layout::{RoleAssignmentError, PACKAGE_BLUEPRINT};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -197,4 +197,82 @@ fn test_write_after_locking_key_value_collection_entry() {
             RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
         )
     })
+}
+
+#[test]
+fn test_set_role_of_role_assignment() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAndRole",
+            "set_role_of_role_assignment",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::UsedReservedSpace
+            ))
+        )
+    })
+}
+
+#[test]
+fn test_set_role_of_role_assignment_v2() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAndRole",
+            "set_role_of_role_assignment_v2",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_call_role_assignment_method_of_role_assignment() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAndRole",
+            "call_role_assignment_method_of_role_assignment",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::ObjectModuleDoesNotExist(_))
+        )
+    });
 }
