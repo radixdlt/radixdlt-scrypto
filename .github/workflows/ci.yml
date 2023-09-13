@@ -121,7 +121,9 @@ jobs:
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
     - name: Run tests
       run: cargo test
       working-directory: scrypto-test
