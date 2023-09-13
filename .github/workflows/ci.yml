@@ -107,29 +107,28 @@ jobs:
     - name: Run derive tests
       run: cargo test
       working-directory: scrypto-derive
-  
+
   scrypto-integration-tests:
     name: Run Scrypto integration tests
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Run tests
       run: cargo test
-      working-directory: scrypto-test
+      working-directory: scrypto-tests
     - name: Run tests with no_std
       run: cargo test --no-default-features --features alloc
-      working-directory: scrypto-test
+      working-directory: scrypto-tests
  
   scrypto-examples:
     name: Run Scrypto examples
