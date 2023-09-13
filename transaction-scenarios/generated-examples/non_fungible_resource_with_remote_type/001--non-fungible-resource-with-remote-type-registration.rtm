@@ -364,7 +364,7 @@ PUBLISH_PACKAGE_ADVANCED
                         )
                     ),
                     Map<String, Enum>(
-                        "TestType" => Enum<1u8>(
+                        "RemoveLiquidityEvent" => Enum<1u8>(
                             13u64
                         )
                     ),

@@ -1553,7 +1553,6 @@ impl PackageRoyaltyNativeBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let blueprint_id = api.actor_get_blueprint_id()?;
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
             PackageFeature::PackageRoyalty.feature_name(),
