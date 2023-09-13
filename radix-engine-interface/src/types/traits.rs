@@ -16,3 +16,7 @@ pub trait NonFungibleData: ScryptoSbor {
 pub trait RegisteredType<T>: ScryptoSbor {
     fn blueprint_type_identifier() -> BlueprintTypeIdentifier;
 }
+
+impl NonFungibleData for () {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
+}

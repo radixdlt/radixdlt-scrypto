@@ -319,54 +319,73 @@ pub enum NonFungibleDataSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct LocalNonFungibleDataSchema {
+    pub schema: VersionedScryptoSchema,
+    pub type_id: LocalTypeId,
+    pub mutable_fields: IndexSet<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct RemoteNonFungibleDataSchema {
     pub type_id: BlueprintTypeIdentifier,
     pub mutable_fields: IndexSet<String>,
 }
 
-impl NonFungibleData for () {
-    const MUTABLE_FIELDS: &'static [&'static str] = &[];
-}
-
-impl NonFungibleDataSchema {
-    /// Arguments:
-    /// * [`package_address`] - The package address to use for replacing `None` package address in type validation
-    pub fn new_local_with_self_package_replacement<N: NonFungibleData>(
+impl LocalNonFungibleDataSchema {
+    pub fn new_with_self_package_replacement<N: NonFungibleData>(
         package_address: PackageAddress,
     ) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let type_id = aggregator.add_child_type_and_descendents::<N>();
         let mut schema = generate_full_schema(aggregator);
         replace_self_package_address(&mut schema, package_address);
-        Self::Local {
+        Self {
             schema,
             type_id,
             mutable_fields: N::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
+    pub fn new_without_self_package_replacement<N: NonFungibleData>() -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let type_id = aggregator.add_child_type_and_descendents::<N>();
+        let schema = generate_full_schema(aggregator);
+        Self {
+            schema,
+            type_id,
+            mutable_fields: N::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+}
+
+impl RemoteNonFungibleDataSchema {
+    pub fn new(type_id: BlueprintTypeIdentifier, mutable_fields: IndexSet<String>) -> Self {
+        Self {
+            type_id,
+            mutable_fields,
+        }
+    }
+}
+
+impl NonFungibleDataSchema {
+    pub fn new_with_self_package_replacement<N: NonFungibleData>(
+        package_address: PackageAddress,
+    ) -> Self {
+        let schema =
+            LocalNonFungibleDataSchema::new_with_self_package_replacement::<N>(package_address);
+        Self::Local {
+            schema: schema.schema,
+            type_id: schema.type_id,
+            mutable_fields: schema.mutable_fields,
         }
     }
 
     pub fn new_local_without_self_package_replacement<N: NonFungibleData>() -> Self {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let type_id = aggregator.add_child_type_and_descendents::<N>();
-        let schema = generate_full_schema(aggregator);
+        let schema = LocalNonFungibleDataSchema::new_without_self_package_replacement::<N>();
         Self::Local {
-            schema,
-            type_id,
-            mutable_fields: N::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect(),
-        }
-    }
-
-    pub fn new_remote<T: AsRef<[S]>, S: AsRef<str>>(
-        type_id: BlueprintTypeIdentifier,
-        mutable_fields: T,
-    ) -> Self {
-        Self::Remote {
-            type_id,
-            mutable_fields: mutable_fields
-                .as_ref()
-                .iter()
-                .map(|s| s.as_ref().to_string())
-                .collect(),
+            schema: schema.schema,
+            type_id: schema.type_id,
+            mutable_fields: schema.mutable_fields,
         }
     }
 }
@@ -377,6 +396,14 @@ impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
     // ScryptoSchema, therefore implementing arbitrary by hand.
     // TODO: Introduce a method that genearates NonFungibleDataSchema in a truly random manner
     fn arbitrary(_u: &mut Unstructured<'a>) -> Result<Self> {
-        Ok(Self::new_local_without_self_package_replacement::<()>())
+        Ok(Self::Local {
+            schema: VersionedSchema::V1(SchemaV1 {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
+            }),
+            type_id: LocalTypeId::WellKnown(sbor::basic_well_known_types::UNIT_TYPE),
+            mutable_fields: indexset!(),
+        })
     }
 }

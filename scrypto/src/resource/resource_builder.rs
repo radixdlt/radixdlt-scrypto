@@ -2,6 +2,7 @@ use self::private::NoNonFungibleDataSchema;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
 use radix_engine_common::prelude::ScryptoCategorize;
+use radix_engine_common::prelude::ScryptoDecode;
 use radix_engine_common::prelude::ScryptoEncode;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
@@ -42,63 +43,87 @@ pub struct ResourceBuilder;
 impl ResourceBuilder {
     /// Starts a new builder to create a fungible resource.
     pub fn new_fungible(owner_role: OwnerRole) -> InProgressResourceBuilder<FungibleResourceType> {
-        InProgressResourceBuilder::new(owner_role)
+        InProgressResourceBuilder::new(owner_role, FungibleResourceType::default())
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
     pub fn new_string_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>> {
-        InProgressResourceBuilder::new(owner_role)
+    ) -> InProgressResourceBuilder<
+        NonFungibleResourceType<
+            StringNonFungibleLocalId,
+            D,
+            FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL, LocalNonFungibleDataSchema>,
+        >,
+    > {
+        InProgressResourceBuilder::new(
+            owner_role,
+            NonFungibleResourceType::new(FixedEnumVariant {
+                fields: LocalNonFungibleDataSchema::new_with_self_package_replacement::<D>(
+                    Runtime::package_address(),
+                ),
+            }),
+        )
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
     pub fn new_integer_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>> {
-        InProgressResourceBuilder::new(owner_role)
+    ) -> InProgressResourceBuilder<
+        NonFungibleResourceType<
+            IntegerNonFungibleLocalId,
+            D,
+            FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL, LocalNonFungibleDataSchema>,
+        >,
+    > {
+        InProgressResourceBuilder::new(
+            owner_role,
+            NonFungibleResourceType::new(FixedEnumVariant {
+                fields: LocalNonFungibleDataSchema::new_with_self_package_replacement::<D>(
+                    Runtime::package_address(),
+                ),
+            }),
+        )
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
     pub fn new_bytes_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>> {
-        InProgressResourceBuilder::new(owner_role)
+    ) -> InProgressResourceBuilder<
+        NonFungibleResourceType<
+            BytesNonFungibleLocalId,
+            D,
+            FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL, LocalNonFungibleDataSchema>,
+        >,
+    > {
+        InProgressResourceBuilder::new(
+            owner_role,
+            NonFungibleResourceType::new(FixedEnumVariant {
+                fields: LocalNonFungibleDataSchema::new_with_self_package_replacement::<D>(
+                    Runtime::package_address(),
+                ),
+            }),
+        )
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::RUID`
     pub fn new_ruid_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>> {
-        InProgressResourceBuilder::new(owner_role)
-    }
-
-    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
-    pub fn new_string_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
-        owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<StringNonFungibleLocalId, D, B>> {
-        InProgressResourceBuilder::new(owner_role)
-    }
-
-    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
-    pub fn new_integer_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
-        owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<IntegerNonFungibleLocalId, D, B>> {
-        InProgressResourceBuilder::new(owner_role)
-    }
-
-    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
-    pub fn new_bytes_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
-        owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<BytesNonFungibleLocalId, D, B>> {
-        InProgressResourceBuilder::new(owner_role)
-    }
-
-    /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::RUID`
-    pub fn new_ruid_non_fungible_v2<B, D: NonFungibleData + RegisteredType<B>>(
-        owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceTypeV2<RUIDNonFungibleLocalId, D, B>> {
-        InProgressResourceBuilder::new(owner_role)
+    ) -> InProgressResourceBuilder<
+        NonFungibleResourceType<
+            RUIDNonFungibleLocalId,
+            D,
+            FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL, LocalNonFungibleDataSchema>,
+        >,
+    > {
+        InProgressResourceBuilder::new(
+            owner_role,
+            NonFungibleResourceType::new(FixedEnumVariant {
+                fields: LocalNonFungibleDataSchema::new_with_self_package_replacement::<D>(
+                    Runtime::package_address(),
+                ),
+            }),
+        )
     }
 }
 
@@ -126,10 +151,10 @@ pub struct InProgressResourceBuilder<T: AnyResourceType> {
 }
 
 impl<T: AnyResourceType> InProgressResourceBuilder<T> {
-    fn new(owner_role: OwnerRole) -> Self {
+    pub fn new(owner_role: OwnerRole, resource_type: T) -> Self {
         Self {
             owner_role,
-            resource_type: T::default(),
+            resource_type,
             metadata_config: None,
             address_reservation: None,
             resource_roles: T::ResourceRoles::default(),
@@ -138,7 +163,7 @@ impl<T: AnyResourceType> InProgressResourceBuilder<T> {
 }
 
 // Various types for ResourceType
-pub trait AnyResourceType: Default {
+pub trait AnyResourceType {
     type ResourceRoles: Default;
 }
 
@@ -156,36 +181,27 @@ impl Default for FungibleResourceType {
     }
 }
 
-pub struct NonFungibleResourceType<T: IsNonFungibleLocalId, D: NonFungibleData>(
-    PhantomData<T>,
-    PhantomData<D>,
-);
-impl<T: IsNonFungibleLocalId, D: NonFungibleData> AnyResourceType
-    for NonFungibleResourceType<T, D>
-{
-    type ResourceRoles = NonFungibleResourceRoles;
-}
-impl<T: IsNonFungibleLocalId, D: NonFungibleData> Default for NonFungibleResourceType<T, D> {
-    fn default() -> Self {
-        Self(PhantomData, PhantomData)
-    }
-}
-
-pub struct NonFungibleResourceTypeV2<
+pub struct NonFungibleResourceType<
     T: IsNonFungibleLocalId,
-    D: NonFungibleData + RegisteredType<B>,
-    B,
->(PhantomData<T>, PhantomData<D>, PhantomData<B>);
-impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>> AnyResourceType
-    for NonFungibleResourceTypeV2<T, D, B>
+    D: NonFungibleData,
+    S: ScryptoCategorize + ScryptoEncode + ScryptoDecode,
+>(S, PhantomData<T>, PhantomData<D>);
+impl<
+        T: IsNonFungibleLocalId,
+        D: NonFungibleData,
+        S: ScryptoCategorize + ScryptoEncode + ScryptoDecode,
+    > AnyResourceType for NonFungibleResourceType<T, D, S>
 {
     type ResourceRoles = NonFungibleResourceRoles;
 }
-impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>> Default
-    for NonFungibleResourceTypeV2<T, D, B>
+impl<
+        T: IsNonFungibleLocalId,
+        D: NonFungibleData,
+        S: ScryptoCategorize + ScryptoEncode + ScryptoDecode,
+    > NonFungibleResourceType<T, D, S>
 {
-    fn default() -> Self {
-        Self(PhantomData, PhantomData, PhantomData)
+    pub fn new(schema: S) -> Self {
+        Self(schema, PhantomData, PhantomData)
     }
 }
 
@@ -415,8 +431,11 @@ impl UpdateAuthBuilder for InProgressResourceBuilder<FungibleResourceType> {
     }
 }
 
-impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder
-    for InProgressResourceBuilder<NonFungibleResourceType<T, D>>
+impl<
+        T: IsNonFungibleLocalId,
+        D: NonFungibleData,
+        S: ScryptoCategorize + ScryptoEncode + ScryptoDecode,
+    > UpdateAuthBuilder for InProgressResourceBuilder<NonFungibleResourceType<T, D, S>>
 {
     fn mint_roles(mut self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self {
         self.resource_roles.mint_roles = mint_roles;
@@ -449,88 +468,11 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder
     }
 }
 
-impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>> UpdateAuthBuilder
-    for InProgressResourceBuilder<NonFungibleResourceTypeV2<T, D, B>>
-{
-    fn mint_roles(mut self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self {
-        self.resource_roles.mint_roles = mint_roles;
-        self
-    }
-
-    fn burn_roles(mut self, burn_roles: Option<BurnRoles<RoleDefinition>>) -> Self {
-        self.resource_roles.burn_roles = burn_roles;
-        self
-    }
-
-    fn recall_roles(mut self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self {
-        self.resource_roles.recall_roles = recall_roles;
-        self
-    }
-
-    fn freeze_roles(mut self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self {
-        self.resource_roles.freeze_roles = freeze_roles;
-        self
-    }
-
-    fn withdraw_roles(mut self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self {
-        self.resource_roles.withdraw_roles = withdraw_roles;
-        self
-    }
-
-    fn deposit_roles(mut self, deposit_roles: Option<DepositRoles<RoleDefinition>>) -> Self {
-        self.resource_roles.deposit_roles = deposit_roles;
-        self
-    }
-}
-
-impl<T: IsNonFungibleLocalId, D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<T, D>>
-{
-    /// Sets how each non-fungible's mutable data can be updated.
-    ///
-    /// * The first parameter is the access rule which allows updating the mutable data of each non-fungible.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
-    ///
-    /// ### Examples
-    ///
-    /// ```no_run
-    /// use radix_engine_interface::non_fungible_data_update_roles;
-    /// use scrypto::prelude::*;
-    ///
-    /// # let resource_address = XRD;
-    ///
-    /// #[derive(ScryptoSbor, NonFungibleData)]
-    /// struct NFData {
-    ///     pub name: String,
-    ///     #[mutable]
-    ///     pub flag: bool,
-    /// }
-    /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
-    ///        non_fungible_data_updater => rule!(require(resource_address));
-    ///        non_fungible_data_updater_updater => rule!(deny_all);
-    ///    });
-    ///
-    /// # let resource_address = XRD;
-    /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
-    /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
-    ///        non_fungible_data_updater => rule!(deny_all);
-    ///        non_fungible_data_updater_updater => rule!(require(resource_address));
-    ///    });
-    /// ```
-    pub fn non_fungible_data_update_roles(
-        mut self,
-        non_fungible_data_update_roles: Option<NonFungibleDataUpdateRoles<RoleDefinition>>,
-    ) -> Self {
-        self.resource_roles.non_fungible_data_update_roles = non_fungible_data_update_roles;
-        self
-    }
-}
-
-impl<T: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>>
-    InProgressResourceBuilder<NonFungibleResourceTypeV2<T, D, B>>
+impl<
+        T: IsNonFungibleLocalId,
+        D: NonFungibleData,
+        S: ScryptoCategorize + ScryptoEncode + ScryptoDecode,
+    > InProgressResourceBuilder<NonFungibleResourceType<T, D, S>>
 {
     /// Sets how each non-fungible's mutable data can be updated.
     ///
@@ -713,8 +655,8 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     }
 }
 
-impl<D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>>
+impl<D: NonFungibleData, S: ScryptoCategorize + ScryptoEncode + ScryptoDecode>
+    InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D, S>>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
     ///
@@ -739,10 +681,6 @@ impl<D: NonFungibleData>
     where
         T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
-            Runtime::package_address(),
-        );
-
         let metadata = self
             .metadata_config
             .take()
@@ -757,7 +695,7 @@ impl<D: NonFungibleData>
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
-                    non_fungible_schema,
+                    non_fungible_schema: self.resource_type.0,
                     resource_roles: self.resource_roles,
                     metadata,
                     entries: map_entries(entries),
@@ -772,73 +710,8 @@ impl<D: NonFungibleData>
     }
 }
 
-impl<B, D: NonFungibleData + RegisteredType<B>>
-    InProgressResourceBuilder<NonFungibleResourceTypeV2<StringNonFungibleLocalId, D, B>>
-{
-    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
-    ///
-    /// ### Example
-    /// ```no_run
-    /// use scrypto::prelude::*;
-    ///
-    /// #[derive(ScryptoSbor, NonFungibleData)]
-    /// struct NFData {
-    ///     pub name: String,
-    ///     #[mutable]
-    ///     pub flag: bool,
-    /// }
-    ///
-    /// let bucket: NonFungibleBucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
-    ///     .mint_initial_supply([
-    ///         ("One".try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
-    ///         ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
-    ///     ]);
-    /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
-    where
-        T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
-    {
-        let non_fungible_schema = RemoteNonFungibleDataSchema {
-            type_id: D::blueprint_type_identifier(),
-            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
-        };
-
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
-
-        let bytes = ScryptoVmV1Api::blueprint_call(
-            RESOURCE_PACKAGE,
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-            scrypto_encode(
-                &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
-                    owner_role: self.owner_role,
-                    track_total_supply: true,
-                    id_type: StringNonFungibleLocalId::id_type(),
-                    non_fungible_schema: FixedEnumVariant::<
-                        NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
-                        RemoteNonFungibleDataSchema,
-                    > {
-                        fields: non_fungible_schema,
-                    },
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: map_entries(entries),
-                    address_reservation: self.address_reservation,
-                },
-            )
-            .unwrap(),
-        );
-        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
-            .unwrap()
-            .1
-    }
-}
-
-impl<D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>>
+impl<D: NonFungibleData, S: ScryptoCategorize + ScryptoEncode + ScryptoDecode>
+    InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D, S>>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
     ///
@@ -863,10 +736,6 @@ impl<D: NonFungibleData>
     where
         T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
-            Runtime::package_address(),
-        );
-
         let metadata = self
             .metadata_config
             .take()
@@ -881,7 +750,7 @@ impl<D: NonFungibleData>
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
-                    non_fungible_schema,
+                    non_fungible_schema: self.resource_type.0,
                     resource_roles: self.resource_roles,
                     metadata,
                     entries: map_entries(entries),
@@ -896,73 +765,8 @@ impl<D: NonFungibleData>
     }
 }
 
-impl<B, D: NonFungibleData + RegisteredType<B>>
-    InProgressResourceBuilder<NonFungibleResourceTypeV2<IntegerNonFungibleLocalId, D, B>>
-{
-    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
-    ///
-    /// ### Example
-    /// ```no_run
-    /// use scrypto::prelude::*;
-    ///
-    /// #[derive(ScryptoSbor, NonFungibleData)]
-    /// struct NFData {
-    ///     pub name: String,
-    ///     #[mutable]
-    ///     pub flag: bool,
-    /// }
-    ///
-    /// let bucket: NonFungibleBucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
-    ///     .mint_initial_supply([
-    ///         (1u64.into(), NFData { name: "NF One".to_owned(), flag: true }),
-    ///         (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),
-    ///     ]);
-    /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
-    where
-        T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
-    {
-        let non_fungible_schema = RemoteNonFungibleDataSchema {
-            type_id: D::blueprint_type_identifier(),
-            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
-        };
-
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
-
-        let bytes = ScryptoVmV1Api::blueprint_call(
-            RESOURCE_PACKAGE,
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-            scrypto_encode(
-                &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
-                    owner_role: self.owner_role,
-                    track_total_supply: true,
-                    id_type: IntegerNonFungibleLocalId::id_type(),
-                    non_fungible_schema: FixedEnumVariant::<
-                        NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
-                        RemoteNonFungibleDataSchema,
-                    > {
-                        fields: non_fungible_schema,
-                    },
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: map_entries(entries),
-                    address_reservation: self.address_reservation,
-                },
-            )
-            .unwrap(),
-        );
-        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
-            .unwrap()
-            .1
-    }
-}
-
-impl<D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>>
+impl<D: NonFungibleData, S: ScryptoCategorize + ScryptoEncode + ScryptoDecode>
+    InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D, S>>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
     ///
@@ -987,10 +791,6 @@ impl<D: NonFungibleData>
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
-            Runtime::package_address(),
-        );
-
         let metadata = self
             .metadata_config
             .take()
@@ -1005,7 +805,7 @@ impl<D: NonFungibleData>
                     owner_role: self.owner_role,
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
-                    non_fungible_schema,
+                    non_fungible_schema: self.resource_type.0,
                     resource_roles: self.resource_roles,
                     metadata,
                     entries: map_entries(entries),
@@ -1020,73 +820,8 @@ impl<D: NonFungibleData>
     }
 }
 
-impl<B, D: NonFungibleData + RegisteredType<B>>
-    InProgressResourceBuilder<NonFungibleResourceTypeV2<BytesNonFungibleLocalId, D, B>>
-{
-    /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
-    ///
-    /// ### Example
-    /// ```no_run
-    /// use scrypto::prelude::*;
-    ///
-    /// #[derive(ScryptoSbor, NonFungibleData)]
-    /// struct NFData {
-    ///     pub name: String,
-    ///     #[mutable]
-    ///     pub flag: bool,
-    /// }
-    ///
-    /// let bucket: NonFungibleBucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
-    ///     .mint_initial_supply([
-    ///         (vec![1u8].try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
-    ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
-    ///     ]);
-    /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
-    where
-        T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
-    {
-        let non_fungible_schema = RemoteNonFungibleDataSchema {
-            type_id: D::blueprint_type_identifier(),
-            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
-        };
-
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
-
-        let bytes = ScryptoVmV1Api::blueprint_call(
-            RESOURCE_PACKAGE,
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-            scrypto_encode(
-                &NonFungibleResourceManagerCreateWithInitialSupplyGenericInput {
-                    owner_role: self.owner_role,
-                    id_type: BytesNonFungibleLocalId::id_type(),
-                    track_total_supply: true,
-                    non_fungible_schema: FixedEnumVariant::<
-                        NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
-                        RemoteNonFungibleDataSchema,
-                    > {
-                        fields: non_fungible_schema,
-                    },
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: map_entries(entries),
-                    address_reservation: self.address_reservation,
-                },
-            )
-            .unwrap(),
-        );
-        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
-            .unwrap()
-            .1
-    }
-}
-
-impl<D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>>
+impl<D: NonFungibleData, S: ScryptoCategorize + ScryptoEncode + ScryptoDecode>
+    InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D, S>>
 {
     /// Creates the RUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
     ///
@@ -1115,10 +850,6 @@ impl<D: NonFungibleData>
         T: IntoIterator<Item = D>,
         D: ScryptoEncode,
     {
-        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
-            Runtime::package_address(),
-        );
-
         let metadata = self
             .metadata_config
             .take()
@@ -1131,75 +862,7 @@ impl<D: NonFungibleData>
             scrypto_encode(
                 &NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput {
                     owner_role: self.owner_role,
-                    non_fungible_schema,
-                    track_total_supply: true,
-                    resource_roles: self.resource_roles,
-                    metadata,
-                    entries: entries.into_iter().map(|data| (data,)).collect(),
-                    address_reservation: self.address_reservation,
-                },
-            )
-            .unwrap(),
-        );
-        scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
-            .unwrap()
-            .1
-    }
-}
-
-impl<B, D: NonFungibleData + RegisteredType<B>>
-    InProgressResourceBuilder<NonFungibleResourceTypeV2<RUIDNonFungibleLocalId, D, B>>
-{
-    /// Creates the RUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
-    ///
-    /// The system automatically generates a new RUID `NonFungibleLocalId` for each non-fungible,
-    /// and assigns the given data to each.
-    ///
-    /// ### Example
-    /// ```no_run
-    /// use scrypto::prelude::*;
-    ///
-    /// #[derive(ScryptoSbor, NonFungibleData)]
-    /// struct NFData {
-    ///     pub name: String,
-    ///     #[mutable]
-    ///     pub flag: bool,
-    /// }
-    ///
-    /// let bucket: NonFungibleBucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///     .mint_initial_supply([
-    ///         (NFData { name: "NF One".to_owned(), flag: true }),
-    ///         (NFData { name: "NF Two".to_owned(), flag: true }),
-    ///     ]);
-    /// ```
-    pub fn mint_initial_supply<T>(mut self, entries: T) -> NonFungibleBucket
-    where
-        T: IntoIterator<Item = D>,
-        D: ScryptoEncode,
-    {
-        let non_fungible_schema = RemoteNonFungibleDataSchema {
-            type_id: D::blueprint_type_identifier(),
-            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
-        };
-
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
-
-        let bytes = ScryptoVmV1Api::blueprint_call(
-            RESOURCE_PACKAGE,
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
-            scrypto_encode(
-                &NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput {
-                    owner_role: self.owner_role,
-                    non_fungible_schema: FixedEnumVariant::<
-                        NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
-                        RemoteNonFungibleDataSchema,
-                    > {
-                        fields: non_fungible_schema,
-                    },
+                    non_fungible_schema: self.resource_type.0,
                     track_total_supply: true,
                     resource_roles: self.resource_roles,
                     metadata,
@@ -1248,11 +911,11 @@ impl<T: AnyResourceType> private::CanSetAddressReservation for InProgressResourc
 }
 
 impl private::CanCreateWithNoSupply for InProgressResourceBuilder<FungibleResourceType> {
-    type NonFungibleDataSchemaType = NoNonFungibleDataSchema;
+    type NonFungibleDataSchema = NoNonFungibleDataSchema;
 
     fn into_create_with_no_supply_invocation(
         self,
-    ) -> private::CreateWithNoSupply<Self::NonFungibleDataSchemaType> {
+    ) -> private::CreateWithNoSupply<NoNonFungibleDataSchema> {
         private::CreateWithNoSupply::Fungible {
             owner_role: self.owner_role,
             divisibility: self.resource_type.divisibility,
@@ -1263,53 +926,20 @@ impl private::CanCreateWithNoSupply for InProgressResourceBuilder<FungibleResour
     }
 }
 
-impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
-    for InProgressResourceBuilder<NonFungibleResourceType<Y, D>>
+impl<
+        Y: IsNonFungibleLocalId,
+        D: NonFungibleData,
+        S: ScryptoCategorize + ScryptoEncode + ScryptoDecode,
+    > private::CanCreateWithNoSupply
+    for InProgressResourceBuilder<NonFungibleResourceType<Y, D, S>>
 {
-    type NonFungibleDataSchemaType = NonFungibleDataSchema;
+    type NonFungibleDataSchema = S;
 
-    fn into_create_with_no_supply_invocation(
-        self,
-    ) -> private::CreateWithNoSupply<Self::NonFungibleDataSchemaType> {
-        let non_fungible_schema = NonFungibleDataSchema::new_local_with_self_package_replacement::<D>(
-            Runtime::package_address(),
-        );
-
+    fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply<S> {
         private::CreateWithNoSupply::NonFungible {
             owner_role: self.owner_role,
             id_type: Y::id_type(),
-            non_fungible_schema,
-            resource_roles: self.resource_roles,
-            metadata: self.metadata_config,
-            address_reservation: self.address_reservation,
-        }
-    }
-}
-
-impl<Y: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>>
-    private::CanCreateWithNoSupply
-    for InProgressResourceBuilder<NonFungibleResourceTypeV2<Y, D, B>>
-{
-    type NonFungibleDataSchemaType =
-        FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>;
-
-    fn into_create_with_no_supply_invocation(
-        self,
-    ) -> private::CreateWithNoSupply<Self::NonFungibleDataSchemaType> {
-        let non_fungible_schema = RemoteNonFungibleDataSchema {
-            type_id: D::blueprint_type_identifier(),
-            mutable_fields: D::MUTABLE_FIELDS.iter().map(ToString::to_string).collect(),
-        };
-
-        private::CreateWithNoSupply::NonFungible {
-            owner_role: self.owner_role,
-            id_type: Y::id_type(),
-            non_fungible_schema: FixedEnumVariant::<
-                NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
-                RemoteNonFungibleDataSchema,
-            > {
-                fields: non_fungible_schema,
-            },
+            non_fungible_schema: self.resource_type.0,
             resource_roles: self.resource_roles,
             metadata: self.metadata_config,
             address_reservation: self.address_reservation,
@@ -1331,7 +961,6 @@ impl<Y: IsNonFungibleLocalId, B, D: NonFungibleData + RegisteredType<B>>
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_common::prelude::ScryptoDecode;
     use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
 
     pub trait CanSetMetadata: Sized {
@@ -1365,11 +994,11 @@ mod private {
     }
 
     pub trait CanCreateWithNoSupply: Sized {
-        type NonFungibleDataSchemaType: ScryptoCategorize + ScryptoEncode + ScryptoDecode;
+        type NonFungibleDataSchema: ScryptoCategorize + ScryptoEncode + ScryptoDecode;
 
         fn into_create_with_no_supply_invocation(
             self,
-        ) -> CreateWithNoSupply<Self::NonFungibleDataSchemaType>;
+        ) -> CreateWithNoSupply<Self::NonFungibleDataSchema>;
     }
 
     pub enum CreateWithNoSupply<S: ScryptoCategorize + ScryptoEncode + ScryptoDecode> {
