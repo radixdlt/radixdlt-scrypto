@@ -495,10 +495,48 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         import_statements
     };
 
-    let registered_type_ident = bp_ident.clone();
-    let mut registered_type_defs = Vec::<ItemStruct>::new();
+    let registered_type_ident = format_ident!("{}RegisteredType", bp_ident);
+    let mut registered_type_traits = Vec::<ItemTrait>::new();
+    let mut registered_type_structs = Vec::<ItemStruct>::new();
     let mut registered_type_impls = Vec::<ItemImpl>::new();
     let mut registered_type_paths = BTreeMap::<String, Path>::new();
+
+    registered_type_traits.push(parse_quote! {
+        pub trait #registered_type_ident {
+            fn blueprint_type_identifier() -> BlueprintTypeIdentifier;
+        }
+    });
+    let registered_type_kv_store = format_ident!("{}KeyValueStore", bp_ident);
+    registered_type_traits.push(parse_quote! {
+        pub trait #registered_type_kv_store {
+            fn new_with_registered() -> Self;
+        }
+    });
+    registered_type_impls.push(parse_quote! {
+        impl<
+            K: ScryptoEncode + ScryptoDecode + ScryptoDescribe + #registered_type_ident,
+            V: ScryptoEncode + ScryptoDecode + ScryptoDescribe + #registered_type_ident,
+        > #registered_type_kv_store for KeyValueStore<K, V> {
+            fn new_with_registered() -> Self {
+                let store_schema = RemoteKeyValueStoreDataSchema {
+                    key_type: K::blueprint_type_identifier(),
+                    value_type: V::blueprint_type_identifier(),
+                    allow_ownership: true,
+                };
+
+                Self {
+                    id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+                        KV_STORE_DATA_SCHEMA_VARIANT_REMOTE,
+                        RemoteKeyValueStoreDataSchema,
+                    > {
+                        fields: store_schema,
+                    })),
+                    key: PhantomData,
+                    value: PhantomData,
+                }
+            }
+        }
+    });
 
     for attribute in &blueprint.attributes {
         if attribute.path.is_ident("types") {
@@ -508,7 +546,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let type_name;
                 if let Some(alias) = aliasable_type.alias {
                     type_name = alias.to_string();
-                    registered_type_defs.push(parse_quote! {
+                    registered_type_structs.push(parse_quote! {
                         #[derive(ScryptoSbor)]
                         #[sbor(transparent)]
                         pub struct #alias(#path);
@@ -528,7 +566,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         }
                     });
                     registered_type_impls.push(parse_quote! {
-                        impl RegisteredType<#registered_type_ident> for #alias {
+                        impl #registered_type_ident for #alias {
                             fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                                 BlueprintTypeIdentifier {
                                     package_address: Runtime::package_address(),
@@ -541,7 +579,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 } else {
                     type_name = derive_sensible_identifier_from_path(&path)?;
                     registered_type_impls.push(parse_quote! {
-                        impl RegisteredType<#registered_type_ident> for #path {
+                        impl #registered_type_ident for #path {
                             fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                                 BlueprintTypeIdentifier {
                                     package_address: Runtime::package_address(),
@@ -944,7 +982,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             #output_stubs
 
-            #(#registered_type_defs)*
+            #(#registered_type_traits)*
+
+            #(#registered_type_structs)*
 
             #(#registered_type_impls)*
         }
@@ -2004,6 +2044,14 @@ mod tests {
                         }
                     }
 
+                    pub trait TestRegisteredType {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier;
+                    }
+
+                    pub trait TestKeyValueStore {
+                        fn new_with_registered() -> Self;
+                    }
+
                     #[derive(ScryptoSbor)]
                     #[sbor(transparent)]
                     pub struct Hi(Struct2);
@@ -2012,7 +2060,31 @@ mod tests {
                     #[sbor(transparent)]
                     pub struct GenericAlias(Vec<Bucket>);
 
-                    impl RegisteredType<Test> for Struct1 {
+                    impl<
+                            K: ScryptoEncode + ScryptoDecode + ScryptoDescribe + TestRegisteredType,
+                            V: ScryptoEncode + ScryptoDecode + ScryptoDescribe + TestRegisteredType,
+                        > TestKeyValueStore for KeyValueStore<K, V>
+                    {
+                        fn new_with_registered() -> Self {
+                            let store_schema = RemoteKeyValueStoreDataSchema {
+                                key_type: K::blueprint_type_identifier(),
+                                value_type: V::blueprint_type_identifier(),
+                                allow_ownership: true,
+                            };
+                            Self {
+                                id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+                                    KV_STORE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteKeyValueStoreDataSchema,
+                                > {
+                                    fields: store_schema,
+                                })),
+                                key: PhantomData,
+                                value: PhantomData,
+                            }
+                        }
+                    }
+
+                    impl TestRegisteredType for Struct1 {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2032,7 +2104,7 @@ mod tests {
                             value.0
                         }
                     }
-                    impl RegisteredType<Test> for Hi {
+                    impl TestRegisteredType for Hi {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2042,7 +2114,7 @@ mod tests {
                         }
                     }
 
-                    impl RegisteredType<Test> for u32 {
+                    impl TestRegisteredType for u32 {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2052,7 +2124,7 @@ mod tests {
                         }
                     }
 
-                    impl RegisteredType<Test> for NonFungibleGlobalId {
+                    impl TestRegisteredType for NonFungibleGlobalId {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2062,7 +2134,7 @@ mod tests {
                         }
                     }
 
-                    impl RegisteredType<Test> for Vec<Hash> {
+                    impl TestRegisteredType for Vec<Hash> {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),
@@ -2082,7 +2154,7 @@ mod tests {
                             value.0
                         }
                     }
-                    impl RegisteredType<Test> for GenericAlias {
+                    impl TestRegisteredType for GenericAlias {
                         fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
                             BlueprintTypeIdentifier {
                                 package_address: Runtime::package_address(),

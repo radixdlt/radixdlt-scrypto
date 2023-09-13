@@ -67,7 +67,7 @@ mod genesis_helper {
 
     struct GenesisHelper {
         consensus_manager: Global<ConsensusManager>,
-        validators: KeyValueStoreV2<GenesisHelper, Secp256k1PublicKey, Global<Validator>>,
+        validators: KeyValueStore<Secp256k1PublicKey, Global<Validator>>,
     }
 
     impl GenesisHelper {
@@ -78,7 +78,7 @@ mod genesis_helper {
         ) -> Global<GenesisHelper> {
             Self {
                 consensus_manager,
-                validators: KeyValueStoreV2::new(),
+                validators: KeyValueStore::new_with_registered(),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Updatable(rule!(require(system_role.clone()))))

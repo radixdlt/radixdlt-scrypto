@@ -6,7 +6,7 @@ use scrypto::prelude::*;
 mod faucet {
     struct Faucet {
         vault: Vault,
-        transactions: KeyValueStoreV2<Faucet, Hash, Epoch>,
+        transactions: KeyValueStore<Hash, Epoch>,
     }
 
     impl Faucet {
@@ -16,7 +16,7 @@ mod faucet {
         ) -> Global<Faucet> {
             Self {
                 vault: Vault::with_bucket(bucket),
-                transactions: KeyValueStoreV2::new(),
+                transactions: KeyValueStore::new_with_registered(),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
