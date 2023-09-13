@@ -1,4 +1,3 @@
-use std::ops::Neg;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -16,6 +15,7 @@ use radix_engine_interface::api::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
+use std::ops::Neg;
 
 declare_native_blueprint_state! {
     blueprint_ident: NonFungibleResourceManager,
@@ -644,8 +644,14 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (generic_args, mutable_field_index) =
-            Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
+        let (object_id, roles) = Self::create_object(
+            id_type,
+            indexmap!(),
+            track_total_supply,
+            non_fungible_schema,
+            resource_roles,
+            api,
+        )?;
 
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
@@ -657,53 +663,6 @@ impl NonFungibleResourceManagerBlueprint {
                 reservation
             }
         };
-
-        let mutable_fields = NonFungibleResourceManagerMutableFields {
-            mutable_field_index,
-        };
-
-        let (mut features, roles) = to_features_and_roles(resource_roles);
-        features.track_total_supply = track_total_supply;
-
-        let mut fields = indexmap! {
-            NonFungibleResourceManagerField::IdType.into() => FieldValue::immutable(
-                    &NonFungibleResourceManagerIdTypeFieldPayload::from_content_source(id_type),
-                ),
-            NonFungibleResourceManagerField::MutableFields.into() => FieldValue::immutable(
-                    &NonFungibleResourceManagerMutableFieldsFieldPayload::from_content_source(
-                        mutable_fields,
-                    ),
-                )
-        };
-
-        if track_total_supply {
-            let total_supply_field = if features.mint || features.burn {
-                FieldValue::new(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                        Decimal::zero(),
-                    ),
-                )
-            } else {
-                FieldValue::immutable(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                        Decimal::zero(),
-                    ),
-                )
-            };
-
-            fields.insert(
-                NonFungibleResourceManagerField::TotalSupply.into(),
-                total_supply_field,
-            );
-        }
-
-        let object_id = api.new_object(
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            features.feature_names_str(),
-            generic_args,
-            fields,
-            indexmap!(),
-        )?;
 
         let address = globalize_object(
             object_id,
@@ -731,20 +690,6 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let (generic_args, mutable_field_index) =
-            Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
-
-        let address_reservation = match address_reservation {
-            Some(address_reservation) => address_reservation,
-            None => {
-                let (reservation, _) = api.allocate_global_address(BlueprintId {
-                    package_address: RESOURCE_PACKAGE,
-                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                })?;
-                reservation
-            }
-        };
-
         // TODO: Do this check in a better way (e.g. via type check)
         if id_type == NonFungibleIdType::RUID {
             return Err(RuntimeError::ApplicationError(
@@ -753,6 +698,9 @@ impl NonFungibleResourceManagerBlueprint {
                 ),
             ));
         }
+
+        let (generic_args, mutable_field_index) =
+            Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
 
         let mutable_fields = NonFungibleResourceManagerMutableFields {
             mutable_field_index,
@@ -815,6 +763,17 @@ impl NonFungibleResourceManagerBlueprint {
             fields,
             indexmap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
         )?;
+
+        let address_reservation = match address_reservation {
+            Some(address_reservation) => address_reservation,
+            None => {
+                let (reservation, _) = api.allocate_global_address(BlueprintId {
+                    package_address: RESOURCE_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                })?;
+                reservation
+            }
+        };
 
         let (resource_address, bucket) = globalize_object_with_inner_object_and_event(
             object_id,
@@ -986,7 +945,13 @@ impl NonFungibleResourceManagerBlueprint {
                 ids.insert(id.clone());
                 non_fungibles.insert(id, value.0);
             }
-            create_non_fungibles(resource_address, NonFungibleIdType::RUID, non_fungibles, false, api)?;
+            create_non_fungibles(
+                resource_address,
+                NonFungibleIdType::RUID,
+                non_fungibles,
+                false,
+                api,
+            )?;
 
             ids
         };
@@ -1001,8 +966,8 @@ impl NonFungibleResourceManagerBlueprint {
         value: ScryptoValue,
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_mintable(api)?;
         Self::assert_is_ruid(api)?;
@@ -1014,7 +979,13 @@ impl NonFungibleResourceManagerBlueprint {
             let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
             let non_fungibles = indexmap!(id.clone() => value);
 
-            create_non_fungibles(resource_address, NonFungibleIdType::RUID, non_fungibles, false, api)?;
+            create_non_fungibles(
+                resource_address,
+                NonFungibleIdType::RUID,
+                non_fungibles,
+                false,
+                api,
+            )?;
 
             id
         };
@@ -1322,9 +1293,96 @@ impl NonFungibleResourceManagerBlueprint {
         }
     }
 
+    fn create_object<Y>(
+        id_type: NonFungibleIdType,
+        entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+        track_total_supply: bool,
+        non_fungible_schema: NonFungibleDataSchema,
+        resource_roles: NonFungibleResourceRoles,
+        api: &mut Y,
+    ) -> Result<(NodeId, RoleAssignmentInit), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let (generic_args, mutable_field_index) =
+            Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
+
+        let mutable_fields = NonFungibleResourceManagerMutableFields {
+            mutable_field_index,
+        };
+
+        let supply: Decimal = Decimal::from(entries.len());
+
+        let mut non_fungibles = index_map_new();
+        for (id, (value,)) in entries {
+            if id.id_type() != id_type {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::NonFungibleResourceManagerError(
+                        NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                            id.id_type(),
+                            id_type,
+                        ),
+                    ),
+                ));
+            }
+
+            let kv_entry = KVEntry {
+                value: Some(scrypto_encode(&value).unwrap()),
+                locked: false,
+            };
+
+            non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
+        }
+
+        let (mut features, roles) = to_features_and_roles(resource_roles);
+        features.track_total_supply = track_total_supply;
+
+        let mut fields = indexmap! {
+            NonFungibleResourceManagerField::IdType.into() => FieldValue::immutable(
+                    &NonFungibleResourceManagerIdTypeFieldPayload::from_content_source(id_type),
+                ),
+            NonFungibleResourceManagerField::MutableFields.into() => FieldValue::immutable(
+                    &NonFungibleResourceManagerMutableFieldsFieldPayload::from_content_source(
+                        mutable_fields,
+                    ),
+                )
+        };
+
+        if track_total_supply {
+            let total_supply_field = if features.mint || features.burn {
+                FieldValue::new(
+                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
+                        supply,
+                    ),
+                )
+            } else {
+                FieldValue::immutable(
+                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
+                        supply,
+                    ),
+                )
+            };
+
+            fields.insert(
+                NonFungibleResourceManagerField::TotalSupply.into(),
+                total_supply_field,
+            );
+        }
+
+        let object_id = api.new_object(
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            features.feature_names_str(),
+            generic_args,
+            fields,
+            indexmap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
+        )?;
+
+        Ok((object_id, roles))
+    }
+
     fn assert_is_not_ruid<Y>(api: &mut Y) -> Result<NonFungibleIdType, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1346,8 +1404,8 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     fn assert_is_ruid<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         // Check type
         let handle = api.actor_open_field(
@@ -1416,8 +1474,8 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     fn update_total_supply<Y>(api: &mut Y, amount: Decimal) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         if api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
