@@ -1,4 +1,4 @@
-use crate::{TestFuzzer, ValidatorMeta};
+use crate::{SystemTestFuzzer, ValidatorMeta};
 use radix_engine::types::FromRepr;
 use radix_engine_common::constants::XRD;
 use radix_engine_common::manifest_args;
@@ -33,7 +33,7 @@ impl ValidatorFuzzAction {
         &self,
         _uuid: u64,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         meta: &Vec<ValidatorMeta>,
         _account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {

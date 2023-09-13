@@ -1,4 +1,4 @@
-use crate::{OnePoolMeta, TestFuzzer};
+use crate::{OnePoolMeta, SystemTestFuzzer};
 use radix_engine::types::FromRepr;
 use radix_engine_common::prelude::ComponentAddress;
 use radix_engine_interface::blueprints::pool::{
@@ -24,7 +24,7 @@ impl OnePoolFuzzAction {
     pub fn add_to_manifest(
         &self,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         account_address: ComponentAddress,
         one_pool_meta: &OnePoolMeta,
     ) -> (ManifestBuilder, bool) {

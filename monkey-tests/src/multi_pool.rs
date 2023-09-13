@@ -1,4 +1,4 @@
-use crate::{MultiPoolMeta, TestFuzzer};
+use crate::{MultiPoolMeta, SystemTestFuzzer};
 use radix_engine::types::FromRepr;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{ComponentAddress, Decimal, ManifestExpression};
@@ -28,7 +28,7 @@ impl MultiPoolFuzzAction {
     pub fn add_to_manifest(
         &self,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         account_address: ComponentAddress,
         multi_pool_meta: &MultiPoolMeta,
     ) -> (ManifestBuilder, bool) {

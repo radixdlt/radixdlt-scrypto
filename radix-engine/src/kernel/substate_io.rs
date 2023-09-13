@@ -253,7 +253,9 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                     CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
                 })?,
             SubstateDevice::Store => {
-                panic!("Partition moves from store not supported.");
+                return Err(CallbackError::Error(
+                    MovePartitionError::MoveFromStoreNotPermitted,
+                ));
             }
         };
 

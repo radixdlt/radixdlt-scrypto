@@ -439,6 +439,11 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
 #[cfg(feature = "post_run_db_check")]
 impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
     fn drop(&mut self) {
+        let mut kernel_checker = KernelDatabaseChecker::new();
+        kernel_checker
+            .check_db(&self.database)
+            .expect("Database should be consistent");
+
         let db_results = self
             .check_db::<ResourceDatabaseChecker>()
             .expect("Database should be consistent after running test");

@@ -1,4 +1,4 @@
-use crate::{ResourceComponentMeta, TestFuzzer};
+use crate::{ResourceComponentMeta, SystemTestFuzzer};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::{NativeBucket, NativeVault};
@@ -122,7 +122,7 @@ impl FungibleResourceFuzzGetBucketAction {
     pub fn add_to_manifest(
         &self,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         vault_meta: &ResourceComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
@@ -173,7 +173,7 @@ impl ResourceFuzzTransformBucketAction {
     pub fn add_to_manifest(
         &self,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         vault_meta: &ResourceComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
@@ -211,7 +211,7 @@ impl ResourceFuzzRandomAction {
     pub fn add_to_manifest(
         &self,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         account: ComponentAddress,
         fungible_vault_meta: &ResourceComponentMeta,
         non_fungible_vault_meta: &ResourceComponentMeta,
@@ -300,7 +300,7 @@ impl ResourceFuzzUseBucketAction {
     pub fn add_to_manifest(
         &self,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         vault_meta: &ResourceComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {
@@ -344,7 +344,7 @@ impl NonFungibleResourceFuzzGetBucketAction {
     pub fn add_to_manifest(
         &self,
         builder: ManifestBuilder,
-        fuzzer: &mut TestFuzzer,
+        fuzzer: &mut SystemTestFuzzer,
         vault_meta: &ResourceComponentMeta,
     ) -> (ManifestBuilder, bool) {
         match self {

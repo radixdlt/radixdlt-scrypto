@@ -456,6 +456,7 @@ pub enum MovePartitionError {
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
     SubstateBorrowed(NodeId),
+    MoveFromStoreNotPermitted,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
