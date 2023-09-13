@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::component::globalize_object;
+use native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
@@ -96,7 +96,6 @@ pub struct NonFungibleResourceManagerMutableFieldsV1 {
 pub enum NonFungibleResourceManagerError {
     NonFungibleAlreadyExists(Box<NonFungibleGlobalId>),
     NonFungibleNotFound(Box<NonFungibleGlobalId>),
-    InvalidRole(String),
     UnknownMutableFieldName(String),
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
@@ -760,7 +759,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let supply: Decimal = Decimal::from(entries.len());
 
-        let ids = entries.keys().cloned().collect();
+        let ids: IndexSet<NonFungibleLocalId> = entries.keys().cloned().collect();
 
         let mut non_fungibles = index_map_new();
         for (id, (value,)) in entries {
@@ -815,17 +814,27 @@ impl NonFungibleResourceManagerBlueprint {
             fields,
             indexmap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
         )?;
-        let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
-            owner_role,
+
+        let (resource_address, bucket) = globalize_object_with_inner_object_and_event(
             object_id,
+            owner_role,
             address_reservation,
             roles,
             metadata,
-            ids,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT,
+            indexmap! {
+                NonFungibleBucketField::Liquid.field_index() => FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
+                NonFungibleBucketField::Locked.field_index() => FieldValue::new(&LockedNonFungibleResource::default()),
+            },
+            MintNonFungibleResourceEvent::EVENT_NAME,
+            MintNonFungibleResourceEvent { ids },
             api,
         )?;
 
-        Ok((resource_address, bucket))
+        Ok((
+            ResourceAddress::new_or_panic(resource_address.into()),
+            Bucket(Own(bucket)),
+        ))
     }
 
     pub(crate) fn create_ruid_with_initial_supply<Y>(
@@ -905,17 +914,27 @@ impl NonFungibleResourceManagerBlueprint {
             fields,
             indexmap!(NonFungibleResourceManagerCollection::DataKeyValue.collection_index() => non_fungibles),
         )?;
-        let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
-            owner_role,
+
+        let (resource_address, bucket) = globalize_object_with_inner_object_and_event(
             object_id,
+            owner_role,
             address_reservation,
             roles,
             metadata,
-            ids,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT,
+            indexmap! {
+                NonFungibleBucketField::Liquid.field_index() => FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
+                NonFungibleBucketField::Locked.field_index() => FieldValue::new(&LockedNonFungibleResource::default()),
+            },
+            MintNonFungibleResourceEvent::EVENT_NAME,
+            MintNonFungibleResourceEvent { ids },
             api,
         )?;
 
-        Ok((resource_address, bucket))
+        Ok((
+            ResourceAddress::new_or_panic(resource_address.into()),
+            Bucket(Own(bucket)),
+        ))
     }
 
     pub(crate) fn mint_non_fungible<Y>(
