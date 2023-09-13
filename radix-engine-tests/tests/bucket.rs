@@ -1,7 +1,9 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
-use radix_engine::blueprints::resource::{ProofError, VaultError};
+use radix_engine::blueprints::resource::{
+    FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError, VaultError,
+};
 use radix_engine::errors::SystemError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::{
@@ -39,19 +41,85 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
     }
 }
 
+fn test_bucket_internal2<F: FnOnce(TransactionReceipt)>(
+    method_name: &str,
+    args: ManifestValue,
+    on_receipt: F,
+) {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account)
+        .call_function_raw(package_address, "BucketTest", method_name, args)
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    on_receipt(receipt);
+}
+
 #[test]
 fn test_drop_bucket() {
     test_bucket_internal("drop_bucket", manifest_args!().into(), false);
 }
 
 #[test]
-fn test_bucket_drop_empty() {
-    test_bucket_internal("drop_empty", manifest_args!(0u32).into(), true);
+fn test_fungible_bucket_drop_empty() {
+    test_bucket_internal2("drop_fungible_empty", manifest_args!(0u32).into(), |r| {
+        r.expect_commit_success();
+    });
 }
 
 #[test]
-fn test_bucket_drop_not_empty() {
-    test_bucket_internal("drop_empty", manifest_args!(1u32).into(), false);
+fn test_fungible_bucket_drop_not_empty() {
+    test_bucket_internal2("drop_fungible_empty", manifest_args!(1u32).into(), |r| {
+        r.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
+                    FungibleResourceManagerError::DropNonEmptyBucket
+                ))
+            )
+        });
+    });
+}
+
+#[test]
+fn test_non_fungible_bucket_drop_empty() {
+    test_bucket_internal2(
+        "drop_non_fungible_empty",
+        manifest_args!(true).into(),
+        |r| {
+            r.expect_commit_success();
+        },
+    );
+}
+
+#[test]
+fn test_non_fungible_bucket_drop_not_empty() {
+    test_bucket_internal2(
+        "drop_non_fungible_empty",
+        manifest_args!(false).into(),
+        |r| {
+            r.expect_specific_failure(|e| {
+                matches!(
+                    e,
+                    RuntimeError::ApplicationError(
+                        ApplicationError::NonFungibleResourceManagerError(
+                            NonFungibleResourceManagerError::DropNonEmptyBucket
+                        )
+                    )
+                )
+            });
+        },
+    );
 }
 
 #[test]
