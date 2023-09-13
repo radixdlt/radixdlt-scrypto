@@ -74,6 +74,9 @@ pub use sbor_derive::{
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
 extern crate self as sbor;
 
+// For self-contained macros
+pub extern crate paste;
+
 /// Each module should have its own prelude, which:
 /// * Adds preludes of upstream crates
 /// * Exports types with specific-enough names which mean they can safely be used downstream.
@@ -94,6 +97,7 @@ pub mod prelude {
     pub use crate::schema::prelude::*;
     pub use crate::value::{CustomValue as SborCustomValue, Value as SborValue};
     pub use crate::value_kind::*;
+    pub use crate::versioned::{CloneIntoLatest, HasLatestVersion, UpdateResult};
     pub use crate::{
         basic_decode, basic_encode, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode,
         BasicSbor,
