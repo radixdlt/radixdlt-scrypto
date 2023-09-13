@@ -291,3 +291,16 @@ mod swappy {
         pub fn receive_proof(&self, _proof: Proof) {}
     }
 }
+
+#[blueprint]
+mod count_of_zero {
+    enable_function_auth! {
+        hi => AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(0, vec![ResourceOrNonFungible::Resource(XRD)])));
+    }
+
+    struct CountOfZero {}
+
+    impl CountOfZero {
+        pub fn hi() {}
+    }
+}

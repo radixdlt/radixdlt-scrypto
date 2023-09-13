@@ -1,4 +1,6 @@
-use crate::track::{BatchPartitionUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates};
+use crate::track::{
+    BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
+};
 use radix_engine_common::types::{NodeId, PartitionNumber, SubstateKey};
 use radix_engine_interface::ScryptoSbor;
 use radix_engine_store_interface::interface::DatabaseUpdate;
@@ -54,7 +56,7 @@ impl From<StateUpdates> for LegacyStateUpdates {
                                 system_updates.insert(node_partition, by_substate);
                             }
                             PartitionStateUpdates::Batch(batch) => match batch {
-                                BatchPartitionUpdate::Reset {
+                                BatchPartitionStateUpdate::Reset {
                                     new_substate_values,
                                 } => {
                                     partition_deletions.insert(node_partition.clone());

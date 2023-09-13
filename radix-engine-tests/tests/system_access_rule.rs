@@ -1,4 +1,7 @@
+mod package_loader;
+
 use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
+use package_loader::PackageLoader;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::node_modules::role_assignment::RoleAssignmentError;
@@ -7,6 +10,7 @@ use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_queries::typed_substate_layout::{FunctionAuth, PackageError};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -144,6 +148,54 @@ fn setting_a_role_access_rule_which_is_beyond_the_length_limit_should_error() {
             )
         },
     );
+}
+
+#[test]
+fn package_function_access_rules_are_checked_for_depth_and_width() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("address");
+    let rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
+
+    definition.blueprints.values_mut().for_each(|bp_def| {
+        let func_auth = bp_def
+            .schema
+            .functions
+            .functions
+            .iter()
+            .filter_map(|(func, func_def)| {
+                if func_def.receiver.is_none() {
+                    Some((func.clone(), rule.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect::<IndexMap<_, _>>();
+        bp_def.auth_config.function_auth = FunctionAuth::AccessRules(func_auth);
+    });
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::RoleAssignmentError(..)
+            ))
+        )
+    })
 }
 
 fn create_access_rule_of_depth(depth: usize) -> AccessRule {

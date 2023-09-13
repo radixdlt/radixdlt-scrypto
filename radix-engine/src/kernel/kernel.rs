@@ -12,6 +12,7 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
+use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -38,14 +39,14 @@ use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct KernelBoot<'g, V: SystemCallbackObject, S: CommitableSubstateStore> {
+pub struct KernelBoot<'g, M: KernelCallbackObject, S: CommitableSubstateStore> {
     pub id_allocator: &'g mut IdAllocator,
-    pub callback: &'g mut SystemConfig<V>,
+    pub callback: &'g mut M,
     pub store: &'g mut S,
 }
 
-impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, V, S> {
-    pub fn create_kernel_for_test_only(&mut self) -> Kernel<SystemConfig<V>, S> {
+impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
+    pub fn create_kernel_for_test_only(&mut self) -> Kernel<M, S> {
         Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
@@ -53,15 +54,19 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
                 heap_transient_substates: TransientSubstates::new(),
-                pinned_nodes: BTreeSet::new(),
+                pinned_to_heap: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
-            current_frame: CallFrame::new_root(Actor::Root),
+            current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
             callback: self.callback,
         }
     }
+}
 
+impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore>
+    KernelBoot<'g, SystemConfig<V>, S>
+{
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
         self,
@@ -82,7 +87,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
                 heap_transient_substates: TransientSubstates::new(),
-                pinned_nodes: BTreeSet::new(),
+                pinned_to_heap: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
@@ -312,25 +317,6 @@ where
             })
     }
 
-    #[trace_resources]
-    fn kernel_mark_substate_as_transient(
-        &mut self,
-        node_id: NodeId,
-        partition_num: PartitionNumber,
-        key: SubstateKey,
-    ) -> Result<(), RuntimeError> {
-        self.callback
-            .on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
-
-        self.current_frame
-            .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)
-            .map_err(|e| {
-                RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::MarkTransientSubstateError(e),
-                ))
-            })
-    }
-
     #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         M::on_allocate_node_id(entity_type, self)?;
@@ -373,8 +359,78 @@ where
         Ok(())
     }
 
+    fn kernel_create_node_from(
+        &mut self,
+        node_id: NodeId,
+        partitions: BTreeMap<PartitionNumber, (NodeId, PartitionNumber)>,
+    ) -> Result<(), RuntimeError> {
+        {
+            let node_substates = NodeSubstates::new();
+            let mut read_only = as_read_only!(self);
+            M::on_create_node(
+                &mut read_only,
+                CreateNodeEvent::Start(&node_id, &node_substates),
+            )?;
+
+            let mut handler = KernelHandler {
+                callback: self.callback,
+                prev_frame: self.prev_frame_stack.last(),
+                on_io_access: |api, io_access| {
+                    M::on_create_node(api, CreateNodeEvent::IOAccess(&io_access))
+                },
+            };
+
+            self.current_frame
+                .create_node(
+                    &mut self.substate_io,
+                    &mut handler,
+                    node_id,
+                    NodeSubstates::new(),
+                )
+                .map_err(|e| match e {
+                    CallbackError::Error(e) => RuntimeError::KernelError(
+                        KernelError::CallFrameError(CallFrameError::CreateNodeError(e)),
+                    ),
+                    CallbackError::CallbackError(e) => e,
+                })?;
+
+            let mut read_only = as_read_only!(self);
+            M::on_create_node(&mut read_only, CreateNodeEvent::End(&node_id))?;
+        }
+
+        {
+            let mut handler = KernelHandler {
+                callback: self.callback,
+                prev_frame: self.prev_frame_stack.last(),
+                on_io_access: |api, io_access| {
+                    M::on_move_module(api, MoveModuleEvent::IOAccess(&io_access))
+                },
+            };
+
+            for (dest_partition_number, (src_node_id, src_partition_number)) in partitions {
+                self.current_frame
+                    .move_partition(
+                        &mut self.substate_io,
+                        &mut handler,
+                        &src_node_id,
+                        src_partition_number,
+                        &node_id,
+                        dest_partition_number,
+                    )
+                    .map_err(|e| match e {
+                        CallbackError::Error(e) => RuntimeError::KernelError(
+                            KernelError::CallFrameError(CallFrameError::MovePartitionError(e)),
+                        ),
+                        CallbackError::CallbackError(e) => e,
+                    })?;
+            }
+        }
+
+        Ok(())
+    }
+
     #[trace_resources(log=node_id.entity_type())]
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<DroppedNode, RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
 
@@ -387,7 +443,7 @@ where
                 M::on_drop_node(api, DropNodeEvent::IOAccess(&io_access))
             },
         };
-        let node_substates = self
+        let dropped_node = self
             .current_frame
             .drop_node(&mut self.substate_io, node_id, &mut handler)
             .map_err(|e| match e {
@@ -398,44 +454,12 @@ where
             })?;
 
         let mut read_only = as_read_only!(self);
-        M::on_drop_node(&mut read_only, DropNodeEvent::End(node_id, &node_substates))?;
+        M::on_drop_node(
+            &mut read_only,
+            DropNodeEvent::End(node_id, &dropped_node.substates),
+        )?;
 
-        Ok(node_substates)
-    }
-
-    #[trace_resources]
-    fn kernel_move_partition(
-        &mut self,
-        src_node_id: &NodeId,
-        src_partition_number: PartitionNumber,
-        dest_node_id: &NodeId,
-        dest_partition_number: PartitionNumber,
-    ) -> Result<(), RuntimeError> {
-        let mut handler = KernelHandler {
-            callback: self.callback,
-            prev_frame: self.prev_frame_stack.last(),
-            on_io_access: |api, io_access| {
-                M::on_move_module(api, MoveModuleEvent::IOAccess(&io_access))
-            },
-        };
-
-        self.current_frame
-            .move_partition(
-                &mut self.substate_io,
-                &mut handler,
-                src_node_id,
-                src_partition_number,
-                dest_node_id,
-                dest_partition_number,
-            )
-            .map_err(|e| match e {
-                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::MovePartitionError(e),
-                )),
-                CallbackError::CallbackError(e) => e,
-            })?;
-
-        Ok(())
+        Ok(dropped_node)
     }
 }
 
@@ -670,6 +694,25 @@ where
     M: KernelCallbackObject,
     S: CommitableSubstateStore,
 {
+    #[trace_resources]
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        self.callback
+            .on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
+
+        self.current_frame
+            .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::MarkTransientSubstateError(e),
+                ))
+            })
+    }
+
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
@@ -1085,9 +1128,14 @@ where
 
         // Push call frame
         {
-            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, callee, message)
-                .map_err(CallFrameError::CreateFrameError)
-                .map_err(KernelError::CallFrameError)?;
+            let frame = CallFrame::new_child_from_parent(
+                &self.substate_io,
+                &mut self.current_frame,
+                callee,
+                message,
+            )
+            .map_err(CallFrameError::CreateFrameError)
+            .map_err(KernelError::CallFrameError)?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
         }
@@ -1130,9 +1178,14 @@ where
             let parent = self.prev_frame_stack.last_mut().unwrap();
 
             // Move resource
-            CallFrame::pass_message(&mut self.current_frame, parent, message.clone())
-                .map_err(CallFrameError::PassMessageError)
-                .map_err(KernelError::CallFrameError)?;
+            CallFrame::pass_message(
+                &self.substate_io,
+                &mut self.current_frame,
+                parent,
+                message.clone(),
+            )
+            .map_err(CallFrameError::PassMessageError)
+            .map_err(KernelError::CallFrameError)?;
 
             // Auto-drop
             let owned_nodes = self.current_frame.owned_nodes();
@@ -1197,11 +1250,14 @@ where
 
     pub fn kernel_current_frame_mut(
         &mut self,
-    ) -> &mut CallFrame<
-        <M as KernelCallbackObject>::CallFrameData,
-        <M as KernelCallbackObject>::LockData,
-    > {
-        &mut self.current_frame
+    ) -> (
+        &SubstateIO<S>,
+        &mut CallFrame<
+            <M as KernelCallbackObject>::CallFrameData,
+            <M as KernelCallbackObject>::LockData,
+        >,
+    ) {
+        (&self.substate_io, &mut self.current_frame)
     }
 
     pub fn kernel_prev_frame_stack(

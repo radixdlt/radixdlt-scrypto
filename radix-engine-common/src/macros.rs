@@ -2,6 +2,30 @@
 ///
 #[macro_export]
 macro_rules! dec {
+    (0) => {
+        $crate::math::Decimal::ZERO
+    };
+    ("0") => {
+        $crate::math::Decimal::ZERO
+    };
+    ("0.1") => {
+        $crate::math::Decimal::ONE_TENTH
+    };
+    ("1" | 1) => {
+        $crate::math::Decimal::ONE
+    };
+    (10) => {
+        $crate::math::Decimal::TEN
+    };
+    ("10") => {
+        $crate::math::Decimal::TEN
+    };
+    (100) => {
+        $crate::math::Decimal::ONE_HUNDRED
+    };
+    ("100") => {
+        $crate::math::Decimal::ONE_HUNDRED
+    };
     // NOTE: Decimal arithmetic operation safe unwrap.
     // In general, it is assumed that reasonable literals are provided.
     // If not then something is definitely wrong and panic is fine.
@@ -51,6 +75,33 @@ macro_rules! i {
 ///
 #[macro_export]
 macro_rules! pdec {
+    (0) => {
+        $crate::math::PreciseDecimal::ZERO
+    };
+    ("0") => {
+        $crate::math::PreciseDecimal::ZERO
+    };
+    ("0.1") => {
+        $crate::math::PreciseDecimal::ONE_TENTH
+    };
+    (1) => {
+        $crate::math::PreciseDecimal::ONE
+    };
+    ("1") => {
+        $crate::math::PreciseDecimal::ONE
+    };
+    (10) => {
+        $crate::math::PreciseDecimal::TEN
+    };
+    ("10") => {
+        $crate::math::PreciseDecimal::TEN
+    };
+    (100) => {
+        $crate::math::PreciseDecimal::ONE_HUNDRED
+    };
+    ("100") => {
+        $crate::math::PreciseDecimal::ONE_HUNDRED
+    };
     // NOTE: PreciseDecimal arithmetic operation safe unwrap.
     // In general, it is assumed that reasonable literals are provided.
     // If not then something is definitely wrong and panic is fine.

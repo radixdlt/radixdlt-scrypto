@@ -612,6 +612,7 @@ where
         Ok(())
     }
 
+    /// Internal, handle must be checked or from trusted sources
     fn key_value_entry_remove_and_close_substate(
         &mut self,
         handle: KeyValueEntryHandle,
@@ -864,9 +865,10 @@ where
     ) -> Result<GlobalAddress, RuntimeError> {
         // Check global address reservation
         let global_address = {
-            let substates = self.kernel_drop_node(global_address_reservation.0.as_node_id())?;
+            let dropped_node = self.kernel_drop_node(global_address_reservation.0.as_node_id())?;
 
-            let type_info: Option<TypeInfoSubstate> = substates
+            let type_info: Option<TypeInfoSubstate> = dropped_node
+                .substates
                 .get(&TYPE_INFO_FIELD_PARTITION)
                 .and_then(|x| x.get(&TypeInfoField::TypeInfo.into()))
                 .and_then(|x| x.as_typed().ok());
@@ -939,7 +941,7 @@ where
         let mut object_info = self.get_object_info(&node_id)?;
 
         // Verify can globalize with address
-        {
+        let num_main_partitions = {
             if object_info.is_global() {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                     CannotGlobalizeError::AlreadyGlobalized,
@@ -954,63 +956,38 @@ where
                     CannotGlobalizeError::InvalidBlueprintId,
                 )));
             }
-        }
-
-        // Update Object Info
-        {
-            let mut module_versions = index_map_new();
-            for module_id in modules.keys() {
-                module_versions.insert(module_id.clone(), BlueprintVersion::default());
-            }
-
-            object_info.object_type = ObjectType::Global {
-                modules: module_versions,
-            };
-        }
-
-        let num_main_partitions = {
             let interface = self
                 .get_blueprint_default_interface(object_info.blueprint_info.blueprint_id.clone())?;
+
+            if interface.is_transient {
+                return Err(RuntimeError::SystemError(
+                    SystemError::GlobalizingTransientBlueprint,
+                ));
+            }
+
             interface.state.num_logical_partitions()
         };
 
-        // Create a global node
-        self.kernel_create_node(
-            global_address.into(),
-            btreemap!(
-                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(object_info))
-            ),
-        )?;
-
-        self.kernel_move_partition(
-            &node_id,
-            SCHEMAS_PARTITION,
-            global_address.as_node_id(),
-            SCHEMAS_PARTITION,
-        )?;
+        let mut partitions = btreemap!(
+            SCHEMAS_PARTITION => (node_id, SCHEMAS_PARTITION),
+        );
 
         // Move self modules to the newly created global node, and drop
         for offset in 0u8..num_main_partitions {
             let partition_number = MAIN_BASE_PARTITION
                 .at_offset(PartitionOffset(offset))
                 .unwrap();
-            self.kernel_move_partition(
-                &node_id,
-                partition_number,
-                global_address.as_node_id(),
-                partition_number,
-            )?;
+
+            partitions.insert(partition_number, (node_id, partition_number));
         }
 
-        self.kernel_drop_node(&node_id)?;
-
         // Move other modules, and drop
-        for (module_id, node_id) in modules {
+        for (module_id, node_id) in &modules {
             match module_id {
                 AttachedModuleId::RoleAssignment
                 | AttachedModuleId::Metadata
                 | AttachedModuleId::Royalty => {
-                    let blueprint_id = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
+                    let blueprint_id = self.get_object_info(node_id)?.blueprint_info.blueprint_id;
                     let expected_blueprint = module_id.static_blueprint();
                     if !blueprint_id.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -1026,15 +1003,15 @@ where
                         .system
                         .modules
                         .add_replacement(
-                            (node_id, ModuleId::Main),
-                            (*global_address.as_node_id(), module_id.into()),
+                            (*node_id, ModuleId::Main),
+                            (*global_address.as_node_id(), module_id.clone().into()),
                         );
 
                     // Move and drop
                     let interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
                     let num_logical_partitions = interface.state.num_logical_partitions();
 
-                    let module_id: ModuleId = module_id.into();
+                    let module_id: ModuleId = module_id.clone().into();
                     let module_base_partition = module_id.base_partition_num();
                     for offset in 0u8..num_logical_partitions {
                         let src = MAIN_BASE_PARTITION
@@ -1044,16 +1021,37 @@ where
                             .at_offset(PartitionOffset(offset))
                             .unwrap();
 
-                        self.kernel_move_partition(
-                            &node_id,
-                            src,
-                            global_address.as_node_id(),
-                            dest,
-                        )?;
+                        partitions.insert(dest, (*node_id, src));
                     }
-
-                    self.kernel_drop_node(&node_id)?;
                 }
+            }
+        }
+
+        self.kernel_create_node_from(global_address.into(), partitions)?;
+
+        // Update Object Info
+        {
+            let mut module_versions = index_map_new();
+            for module_id in modules.keys() {
+                module_versions.insert(module_id.clone(), BlueprintVersion::default());
+            }
+            object_info.object_type = ObjectType::Global {
+                modules: module_versions,
+            };
+
+            self.kernel_set_substate(
+                &global_address.into(),
+                TYPE_INFO_FIELD_PARTITION,
+                SubstateKey::Field(0u8),
+                IndexedScryptoValue::from_typed(&TypeInfoSubstate::Object(object_info)),
+            )?;
+        }
+
+        // Drop nodes
+        {
+            self.kernel_drop_node(&node_id)?;
+            for (_module_id, node_id) in &modules {
+                self.kernel_drop_node(&node_id)?;
             }
         }
 
@@ -1559,18 +1557,19 @@ where
             }
         }
 
-        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-        let fields = if let Some(user_substates) = node_substates.remove(&MAIN_BASE_PARTITION) {
-            user_substates
-                .into_iter()
-                .map(|(_key, v)| {
-                    let substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
-                    scrypto_encode(&substate.into_payload()).unwrap()
-                })
-                .collect()
-        } else {
-            vec![]
-        };
+        let mut dropped_node = self.api.kernel_drop_node(&node_id)?;
+        let fields =
+            if let Some(user_substates) = dropped_node.substates.remove(&MAIN_BASE_PARTITION) {
+                user_substates
+                    .into_iter()
+                    .map(|(_key, v)| {
+                        let substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+                        scrypto_encode(&substate.into_payload()).unwrap()
+                    })
+                    .collect()
+            } else {
+                vec![]
+            };
 
         Ok(fields)
     }
@@ -1592,11 +1591,10 @@ where
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
-        match data {
-            SystemLockData::KeyValueEntry(..) => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
-            }
+        if !data.is_kv_entry() {
+            return Err(RuntimeError::SystemError(
+                SystemError::NotAKeyValueEntryHandle,
+            ));
         }
 
         self.api.kernel_read_substate(handle).map(|v| {
@@ -1615,7 +1613,7 @@ where
             ) => {}
             _ => {
                 return Err(RuntimeError::SystemError(
-                    SystemError::NotAKeyValueWriteLock,
+                    SystemError::NotAKeyValueEntryWriteHandle,
                 ));
             }
         };
@@ -1633,6 +1631,13 @@ where
         &mut self,
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
+        let data = self.api.kernel_get_lock_data(handle)?;
+        if !data.is_kv_entry_with_write() {
+            return Err(RuntimeError::SystemError(
+                SystemError::NotAKeyValueEntryWriteHandle,
+            ));
+        }
+
         let current_value = self
             .api
             .kernel_read_substate(handle)
@@ -1679,7 +1684,7 @@ where
             }
             _ => {
                 return Err(RuntimeError::SystemError(
-                    SystemError::NotAKeyValueWriteLock,
+                    SystemError::NotAKeyValueEntryWriteHandle,
                 ));
             }
         }
@@ -1700,7 +1705,9 @@ where
     fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
         if !data.is_kv_entry() {
-            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
+            return Err(RuntimeError::SystemError(
+                SystemError::NotAKeyValueEntryHandle,
+            ));
         }
 
         self.api.kernel_close_substate(handle)
@@ -2789,17 +2796,7 @@ where
         self.api.kernel_pin_node(node_id)
     }
 
-    fn kernel_mark_substate_as_transient(
-        &mut self,
-        node_id: NodeId,
-        partition_num: PartitionNumber,
-        key: SubstateKey,
-    ) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_mark_substate_as_transient(node_id, partition_num, key)
-    }
-
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<DroppedNode, RuntimeError> {
         self.api.kernel_drop_node(node_id)
     }
 
@@ -2815,19 +2812,12 @@ where
         self.api.kernel_create_node(node_id, node_substates)
     }
 
-    fn kernel_move_partition(
+    fn kernel_create_node_from(
         &mut self,
-        src_node_id: &NodeId,
-        src_partition_number: PartitionNumber,
-        dest_node_id: &NodeId,
-        dest_partition_number: PartitionNumber,
+        node_id: NodeId,
+        partitions: BTreeMap<PartitionNumber, (NodeId, PartitionNumber)>,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_move_partition(
-            src_node_id,
-            src_partition_number,
-            dest_node_id,
-            dest_partition_number,
-        )
+        self.api.kernel_create_node_from(node_id, partitions)
     }
 }
 
@@ -2840,6 +2830,16 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    fn kernel_mark_substate_as_transient(
+        &mut self,
+        node_id: NodeId,
+        partition_num: PartitionNumber,
+        key: SubstateKey,
+    ) -> Result<(), RuntimeError> {
+        self.api
+            .kernel_mark_substate_as_transient(node_id, partition_num, key)
+    }
+
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,

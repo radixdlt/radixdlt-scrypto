@@ -291,10 +291,7 @@ where
         self.allocate_buffer(value)
     }
 
-    fn key_value_entry_release(
-        &mut self,
-        handle: u32,
-    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn key_value_entry_close(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.key_value_entry_close(handle)?;
         Ok(())
     }

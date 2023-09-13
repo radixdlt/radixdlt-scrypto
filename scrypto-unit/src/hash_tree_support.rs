@@ -1,12 +1,10 @@
 use radix_engine::types::*;
 use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
-    DbSubstateValue, ListableSubstateDatabase, PartitionEntry, SubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
+    ListableSubstateDatabase, PartitionEntry, SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use radix_engine_stores::hash_tree::{
-    list_substate_hashes_at_version, put_at_next_version, SubstateHashChange,
-};
+use radix_engine_stores::hash_tree::{list_substate_hashes_at_version, put_at_next_version};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct HashTreeUpdatingDatabase<D> {
@@ -35,24 +33,10 @@ impl<D> HashTreeUpdatingDatabase<D> {
     }
 
     fn update_with(&mut self, db_updates: &DatabaseUpdates) {
-        let mut hash_changes = Vec::new();
-        for (db_partition_key, partition_update) in db_updates {
-            for (db_sort_key, db_update) in partition_update {
-                let hash_change = SubstateHashChange::new(
-                    (db_partition_key.clone(), db_sort_key.clone()),
-                    match db_update {
-                        DatabaseUpdate::Set(v) => Some(hash(v)),
-                        DatabaseUpdate::Delete => None,
-                    },
-                );
-                hash_changes.push(hash_change);
-            }
-        }
-
         self.current_hash = put_at_next_version(
             &mut self.tree_store,
             Some(self.current_version).filter(|version| *version > 0),
-            hash_changes,
+            db_updates,
         );
         self.current_version += 1;
     }

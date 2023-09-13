@@ -1,6 +1,7 @@
+use crate::kernel::kernel_api::DroppedNode;
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
-    IOAccessHandler, ProcessSubstateIOWriteError, SubstateDevice, SubstateIO, SubstateReadHandler,
+    IOAccessHandler, SubstateDevice, SubstateIO, SubstateReadHandler,
 };
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
 use crate::types::*;
@@ -419,9 +420,6 @@ pub enum PassMessageError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateNodeError {
     ProcessSubstateError(ProcessSubstateError),
-    ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
-    NonGlobalRefNotAllowed(NodeId),
-    PersistNodeError(PersistNodeError),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
     SubstateDiffError(SubstateDiffError),
 }
@@ -447,7 +445,7 @@ pub enum PersistNodeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TakeNodeError {
     OwnNotFound(NodeId),
-    OwnLocked(NodeId),
+    SubstateBorrowed(NodeId),
 }
 
 /// Represents an error when moving modules from one node to another.
@@ -458,6 +456,7 @@ pub enum MovePartitionError {
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
     SubstateBorrowed(NodeId),
+    MoveFromStoreNotPermitted,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -486,26 +485,23 @@ pub enum OpenSubstateError {
 /// Represents an error when reading substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ReadSubstateError {
-    LockNotFound(SubstateHandle),
+    HandleNotFound(SubstateHandle),
 }
 
 /// Represents an error when writing substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WriteSubstateError {
-    LockNotFound(SubstateHandle),
-    ProcessSubstateIOWriteError(ProcessSubstateIOWriteError),
+    HandleNotFound(SubstateHandle),
     ProcessSubstateError(ProcessSubstateError),
     NoWritePermission,
-    PersistNodeError(PersistNodeError),
-    NonGlobalRefNotAllowed(NodeId),
-    ContainsDuplicatedOwns,
     SubstateDiffError(SubstateDiffError),
 }
 
 /// Represents an error when dropping a substate lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CloseSubstateError {
-    LockNotFound(SubstateHandle),
+    HandleNotFound(SubstateHandle),
+    SubstateBorrowed(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -525,7 +521,6 @@ pub enum CallFrameRemoveSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanKeysError {
     NodeNotVisible(NodeId),
-    OwnedNodeNotSupported(NodeId),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
@@ -545,8 +540,8 @@ pub enum CallFrameScanSortedSubstatesError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProcessSubstateKeyError {
-    DecodeError(DecodeError),
     NodeNotVisible(NodeId),
+    DecodeError(DecodeError),
     OwnedNodeNotSupported,
 }
 
@@ -578,7 +573,8 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
     }
 
-    pub fn new_child_from_parent(
+    pub fn new_child_from_parent<S: CommitableSubstateStore>(
+        substate_io: &SubstateIO<S>,
         parent: &mut CallFrame<C, L>,
         call_frame_data: C,
         message: CallFrameMessage,
@@ -594,13 +590,14 @@ impl<C, L: Clone> CallFrame<C, L> {
         };
 
         // Copy references and move nodes
-        Self::pass_message(parent, &mut frame, message)
+        Self::pass_message(substate_io, parent, &mut frame, message)
             .map_err(CreateFrameError::PassMessageError)?;
 
         Ok(frame)
     }
 
-    pub fn pass_message(
+    pub fn pass_message<S: CommitableSubstateStore>(
+        substate_io: &SubstateIO<S>,
         from: &mut CallFrame<C, L>,
         to: &mut CallFrame<C, L>,
         message: CallFrameMessage,
@@ -608,12 +605,12 @@ impl<C, L: Clone> CallFrame<C, L> {
         for node_id in message.move_nodes {
             // Note that this has no impact on the `transient_references` because
             // we don't allow move of "locked nodes".
-            from.take_node_internal(&node_id)
+            from.take_node_internal(substate_io, &node_id)
                 .map_err(PassMessageError::TakeNodeError)?;
             to.owned_root_nodes.insert(node_id);
         }
 
-        // Only allow move of `Global` and `DirectAccess` references
+        // Only allow copy of `Global` and `DirectAccess` references
         for node_id in message.copy_global_references {
             if from.get_node_visibility(&node_id).is_global() {
                 // Note that GLOBAL and DirectAccess references are mutually exclusive,
@@ -681,7 +678,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         match device {
             SubstateDevice::Heap => {
-                substate_io.pinned_nodes.insert(node_id);
+                substate_io.pinned_to_heap.insert(node_id);
             }
             SubstateDevice::Store => {
                 // Nodes in store are always pinned
@@ -778,8 +775,8 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
-    ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
-        self.take_node_internal(node_id)
+    ) -> Result<DroppedNode, CallbackError<DropNodeError, E>> {
+        self.take_node_internal(substate_io, node_id)
             .map_err(|e| CallbackError::Error(DropNodeError::TakeNodeError(e)))?;
 
         let mut adapter = CallFrameToIOAccessAdapter {
@@ -787,13 +784,13 @@ impl<C, L: Clone> CallFrame<C, L> {
             handler,
             phantom: PhantomData::default(),
         };
-        let node_substates = substate_io
+        let substates = substate_io
             .drop_node(SubstateDevice::Heap, node_id, &mut adapter)
             .map_err(|e| match e {
                 CallbackError::Error(e) => CallbackError::Error(e),
                 CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
             })?;
-        for (_partition_number, module) in &node_substates {
+        for (_partition_number, module) in &substates {
             for (_substate_key, substate_value) in module {
                 let diff = SubstateDiff::from_drop_substate(&substate_value);
                 adapter
@@ -813,7 +810,12 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        Ok(node_substates)
+        let pinned_to_heap = substate_io.pinned_to_heap.remove(node_id);
+
+        Ok(DroppedNode {
+            substates,
+            pinned_to_heap,
+        })
     }
 
     pub fn move_partition<'f, S: CommitableSubstateStore, E>(
@@ -981,7 +983,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         } = self
             .open_substates
             .get(&lock_handle)
-            .ok_or(CallbackError::Error(ReadSubstateError::LockNotFound(
+            .ok_or(CallbackError::Error(ReadSubstateError::HandleNotFound(
                 lock_handle,
             )))?;
 
@@ -1008,7 +1010,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         let mut opened_substate =
             self.open_substates
                 .remove(&lock_handle)
-                .ok_or(CallbackError::Error(WriteSubstateError::LockNotFound(
+                .ok_or(CallbackError::Error(WriteSubstateError::HandleNotFound(
                     lock_handle,
                 )))?;
 
@@ -1058,7 +1060,16 @@ impl<C, L: Clone> CallFrame<C, L> {
         let mut open_substate = self
             .open_substates
             .remove(&lock_handle)
-            .ok_or_else(|| CloseSubstateError::LockNotFound(lock_handle))?;
+            .ok_or_else(|| CloseSubstateError::HandleNotFound(lock_handle))?;
+
+        for node_id in open_substate.owned_nodes.iter() {
+            // We must maintain the invariant that opened substates must always
+            // be from a visible node. Thus, we cannot close a substate if there is a
+            // child opened substate.
+            if substate_io.substate_locks.node_is_locked(node_id) {
+                return Err(CloseSubstateError::SubstateBorrowed(*node_id));
+            }
+        }
 
         substate_io.close_substate(open_substate.global_substate_handle)?;
 
@@ -1069,6 +1080,25 @@ impl<C, L: Clone> CallFrame<C, L> {
             &mut open_substate,
             &diff,
         );
+
+        Ok(())
+    }
+
+    pub fn close_all_substates<S: CommitableSubstateStore>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+    ) -> Result<(), CloseSubstateError> {
+        // Closing of all substates should always be possible as no invariant needs to be maintained
+        for (_lock_handle, mut open_substate) in self.open_substates.drain(..) {
+            substate_io.close_substate(open_substate.global_substate_handle)?;
+            let diff = open_substate.diff_on_close();
+            Self::apply_diff_to_open_substate(
+                &mut self.transient_references,
+                substate_io,
+                &mut open_substate,
+                &diff,
+            );
+        }
 
         Ok(())
     }
@@ -1292,19 +1322,6 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(substates)
     }
 
-    pub fn close_all_substates<S: CommitableSubstateStore>(
-        &mut self,
-        substate_io: &mut SubstateIO<S>,
-    ) -> Result<(), CloseSubstateError> {
-        let lock_handles: Vec<SubstateHandle> = self.open_substates.keys().cloned().collect();
-
-        for lock_handle in lock_handles {
-            self.close_substate(substate_io, lock_handle)?;
-        }
-
-        Ok(())
-    }
-
     pub fn owned_nodes(&self) -> Vec<NodeId> {
         self.owned_root_nodes.clone().into_iter().collect()
     }
@@ -1358,7 +1375,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         {
             for added_own in &diff.added_owns {
                 // Node no longer owned by frame
-                self.take_node_internal(added_own)
+                self.take_node_internal(substate_io, added_own)
                     .map_err(|e| CallbackError::Error(ProcessSubstateError::TakeNodeError(e)))?;
             }
 
@@ -1507,7 +1524,19 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
     }
 
-    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
+    fn take_node_internal<S: CommitableSubstateStore>(
+        &mut self,
+        substate_io: &SubstateIO<S>,
+        node_id: &NodeId,
+    ) -> Result<(), TakeNodeError> {
+        // If there exists a non-global node-ref we still allow the node to be
+        // taken. We prevent substate locked nodes from being taken though.
+        // We do not need to check children of the node as a node must be
+        // substate locked in order to access any of it's children.
+        if substate_io.substate_locks.node_is_locked(node_id) {
+            return Err(TakeNodeError::SubstateBorrowed(*node_id));
+        }
+
         if self.owned_root_nodes.remove(node_id) {
             Ok(())
         } else {

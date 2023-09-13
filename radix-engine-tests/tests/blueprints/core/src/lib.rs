@@ -241,3 +241,127 @@ mod recursive_test {
         }
     }
 }
+
+#[blueprint]
+mod globalize_unflushed {
+    struct GlobalizeUnflushed {
+        garbage: Own,
+    }
+
+    impl GlobalizeUnflushed {
+        pub fn globalize_with_unflushed_invalid_own() {
+            let kv_store = KeyValueStore::<u32, Own>::new();
+
+            let key_payload = scrypto_encode(&1u32).unwrap();
+            let handle = ScryptoVmV1Api::kv_store_open_entry(
+                &kv_store.id.0,
+                &key_payload,
+                LockFlags::MUTABLE,
+            );
+            let value_payload = scrypto_encode(&Own(NodeId([0xff; NodeId::LENGTH]))).unwrap();
+            ScryptoVmV1Api::kv_entry_write(handle, value_payload);
+
+            Self {
+                garbage: Own(kv_store.id.0),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
+        pub fn globalize_with_unflushed_kv_store_self_own() {
+            let kv_store = KeyValueStore::<u32, Own>::new();
+
+            let key_payload = scrypto_encode(&1u32).unwrap();
+            let handle = ScryptoVmV1Api::kv_store_open_entry(
+                &kv_store.id.0,
+                &key_payload,
+                LockFlags::MUTABLE,
+            );
+            let value_payload = scrypto_encode(&kv_store).unwrap();
+            ScryptoVmV1Api::kv_entry_write(handle, value_payload);
+
+            Self {
+                garbage: Own(kv_store.id.0),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
+        pub fn globalize_with_unflushed_another_transient_own() {
+            let bucket = Bucket::new(XRD);
+            let kv_store = KeyValueStore::<u32, Own>::new();
+
+            let key_payload = scrypto_encode(&1u32).unwrap();
+            let handle = ScryptoVmV1Api::kv_store_open_entry(
+                &kv_store.id.0,
+                &key_payload,
+                LockFlags::MUTABLE,
+            );
+            let value_payload = scrypto_encode(&Own(bucket.0 .0)).unwrap();
+            ScryptoVmV1Api::kv_entry_write(handle, value_payload);
+
+            Self {
+                garbage: Own(kv_store.id.0),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+            bucket.drop_empty();
+        }
+
+        pub fn globalize_with_unflushed_another_own() {
+            let temp = KeyValueStore::<u32, Own>::new();
+            let kv_store = KeyValueStore::<u32, Own>::new();
+
+            let key_payload = scrypto_encode(&1u32).unwrap();
+            let handle = ScryptoVmV1Api::kv_store_open_entry(
+                &kv_store.id.0,
+                &key_payload,
+                LockFlags::MUTABLE,
+            );
+            let value_payload = scrypto_encode(&temp).unwrap();
+            ScryptoVmV1Api::kv_entry_write(handle, value_payload);
+
+            Self {
+                garbage: Own(kv_store.id.0),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+
+            ScryptoVmV1Api::kv_entry_read(handle);
+        }
+
+        pub fn globalize_with_unflushed_another_own_v2() {
+            let temp = KeyValueStore::<u32, Own>::new();
+            let store1 = KeyValueStore::<u32, Own>::new();
+            let store2 = KeyValueStore::<u32, Own>::new();
+            store1.insert(1, store2.id);
+
+            let handle = {
+                let _data_ref = store1.get(&1);
+                let key_payload = scrypto_encode(&1u32).unwrap();
+                let handle = ScryptoVmV1Api::kv_store_open_entry(
+                    &store2.id.0,
+                    &key_payload,
+                    LockFlags::MUTABLE,
+                );
+                let value_payload = scrypto_encode(&temp).unwrap();
+                ScryptoVmV1Api::kv_entry_write(handle, value_payload);
+
+                handle
+            };
+
+            Self {
+                garbage: Own(store1.id.0),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+
+            ScryptoVmV1Api::kv_entry_read(handle);
+        }
+    }
+}

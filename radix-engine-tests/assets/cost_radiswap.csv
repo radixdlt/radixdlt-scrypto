@@ -1,11 +1,12 @@
-Total Cost (XRD)                                                           ,            0.57934897273,    100.0%
-- Execution Cost (XRD)                                                     ,                 0.373414,     64.5%
+Total Cost (XRD)                                                           ,            0.57962967273,    100.0%
+- Execution Cost (XRD)                                                     ,                0.3736947,     64.5%
 - Finalization Cost (XRD)                                                  ,                0.0427613,      7.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,            0.16317367273,     28.2%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  7468280,    100.0%
+Execution Cost Breakdown                                                   ,                  7473894,    100.0%
+- AfterInvoke                                                              ,                     5614,      0.1%
 - AllocateNodeId                                                           ,                     3045,      0.0%
 - BeforeInvoke                                                             ,                     3714,      0.0%
 - CloseSubstate                                                            ,                    74803,      1.0%

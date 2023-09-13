@@ -32,10 +32,6 @@ pub struct TransactionRuntimeModule {
 }
 
 impl TransactionRuntimeModule {
-    pub fn transaction_hash(&self) -> Hash {
-        self.tx_hash
-    }
-
     pub fn generate_ruid(&mut self) -> [u8; 32] {
         let mut bytes = [0u8; 36];
         (&mut bytes[..32]).copy_from_slice(self.tx_hash.as_slice());
@@ -56,11 +52,6 @@ impl TransactionRuntimeModule {
 
     pub fn add_replacement(&mut self, old: (NodeId, ModuleId), new: (NodeId, ModuleId)) {
         self.replacements.insert(old, new);
-    }
-
-    pub fn clear(&mut self) {
-        self.events.clear();
-        self.replacements.clear();
     }
 
     pub fn finalize(

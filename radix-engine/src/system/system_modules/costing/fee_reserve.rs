@@ -26,6 +26,7 @@ pub enum FeeReserveError {
         xrd_owed: Decimal,
     },
     Abort(AbortReason),
+    RoyaltyAmountIsNegative(RoyaltyAmount),
 }
 
 #[derive(Copy, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
@@ -296,10 +297,6 @@ impl SystemLoanFeeReserve {
         transmute_u128_as_decimal(self.usd_price)
     }
 
-    pub fn state_storage_price(&self) -> Decimal {
-        transmute_u128_as_decimal(self.state_storage_price)
-    }
-
     pub fn tip_percentage(&self) -> u32 {
         self.tip_percentage.into()
     }
@@ -507,6 +504,9 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
     ) -> Result<(), FeeReserveError> {
         if royalty_amount.is_zero() {
             return Ok(());
+        }
+        if royalty_amount.is_negative() {
+            return Err(FeeReserveError::RoyaltyAmountIsNegative(royalty_amount));
         }
 
         self.consume_royalty_internal(royalty_amount, recipient)?;

@@ -50,14 +50,16 @@ jobs:
       - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
-          tests-dir: sbor
+          flags: -p sbor
+          coverage_report_name: sbor-coverage
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
-          tests-dir: sbor
-          flags: --no-default-features --features alloc
+          flags: -p sbor --no-default-features --features alloc
+          coverage_report_name: sbor-coverage
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
-          tests-dir: sbor-derive-common
+          flags: -p sbor-derive-common
+          coverage_report_name: sbor-derive-common-coverage
 
   sbor-integration-tests:
     name: Run SBOR integration tests
@@ -72,11 +74,12 @@ jobs:
       - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
-          tests-dir: sbor-tests
+          flags: -p sbor-tests
+          coverage_report_name: sbor-tests-coverage
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
-          tests-dir: sbor-tests
-          flags: --no-default-features --features alloc
+          flags: -p sbor-tests --no-default-features --features alloc
+          coverage_report_name: sbor-tests-coverage
       - name: Run bench
         run: cargo bench
         working-directory: sbor-tests
@@ -95,16 +98,20 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
+        flags: -p scrypto
+        coverage_report_name: scrypto-coverage
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: scrypto
-        flags: --no-default-features --features alloc
+        flags: -p scrypto --no-default-features --features alloc
+        coverage_report_name: scrypto-coverage
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: scrypto-schema
+        flags: -p scrypto-schema
+        coverage_report_name: scrypto-schema-coverage
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: scrypto-derive
+        flags: scrypto-derive
+        coverage_report_name: scrypto-derive-coverage
   
   scrypto-integration-tests:
     name: Run Scrypto integration tests
@@ -119,11 +126,12 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: scrypto-derive-tests
+        flags: -p scrypto-derive-tests
+        coverage_report_name: scrypto-derive-tests-coverage
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: scrypto-derive-tests
-        flags: --no-default-features --features alloc
+        flags: -p scrypto-derive-tests --no-default-features --features alloc
+        coverage_report_name: scrypto-derive-tests-coverage
   
   scrypto-examples:
     name: Run Scrypto examples
@@ -201,34 +209,17 @@ jobs:
 
   radix-engine:
     name: Run Radix Engine tests
-    runs-on: ${{ matrix.os }}
-    env:
-      CARGO_LOG: info
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
+    runs-on: k8s-linux-runner
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: 1.70.0
-    - name: reset registry
-      run: rm -fr ~/.cargo/registry
-    - name: Install nextest
-      uses: taiki-e/install-action@nextest
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run tests
-      run: |
-        cargo nextest run \
-          --features post_run_db_check serde \
-          -p radix-engine-common \
-          -p radix-engine-derive \
-          -p radix-engine-interface \
-          -p radix-engine \
-          -p radix-engine-tests \
-          --features compile-blueprints-at-build-time
-        ./check_stack_usage.sh
+      - uses: actions/checkout@v3
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
+        with:
+          install_wasm: "true"
+          install_simulator: "true"
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
+        with:
+          flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
+          coverage_report_name: radix-engine-coverage
 
   radix-engine-release:
     # Run tests in release variant.
@@ -376,7 +367,8 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: transaction
+        flags: -p transaction
+        coverage_report_name: transaction-coverage
   
   transaction-scenarios:
     name: Run transaction scenarios
@@ -391,7 +383,8 @@ jobs:
     - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        tests-dir: transaction-scenarios
+        flags: -p transaction-scenarios
+        coverage_report_name: transaction-scenarios-coverage
   
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)

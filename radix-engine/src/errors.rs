@@ -212,6 +212,7 @@ pub enum SystemError {
     InvalidActorStateHandle,
     InvalidActorRefHandle,
 
+    GlobalizingTransientBlueprint,
     GlobalAddressDoesNotExist,
     NotAnAddressReservation,
     NotAnObject,
@@ -236,7 +237,8 @@ pub enum SystemError {
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ActorStateHandle, u8),
     ObjectModuleDoesNotExist(AttachedModuleId),
-    NotAKeyValueWriteLock,
+    NotAKeyValueEntryHandle,
+    NotAKeyValueEntryWriteHandle,
     InvalidLockFlags,
     CannotGlobalize(CannotGlobalizeError),
     MissingModule(ModuleId),

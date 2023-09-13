@@ -466,7 +466,7 @@ fn unlock_key_value_entry(
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.key_value_entry_release(handle)
+    runtime.key_value_entry_close(handle)
 }
 
 fn key_value_store_remove(

@@ -61,7 +61,7 @@ pub struct SubstateIO<'g, S: CommitableSubstateStore> {
     pub non_global_node_refs: NonGlobalNodeRefs,
     pub substate_locks: SubstateLocks<LockData>,
     pub heap_transient_substates: TransientSubstates,
-    pub pinned_nodes: BTreeSet<NodeId>,
+    pub pinned_to_heap: BTreeSet<NodeId>,
 }
 
 impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
@@ -72,7 +72,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
             non_global_node_refs: NonGlobalNodeRefs::new(),
             substate_locks: SubstateLocks::new(),
             heap_transient_substates: TransientSubstates::new(),
-            pinned_nodes: BTreeSet::new(),
+            pinned_to_heap: BTreeSet::new(),
         }
     }
 
@@ -162,7 +162,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                 )));
             }
 
-            if self.pinned_nodes.contains(&node_id) {
+            if self.pinned_to_heap.contains(&node_id) {
                 return Err(CallbackError::Error(
                     PersistNodeError::CannotPersistPinnedNode(node_id),
                 ));
@@ -233,12 +233,17 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                 *src_node_id,
             )));
         }
+        if self.substate_locks.node_is_locked(dest_node_id) {
+            return Err(CallbackError::Error(MovePartitionError::SubstateBorrowed(
+                *dest_node_id,
+            )));
+        }
 
         // Move
         let partition_substates = match src_device {
             SubstateDevice::Heap => self
                 .heap
-                .remove_module(src_node_id, src_partition_number, &mut |heap, io_access| {
+                .remove_partition(src_node_id, src_partition_number, &mut |heap, io_access| {
                     handler.on_io_access(heap, io_access)
                 })
                 .map_err(|e| match e {
@@ -248,7 +253,9 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                     CallbackError::CallbackError(e) => CallbackError::CallbackError(e),
                 })?,
             SubstateDevice::Store => {
-                panic!("Partition moves from store not supported.");
+                return Err(CallbackError::Error(
+                    MovePartitionError::MoveFromStoreNotPermitted,
+                ));
             }
         };
 

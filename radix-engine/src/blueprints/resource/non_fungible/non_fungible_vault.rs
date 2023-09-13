@@ -767,6 +767,10 @@ impl NonFungibleVaultBlueprint {
             ACTOR_STATE_OUTER_OBJECT,
             NonFungibleResourceManagerFeature::VaultFreeze.feature_name(),
         )? {
+            // This should never be hit since the auth layer will prevent
+            // any freeze call from even getting to this point but this is useful
+            // if the Auth layer is ever disabled for whatever reason.
+            // We still want to maintain these invariants.
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotFreezable),
             ));
@@ -783,6 +787,10 @@ impl NonFungibleVaultBlueprint {
             ACTOR_STATE_OUTER_OBJECT,
             NonFungibleResourceManagerFeature::VaultRecall.feature_name(),
         )? {
+            // This should never be hit since the auth layer will prevent
+            // any recall call from even getting to this point but this is useful
+            // if the Auth layer is ever disabled for whatever reason.
+            // We still want to maintain these invariants.
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotRecallable),
             ));
