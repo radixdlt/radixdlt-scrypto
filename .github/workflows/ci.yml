@@ -21,34 +21,33 @@ concurrency:
 jobs:
   check-code-format:
     name: Check code format
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
     - name: Check format
-      run: |
-        rustup component add rustfmt
-        bash ./check.sh
+      run: bash ./check.sh
 
   sbor-unit-tests:
     name: Run SBOR unit tests
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
       - uses: actions/checkout@v3
-      - name: setup the container
-        run: |
-          apt update && apt install -y clang llvm cmake build-essential
-          rustup component add llvm-tools
-          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           flags: -p sbor
@@ -64,20 +63,15 @@ jobs:
 
   sbor-integration-tests:
     name: Run SBOR integration tests
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
       - uses: actions/checkout@v3
-      - name: setup the container
-        run: |
-          apt update && apt install -y clang llvm cmake build-essential
-          rustup component add llvm-tools
-          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
       - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
         with:
           flags: -p sbor-tests
@@ -92,20 +86,15 @@ jobs:
 
   scrypto-unit-tests:
     name: Run Scrypto unit tests
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: Install cargo-llvm-cov
-      uses: taiki-e/install-action@cargo-llvm-cov
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         tests-dir: scrypto
@@ -121,25 +110,20 @@ jobs:
         coverage_report_name: scrypto-schema-coverage
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
-        flags: -p scrypto-derive
+        flags: scrypto-derive
         coverage_report_name: scrypto-derive-coverage
   
   scrypto-integration-tests:
     name: Run Scrypto integration tests
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: Install cargo-llvm-cov
-      uses: taiki-e/install-action@cargo-llvm-cov
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p scrypto-derive-tests
@@ -148,21 +132,26 @@ jobs:
       with:
         flags: -p scrypto-derive-tests --no-default-features --features alloc
         coverage_report_name: scrypto-derive-tests-coverage
- 
+  
   scrypto-examples:
     name: Run Scrypto examples
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        rustup target add wasm32-unknown-unknown
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Add wasm target (nightly)
+      run: rustup +nightly target add wasm32-unknown-unknown
     - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/blueprints/faucet
@@ -181,17 +170,17 @@ jobs:
 
   scrypto-stubs:
     name: Check Scrypto Stubs
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools rustfmt
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
     - run: ./check_stubs.sh
 
   radix-engine-build:
@@ -223,11 +212,11 @@ jobs:
     runs-on: k8s-linux-runner
     steps:
       - uses: actions/checkout@v3
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@chore/install-dependencia-action
         with:
           install_wasm: "true"
           install_simulator: "true"
-      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
+      - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@chore/install-dependencia-action
         with:
           flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
           coverage_report_name: radix-engine-coverage
@@ -239,130 +228,164 @@ jobs:
     # - overflow-checks
     # which are false for release variant
     name: Run Radix Engine tests (release)
-    runs-on: k8s-linux-runner
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+    - uses: actions-rs/toolchain@v1
       with:
-        install_wasm: "true"
-        install_simulator: "true"
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-      with:
-        flags: -p radix-engine-common -p radix-engine-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time --release
-        coverage_report_name: radix-engine-release-coverage
+        toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Run tests
+      run: |
+        cargo nextest run \
+          --release \
+          --features post_run_db_check serde \
+          -p radix-engine-common \
+          -p radix-engine-derive \
+          -p radix-engine-interface \
+          -p radix-engine \
+          -p radix-engine-tests \
+          --features compile-blueprints-at-build-time
+        ./check_stack_usage.sh
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
-    runs-on: k8s-linux-runner
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+    - uses: actions-rs/toolchain@v1
       with:
-        install_wasm: "true"
-        install_simulator: "true"
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-      with:
-        flags: --no-default-features --features alloc -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
-        coverage_report_name: radix-engine-no-std-coverage
-
+        toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Run tests
+      run: |
+        cargo nextest run \
+          --no-default-features --features alloc \
+          -p radix-engine \
+          -p radix-engine-tests \
+          --features compile-blueprints-at-build-time
+  
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
-    runs-on: k8s-linux-runner
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
+    - uses: actions-rs/toolchain@v1
       with:
-        install_wasm: "true"
-        install_simulator: "true"
-    - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
-      with: 
-        flags: --features wasmer -p radix-engine -p radix-engine-tests --features compile-blueprints-at-build-time
-        coverage_report_name: radix-engine-wasmer-coverage
-
+        toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Run tests
+      run: |
+        cargo nextest run \
+          --features wasmer \
+          -p radix-engine \
+          -p radix-engine-tests \
+          --features compile-blueprints-at-build-time
+  
   radix-engine-bench:
     name: Run Radix Engine benchmarks
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        rustup target add wasm32-unknown-unknown
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine-tests
-
+  
   radix-engine-common-bench:
     name: Run Radix Engine common benchmarks
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        rustup target add wasm32-unknown-unknown
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine-common
-
+  
   transaction:
     name: Run transaction tests
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: Install cargo-llvm-cov
-      uses: taiki-e/install-action@cargo-llvm-cov
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p transaction
         coverage_report_name: transaction-coverage
-
+  
   transaction-scenarios:
     name: Run transaction scenarios
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: Install cargo-llvm-cov
-      uses: taiki-e/install-action@cargo-llvm-cov
+    - uses: radixdlt/public-iac-resuable-artifacts/rust-setup@main
     - uses: radixdlt/public-iac-resuable-artifacts/rust-coverage@main
       with:
         flags: -p transaction-scenarios
         coverage_report_name: transaction-scenarios-coverage
-
+  
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
     runs-on: ${{ matrix.os }}
@@ -401,7 +424,7 @@ jobs:
     - name: Run tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
-
+  
   cli-scrypto:
     name: Run CLI tests (scrypto)
     runs-on: ${{ matrix.os }}
@@ -434,22 +457,26 @@ jobs:
     - name: Run tests
       run: bash ./tests/scrypto.sh
       working-directory: simulator
-
+  
   fuzzer-check:
     name: Build fuzzer
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
+    runs-on: ${{ matrix.os }}
     env:
       CARGO_LOG: info
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: reset registry
+      run: rm -fr ~/.cargo/registry
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
     - name: Setup AFL
       run: bash ./install_afl.sh
       working-directory: fuzz-tests
