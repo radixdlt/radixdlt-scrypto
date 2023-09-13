@@ -1,3 +1,4 @@
+use std::ops::Neg;
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -1192,48 +1193,16 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         Self::assert_burnable(api)?;
-
         // Drop the bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
+        Self::update_total_supply(api, other_bucket.liquid.amount().neg())?;
 
-        // Construct the event and only emit it once all of the operations are done.
         Runtime::emit_event(
             api,
             BurnNonFungibleResourceEvent {
                 ids: other_bucket.liquid.ids().clone(),
             },
         )?;
-
-        // Update total supply
-        // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        if api.actor_is_feature_enabled(
-            ACTOR_STATE_SELF,
-            NonFungibleResourceManagerFeature::TrackTotalSupply.feature_name(),
-        )? {
-            let total_supply_handle = api.actor_open_field(
-                ACTOR_STATE_SELF,
-                NonFungibleResourceManagerField::TotalSupply.into(),
-                LockFlags::MUTABLE,
-            )?;
-            let mut total_supply = api
-                .field_read_typed::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
-                    total_supply_handle,
-                )?
-                .into_latest();
-            total_supply = total_supply
-                .checked_sub(other_bucket.liquid.amount())
-                .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::UnexpectedDecimalComputationError,
-                    ),
-                ))?;
-            api.field_write_typed(
-                total_supply_handle,
-                &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
-                    total_supply,
-                ),
-            )?;
-        }
 
         // Update
         {
@@ -1373,7 +1342,7 @@ impl NonFungibleResourceManagerBlueprint {
                 ),
             ));
         }
-        id_type
+        Ok(id_type)
     }
 
     fn assert_is_ruid<Y>(api: &mut Y) -> Result<(), RuntimeError>
