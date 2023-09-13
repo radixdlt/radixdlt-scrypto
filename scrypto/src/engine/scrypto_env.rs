@@ -200,7 +200,7 @@ impl ScryptoVmV1Api {
     pub fn actor_get_blueprint_name() -> String {
         let blueprint_name = copy_buffer(unsafe { actor::actor_get_blueprint_name() });
 
-        String::from_utf8(blueprint_name).unwrap()
+        unsafe { String::from_utf8_unchecked(blueprint_name) }
     }
 
     pub fn actor_emit_event(event_name: String, event_data: Vec<u8>, flags: EventFlags) {
@@ -280,7 +280,7 @@ impl ScryptoVmV1Api {
         let encoded = copy_buffer(unsafe {
             system::sys_bech32_encode_address(global_address.as_ptr(), global_address.len())
         });
-        String::from_utf8(encoded).unwrap()
+        unsafe { String::from_utf8_unchecked(encoded) }
     }
 
     pub fn sys_log(level: Level, message: String) {
