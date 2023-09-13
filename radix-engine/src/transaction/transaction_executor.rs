@@ -302,10 +302,9 @@ where
                     None
                 };
 
-                // Abort the process if an error has occurred in the system layer or below. The
-                // following code is only enabled when compiling with the standard library. It's
-                // impossible for us to come across a `SystemError::SystemPanic` in no_std since
-                // we can't catch those panics in no_std.
+                // Panic if an error is encountered in the system layer or below. The following code
+                // is only enabled when compiling with the standard library since the panic catching
+                // machinery and `SystemPanic` errors are only implemented in `std`.
                 #[cfg(feature = "std")]
                 if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) =
                     interpretation_result
