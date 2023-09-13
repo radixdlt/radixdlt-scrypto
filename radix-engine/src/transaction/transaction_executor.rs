@@ -310,7 +310,7 @@ where
                 if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) =
                     interpretation_result
                 {
-                    std::process::abort()
+                    panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{interpretation_result:?}\"")
                 }
 
                 let result_type = Self::determine_result_type(
