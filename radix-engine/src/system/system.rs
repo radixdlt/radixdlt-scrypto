@@ -612,6 +612,7 @@ where
         Ok(())
     }
 
+    /// Internal, handle must be checked or from trusted sources
     fn key_value_entry_remove_and_close_substate(
         &mut self,
         handle: KeyValueEntryHandle,
@@ -1590,11 +1591,10 @@ where
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
-        match data {
-            SystemLockData::KeyValueEntry(..) => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
-            }
+        if !data.is_kv_entry() {
+            return Err(RuntimeError::SystemError(
+                SystemError::NotAKeyValueEntryHandle,
+            ));
         }
 
         self.api.kernel_read_substate(handle).map(|v| {
@@ -1613,7 +1613,7 @@ where
             ) => {}
             _ => {
                 return Err(RuntimeError::SystemError(
-                    SystemError::NotAKeyValueWriteLock,
+                    SystemError::NotAKeyValueEntryWriteHandle,
                 ));
             }
         };
@@ -1631,6 +1631,13 @@ where
         &mut self,
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
+        let data = self.api.kernel_get_lock_data(handle)?;
+        if !data.is_kv_entry_with_write() {
+            return Err(RuntimeError::SystemError(
+                SystemError::NotAKeyValueEntryWriteHandle,
+            ));
+        }
+
         let current_value = self
             .api
             .kernel_read_substate(handle)
@@ -1677,7 +1684,7 @@ where
             }
             _ => {
                 return Err(RuntimeError::SystemError(
-                    SystemError::NotAKeyValueWriteLock,
+                    SystemError::NotAKeyValueEntryWriteHandle,
                 ));
             }
         }
@@ -1698,7 +1705,9 @@ where
     fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
         if !data.is_kv_entry() {
-            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
+            return Err(RuntimeError::SystemError(
+                SystemError::NotAKeyValueEntryHandle,
+            ));
         }
 
         self.api.kernel_close_substate(handle)

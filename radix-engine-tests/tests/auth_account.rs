@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -265,7 +268,6 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Assert
     receipt.expect_commit_success();
 }
-
 #[test]
 fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof() {
     // Arrange
@@ -340,4 +342,24 @@ fn cannot_set_royalty_on_accounts() {
             ))
         )
     });
+}
+
+#[test]
+fn can_call_function_requiring_count_of_zero() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let (pk, _, account) = test_runner.new_account(false);
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("auth_scenarios"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .call_function(package_address, "CountOfZero", "hi", manifest_args!())
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    receipt.expect_commit_success();
 }

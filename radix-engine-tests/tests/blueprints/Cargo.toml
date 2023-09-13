@@ -52,6 +52,7 @@ members = [
     "royalty",
     "royalty-auth",
     "scrypto_env",
+    "system",
     "transaction_limits",
     "transaction_runtime",
     "tx_processor_access",
@@ -61,7 +62,8 @@ members = [
     "validator",
     "wasm_non_mvp",
     "royalty-edge-cases",
-    "system_wasm_buffers"
+    "system_wasm_buffers",
+    "event-replacement"
 ]
 
 [profile.release]

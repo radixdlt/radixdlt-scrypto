@@ -21,7 +21,7 @@ use sbor::rust::prelude::*;
 
 pub trait HasRoleAssignment {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A);
-    fn lock_owner_role<A: Into<AccessRule>>(&self);
+    fn lock_owner_role(&self);
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
     fn get_role(&self, name: &str) -> Option<AccessRule>;
     fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
@@ -107,6 +107,14 @@ impl RoleAssignment {
 
     pub fn get_component_royalties_role(&self, name: &str) -> Option<AccessRule> {
         self.internal_get_role(ModuleId::Royalty, name)
+    }
+
+    pub fn set_role_assignment_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.internal_set_role(ModuleId::RoleAssignment, name, rule);
+    }
+
+    pub fn get_role_assignment_role(&self, name: &str) -> Option<AccessRule> {
+        self.internal_get_role(ModuleId::RoleAssignment, name)
     }
 }
 
