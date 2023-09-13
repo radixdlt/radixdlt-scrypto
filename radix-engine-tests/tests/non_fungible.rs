@@ -1,9 +1,12 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
-use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
+use radix_engine::blueprints::resource::{
+    InvalidNonFungibleSchema, NonFungibleResourceManagerError,
+};
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::system_type_checker::TypeCheckError;
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -26,13 +29,151 @@ fn create_non_fungible_resource_with_supply_and_ruid_should_fail() {
             false,
             NonFungibleResourceRoles::default(),
             ModuleConfig::default(),
-            Some(vec![(NonFungibleLocalId::ruid([0u8;32]), ())]),
+            Some(vec![(NonFungibleLocalId::ruid([0u8; 32]), ())]),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::NonFungibleLocalIdProvidedForRUIDType))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::NonFungibleLocalIdProvidedForRUIDType
+            ))
+        )
+    });
+}
+
+fn test_non_fungible_resource_with_schema<F: FnOnce(TransactionReceipt)>(
+    non_fungible_schema: NonFungibleDataSchema,
+    on_receipt: F,
+) {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .add_instruction_advanced(InstructionV1::CallFunction {
+            package_address: RESOURCE_PACKAGE.into(),
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateManifestInput {
+                owner_role: OwnerRole::None,
+                id_type: NonFungibleIdType::Integer,
+                track_total_supply: true,
+                non_fungible_schema,
+                resource_roles: NonFungibleResourceRoles::default(),
+                metadata: ModuleConfig::default(),
+                address_reservation: None,
+            }),
+        })
+        .0
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    on_receipt(receipt);
+}
+
+#[test]
+fn create_non_fungible_resource_with_invalid_type_id_should_fail() {
+    let aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+    let schema = generate_full_schema(aggregator);
+    let non_fungible_schema = NonFungibleDataSchema::Local {
+        schema,
+        type_id: LocalTypeId::SchemaLocalIndex(64), // Invalid LocalTypeId
+        mutable_fields: indexset!(),
+    };
+
+    test_non_fungible_resource_with_schema(non_fungible_schema, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                        InvalidNonFungibleSchema::InvalidLocalTypeId
+                    )
+                ))
+            )
+        });
+    })
+}
+
+#[test]
+fn create_non_fungible_resource_with_non_tuple_type_id_should_fail() {
+    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+    let type_id = aggregator.add_child_type_and_descendents::<String>();
+    let schema = generate_full_schema(aggregator);
+    let non_fungible_schema = NonFungibleDataSchema::Local {
+        schema,
+        type_id,
+        mutable_fields: indexset!(),
+    };
+
+    test_non_fungible_resource_with_schema(non_fungible_schema, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                        InvalidNonFungibleSchema::NotATuple
+                    )
+                ))
+            )
+        });
+    })
+}
+
+#[test]
+fn create_non_fungible_resource_with_missing_mutable_field_should_fail2() {
+    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+    let type_id = aggregator.add_child_type_and_descendents::<Sandwich>();
+    let schema = generate_full_schema(aggregator);
+    let non_fungible_schema = NonFungibleDataSchema::Local {
+        schema,
+        type_id,
+        mutable_fields: indexset!("missing".to_string()),
+    };
+
+    test_non_fungible_resource_with_schema(non_fungible_schema, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                        InvalidNonFungibleSchema::MutableFieldDoesNotExist(..)
+                    )
+                ))
+            )
+        });
+    })
+}
+
+#[test]
+fn create_non_fungible_resource_with_missing_mutable_field_should_fail() {
+    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+    let type_id = aggregator.add_child_type_and_descendents::<()>();
+    let schema = generate_full_schema(aggregator);
+    let non_fungible_schema = NonFungibleDataSchema::Local {
+        schema,
+        type_id,
+        mutable_fields: indexset!("missing".to_string()),
+    };
+
+    test_non_fungible_resource_with_schema(non_fungible_schema, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                        InvalidNonFungibleSchema::MissingFieldNames
+                    )
+                ))
+            )
+        });
+    })
 }
 
 #[test]
