@@ -66,6 +66,30 @@ fn can_securify_from_virtual_identity() {
 }
 
 #[test]
+fn can_securify_from_virtual_identity_ed25519() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_ed25519_virtual_account();
+    let component_address = test_runner.new_identity(pk.clone(), true);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            component_address,
+            IDENTITY_SECURIFY_IDENT,
+            IdentitySecurifyToSingleBadgeInput {},
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn cannot_securify_twice() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

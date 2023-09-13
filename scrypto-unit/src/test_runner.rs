@@ -1026,7 +1026,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         }
     }
 
-    pub fn new_identity(&mut self, pk: Secp256k1PublicKey, is_virtual: bool) -> ComponentAddress {
+    pub fn new_identity<P: Into<PublicKey> + Clone + HasPublicKeyHash>(
+        &mut self,
+        pk: P,
+        is_virtual: bool,
+    ) -> ComponentAddress {
         if is_virtual {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
