@@ -6,7 +6,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn cannot_burn_frozen_burn_vault() {
+fn cannot_burn_frozen_burn_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
@@ -38,7 +38,7 @@ fn cannot_burn_frozen_burn_vault() {
 }
 
 #[test]
-fn cannot_deposit_into_frozen_deposit_vault() {
+fn cannot_deposit_into_frozen_deposit_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
@@ -71,7 +71,7 @@ fn cannot_deposit_into_frozen_deposit_vault() {
 }
 
 #[test]
-fn cannot_withdraw_from_frozen_vault() {
+fn cannot_withdraw_from_frozen_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
@@ -104,7 +104,7 @@ fn cannot_withdraw_from_frozen_vault() {
 }
 
 #[test]
-fn can_recall_from_frozen_vault() {
+fn can_recall_from_frozen_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
@@ -133,7 +133,7 @@ fn can_recall_from_frozen_vault() {
 }
 
 #[test]
-fn can_withdraw_from_unfrozen_vault() {
+fn can_withdraw_from_unfrozen_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
@@ -165,6 +165,112 @@ fn can_withdraw_from_unfrozen_vault() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn cannot_burn_frozen_burn_non_fungible_vault() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (key, _priv, account) = test_runner.new_account(true);
+    let token_address = test_runner.create_freezeable_non_fungible(account);
+    let vaults = test_runner.get_component_vaults(account, token_address);
+    let vault_id = vaults[0];
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .freeze_burn(InternalAddress::new_or_panic(vault_id.into()))
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .burn_non_fungibles_in_account(account, token_address, [NonFungibleLocalId::integer(1)])
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::VaultIsFrozen))
+        )
+    });
+}
+
+#[test]
+fn cannot_deposit_into_frozen_deposit_non_fungible_vault() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (key, _priv, account) = test_runner.new_account(true);
+    let token_address = test_runner.create_freezeable_non_fungible(account);
+    let vaults = test_runner.get_component_vaults(account, token_address);
+    let vault_id = vaults[0];
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .freeze_deposit(InternalAddress::new_or_panic(vault_id.into()))
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_non_fungibles_from_account(
+            account,
+            token_address,
+            [NonFungibleLocalId::integer(1)],
+        )
+        .deposit_batch(account)
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::VaultIsFrozen))
+        )
+    });
+}
+
+#[test]
+fn cannot_withdraw_from_frozen_non_fungible_vault() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (key, _priv, account) = test_runner.new_account(true);
+    let token_address = test_runner.create_freezeable_non_fungible(account);
+    let vaults = test_runner.get_component_vaults(account, token_address);
+    let vault_id = vaults[0];
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_non_fungibles_from_account(
+            account,
+            token_address,
+            [NonFungibleLocalId::integer(1)],
+        )
+        .deposit_batch(account)
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::VaultIsFrozen))
+        )
+    });
 }
 
 #[test]

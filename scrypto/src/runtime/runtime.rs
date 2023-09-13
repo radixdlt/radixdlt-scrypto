@@ -2,6 +2,7 @@ use crate::component::ObjectStubHandle;
 use crate::engine::wasm_api::{addr, copy_buffer};
 use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::RESOURCE_PACKAGE;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::*;
@@ -17,6 +18,7 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDescribe, ScryptoEncode,
 };
+use radix_engine_interface::prelude::NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
@@ -37,6 +39,18 @@ impl Runtime {
                 blueprint_id.package_address.as_ref().len(),
                 blueprint_id.blueprint_name.as_ptr(),
                 blueprint_id.blueprint_name.len(),
+            )
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    pub fn allocate_non_fungible_address() -> (GlobalAddressReservation, ResourceAddress) {
+        let bytes = copy_buffer(unsafe {
+            addr::address_allocate(
+                RESOURCE_PACKAGE.as_ref().as_ptr(),
+                RESOURCE_PACKAGE.as_ref().len(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.as_ptr(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.len(),
             )
         });
         scrypto_decode(&bytes).unwrap()
