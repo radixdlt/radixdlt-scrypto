@@ -2,12 +2,14 @@ use super::*;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
     own_key_value_store_type_data, OWN_KEY_VALUE_STORE_TYPE,
 };
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::prelude::{
+    LocalKeyValueStoreDataSchema, KV_STORE_DATA_SCHEMA_VARIANT_LOCAL,
+};
 use sbor::rust::marker::PhantomData;
 use sbor::*;
 
@@ -28,13 +30,24 @@ impl<
 {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let store_schema = KeyValueStoreDataSchema::new_local_with_self_package_replacement::<K, V>(
+        let schema = LocalKeyValueStoreDataSchema::new_with_self_package_replacement::<K, V>(
             Runtime::package_address(),
             true,
         );
 
+        let store_schema = LocalKeyValueStoreDataSchema {
+            additional_schema: schema.additional_schema,
+            key_type: schema.key_type,
+            value_type: schema.value_type,
+            allow_ownership: schema.allow_ownership,
+        };
         Self {
-            id: Own(ScryptoVmV1Api::kv_store_new(store_schema)),
+            id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+                KV_STORE_DATA_SCHEMA_VARIANT_LOCAL,
+                LocalKeyValueStoreDataSchema,
+            > {
+                fields: store_schema,
+            })),
             key: PhantomData,
             value: PhantomData,
         }
