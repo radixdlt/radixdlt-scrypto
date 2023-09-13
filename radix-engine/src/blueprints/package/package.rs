@@ -22,7 +22,6 @@ pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::*;
 use sbor::LocalTypeId;
-use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
@@ -55,12 +54,19 @@ pub enum PackageError {
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
-    InvalidName(String),
+    InvalidName {
+        name: String,
+        violating_char: Option<String>,
+    },
     MissingOuterBlueprint,
     WasmUnsupported(String),
     InvalidLocalTypeId(LocalTypeId),
     InvalidGenericId(u8),
     EventGenericTypeNotSupported,
+    OuterBlueprintCantBeAnInnerBlueprint {
+        inner: String,
+        violating_outer: String,
+    },
     RoleAssignmentError(RoleAssignmentError),
 
     InvalidAuthSetup,
@@ -70,6 +76,10 @@ pub enum PackageError {
         actual: usize,
     },
     ExceededMaxRoleNameLen {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxBlueprintNameLen {
         limit: usize,
         actual: usize,
     },
@@ -133,8 +143,28 @@ pub enum PackageError {
 fn validate_package_schema(
     blueprints: &IndexMap<String, BlueprintDefinitionInit>,
 ) -> Result<(), PackageError> {
-    for bp_def in blueprints.values() {
+    for (bp_name, bp_def) in blueprints.iter() {
         let bp_schema = &bp_def.schema;
+
+        match &bp_def.blueprint_type {
+            BlueprintType::Outer => Ok(()),
+            BlueprintType::Inner { outer_blueprint } if outer_blueprint != bp_name => {
+                match blueprints
+                    .get(outer_blueprint)
+                    .map(|bp_def| &bp_def.blueprint_type)
+                {
+                    Some(BlueprintType::Outer) => Ok(()),
+                    Some(BlueprintType::Inner { .. }) => {
+                        Err(PackageError::OuterBlueprintCantBeAnInnerBlueprint {
+                            inner: bp_name.clone(),
+                            violating_outer: outer_blueprint.clone(),
+                        })
+                    }
+                    None => Err(PackageError::MissingOuterBlueprint),
+                }
+            }
+            BlueprintType::Inner { .. } => Err(PackageError::MissingOuterBlueprint),
+        }?;
 
         validate_schema(bp_schema.schema.v1())
             .map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
@@ -515,13 +545,39 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
 }
 
 fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
-    // All names should follow Rust Identifier specification
-    let condition = |name| {
-        syn::parse_str::<Ident>(name).map_err(|_| PackageError::InvalidName(name.to_string()))
+    let condition = |name: &str| {
+        let mut iter = name.chars();
+        match iter.next() {
+            Some('A'..='Z' | 'a'..='z' | '_') => {
+                for char in iter {
+                    if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
+                        return Err(PackageError::InvalidName {
+                            name: name.to_owned(),
+                            violating_char: Some(char.to_string()),
+                        });
+                    }
+                }
+                Ok(())
+            }
+            Some(char) => Err(PackageError::InvalidName {
+                name: name.to_owned(),
+                violating_char: Some(char.to_string()),
+            }),
+            None => Err(PackageError::InvalidName {
+                name: name.to_owned(),
+                violating_char: None,
+            }),
+        }
     };
 
     for (bp_name, bp_init) in definition.blueprints.iter() {
         condition(bp_name)?;
+        if bp_name.len() > MAX_BLUEPRINT_NAME_LEN {
+            return Err(PackageError::ExceededMaxBlueprintNameLen {
+                limit: MAX_BLUEPRINT_NAME_LEN,
+                actual: bp_name.len(),
+            });
+        }
 
         for (name, _) in bp_init.schema.events.event_schema.iter() {
             if name.len() > MAX_EVENT_NAME_LEN {
