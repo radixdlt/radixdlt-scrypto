@@ -940,7 +940,7 @@ where
         let mut object_info = self.get_object_info(&node_id)?;
 
         // Verify can globalize with address
-        {
+        let num_main_partitions = {
             if object_info.is_global() {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                     CannotGlobalizeError::AlreadyGlobalized,
@@ -955,68 +955,38 @@ where
                     CannotGlobalizeError::InvalidBlueprintId,
                 )));
             }
-        }
-
-        // Update Object Info
-        {
-            let mut module_versions = index_map_new();
-            for module_id in modules.keys() {
-                module_versions.insert(module_id.clone(), BlueprintVersion::default());
-            }
-
-            object_info.object_type = ObjectType::Global {
-                modules: module_versions,
-            };
-        }
-
-        let num_main_partitions = {
             let interface = self
                 .get_blueprint_default_interface(object_info.blueprint_info.blueprint_id.clone())?;
+
+            if interface.is_transient {
+                return Err(RuntimeError::SystemError(
+                    SystemError::GlobalizingTransientBlueprint,
+                ));
+            }
+
             interface.state.num_logical_partitions()
         };
 
-        // Create a global node
-        self.kernel_create_node(
-            global_address.into(),
-            btreemap!(
-                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(object_info))
-            ),
-        )?;
-
-        self.kernel_move_partition(
-            &node_id,
-            SCHEMAS_PARTITION,
-            global_address.as_node_id(),
-            SCHEMAS_PARTITION,
-        )?;
+        let mut partitions = btreemap!(
+            SCHEMAS_PARTITION => (node_id, SCHEMAS_PARTITION),
+        );
 
         // Move self modules to the newly created global node, and drop
         for offset in 0u8..num_main_partitions {
             let partition_number = MAIN_BASE_PARTITION
                 .at_offset(PartitionOffset(offset))
                 .unwrap();
-            self.kernel_move_partition(
-                &node_id,
-                partition_number,
-                global_address.as_node_id(),
-                partition_number,
-            )?;
-        }
 
-        let dropped_node = self.kernel_drop_node(&node_id)?;
-        if dropped_node.pinned_to_heap {
-            return Err(RuntimeError::SystemError(
-                SystemError::GlobalizingTransientBlueprint,
-            ));
+            partitions.insert(partition_number, (node_id, partition_number));
         }
 
         // Move other modules, and drop
-        for (module_id, node_id) in modules {
+        for (module_id, node_id) in &modules {
             match module_id {
                 AttachedModuleId::RoleAssignment
                 | AttachedModuleId::Metadata
                 | AttachedModuleId::Royalty => {
-                    let blueprint_id = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
+                    let blueprint_id = self.get_object_info(node_id)?.blueprint_info.blueprint_id;
                     let expected_blueprint = module_id.static_blueprint();
                     if !blueprint_id.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -1032,15 +1002,15 @@ where
                         .system
                         .modules
                         .add_replacement(
-                            (node_id, ModuleId::Main),
-                            (*global_address.as_node_id(), module_id.into()),
+                            (*node_id, ModuleId::Main),
+                            (*global_address.as_node_id(), module_id.clone().into()),
                         );
 
                     // Move and drop
                     let interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
                     let num_logical_partitions = interface.state.num_logical_partitions();
 
-                    let module_id: ModuleId = module_id.into();
+                    let module_id: ModuleId = module_id.clone().into();
                     let module_base_partition = module_id.base_partition_num();
                     for offset in 0u8..num_logical_partitions {
                         let src = MAIN_BASE_PARTITION
@@ -1050,16 +1020,37 @@ where
                             .at_offset(PartitionOffset(offset))
                             .unwrap();
 
-                        self.kernel_move_partition(
-                            &node_id,
-                            src,
-                            global_address.as_node_id(),
-                            dest,
-                        )?;
+                        partitions.insert(dest, (*node_id, src));
                     }
-
-                    self.kernel_drop_node(&node_id)?;
                 }
+            }
+        }
+
+        self.kernel_create_node_from(global_address.into(), partitions)?;
+
+        // Update Object Info
+        {
+            let mut module_versions = index_map_new();
+            for module_id in modules.keys() {
+                module_versions.insert(module_id.clone(), BlueprintVersion::default());
+            }
+            object_info.object_type = ObjectType::Global {
+                modules: module_versions,
+            };
+
+            self.kernel_set_substate(
+                &global_address.into(),
+                TYPE_INFO_FIELD_PARTITION,
+                SubstateKey::Field(0u8),
+                IndexedScryptoValue::from_typed(&TypeInfoSubstate::Object(object_info)),
+            )?;
+        }
+
+        // Drop nodes
+        {
+            self.kernel_drop_node(&node_id)?;
+            for (_module_id, node_id) in &modules {
+                self.kernel_drop_node(&node_id)?;
             }
         }
 
@@ -2812,19 +2803,12 @@ where
         self.api.kernel_create_node(node_id, node_substates)
     }
 
-    fn kernel_move_partition(
+    fn kernel_create_node_from(
         &mut self,
-        src_node_id: &NodeId,
-        src_partition_number: PartitionNumber,
-        dest_node_id: &NodeId,
-        dest_partition_number: PartitionNumber,
+        node_id: NodeId,
+        partitions: BTreeMap<PartitionNumber, (NodeId, PartitionNumber)>,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_move_partition(
-            src_node_id,
-            src_partition_number,
-            dest_node_id,
-            dest_partition_number,
-        )
+        self.api.kernel_create_node_from(node_id, partitions)
     }
 }
 

@@ -1,15 +1,15 @@
-Total Cost (XRD)                                                           ,            6.57020855536,    100.0%
-- Execution Cost (XRD)                                                     ,               0.32089515,      4.9%
+Total Cost (XRD)                                                           ,            6.57022285536,    100.0%
+- Execution Cost (XRD)                                                     ,               0.32090945,      4.9%
 - Finalization Cost (XRD)                                                  ,                2.4964143,     38.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,            3.75289910536,     57.1%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  6417903,    100.0%
+Execution Cost Breakdown                                                   ,                  6418189,    100.0%
 - AllocateNodeId                                                           ,                     1914,      0.0%
 - BeforeInvoke                                                             ,                    10436,      0.2%
 - CloseSubstate                                                            ,                    62865,      1.0%
-- CreateNode                                                               ,                    32310,      0.5%
+- CreateNode                                                               ,                    31860,      0.5%
 - DropNode                                                                 ,                    34672,      0.5%
 - EmitEvent                                                                ,                    15532,      0.2%
 - LockFee                                                                  ,                      500,      0.0%
@@ -41,7 +41,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::put_NonFungibleVault                                      ,                    34850,      0.5%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   128776,      2.0%
 - RunWasmCode::Faucet_lock_fee                                             ,                    21650,      0.3%
-- SetSubstate                                                              ,                    72048,      1.1%
+- SetSubstate                                                              ,                    72784,      1.1%
 - ValidateTxPayload                                                        ,                   171920,      2.7%
 - VerifyTxSignatures                                                       ,                     7000,      0.1%
 - WriteSubstate                                                            ,                     9002,      0.1%

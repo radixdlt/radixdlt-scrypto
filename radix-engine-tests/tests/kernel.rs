@@ -238,8 +238,8 @@ impl KernelCallbackObject for TestCallbackObject {
 
 enum MoveVariation {
     Create,
+    CreateNodeFrom,
     Write,
-    MovePartition,
     Invoke,
 }
 
@@ -291,6 +291,17 @@ fn kernel_move_node_via_create_with_opened_substate(
             );
             kernel.kernel_create_node(node_id, substates)?;
         }
+        MoveVariation::CreateNodeFrom => {
+            let node_id = kernel
+                .kernel_allocate_node_id(EntityType::GlobalAccount)
+                .unwrap();
+            kernel.kernel_create_node_from(
+                node_id,
+                btreemap!(
+                    PartitionNumber(0u8) => (child_id, PartitionNumber(0u8))
+                ),
+            )?;
+        }
         MoveVariation::Write => {
             let node_id = kernel
                 .kernel_allocate_node_id(EntityType::GlobalAccount)
@@ -310,23 +321,6 @@ fn kernel_move_node_via_create_with_opened_substate(
             )?;
             kernel
                 .kernel_write_substate(handle, IndexedScryptoValue::from_typed(&Own(child_id)))?;
-        }
-        MoveVariation::MovePartition => {
-            let node_id = kernel
-                .kernel_allocate_node_id(EntityType::GlobalAccount)
-                .unwrap();
-            let substates = btreemap!(
-                PartitionNumber(0u8) => btreemap!(
-                    SubstateKey::Field(0u8) => IndexedScryptoValue::from_typed(&())
-                )
-            );
-            kernel.kernel_create_node(node_id, substates)?;
-            kernel.kernel_move_partition(
-                &child_id,
-                PartitionNumber(0u8),
-                &node_id,
-                PartitionNumber(0u8),
-            )?;
         }
         MoveVariation::Invoke => {
             let invocation = KernelInvocation {
@@ -368,7 +362,7 @@ fn test_kernel_move_node_via_write_with_opened_substate() {
 
 #[test]
 fn test_kernel_move_node_via_move_partition_with_opened_substate() {
-    let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::MovePartition);
+    let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::CreateNodeFrom);
     println!("{:?}", result);
     assert!(matches!(
         result,

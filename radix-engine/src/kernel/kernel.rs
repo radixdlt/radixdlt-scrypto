@@ -359,6 +359,76 @@ where
         Ok(())
     }
 
+    fn kernel_create_node_from(
+        &mut self,
+        node_id: NodeId,
+        partitions: BTreeMap<PartitionNumber, (NodeId, PartitionNumber)>,
+    ) -> Result<(), RuntimeError> {
+        {
+            let node_substates = NodeSubstates::new();
+            let mut read_only = as_read_only!(self);
+            M::on_create_node(
+                &mut read_only,
+                CreateNodeEvent::Start(&node_id, &node_substates),
+            )?;
+
+            let mut handler = KernelHandler {
+                callback: self.callback,
+                prev_frame: self.prev_frame_stack.last(),
+                on_io_access: |api, io_access| {
+                    M::on_create_node(api, CreateNodeEvent::IOAccess(&io_access))
+                },
+            };
+
+            self.current_frame
+                .create_node(
+                    &mut self.substate_io,
+                    &mut handler,
+                    node_id,
+                    NodeSubstates::new(),
+                )
+                .map_err(|e| match e {
+                    CallbackError::Error(e) => RuntimeError::KernelError(
+                        KernelError::CallFrameError(CallFrameError::CreateNodeError(e)),
+                    ),
+                    CallbackError::CallbackError(e) => e,
+                })?;
+
+            let mut read_only = as_read_only!(self);
+            M::on_create_node(&mut read_only, CreateNodeEvent::End(&node_id))?;
+        }
+
+        {
+            let mut handler = KernelHandler {
+                callback: self.callback,
+                prev_frame: self.prev_frame_stack.last(),
+                on_io_access: |api, io_access| {
+                    M::on_move_module(api, MoveModuleEvent::IOAccess(&io_access))
+                },
+            };
+
+            for (dest_partition_number, (src_node_id, src_partition_number)) in partitions {
+                self.current_frame
+                    .move_partition(
+                        &mut self.substate_io,
+                        &mut handler,
+                        &src_node_id,
+                        src_partition_number,
+                        &node_id,
+                        dest_partition_number,
+                    )
+                    .map_err(|e| match e {
+                        CallbackError::Error(e) => RuntimeError::KernelError(
+                            KernelError::CallFrameError(CallFrameError::MovePartitionError(e)),
+                        ),
+                        CallbackError::CallbackError(e) => e,
+                    })?;
+            }
+        }
+
+        Ok(())
+    }
+
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<DroppedNode, RuntimeError> {
         let mut read_only = as_read_only!(self);
@@ -390,41 +460,6 @@ where
         )?;
 
         Ok(dropped_node)
-    }
-
-    #[trace_resources]
-    fn kernel_move_partition(
-        &mut self,
-        src_node_id: &NodeId,
-        src_partition_number: PartitionNumber,
-        dest_node_id: &NodeId,
-        dest_partition_number: PartitionNumber,
-    ) -> Result<(), RuntimeError> {
-        let mut handler = KernelHandler {
-            callback: self.callback,
-            prev_frame: self.prev_frame_stack.last(),
-            on_io_access: |api, io_access| {
-                M::on_move_module(api, MoveModuleEvent::IOAccess(&io_access))
-            },
-        };
-
-        self.current_frame
-            .move_partition(
-                &mut self.substate_io,
-                &mut handler,
-                src_node_id,
-                src_partition_number,
-                dest_node_id,
-                dest_partition_number,
-            )
-            .map_err(|e| match e {
-                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::MovePartitionError(e),
-                )),
-                CallbackError::CallbackError(e) => e,
-            })?;
-
-        Ok(())
     }
 }
 

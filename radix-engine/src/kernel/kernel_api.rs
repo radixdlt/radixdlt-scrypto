@@ -30,24 +30,17 @@ pub trait KernelNodeApi {
         node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError>;
 
+    fn kernel_create_node_from(
+        &mut self,
+        node_id: NodeId,
+        partitions: BTreeMap<PartitionNumber, (NodeId, PartitionNumber)>,
+    ) -> Result<(), RuntimeError>;
+
     /// Removes an RENode. Owned children will be possessed by the call frame.
     ///
     /// Dropped substates can't necessary be added back due to visibility loss.
     /// Clients should consider the return value as "raw data".
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<DroppedNode, RuntimeError>;
-
-    /// Moves module substates from one node to another node.
-    ///
-    /// The source node must be in heap and lock-free; otherwise a runtime error is returned.
-    ///
-    /// Note that implementation will not check if the destination already exists.
-    fn kernel_move_partition(
-        &mut self,
-        src_node_id: &NodeId,
-        src_partition_number: PartitionNumber,
-        dest_node_id: &NodeId,
-        dest_partition_number: PartitionNumber,
-    ) -> Result<(), RuntimeError>;
 }
 
 /// API for managing substates within nodes

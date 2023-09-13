@@ -55,17 +55,15 @@ impl KernelNodeApi for MockKernel {
         panic1!()
     }
 
-    fn kernel_drop_node(&mut self, _: &NodeId) -> Result<DroppedNode, RuntimeError> {
+    fn kernel_create_node_from(
+        &mut self,
+        _: NodeId,
+        _: BTreeMap<PartitionNumber, (NodeId, PartitionNumber)>,
+    ) -> Result<(), RuntimeError> {
         panic1!()
     }
 
-    fn kernel_move_partition(
-        &mut self,
-        _: &NodeId,
-        _: PartitionNumber,
-        _: &NodeId,
-        _: PartitionNumber,
-    ) -> Result<(), RuntimeError> {
+    fn kernel_drop_node(&mut self, _: &NodeId) -> Result<DroppedNode, RuntimeError> {
         panic1!()
     }
 }
