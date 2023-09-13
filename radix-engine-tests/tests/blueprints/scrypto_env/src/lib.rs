@@ -79,6 +79,7 @@ mod max_sbor_depth {
 
             // Write entry
             ScryptoVmV1Api::kv_entry_write(handle, buffer);
+            ScryptoVmV1Api::kv_entry_close(handle);
 
             // Clean up
             Self {

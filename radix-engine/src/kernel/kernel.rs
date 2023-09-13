@@ -12,6 +12,7 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
+use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -38,14 +39,14 @@ use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct KernelBoot<'g, V: SystemCallbackObject, S: CommitableSubstateStore> {
+pub struct KernelBoot<'g, M: KernelCallbackObject, S: CommitableSubstateStore> {
     pub id_allocator: &'g mut IdAllocator,
-    pub callback: &'g mut SystemConfig<V>,
+    pub callback: &'g mut M,
     pub store: &'g mut S,
 }
 
-impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, V, S> {
-    pub fn create_kernel_for_test_only(&mut self) -> Kernel<SystemConfig<V>, S> {
+impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
+    pub fn create_kernel_for_test_only(&mut self) -> Kernel<M, S> {
         Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
@@ -56,12 +57,16 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
                 pinned_to_heap: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
-            current_frame: CallFrame::new_root(Actor::Root),
+            current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
             callback: self.callback,
         }
     }
+}
 
+impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore>
+    KernelBoot<'g, SystemConfig<V>, S>
+{
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
         self,
@@ -1088,9 +1093,14 @@ where
 
         // Push call frame
         {
-            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, callee, message)
-                .map_err(CallFrameError::CreateFrameError)
-                .map_err(KernelError::CallFrameError)?;
+            let frame = CallFrame::new_child_from_parent(
+                &self.substate_io,
+                &mut self.current_frame,
+                callee,
+                message,
+            )
+            .map_err(CallFrameError::CreateFrameError)
+            .map_err(KernelError::CallFrameError)?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
         }
@@ -1133,9 +1143,14 @@ where
             let parent = self.prev_frame_stack.last_mut().unwrap();
 
             // Move resource
-            CallFrame::pass_message(&mut self.current_frame, parent, message.clone())
-                .map_err(CallFrameError::PassMessageError)
-                .map_err(KernelError::CallFrameError)?;
+            CallFrame::pass_message(
+                &self.substate_io,
+                &mut self.current_frame,
+                parent,
+                message.clone(),
+            )
+            .map_err(CallFrameError::PassMessageError)
+            .map_err(KernelError::CallFrameError)?;
 
             // Auto-drop
             let owned_nodes = self.current_frame.owned_nodes();
@@ -1200,11 +1215,14 @@ where
 
     pub fn kernel_current_frame_mut(
         &mut self,
-    ) -> &mut CallFrame<
-        <M as KernelCallbackObject>::CallFrameData,
-        <M as KernelCallbackObject>::LockData,
-    > {
-        &mut self.current_frame
+    ) -> (
+        &SubstateIO<S>,
+        &mut CallFrame<
+            <M as KernelCallbackObject>::CallFrameData,
+            <M as KernelCallbackObject>::LockData,
+        >,
+    ) {
+        (&self.substate_io, &mut self.current_frame)
     }
 
     pub fn kernel_prev_frame_stack(

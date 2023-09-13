@@ -233,12 +233,17 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                 *src_node_id,
             )));
         }
+        if self.substate_locks.node_is_locked(dest_node_id) {
+            return Err(CallbackError::Error(MovePartitionError::SubstateBorrowed(
+                *dest_node_id,
+            )));
+        }
 
         // Move
         let partition_substates = match src_device {
             SubstateDevice::Heap => self
                 .heap
-                .remove_module(src_node_id, src_partition_number, &mut |heap, io_access| {
+                .remove_partition(src_node_id, src_partition_number, &mut |heap, io_access| {
                     handler.on_io_access(heap, io_access)
                 })
                 .map_err(|e| match e {
