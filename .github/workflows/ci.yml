@@ -125,10 +125,10 @@ jobs:
       run: rm -fr ~/.cargo/registry
     - name: Run tests
       run: cargo test
-      working-directory: scrypto-tests
+      working-directory: scrypto-test
     - name: Run tests with no_std
       run: cargo test --no-default-features --features alloc
-      working-directory: scrypto-tests
+      working-directory: scrypto-test
  
   scrypto-examples:
     name: Run Scrypto examples
