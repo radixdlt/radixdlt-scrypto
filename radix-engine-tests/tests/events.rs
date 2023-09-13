@@ -2696,3 +2696,63 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         )
     }
 }
+
+/// A quick into into event replacements and why they take place. Any event that is emitted by a
+/// node module prior to it being attached need to have replacements done to their event type
+/// identifiers to reflect that. As an example, if the metadata module A was created, emitted an
+/// event, and then was attached to component B, then the event emitted by module A should be
+/// changed to say that it was emitted by the metadata module of component B.
+#[test]
+fn event_replacements_occur_as_expected() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("event-replacement"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "EventReplacement",
+            "instantiate",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let component_address = *receipt
+        .expect_commit_success()
+        .new_component_addresses()
+        .first()
+        .unwrap();
+    let events = receipt
+        .expect_commit_success()
+        .application_events
+        .as_slice();
+    let [
+        _, /* Faucet Lock Fee Event */
+        (metadata_event_type_identifier, metadata_event_data), /* Withdraw of XRD from vault 1 */
+        _, /* Royalty Module vault creation event */
+        _, /* Pay Fee Event */
+        _, /* Deposit Fee Event */
+        _, /* Burn event */
+    ] = events else {
+        panic!("Incorrect number of events: {}", events.len())
+    };
+    assert_eq!(
+        metadata_event_type_identifier.to_owned(),
+        EventTypeIdentifier(
+            Emitter::Method(component_address.into_node_id(), ModuleId::Metadata),
+            "SetMetadataEvent".to_owned()
+        )
+    );
+    assert_eq!(
+        scrypto_decode::<SetMetadataEvent>(&metadata_event_data).unwrap(),
+        SetMetadataEvent {
+            key: "Hello".to_owned(),
+            value: MetadataValue::String("World".to_owned())
+        }
+    );
+}

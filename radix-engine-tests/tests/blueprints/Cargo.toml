@@ -62,7 +62,8 @@ members = [
     "validator",
     "wasm_non_mvp",
     "royalty-edge-cases",
-    "system_wasm_buffers"
+    "system_wasm_buffers",
+    "event-replacement"
 ]
 
 [profile.release]
