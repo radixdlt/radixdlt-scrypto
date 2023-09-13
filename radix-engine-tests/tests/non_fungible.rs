@@ -5,11 +5,35 @@ use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::prelude::*;
+
+#[test]
+fn create_non_fungible_resource_with_supply_and_ruid_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_non_fungible_resource(
+            OwnerRole::None,
+            NonFungibleIdType::RUID,
+            false,
+            NonFungibleResourceRoles::default(),
+            ModuleConfig::default(),
+            Some(vec![(NonFungibleLocalId::ruid([0u8;32]), ())]),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::NonFungibleLocalIdProvidedForRUIDType))));
+}
 
 #[test]
 fn can_mint_non_fungible_with_global() {
