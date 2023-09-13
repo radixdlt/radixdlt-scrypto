@@ -78,7 +78,7 @@ mod genesis_helper {
         ) -> Global<GenesisHelper> {
             Self {
                 consensus_manager,
-                validators: KeyValueStore::new_with_registered(),
+                validators: KeyValueStore::new_with_registered_type(),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Updatable(rule!(require(system_role.clone()))))

@@ -34,7 +34,7 @@ mod basic_flash_loan {
                 .mint_initial_supply(1);
 
             // Define a "transient" resource which can never be deposited once created, only burned
-            let transient_resource_manager = ResourceBuilder::new_ruid_non_fungible_with_registered::<LoanDue>(OwnerRole::Fixed(rule!(require(auth_token.resource_address()))))
+            let transient_resource_manager = ResourceBuilder::new_ruid_non_fungible_with_registered_type::<LoanDue>(OwnerRole::Fixed(rule!(require(auth_token.resource_address()))))
                 .metadata(metadata! {
                     init {
                         "name" => "Promise token for BasicFlashLoan - must be returned to be burned!".to_string(), locked;

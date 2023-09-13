@@ -16,7 +16,7 @@ mod faucet {
         ) -> Global<Faucet> {
             Self {
                 vault: Vault::with_bucket(bucket),
-                transactions: KeyValueStore::new_with_registered(),
+                transactions: KeyValueStore::new_with_registered_type(),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

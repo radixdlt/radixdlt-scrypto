@@ -512,7 +512,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let registered_type_kv_store = format_ident!("{}KeyValueStore", bp_ident);
     registered_type_traits.push(parse_quote! {
         pub trait #registered_type_kv_store {
-            fn new_with_registered() -> Self;
+            fn new_with_registered_type() -> Self;
         }
     });
     registered_type_impls.push(parse_quote! {
@@ -520,7 +520,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             K: ScryptoEncode + ScryptoDecode + ScryptoDescribe + #registered_type_ident,
             V: ScryptoEncode + ScryptoDecode + ScryptoDescribe + #registered_type_ident,
         > #registered_type_kv_store for KeyValueStore<K, V> {
-            fn new_with_registered() -> Self {
+            fn new_with_registered_type() -> Self {
                 let store_schema = RemoteKeyValueStoreDataSchema {
                     key_type: K::blueprint_type_identifier(),
                     value_type: V::blueprint_type_identifier(),
@@ -545,26 +545,26 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let registered_type_resource_builder = format_ident!("{}ResourceBuilder", bp_ident);
     registered_type_traits.push(parse_quote! {
         pub trait #registered_type_resource_builder {
-            fn new_string_non_fungible_with_registered<D: NonFungibleData + #registered_type_ident>(
+            fn new_string_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
             ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
 
-            fn new_integer_non_fungible_with_registered<D: NonFungibleData + #registered_type_ident>(
+            fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
             ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
 
-            fn new_bytes_non_fungible_with_registered<D: NonFungibleData + #registered_type_ident>(
+            fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
             ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
 
-            fn new_ruid_non_fungible_with_registered<D: NonFungibleData + #registered_type_ident>(
+            fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
             ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
         }
     });
     registered_type_impls.push(parse_quote! {
         impl #registered_type_resource_builder for ResourceBuilder {
-            fn new_string_non_fungible_with_registered<D: NonFungibleData + #registered_type_ident>(
+            fn new_string_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
             ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
                 InProgressResourceBuilder::new(
@@ -578,7 +578,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 )
             }
 
-            fn new_integer_non_fungible_with_registered<D: NonFungibleData + #registered_type_ident>(
+            fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
             ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
                 InProgressResourceBuilder::new(
@@ -592,7 +592,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 )
             }
 
-            fn new_bytes_non_fungible_with_registered<D: NonFungibleData + #registered_type_ident>(
+            fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
             ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
                 InProgressResourceBuilder::new(
@@ -606,7 +606,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 )
             }
 
-            fn new_ruid_non_fungible_with_registered<D: NonFungibleData + #registered_type_ident>(
+            fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
             ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
                 InProgressResourceBuilder::new(
@@ -2133,11 +2133,11 @@ mod tests {
                     }
 
                     pub trait TestKeyValueStore {
-                        fn new_with_registered() -> Self;
+                        fn new_with_registered_type() -> Self;
                     }
 
                     pub trait TestResourceBuilder {
-                        fn new_string_non_fungible_with_registered<D: NonFungibleData + TestRegisteredType>(
+                        fn new_string_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
                             owner_role: OwnerRole,
                         ) -> InProgressResourceBuilder<
                             NonFungibleResourceType<
@@ -2149,7 +2149,7 @@ mod tests {
                                 >
                             >
                         >;
-                        fn new_integer_non_fungible_with_registered<D: NonFungibleData + TestRegisteredType>(
+                        fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
                             owner_role: OwnerRole,
                         ) -> InProgressResourceBuilder<
                             NonFungibleResourceType<
@@ -2161,7 +2161,7 @@ mod tests {
                                 >
                             >
                         >;
-                        fn new_bytes_non_fungible_with_registered<D: NonFungibleData + TestRegisteredType>(
+                        fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
                             owner_role: OwnerRole,
                         ) -> InProgressResourceBuilder<
                             NonFungibleResourceType<
@@ -2173,7 +2173,7 @@ mod tests {
                                 >
                             >
                         >;
-                        fn new_ruid_non_fungible_with_registered<D: NonFungibleData + TestRegisteredType>(
+                        fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
                             owner_role: OwnerRole,
                         ) -> InProgressResourceBuilder<
                             NonFungibleResourceType<
@@ -2200,7 +2200,7 @@ mod tests {
                             V: ScryptoEncode + ScryptoDecode + ScryptoDescribe + TestRegisteredType,
                         > TestKeyValueStore for KeyValueStore<K, V>
                     {
-                        fn new_with_registered() -> Self {
+                        fn new_with_registered_type() -> Self {
                             let store_schema = RemoteKeyValueStoreDataSchema {
                                 key_type: K::blueprint_type_identifier(),
                                 value_type: V::blueprint_type_identifier(),
@@ -2220,7 +2220,7 @@ mod tests {
                     }
 
                     impl TestResourceBuilder for ResourceBuilder {
-                        fn new_string_non_fungible_with_registered<D: NonFungibleData + TestRegisteredType>(
+                        fn new_string_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
                             owner_role: OwnerRole,
                         ) -> InProgressResourceBuilder<
                             NonFungibleResourceType<
@@ -2242,7 +2242,7 @@ mod tests {
                                 }),
                             )
                         }
-                        fn new_integer_non_fungible_with_registered<D: NonFungibleData + TestRegisteredType>(
+                        fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
                             owner_role: OwnerRole,
                         ) -> InProgressResourceBuilder<
                             NonFungibleResourceType<
@@ -2264,7 +2264,7 @@ mod tests {
                                 }),
                             )
                         }
-                        fn new_bytes_non_fungible_with_registered<D: NonFungibleData + TestRegisteredType>(
+                        fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
                             owner_role: OwnerRole,
                         ) -> InProgressResourceBuilder<
                             NonFungibleResourceType<
@@ -2286,7 +2286,7 @@ mod tests {
                                 }),
                             )
                         }
-                        fn new_ruid_non_fungible_with_registered<D: NonFungibleData + TestRegisteredType>(
+                        fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
                             owner_role: OwnerRole,
                         ) -> InProgressResourceBuilder<
                             NonFungibleResourceType<
