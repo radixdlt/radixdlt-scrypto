@@ -55,9 +55,7 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
     }
 }
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore>
-    KernelBoot<'g, M, S>
-{
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
         self,

@@ -15,7 +15,11 @@ use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
 use radix_engine::system::type_info::TypeInfoSubstate;
-use radix_engine::transaction::{execute_preview, BalanceChange, CommitResult, CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult, WrappedSystem, execute_transaction_with_wrapper};
+use radix_engine::transaction::{
+    execute_preview, execute_transaction_with_wrapper, BalanceChange, CommitResult,
+    CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
+    WrappedSystem,
+};
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
@@ -1343,6 +1347,25 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         )
     }
 
+    pub fn execute_raw_transaction_with_wrapper<
+        'a,
+        T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>,
+    >(
+        &'a mut self,
+        network: &NetworkDefinition,
+        raw_transaction: &RawNotarizedTransaction,
+    ) -> TransactionReceipt {
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
+        let validated = validator
+            .validate_from_raw(&raw_transaction)
+            .expect("Expected raw transaction to be valid");
+        self.execute_transaction_with_wrapper::<T>(
+            validated.get_executable(),
+            CostingParameters::default(),
+            ExecutionConfig::for_notarized_transaction(network.clone()),
+        )
+    }
+
     pub fn execute_manifest<T>(
         &mut self,
         manifest: TransactionManifestV1,
@@ -1404,7 +1427,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         costing_parameters: CostingParameters,
         execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
-        self.execute_transaction_with_wrapper::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(executable, costing_parameters, execution_config)
+        self.execute_transaction_with_wrapper::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
+            executable,
+            costing_parameters,
+            execution_config,
+        )
     }
 
     pub fn execute_transaction_with_wrapper<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(

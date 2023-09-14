@@ -63,7 +63,10 @@ impl KernelCallbackObject for TestCallbackObject {
         _pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         _references: &IndexSet<Reference>,
         _blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError> where Y: KernelApi<Self> {
+    ) -> Result<Vec<u8>, RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
         unreachable!()
     }
 

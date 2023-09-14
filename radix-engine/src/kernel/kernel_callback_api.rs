@@ -141,8 +141,8 @@ pub trait KernelCallbackObject: Sized {
         references: &IndexSet<Reference>,
         blobs: &IndexMap<Hash, Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    where
+        Y: KernelApi<Self>;
 
     fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where

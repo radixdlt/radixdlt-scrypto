@@ -3,6 +3,7 @@ use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
+use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
@@ -22,6 +23,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
+use crate::transaction::WrappedSystem;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -29,7 +31,9 @@ use radix_engine_interface::api::{ClientBlueprintApi, CollectionIndex};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::transaction_processor::{TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT};
+use radix_engine_interface::blueprints::transaction_processor::{
+    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
+};
 use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnDropOutput;
 use radix_engine_interface::hooks::OnMoveInput;
@@ -38,8 +42,6 @@ use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::RefTypes;
 use transaction::model::PreAllocatedAddress;
-use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
-use crate::transaction::WrappedSystem;
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -122,7 +124,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_init(api)
     }
 
-    fn start<Y>(api: &mut Y, manifest_encoded_instructions: &[u8], pre_allocated_addresses: &Vec<PreAllocatedAddress>, references: &IndexSet<Reference>, blobs: &IndexMap<Hash, Vec<u8>>) -> Result<Vec<u8>, RuntimeError> where Y: KernelApi<Self> {
+    fn start<Y>(
+        api: &mut Y,
+        manifest_encoded_instructions: &[u8],
+        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
+        references: &IndexSet<Reference>,
+        blobs: &IndexMap<Hash, Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
         // Allocate global addresses
         let mut global_address_reservations = Vec::new();
         for PreAllocatedAddress {
@@ -148,7 +159,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 references,
                 blobs,
             })
-                .unwrap(),
+            .unwrap(),
         )?;
 
         Ok(rtn)
