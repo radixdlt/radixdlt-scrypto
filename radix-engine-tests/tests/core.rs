@@ -13,6 +13,37 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
+#[derive(ScryptoSbor, PartialEq, Eq, Debug)]
+struct Compo {
+    message: String,
+}
+
+#[test]
+fn inspect_component_state() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(package_address, "Compo", "new", manifest_args!())
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let state: Compo = test_runner.component_state(component_address);
+    assert_eq!(
+        state,
+        Compo {
+            message: "Hi".to_owned()
+        }
+    );
+}
+
 #[test]
 fn test_globalize_with_unflushed_invalid_own() {
     let mut test_runner = TestRunnerBuilder::new().build();

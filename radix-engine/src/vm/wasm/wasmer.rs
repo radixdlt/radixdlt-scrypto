@@ -347,6 +347,18 @@ impl WasmerModule {
             )
         }
 
+        pub fn object_get_blueprint_id(
+            env: &WasmerInstanceEnv,
+            component_id_ptr: u32,
+            component_id_len: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .blueprint_id(read_memory(&instance, component_id_ptr, component_id_len)?)
+                .map(|buffer| buffer.0)
+        }
+
         pub fn object_get_outer_object(
             env: &WasmerInstanceEnv,
             component_id_ptr: u32,
@@ -731,6 +743,7 @@ impl WasmerModule {
                 OBJECT_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_new),
                 OBJECT_GLOBALIZE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_globalize),
                 OBJECT_INSTANCE_OF_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_instance_of),
+                OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_get_blueprint_id),
                 OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_get_outer_object),
                 OBJECT_CALL_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_call),
                 OBJECT_CALL_MODULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_call_module),

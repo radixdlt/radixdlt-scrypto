@@ -365,3 +365,21 @@ mod globalize_unflushed {
         }
     }
 }
+
+#[blueprint]
+mod compo {
+    struct Compo {
+        message: String,
+    }
+
+    impl Compo {
+        pub fn new() {
+            Self {
+                message: "Hi".to_owned(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+    }
+}

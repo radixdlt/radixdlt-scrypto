@@ -6,7 +6,7 @@ struct TestType {
 }
 
 #[blueprint]
-#[experimental_types(TestType)]
+#[types(TestType)]
 mod kv_store {
     struct KVStore {
         kv_store: Own,
