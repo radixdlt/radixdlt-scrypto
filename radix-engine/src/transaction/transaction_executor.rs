@@ -186,6 +186,22 @@ impl ExecutionConfig {
     }
 }
 
+impl<C: SystemCallbackObject> WrappedSystem<C> for SystemConfig<C> {
+    type Init = ();
+
+    fn create(config: SystemConfig<C>, _: ()) -> Self {
+        config
+    }
+
+    fn system_mut(&mut self) -> &mut SystemConfig<C> {
+        self
+    }
+
+    fn to_system(self) -> SystemConfig<C> {
+        self
+    }
+}
+
 /// An executor that runs transactions.
 /// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
 /// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve

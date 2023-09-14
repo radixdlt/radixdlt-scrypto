@@ -23,7 +23,6 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
-use crate::transaction::WrappedSystem;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -97,22 +96,6 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub schema_cache: NonIterMap<SchemaHash, VersionedScryptoSchema>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
-}
-
-impl<C: SystemCallbackObject> WrappedSystem<C> for SystemConfig<C> {
-    type Init = ();
-
-    fn create(config: SystemConfig<C>, _: ()) -> Self {
-        config
-    }
-
-    fn system_mut(&mut self) -> &mut SystemConfig<C> {
-        self
-    }
-
-    fn to_system(self) -> SystemConfig<C> {
-        self
-    }
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
