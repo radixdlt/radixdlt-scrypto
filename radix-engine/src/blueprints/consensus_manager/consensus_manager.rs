@@ -1244,6 +1244,8 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let mut stake_sum_xrd = Decimal::ZERO;
+
         let mut validator_infos: IndexMap<ValidatorIndex, ValidatorInfo> = index_map_new();
         for (index, (address, validator)) in validator_set
             .validators_by_stake_desc
@@ -1256,6 +1258,12 @@ impl ConsensusManagerBlueprint {
                 validator_statistics[index].clone(),
                 config.min_validator_reliability,
             )? {
+                stake_sum_xrd = stake_sum_xrd.checked_add(info.stake_xrd).ok_or(
+                    RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    )),
+                )?;
+
                 validator_infos.insert(
                     TryInto::<u8>::try_into(index)
                         .expect("Validator index exceeds the range of u8"),
@@ -1268,22 +1276,6 @@ impl ConsensusManagerBlueprint {
         if validator_infos.is_empty() {
             return Ok(());
         }
-
-        let stake_sum_xrd = {
-            let mut sum = Decimal::ZERO;
-
-            for v in validator_infos
-                .values()
-                .map(|validator_info| validator_info.stake_xrd)
-            {
-                sum = sum.checked_add(v).ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::ConsensusManagerError(
-                        ConsensusManagerError::UnexpectedDecimalComputationError,
-                    ),
-                ))?;
-            }
-            sum
-        };
 
         //======================
         // Distribute emissions
