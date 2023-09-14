@@ -24,7 +24,7 @@ fn fuzz_consensus() {
 }
 
 #[test]
-fn verify_no_panics_on_system_call() {
+fn verify_no_unwrap_on_system_call() {
     struct ConsensusFuzzer;
     impl TxnFuzzer for ConsensusFuzzer {
         fn next_txn_intent(fuzzer: &mut SystemTestFuzzer) -> Vec<FuzzAction> {
