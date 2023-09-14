@@ -1,21 +1,17 @@
+use super::*;
+use crate::engine::scrypto_env::ScryptoVmV1Api;
+use crate::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
     own_key_value_store_type_data, OWN_KEY_VALUE_STORE_TYPE,
 };
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::SubstateHandle;
-use sbor::rust::fmt;
+use radix_engine_interface::prelude::{
+    LocalKeyValueStoreDataSchema, KV_STORE_DATA_SCHEMA_VARIANT_LOCAL,
+};
 use sbor::rust::marker::PhantomData;
-use sbor::rust::ops::{Deref, DerefMut};
 use sbor::*;
-
-use crate::engine::scrypto_env::ScryptoVmV1Api;
-use crate::runtime::Runtime;
-
-// TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<
@@ -34,13 +30,24 @@ impl<
 {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let store_schema = KeyValueStoreDataSchema::new_local_with_self_package_replacement::<K, V>(
+        let schema = LocalKeyValueStoreDataSchema::new_with_self_package_replacement::<K, V>(
             Runtime::package_address(),
             true,
         );
 
+        let store_schema = LocalKeyValueStoreDataSchema {
+            additional_schema: schema.additional_schema,
+            key_type: schema.key_type,
+            value_type: schema.value_type,
+            allow_ownership: schema.allow_ownership,
+        };
         Self {
-            id: Own(ScryptoVmV1Api::kv_store_new(store_schema)),
+            id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+                KV_STORE_DATA_SCHEMA_VARIANT_LOCAL,
+                LocalKeyValueStoreDataSchema,
+            > {
+                fields: store_schema,
+            })),
             key: PhantomData,
             value: PhantomData,
         }
@@ -169,85 +176,5 @@ impl<
 
     fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, RustTypeId> {
         own_key_value_store_type_data()
-    }
-}
-
-pub struct KeyValueEntryRef<'a, V: ScryptoEncode> {
-    lock_handle: KeyValueEntryHandle,
-    value: V,
-    phantom: PhantomData<&'a ()>,
-}
-
-impl<'a, V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRef<'a, V> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.value.fmt(f)
-    }
-}
-
-impl<'a, V: ScryptoEncode> KeyValueEntryRef<'a, V> {
-    pub fn new(lock_handle: KeyValueEntryHandle, value: V) -> KeyValueEntryRef<'a, V> {
-        KeyValueEntryRef {
-            lock_handle,
-            value,
-            phantom: PhantomData::default(),
-        }
-    }
-}
-
-impl<'a, V: ScryptoEncode> Deref for KeyValueEntryRef<'a, V> {
-    type Target = V;
-
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
-
-impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRef<'a, V> {
-    fn drop(&mut self) {
-        ScryptoVmV1Api::kv_entry_close(self.lock_handle);
-    }
-}
-
-pub struct KeyValueEntryRefMut<'a, V: ScryptoEncode> {
-    handle: KeyValueEntryHandle,
-    value: V,
-    phantom: PhantomData<&'a ()>,
-}
-
-impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRefMut<'_, V> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.value.fmt(f)
-    }
-}
-
-impl<'a, V: ScryptoEncode> KeyValueEntryRefMut<'a, V> {
-    pub fn new(lock_handle: SubstateHandle, value: V) -> KeyValueEntryRefMut<'a, V> {
-        KeyValueEntryRefMut {
-            handle: lock_handle,
-            value,
-            phantom: PhantomData::default(),
-        }
-    }
-}
-
-impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRefMut<'a, V> {
-    fn drop(&mut self) {
-        let value = scrypto_encode(&self.value).unwrap();
-        ScryptoVmV1Api::kv_entry_write(self.handle, value);
-        ScryptoVmV1Api::kv_entry_close(self.handle);
-    }
-}
-
-impl<'a, V: ScryptoEncode> Deref for KeyValueEntryRefMut<'a, V> {
-    type Target = V;
-
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
-
-impl<'a, V: ScryptoEncode> DerefMut for KeyValueEntryRefMut<'a, V> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.value
     }
 }
