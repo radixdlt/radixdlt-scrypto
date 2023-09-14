@@ -261,7 +261,8 @@ impl NotarizedTransactionValidator {
                 | InstructionV1::CallMethod { args, .. }
                 | InstructionV1::CallRoyaltyMethod { args, .. }
                 | InstructionV1::CallMetadataMethod { args, .. }
-                | InstructionV1::CallRoleAssignmentMethod { args, .. } => {
+                | InstructionV1::CallRoleAssignmentMethod { args, .. }
+                | InstructionV1::CallDirectVaultMethod { args, .. } => {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
@@ -270,7 +271,6 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(&bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::CallDirectVaultMethod { .. } => {}
                 InstructionV1::AllocateGlobalAddress { .. } => {
                     let _ = id_validator.new_address_reservation();
                     id_validator.new_named_address();
