@@ -223,6 +223,13 @@ pub enum ConsensusManagerError {
     NotXrd,
     UnexpectedDecimalComputationError,
     EpochMathOverflow,
+    MilliToMinuteConversionOverflowError,
+}
+
+impl From<ConsensusManagerError> for RuntimeError {
+    fn from(value: ConsensusManagerError) -> Self {
+        Self::ApplicationError(ApplicationError::ConsensusManagerError(value))
+    }
 }
 
 declare_native_blueprint_state! {
@@ -578,7 +585,8 @@ impl ConsensusManagerBlueprint {
                 validator_statistics: Vec::new(),
             };
             let minute_timestamp = ProposerMinuteTimestampSubstate {
-                epoch_minute: Self::milli_to_minute(initial_time_milli),
+                epoch_minute: Self::milli_to_minute(initial_time_milli)
+                    .ok_or(ConsensusManagerError::MilliToMinuteConversionOverflowError)?,
             };
             let milli_timestamp = ProposerMilliTimestampSubstate {
                 epoch_milli: initial_time_milli,
@@ -737,7 +745,8 @@ impl ConsensusManagerBlueprint {
             TimePrecision::Minute => {
                 let other_epoch_minute = Self::milli_to_minute(
                     other_arbitrary_precision_instant.seconds_since_unix_epoch * MILLIS_IN_SECOND,
-                );
+                )
+                .ok_or(ConsensusManagerError::MilliToMinuteConversionOverflowError)?;
 
                 let handle = api.actor_open_field(
                     ACTOR_STATE_SELF,
@@ -765,8 +774,8 @@ impl ConsensusManagerBlueprint {
         Instant::new(epoch_minute as i64 * SECONDS_IN_MINUTE)
     }
 
-    fn milli_to_minute(epoch_milli: i64) -> i32 {
-        i32::try_from(epoch_milli / MILLIS_IN_MINUTE).unwrap() // safe until A.D. 5700
+    fn milli_to_minute(epoch_milli: i64) -> Option<i32> {
+        i32::try_from(epoch_milli / MILLIS_IN_MINUTE).ok() // safe until A.D. 5700
     }
 
     pub(crate) fn next_round<Y>(
@@ -959,7 +968,8 @@ impl ConsensusManagerBlueprint {
         }
         api.field_close(handle)?;
 
-        let new_rounded_value = Self::milli_to_minute(current_time_ms);
+        let new_rounded_value = Self::milli_to_minute(current_time_ms)
+            .ok_or(ConsensusManagerError::MilliToMinuteConversionOverflowError)?;
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ConsensusManagerField::ProposerMinuteTimestamp.into(),
