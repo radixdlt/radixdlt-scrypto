@@ -22,15 +22,17 @@ use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use transaction::prelude::PreAllocatedAddress;
 
-pub struct RandomCallbackError<K: KernelCallbackObject> {
+pub struct RandomSystemErrors<K: KernelCallbackObject> {
     rng: ChaCha8Rng,
     callback_object: K,
 }
 
-impl<C: SystemCallbackObject> WrappedSystem<C> for RandomCallbackError<SystemConfig<C>> {
-    fn create(config: SystemConfig<C>) -> Self {
+impl<C: SystemCallbackObject> WrappedSystem<C> for RandomSystemErrors<SystemConfig<C>> {
+    type Init = u64;
+
+    fn create(config: SystemConfig<C>, seed: u64) -> Self {
         Self {
-            rng: ChaCha8Rng::seed_from_u64(0u64),
+            rng: ChaCha8Rng::seed_from_u64(seed),
             callback_object: config,
         }
     }
@@ -44,7 +46,7 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for RandomCallbackError<SystemCon
     }
 }
 
-impl<K: KernelCallbackObject> RandomCallbackError<K> {
+impl<K: KernelCallbackObject> RandomSystemErrors<K> {
     fn maybe_err(&mut self) -> Result<(), RuntimeError> {
         if self.rng.gen_bool(0.1) {
             return Err(RuntimeError::SystemModuleError(SystemModuleError::CostingError(CostingError::FeeReserveError(FeeReserveError::InsufficientBalance {
@@ -75,7 +77,7 @@ macro_rules! wrapped_internal_api {
     };
 }
 
-impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for RandomCallbackError<K> {
+impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for RandomSystemErrors<K> {
     type LockData = K::LockData;
     type CallFrameData = K::CallFrameData;
 
@@ -337,13 +339,13 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for RandomCallbackEr
     }
 }
 
-pub struct WrappedKernelApi<'a, M: KernelCallbackObject + 'a, K: KernelApi<RandomCallbackError<M>>>
+pub struct WrappedKernelApi<'a, M: KernelCallbackObject + 'a, K: KernelApi<RandomSystemErrors<M>>>
 {
     api: &'a mut K,
     phantom: PhantomData<M>,
 }
 
-impl<'a, M: KernelCallbackObject, K: KernelApi<RandomCallbackError<M>>> KernelNodeApi
+impl<'a, M: KernelCallbackObject, K: KernelApi<RandomSystemErrors<M>>> KernelNodeApi
 for WrappedKernelApi<'a, M, K>
 {
     fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
@@ -375,7 +377,7 @@ for WrappedKernelApi<'a, M, K>
     }
 }
 
-impl<'a, M: KernelCallbackObject, Y: KernelApi<RandomCallbackError<M>>>
+impl<'a, M: KernelCallbackObject, Y: KernelApi<RandomSystemErrors<M>>>
 KernelSubstateApi<M::LockData> for WrappedKernelApi<'a, M, Y>
 {
     fn kernel_mark_substate_as_transient(
@@ -485,7 +487,7 @@ KernelSubstateApi<M::LockData> for WrappedKernelApi<'a, M, Y>
     }
 }
 
-impl<'a, M: KernelCallbackObject + 'a, K: KernelApi<RandomCallbackError<M>>>
+impl<'a, M: KernelCallbackObject + 'a, K: KernelApi<RandomSystemErrors<M>>>
 KernelInvokeApi<M::CallFrameData> for WrappedKernelApi<'a, M, K>
 {
     fn kernel_invoke(
@@ -496,7 +498,7 @@ KernelInvokeApi<M::CallFrameData> for WrappedKernelApi<'a, M, K>
     }
 }
 
-impl<'a, M: KernelCallbackObject, K: KernelApi<RandomCallbackError<M>>> KernelInternalApi<M>
+impl<'a, M: KernelCallbackObject, K: KernelApi<RandomSystemErrors<M>>> KernelInternalApi<M>
 for WrappedKernelApi<'a, M, K>
 {
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
@@ -525,7 +527,7 @@ for WrappedKernelApi<'a, M, K>
     }
 }
 
-impl<'a, M: KernelCallbackObject, K: KernelApi<RandomCallbackError<M>>> KernelApi<M>
+impl<'a, M: KernelCallbackObject, K: KernelApi<RandomSystemErrors<M>>> KernelApi<M>
 for WrappedKernelApi<'a, M, K>
 {
 }
@@ -533,13 +535,13 @@ for WrappedKernelApi<'a, M, K>
 pub struct WrappedKernelInternalApi<
     'a,
     M: KernelCallbackObject + 'a,
-    K: KernelInternalApi<RandomCallbackError<M>>,
+    K: KernelInternalApi<RandomSystemErrors<M>>,
 > {
     api: &'a mut K,
     phantom: PhantomData<M>,
 }
 
-impl<'a, M: KernelCallbackObject, K: KernelInternalApi<RandomCallbackError<M>>> KernelInternalApi<M>
+impl<'a, M: KernelCallbackObject, K: KernelInternalApi<RandomSystemErrors<M>>> KernelInternalApi<M>
 for WrappedKernelInternalApi<'a, M, K>
 {
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {

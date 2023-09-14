@@ -1317,6 +1317,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         mut manifest: TransactionManifestV1,
         amount: Decimal,
         initial_proofs: T,
+        init: R::Init,
     ) -> TransactionReceipt
         where
             T: IntoIterator<Item = NonFungibleGlobalId>,
@@ -1329,7 +1330,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 args: manifest_args!(amount).into(),
             },
         );
-        self.execute_manifest_with_wrapper::<'a, T, R>(manifest, initial_proofs)
+        self.execute_manifest_with_wrapper::<'a, T, R>(manifest, initial_proofs, init)
     }
 
     pub fn execute_manifest_ignoring_fee<T>(
@@ -1374,6 +1375,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         &'a mut self,
         network: &NetworkDefinition,
         raw_transaction: &RawNotarizedTransaction,
+        init: T::Init,
     ) -> TransactionReceipt {
         let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
         let validated = validator
@@ -1383,6 +1385,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             validated.get_executable(),
             CostingParameters::default(),
             ExecutionConfig::for_notarized_transaction(network.clone()),
+            init,
         )
     }
 
@@ -1405,6 +1408,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         &'a mut self,
         manifest: TransactionManifestV1,
         initial_proofs: T,
+        init: R::Init,
     ) -> TransactionReceipt
         where
             T: IntoIterator<Item = NonFungibleGlobalId>,
@@ -1417,6 +1421,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 .get_executable(initial_proofs.into_iter().collect()),
             CostingParameters::default(),
             ExecutionConfig::for_test_transaction(),
+            init,
         )
     }
 
@@ -1470,6 +1475,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             executable,
             costing_parameters,
             execution_config,
+            (),
         )
     }
 
@@ -1478,6 +1484,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         executable: Executable,
         costing_parameters: CostingParameters,
         mut execution_config: ExecutionConfig,
+        init: T::Init,
     ) -> TransactionReceipt {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
@@ -1501,6 +1508,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             &costing_parameters,
             &execution_config,
             &executable,
+            init,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit

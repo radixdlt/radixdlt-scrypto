@@ -42,7 +42,7 @@ use scrypto::prelude::{ToRoleEntry, Zero};
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
-use crate::costing_err::RandomCallbackError;
+use crate::costing_err::RandomSystemErrors;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
@@ -650,6 +650,11 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             .into_par_iter()
             .map(|seed| {
                 let mut fuzz_test = Self::new(seed);
+                let random_system_errors = if random_system_errors {
+                    Some(seed)
+                } else {
+                    None
+                };
                 fuzz_test.run_single_fuzz(num_txns, random_system_errors)
             })
             .collect();
@@ -686,7 +691,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
     fn run_single_fuzz(
         &mut self,
         num_txns: u64,
-        random_system_errors: bool,
+        random_system_errors: Option<u64>,
     ) -> BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> {
         let mut fuzz_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
@@ -721,8 +726,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .build();
 
 
-                let receipt = if random_system_errors {
-                    self.test_runner.execute_manifest_with_fee_from_faucet_with_wrapper::<_, RandomCallbackError<
+                let receipt = if let Some(seed) = random_system_errors {
+                    self.test_runner.execute_manifest_with_fee_from_faucet_with_wrapper::<_, RandomSystemErrors<
                         SystemConfig<Vm<'_, DefaultWasmEngine, OverridePackageCode<ResourceTestInvoke>>>,
                     >>(
                         manifest,
@@ -730,6 +735,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         vec![NonFungibleGlobalId::from_public_key(
                             &self.account_public_key,
                         )],
+                        seed,
                     )
                 } else {
                     self.test_runner.execute_manifest_with_fee_from_faucet(

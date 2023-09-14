@@ -1,7 +1,7 @@
 use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 use rand_chacha::rand_core::SeedableRng;
-use monkey_tests::costing_err::RandomCallbackError;
+use monkey_tests::costing_err::RandomSystemErrors;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{
@@ -46,7 +46,7 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
             match next {
                 NextAction::Transaction(next) => {
                     let receipt =
-                        test_runner.execute_raw_transaction_with_wrapper::<RandomCallbackError<
+                        test_runner.execute_raw_transaction_with_wrapper::<RandomSystemErrors<
                             SystemConfig<Vm<'_, DefaultWasmEngine, NoExtension>>,
                         >>(&network, &next.raw_transaction);
                     match &receipt.result {

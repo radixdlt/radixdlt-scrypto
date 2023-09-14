@@ -211,6 +211,7 @@ where
         executable: &Executable,
         costing_parameters: &CostingParameters,
         execution_config: &ExecutionConfig,
+        init: T::Init,
     ) -> TransactionReceipt {
         let fee_reserve = SystemLoanFeeReserve::new(
             costing_parameters,
@@ -273,6 +274,7 @@ where
                     execution_config,
                     fee_reserve,
                     fee_table,
+                    init,
                 );
 
                 #[cfg(not(feature = "alloc"))]
@@ -553,6 +555,7 @@ where
         execution_config: &ExecutionConfig,
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
+        init: T::Init,
     ) -> (
         Result<Vec<InstructionOutput>, RuntimeError>,
         (
@@ -580,7 +583,7 @@ where
             ),
         };
 
-        let mut wrapped_system = T::create(system);
+        let mut wrapped_system = T::create(system, init);
 
         let kernel_boot = KernelBoot {
             id_allocator: &mut id_allocator,
@@ -1171,6 +1174,7 @@ pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>
         costing_parameters,
         execution_config,
         transaction,
+        (),
     )
 }
 
@@ -1184,11 +1188,13 @@ pub fn execute_transaction_with_wrapper<
     costing_parameters: &CostingParameters,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
+    init: T::Init,
 ) -> TransactionReceipt {
     TransactionExecutor::new(substate_db, vm).execute::<T>(
         transaction,
         costing_parameters,
         execution_config,
+        init,
     )
 }
 
@@ -1199,7 +1205,9 @@ enum TransactionResultType {
 }
 
 pub trait WrappedSystem<C: SystemCallbackObject>: KernelCallbackObject {
-    fn create(config: SystemConfig<C>) -> Self;
+    type Init;
+
+    fn create(config: SystemConfig<C>, init: Self::Init) -> Self;
     fn system_mut(&mut self) -> &mut SystemConfig<C>;
     fn to_system(self) -> SystemConfig<C>;
 }

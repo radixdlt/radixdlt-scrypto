@@ -100,7 +100,9 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 }
 
 impl<C: SystemCallbackObject> WrappedSystem<C> for SystemConfig<C> {
-    fn create(config: SystemConfig<C>) -> Self {
+    type Init = ();
+
+    fn create(config: SystemConfig<C>, _: ()) -> Self {
         config
     }
 
