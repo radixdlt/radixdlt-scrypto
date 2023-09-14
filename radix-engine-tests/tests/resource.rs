@@ -12,6 +12,60 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
+fn test_take_from_vault_after_mint() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, _) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ResourceTest",
+            "take_from_vault_after_mint",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    println!("{}", result.state_updates_string());
+}
+
+#[test]
+fn test_query_nonexistent_and_mint() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, _) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ResourceTest",
+            "query_nonexistent_and_mint",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    println!("{}", result.state_updates_string());
+}
+
+#[test]
 fn cannot_get_total_supply_of_xrd() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
