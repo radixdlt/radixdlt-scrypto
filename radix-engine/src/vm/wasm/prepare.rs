@@ -986,7 +986,10 @@ impl WasmModule {
             }
 
             if locals_count > max_number_of_function_locals {
-                return Err(PrepareError::TooManyFunctionLocals);
+                return Err(PrepareError::TooManyFunctionLocals {
+                    max: max_number_of_function_locals,
+                    actual: locals_count,
+                });
             }
         }
 
@@ -1419,7 +1422,7 @@ mod tests {
                 )
             )
             "#,
-            PrepareError::TooManyFunctionLocals,
+            PrepareError::TooManyFunctionLocals { max: 2, actual: 4 },
             |x| WasmModule::enforce_function_limit(x, 2, 3, 3)
         );
     }
