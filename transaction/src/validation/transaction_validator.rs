@@ -761,6 +761,24 @@ mod tests {
         signers: Vec<u64>,
         notary: u64,
     ) -> NotarizedTransactionV1 {
+        create_transaction_advanced(
+            start_epoch,
+            end_epoch,
+            nonce,
+            signers,
+            notary,
+            ManifestBuilder::new().drop_auth_zone_proofs().build(),
+        )
+    }
+
+    fn create_transaction_advanced(
+        start_epoch: Epoch,
+        end_epoch: Epoch,
+        nonce: u32,
+        signers: Vec<u64>,
+        notary: u64,
+        manifest: TransactionManifestV1,
+    ) -> NotarizedTransactionV1 {
         let sk_notary = Secp256k1PrivateKey::from_u64(notary).unwrap();
 
         let mut builder = TransactionBuilder::new()
@@ -773,7 +791,7 @@ mod tests {
                 notary_is_signatory: false,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilder::new().drop_auth_zone_proofs().build());
+            .manifest(manifest);
 
         for signer in signers {
             builder = builder.sign(&Secp256k1PrivateKey::from_u64(signer).unwrap());
@@ -781,5 +799,60 @@ mod tests {
         builder = builder.notarize(&sk_notary);
 
         builder.build()
+    }
+
+    #[test]
+    fn test_drop_bucket_before_proof() {
+        let transaction = create_transaction_advanced(
+            Epoch::of(0),
+            Epoch::of(40),
+            123,
+            vec![55],
+            66,
+            ManifestBuilder::new()
+                .take_from_worktop(XRD, dec!(100), "bucket")
+                .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof1")
+                .return_to_worktop("bucket")
+                .drop_proof("proof1")
+                .build(),
+        );
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        assert_eq!(
+            validator.validate_from_payload_bytes(&transaction.to_payload_bytes().unwrap()),
+            Err(TransactionValidationError::IdValidationError(
+                ManifestIdValidationError::BucketLocked(ManifestBucket(0))
+            ))
+        );
+    }
+
+    #[test]
+    fn test_clone_invalid_proof() {
+        let transaction = create_transaction_advanced(
+            Epoch::of(0),
+            Epoch::of(40),
+            123,
+            vec![55],
+            66,
+            ManifestBuilder::new()
+                .take_from_worktop(XRD, dec!(100), "bucket")
+                .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof1")
+                .then(|builder| {
+                    let lookup = builder.name_lookup();
+                    let proof_id = lookup.proof("proof1");
+                    builder
+                        .drop_proof("proof1")
+                        .return_to_worktop("bucket")
+                        .add_instruction_advanced(InstructionV1::CloneProof { proof_id })
+                        .0
+                })
+                .build(),
+        );
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        assert_eq!(
+            validator.validate_from_payload_bytes(&transaction.to_payload_bytes().unwrap()),
+            Err(TransactionValidationError::IdValidationError(
+                ManifestIdValidationError::ProofNotFound(ManifestProof(0))
+            ))
+        );
     }
 }

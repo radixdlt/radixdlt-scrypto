@@ -12,11 +12,9 @@ use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofKind {
-    /// Proof of virtual bucket.
-    VirtualProof,
-    /// Bucket proof.
+    /// Proof created from a bucket
     BucketProof(ManifestBucket),
-    /// Proof taken or derived from auth zone.
+    /// Proof created from auth zone.
     AuthZoneProof,
 }
 
@@ -72,7 +70,7 @@ impl ManifestValidator {
                     return Err(ManifestIdValidationError::BucketNotFound(bucket_id.clone()));
                 }
             }
-            ProofKind::AuthZoneProof | ProofKind::VirtualProof => {}
+            ProofKind::AuthZoneProof => {}
         }
 
         let proof_id = self.id_allocator.new_proof_id();
