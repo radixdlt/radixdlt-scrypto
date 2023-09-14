@@ -80,6 +80,12 @@ impl NodeStateUpdates {
             }
         }
     }
+
+    pub fn partition_updates(&self) -> &IndexMap<PartitionNumber, PartitionStateUpdates> {
+        match self {
+            NodeStateUpdates::Delta { by_partition } => by_partition,
+        }
+    }
 }
 
 /// A description of all updates that happened to a state of a single Partition.
