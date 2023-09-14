@@ -17,7 +17,7 @@ use radix_engine::system::system_db_reader::{
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction_with_wrapper, BalanceChange, CommitResult,
+    execute_preview, execute_transaction_with_system, BalanceChange, CommitResult,
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
     WrappedSystem,
 };
@@ -1325,15 +1325,19 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         self.execute_manifest(manifest, initial_proofs)
     }
 
-    pub fn execute_manifest_with_fee_from_faucet_with_wrapper<'a, T, R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+    pub fn execute_manifest_with_fee_from_faucet_with_system<
+        'a,
+        T,
+        R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>,
+    >(
         &'a mut self,
         mut manifest: TransactionManifestV1,
         amount: Decimal,
         initial_proofs: T,
         init: R::Init,
     ) -> TransactionReceipt
-        where
-            T: IntoIterator<Item = NonFungibleGlobalId>,
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         manifest.instructions.insert(
             0,
@@ -1343,7 +1347,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 args: manifest_args!(amount).into(),
             },
         );
-        self.execute_manifest_with_wrapper::<'a, T, R>(manifest, initial_proofs, init)
+        self.execute_manifest_with_system::<'a, T, R>(manifest, initial_proofs, init)
     }
 
     pub fn execute_manifest_ignoring_fee<T>(
@@ -1381,27 +1385,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         )
     }
 
-    pub fn execute_raw_transaction_with_wrapper<
-        'a,
-        T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>,
-    >(
-        &'a mut self,
-        network: &NetworkDefinition,
-        raw_transaction: &RawNotarizedTransaction,
-        init: T::Init,
-    ) -> TransactionReceipt {
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
-        let validated = validator
-            .validate_from_raw(&raw_transaction)
-            .expect("Expected raw transaction to be valid");
-        self.execute_transaction_with_wrapper::<T>(
-            validated.get_executable(),
-            CostingParameters::default(),
-            ExecutionConfig::for_notarized_transaction(network.clone()),
-            init,
-        )
-    }
-
     pub fn execute_manifest<T>(
         &mut self,
         manifest: TransactionManifestV1,
@@ -1417,17 +1400,17 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         )
     }
 
-    pub fn execute_manifest_with_wrapper<'a, T, R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+    pub fn execute_manifest_with_system<'a, T, R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
         &'a mut self,
         manifest: TransactionManifestV1,
         initial_proofs: T,
         init: R::Init,
     ) -> TransactionReceipt
-        where
-            T: IntoIterator<Item = NonFungibleGlobalId>,
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
-        self.execute_transaction_with_wrapper::<R>(
+        self.execute_transaction_with_system::<R>(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
@@ -1484,7 +1467,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         costing_parameters: CostingParameters,
         execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
-        self.execute_transaction_with_wrapper::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
+        self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
             executable,
             costing_parameters,
             execution_config,
@@ -1492,7 +1475,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         )
     }
 
-    pub fn execute_transaction_with_wrapper<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+    pub fn execute_transaction_with_system<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
         &'a mut self,
         executable: Executable,
         costing_parameters: CostingParameters,
@@ -1515,7 +1498,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             native_vm: self.native_vm.clone(),
         };
 
-        let transaction_receipt = execute_transaction_with_wrapper::<_, _, T>(
+        let transaction_receipt = execute_transaction_with_system::<_, _, T>(
             &mut self.database,
             vm,
             &costing_parameters,

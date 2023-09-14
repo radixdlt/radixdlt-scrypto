@@ -28,7 +28,7 @@ fn fuzz_fungible_resource() {
 }
 
 #[test]
-fn verify_no_unwrap_on_system_call() {
+fn fungible_resource_inject_costing_error() {
     struct FungibleResourceFuzzer;
     impl TxnFuzzer for FungibleResourceFuzzer {
         fn next_txn_intent(fuzzer: &mut SystemTestFuzzer) -> Vec<FuzzAction> {

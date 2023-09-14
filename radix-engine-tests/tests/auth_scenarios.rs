@@ -3,15 +3,18 @@ mod package_loader;
 use crate::node_modules::auth::RoleDefinition;
 use package_loader::PackageLoader;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
+use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::node_modules::auth::ToRoleEntry;
 use radix_engine::types::*;
-use radix_engine::vm::NoExtension;
+use radix_engine::vm::wasm::DefaultWasmEngine;
+use radix_engine::vm::{NoExtension, OverridePackageCode, Vm};
 use radix_engine_interface::api::node_modules::auth::{
     RoleAssignmentSetInput, ROLE_ASSIGNMENT_SET_IDENT,
 };
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use scrypto_unit::inject_costing_err::{InjectCostingError, InjectSystemCostingError};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -140,6 +143,30 @@ fn scenario_1() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn scenario_1_with_injected_costing_error() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    let mut inject_err_after_count = 1u64;
+
+    loop {
+        let manifest = ManifestBuilder::new()
+            .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
+            .call_method(env.swappy, "protected_method", manifest_args!())
+            .build();
+        let receipt = test_runner.execute_manifest_with_fee_from_faucet_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
+            manifest, dec!("500"), vec![env.virtua_sig.clone()], inject_err_after_count);
+        if receipt.is_commit_success() {
+            break;
+        }
+
+        inject_err_after_count += 1u64;
+    }
+
+    println!("Count: {:?}", inject_err_after_count);
 }
 
 #[test]

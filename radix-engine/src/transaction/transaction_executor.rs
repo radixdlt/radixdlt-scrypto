@@ -1168,7 +1168,7 @@ pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    execute_transaction_with_wrapper::<S, V, SystemConfig<V>>(
+    execute_transaction_with_system::<S, V, SystemConfig<V>>(
         substate_db,
         vm,
         costing_parameters,
@@ -1178,7 +1178,7 @@ pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>
     )
 }
 
-pub fn execute_transaction_with_wrapper<
+pub fn execute_transaction_with_system<
     S: SubstateDatabase,
     V: SystemCallbackObject + Clone,
     T: WrappedSystem<V>,

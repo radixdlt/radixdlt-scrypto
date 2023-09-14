@@ -1,5 +1,4 @@
 pub mod consensus_manager;
-pub mod costing_err;
 pub mod multi_pool;
 pub mod one_pool;
 pub mod resource;
@@ -19,9 +18,12 @@ use crate::validator::ValidatorFuzzAction;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
+use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
 use radix_engine::prelude::node_modules::ModuleConfig;
+use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
 use radix_engine::types::*;
+use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{OverridePackageCode, Vm};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::pool::{
@@ -36,14 +38,11 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
-use radix_engine::system::system_callback::SystemConfig;
-use radix_engine::vm::wasm::DefaultWasmEngine;
 use scrypto::prelude::{ToRoleEntry, Zero};
+use scrypto_unit::inject_costing_err::{InjectCostingError, InjectSystemCostingError};
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
-use crate::costing_err::RandomCostingErrors;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
@@ -638,11 +637,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         }
     }
 
-    pub fn run_fuzz(
-        num_tests: u64,
-        num_txns: u64,
-        random_system_errors: bool,
-    ) {
+    pub fn run_fuzz(num_tests: u64, num_txns: u64, inject_costing_error: bool) {
         let mut summed_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
 
@@ -651,7 +646,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             .into_par_iter()
             .map(|seed| {
                 let mut fuzz_test = Self::new(seed);
-                let err_after_acount = if random_system_errors {
+                let err_after_acount = if inject_costing_error {
                     let err_after_count = fuzz_test.fuzzer.rng.gen_range(200u64..500u64);
                     Some(err_after_count)
                 } else {
@@ -661,7 +656,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             })
             .collect();
 
-        if !random_system_errors {
+        if !inject_costing_error {
             for run_result in results {
                 for (txn, txn_results) in run_result {
                     for (txn_result, count) in txn_results {
@@ -727,11 +722,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .deposit_batch(self.validators[0].account_address)
                     .build();
 
-
                 let receipt = if let Some(error_after_count) = error_after_system_callback_count {
-                    self.test_runner.execute_manifest_with_fee_from_faucet_with_wrapper::<_, RandomCostingErrors<
-                        SystemConfig<Vm<'_, DefaultWasmEngine, OverridePackageCode<ResourceTestInvoke>>>,
-                    >>(
+                    self.test_runner.execute_manifest_with_fee_from_faucet_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
                         manifest,
                         self.fuzzer.next_fee(),
                         vec![NonFungibleGlobalId::from_public_key(
@@ -770,12 +762,14 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                                 });
                             });
 
-                        if let TransactionOutcome::Failure(RuntimeError::VmError(VmError::Native(
-                            NativeRuntimeError::Trap {
+                        if let TransactionOutcome::Failure(RuntimeError::VmError(
+                            VmError::Native(NativeRuntimeError::Trap {
                                 export_name,
                                 input,
                                 error,
-                            }))) = &commit_result.outcome {
+                            }),
+                        )) = &commit_result.outcome
+                        {
                             panic!("Native panic: {:?} {:?} {:?}", export_name, input, error);
                         }
 

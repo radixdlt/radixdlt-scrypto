@@ -22,24 +22,3 @@ fn fuzz_consensus() {
 
     FuzzTest::<ConsensusFuzzer>::run_fuzz(32, 100, false);
 }
-
-#[test]
-fn verify_no_unwrap_on_system_call() {
-    struct ConsensusFuzzer;
-    impl TxnFuzzer for ConsensusFuzzer {
-        fn next_txn_intent(fuzzer: &mut SystemTestFuzzer) -> Vec<FuzzAction> {
-            match fuzzer.next(0u8..10u8) {
-                0u8 => vec![FuzzAction::ConsensusManager(
-                    ConsensusManagerFuzzAction::CreateValidator,
-                )],
-                _ => {
-                    let action: ValidatorFuzzAction =
-                        ValidatorFuzzAction::from_repr(fuzzer.next_u8(8u8)).unwrap();
-                    vec![FuzzAction::Validator(action)]
-                }
-            }
-        }
-    }
-
-    FuzzTest::<ConsensusFuzzer>::run_fuzz(32, 100, true);
-}
