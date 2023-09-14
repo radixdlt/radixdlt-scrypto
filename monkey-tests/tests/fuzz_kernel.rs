@@ -395,7 +395,7 @@ impl KernelFuzzAction {
                             &SubstateKey::Field(0u8),
                             LockFlags::MUTABLE,
                             Some(|| IndexedScryptoValue::from_typed(&())),
-                            ()
+                            (),
                         )?;
                         kernel.kernel_write_substate(handle, value)?;
                         kernel.kernel_close_substate(handle)?;
