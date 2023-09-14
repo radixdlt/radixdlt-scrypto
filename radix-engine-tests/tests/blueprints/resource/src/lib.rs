@@ -11,6 +11,7 @@ pub struct TestNFData {
 mod resource_test {
     struct ResourceTest {
         vault: Vault,
+        data: String,
     }
 
     impl ResourceTest {
@@ -27,6 +28,7 @@ mod resource_test {
                     .into();
             let global = Self {
                 vault: Vault::new(bucket.resource_address()),
+                data: "hi".to_string(),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -38,6 +40,45 @@ mod resource_test {
         pub fn take_from_vault_after_mint_helper(&mut self, bucket: Bucket) {
             self.vault.put(bucket);
             let bucket = self.vault.take(dec!(1));
+            self.vault.put(bucket);
+            self.data = "hello".to_string();
+        }
+
+        pub fn query_nonexistent_and_mint() {
+            let resource_manager =
+                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                    .mint_roles(mint_roles! {
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(allow_all);
+                    })
+                    .burn_roles(burn_roles! {
+                        burner => rule!(allow_all);
+                        burner_updater => rule!(allow_all);
+                    })
+                    .create_with_no_initial_supply();
+
+            let global = Self {
+                vault: Vault::new(resource_manager.address()),
+                data: "hi".to_string(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+
+            global.query_nonexistent_and_mint_helper();
+        }
+
+        pub fn query_nonexistent_and_mint_helper(&mut self) {
+            self.vault
+                .as_non_fungible()
+                .contains_non_fungible(&NonFungibleLocalId::integer(0));
+            let bucket = self.vault.resource_manager().mint_non_fungible(
+                &NonFungibleLocalId::integer(0),
+                TestNFData {
+                    name: "name".to_string(),
+                    available: false,
+                },
+            );
             self.vault.put(bucket);
         }
 
