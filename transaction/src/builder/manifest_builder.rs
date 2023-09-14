@@ -936,6 +936,19 @@ impl ManifestBuilder {
         self.call_module_method(address, ModuleId::Royalty, method_name, arguments)
     }
 
+    pub fn call_direct_access_method(
+        self,
+        address: InternalAddress,
+        method_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address,
+            method_name: method_name.into(),
+            args: arguments.resolve(),
+        })
+    }
+
     pub fn set_owner_role(
         self,
         address: impl ResolvableGlobalAddress,

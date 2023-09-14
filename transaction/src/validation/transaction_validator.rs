@@ -855,4 +855,37 @@ mod tests {
             ))
         );
     }
+
+    #[test]
+    fn verify_call_direct_method_args_are_processed() {
+        let transaction = create_transaction_advanced(
+            Epoch::of(0),
+            Epoch::of(40),
+            123,
+            vec![55],
+            66,
+            ManifestBuilder::new()
+                .take_from_worktop(XRD, dec!(100), "bucket")
+                .then(|builder| {
+                    let lookup = builder.name_lookup();
+                    builder
+                        .call_direct_access_method(
+                            InternalAddress::new_or_panic(
+                                [EntityType::InternalFungibleVault as u8; NodeId::LENGTH],
+                            ),
+                            "test",
+                            manifest_args!(lookup.bucket("bucket")),
+                        )
+                        .return_to_worktop("bucket")
+                })
+                .build(),
+        );
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        assert_eq!(
+            validator.validate_from_payload_bytes(&transaction.to_payload_bytes().unwrap()),
+            Err(TransactionValidationError::IdValidationError(
+                ManifestIdValidationError::BucketNotFound(ManifestBucket(0))
+            ))
+        );
+    }
 }
