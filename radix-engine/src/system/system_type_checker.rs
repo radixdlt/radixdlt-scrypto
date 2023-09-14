@@ -467,6 +467,12 @@ impl SystemMapper {
             let mut field_partition = BTreeMap::new();
 
             for (index, field) in system_struct.0.into_iter() {
+                let (_, field_schema) = schema.field(index).unwrap();
+                match field_schema.transience {
+                    FieldTransience::TransientStatic { .. } => continue,
+                    FieldTransience::NotTransient => {}
+                }
+
                 let payload: ScryptoValue =
                     scrypto_decode(&field.value).expect("Checked by payload-schema validation");
 

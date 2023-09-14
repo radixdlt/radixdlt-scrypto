@@ -487,6 +487,44 @@ mod tests {
     }
 
     #[test]
+    pub fn test_calculate_value_tree_body_byte_array() {
+        let payload = basic_encode(&BasicValue::Array {
+            element_value_kind: BasicValueKind::Array,
+            elements: vec![BasicValue::Array {
+                element_value_kind: BasicValueKind::U8,
+                elements: vec![BasicValue::U8 { value: 44 }, BasicValue::U8 { value: 55 }],
+            }],
+        })
+        .unwrap();
+        /*
+            91  - prefix
+            32  - value kind: array
+            32  - element value kind: array
+            1   - number of elements: 1
+            7   - element value kind: u8
+            2   - number of elements: u8
+            44  - u8
+            55  - u8
+        */
+        let length = calculate_value_tree_body_byte_length::<NoCustomExtension>(
+            &payload[2..],
+            BasicValueKind::Array,
+            0,
+            100,
+        )
+        .unwrap();
+        assert_eq!(length, 6);
+        let length = calculate_value_tree_body_byte_length::<NoCustomExtension>(
+            &payload[6..],
+            BasicValueKind::U8,
+            0,
+            100,
+        )
+        .unwrap();
+        assert_eq!(length, 1);
+    }
+
+    #[test]
     pub fn test_exact_events_returned() {
         let payload = basic_encode(&(
             2u8,
