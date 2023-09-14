@@ -4,10 +4,14 @@ use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::*;
+use crate::track::BatchPartitionStateUpdate;
+use crate::track::NodeStateUpdates;
+use crate::track::PartitionStateUpdates;
 use crate::track::StateUpdates;
 use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_store_interface::interface::DatabaseUpdate;
 use sbor::representations::*;
 use transaction::prelude::TransactionCostingParameters;
 
@@ -241,6 +245,82 @@ impl CommitResult {
             },
             TransactionOutcome::Failure(_) => panic!("Transaction failed"),
         }
+    }
+
+    pub fn state_updates(
+        &self,
+    ) -> BTreeMap<NodeId, BTreeMap<PartitionNumber, BTreeMap<SubstateKey, DatabaseUpdate>>> {
+        let mut updates = BTreeMap::<
+            NodeId,
+            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, DatabaseUpdate>>,
+        >::new();
+        for (node_id, x) in &self.state_updates.by_node {
+            let NodeStateUpdates::Delta { by_partition } = x;
+            for (partition_num, y) in by_partition {
+                match y {
+                    PartitionStateUpdates::Delta { by_substate } => {
+                        for (substate_key, substate_update) in by_substate {
+                            updates
+                                .entry(node_id.clone())
+                                .or_default()
+                                .entry(partition_num.clone())
+                                .or_default()
+                                .insert(substate_key.clone(), substate_update.clone());
+                        }
+                    }
+                    PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
+                        new_substate_values,
+                    }) => {
+                        for (substate_key, substate_value) in new_substate_values {
+                            updates
+                                .entry(node_id.clone())
+                                .or_default()
+                                .entry(partition_num.clone())
+                                .or_default()
+                                .insert(
+                                    substate_key.clone(),
+                                    DatabaseUpdate::Set(substate_value.clone()),
+                                );
+                        }
+                    }
+                }
+            }
+        }
+        updates
+    }
+
+    pub fn state_updates_string(&self) -> String {
+        let mut buffer = String::new();
+        for (node_id, x) in &self.state_updates() {
+            buffer.push_str(&format!("\n{:?}, {:?}\n", node_id, node_id.entity_type()));
+            for (partition_num, y) in x {
+                buffer.push_str(&format!("    {:?}\n", partition_num));
+                for (substate_key, substate_update) in y {
+                    buffer.push_str(&format!(
+                        "        {}\n",
+                        match substate_key {
+                            SubstateKey::Field(x) => format!("Field: {}", x),
+                            SubstateKey::Map(x) =>
+                                format!("Map: {:?}", scrypto_decode::<ScryptoValue>(&x).unwrap()),
+                            SubstateKey::Sorted(x) => format!(
+                                "Sorted: {:?}, {:?}",
+                                x.0,
+                                scrypto_decode::<ScryptoValue>(&x.1).unwrap()
+                            ),
+                        },
+                    ));
+                    buffer.push_str(&format!(
+                        "        {}\n",
+                        match substate_update {
+                            DatabaseUpdate::Set(x) =>
+                                format!("Set: {:?}", scrypto_decode::<ScryptoValue>(&x).unwrap()),
+                            DatabaseUpdate::Delete => format!("Delete"),
+                        }
+                    ));
+                }
+            }
+        }
+        buffer
     }
 }
 
