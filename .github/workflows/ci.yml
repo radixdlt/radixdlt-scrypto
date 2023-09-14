@@ -24,8 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - name: Check format
@@ -38,8 +36,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
       - uses: actions/checkout@v3
       - name: setup the container
@@ -62,8 +58,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
       - uses: actions/checkout@v3
       - name: setup the container
@@ -86,8 +80,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
@@ -110,8 +102,6 @@ jobs:
 
   scrypto-integration-tests:
     name: Run Scrypto integration tests
-    env:
-      CARGO_LOG: info
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
@@ -137,8 +127,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
@@ -167,8 +155,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
@@ -180,8 +166,6 @@ jobs:
   radix-engine-build:
     name: Run Radix Engine build (RocksDB)
     runs-on: ${{ matrix.os }}
-    env:
-      CARGO_LOG: info
     strategy:
       matrix:
         os: [ubuntu-latest-16-cores]
@@ -229,8 +213,6 @@ jobs:
     # which are false for release variant
     name: Run Radix Engine tests (release)
     runs-on: ubuntu-latest-16-cores
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -254,8 +236,6 @@ jobs:
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ubuntu-latest-16-cores
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -275,8 +255,6 @@ jobs:
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
     runs-on: ubuntu-latest-16-cores
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -298,8 +276,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
@@ -316,8 +292,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
@@ -334,8 +308,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
@@ -352,8 +324,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
@@ -368,8 +338,6 @@ jobs:
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
     runs-on: ${{ matrix.os }}
-    env:
-      CARGO_LOG: info
     strategy:
       matrix:
         os: [ubuntu-latest-16-cores, windows-latest-16-cores]
@@ -405,8 +373,6 @@ jobs:
   cli-scrypto:
     name: Run CLI tests (scrypto)
     runs-on: ${{ matrix.os }}
-    env:
-      CARGO_LOG: info
     strategy:
       matrix:
         os: [ubuntu-latest-16-cores, windows-latest-16-cores, macos-latest]
@@ -438,8 +404,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.70.0-bullseye
-    env:
-      CARGO_LOG: info
     steps:
     - uses: actions/checkout@v3
     - name: setup the container
