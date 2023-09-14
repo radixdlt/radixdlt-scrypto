@@ -2,6 +2,7 @@ use scrypto::prelude::*;
 
 // Faucet - TestNet only
 #[blueprint]
+#[types(Hash, Epoch)]
 mod faucet {
     struct Faucet {
         vault: Vault,
@@ -15,7 +16,7 @@ mod faucet {
         ) -> Global<Faucet> {
             Self {
                 vault: Vault::with_bucket(bucket),
-                transactions: KeyValueStore::new(),
+                transactions: KeyValueStore::new_with_registered_type(),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

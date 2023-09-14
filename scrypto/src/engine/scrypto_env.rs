@@ -3,7 +3,6 @@ use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{ActorRefHandle, FieldValue};
 use radix_engine_interface::api::{AttachedModuleId, FieldIndex, LockFlags};
 use radix_engine_interface::crypto::Hash;
@@ -90,6 +89,21 @@ impl ScryptoVmV1Api {
         rtn == 1
     }
 
+    pub fn object_get_blueprint_id(node_id: &NodeId) -> BlueprintId {
+        let bytes = copy_buffer(unsafe {
+            object::object_get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+
+        BlueprintId {
+            package_address: PackageAddress::new_or_panic(
+                bytes[0..NodeId::LENGTH].try_into().unwrap(),
+            ),
+            blueprint_name: unsafe {
+                String::from_utf8_unchecked(bytes[NodeId::LENGTH..].to_vec())
+            },
+        }
+    }
+
     pub fn object_get_outer_object(node_id: &NodeId) -> GlobalAddress {
         let bytes = copy_buffer(unsafe {
             object::object_get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())
@@ -143,7 +157,8 @@ impl ScryptoVmV1Api {
         })
     }
 
-    pub fn kv_store_new(schema: KeyValueStoreDataSchema) -> NodeId {
+    // TODO: dedicated marker trait for key value store schema
+    pub fn kv_store_new<S: ScryptoEncode>(schema: S) -> NodeId {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { kv_store::kv_store_new(schema.as_ptr(), schema.len()) });
         NodeId(bytes.try_into().unwrap())
@@ -200,7 +215,7 @@ impl ScryptoVmV1Api {
     pub fn actor_get_blueprint_name() -> String {
         let blueprint_name = copy_buffer(unsafe { actor::actor_get_blueprint_name() });
 
-        String::from_utf8(blueprint_name).unwrap()
+        unsafe { String::from_utf8_unchecked(blueprint_name) }
     }
 
     pub fn actor_emit_event(event_name: String, event_data: Vec<u8>, flags: EventFlags) {
@@ -280,7 +295,7 @@ impl ScryptoVmV1Api {
         let encoded = copy_buffer(unsafe {
             system::sys_bech32_encode_address(global_address.as_ptr(), global_address.len())
         });
-        String::from_utf8(encoded).unwrap()
+        unsafe { String::from_utf8_unchecked(encoded) }
     }
 
     pub fn sys_log(level: Level, message: String) {

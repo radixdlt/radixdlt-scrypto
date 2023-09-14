@@ -352,28 +352,14 @@ fn validate_type_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
         let blueprint_schema_init = &blueprint_init.schema;
         let BlueprintSchemaInit { schema, types, .. } = blueprint_schema_init;
 
-        for (expected_type_name, local_type_id) in types.type_schema.iter() {
+        for (_, local_type_id) in types.type_schema.iter() {
             if schema.v1().resolve_type_kind(*local_type_id).is_none() {
                 return Err(PackageError::InvalidLocalTypeId(*local_type_id));
             }
 
-            // Checking that the type name is indeed what the user claims it to be
-            let actual_type_name = schema.v1().resolve_type_metadata(*local_type_id).map_or(
-                Err(PackageError::FailedToResolveLocalSchema {
-                    local_type_id: *local_type_id,
-                }),
-                |metadata| Ok(metadata.get_name_string()),
-            )?;
-
-            if Some(expected_type_name) != actual_type_name.as_ref() {
-                Err(PackageError::TypeNameMismatch {
-                    expected: expected_type_name.to_string(),
-                    actual: actual_type_name,
-                })?
-            }
-
             // Notes:
-            // - The "type name" length check is done within `validate_names`
+            // - The "type name" length and char check is done within `validate_names`
+            // - We do no require the type identifier to be equal to the type name in metadata
         }
     }
 

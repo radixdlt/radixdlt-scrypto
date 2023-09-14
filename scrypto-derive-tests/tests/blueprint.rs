@@ -11,12 +11,20 @@ mod empty {
 }
 
 #[derive(ScryptoSbor)]
-struct RegisteredStruct {
+struct Struct1 {
     a: String,
 }
 
+#[derive(ScryptoSbor)]
+struct Struct2 {
+    a: String,
+}
+
+pub type Array = [u8; 22];
+pub type Tuple = (String, String);
+
 #[blueprint]
-#[experimental_types(RegisteredStruct)]
+#[types(Struct1, Struct2 as Hi, u32, NonFungibleGlobalId, Vec<Hash>, Vec<Bucket> as GenericAlias, scrypto::prelude::NonFungibleLocalId, Array, Tuple)]
 mod simple {
     use scrypto::prelude::OwnerRole;
 
