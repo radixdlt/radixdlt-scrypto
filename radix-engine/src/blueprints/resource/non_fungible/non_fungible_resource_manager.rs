@@ -2,7 +2,6 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use core::ops::Neg;
 use native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
@@ -124,7 +123,7 @@ fn create_non_fungibles<Y>(
     entries: IndexMap<NonFungibleLocalId, ScryptoValue>,
     check_non_existence: bool,
     api: &mut Y,
-) -> Result<(), RuntimeError>
+) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
@@ -154,7 +153,7 @@ where
                     non_fungible_handle,
                 )?;
 
-            if let Some(..) = cur_non_fungible {
+            if cur_non_fungible.is_some() {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
                         NonFungibleResourceManagerError::NonFungibleAlreadyExists(Box::new(
@@ -173,7 +172,7 @@ where
         ids.insert(non_fungible_local_id);
     }
 
-    Ok(())
+    Ok(ids)
 }
 
 pub struct NonFungibleResourceManagerBlueprint;
@@ -688,7 +687,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         // TODO: Do this check in a better way (e.g. via type check)
         if id_type == NonFungibleIdType::RUID {
@@ -754,7 +753,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let entries: Result<IndexMap<NonFungibleLocalId, (ScryptoValue,)>, RuntimeError> = entries
             .into_iter()
@@ -824,11 +823,8 @@ impl NonFungibleResourceManagerBlueprint {
         let ids = {
             let resource_address =
                 ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
-            let ids: IndexSet<NonFungibleLocalId> = entries.keys().cloned().collect();
             let non_fungibles = entries.into_iter().map(|(k, v)| (k, v.0)).collect();
-            create_non_fungibles(resource_address, id_type, non_fungibles, true, api)?;
-
-            ids
+            create_non_fungibles(resource_address, id_type, non_fungibles, true, api)?
         };
 
         let bucket = Self::create_bucket(ids.clone(), api)?;
@@ -851,11 +847,9 @@ impl NonFungibleResourceManagerBlueprint {
         let ids = {
             let resource_address =
                 ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
-            let mut ids = index_set_new();
             let mut non_fungibles = index_map_new();
             for value in entries {
                 let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
-                ids.insert(id.clone());
                 non_fungibles.insert(id, value.0);
             }
             create_non_fungibles(
@@ -864,9 +858,7 @@ impl NonFungibleResourceManagerBlueprint {
                 non_fungibles,
                 false,
                 api,
-            )?;
-
-            ids
+            )?
         };
 
         let bucket = Self::create_bucket(ids.clone(), api)?;
@@ -886,13 +878,13 @@ impl NonFungibleResourceManagerBlueprint {
         Self::assert_is_ruid(api)?;
         Self::update_total_supply(api, Decimal::ONE)?;
 
-        let id = {
+        let (id, ids) = {
             let resource_address =
                 ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
             let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
             let non_fungibles = indexmap!(id.clone() => value);
 
-            create_non_fungibles(
+            let ids = create_non_fungibles(
                 resource_address,
                 NonFungibleIdType::RUID,
                 non_fungibles,
@@ -900,10 +892,9 @@ impl NonFungibleResourceManagerBlueprint {
                 api,
             )?;
 
-            id
+            (id, ids)
         };
 
-        let ids = indexset!(id.clone());
         let bucket = Self::create_bucket(ids.clone(), api)?;
         Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
@@ -919,28 +910,29 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
-        let data_schema_handle = api.actor_open_field(
-            ACTOR_STATE_SELF,
-            NonFungibleResourceManagerField::MutableFields.into(),
-            LockFlags::read_only(),
-        )?;
-        let mutable_fields = api
-            .field_read_typed::<NonFungibleResourceManagerMutableFieldsFieldPayload>(
-                data_schema_handle,
-            )?
-            .into_latest();
-
-        let field_index = mutable_fields
-            .mutable_field_index
-            .get(&field_name)
-            .cloned()
-            .ok_or_else(|| {
-                RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::UnknownMutableFieldName(field_name),
-                ))
-            })?;
+        let field_index = {
+            let data_schema_handle = api.actor_open_field(
+                ACTOR_STATE_SELF,
+                NonFungibleResourceManagerField::MutableFields.into(),
+                LockFlags::read_only(),
+            )?;
+            let mutable_fields = api
+                .field_read_typed::<NonFungibleResourceManagerMutableFieldsFieldPayload>(
+                    data_schema_handle,
+                )?
+                .into_latest();
+            mutable_fields
+                .mutable_field_index
+                .get(&field_name)
+                .cloned()
+                .ok_or_else(|| {
+                    RuntimeError::ApplicationError(
+                        ApplicationError::NonFungibleResourceManagerError(
+                            NonFungibleResourceManagerError::UnknownMutableFieldName(field_name),
+                        ),
+                    )
+                })?
+        };
 
         let non_fungible_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
@@ -962,6 +954,8 @@ impl NonFungibleResourceManagerBlueprint {
             let buffer = scrypto_encode(non_fungible_data_payload).unwrap();
             api.key_value_entry_set(non_fungible_handle, buffer)?;
         } else {
+            let resource_address =
+                ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id);
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
@@ -971,8 +965,6 @@ impl NonFungibleResourceManagerBlueprint {
                 ),
             ));
         }
-
-        api.key_value_entry_close(non_fungible_handle)?;
 
         Ok(())
     }
@@ -994,9 +986,8 @@ impl NonFungibleResourceManagerBlueprint {
             .key_value_entry_get_typed::<NonFungibleResourceManagerDataEntryPayload>(
                 non_fungible_handle,
             )?;
-        let exists = matches!(non_fungible, Option::Some(..));
 
-        Ok(exists)
+        Ok(non_fungible.is_some())
     }
 
     pub(crate) fn get_non_fungible<Y>(
@@ -1006,9 +997,6 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
-
         let non_fungible_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
             NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
@@ -1021,6 +1009,8 @@ impl NonFungibleResourceManagerBlueprint {
         if let Some(non_fungible) = wrapper {
             Ok(non_fungible.into_content())
         } else {
+            let resource_address =
+                ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id.clone());
             Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
@@ -1034,7 +1024,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_empty_bucket<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::create_bucket(index_set_new(), api)
     }
@@ -1077,8 +1067,11 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         Self::assert_burnable(api)?;
+
         // Drop the bucket
+        // This will fail if bucket is not an inner object of the current non-fungible resource
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
+
         Self::update_total_supply(api, other_bucket.liquid.amount().neg())?;
 
         Runtime::emit_event(
