@@ -1422,7 +1422,7 @@ mod tests {
                 )
             )
             "#,
-            PrepareError::TooManyFunctionLocals { max: 2, actual: 4 },
+            PrepareError::TooManyFunctionLocals { max: 3, actual: 4 },
             |x| WasmModule::enforce_function_limit(x, 2, 3, 3)
         );
     }
