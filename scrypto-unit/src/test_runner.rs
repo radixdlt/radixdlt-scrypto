@@ -10,14 +10,12 @@ use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRI
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::checkers::*;
+use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
 use radix_engine::system::type_info::TypeInfoSubstate;
-use radix_engine::transaction::{
-    execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
-    ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
-};
+use radix_engine::transaction::{execute_preview, BalanceChange, CommitResult, CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult, WrappedSystem, execute_transaction_with_wrapper};
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
@@ -1404,6 +1402,15 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         &mut self,
         executable: Executable,
         costing_parameters: CostingParameters,
+        execution_config: ExecutionConfig,
+    ) -> TransactionReceipt {
+        self.execute_transaction_with_wrapper::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(executable, costing_parameters, execution_config)
+    }
+
+    pub fn execute_transaction_with_wrapper<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+        &'a mut self,
+        executable: Executable,
+        costing_parameters: CostingParameters,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config
@@ -1422,7 +1429,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             native_vm: self.native_vm.clone(),
         };
 
-        let transaction_receipt = execute_transaction(
+        let transaction_receipt = execute_transaction_with_wrapper::<_, _, T>(
             &mut self.database,
             vm,
             &costing_parameters,

@@ -931,7 +931,6 @@ version = "0.13.0"
 dependencies = [
  "hex",
  "itertools",
- "paste",
  "radix-engine-common",
  "radix-engine-derive",
  "radix-engine-store-interface",
