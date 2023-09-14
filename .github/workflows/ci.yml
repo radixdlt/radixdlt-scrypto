@@ -125,8 +125,6 @@ jobs:
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: reset registry
-      run: rm -fr ~/.cargo/registry
     - name: Run tests
       run: cargo test
       working-directory: scrypto-derive-tests
@@ -192,8 +190,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
-    - name: reset registry
-      run: rm -fr ~/.cargo/registry
     - name: Install dependency
       run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
     - name: Build with resource tracking
@@ -211,8 +207,6 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: 1.70.0
-      - name: reset registry
-        run: rm -fr ~/.cargo/registry
       - name: Install nextest
         uses: taiki-e/install-action@nextest
       - name: Add wasm target
@@ -242,8 +236,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
-    - name: reset registry
-      run: rm -fr ~/.cargo/registry
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -269,8 +261,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
-    - name: reset registry
-      run: rm -fr ~/.cargo/registry
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -292,8 +282,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
-    - name: reset registry
-      run: rm -fr ~/.cargo/registry
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -390,9 +378,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
-    - name: reset registry
-      if: runner.os != 'Windows'
-      run: rm -fr ~/.cargo/registry
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
         prefix-key: ""
@@ -430,9 +415,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
-    - name: reset registry
-      if: runner.os != 'Windows'
-      run: rm -fr ~/.cargo/registry
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
         prefix-key: ""
