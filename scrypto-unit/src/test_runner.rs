@@ -14,6 +14,7 @@ use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
+use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction_with_wrapper, BalanceChange, CommitResult,
@@ -48,8 +49,8 @@ use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_native_events::to_typed_native_event;
 use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase, SubstateDatabase,
 };
@@ -800,6 +801,18 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let mut accounter = ResourceAccounter::new(&self.database);
         accounter.traverse(node_id.clone());
         accounter.close().balances
+    }
+
+    pub fn component_state<T: ScryptoDecode>(&self, component_address: ComponentAddress) -> T {
+        let node_id: &NodeId = component_address.as_node_id();
+        let component_state = self
+            .substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<T>>(
+                node_id,
+                MAIN_BASE_PARTITION,
+                &ComponentField::State0.into(),
+            );
+        component_state.unwrap().into_payload()
     }
 
     pub fn get_non_fungible_data<T: NonFungibleData>(

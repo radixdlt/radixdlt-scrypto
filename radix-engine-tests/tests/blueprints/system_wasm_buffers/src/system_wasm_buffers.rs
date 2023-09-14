@@ -1,4 +1,3 @@
-use sbor::*;
 use scrypto::prelude::wasm_api::*;
 use scrypto::prelude::*;
 

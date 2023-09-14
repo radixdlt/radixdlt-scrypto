@@ -9,6 +9,9 @@ use sbor::rust::prelude::*;
 use sbor::LocalTypeId;
 use sbor::{generate_full_schema, TypeAggregator};
 
+pub const KV_STORE_DATA_SCHEMA_VARIANT_LOCAL: u8 = 0;
+pub const KV_STORE_DATA_SCHEMA_VARIANT_REMOTE: u8 = 1;
+
 /// Less flexible than previous revision, as mixed type origin is not allowed, but
 /// better for client-side optimization
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -27,11 +30,23 @@ pub enum KeyValueStoreDataSchema {
     },
 }
 
-impl KeyValueStoreDataSchema {
-    /// Arguments:
-    /// * [`package_address`] - The package address to use for replacing `None` package address in type validation
-    /// * [`allow_ownership`] - Whether to allow ownership in value
-    pub fn new_local_with_self_package_replacement<K: ScryptoDescribe, V: ScryptoDescribe>(
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct LocalKeyValueStoreDataSchema {
+    pub additional_schema: VersionedScryptoSchema,
+    pub key_type: LocalTypeId,
+    pub value_type: LocalTypeId,
+    pub allow_ownership: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct RemoteKeyValueStoreDataSchema {
+    pub key_type: BlueprintTypeIdentifier,
+    pub value_type: BlueprintTypeIdentifier,
+    pub allow_ownership: bool,
+}
+
+impl LocalKeyValueStoreDataSchema {
+    pub fn new_with_self_package_replacement<K: ScryptoDescribe, V: ScryptoDescribe>(
         package_address: PackageAddress,
         allow_ownership: bool,
     ) -> Self {
@@ -40,7 +55,7 @@ impl KeyValueStoreDataSchema {
         let value_type_id = aggregator.add_child_type_and_descendents::<V>();
         let mut schema = generate_full_schema(aggregator);
         replace_self_package_address(&mut schema, package_address);
-        Self::Local {
+        Self {
             additional_schema: schema,
             key_type: key_type_id,
             value_type: value_type_id,
@@ -48,18 +63,64 @@ impl KeyValueStoreDataSchema {
         }
     }
 
-    pub fn new_local_without_self_package_replacement<K: ScryptoDescribe, V: ScryptoDescribe>(
+    pub fn new_without_self_package_replacement<K: ScryptoDescribe, V: ScryptoDescribe>(
         allow_ownership: bool,
     ) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_id = aggregator.add_child_type_and_descendents::<K>();
         let value_type_id = aggregator.add_child_type_and_descendents::<V>();
         let schema = generate_full_schema(aggregator);
-        Self::Local {
+        Self {
             additional_schema: schema,
             key_type: key_type_id,
             value_type: value_type_id,
             allow_ownership,
+        }
+    }
+}
+
+impl RemoteKeyValueStoreDataSchema {
+    pub fn new(
+        key_type: BlueprintTypeIdentifier,
+        value_type: BlueprintTypeIdentifier,
+        allow_ownership: bool,
+    ) -> Self {
+        Self {
+            key_type,
+            value_type,
+            allow_ownership,
+        }
+    }
+}
+
+impl KeyValueStoreDataSchema {
+    pub fn new_local_with_self_package_replacement<K: ScryptoDescribe, V: ScryptoDescribe>(
+        package_address: PackageAddress,
+        allow_ownership: bool,
+    ) -> Self {
+        let schema = LocalKeyValueStoreDataSchema::new_with_self_package_replacement::<K, V>(
+            package_address,
+            allow_ownership,
+        );
+        Self::Local {
+            additional_schema: schema.additional_schema,
+            key_type: schema.key_type,
+            value_type: schema.value_type,
+            allow_ownership: schema.allow_ownership,
+        }
+    }
+
+    pub fn new_local_without_self_package_replacement<K: ScryptoDescribe, V: ScryptoDescribe>(
+        allow_ownership: bool,
+    ) -> Self {
+        let schema = LocalKeyValueStoreDataSchema::new_without_self_package_replacement::<K, V>(
+            allow_ownership,
+        );
+        Self::Local {
+            additional_schema: schema.additional_schema,
+            key_type: schema.key_type,
+            value_type: schema.value_type,
+            allow_ownership: schema.allow_ownership,
         }
     }
 

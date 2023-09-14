@@ -211,7 +211,7 @@ impl ResourceManagerStub {
         entries.insert(id.clone(), (data,));
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-            &NonFungibleResourceManagerMintTypedInput { entries },
+            &NonFungibleResourceManagerMintGenericInput { entries },
         )
     }
 
@@ -222,7 +222,7 @@ impl ResourceManagerStub {
 
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,
-            &NonFungibleResourceManagerMintRuidTypedInput { entries },
+            &NonFungibleResourceManagerMintRuidGenericInput { entries },
         )
     }
 

@@ -417,6 +417,23 @@ where
         }
     }
 
+    fn blueprint_id(
+        &mut self,
+        object_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let object_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(object_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let blueprint_id = self.api.get_blueprint_id(&object_id)?;
+
+        let mut buf = Vec::new();
+        buf.extend(blueprint_id.package_address.as_ref().to_vec());
+        buf.extend(blueprint_id.blueprint_name.as_bytes().to_vec());
+
+        self.allocate_buffer(buf)
+    }
+
     fn get_outer_object(
         &mut self,
         node_id: Vec<u8>,
