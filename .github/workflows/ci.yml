@@ -133,7 +133,7 @@ jobs:
     - name: Run tests with no_std
       run: cargo test --no-default-features --features alloc
       working-directory: scrypto-derive-tests
- 
+
   scrypto-examples:
     name: Run Scrypto examples
     runs-on: ubuntu-latest
@@ -391,6 +391,7 @@ jobs:
       with:
         toolchain: 1.70.0
     - name: reset registry
+      if: runner.os != 'Windows'
       run: rm -fr ~/.cargo/registry
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
@@ -430,6 +431,7 @@ jobs:
       with:
         toolchain: 1.70.0
     - name: reset registry
+      if: runner.os != 'Windows'
       run: rm -fr ~/.cargo/registry
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
