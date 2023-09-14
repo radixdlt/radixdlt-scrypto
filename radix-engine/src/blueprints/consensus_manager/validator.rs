@@ -1112,7 +1112,7 @@ impl ValidatorBlueprint {
             ACTOR_STATE_SELF,
             ValidatorField::State.into(),
             LockFlags::read_only(),
-        ).unwrap();
+        )?;
         let validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
             .into_latest();

@@ -36,13 +36,14 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use scrypto::prelude::{ToRoleEntry, Zero};
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
-use crate::costing_err::RandomSystemErrors;
+use crate::costing_err::RandomCostingErrors;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
@@ -650,12 +651,13 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             .into_par_iter()
             .map(|seed| {
                 let mut fuzz_test = Self::new(seed);
-                let random_system_errors = if random_system_errors {
-                    Some(seed)
+                let err_after_acount = if random_system_errors {
+                    let err_after_count = fuzz_test.fuzzer.rng.gen_range(200u64..500u64);
+                    Some(err_after_count)
                 } else {
                     None
                 };
-                fuzz_test.run_single_fuzz(num_txns, random_system_errors)
+                fuzz_test.run_single_fuzz(num_txns, err_after_acount)
             })
             .collect();
 
@@ -691,7 +693,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
     fn run_single_fuzz(
         &mut self,
         num_txns: u64,
-        random_system_errors: Option<u64>,
+        error_after_system_callback_count: Option<u64>,
     ) -> BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> {
         let mut fuzz_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
@@ -726,8 +728,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .build();
 
 
-                let receipt = if let Some(seed) = random_system_errors {
-                    self.test_runner.execute_manifest_with_fee_from_faucet_with_wrapper::<_, RandomSystemErrors<
+                let receipt = if let Some(error_after_count) = error_after_system_callback_count {
+                    self.test_runner.execute_manifest_with_fee_from_faucet_with_wrapper::<_, RandomCostingErrors<
                         SystemConfig<Vm<'_, DefaultWasmEngine, OverridePackageCode<ResourceTestInvoke>>>,
                     >>(
                         manifest,
@@ -735,7 +737,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         vec![NonFungibleGlobalId::from_public_key(
                             &self.account_public_key,
                         )],
-                        seed,
+                        error_after_count,
                     )
                 } else {
                     self.test_runner.execute_manifest_with_fee_from_faucet(
@@ -767,6 +769,15 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                                     validator_address: *validator_address,
                                 });
                             });
+
+                        if let TransactionOutcome::Failure(RuntimeError::VmError(VmError::Native(
+                            NativeRuntimeError::Trap {
+                                export_name,
+                                input,
+                                error,
+                            }))) = &commit_result.outcome {
+                            panic!("Native panic: {:?} {:?} {:?}", export_name, input, error);
+                        }
 
                         FuzzTxnResult::from_outcome(&commit_result.outcome, trivial)
                     }

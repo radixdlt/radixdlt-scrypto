@@ -22,17 +22,19 @@ use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use transaction::prelude::PreAllocatedAddress;
 
-pub struct RandomSystemErrors<K: KernelCallbackObject> {
-    rng: ChaCha8Rng,
+pub struct RandomCostingErrors<K: KernelCallbackObject> {
+    count: u64,
+    error_after_count: u64,
     callback_object: K,
 }
 
-impl<C: SystemCallbackObject> WrappedSystem<C> for RandomSystemErrors<SystemConfig<C>> {
+impl<C: SystemCallbackObject> WrappedSystem<C> for RandomCostingErrors<SystemConfig<C>> {
     type Init = u64;
 
-    fn create(config: SystemConfig<C>, seed: u64) -> Self {
+    fn create(config: SystemConfig<C>, error_after_count: u64) -> Self {
         Self {
-            rng: ChaCha8Rng::seed_from_u64(seed),
+            count: 0u64,
+            error_after_count,
             callback_object: config,
         }
     }
@@ -46,9 +48,10 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for RandomSystemErrors<SystemConf
     }
 }
 
-impl<K: KernelCallbackObject> RandomSystemErrors<K> {
+impl<K: KernelCallbackObject> RandomCostingErrors<K> {
     fn maybe_err(&mut self) -> Result<(), RuntimeError> {
-        if self.rng.gen_bool(0.1) {
+        self.count += 1;
+        if self.count == self.error_after_count {
             return Err(RuntimeError::SystemModuleError(SystemModuleError::CostingError(CostingError::FeeReserveError(FeeReserveError::InsufficientBalance {
                 required: Decimal::MAX,
                 remaining: Decimal::ONE,
@@ -77,7 +80,7 @@ macro_rules! wrapped_internal_api {
     };
 }
 
-impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for RandomSystemErrors<K> {
+impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for RandomCostingErrors<K> {
     type LockData = K::LockData;
     type CallFrameData = K::CallFrameData;
 
@@ -339,13 +342,13 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for RandomSystemErro
     }
 }
 
-pub struct WrappedKernelApi<'a, M: KernelCallbackObject + 'a, K: KernelApi<RandomSystemErrors<M>>>
+pub struct WrappedKernelApi<'a, M: KernelCallbackObject + 'a, K: KernelApi<RandomCostingErrors<M>>>
 {
     api: &'a mut K,
     phantom: PhantomData<M>,
 }
 
-impl<'a, M: KernelCallbackObject, K: KernelApi<RandomSystemErrors<M>>> KernelNodeApi
+impl<'a, M: KernelCallbackObject, K: KernelApi<RandomCostingErrors<M>>> KernelNodeApi
 for WrappedKernelApi<'a, M, K>
 {
     fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
@@ -377,7 +380,7 @@ for WrappedKernelApi<'a, M, K>
     }
 }
 
-impl<'a, M: KernelCallbackObject, Y: KernelApi<RandomSystemErrors<M>>>
+impl<'a, M: KernelCallbackObject, Y: KernelApi<RandomCostingErrors<M>>>
 KernelSubstateApi<M::LockData> for WrappedKernelApi<'a, M, Y>
 {
     fn kernel_mark_substate_as_transient(
@@ -487,7 +490,7 @@ KernelSubstateApi<M::LockData> for WrappedKernelApi<'a, M, Y>
     }
 }
 
-impl<'a, M: KernelCallbackObject + 'a, K: KernelApi<RandomSystemErrors<M>>>
+impl<'a, M: KernelCallbackObject + 'a, K: KernelApi<RandomCostingErrors<M>>>
 KernelInvokeApi<M::CallFrameData> for WrappedKernelApi<'a, M, K>
 {
     fn kernel_invoke(
@@ -498,7 +501,7 @@ KernelInvokeApi<M::CallFrameData> for WrappedKernelApi<'a, M, K>
     }
 }
 
-impl<'a, M: KernelCallbackObject, K: KernelApi<RandomSystemErrors<M>>> KernelInternalApi<M>
+impl<'a, M: KernelCallbackObject, K: KernelApi<RandomCostingErrors<M>>> KernelInternalApi<M>
 for WrappedKernelApi<'a, M, K>
 {
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
@@ -527,7 +530,7 @@ for WrappedKernelApi<'a, M, K>
     }
 }
 
-impl<'a, M: KernelCallbackObject, K: KernelApi<RandomSystemErrors<M>>> KernelApi<M>
+impl<'a, M: KernelCallbackObject, K: KernelApi<RandomCostingErrors<M>>> KernelApi<M>
 for WrappedKernelApi<'a, M, K>
 {
 }
@@ -535,13 +538,13 @@ for WrappedKernelApi<'a, M, K>
 pub struct WrappedKernelInternalApi<
     'a,
     M: KernelCallbackObject + 'a,
-    K: KernelInternalApi<RandomSystemErrors<M>>,
+    K: KernelInternalApi<RandomCostingErrors<M>>,
 > {
     api: &'a mut K,
     phantom: PhantomData<M>,
 }
 
-impl<'a, M: KernelCallbackObject, K: KernelInternalApi<RandomSystemErrors<M>>> KernelInternalApi<M>
+impl<'a, M: KernelCallbackObject, K: KernelInternalApi<RandomCostingErrors<M>>> KernelInternalApi<M>
 for WrappedKernelInternalApi<'a, M, K>
 {
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
