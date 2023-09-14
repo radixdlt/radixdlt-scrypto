@@ -133,7 +133,7 @@ jobs:
     - name: Run tests with no_std
       run: cargo test --no-default-features --features alloc
       working-directory: scrypto-derive-tests
- 
+
   scrypto-examples:
     name: Run Scrypto examples
     runs-on: ubuntu-latest
@@ -244,6 +244,12 @@ jobs:
         toolchain: 1.70.0
     - name: reset registry
       run: rm -fr ~/.cargo/registry
+    - uses: radixdlt/rust-cache@allow_registry_src_caching
+      with:
+        prefix-key: ""
+        shared-key: radix-engine-release-${{ runner.os }}
+        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+        workspaces: "."
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
