@@ -39,6 +39,7 @@ use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::RefTypes;
 use transaction::model::PreAllocatedAddress;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
+use crate::transaction::WrappedSystem;
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -94,6 +95,20 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub schema_cache: NonIterMap<SchemaHash, VersionedScryptoSchema>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
+}
+
+impl<C: SystemCallbackObject> WrappedSystem<C> for SystemConfig<C> {
+    fn create(config: SystemConfig<C>) -> Self {
+        config
+    }
+
+    fn system_mut(&mut self) -> &mut SystemConfig<C> {
+        self
+    }
+
+    fn to_system(self) -> SystemConfig<C> {
+        self
+    }
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {

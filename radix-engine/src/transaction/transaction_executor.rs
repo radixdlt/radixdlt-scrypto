@@ -209,7 +209,7 @@ where
         Self { substate_db, vm }
     }
 
-    pub fn execute(
+    pub fn execute<T: WrappedSystem<V>>(
         &mut self,
         executable: &Executable,
         costing_parameters: &CostingParameters,
@@ -270,7 +270,7 @@ where
                 let (
                     interpretation_result,
                     (mut costing_module, runtime_module, execution_trace_module),
-                ) = self.interpret_manifest(
+                ) = self.interpret_manifest::<T>(
                     &mut track,
                     executable,
                     execution_config,
@@ -549,7 +549,7 @@ where
         Ok(())
     }
 
-    fn interpret_manifest(
+    fn interpret_manifest<T: WrappedSystem<V>>(
         &self,
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         executable: &Executable,
@@ -583,13 +583,11 @@ where
             ),
         };
 
-        let mut wrapper = RandomCallbackError {
-            callback_object: system
-        };
+        let mut wrapped_system = T::create(system);
 
         let kernel_boot = KernelBoot {
             id_allocator: &mut id_allocator,
-            callback: &mut wrapper,
+            callback: &mut wrapped_system,
             store: track,
         };
 
@@ -601,7 +599,7 @@ where
                 executable.blobs(),
             )
             .and_then(|x| {
-                let system = &mut wrapper.callback_object;
+                let system = wrapped_system.system_mut();
 
                 // Note that if a transactions fails during this phase, the costing is
                 // done as if it would succeed.
@@ -658,7 +656,7 @@ where
                 output
             });
 
-        let system = wrapper.callback_object;
+        let system = wrapped_system.to_system();
         (interpretation_result, system.modules.unpack())
     }
 
@@ -1170,7 +1168,7 @@ pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_db, vm).execute(
+    TransactionExecutor::new(substate_db, vm).execute::<SystemConfig<V>>(
         transaction,
         costing_parameters,
         execution_config,
@@ -1183,8 +1181,30 @@ enum TransactionResultType {
     Abort(AbortReason),
 }
 
-pub struct RandomCallbackError< K: KernelCallbackObject> {
+pub trait WrappedSystem<C: SystemCallbackObject>: KernelCallbackObject {
+    fn create(config: SystemConfig<C>) -> Self;
+    fn system_mut(&mut self) -> &mut SystemConfig<C>;
+    fn to_system(self) -> SystemConfig<C>;
+}
+
+pub struct RandomCallbackError<K: KernelCallbackObject> {
     callback_object: K
+}
+
+impl<C: SystemCallbackObject> WrappedSystem<C> for RandomCallbackError<SystemConfig<C>> {
+    fn create(config: SystemConfig<C>) -> Self {
+        Self {
+            callback_object: config
+        }
+    }
+
+    fn system_mut(&mut self) -> &mut SystemConfig<C> {
+        &mut self.callback_object
+    }
+
+    fn to_system(self) -> SystemConfig<C> {
+        self.callback_object
+    }
 }
 
 pub struct WrappedKernelApi<'a, M: KernelCallbackObject + 'a, K: KernelApi<RandomCallbackError<M>>> {
