@@ -1,7 +1,7 @@
 use scrypto::prelude::*;
 
 #[blueprint]
-#[events(AddLiquidityEvent, RemoveLiquidityEvent, SwapEvent)]
+#[events(InstantiationEvent, AddLiquidityEvent, RemoveLiquidityEvent, SwapEvent)]
 mod radiswap {
     struct Radiswap {
         pool_component: Global<TwoResourcePool>,
@@ -28,11 +28,20 @@ mod radiswap {
                 None,
             );
 
-            Self { pool_component }
+            let component = Self { pool_component }
                 .instantiate()
-                .prepare_to_globalize(owner_role)
+                .prepare_to_globalize(owner_role.clone())
                 .with_address(address_reservation)
-                .globalize()
+                .globalize();
+
+            Runtime::emit_event(InstantiationEvent {
+                component_address: component.address(),
+                resource_address1,
+                resource_address2,
+                owner_role,
+            });
+
+            component
         }
 
         pub fn add_liquidity(
@@ -114,6 +123,14 @@ mod radiswap {
             )
         }
     }
+}
+
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct InstantiationEvent {
+    pub owner_role: OwnerRole,
+    pub resource_address1: ResourceAddress,
+    pub resource_address2: ResourceAddress,
+    pub component_address: ComponentAddress,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
