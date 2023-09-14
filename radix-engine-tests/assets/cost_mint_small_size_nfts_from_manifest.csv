@@ -1,16 +1,16 @@
-Total Cost (XRD)                                                           ,            6.55121110536,    100.0%
-- Execution Cost (XRD)                                                     ,                0.3018977,      4.6%
+Total Cost (XRD)                                                           ,            6.55120930536,    100.0%
+- Execution Cost (XRD)                                                     ,                0.3018959,      4.6%
 - Finalization Cost (XRD)                                                  ,                2.4964143,     38.1%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,            3.75289910536,     57.3%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  6037954,    100.0%
+Execution Cost Breakdown                                                   ,                  6037918,    100.0%
 - AfterInvoke                                                              ,                     6561,      0.1%
 - AllocateNodeId                                                           ,                     1914,      0.0%
 - BeforeInvoke                                                             ,                    10436,      0.2%
 - CloseSubstate                                                            ,                    62865,      1.0%
-- CreateNode                                                               ,                    31860,      0.5%
+- CreateNode                                                               ,                    31824,      0.5%
 - DropNode                                                                 ,                    34672,      0.6%
 - EmitEvent                                                                ,                    15532,      0.3%
 - LockFee                                                                  ,                      500,      0.0%
