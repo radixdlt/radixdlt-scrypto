@@ -20,11 +20,9 @@ use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLU
 use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
 use radix_engine::prelude::node_modules::ModuleConfig;
-use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
 use radix_engine::types::*;
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{OverridePackageCode, Vm};
+use radix_engine::vm::OverridePackageCode;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
@@ -39,7 +37,7 @@ use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use scrypto::prelude::{ToRoleEntry, Zero};
-use scrypto_unit::inject_costing_err::{InjectCostingError, InjectSystemCostingError};
+use scrypto_unit::InjectSystemCostingError;
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
