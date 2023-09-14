@@ -9,9 +9,38 @@ pub struct TestNFData {
 
 #[blueprint]
 mod resource_test {
-    struct ResourceTest;
+    struct ResourceTest {
+        vault: Vault,
+    }
 
     impl ResourceTest {
+        pub fn take_from_vault_after_mint() {
+            let bucket: Bucket =
+                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                    .mint_initial_supply(vec![(
+                        0u64.into(),
+                        TestNFData {
+                            name: "name".to_string(),
+                            available: false,
+                        },
+                    )])
+                    .into();
+            let global = Self {
+                vault: Vault::new(bucket.resource_address()),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+
+            global.take_from_vault_after_mint_helper(bucket);
+        }
+
+        pub fn take_from_vault_after_mint_helper(&mut self, bucket: Bucket) {
+            self.vault.put(bucket);
+            let bucket = self.vault.take(dec!(1));
+            self.vault.put(bucket);
+        }
+
         pub fn set_mintable_with_self_resource_address() {
             let super_admin_manager: ResourceManager =
                 ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)
