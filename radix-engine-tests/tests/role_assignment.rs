@@ -10,6 +10,7 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::rule;
+use scrypto::prelude::FallToOwner;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -319,6 +320,21 @@ fn change_lock_owner_role_rules() {
             RuntimeError::SystemModuleError(SystemModuleError::AuthError(..)),
         )
     })
+}
+
+#[test]
+fn check_fall_to_owner() {
+    // Arrange
+    let mut roles = RoleAssignmentInit::new();
+    roles.define_role("owner", FallToOwner::OWNER);
+    let mut test_runner = MutableRolesTestRunner::new(roles);
+
+    let receipt = test_runner.get_role(RoleKey::new("owner"));
+    let ret = receipt.expect_commit(true).outcome.expect_success();
+    assert_eq!(
+        ret[1],
+        InstructionOutput::CallReturn(scrypto_encode(&Option::<AccessRule>::None).unwrap())
+    );
 }
 
 struct MutableRolesTestRunner {
