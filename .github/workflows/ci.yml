@@ -184,7 +184,7 @@ jobs:
       CARGO_LOG: info
     strategy:
       matrix:
-        os: [k8s-linux-runner]
+        os: [ubuntu-latest-16-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -201,7 +201,7 @@ jobs:
 
   radix-engine:
     name: Run Radix Engine tests
-    runs-on: k8s-linux-runner
+    runs-on: ubuntu-latest-16-cores
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -228,7 +228,7 @@ jobs:
     # - overflow-checks
     # which are false for release variant
     name: Run Radix Engine tests (release)
-    runs-on: k8s-linux-runner
+    runs-on: ubuntu-latest-16-cores
     env:
       CARGO_LOG: info
     steps:
@@ -253,7 +253,7 @@ jobs:
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
-    runs-on: k8s-linux-runner
+    runs-on: ubuntu-latest-16-cores
     env:
       CARGO_LOG: info
     steps:
@@ -274,7 +274,7 @@ jobs:
 
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
-    runs-on: k8s-linux-runner
+    runs-on: ubuntu-latest-16-cores
     env:
       CARGO_LOG: info
     steps:
@@ -372,7 +372,7 @@ jobs:
       CARGO_LOG: info
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
+        os: [ubuntu-latest-16-cores, windows-latest-16-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -409,7 +409,7 @@ jobs:
       CARGO_LOG: info
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores, macos-latest]
+        os: [ubuntu-latest-16-cores, windows-latest-16-cores, macos-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
