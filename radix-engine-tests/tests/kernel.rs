@@ -19,6 +19,7 @@ use radix_engine::track::Track;
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use transaction::model::PreAllocatedAddress;
 
 struct TestCallFrameData;
 
@@ -54,6 +55,16 @@ impl KernelCallbackObject for TestCallbackObject {
         Y: KernelApi<Self>,
     {
         Ok(())
+    }
+
+    fn start<Y>(
+        _api: &mut Y,
+        _manifest_encoded_instructions: &[u8],
+        _pre_allocated_addresses: &Vec<PreAllocatedAddress>,
+        _references: &IndexSet<Reference>,
+        _blobs: &IndexMap<Hash, Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError> where Y: KernelApi<Self> {
+        unreachable!()
     }
 
     fn on_teardown<Y>(_api: &mut Y) -> Result<(), RuntimeError>

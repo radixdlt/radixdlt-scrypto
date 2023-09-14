@@ -1,9 +1,7 @@
-use super::actor::Actor;
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use crate::blueprints::resource::*;
-use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::internal_prelude::*;
@@ -20,19 +18,12 @@ use crate::kernel::kernel_callback_api::{
 };
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
-use crate::system::system::SystemService;
-use crate::system::system_callback::SystemConfig;
-use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_processor::{
-    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
-};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
@@ -64,8 +55,8 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
     }
 }
 
-impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore>
-    KernelBoot<'g, SystemConfig<V>, S>
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore>
+    KernelBoot<'g, M, S>
 {
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
@@ -90,12 +81,12 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore>
                 pinned_to_heap: BTreeSet::new(),
             },
             id_allocator: self.id_allocator,
-            current_frame: CallFrame::new_root(Actor::Root),
+            current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
             callback: self.callback,
         };
 
-        SystemConfig::on_init(&mut kernel)?;
+        M::on_init(&mut kernel)?;
 
         // Reference management
         for reference in references.iter() {
@@ -159,32 +150,12 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore>
             }
         }
 
-        // Allocate global addresses
-        let mut global_address_reservations = Vec::new();
-        for PreAllocatedAddress {
-            blueprint_id,
-            address,
-        } in pre_allocated_addresses
-        {
-            let mut system = SystemService::new(&mut kernel);
-            let global_address_reservation =
-                system.prepare_global_address(blueprint_id.clone(), address.clone())?;
-            global_address_reservations.push(global_address_reservation);
-        }
-
-        // Call TX processor
-        let mut system = SystemService::new(&mut kernel);
-        let rtn = system.call_function(
-            TRANSACTION_PROCESSOR_PACKAGE,
-            TRANSACTION_PROCESSOR_BLUEPRINT,
-            TRANSACTION_PROCESSOR_RUN_IDENT,
-            scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions,
-                global_address_reservations,
-                references,
-                blobs,
-            })
-            .unwrap(),
+        let rtn = M::start(
+            &mut kernel,
+            manifest_encoded_instructions,
+            pre_allocated_addresses,
+            references,
+            blobs,
         )?;
 
         // Sanity check call frame
@@ -193,7 +164,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: CommitableSubstateStore>
         // Sanity check heap
         assert!(kernel.substate_io.heap.is_empty());
 
-        SystemConfig::on_teardown(&mut kernel)?;
+        M::on_teardown(&mut kernel)?;
 
         Ok(rtn)
     }

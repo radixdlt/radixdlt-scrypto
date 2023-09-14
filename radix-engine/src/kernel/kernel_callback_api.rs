@@ -6,6 +6,7 @@ use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
+use transaction::prelude::PreAllocatedAddress;
 
 pub trait CallFrameReferences {
     fn root() -> Self;
@@ -132,6 +133,16 @@ pub trait KernelCallbackObject: Sized {
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
+
+    fn start<Y>(
+        api: &mut Y,
+        manifest_encoded_instructions: &[u8],
+        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
+        references: &IndexSet<Reference>,
+        blobs: &IndexMap<Hash, Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError>
+        where
+            Y: KernelApi<Self>;
 
     fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
