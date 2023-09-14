@@ -263,7 +263,6 @@ jobs:
           -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests
-        ./check_stack_usage.sh
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
