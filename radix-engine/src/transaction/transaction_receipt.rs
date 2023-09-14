@@ -5,6 +5,7 @@ use crate::internal_prelude::*;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::*;
 use crate::track::BatchPartitionStateUpdate;
+use crate::track::NodeStateUpdates;
 use crate::track::PartitionStateUpdates;
 use crate::track::StateUpdates;
 use crate::transaction::SystemStructure;
@@ -254,7 +255,8 @@ impl CommitResult {
             BTreeMap<PartitionNumber, BTreeMap<SubstateKey, DatabaseUpdate>>,
         >::new();
         for (node_id, x) in &self.state_updates.by_node {
-            for (partition_num, y) in x.partition_updates() {
+            let NodeStateUpdates::Delta { by_partition } = x;
+            for (partition_num, y) in by_partition {
                 match y {
                     PartitionStateUpdates::Delta { by_substate } => {
                         for (substate_key, substate_update) in by_substate {
