@@ -1,4 +1,5 @@
 pub mod consensus_manager;
+pub mod costing_err;
 pub mod multi_pool;
 pub mod one_pool;
 pub mod resource;
@@ -21,7 +22,7 @@ use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRI
 use radix_engine::prelude::node_modules::ModuleConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
 use radix_engine::types::*;
-use radix_engine::vm::OverridePackageCode;
+use radix_engine::vm::{OverridePackageCode, Vm};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
@@ -35,10 +36,13 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use radix_engine::system::system_callback::SystemConfig;
+use radix_engine::vm::wasm::DefaultWasmEngine;
 use scrypto::prelude::{ToRoleEntry, Zero};
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
+use crate::costing_err::RandomCallbackError;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
@@ -633,7 +637,11 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         }
     }
 
-    pub fn run_fuzz(num_tests: u64, num_txns: u64) {
+    pub fn run_fuzz(
+        num_tests: u64,
+        num_txns: u64,
+        random_system_errors: bool,
+    ) {
         let mut summed_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
 
@@ -642,40 +650,43 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             .into_par_iter()
             .map(|seed| {
                 let mut fuzz_test = Self::new(seed);
-                fuzz_test.run_single_fuzz(num_txns)
+                fuzz_test.run_single_fuzz(num_txns, random_system_errors)
             })
             .collect();
 
-        for run_result in results {
-            for (txn, txn_results) in run_result {
-                for (txn_result, count) in txn_results {
-                    summed_results
-                        .entry(txn.clone())
-                        .or_default()
-                        .entry(txn_result)
-                        .or_default()
-                        .add_assign(&count);
+        if !random_system_errors {
+            for run_result in results {
+                for (txn, txn_results) in run_result {
+                    for (txn_result, count) in txn_results {
+                        summed_results
+                            .entry(txn.clone())
+                            .or_default()
+                            .entry(txn_result)
+                            .or_default()
+                            .add_assign(&count);
+                    }
                 }
             }
-        }
 
-        let mut missing_success = BTreeSet::new();
-        for (intent, results) in &summed_results {
-            if !results.contains_key(&FuzzTxnResult::Success) {
-                missing_success.insert(intent);
+            let mut missing_success = BTreeSet::new();
+            for (intent, results) in &summed_results {
+                if !results.contains_key(&FuzzTxnResult::Success) {
+                    missing_success.insert(intent);
+                }
             }
-        }
 
-        if !missing_success.is_empty() {
-            panic!("Missing intent success: {:#?}", missing_success);
-        }
+            if !missing_success.is_empty() {
+                panic!("Missing intent success: {:#?}", missing_success);
+            }
 
-        println!("{:#?}", summed_results);
+            println!("{:#?}", summed_results);
+        }
     }
 
     fn run_single_fuzz(
         &mut self,
         num_txns: u64,
+        random_system_errors: bool,
     ) -> BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> {
         let mut fuzz_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
@@ -708,13 +719,27 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 let manifest = builder
                     .deposit_batch(self.validators[0].account_address)
                     .build();
-                let receipt = self.test_runner.execute_manifest_with_fee_from_faucet(
-                    manifest,
-                    self.fuzzer.next_fee(),
-                    vec![NonFungibleGlobalId::from_public_key(
-                        &self.account_public_key,
-                    )],
-                );
+
+
+                let receipt = if random_system_errors {
+                    self.test_runner.execute_manifest_with_fee_from_faucet_with_wrapper::<_, RandomCallbackError<
+                        SystemConfig<Vm<'_, DefaultWasmEngine, OverridePackageCode<ResourceTestInvoke>>>,
+                    >>(
+                        manifest,
+                        self.fuzzer.next_fee(),
+                        vec![NonFungibleGlobalId::from_public_key(
+                            &self.account_public_key,
+                        )],
+                    )
+                } else {
+                    self.test_runner.execute_manifest_with_fee_from_faucet(
+                        manifest,
+                        self.fuzzer.next_fee(),
+                        vec![NonFungibleGlobalId::from_public_key(
+                            &self.account_public_key,
+                        )],
+                    )
+                };
 
                 let result = receipt.result;
                 match result {

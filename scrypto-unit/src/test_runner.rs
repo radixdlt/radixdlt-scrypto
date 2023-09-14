@@ -1312,6 +1312,26 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         self.execute_manifest(manifest, initial_proofs)
     }
 
+    pub fn execute_manifest_with_fee_from_faucet_with_wrapper<'a, T, R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+        &'a mut self,
+        mut manifest: TransactionManifestV1,
+        amount: Decimal,
+        initial_proofs: T,
+    ) -> TransactionReceipt
+        where
+            T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        manifest.instructions.insert(
+            0,
+            transaction::model::InstructionV1::CallMethod {
+                address: self.faucet_component().into(),
+                method_name: "lock_fee".to_string(),
+                args: manifest_args!(amount).into(),
+            },
+        );
+        self.execute_manifest_with_wrapper::<'a, T, R>(manifest, initial_proofs)
+    }
+
     pub fn execute_manifest_ignoring_fee<T>(
         &mut self,
         mut manifest: TransactionManifestV1,
@@ -1378,6 +1398,25 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             manifest,
             initial_proofs,
             CostingParameters::default(),
+        )
+    }
+
+    pub fn execute_manifest_with_wrapper<'a, T, R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+        &'a mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+    ) -> TransactionReceipt
+        where
+            T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction_with_wrapper::<R>(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            CostingParameters::default(),
+            ExecutionConfig::for_test_transaction(),
         )
     }
 

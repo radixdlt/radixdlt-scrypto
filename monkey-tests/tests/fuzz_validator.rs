@@ -13,5 +13,5 @@ fn fuzz_validator() {
         }
     }
 
-    FuzzTest::<ValidatorFuzzer>::run_fuzz(32, 100);
+    FuzzTest::<ValidatorFuzzer>::run_fuzz(32, 100, false);
 }

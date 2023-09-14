@@ -13,5 +13,5 @@ fn fuzz_two_pool() {
         }
     }
 
-    FuzzTest::<TwoResourcePoolFuzzer>::run_fuzz(32, 100);
+    FuzzTest::<TwoResourcePoolFuzzer>::run_fuzz(32, 100, false);
 }

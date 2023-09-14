@@ -20,5 +20,5 @@ fn fuzz_consensus() {
         }
     }
 
-    FuzzTest::<ConsensusFuzzer>::run_fuzz(32, 100);
+    FuzzTest::<ConsensusFuzzer>::run_fuzz(32, 100, false);
 }
