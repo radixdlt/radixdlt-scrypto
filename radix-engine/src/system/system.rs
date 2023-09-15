@@ -2220,7 +2220,12 @@ where
             })
     }
 
-    fn costing_is_enabled(&mut self) -> Result<bool, RuntimeError> {
+    fn start_credit_cost_units(&mut self) -> Result<bool, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
+
         Ok(self
             .api
             .kernel_get_system()
@@ -2239,12 +2244,9 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
+            .credit_cost_units(vault_id, locked_fee, contingent);
 
-        self.api
-            .kernel_get_system()
-            .modules
-            .credit_cost_units(vault_id, locked_fee, contingent)
+        Ok(())
     }
 
     fn execution_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
