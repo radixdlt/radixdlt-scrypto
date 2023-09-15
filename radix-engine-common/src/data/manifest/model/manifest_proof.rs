@@ -76,6 +76,7 @@ mod tests {
             Err(ParseManifestProofError::InvalidLength)
         ));
 
+        #[cfg(not(feature = "alloc"))]
         println!("Manifest Proof error: {}", proof_out.unwrap_err());
     }
 

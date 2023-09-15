@@ -85,6 +85,7 @@ mod tests {
             Err(ParseManifestPreciseDecimalError::InvalidLength)
         ));
 
+        #[cfg(not(feature = "alloc"))]
         println!("Manifest Precise Decimal error: {}", dec_out.unwrap_err());
     }
 
