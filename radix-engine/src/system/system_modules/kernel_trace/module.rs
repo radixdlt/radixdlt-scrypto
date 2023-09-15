@@ -205,8 +205,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            CloseSubstateEvent::End(lock_handle) => {
-                log!(api, "Substate closed: handle = {} ", lock_handle);
+            CloseSubstateEvent::Start(lock_handle) => {
+                log!(api, "Substate close: handle = {} ", lock_handle);
             }
         }
         Ok(())

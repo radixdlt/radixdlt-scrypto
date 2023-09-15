@@ -2221,7 +2221,12 @@ where
     }
 
     fn costing_is_enabled(&mut self) -> Result<bool, RuntimeError> {
-        Ok(self.api.kernel_get_system().modules.enabled_modules.contains(EnabledModules::COSTING))
+        Ok(self
+            .api
+            .kernel_get_system()
+            .modules
+            .enabled_modules
+            .contains(EnabledModules::COSTING))
     }
 
     #[trace_resources]

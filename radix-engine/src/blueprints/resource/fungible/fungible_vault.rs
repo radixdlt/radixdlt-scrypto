@@ -396,7 +396,7 @@ impl FungibleVaultBlueprint {
         }
 
         if !api.costing_is_enabled().unwrap() {
-            Runtime::emit_event_no_revert(api, events::fungible_vault::LockFeeEvent { amount })?;
+            Runtime::emit_event_no_revert(api, LockFeeEvent { amount })?;
             return Ok(());
         }
 
@@ -431,12 +431,16 @@ impl FungibleVaultBlueprint {
             fee
         };
 
+        // At this point the vault fee take is guaranteed to be force-written
+        // so we must take care not to error out before crediting the cost units
+        // and emitting an event
+
         // Credit cost units
         let receiver = Runtime::get_node_id(api)?;
         api.credit_cost_units(receiver.clone().into(), fee, contingent)?;
 
         // Emitting an event once the fee has been locked
-        Runtime::emit_event_no_revert(api, events::fungible_vault::LockFeeEvent { amount })?;
+        Runtime::emit_event_no_revert(api, LockFeeEvent { amount })?;
 
         Ok(())
     }
