@@ -951,12 +951,16 @@ mod tests {
     use super::*;
 
     // Check that the below compiles
+    #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct TestBlueprintRoyaltyV1;
 
+    #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct TestBlueprintMyCoolKeyValueStoreV1;
 
+    #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct TestBlueprintMyCoolIndexV1;
 
+    #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct TestBlueprintMyCoolSortedIndexV1;
 
     use radix_engine_interface::blueprints::package::*;

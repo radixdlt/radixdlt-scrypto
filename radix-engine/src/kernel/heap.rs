@@ -16,6 +16,7 @@ pub enum HeapRemovePartitionError {
     ModuleNotFound(PartitionNumber),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapRemoveNodeError {
     NodeNotFound(NodeId),
 }
