@@ -2,7 +2,8 @@ use radix_engine::errors::*;
 use radix_engine::kernel::actor::*;
 use radix_engine::kernel::call_frame::*;
 use radix_engine::kernel::kernel_api::*;
-use radix_engine::system::system::*;
+#[cfg(not(feature = "alloc"))]
+use radix_engine::system::system::SystemService;
 use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::execution_trace::*;
 use radix_engine::track::*;

@@ -40,6 +40,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{Condition, KeyValueStoreGenericSubstitutions};
+#[cfg(not(feature = "alloc"))]
 use radix_engine_macros::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
