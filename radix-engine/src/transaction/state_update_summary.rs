@@ -85,8 +85,18 @@ impl AddAssign for BalanceChange {
                 let BalanceChange::NonFungible { added, removed } = rhs else {
                     panic!("cannot {:?} + {:?}", self, rhs);
                 };
-                self_added.extend(added);
-                self_removed.extend(removed);
+
+                for remove in removed {
+                    if !self_added.remove(&remove) {
+                        self_removed.insert(remove);
+                    }
+                }
+
+                for add in added {
+                    if !self_removed.remove(&add) {
+                        self_added.insert(add);
+                    }
+                }
             }
         }
     }

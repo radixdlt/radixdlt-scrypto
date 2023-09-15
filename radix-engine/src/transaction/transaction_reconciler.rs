@@ -15,7 +15,7 @@ use std::ops::AddAssign;
 use utils::prelude::IndexMap;
 use utils::{btreeset, indexmap};
 
-pub fn reconcile_state_and_events<'a, S: SubstateDatabase>(
+pub fn reconcile_resource_state_and_events<'a, S: SubstateDatabase>(
     summary: &StateUpdateSummary,
     events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
     system_db: SystemDatabaseReader<'a, S>,
@@ -34,7 +34,7 @@ pub fn reconcile_state_and_events<'a, S: SubstateDatabase>(
     if resource_changes_from_state.ne(&resource_changes_from_vault_events)
         || resource_changes_from_vault_events.ne(&resource_changes_from_resman_events)
     {
-        panic!("Txn Resource Reconciliation failed:\nState Changes: {:?}\nResource Event Changes: {:?}\nVault Event Changes: {:?}",
+        panic!("Txn Resource Reconciliation failed:\nState Changes: {:#?}\nResource Event Changes: {:#?}\nVault Event Changes: {:#?}",
                resource_changes_from_state,
                resource_changes_from_resman_events,
                resource_changes_from_vault_events,
