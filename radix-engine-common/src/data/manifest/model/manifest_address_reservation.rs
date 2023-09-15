@@ -80,6 +80,7 @@ mod tests {
             Err(ParseManifestAddressReservationError::InvalidLength)
         ));
 
+        #[cfg(not(feature = "alloc"))]
         println!(
             "Manifest Address Reservation error: {}",
             address_out.unwrap_err()

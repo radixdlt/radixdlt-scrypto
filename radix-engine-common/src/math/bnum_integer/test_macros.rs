@@ -675,6 +675,7 @@ macro_rules! test_math {
                     a <<= i.try_into().unwrap();
                     let mut expect_bytes = expect.to_signed_bytes_le();
                     expect_bytes.resize((<$i>::BITS / 8) as usize, 0);
+                    #[cfg(not(feature = "alloc"))]
                     println!("expect_bytes= {:?} len={}", expect_bytes, expect_bytes.len());
                     assert_eq!(a, <$i>::from_le_bytes(expect_bytes.as_slice().try_into().unwrap()));
                 }
@@ -766,6 +767,9 @@ macro_rules! test_math {
 
             #[test]
             fn [<test_try_from_vector_ $i:lower>]() {
+                #[cfg(feature = "alloc")]
+                use sbor::prelude::vec;
+
                 let mut a: $i;
                 let mut expect: BigInt;
                 let bits: usize = <$i>::BITS as usize;
@@ -778,6 +782,9 @@ macro_rules! test_math {
 
             #[test]
             fn [<test_try_from_slice_ $i:lower>]() {
+                #[cfg(feature = "alloc")]
+                use sbor::prelude::vec;
+
                 let mut a: $i;
                 let mut expect: BigInt;
                 let bits: usize = <$i>::BITS as usize;
