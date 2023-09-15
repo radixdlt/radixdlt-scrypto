@@ -224,6 +224,10 @@ pub enum ConsensusManagerError {
     UnexpectedDecimalComputationError,
     EpochMathOverflow,
     InvalidConsensusTime(i64),
+    ExceededValidatorCount {
+        current: u32,
+        max: u32,
+    },
 }
 
 declare_native_blueprint_state! {
@@ -525,6 +529,17 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        if initial_config.max_validators > ValidatorIndex::MAX as u32 {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::ExceededValidatorCount {
+                        current: initial_config.max_validators,
+                        max: ValidatorIndex::MAX as u32,
+                    },
+                ),
+            ));
+        }
+
         {
             // TODO: remove mint and premint all tokens
             let global_id =
@@ -1265,7 +1280,8 @@ impl ConsensusManagerBlueprint {
                 )?;
 
                 validator_infos.insert(
-                    TryInto::<u8>::try_into(index)
+                    TryInto::<ValidatorIndex>::try_into(index)
+                        // Should never happen. We made sure no more than u8::MAX validators are stored
                         .expect("Validator index exceeds the range of u8"),
                     info,
                 );
