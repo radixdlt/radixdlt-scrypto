@@ -395,46 +395,45 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        // Lock the substate (with special flags)
-        let vault_handle = api.actor_open_field(
-            ACTOR_STATE_SELF,
-            FungibleVaultField::Balance.into(),
-            LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
-        )?;
+        if !api.costing_is_enabled().unwrap() {
+            Runtime::emit_event_no_revert(api, events::fungible_vault::LockFeeEvent { amount })?;
+            return Ok(());
+        }
 
         // Take fee from the vault
-        let mut vault = api
-            .field_read_typed::<FungibleVaultBalanceFieldPayload>(vault_handle)?
-            .into_latest();
-        let fee = vault.take_by_amount(amount).map_err(|e| {
-            let vault_error = match e {
-                ResourceError::InsufficientBalance { requested, actual } => {
-                    VaultError::LockFeeInsufficientBalance { requested, actual }
-                }
-                _ => VaultError::ResourceError(e),
-            };
+        let fee = {
+            // Lock the substate (with special flags)
+            let vault_handle = api.actor_open_field(
+                ACTOR_STATE_SELF,
+                FungibleVaultField::Balance.into(),
+                LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
+            )?;
 
-            RuntimeError::ApplicationError(ApplicationError::VaultError(vault_error))
-        })?;
+            let mut vault = api
+                .field_read_typed::<FungibleVaultBalanceFieldPayload>(vault_handle)?
+                .into_latest();
+            let fee = vault.take_by_amount(amount).map_err(|e| {
+                let vault_error = match e {
+                    ResourceError::InsufficientBalance { requested, actual } => {
+                        VaultError::LockFeeInsufficientBalance { requested, actual }
+                    }
+                    _ => VaultError::ResourceError(e),
+                };
+
+                RuntimeError::ApplicationError(ApplicationError::VaultError(vault_error))
+            })?;
+            // Flush updates
+            api.field_write_typed(
+                vault_handle,
+                &FungibleVaultBalanceFieldPayload::from_content_source(vault),
+            )?;
+            api.field_close(vault_handle)?;
+            fee
+        };
 
         // Credit cost units
         let receiver = Runtime::get_node_id(api)?;
-        let changes = api.credit_cost_units(receiver.clone().into(), fee, contingent)?;
-
-        // Keep changes
-        if !changes.is_empty() {
-            // This will only occur if costing module is turned off for whatever reason.
-            // There is probably a nicer interface which doesn't require this sort of logic but
-            // this is good enough for now.
-            vault.put(changes);
-        }
-
-        // Flush updates
-        api.field_write_typed(
-            vault_handle,
-            &FungibleVaultBalanceFieldPayload::from_content_source(vault),
-        )?;
-        api.field_close(vault_handle)?;
+        api.credit_cost_units(receiver.clone().into(), fee, contingent)?;
 
         // Emitting an event once the fee has been locked
         Runtime::emit_event_no_revert(api, events::fungible_vault::LockFeeEvent { amount })?;

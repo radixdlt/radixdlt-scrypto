@@ -4,6 +4,8 @@ use radix_engine_common::math::Decimal;
 use radix_engine_common::types::*;
 
 pub trait ClientCostingApi<E> {
+    fn costing_is_enabled(&mut self) -> Result<bool, E>;
+
     fn consume_cost_units(&mut self, costing_entry: ClientCostingEntry) -> Result<(), E>;
 
     fn credit_cost_units(
@@ -11,7 +13,7 @@ pub trait ClientCostingApi<E> {
         vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<LiquidFungibleResource, E>;
+    ) -> Result<(), E>;
 
     fn execution_cost_unit_limit(&mut self) -> Result<u32, E>;
 

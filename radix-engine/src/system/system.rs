@@ -18,7 +18,7 @@ use crate::system::system_callback::{
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
-use crate::system::system_modules::SystemModuleMixer;
+use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::{KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta, SystemMapper,
@@ -2220,13 +2220,17 @@ where
             })
     }
 
+    fn costing_is_enabled(&mut self) -> Result<bool, RuntimeError> {
+        Ok(self.api.kernel_get_system().modules.enabled_modules.contains(EnabledModules::COSTING))
+    }
+
     #[trace_resources]
     fn credit_cost_units(
         &mut self,
         vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<LiquidFungibleResource, RuntimeError> {
+    ) -> Result<(), RuntimeError> {
         self.api
             .kernel_get_system()
             .modules

@@ -79,7 +79,7 @@ pub trait ExecutionFeeReserve {
         vault_id: NodeId,
         fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<LiquidFungibleResource, FeeReserveError>;
+    ) -> Result<(), FeeReserveError>;
 }
 
 pub trait FinalizingFeeReserve {
@@ -542,7 +542,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         vault_id: NodeId,
         mut fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<LiquidFungibleResource, FeeReserveError> {
+    ) -> Result<(), FeeReserveError> {
         // Update balance
         if !contingent {
             // Assumption: no overflow due to limited XRD supply
@@ -553,7 +553,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         self.locked_fees
             .push((vault_id, fee.take_all(), contingent));
 
-        Ok(fee)
+        Ok(())
     }
 }
 
