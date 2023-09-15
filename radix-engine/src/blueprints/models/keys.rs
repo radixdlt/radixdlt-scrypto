@@ -64,14 +64,6 @@ macro_rules! declare_key_new_type {
             type Content = $content_type;
             type FullContent = $full_content_type;
 
-            fn into_sort_key_and_content(self) -> (u16, Self::Content) {
-                (self.sort_prefix(), self.content)
-            }
-
-            fn as_sort_key_and_content(&self) -> (u16, &Self::Content) {
-                (self.sort_prefix(), &self.content)
-            }
-
             fn from_sort_key_and_content(sort_prefix: u16, content: Self::Content) -> Self {
                 Self {
                     $sort_prefix_property_name: sort_prefix,
@@ -282,13 +274,6 @@ pub trait SortedIndexKeyPayload: Sized + AsRef<Self::Content> + AsMut<Self::Cont
     type FullContent: SortedIndexKeyFullContent<Self>;
 
     fn from_sort_key_and_content(sort_key: u16, content: Self::Content) -> Self;
-    fn into_sort_key_and_content(self) -> (u16, Self::Content);
-    fn as_sort_key_and_content(&self) -> (u16, &Self::Content);
-
-    fn into_full_content(self) -> Self::FullContent {
-        let (sort_key, content) = self.into_sort_key_and_content();
-        Self::FullContent::from_sort_key_and_content(sort_key, content)
-    }
 
     fn from_content_source<T: SortedIndexKeyContentSource<Self>>(content: T) -> Self {
         let (sort_key, content) = content.into_sort_key_and_content();
@@ -324,8 +309,4 @@ pub trait SortedIndexKeyFullContent<Payload: SortedIndexKeyPayload>:
 {
     fn from_sort_key_and_content(sort_key: u16, content: Payload::Content) -> Self;
     fn as_content(&self) -> &Payload::Content;
-
-    fn as_sort_key_and_content(&self) -> (u16, &Payload::Content) {
-        (self.sort_key(), self.as_content())
-    }
 }
