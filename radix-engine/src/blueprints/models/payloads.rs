@@ -66,9 +66,7 @@ pub(crate) use declare_payload_new_type;
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular field.
-pub trait FieldPayload:
-    Sized + AsMut<Self::Content> + From<Self::Content>
-{
+pub trait FieldPayload: Sized + AsMut<Self::Content> + From<Self::Content> {
     type Content: FieldContentSource<Self>;
 
     fn into_content(self) -> Self::Content;
@@ -100,9 +98,7 @@ pub trait FieldContentSource<Payload: FieldPayload>: Sized {
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular key value collection.
-pub trait KeyValueEntryPayload:
-    Sized + AsMut<Self::Content> + From<Self::Content>
-{
+pub trait KeyValueEntryPayload: Sized + AsMut<Self::Content> + From<Self::Content> {
     type Content: KeyValueEntryContentSource<Self>;
 
     fn into_content(self) -> Self::Content;
@@ -134,9 +130,7 @@ pub trait KeyValueEntryContentSource<Payload: KeyValueEntryPayload>: Sized {
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular index collection.
-pub trait IndexEntryPayload:
-    Sized + AsMut<Self::Content> + From<Self::Content>
-{
+pub trait IndexEntryPayload: Sized + AsMut<Self::Content> + From<Self::Content> {
     type Content: IndexEntryContentSource<Self>;
 
     fn into_content(self) -> Self::Content;
@@ -167,9 +161,7 @@ pub trait IndexEntryContentSource<Payload: IndexEntryPayload>: Sized {
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular sorted index collection.
-pub trait SortedIndexEntryPayload:
-    Sized + AsMut<Self::Content> + From<Self::Content>
-{
+pub trait SortedIndexEntryPayload: Sized + AsMut<Self::Content> + From<Self::Content> {
     type Content: SortedIndexEntryContentSource<Self>;
 
     fn into_content(self) -> Self::Content;

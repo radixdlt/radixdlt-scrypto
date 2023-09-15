@@ -1,6 +1,6 @@
+use crate::track::interface::IOAccess;
 use crate::track::interface::{CallbackError, CanonicalSubstateKey, NodeSubstates};
 use crate::types::*;
-use crate::{blueprints::resource::*, track::interface::IOAccess};
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
     LockedNonFungibleResource,
@@ -16,7 +16,6 @@ pub enum HeapRemovePartitionError {
     ModuleNotFound(PartitionNumber),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapRemoveNodeError {
     NodeNotFound(NodeId),
 }
@@ -339,44 +338,6 @@ impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
             scrypto_decode(&self[NonFungibleBucketField::Locked as usize]).unwrap();
 
         DroppedNonFungibleBucket { liquid, locked }
-    }
-}
-
-pub struct DroppedFungibleProof {
-    pub moveable: ProofMoveableSubstate,
-    pub fungible_proof: FungibleProofSubstate,
-}
-
-pub struct DroppedNonFungibleProof {
-    pub moveable: ProofMoveableSubstate,
-    pub non_fungible_proof: NonFungibleProofSubstate,
-}
-
-impl Into<DroppedFungibleProof> for Vec<Vec<u8>> {
-    fn into(self) -> DroppedFungibleProof {
-        let moveable: ProofMoveableSubstate =
-            scrypto_decode(&self[FungibleProofField::Moveable as usize]).unwrap();
-        let fungible_proof: FungibleProofSubstate =
-            scrypto_decode(&self[FungibleProofField::ProofRefs as usize]).unwrap();
-
-        DroppedFungibleProof {
-            moveable,
-            fungible_proof,
-        }
-    }
-}
-
-impl Into<DroppedNonFungibleProof> for Vec<Vec<u8>> {
-    fn into(self) -> DroppedNonFungibleProof {
-        let moveable: ProofMoveableSubstate =
-            scrypto_decode(&self[FungibleProofField::Moveable as usize]).unwrap();
-        let non_fungible_proof: NonFungibleProofSubstate =
-            scrypto_decode(&self[FungibleProofField::ProofRefs as usize]).unwrap();
-
-        DroppedNonFungibleProof {
-            moveable,
-            non_fungible_proof,
-        }
     }
 }
 

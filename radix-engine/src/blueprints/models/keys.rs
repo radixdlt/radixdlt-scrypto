@@ -153,9 +153,7 @@ pub(crate) use declare_key_new_type;
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` key of a particular key value collection.
-pub trait KeyValueKeyPayload:
-    Sized + From<Self::Content>
-{
+pub trait KeyValueKeyPayload: Sized + From<Self::Content> {
     type Content: KeyValueKeyContentSource<Self>;
 
     fn into_content(self) -> Self::Content;
@@ -175,9 +173,7 @@ pub trait KeyValueKeyContentSource<Payload: KeyValueKeyPayload>: Sized {
 
 /// This trait is intended to be implemented by an explicit new type for the given
 /// `{ content: T }` key of a particular index collection.
-pub trait IndexKeyPayload:
-    Sized + From<Self::Content>
-{
+pub trait IndexKeyPayload: Sized + From<Self::Content> {
     type Content: IndexKeyContentSource<Self>;
 
     fn into_content(self) -> Self::Content;

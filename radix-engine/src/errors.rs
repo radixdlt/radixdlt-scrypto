@@ -88,14 +88,6 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
-impl RuntimeError {
-    pub const fn update_substate(e: CloseSubstateError) -> Self {
-        Self::KernelError(KernelError::CallFrameError(
-            CallFrameError::CloseSubstateError(e),
-        ))
-    }
-}
-
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
         RuntimeError::KernelError(error.into())
@@ -217,7 +209,6 @@ pub enum SystemError {
     NotAnAddressReservation,
     NotAnObject,
     NotAKeyValueStore,
-    PersistenceProhibited,
     ModulesDontHaveOuterObjects,
     ActorNodeIdDoesNotExist,
     OuterObjectDoesNotExist,
@@ -253,11 +244,9 @@ pub enum SystemError {
     AuthTemplateDoesNotExist(CanonicalBlueprintId),
     InvalidGlobalizeAccess(Box<InvalidGlobalizeAccess>),
     InvalidDropAccess(Box<InvalidDropAccess>),
-    InvalidScryptoValue(DecodeError),
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
-    InvalidNativeSubstatesForFeature(String),
     ForceWriteEventFlagsNotAllowed,
 
     BlueprintTypeNotFound(String),
@@ -270,28 +259,15 @@ pub enum SystemError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum EventError {
-    SchemaNotFoundError {
-        blueprint: BlueprintId,
-        event_name: String,
-    },
-    EventSchemaNotMatch(String),
-    NoAssociatedPackage,
     InvalidActor,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemUpstreamError {
-    SystemFunctionCallNotAllowed,
-
-    FnNotFound(String),
     ReceiverNotMatch(String),
     HookNotFound(BlueprintHook),
-
     InputDecodeError(DecodeError),
-    InputSchemaNotMatch(String, String),
-
     OutputDecodeError(DecodeError),
-    OutputSchemaNotMatch(String, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -314,12 +290,9 @@ pub enum NativeRuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateObjectError {
-    BlueprintNotFound(String),
     InvalidFieldDueToFeature(BlueprintId, u8),
     MissingField(BlueprintId, u8),
     InvalidFieldIndex(BlueprintId, u8),
-    SchemaValidationError(BlueprintId, String),
-    InvalidSubstateWrite(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -338,7 +311,6 @@ pub struct InvalidModuleType {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CannotGlobalizeError {
-    NotAnObject,
     AlreadyGlobalized,
     InvalidBlueprintId,
 }
