@@ -5,7 +5,7 @@ use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
 };
 use radix_engine::blueprints::resource::BucketError;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::types::*;
@@ -3248,4 +3248,44 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
         significant_readiness["b".repeat(32).as_str()],
         Decimal::from(10)
     );
+}
+
+#[test]
+fn cannot_unstake_with_wrong_resource() {
+    // Arrange
+    let genesis_epoch = Epoch::of(5);
+    let num_unstake_epochs = 7;
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        Decimal::ZERO,
+        account_with_su,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_num_unstake_epochs(num_unstake_epochs),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .take_all_from_worktop(XRD, "fake_stake_units")
+        .unstake_validator(validator_address, "fake_stake_units")
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(_))
+        )
+    });
 }
