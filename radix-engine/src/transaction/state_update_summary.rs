@@ -1,7 +1,6 @@
 use crate::blueprints::resource::{FungibleVaultBalanceFieldPayload, FungibleVaultField};
 use crate::internal_prelude::*;
 use crate::system::system_db_reader::SystemDatabaseReader;
-use crate::system::type_info::TypeInfoSubstate;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
 use radix_engine_interface::data::scrypto::model::*;
@@ -11,7 +10,6 @@ use radix_engine_interface::*;
 use radix_engine_store_interface::{
     db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
-use sbor::rust::ops::Add;
 use sbor::rust::prelude::*;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
@@ -71,11 +69,9 @@ pub enum BalanceChange {
     },
 }
 
-impl Add for BalanceChange {
-    type Output = Self;
-
-    fn add(mut self, rhs: Self) -> Self::Output {
-        match &mut self {
+impl AddAssign for BalanceChange {
+    fn add_assign(&mut self, rhs: Self) {
+        match self {
             BalanceChange::Fungible(self_value) => {
                 let BalanceChange::Fungible(value) = rhs else {
                     panic!("cannot {:?} + {:?}", self, rhs);
@@ -93,11 +89,26 @@ impl Add for BalanceChange {
                 self_removed.extend(removed);
             }
         }
-        self
     }
 }
 
 impl BalanceChange {
+    pub fn prune_and_check_if_zero(&mut self) -> bool {
+        match self {
+            BalanceChange::Fungible(x) => x.is_zero(),
+            BalanceChange::NonFungible { added, removed } => {
+                let cancelled_out = added
+                    .intersection(&removed)
+                    .cloned()
+                    .collect::<BTreeSet<_>>();
+                added.retain(|id| !cancelled_out.contains(id));
+                removed.retain(|id| !cancelled_out.contains(id));
+
+                added.is_empty() && removed.is_empty()
+            }
+        }
+    }
+
     pub fn fungible(&mut self) -> &mut Decimal {
         match self {
             BalanceChange::Fungible(x) => x,
@@ -149,26 +160,14 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         &self,
         vault_id: &NodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
-        let type_info: TypeInfoSubstate = self
+        let object_info = self
             .system_reader
-            .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                vault_id,
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-            )
+            .get_object_info(*vault_id)
             .expect("Missing vault info");
 
-        let resource_address = match type_info {
-            TypeInfoSubstate::Object(info) => {
-                ResourceAddress::new_or_panic(info.get_outer_object().into())
-            }
-            _ => panic!("Unexpected"),
-        };
+        let resource_address = ResourceAddress::new_or_panic(object_info.get_outer_object().into());
 
-        let is_fungible = resource_address
-            .as_node_id()
-            .is_global_fungible_resource_manager();
-        let change = if is_fungible {
+        let change = if resource_address.is_fungible() {
             self.calculate_fungible_vault_balance_change(vault_id)
         } else {
             self.calculate_non_fungible_vault_balance_change(vault_id)
