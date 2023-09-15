@@ -12,7 +12,7 @@ jobs:
       platform:
         - linux/amd64
         - linux/arm64
-  build-simulator:
+  steps:
     name: Build simulator
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
