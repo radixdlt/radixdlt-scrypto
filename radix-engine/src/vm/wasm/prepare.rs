@@ -80,9 +80,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    BUFFER_CONSUME_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -105,9 +103,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    OBJECT_CALL_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -131,9 +127,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    OBJECT_CALL_MODULE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -156,9 +150,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    OBJECT_CALL_DIRECT_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -183,9 +175,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    OBJECT_CALL_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -207,9 +197,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -225,9 +213,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_ENTRY_READ_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -243,9 +229,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -261,9 +245,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -279,9 +261,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -297,9 +277,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -315,9 +293,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    ACTOR_OPEN_FIELD_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -333,9 +309,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    FIELD_ENTRY_READ_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -351,9 +325,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    FIELD_ENTRY_WRITE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -369,9 +341,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    FIELD_ENTRY_CLOSE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -387,9 +357,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    ACTOR_GET_OBJECT_ID_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -405,9 +373,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    ACTOR_GET_PACKAGE_ADDRESS_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -423,9 +389,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    ACTOR_GET_BLUEPRINT_NAME_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -442,9 +406,7 @@ impl WasmModule {
                             }
 
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    OBJECT_NEW_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -460,9 +422,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -477,9 +437,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -494,10 +452,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME
-                                        .to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -512,10 +467,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME
-                                        .to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -530,9 +482,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    COSTING_GET_USD_PRICE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -547,9 +497,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -564,9 +512,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    COSTING_GET_FEE_BALANCE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -582,9 +528,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    ADDRESS_ALLOCATE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -599,9 +543,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -623,9 +565,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    OBJECT_GLOBALIZE_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -640,9 +580,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    KEY_VALUE_STORE_NEW_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -664,9 +602,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    OBJECT_INSTANCE_OF_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -681,9 +617,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -698,9 +632,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -721,9 +653,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    ACTOR_EMIT_EVENT_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -738,9 +668,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    SYS_LOG_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -755,9 +683,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -772,9 +698,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    SYS_PANIC_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -789,9 +713,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    SYS_GET_TRANSACTION_HASH_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -806,9 +728,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    SYS_GENERATE_RUID_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
                             ));
                         }
                     }
@@ -1008,7 +928,10 @@ impl WasmModule {
 
     pub fn enforce_global_limit(self, max_number_of_globals: u32) -> Result<Self, PrepareError> {
         if self.module.num_local_globals() > max_number_of_globals {
-            return Err(PrepareError::TooManyGlobals);
+            return Err(PrepareError::TooManyGlobals {
+                max: max_number_of_globals,
+                current: self.module.num_local_globals(),
+            });
         }
 
         Ok(self)
@@ -1290,6 +1213,86 @@ mod tests {
     }
 
     #[test]
+    fn test_enforce_import_limit() {
+        let wat = r#"
+            (module
+                (import "env" "name_to_replace" (func $some_func (param i32 i32 i32 i32 i32 i32 i32 i32)))
+            )
+            "#;
+        assert_invalid_wasm!(
+            wat,
+            PrepareError::InvalidImport(InvalidImport::ImportNotAllowed(
+                "name_to_replace".to_string()
+            )),
+            WasmModule::enforce_import_limit
+        );
+
+        for name in [
+            BUFFER_CONSUME_FUNCTION_NAME,
+            OBJECT_CALL_FUNCTION_NAME,
+            OBJECT_CALL_MODULE_FUNCTION_NAME,
+            OBJECT_CALL_DIRECT_FUNCTION_NAME,
+            BLUEPRINT_CALL_FUNCTION_NAME,
+            KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_READ_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME,
+            KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME,
+            ACTOR_OPEN_FIELD_FUNCTION_NAME,
+            FIELD_ENTRY_READ_FUNCTION_NAME,
+            FIELD_ENTRY_WRITE_FUNCTION_NAME,
+            FIELD_ENTRY_CLOSE_FUNCTION_NAME,
+            ACTOR_GET_OBJECT_ID_FUNCTION_NAME,
+            ACTOR_GET_PACKAGE_ADDRESS_FUNCTION_NAME,
+            ACTOR_GET_BLUEPRINT_NAME_FUNCTION_NAME,
+            OBJECT_NEW_FUNCTION_NAME,
+            COSTING_GET_EXECUTION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            COSTING_GET_EXECUTION_COST_UNIT_PRICE_FUNCTION_NAME,
+            COSTING_GET_FINALIZATION_COST_UNIT_LIMIT_FUNCTION_NAME,
+            COSTING_GET_FINALIZATION_COST_UNIT_PRICE_FUNCTION_NAME,
+            COSTING_GET_USD_PRICE_FUNCTION_NAME,
+            COSTING_GET_TIP_PERCENTAGE_FUNCTION_NAME,
+            COSTING_GET_FEE_BALANCE_FUNCTION_NAME,
+            ADDRESS_ALLOCATE_FUNCTION_NAME,
+            ADDRESS_GET_RESERVATION_ADDRESS_FUNCTION_NAME,
+            OBJECT_GLOBALIZE_FUNCTION_NAME,
+            KEY_VALUE_STORE_NEW_FUNCTION_NAME,
+            OBJECT_INSTANCE_OF_FUNCTION_NAME,
+            OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME,
+            OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME,
+            ACTOR_EMIT_EVENT_FUNCTION_NAME,
+            SYS_LOG_FUNCTION_NAME,
+            SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME,
+            SYS_PANIC_FUNCTION_NAME,
+            SYS_GET_TRANSACTION_HASH_FUNCTION_NAME,
+            SYS_GENERATE_RUID_FUNCTION_NAME,
+        ] {
+            assert_invalid_wasm!(
+                wat.replace("name_to_replace", name),
+                PrepareError::InvalidImport(InvalidImport::InvalidFunctionType(name.to_string())),
+                WasmModule::enforce_import_limit
+            );
+        }
+    }
+
+    #[test]
+    fn test_enforce_global_limit() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (global $g1 i32 (i32.const 0))
+                (global $g2 i32 (i32.const 0))
+                (global $g3 i32 (i32.const 0))
+                (global $g4 i32 (i32.const 0))
+            )
+            "#,
+            PrepareError::TooManyGlobals { max: 3, current: 4 },
+            |x| WasmModule::enforce_global_limit(x, 3)
+        );
+    }
+
+    #[test]
     fn test_memory() {
         assert_invalid_wasm!(
             r#"
@@ -1504,6 +1507,35 @@ mod tests {
                 export_name: "Test_f".to_string()
             },
             |x| WasmModule::enforce_export_constraints(x, blueprints.values())
+        );
+
+        // export kind does not match
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (global (export "Test_f") i32 (i32.const 0))
+            )
+            "#,
+            PrepareError::MissingExport {
+                export_name: "Test_f".to_string()
+            },
+            |x| WasmModule::enforce_export_constraints(x, blueprints.values())
+        );
+    }
+
+    #[test]
+    fn test_inject_instruction_metering() {
+        use crate::vm::wasm::WasmValidatorConfigV1;
+
+        let instrumenter_config = WasmValidatorConfigV1::new();
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (import "env" "gas" (func $some_func (param i32 i32 i32 i32 i32 i32 i32 i32)))
+            )
+            "#,
+            PrepareError::RejectedByInstructionMetering{reason: "dupa".to_string()},
+            |x| WasmModule::inject_instruction_metering(x, &instrumenter_config)
         );
     }
 }
