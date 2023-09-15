@@ -301,6 +301,7 @@ mod tests {
             addr3,
             Err(ParseComponentAddressError::InvalidEntityTypeId(..))
         ));
+        #[cfg(not(feature = "alloc"))]
         println!("Decode error: {}", addr3.unwrap_err());
     }
 

@@ -2,7 +2,8 @@ use radix_engine::errors::*;
 use radix_engine::kernel::actor::*;
 use radix_engine::kernel::call_frame::*;
 use radix_engine::kernel::kernel_api::*;
-use radix_engine::system::system::*;
+#[cfg(not(feature = "alloc"))]
+use radix_engine::system::system::SystemService;
 use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::execution_trace::*;
 use radix_engine::track::*;
@@ -47,6 +48,28 @@ impl KernelNodeApi for MockKernel {
         panic1!()
     }
 
+    fn kernel_allocate_node_id(&mut self, _: EntityType) -> Result<NodeId, RuntimeError> {
+        panic1!()
+    }
+
+    fn kernel_create_node(&mut self, _: NodeId, _: NodeSubstates) -> Result<(), RuntimeError> {
+        panic1!()
+    }
+
+    fn kernel_create_node_from(
+        &mut self,
+        _: NodeId,
+        _: BTreeMap<PartitionNumber, (NodeId, PartitionNumber)>,
+    ) -> Result<(), RuntimeError> {
+        panic1!()
+    }
+
+    fn kernel_drop_node(&mut self, _: &NodeId) -> Result<DroppedNode, RuntimeError> {
+        panic1!()
+    }
+}
+
+impl KernelSubstateApi<SystemLockData> for MockKernel {
     fn kernel_mark_substate_as_transient(
         &mut self,
         _: NodeId,
@@ -56,30 +79,6 @@ impl KernelNodeApi for MockKernel {
         panic1!()
     }
 
-    fn kernel_allocate_node_id(&mut self, _: EntityType) -> Result<NodeId, RuntimeError> {
-        panic1!()
-    }
-
-    fn kernel_create_node(&mut self, _: NodeId, _: NodeSubstates) -> Result<(), RuntimeError> {
-        panic1!()
-    }
-
-    fn kernel_drop_node(&mut self, _: &NodeId) -> Result<NodeSubstates, RuntimeError> {
-        panic1!()
-    }
-
-    fn kernel_move_partition(
-        &mut self,
-        _: &NodeId,
-        _: PartitionNumber,
-        _: &NodeId,
-        _: PartitionNumber,
-    ) -> Result<(), RuntimeError> {
-        panic1!()
-    }
-}
-
-impl KernelSubstateApi<SystemLockData> for MockKernel {
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         _: &NodeId,

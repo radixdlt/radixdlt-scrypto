@@ -1,13 +1,13 @@
+use crate::ast;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use radix_engine_common::address::AddressBech32Decoder;
+use std::collections::BTreeMap;
 use std::str::FromStr;
 use syn::parse::{Parse, ParseStream, Parser};
 use syn::spanned::Spanned;
 use syn::token::{Brace, Comma};
 use syn::*;
-
-use crate::ast;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -220,6 +220,38 @@ pub fn replace_macros(expr: &mut Expr, dependency_exprs: &mut Vec<Expr>) -> Resu
     }
 
     Ok(())
+}
+
+/// Derive a sensible type identifier from a path, so to pass Radix Engine's constraints.
+pub fn derive_sensible_identifier_from_path(path: &Path) -> Result<String> {
+    if let Some(segment) = path.segments.last() {
+        let mut result = String::new();
+        let mut with_underscore = false;
+
+        for c in quote! { #segment }.to_string().chars() {
+            if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' {
+                result.push(c);
+                with_underscore = false;
+            } else {
+                if !with_underscore {
+                    result.push('_');
+                    with_underscore = true;
+                }
+            }
+        }
+
+        // Trim
+        if result.len() > 1 && result.ends_with('_') {
+            result.pop();
+        }
+
+        Ok(result)
+    } else {
+        Err(Error::new(
+            path.span(),
+            "Failed to derive sensible identifier",
+        ))
+    }
 }
 
 pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
@@ -463,6 +495,196 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         import_statements
     };
 
+    let registered_type_ident = format_ident!("{}RegisteredType", bp_ident);
+    let mut registered_type_traits = Vec::<ItemTrait>::new();
+    let mut registered_type_structs = Vec::<ItemStruct>::new();
+    let mut registered_type_impls = Vec::<ItemImpl>::new();
+    let mut registered_type_paths = BTreeMap::<String, Path>::new();
+
+    // Register type trait
+    registered_type_traits.push(parse_quote! {
+        pub trait #registered_type_ident {
+            fn blueprint_type_identifier() -> BlueprintTypeIdentifier;
+        }
+    });
+
+    // KeyValueStore trait and impl
+    let registered_type_kv_store = format_ident!("{}KeyValueStore", bp_ident);
+    registered_type_traits.push(parse_quote! {
+        pub trait #registered_type_kv_store {
+            fn new_with_registered_type() -> Self;
+        }
+    });
+    registered_type_impls.push(parse_quote! {
+        impl<
+            K: ScryptoEncode + ScryptoDecode + ScryptoDescribe + #registered_type_ident,
+            V: ScryptoEncode + ScryptoDecode + ScryptoDescribe + #registered_type_ident,
+        > #registered_type_kv_store for KeyValueStore<K, V> {
+            fn new_with_registered_type() -> Self {
+                let store_schema = RemoteKeyValueStoreDataSchema {
+                    key_type: K::blueprint_type_identifier(),
+                    value_type: V::blueprint_type_identifier(),
+                    allow_ownership: true,
+                };
+
+                Self {
+                    id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+                        KV_STORE_DATA_SCHEMA_VARIANT_REMOTE,
+                        RemoteKeyValueStoreDataSchema,
+                    > {
+                        fields: store_schema,
+                    })),
+                    key: PhantomData,
+                    value: PhantomData,
+                }
+            }
+        }
+    });
+
+    // ResourceBuilder trait and impl
+    let registered_type_resource_builder = format_ident!("{}ResourceBuilder", bp_ident);
+    registered_type_traits.push(parse_quote! {
+        pub trait #registered_type_resource_builder {
+            fn new_string_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
+                owner_role: OwnerRole,
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
+
+            fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
+                owner_role: OwnerRole,
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
+
+            fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
+                owner_role: OwnerRole,
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
+
+            fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
+                owner_role: OwnerRole,
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
+        }
+    });
+    registered_type_impls.push(parse_quote! {
+        impl #registered_type_resource_builder for ResourceBuilder {
+            fn new_string_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
+                owner_role: OwnerRole,
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
+                InProgressResourceBuilder::new(
+                    owner_role,
+                    NonFungibleResourceType::new(FixedEnumVariant {
+                        fields: RemoteNonFungibleDataSchema::new(
+                            D::blueprint_type_identifier(),
+                            D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
+                        ),
+                    }),
+                )
+            }
+
+            fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
+                owner_role: OwnerRole,
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
+                InProgressResourceBuilder::new(
+                    owner_role,
+                    NonFungibleResourceType::new(FixedEnumVariant {
+                        fields: RemoteNonFungibleDataSchema::new(
+                            D::blueprint_type_identifier(),
+                            D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
+                        ),
+                    }),
+                )
+            }
+
+            fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
+                owner_role: OwnerRole,
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
+                InProgressResourceBuilder::new(
+                    owner_role,
+                    NonFungibleResourceType::new(FixedEnumVariant {
+                        fields: RemoteNonFungibleDataSchema::new(
+                            D::blueprint_type_identifier(),
+                            D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
+                        ),
+                    }),
+                )
+            }
+
+            fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
+                owner_role: OwnerRole,
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
+                InProgressResourceBuilder::new(
+                    owner_role,
+                    NonFungibleResourceType::new(FixedEnumVariant {
+                        fields: RemoteNonFungibleDataSchema::new(
+                            D::blueprint_type_identifier(),
+                            D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
+                        ),
+                    }),
+                )
+            }
+        }
+    });
+
+    for attribute in &blueprint.attributes {
+        if attribute.path.is_ident("types") {
+            let types_inner = parse2::<ast::TypesInner>(attribute.tokens.clone())?;
+            for aliasable_type in types_inner.aliasable_types {
+                let path = aliasable_type.path;
+                let type_name;
+                if let Some(alias) = aliasable_type.alias {
+                    type_name = alias.to_string();
+                    registered_type_structs.push(parse_quote! {
+                        #[derive(ScryptoSbor)]
+                        #[sbor(transparent)]
+                        pub struct #alias(#path);
+                    });
+                    registered_type_impls.push(parse_quote! {
+                        impl From<#path> for #alias {
+                            fn from(value: #path) -> Self {
+                                Self(value)
+                            }
+                        }
+                    });
+                    registered_type_impls.push(parse_quote! {
+                        impl From<#alias> for #path {
+                            fn from(value: #alias) -> Self {
+                                value.0
+                            }
+                        }
+                    });
+                    registered_type_impls.push(parse_quote! {
+                        impl #registered_type_ident for #alias {
+                            fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                                BlueprintTypeIdentifier {
+                                    package_address: Runtime::package_address(),
+                                    blueprint_name: #bp_name.to_owned(),
+                                    type_name: #type_name.to_owned(),
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    type_name = derive_sensible_identifier_from_path(&path)?;
+                    registered_type_impls.push(parse_quote! {
+                        impl #registered_type_ident for #path {
+                            fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                                BlueprintTypeIdentifier {
+                                    package_address: Runtime::package_address(),
+                                    blueprint_name: #bp_name.to_owned(),
+                                    type_name: #type_name.to_owned(),
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if let Some(..) = registered_type_paths.insert(type_name, path.clone()) {
+                    return Err(Error::new(
+                        path.span(),
+                        "A type with an identical name has already been registered",
+                    ));
+                }
+            }
+        }
+    }
+
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
     #[cfg(not(feature = "no-schema"))]
@@ -517,43 +739,20 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         // Getting the event types and other named types from attribute
         let (event_type_names, event_type_paths, registered_type_names, registered_type_paths) = {
-            let mut event_type_paths = std::collections::BTreeMap::<String, Path>::new();
-            let mut registered_type_paths = std::collections::BTreeMap::<String, Path>::new();
+            let mut event_type_paths = BTreeMap::<String, Path>::new();
             for attribute in blueprint.attributes {
                 if attribute.path.is_ident("events") {
                     let events_inner = parse2::<ast::EventsInner>(attribute.tokens.clone())?;
                     for path in events_inner.paths.iter() {
-                        let ident_string = quote! { #path }
-                            .to_string()
-                            .split(':')
-                            .last()
-                            .unwrap()
-                            .trim()
-                            .to_owned();
-                        if let Some(..) = event_type_paths.insert(ident_string, path.clone()) {
+                        let type_name = derive_sensible_identifier_from_path(&path)?;
+                        if let Some(..) = event_type_paths.insert(type_name, path.clone()) {
                             return Err(Error::new(
                                 path.span(),
                                 "An event with an identical name has already been named",
                             ));
                         }
                     }
-                } else if attribute.path.is_ident("experimental_types") {
-                    let types_inner = parse2::<ast::TypesInner>(attribute.tokens.clone())?;
-                    for path in types_inner.paths.iter() {
-                        let ident_string = quote! { #path }
-                            .to_string()
-                            .split(':')
-                            .last()
-                            .unwrap()
-                            .trim()
-                            .to_owned();
-                        if let Some(..) = registered_type_paths.insert(ident_string, path.clone()) {
-                            return Err(Error::new(
-                                path.span(),
-                                "An type with an identical name has already been named",
-                            ));
-                        }
-                    }
+                } else if attribute.path.is_ident("types") {
                 }
                 // None of the attributes to apply at the top-level of blueprint macros matched. So,
                 // we provide an error to the user that they're using an incorrect attribute macro
@@ -646,7 +845,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                             type_schema.insert(#registered_type_names.to_owned(), local_type_index);
                         })*
                         BlueprintTypeSchemaInit {
-                            type_schema,
+                            type_schema
                         }
                     };
 
@@ -866,6 +1065,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #output_schema
 
             #output_stubs
+
+            #(#registered_type_traits)*
+
+            #(#registered_type_structs)*
+
+            #(#registered_type_impls)*
         }
 
         // Only available when the blueprint is build with the test feature.
@@ -1610,11 +1815,13 @@ fn type_replacement(ty: &Type, bp_name: &str) -> Type {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::print_generated_code;
     use proc_macro2::TokenStream;
     use std::str::FromStr;
 
-    fn assert_code_eq(a: TokenStream, b: TokenStream) {
-        assert_eq!(a.to_string(), b.to_string());
+    fn assert_code_eq(actual: TokenStream, expected: TokenStream) {
+        print_generated_code("Actual", &actual);
+        assert_eq!(actual.to_string(), expected.to_string());
     }
 
     #[test]
@@ -1624,9 +1831,41 @@ mod tests {
     }
 
     #[test]
+    fn test_derive_sensible_identifier_from_path() {
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { Struct1 }).unwrap(),
+            "Struct1"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { std::test::Struct1 }).unwrap(),
+            "Struct1"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { Vec<u8> }).unwrap(),
+            "Vec_u8"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { Generic<'lifetime, u8> }).unwrap(),
+            "Generic_lifetime_u8"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(&parse_quote! { Generic::<'lifetime, u8> })
+                .unwrap(),
+            "Generic_lifetime_u8"
+        );
+        assert_eq!(
+            derive_sensible_identifier_from_path(
+                &parse_quote! { HashMap<String, std::rust::Test> }
+            )
+            .unwrap(),
+            "HashMap_String_std_rust_Test"
+        );
+    }
+
+    #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "mod test { struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } } }",
+            "#[types(Struct1, Struct2 as Hi, u32, NonFungibleGlobalId, Vec<Hash>, Vec<Bucket> as GenericAlias)] mod test { struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } } }",
         )
             .unwrap();
         let output = handle_blueprint(input).unwrap();
@@ -1820,9 +2059,33 @@ mod tests {
 
                             let types = {
                                 let mut type_schema = index_map_new();
-                                BlueprintTypeSchemaInit {
-                                    type_schema,
+                                {
+                                    let local_type_index =
+                                        aggregator.add_child_type_and_descendents::<Vec<Bucket> >();
+                                    type_schema.insert("GenericAlias".to_owned(), local_type_index);
                                 }
+                                {
+                                    let local_type_index = aggregator.add_child_type_and_descendents::<Struct2>();
+                                    type_schema.insert("Hi".to_owned(), local_type_index);
+                                }
+                                {
+                                    let local_type_index =
+                                        aggregator.add_child_type_and_descendents::<NonFungibleGlobalId>();
+                                    type_schema.insert("NonFungibleGlobalId".to_owned(), local_type_index);
+                                }
+                                {
+                                    let local_type_index = aggregator.add_child_type_and_descendents::<Struct1>();
+                                    type_schema.insert("Struct1".to_owned(), local_type_index);
+                                }
+                                {
+                                    let local_type_index = aggregator.add_child_type_and_descendents::<Vec<Hash> >();
+                                    type_schema.insert("Vec_Hash".to_owned(), local_type_index);
+                                }
+                                {
+                                    let local_type_index = aggregator.add_child_type_and_descendents::<u32>();
+                                    type_schema.insert("u32".to_owned(), local_type_index);
+                                }
+                                BlueprintTypeSchemaInit { type_schema }
                             };
 
                             let schema = generate_full_schema(aggregator);
@@ -1894,6 +2157,268 @@ mod tests {
                     impl TestFunctions for ::scrypto::component::Blueprint<Test> {
                         fn y(i: u32) -> u32 {
                             Self::call_function_raw("y", scrypto_args!(i))
+                        }
+                    }
+
+                    pub trait TestRegisteredType {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier;
+                    }
+
+                    pub trait TestKeyValueStore {
+                        fn new_with_registered_type() -> Self;
+                    }
+
+                    pub trait TestResourceBuilder {
+                        fn new_string_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
+                            owner_role: OwnerRole,
+                        ) -> InProgressResourceBuilder<
+                            NonFungibleResourceType<
+                                StringNonFungibleLocalId,
+                                D,
+                                FixedEnumVariant<
+                                    NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteNonFungibleDataSchema
+                                >
+                            >
+                        >;
+                        fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
+                            owner_role: OwnerRole,
+                        ) -> InProgressResourceBuilder<
+                            NonFungibleResourceType<
+                                IntegerNonFungibleLocalId,
+                                D,
+                                FixedEnumVariant<
+                                    NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteNonFungibleDataSchema
+                                >
+                            >
+                        >;
+                        fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
+                            owner_role: OwnerRole,
+                        ) -> InProgressResourceBuilder<
+                            NonFungibleResourceType<
+                                BytesNonFungibleLocalId,
+                                D,
+                                FixedEnumVariant<
+                                    NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteNonFungibleDataSchema
+                                >
+                            >
+                        >;
+                        fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
+                            owner_role: OwnerRole,
+                        ) -> InProgressResourceBuilder<
+                            NonFungibleResourceType<
+                                RUIDNonFungibleLocalId,
+                                D,
+                                FixedEnumVariant<
+                                    NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteNonFungibleDataSchema
+                                >
+                            >
+                        >;
+                    }
+
+                    #[derive(ScryptoSbor)]
+                    #[sbor(transparent)]
+                    pub struct Hi(Struct2);
+
+                    #[derive(ScryptoSbor)]
+                    #[sbor(transparent)]
+                    pub struct GenericAlias(Vec<Bucket>);
+
+                    impl<
+                            K: ScryptoEncode + ScryptoDecode + ScryptoDescribe + TestRegisteredType,
+                            V: ScryptoEncode + ScryptoDecode + ScryptoDescribe + TestRegisteredType,
+                        > TestKeyValueStore for KeyValueStore<K, V>
+                    {
+                        fn new_with_registered_type() -> Self {
+                            let store_schema = RemoteKeyValueStoreDataSchema {
+                                key_type: K::blueprint_type_identifier(),
+                                value_type: V::blueprint_type_identifier(),
+                                allow_ownership: true,
+                            };
+                            Self {
+                                id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+                                    KV_STORE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteKeyValueStoreDataSchema,
+                                > {
+                                    fields: store_schema,
+                                })),
+                                key: PhantomData,
+                                value: PhantomData,
+                            }
+                        }
+                    }
+
+                    impl TestResourceBuilder for ResourceBuilder {
+                        fn new_string_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
+                            owner_role: OwnerRole,
+                        ) -> InProgressResourceBuilder<
+                            NonFungibleResourceType<
+                                StringNonFungibleLocalId,
+                                D,
+                                FixedEnumVariant<
+                                    NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteNonFungibleDataSchema
+                                >
+                            >
+                        > {
+                            InProgressResourceBuilder::new(
+                                owner_role,
+                                NonFungibleResourceType::new(FixedEnumVariant {
+                                    fields: RemoteNonFungibleDataSchema::new(
+                                        D::blueprint_type_identifier(),
+                                        D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
+                                    ),
+                                }),
+                            )
+                        }
+                        fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
+                            owner_role: OwnerRole,
+                        ) -> InProgressResourceBuilder<
+                            NonFungibleResourceType<
+                                IntegerNonFungibleLocalId,
+                                D,
+                                FixedEnumVariant<
+                                    NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteNonFungibleDataSchema
+                                >
+                            >
+                        > {
+                            InProgressResourceBuilder::new(
+                                owner_role,
+                                NonFungibleResourceType::new(FixedEnumVariant {
+                                    fields: RemoteNonFungibleDataSchema::new(
+                                        D::blueprint_type_identifier(),
+                                        D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
+                                    ),
+                                }),
+                            )
+                        }
+                        fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
+                            owner_role: OwnerRole,
+                        ) -> InProgressResourceBuilder<
+                            NonFungibleResourceType<
+                                BytesNonFungibleLocalId,
+                                D,
+                                FixedEnumVariant<
+                                    NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteNonFungibleDataSchema
+                                >
+                            >
+                        > {
+                            InProgressResourceBuilder::new(
+                                owner_role,
+                                NonFungibleResourceType::new(FixedEnumVariant {
+                                    fields: RemoteNonFungibleDataSchema::new(
+                                        D::blueprint_type_identifier(),
+                                        D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
+                                    ),
+                                }),
+                            )
+                        }
+                        fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + TestRegisteredType>(
+                            owner_role: OwnerRole,
+                        ) -> InProgressResourceBuilder<
+                            NonFungibleResourceType<
+                                RUIDNonFungibleLocalId,
+                                D,
+                                FixedEnumVariant<
+                                    NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
+                                    RemoteNonFungibleDataSchema
+                                >
+                            >
+                        > {
+                            InProgressResourceBuilder::new(
+                                owner_role,
+                                NonFungibleResourceType::new(FixedEnumVariant {
+                                    fields: RemoteNonFungibleDataSchema::new(
+                                        D::blueprint_type_identifier(),
+                                        D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
+                                    ),
+                                }),
+                            )
+                        }
+                    }
+
+                    impl TestRegisteredType for Struct1 {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "Struct1".to_owned(),
+                            }
+                        }
+                    }
+
+                    impl From<Struct2> for Hi {
+                        fn from(value: Struct2) -> Self {
+                            Self(value)
+                        }
+                    }
+                    impl From<Hi> for Struct2 {
+                        fn from(value: Hi) -> Self {
+                            value.0
+                        }
+                    }
+                    impl TestRegisteredType for Hi {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "Hi".to_owned(),
+                            }
+                        }
+                    }
+
+                    impl TestRegisteredType for u32 {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "u32".to_owned(),
+                            }
+                        }
+                    }
+
+                    impl TestRegisteredType for NonFungibleGlobalId {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "NonFungibleGlobalId".to_owned(),
+                            }
+                        }
+                    }
+
+                    impl TestRegisteredType for Vec<Hash> {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "Vec_Hash".to_owned(),
+                            }
+                        }
+                    }
+
+                    impl From<Vec<Bucket> > for GenericAlias {
+                        fn from(value: Vec<Bucket>) -> Self {
+                            Self(value)
+                        }
+                    }
+                    impl From<GenericAlias> for Vec<Bucket> {
+                        fn from(value: GenericAlias) -> Self {
+                            value.0
+                        }
+                    }
+                    impl TestRegisteredType for GenericAlias {
+                        fn blueprint_type_identifier() -> BlueprintTypeIdentifier {
+                            BlueprintTypeIdentifier {
+                                package_address: Runtime::package_address(),
+                                blueprint_name: "Test".to_owned(),
+                                type_name: "GenericAlias".to_owned(),
+                            }
                         }
                     }
                 }

@@ -256,6 +256,7 @@ mod tests {
         let _ = ManifestAddress::try_from(addr).unwrap();
         let _: [u8; NodeId::LENGTH] = addr.try_into().unwrap();
 
+        #[cfg(not(feature = "alloc"))]
         println!("Address: {:?}", addr);
 
         // pass empty string to fail conversion
@@ -278,6 +279,7 @@ mod tests {
             addr3,
             Err(ParseInternalAddressError::InvalidEntityTypeId(..))
         ));
+        #[cfg(not(feature = "alloc"))]
         println!("Decode error: {}", addr3.unwrap_err());
     }
 

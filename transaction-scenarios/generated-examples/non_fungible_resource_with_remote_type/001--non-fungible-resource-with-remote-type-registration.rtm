@@ -364,7 +364,7 @@ PUBLISH_PACKAGE_ADVANCED
                         )
                     ),
                     Map<String, Enum>(
-                        "TestType" => Enum<1u8>(
+                        "RemoveLiquidityEvent" => Enum<1u8>(
                             13u64
                         )
                     ),
@@ -461,7 +461,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("6ea1d7af76b57f04312dc7c89e9bffe9e2ac47b880f43b01b69b175f3de9fbed")
+    Blob("5ac3c0197ffedd42bd66d9cb80455da64a74df92acccee36c924439f0d82aa7f")
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(

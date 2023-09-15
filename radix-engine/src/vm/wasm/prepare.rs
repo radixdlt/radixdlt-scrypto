@@ -670,6 +670,23 @@ impl WasmModule {
                             ));
                         }
                     }
+                    OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
+                        }
+                    }
                     OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
@@ -969,7 +986,10 @@ impl WasmModule {
             }
 
             if locals_count > max_number_of_function_locals {
-                return Err(PrepareError::TooManyFunctionLocals);
+                return Err(PrepareError::TooManyFunctionLocals {
+                    max: max_number_of_function_locals,
+                    actual: locals_count,
+                });
             }
         }
 
@@ -1402,7 +1422,7 @@ mod tests {
                 )
             )
             "#,
-            PrepareError::TooManyFunctionLocals,
+            PrepareError::TooManyFunctionLocals { max: 3, actual: 4 },
             |x| WasmModule::enforce_function_limit(x, 2, 3, 3)
         );
     }

@@ -94,7 +94,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         callback: &mut system,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel_for_test_only();
+    let mut kernel = kernel_boot.create_kernel();
     let mut api = SystemService {
         api: &mut kernel,
         phantom: Default::default(),

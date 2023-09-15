@@ -188,6 +188,7 @@ impl VmPackageValidation {
                     .0;
 
                 for BlueprintDefinitionInit {
+                    is_transient,
                     blueprint_type,
                     feature_set,
                     schema:
@@ -288,6 +289,14 @@ impl VmPackageValidation {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::PackageError(PackageError::WasmUnsupported(
                                 "Generics not supported".to_string(),
+                            )),
+                        ));
+                    }
+
+                    if *is_transient {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "Transient blueprints not supported".to_string(),
                             )),
                         ));
                     }

@@ -4,3 +4,7 @@ use radix_engine_common::data::scrypto::ScryptoSbor;
 pub trait NonFungibleData: ScryptoSbor {
     const MUTABLE_FIELDS: &'static [&'static str];
 }
+
+impl NonFungibleData for () {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
+}

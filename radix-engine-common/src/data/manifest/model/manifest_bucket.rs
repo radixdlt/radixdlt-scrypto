@@ -76,6 +76,7 @@ mod tests {
             Err(ParseManifestBucketError::InvalidLength)
         ));
 
+        #[cfg(not(feature = "alloc"))]
         println!("Manifest Bucket error: {}", bucket_out.unwrap_err());
     }
 

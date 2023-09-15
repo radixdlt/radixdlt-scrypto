@@ -399,6 +399,23 @@ fn instance_of(
     )
 }
 
+fn blueprint_id(
+    mut caller: Caller<'_, HostState>,
+    component_id_ptr: u32,
+    component_id_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .blueprint_id(read_memory(
+            caller.as_context_mut(),
+            memory,
+            component_id_ptr,
+            component_id_len,
+        )?)
+        .map(|buffer| buffer.0)
+}
+
 fn get_outer_object(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
@@ -466,7 +483,7 @@ fn unlock_key_value_entry(
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.key_value_entry_release(handle)
+    runtime.key_value_entry_close(handle)
 }
 
 fn key_value_store_remove(
@@ -989,6 +1006,16 @@ impl WasmiModule {
             },
         );
 
+        let host_get_blueprint_id = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             object_id_ptr: u32,
+             object_id_len: u32|
+             -> Result<u64, Trap> {
+                blueprint_id(caller, object_id_ptr, object_id_len).map_err(|e| e.into())
+            },
+        );
+
         let host_get_outer_object = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -1261,6 +1288,11 @@ impl WasmiModule {
             host_globalize_object
         );
         linker_define!(linker, OBJECT_INSTANCE_OF_FUNCTION_NAME, host_instance_of);
+        linker_define!(
+            linker,
+            OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME,
+            host_get_blueprint_id
+        );
         linker_define!(
             linker,
             OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME,

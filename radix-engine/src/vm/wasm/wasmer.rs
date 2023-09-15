@@ -347,6 +347,18 @@ impl WasmerModule {
             )
         }
 
+        pub fn object_get_blueprint_id(
+            env: &WasmerInstanceEnv,
+            component_id_ptr: u32,
+            component_id_len: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .blueprint_id(read_memory(&instance, component_id_ptr, component_id_len)?)
+                .map(|buffer| buffer.0)
+        }
+
         pub fn object_get_outer_object(
             env: &WasmerInstanceEnv,
             component_id_ptr: u32,
@@ -427,13 +439,24 @@ impl WasmerModule {
             runtime.key_value_entry_set(handle, data)
         }
 
+        pub fn key_value_entry_remove(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .key_value_entry_remove(handle)
+                .map(|buffer| buffer.0)
+        }
+
         pub fn key_value_entry_close(
             env: &WasmerInstanceEnv,
             handle: u32,
         ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (_instance, runtime) = grab_runtime!(env);
 
-            runtime.key_value_entry_release(handle)
+            runtime.key_value_entry_close(handle)
         }
 
         pub fn field_entry_read(
@@ -720,6 +743,7 @@ impl WasmerModule {
                 OBJECT_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_new),
                 OBJECT_GLOBALIZE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_globalize),
                 OBJECT_INSTANCE_OF_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_instance_of),
+                OBJECT_GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_get_blueprint_id),
                 OBJECT_GET_OUTER_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_get_outer_object),
                 OBJECT_CALL_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_call),
                 OBJECT_CALL_MODULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), object_call_module),
@@ -729,6 +753,7 @@ impl WasmerModule {
                 KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_remove_entry),
                 KEY_VALUE_ENTRY_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_read),
                 KEY_VALUE_ENTRY_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_write),
+                KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_remove),
                 KEY_VALUE_ENTRY_CLOSE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_close),
                 FIELD_ENTRY_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_entry_read),
                 FIELD_ENTRY_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_entry_write),

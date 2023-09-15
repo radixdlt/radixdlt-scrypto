@@ -78,6 +78,7 @@ mod tests {
             Err(ParseManifestBlobRefError::InvalidLength)
         ));
 
+        #[cfg(not(feature = "alloc"))]
         println!("Manifest Blob error: {}", blob_out.unwrap_err());
     }
 

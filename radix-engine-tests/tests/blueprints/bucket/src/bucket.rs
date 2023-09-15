@@ -57,15 +57,24 @@ mod bucket_test {
             bucket
         }
 
-        pub fn drop_empty(amount: u32) {
+        pub fn drop_fungible_empty(amount: u32) {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata! {
-                    init {
-                        "name" => "TestToken".to_owned(), locked;
-                    }
-                })
                 .mint_initial_supply(amount);
+
+            bucket.drop_empty();
+        }
+
+        pub fn drop_non_fungible_empty(empty: bool) {
+            let bucket = if empty {
+                let resource_manager =
+                    ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
+                        .create_with_no_initial_supply();
+                Bucket::new(resource_manager.address()).as_non_fungible()
+            } else {
+                ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
+                    .mint_initial_supply([MyData {}])
+            };
 
             bucket.drop_empty();
         }

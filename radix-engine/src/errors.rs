@@ -212,6 +212,7 @@ pub enum SystemError {
     InvalidActorStateHandle,
     InvalidActorRefHandle,
 
+    GlobalizingTransientBlueprint,
     GlobalAddressDoesNotExist,
     NotAnAddressReservation,
     NotAnObject,
@@ -236,7 +237,8 @@ pub enum SystemError {
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ActorStateHandle, u8),
     ObjectModuleDoesNotExist(AttachedModuleId),
-    NotAKeyValueWriteLock,
+    NotAKeyValueEntryHandle,
+    NotAKeyValueEntryWriteHandle,
     InvalidLockFlags,
     CannotGlobalize(CannotGlobalizeError),
     MissingModule(ModuleId),
@@ -262,6 +264,7 @@ pub enum SystemError {
 
     /// A panic that's occurred in the system-layer or below. We're calling it system panic since
     /// we're treating the system as a black-box here.
+    #[cfg(feature = "std")]
     SystemPanic(String),
 }
 

@@ -1,5 +1,6 @@
-//use super::compute_state_tree_update;
-use crate::hash_tree::tree_store::{encode_key, NodeKey, ReadableTreeStore, TreeNode};
+use crate::hash_tree::tree_store::{
+    encode_key, NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
+};
 use itertools::Itertools;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_derive::ScryptoSbor;
@@ -9,8 +10,9 @@ use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Direction, IteratorMode,
     SingleThreaded, WriteBatch, DB,
 };
-use sbor::rust::prelude::*;
+use sbor::prelude::*;
 use std::path::PathBuf;
+
 mod state_tree;
 use crate::rocks_db::{decode_from_rocksdb_bytes, encode_to_rocksdb_bytes};
 use state_tree::*;
@@ -18,7 +20,7 @@ use state_tree::*;
 const META_CF: &str = "meta";
 const SUBSTATES_CF: &str = "substates";
 const MERKLE_NODES_CF: &str = "merkle_nodes";
-const STALE_MERKLE_NODE_KEYS_CF: &str = "stale_merkle_node_keys";
+const STALE_MERKLE_TREE_PARTS_CF: &str = "stale_merkle_tree_parts";
 
 pub struct RocksDBWithMerkleTreeSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,
@@ -49,7 +51,7 @@ impl RocksDBWithMerkleTreeSubstateStore {
                 META_CF,
                 SUBSTATES_CF,
                 MERKLE_NODES_CF,
-                STALE_MERKLE_NODE_KEYS_CF,
+                STALE_MERKLE_TREE_PARTS_CF,
             ]
             .into_iter()
             .map(|name| ColumnFamilyDescriptor::new(name, Options::default()))
@@ -118,37 +120,65 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         let mut batch = WriteBatch::default();
 
         // put regular substate changes
-        for (patrition_key, partition_updates) in database_updates {
-            for (sort_key, database_update) in partition_updates {
-                let key_bytes = encode_to_rocksdb_bytes(patrition_key, sort_key);
-                match database_update {
-                    DatabaseUpdate::Set(value_bytes) => {
-                        batch.put_cf(self.cf(SUBSTATES_CF), key_bytes, value_bytes)
-                    }
-                    DatabaseUpdate::Delete => batch.delete_cf(self.cf(SUBSTATES_CF), key_bytes),
+        for (node_key, node_updates) in &database_updates.node_updates {
+            for (partition_num, partition_updates) in &node_updates.partition_updates {
+                let partition_key = DbPartitionKey {
+                    node_key: node_key.clone(),
+                    partition_num: *partition_num,
                 };
+                match partition_updates {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => {
+                        for (sort_key, update) in substate_updates {
+                            let key_bytes = encode_to_rocksdb_bytes(&partition_key, sort_key);
+                            match update {
+                                DatabaseUpdate::Set(value_bytes) => {
+                                    self.db
+                                        .put_cf(self.cf(SUBSTATES_CF), key_bytes, value_bytes)
+                                }
+                                DatabaseUpdate::Delete => {
+                                    self.db.delete_cf(self.cf(SUBSTATES_CF), key_bytes)
+                                }
+                            }
+                            .expect("IO error");
+                        }
+                    }
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => {
+                        // Note: a plain `delete_range()` is missing from rocksdb's API, and
+                        // (at the moment of writing) this is the only reason of having CF.
+                        self.db
+                            .delete_range_cf(
+                                self.cf(SUBSTATES_CF),
+                                encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
+                                encode_to_rocksdb_bytes(&partition_key.next(), &DbSortKey(vec![])),
+                            )
+                            .expect("IO error");
+                        for (sort_key, value_bytes) in new_substate_values {
+                            let key_bytes = encode_to_rocksdb_bytes(&partition_key, sort_key);
+                            self.db
+                                .put_cf(self.cf(SUBSTATES_CF), key_bytes, value_bytes)
+                                .expect("IO error");
+                        }
+                    }
+                }
             }
         }
 
-        // derive and put new JMT nodes (also record keys of stale nodes, for later amortized background GC [not implemented here!])
+        // derive and put new JMT nodes (also record references to stale parts, for later amortized background GC [not implemented here!])
         let state_hash_tree_update =
             compute_state_tree_update(self, parent_state_version, database_updates);
         for (key, node) in state_hash_tree_update.new_nodes {
             batch.put_cf(
                 self.cf(MERKLE_NODES_CF),
                 encode_key(&key),
-                scrypto_encode(&node).unwrap(),
+                scrypto_encode(&VersionedTreeNode::new_latest(node)).unwrap(),
             );
         }
-        let encoded_node_keys = state_hash_tree_update
-            .stale_hash_tree_node_keys
-            .iter()
-            .map(encode_key)
-            .collect::<Vec<_>>();
         batch.put_cf(
-            self.cf(STALE_MERKLE_NODE_KEYS_CF),
+            self.cf(STALE_MERKLE_TREE_PARTS_CF),
             next_state_version.to_be_bytes(),
-            scrypto_encode(&encoded_node_keys).unwrap(),
+            scrypto_encode(&state_hash_tree_update.stale_tree_parts).unwrap(),
         );
 
         // update the metadata
@@ -188,7 +218,8 @@ impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
         self.db
             .get_cf(self.cf(MERKLE_NODES_CF), &encode_key(key))
             .unwrap()
-            .map(|bytes| scrypto_decode(&bytes).unwrap())
+            .map(|bytes| scrypto_decode::<VersionedTreeNode>(&bytes).unwrap())
+            .map(|versioned| versioned.into_latest())
     }
 }
 

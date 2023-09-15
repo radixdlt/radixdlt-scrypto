@@ -83,7 +83,7 @@ macro_rules! define_versioned {
             $(,)? // Optional trailing comma
         }
     ) => {
-        paste::paste! {
+        $crate::paste::paste! {
             // Create inline sub-macros to handle the type generics nested inside
             // iteration over previous_versions
             // See eg https://stackoverflow.com/a/73543948

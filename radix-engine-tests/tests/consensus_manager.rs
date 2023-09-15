@@ -429,6 +429,51 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
     assert!(result.next_epoch().is_none());
 }
 
+#[test]
+fn create_validator_twice() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_standard_test_fee(account)
+            .withdraw_from_account(
+                account,
+                XRD,
+                DEFAULT_VALIDATOR_XRD_COST.checked_add(dec!(1)).unwrap(),
+            )
+            .take_all_from_worktop(XRD, "creation_fee")
+            .create_validator(public_key, Decimal::ONE, "creation_fee")
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    println!("{:?}", receipt);
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_standard_test_fee(account)
+            .withdraw_from_account(
+                account,
+                XRD,
+                DEFAULT_VALIDATOR_XRD_COST.checked_add(dec!(1)).unwrap(),
+            )
+            .take_all_from_worktop(XRD, "creation_fee")
+            .create_validator(public_key, Decimal::ONE, "creation_fee")
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    println!("{:?}", receipt);
+}
+
 fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -2909,7 +2954,11 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
     pre_allocated_addresses.push(
         (
             BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
-            GlobalAddress::from(CONSENSUS_MANAGER),
+            // Use a new address here so that we don't overwite current consensus manager and break invariants
+            GlobalAddress::from(ComponentAddress::new_or_panic([
+                134, 12, 99, 24, 198, 49, 140, 108, 78, 27, 64, 204, 99, 24, 198, 49, 140, 247,
+                188, 165, 46, 181, 74, 106, 134, 49, 140, 99, 24, 0,
+            ])),
         )
             .into(),
     );

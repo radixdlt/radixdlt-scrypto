@@ -11,6 +11,7 @@ use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
+use num_traits::Zero;
 use radix_engine_interface::api::{ClientObjectApi, LockFlags, ModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
@@ -269,6 +270,10 @@ impl Authorization {
                 Ok(false)
             }
             ProofRule::CountOf(count, resources) => {
+                if count.is_zero() {
+                    return Ok(true);
+                }
+
                 let mut left = count.clone();
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(auth_zone, resource, api)? {

@@ -97,8 +97,7 @@ pub trait WasmRuntime {
         handle: u32,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn key_value_entry_release(&mut self, handle: u32)
-        -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn key_value_entry_close(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn key_value_store_remove_entry(
         &mut self,
@@ -112,6 +111,9 @@ pub trait WasmRuntime {
         package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>>;
+
+    fn blueprint_id(&mut self, object_id: Vec<u8>)
+        -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_outer_object(
         &mut self,

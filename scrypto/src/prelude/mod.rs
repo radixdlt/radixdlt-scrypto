@@ -27,6 +27,7 @@ pub use num_traits::{
 pub use radix_engine_interface::api::node_modules::auth::*;
 pub use radix_engine_interface::api::node_modules::metadata::*;
 pub use radix_engine_interface::api::node_modules::*;
+pub use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
 pub use radix_engine_interface::blueprints::resource::*;
 pub use radix_engine_interface::crypto::*;
 pub use radix_engine_interface::math::*;

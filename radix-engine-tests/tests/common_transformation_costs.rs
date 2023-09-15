@@ -65,7 +65,8 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     );
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
     // 2023-09-08: updated from 0.08581566997 to 0.09277749236 (+7.6% < 50%), due to a bug in event size counting
-    assert!(delta <= dec!("0.09277749236"));
+    // 2023-09-12: updated from 0.09277749236 to 0.09279199236 (0.01% < 50%) due to failure to cost call returns
+    assert!(delta <= dec!("0.09279199236"));
 }
 
 #[test]
@@ -197,7 +198,8 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         delta
     );
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
-    assert!(delta <= dec!("0.00908532837"));
+    // 2023-09-12: updated from 0.00908532837 to 0.00910212837 (0.18% < 50%) due to failure to cost call returns
+    assert!(delta <= dec!("0.00910212837"));
 }
 
 #[test]
@@ -269,7 +271,8 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         delta
     );
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
-    assert!(delta <= dec!("0.00954602837"));
+    // 2023-09-12: updated from 0.00954602837 to 0.00956282837 (0.17% < 50%) due to failure to cost call returns
+    assert!(delta <= dec!("0.00956282837"));
 }
 
 // ED25519 signature is larger than Secp256k1 due to lack of public key recovery

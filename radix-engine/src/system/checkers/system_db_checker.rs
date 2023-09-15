@@ -81,7 +81,7 @@ pub enum SystemPartitionCheckError {
     InvalidKeyValueStoreKey,
     InvalidKeyValueStoreValue,
     InvalidFieldKey,
-    ContainsFieldWhichShouldNotExist,
+    ContainsFieldWhichShouldNotExist(BlueprintId, NodeId, u8),
     InvalidFieldValue,
     MissingFieldSchema(SystemReaderError),
     MissingKeyValueCollectionKeySchema(SystemReaderError),
@@ -114,7 +114,7 @@ pub enum SystemNodeCheckError {
     InvalidCondition,
     MissingBlueprint(SystemReaderError),
     InvalidOuterObject,
-    TransientObjectFound,
+    TransientObjectFound(BlueprintId),
     FoundModuleWithConditionalFields,
     FoundGlobalAddressPhantom,
     FoundGlobalAddressReservation,
@@ -300,7 +300,9 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                 };
 
                 if bp_definition.interface.is_transient {
-                    return Err(SystemNodeCheckError::TransientObjectFound);
+                    return Err(SystemNodeCheckError::TransientObjectFound(
+                        object_info.blueprint_info.blueprint_id,
+                    ));
                 }
 
                 let mut expected_fields = BTreeSet::new();
@@ -308,6 +310,14 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 
                 if let Some((_, fields)) = &bp_definition.interface.state.fields {
                     for (field_index, field_schema) in fields.iter().enumerate() {
+                        match &field_schema.transience {
+                            FieldTransience::TransientStatic { .. } => {
+                                excluded_fields.insert(field_index as u8);
+                                continue;
+                            }
+                            FieldTransience::NotTransient => {}
+                        }
+
                         match &field_schema.condition {
                             Condition::Always => {
                                 expected_fields.insert((ModuleId::Main, field_index as u8));
@@ -543,7 +553,11 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     && excluded_fields.contains(&field_index)
                                 {
                                     return Err(
-                                        SystemPartitionCheckError::ContainsFieldWhichShouldNotExist,
+                                        SystemPartitionCheckError::ContainsFieldWhichShouldNotExist(
+                                            object_info.blueprint_info.blueprint_id.clone(),
+                                            node_checker_state.node_id,
+                                            field_index,
+                                        ),
                                     );
                                 }
 

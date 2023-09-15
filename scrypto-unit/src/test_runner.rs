@@ -10,13 +10,16 @@ use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRI
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::checkers::*;
+use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
+use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
-    ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction_with_system, BalanceChange, CommitResult,
+    CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
+    WrappedSystem,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
@@ -46,8 +49,8 @@ use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_native_events::to_typed_native_event;
 use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase, SubstateDatabase,
 };
@@ -283,6 +286,7 @@ pub struct TestRunnerBuilder<E, D> {
     custom_extension: E,
     custom_database: D,
     trace: bool,
+    skip_receipt_check: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -292,6 +296,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
+            skip_receipt_check: false,
         }
     }
 }
@@ -308,11 +313,17 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: self.custom_extension,
             custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
             trace: self.trace,
+            skip_receipt_check: false,
         }
     }
 
     pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
         self.custom_genesis = Some(genesis);
+        self
+    }
+
+    pub fn skip_receipt_check(mut self) -> Self {
+        self.skip_receipt_check = true;
         self
     }
 
@@ -325,6 +336,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: extension,
             custom_database: self.custom_database,
             trace: self.trace,
+            skip_receipt_check: self.skip_receipt_check,
         }
     }
 
@@ -334,6 +346,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: self.custom_extension,
             custom_database: database,
             trace: self.trace,
+            skip_receipt_check: self.skip_receipt_check,
         }
     }
 
@@ -411,6 +424,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             trace,
             collected_events: events,
             xrd_free_credits_used: false,
+            skip_receipt_check: self.skip_receipt_check,
         };
 
         let next_epoch = wrap_up_receipt
@@ -434,11 +448,17 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     trace: bool,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
     xrd_free_credits_used: bool,
+    skip_receipt_check: bool,
 }
 
 #[cfg(feature = "post_run_db_check")]
 impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
     fn drop(&mut self) {
+        let mut kernel_checker = KernelDatabaseChecker::new();
+        kernel_checker
+            .check_db(&self.database)
+            .expect("Database should be consistent");
+
         let db_results = self
             .check_db::<ResourceDatabaseChecker>()
             .expect("Database should be consistent after running test");
@@ -795,6 +815,18 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         accounter.close().balances
     }
 
+    pub fn component_state<T: ScryptoDecode>(&self, component_address: ComponentAddress) -> T {
+        let node_id: &NodeId = component_address.as_node_id();
+        let component_state = self
+            .substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<T>>(
+                node_id,
+                MAIN_BASE_PARTITION,
+                &ComponentField::State0.into(),
+            );
+        component_state.unwrap().into_payload()
+    }
+
     pub fn get_non_fungible_data<T: NonFungibleData>(
         &self,
         resource: ResourceAddress,
@@ -1008,7 +1040,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         }
     }
 
-    pub fn new_identity(&mut self, pk: Secp256k1PublicKey, is_virtual: bool) -> ComponentAddress {
+    pub fn new_identity<P: Into<PublicKey> + Clone + HasPublicKeyHash>(
+        &mut self,
+        pk: P,
+        is_virtual: bool,
+    ) -> ComponentAddress {
         if is_virtual {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
@@ -1305,6 +1341,31 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         self.execute_manifest(manifest, initial_proofs)
     }
 
+    pub fn execute_manifest_with_fee_from_faucet_with_system<
+        'a,
+        T,
+        R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>,
+    >(
+        &'a mut self,
+        mut manifest: TransactionManifestV1,
+        amount: Decimal,
+        initial_proofs: T,
+        init: R::Init,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        manifest.instructions.insert(
+            0,
+            transaction::model::InstructionV1::CallMethod {
+                address: self.faucet_component().into(),
+                method_name: "lock_fee".to_string(),
+                args: manifest_args!(amount).into(),
+            },
+        );
+        self.execute_manifest_with_system::<'a, T, R>(manifest, initial_proofs, init)
+    }
+
     pub fn execute_manifest_ignoring_fee<T>(
         &mut self,
         mut manifest: TransactionManifestV1,
@@ -1355,6 +1416,27 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         )
     }
 
+    pub fn execute_manifest_with_system<'a, T, R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+        &'a mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+        init: R::Init,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction_with_system::<R>(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            CostingParameters::default(),
+            ExecutionConfig::for_test_transaction(),
+            init,
+        )
+    }
+
     pub fn execute_manifest_with_costing_params<T>(
         &mut self,
         manifest: TransactionManifestV1,
@@ -1399,7 +1481,22 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         &mut self,
         executable: Executable,
         costing_parameters: CostingParameters,
+        execution_config: ExecutionConfig,
+    ) -> TransactionReceipt {
+        self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
+            executable,
+            costing_parameters,
+            execution_config,
+            (),
+        )
+    }
+
+    pub fn execute_transaction_with_system<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+        &'a mut self,
+        executable: Executable,
+        costing_parameters: CostingParameters,
         mut execution_config: ExecutionConfig,
+        init: T::Init,
     ) -> TransactionReceipt {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
@@ -1417,12 +1514,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             native_vm: self.native_vm.clone(),
         };
 
-        let transaction_receipt = execute_transaction(
+        let transaction_receipt = execute_transaction_with_system::<_, _, T>(
             &mut self.database,
             vm,
             &costing_parameters,
             &execution_config,
             &executable,
+            init,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit
@@ -1431,7 +1529,10 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             self.database.commit(&database_updates);
             self.collected_events
                 .push(commit.application_events.clone());
-            assert_receipt_substate_changes_can_be_typed(commit);
+
+            if !self.skip_receipt_check {
+                assert_receipt_substate_changes_can_be_typed(commit);
+            }
         }
         transaction_receipt
     }

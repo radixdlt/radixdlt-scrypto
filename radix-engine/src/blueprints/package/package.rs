@@ -4,7 +4,9 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::metadata::MetadataNativePackage;
-use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
+use crate::system::system_modules::costing::{
+    apply_royalty_cost, CostingError, FeeReserveError, RoyaltyRecipient,
+};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -20,11 +22,10 @@ pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::*;
 use sbor::LocalTypeId;
-use syn::Ident;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::system::node_modules::role_assignment::*;
 use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::*;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -50,15 +51,27 @@ pub enum PackageError {
         expected: String,
         actual: Option<String>,
     },
+    TypeNameMismatch {
+        expected: String,
+        actual: Option<String>,
+    },
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
-    InvalidName(String),
+    InvalidName {
+        name: String,
+        violating_char: Option<String>,
+    },
     MissingOuterBlueprint,
     WasmUnsupported(String),
     InvalidLocalTypeId(LocalTypeId),
     InvalidGenericId(u8),
     EventGenericTypeNotSupported,
+    OuterBlueprintCantBeAnInnerBlueprint {
+        inner: String,
+        violating_outer: String,
+    },
+    RoleAssignmentError(RoleAssignmentError),
 
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
@@ -67,6 +80,10 @@ pub enum PackageError {
         actual: usize,
     },
     ExceededMaxRoleNameLen {
+        limit: usize,
+        actual: usize,
+    },
+    ExceededMaxBlueprintNameLen {
         limit: usize,
         actual: usize,
     },
@@ -124,18 +141,39 @@ pub enum PackageError {
     InvalidMetadataKey(String),
 
     RoyaltiesNotEnabled,
+    RoyaltyAmountIsNegative(RoyaltyAmount),
 }
 
 fn validate_package_schema(
     blueprints: &IndexMap<String, BlueprintDefinitionInit>,
 ) -> Result<(), PackageError> {
-    for bp_def in blueprints.values() {
+    for (bp_name, bp_def) in blueprints.iter() {
         let bp_schema = &bp_def.schema;
+
+        match &bp_def.blueprint_type {
+            BlueprintType::Outer => Ok(()),
+            BlueprintType::Inner { outer_blueprint } if outer_blueprint != bp_name => {
+                match blueprints
+                    .get(outer_blueprint)
+                    .map(|bp_def| &bp_def.blueprint_type)
+                {
+                    Some(BlueprintType::Outer) => Ok(()),
+                    Some(BlueprintType::Inner { .. }) => {
+                        Err(PackageError::OuterBlueprintCantBeAnInnerBlueprint {
+                            inner: bp_name.clone(),
+                            violating_outer: outer_blueprint.clone(),
+                        })
+                    }
+                    None => Err(PackageError::MissingOuterBlueprint),
+                }
+            }
+            BlueprintType::Inner { .. } => Err(PackageError::MissingOuterBlueprint),
+        }?;
 
         validate_schema(bp_schema.schema.v1())
             .map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
-        if bp_schema.state.fields.len() > 0xff {
+        if bp_schema.state.fields.len() > MAX_NUMBER_OF_BLUEPRINT_FIELDS {
             return Err(PackageError::TooManySubstateSchemas);
         }
 
@@ -155,6 +193,10 @@ fn validate_package_schema(
                                 return Err(PackageError::FeatureDoesNotExist(feature.clone()));
                             }
                         } else {
+                            // It's impossible for us to get to this point here. We have checked
+                            // earlier in this same function that each inner blueprint has an outer
+                            // blueprint. Thus, we can't get to this point if this invariant was not
+                            // upheld.
                             return Err(PackageError::FeatureDoesNotExist(feature.clone()));
                         }
                     }
@@ -310,14 +352,14 @@ fn validate_type_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
         let blueprint_schema_init = &blueprint_init.schema;
         let BlueprintSchemaInit { schema, types, .. } = blueprint_schema_init;
 
-        for (_name_ignored, local_type_id) in types.type_schema.iter() {
+        for (_, local_type_id) in types.type_schema.iter() {
             if schema.v1().resolve_type_kind(*local_type_id).is_none() {
                 return Err(PackageError::InvalidLocalTypeId(*local_type_id));
             }
 
             // Notes:
-            // - We're not enforcing the "type name" matches the names in type definition
-            // - The "type name" length check is done within `validate_names`
+            // - The "type name" length and char check is done within `validate_names`
+            // - We do no require the type identifier to be equal to the type name in metadata
         }
     }
 
@@ -394,6 +436,12 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                         });
                     }
                 }
+
+                functions
+                    .values()
+                    .map(RoleAssignmentNativePackage::verify_access_rule)
+                    .collect::<Result<_, _>>()
+                    .map_err(PackageError::RoleAssignmentError)?;
             }
         }
 
@@ -505,13 +553,39 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
 }
 
 fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
-    // All names should follow Rust Identifier specification
-    let condition = |name| {
-        syn::parse_str::<Ident>(name).map_err(|_| PackageError::InvalidName(name.to_string()))
+    let condition = |name: &str| {
+        let mut iter = name.chars();
+        match iter.next() {
+            Some('A'..='Z' | 'a'..='z' | '_') => {
+                for char in iter {
+                    if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
+                        return Err(PackageError::InvalidName {
+                            name: name.to_owned(),
+                            violating_char: Some(char.to_string()),
+                        });
+                    }
+                }
+                Ok(())
+            }
+            Some(char) => Err(PackageError::InvalidName {
+                name: name.to_owned(),
+                violating_char: Some(char.to_string()),
+            }),
+            None => Err(PackageError::InvalidName {
+                name: name.to_owned(),
+                violating_char: None,
+            }),
+        }
     };
 
     for (bp_name, bp_init) in definition.blueprints.iter() {
         condition(bp_name)?;
+        if bp_name.len() > MAX_BLUEPRINT_NAME_LEN {
+            return Err(PackageError::ExceededMaxBlueprintNameLen {
+                limit: MAX_BLUEPRINT_NAME_LEN,
+                actual: bp_name.len(),
+            });
+        }
 
         for (name, _) in bp_init.schema.events.event_schema.iter() {
             if name.len() > MAX_EVENT_NAME_LEN {
@@ -1426,6 +1500,15 @@ impl PackageRoyaltyNativeBlueprint {
             })
             .unwrap_or(RoyaltyAmount::Free);
 
+        // This should always be false and this code path should never be visited. This is because
+        // we check for negative royalties at the instantiation time of the royalty module.
+        if royalty_charge.is_negative() {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::CostingError(CostingError::FeeReserveError(
+                    FeeReserveError::RoyaltyAmountIsNegative(royalty_charge),
+                )),
+            ));
+        }
         if royalty_charge.is_non_zero() {
             let handle = api.kernel_open_substate(
                 receiver,

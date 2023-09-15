@@ -124,3 +124,51 @@ fn test_date_time_conversions() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn compare_max_time_should_return_true() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("clock"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ClockTest",
+            "compare",
+            manifest_args!(Instant::new(i64::MAX)),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let rtn: bool = result.output(1);
+    assert!(rtn);
+}
+
+#[test]
+fn compare_min_time_should_return_false() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("clock"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ClockTest",
+            "compare",
+            manifest_args!(Instant::new(i64::MIN)),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let rtn: bool = result.output(1);
+    assert!(!rtn);
+}

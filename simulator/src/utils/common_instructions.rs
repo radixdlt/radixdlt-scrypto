@@ -251,6 +251,40 @@ fn build_call_argument<'a>(
                 },
             ))
         }
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference)
+            if matches!(
+                type_validation,
+                TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                    ReferenceValidation::IsGlobal
+                ))
+            ) =>
+        {
+            let value = GlobalAddress::try_from_bech32(&address_bech32_decoder, &argument)
+                .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
+            Ok((
+                builder,
+                ManifestValue::Custom {
+                    value: ManifestCustomValue::Address(value.into()),
+                },
+            ))
+        }
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference)
+            if matches!(
+                type_validation,
+                TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                    ReferenceValidation::IsGlobalTyped(_package_address, _bp_name)
+                ))
+            ) =>
+        {
+            let value = GlobalAddress::try_from_bech32(&address_bech32_decoder, &argument)
+                .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
+            Ok((
+                builder,
+                ManifestValue::Custom {
+                    value: ManifestCustomValue::Address(value.into()),
+                },
+            ))
+        }
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own)
             if matches!(
                 type_validation,
@@ -335,6 +369,7 @@ fn build_call_argument<'a>(
 #[cfg(test)]
 mod test {
     use super::*;
+    use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 
     #[test]
     pub fn parsing_of_u8_succeeds() {
@@ -509,6 +544,54 @@ mod test {
 
         // Assert
         assert_eq!(parsed_arg, component_address)
+    }
+
+    #[test]
+    pub fn parsing_of_global_address_succeeds() {
+        // Arrange
+        let component_address = component_address(EntityType::GlobalAccount, 5);
+        let global_address: GlobalAddress = component_address.into();
+
+        let arg = AddressBech32Encoder::for_simulator()
+            .encode(global_address.as_ref())
+            .unwrap();
+        let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference);
+        let type_validation = TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+            ReferenceValidation::IsGlobal,
+        ));
+
+        // Act
+        let parsed_arg: GlobalAddress =
+            build_and_decode_arg(arg, type_kind, type_validation).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, global_address)
+    }
+
+    #[test]
+    pub fn parsing_of_global_address_typed_succeeds() {
+        // Arrange
+        let package_address = package_address(EntityType::GlobalPackage, 5);
+        let global_address: GlobalAddress = package_address.into();
+
+        let arg = AddressBech32Encoder::for_simulator()
+            .encode(global_address.as_ref())
+            .unwrap();
+
+        let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference);
+        let type_validation = TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+            ReferenceValidation::IsGlobalTyped(
+                Some(IDENTITY_PACKAGE),
+                IDENTITY_BLUEPRINT.to_string(),
+            ),
+        ));
+
+        // Act
+        let parsed_arg: GlobalAddress =
+            build_and_decode_arg(arg, type_kind, type_validation).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, global_address)
     }
 
     #[test]

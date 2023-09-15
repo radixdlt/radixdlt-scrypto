@@ -92,6 +92,10 @@ pub enum Actor {
 }
 
 impl CallFrameReferences for Actor {
+    fn root() -> Self {
+        Actor::Root
+    }
+
     fn global_references(&self) -> Vec<NodeId> {
         let mut global_refs = Vec::new();
 

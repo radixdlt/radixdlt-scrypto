@@ -154,6 +154,43 @@ mod pc {
                 .globalize();
         }
 
+        pub fn create_proof_from_non_fungible_vault_contains_non_fungible() {
+            let vault = Self::create_non_fungible_vault();
+            let vault = vault.as_non_fungible();
+            let proof = vault
+                .create_proof_of_non_fungibles(&indexset!(
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2)
+                ))
+                .skip_checking();
+            assert_eq!(proof.amount(), dec!(2));
+            assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(1)));
+            assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(2)));
+            assert_eq!(vault.amount(), dec!(3));
+            proof.drop();
+            ProofCreation {
+                vault: vault.into(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
+        pub fn create_proof_from_non_fungible_vault_of_empty_non_fungibles() {
+            let vault = Self::create_non_fungible_vault();
+            let vault = vault.as_non_fungible();
+            let proof = vault
+                .create_proof_of_non_fungibles(&indexset!())
+                .skip_checking();
+            proof.drop();
+            ProofCreation {
+                vault: vault.into(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
         //==================
         // Auth Zone
         //==================

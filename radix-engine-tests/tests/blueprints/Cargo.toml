@@ -42,6 +42,7 @@ members = [
     "remote_generic_args",
     "resource",
     "role_assignment",
+    "role-assignment-edge-cases",
     "static_dependencies",
     "static_dependencies2",
     "storage",
@@ -52,6 +53,7 @@ members = [
     "royalty",
     "royalty-auth",
     "scrypto_env",
+    "system",
     "transaction_limits",
     "transaction_runtime",
     "tx_processor_access",
@@ -60,7 +62,9 @@ members = [
     "logger",
     "validator",
     "wasm_non_mvp",
-    "system_wasm_buffers"
+    "royalty-edge-cases",
+    "system_wasm_buffers",
+    "event-replacement"
 ]
 
 [profile.release]

@@ -70,7 +70,7 @@ pub const MAX_URL_LENGTH: usize = 1024;
 /// The max length of an Origin in metadata
 pub const MAX_ORIGIN_LENGTH: usize = 1024;
 
-/// The max depth of an access rule, to protect unbounded native stack useage
+/// The max depth of an access rule, to protect unbounded native stack usage
 pub const MAX_ACCESS_RULE_DEPTH: usize = 8;
 
 /// The max number of access rule nodes in an access rule
@@ -91,8 +91,14 @@ pub const MAX_EVENT_NAME_LEN: usize = 100;
 /// The max length of a registered type name
 pub const MAX_TYPE_NAME_LEN: usize = 100;
 
+/// The max length of a blueprint identifier
+pub const MAX_BLUEPRINT_NAME_LEN: usize = 100;
+
 /// The max length of a function name
 pub const MAX_FUNCTION_NAME_LEN: usize = 256;
+
+/// The max number of fields a blueprint can have
+pub const MAX_NUMBER_OF_BLUEPRINT_FIELDS: usize = 0xFF;
 
 /// The price of execution cost unit, in XRD.
 pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000005";

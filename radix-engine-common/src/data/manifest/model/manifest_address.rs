@@ -99,8 +99,11 @@ impl fmt::Debug for ManifestAddress {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "alloc")]
+    use sbor::prelude::Vec;
 
     fn prepare(addr_input: &ManifestAddress) -> Result<ManifestAddress, sbor::DecodeError> {
+        #[cfg(not(feature = "alloc"))]
         println!("Encoding manifest address: {:?}", addr_input);
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);

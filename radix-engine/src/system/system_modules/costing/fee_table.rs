@@ -392,11 +392,6 @@ impl FeeTable {
     //======================
 
     #[inline]
-    pub fn base_cost(&self) -> u32 {
-        50_000
-    }
-
-    #[inline]
     pub fn commit_state_updates_cost(&self, store_commit: &StoreCommit) -> u32 {
         // Committing state time (µs): 0.0025 * size + 1000
         // Finalization cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000

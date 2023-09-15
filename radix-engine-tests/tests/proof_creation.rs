@@ -74,6 +74,15 @@ fn can_create_proof_from_non_fungible_vault() {
         "create_proof_from_non_fungible_vault_of_non_fungibles",
         None,
     );
+    create_proof_internal(
+        "create_proof_from_non_fungible_vault_contains_non_fungible",
+        None,
+    );
+
+    create_proof_internal(
+        "create_proof_from_non_fungible_vault_of_empty_non_fungibles",
+        Some("ProofError(EmptyProofNotAllowed)"),
+    );
 }
 
 #[test]
