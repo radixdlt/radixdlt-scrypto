@@ -212,10 +212,6 @@ pub trait KeyValueKeyPayload:
     fn from_content(inner_content: Self::Content) -> Self {
         Self::from(inner_content)
     }
-
-    fn from_content_source<T: KeyValueKeyContentSource<Self>>(content: T) -> Self {
-        Self::from_content(content.into_content())
-    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -228,10 +224,6 @@ pub trait KeyValueKeyPayload:
 ///   substates
 pub trait KeyValueKeyContentSource<Payload: KeyValueKeyPayload>: Sized {
     fn into_content(self) -> Payload::Content;
-
-    fn into_key(self) -> Payload {
-        Payload::from_content_source(self)
-    }
 }
 
 /// This trait is intended to be implemented by an explicit new type for the given
@@ -245,10 +237,6 @@ pub trait IndexKeyPayload:
     fn from_content(content: Self::Content) -> Self {
         Self::from(content)
     }
-
-    fn from_content_source<T: IndexKeyContentSource<Self>>(content: T) -> Self {
-        Self::from_content(content.into_content())
-    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -261,10 +249,6 @@ pub trait IndexKeyPayload:
 ///   substates
 pub trait IndexKeyContentSource<Payload: IndexKeyPayload>: Sized {
     fn into_content(self) -> Payload::Content;
-
-    fn into_key(self) -> Payload {
-        Payload::from_content_source(self)
-    }
 }
 
 /// This trait is intended to be implemented by an explicit new type for the given
@@ -274,11 +258,6 @@ pub trait SortedIndexKeyPayload: Sized + AsRef<Self::Content> + AsMut<Self::Cont
     type FullContent: SortedIndexKeyFullContent<Self>;
 
     fn from_sort_key_and_content(sort_key: u16, content: Self::Content) -> Self;
-
-    fn from_content_source<T: SortedIndexKeyContentSource<Self>>(content: T) -> Self {
-        let (sort_key, content) = content.into_sort_key_and_content();
-        Self::from_sort_key_and_content(sort_key, content)
-    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -296,10 +275,6 @@ pub trait SortedIndexKeyContentSource<Payload: SortedIndexKeyPayload>: Sized {
     fn into_sort_key_and_content(self) -> (u16, Payload::Content) {
         (self.sort_key(), self.into_content())
     }
-
-    fn into_key(self) -> Payload {
-        Payload::from_content_source(self)
-    }
 }
 
 /// This trait is intended to be implemented by the canonical content
@@ -307,6 +282,4 @@ pub trait SortedIndexKeyContentSource<Payload: SortedIndexKeyPayload>: Sized {
 pub trait SortedIndexKeyFullContent<Payload: SortedIndexKeyPayload>:
     SortedIndexKeyContentSource<Payload>
 {
-    fn from_sort_key_and_content(sort_key: u16, content: Payload::Content) -> Self;
-    fn as_content(&self) -> &Payload::Content;
 }

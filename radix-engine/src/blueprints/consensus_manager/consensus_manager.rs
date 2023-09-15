@@ -325,16 +325,6 @@ impl SortedIndexKeyContentSource<ConsensusManagerRegisteredValidatorByStakeKeyPa
 impl SortedIndexKeyFullContent<ConsensusManagerRegisteredValidatorByStakeKeyPayload>
     for ValidatorByStakeKey
 {
-    fn from_sort_key_and_content(sort_key: u16, validator_address: ComponentAddress) -> Self {
-        Self {
-            divided_stake: u16::MAX - sort_key,
-            validator_address,
-        }
-    }
-
-    fn as_content(&self) -> &ComponentAddress {
-        &self.validator_address
-    }
 }
 
 pub type ConsensusManagerConfigurationV1 = ConsensusManagerConfigSubstate;
