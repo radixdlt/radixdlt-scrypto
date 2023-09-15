@@ -284,6 +284,7 @@ pub struct TestRunnerBuilder<E, D> {
     custom_extension: E,
     custom_database: D,
     trace: bool,
+    skip_receipt_check: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -293,6 +294,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
+            skip_receipt_check: false,
         }
     }
 }
@@ -309,11 +311,17 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: self.custom_extension,
             custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
             trace: self.trace,
+            skip_receipt_check: false,
         }
     }
 
     pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
         self.custom_genesis = Some(genesis);
+        self
+    }
+
+    pub fn skip_receipt_check(mut self) -> Self {
+        self.skip_receipt_check = true;
         self
     }
 
@@ -326,6 +334,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: extension,
             custom_database: self.custom_database,
             trace: self.trace,
+            skip_receipt_check: self.skip_receipt_check,
         }
     }
 
@@ -335,6 +344,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_extension: self.custom_extension,
             custom_database: database,
             trace: self.trace,
+            skip_receipt_check: self.skip_receipt_check,
         }
     }
 
@@ -412,6 +422,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             trace,
             collected_events: events,
             xrd_free_credits_used: false,
+            skip_receipt_check: self.skip_receipt_check,
         };
 
         let next_epoch = wrap_up_receipt
@@ -435,6 +446,7 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     trace: bool,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
     xrd_free_credits_used: bool,
+    skip_receipt_check: bool,
 }
 
 #[cfg(feature = "post_run_db_check")]
@@ -1453,7 +1465,10 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             self.database.commit(&database_updates);
             self.collected_events
                 .push(commit.application_events.clone());
-            assert_receipt_substate_changes_can_be_typed(commit);
+
+            if !self.skip_receipt_check {
+                assert_receipt_substate_changes_can_be_typed(commit);
+            }
         }
         transaction_receipt
     }
