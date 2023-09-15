@@ -32,15 +32,6 @@ macro_rules! declare_payload_new_type {
         }
 
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            core::convert::AsRef<$content_type>
-            for $payload_type_name $(< $( $lt ),+ >)?
-        {
-            fn as_ref(&self) -> &$content_type {
-                &self.content
-            }
-        }
-
-        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             core::convert::AsMut<$content_type>
             for $payload_type_name $(< $( $lt ),+ >)?
         {
@@ -70,14 +61,13 @@ macro_rules! declare_payload_new_type {
         }
     }
 }
-use crate::system::system_substates::FieldSubstate;
 #[allow(unused)]
 pub(crate) use declare_payload_new_type;
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular field.
 pub trait FieldPayload:
-    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
+    Sized + AsMut<Self::Content> + From<Self::Content>
 {
     type Content: FieldContentSource<Self>;
 
@@ -89,14 +79,6 @@ pub trait FieldPayload:
 
     fn from_content_source<T: FieldContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
-    }
-
-    fn into_locked_substate(self) -> FieldSubstate<Self> {
-        FieldSubstate::new_locked_field(self)
-    }
-
-    fn into_mutable_substate(self) -> FieldSubstate<Self> {
-        FieldSubstate::new_mutable_field(self)
     }
 }
 
@@ -114,20 +96,12 @@ pub trait FieldContentSource<Payload: FieldPayload>: Sized {
     fn into_payload(self) -> Payload {
         Payload::from_content_source(self)
     }
-
-    fn into_locked_substate(self) -> FieldSubstate<Payload> {
-        self.into_payload().into_locked_substate()
-    }
-
-    fn into_mutable_substate(self) -> FieldSubstate<Payload> {
-        self.into_payload().into_mutable_substate()
-    }
 }
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular key value collection.
 pub trait KeyValueEntryPayload:
-    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
+    Sized + AsMut<Self::Content> + From<Self::Content>
 {
     type Content: KeyValueEntryContentSource<Self>;
 
@@ -139,14 +113,6 @@ pub trait KeyValueEntryPayload:
 
     fn from_content_source<T: KeyValueEntryContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
-    }
-
-    fn into_locked_substate(self) -> KeyValueEntrySubstate<Self> {
-        KeyValueEntrySubstate::entry(self)
-    }
-
-    fn into_mutable_substate(self) -> KeyValueEntrySubstate<Self> {
-        KeyValueEntrySubstate::locked_entry(self)
     }
 }
 
@@ -164,20 +130,12 @@ pub trait KeyValueEntryContentSource<Payload: KeyValueEntryPayload>: Sized {
     fn into_payload(self) -> Payload {
         Payload::from_content_source(self)
     }
-
-    fn into_locked_substate(self) -> KeyValueEntrySubstate<Payload> {
-        self.into_payload().into_locked_substate()
-    }
-
-    fn into_mutable_substate(self) -> KeyValueEntrySubstate<Payload> {
-        self.into_payload().into_mutable_substate()
-    }
 }
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular index collection.
 pub trait IndexEntryPayload:
-    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
+    Sized + AsMut<Self::Content> + From<Self::Content>
 {
     type Content: IndexEntryContentSource<Self>;
 
@@ -188,10 +146,6 @@ pub trait IndexEntryPayload:
 
     fn from_content_source<T: IndexEntryContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
-    }
-
-    fn into_substate(self) -> IndexEntrySubstate<Self> {
-        IndexEntrySubstate::entry(self)
     }
 }
 
@@ -209,16 +163,12 @@ pub trait IndexEntryContentSource<Payload: IndexEntryPayload>: Sized {
     fn into_payload(self) -> Payload {
         Payload::from_content_source(self)
     }
-
-    fn into_substate(self) -> IndexEntrySubstate<Payload> {
-        self.into_payload().into_substate()
-    }
 }
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` payload of a particular sorted index collection.
 pub trait SortedIndexEntryPayload:
-    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
+    Sized + AsMut<Self::Content> + From<Self::Content>
 {
     type Content: SortedIndexEntryContentSource<Self>;
 
@@ -230,10 +180,6 @@ pub trait SortedIndexEntryPayload:
 
     fn from_content_source<T: SortedIndexEntryContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
-    }
-
-    fn into_substate(self) -> SortedIndexEntrySubstate<Self> {
-        SortedIndexEntrySubstate::entry(self)
     }
 }
 
@@ -250,9 +196,5 @@ pub trait SortedIndexEntryContentSource<Payload: SortedIndexEntryPayload>: Sized
 
     fn into_payload(self) -> Payload {
         Payload::from_content_source(self)
-    }
-
-    fn into_substate(self) -> SortedIndexEntrySubstate<Payload> {
-        self.into_payload().into_substate()
     }
 }

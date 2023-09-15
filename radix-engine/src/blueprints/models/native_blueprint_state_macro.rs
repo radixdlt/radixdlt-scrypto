@@ -595,10 +595,6 @@ mod helper_macros {
                     fn into_latest(self) -> Self::Latest {
                         self.into_content().into_latest()
                     }
-
-                    fn as_latest_ref(&self) -> Option<&Self::Latest> {
-                        self.as_ref().as_latest_ref()
-                    }
                 }
 
                 // Now implement other relevant content traits, for:
@@ -955,16 +951,12 @@ mod tests {
     use super::*;
 
     // Check that the below compiles
-    #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct TestBlueprintRoyaltyV1;
 
-    #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct TestBlueprintMyCoolKeyValueStoreV1;
 
-    #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct TestBlueprintMyCoolIndexV1;
 
-    #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct TestBlueprintMyCoolSortedIndexV1;
 
     use radix_engine_interface::blueprints::package::*;
@@ -1054,19 +1046,9 @@ mod tests {
 
     pub struct ExampleSortedIndexKey(u16, BlueprintVersion);
 
-    impl SortedIndexKeyFullContent<TestBlueprintMyCoolSortedIndexKeyPayload> for ExampleSortedIndexKey {
-        fn from_sort_key_and_content(sort_key: u16, content: BlueprintVersion) -> Self {
-            ExampleSortedIndexKey(sort_key, content)
-        }
-    }
-
     impl SortedIndexKeyContentSource<TestBlueprintMyCoolSortedIndexKeyPayload>
         for ExampleSortedIndexKey
     {
-        fn sort_key(&self) -> u16 {
-            self.0
-        }
-
         fn into_content(self) -> BlueprintVersion {
             self.1
         }

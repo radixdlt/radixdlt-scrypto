@@ -8,7 +8,6 @@ pub enum UpdateResult<T> {
 pub trait HasLatestVersion {
     type Latest;
     fn into_latest(self) -> Self::Latest;
-    fn as_latest_ref(&self) -> Option<&Self::Latest>;
 }
 
 pub trait CloneIntoLatest {
@@ -160,14 +159,6 @@ macro_rules! define_versioned {
                             panic!("Invalid resolved latest version not equal to latest type")
                         };
                         return latest;
-                    }
-
-                    #[allow(unreachable_patterns)]
-                    fn as_latest_ref(&self) -> Option<&Self::Latest> {
-                        match self {
-                            Self::[<V $latest_version>](latest) => Some(latest),
-                            _ => None,
-                        }
                     }
                 }
             );

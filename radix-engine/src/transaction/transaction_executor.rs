@@ -718,8 +718,8 @@ where
                 .into_latest();
             vault_balance.put(LiquidFungibleResource::new(amount));
             let updated_substate_content =
-                FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
-                    .into_mutable_substate();
+                FieldSubstate::new_mutable_field(FungibleVaultBalanceFieldPayload::from_content_source(vault_balance));
+
             track
                 .set_substate(
                     node_id,
@@ -777,8 +777,8 @@ where
                 .into_latest();
             vault_balance.put(locked);
             let updated_substate_content =
-                FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
-                    .into_mutable_substate();
+                FieldSubstate::new_mutable_field(FungibleVaultBalanceFieldPayload::from_content_source(vault_balance));
+
             track
                 .set_substate(
                     vault_id,
@@ -898,8 +898,7 @@ where
                 .into_latest();
             vault_balance.put(collected_fees.take_by_amount(total_amount).unwrap());
             let updated_substate_content =
-                FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
-                    .into_mutable_substate();
+                FieldSubstate::new_mutable_field(FungibleVaultBalanceFieldPayload::from_content_source(vault_balance));
             track
                 .set_substate(
                     vault_node_id,
