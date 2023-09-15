@@ -175,11 +175,24 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     ///
     ///  Returns the state changes and dependencies.
     pub fn finalize(
-        self,
+        mut self,
     ) -> (
         IndexMap<NodeId, TrackedNode>,
         IndexSet<(NodeId, PartitionNumber)>,
     ) {
+        for (node_id, transient_substates) in self.transient_substates.transient_substates {
+            for (partition, substate_key) in transient_substates {
+                if let Some(tracked_partition) = self
+                    .tracked_nodes
+                    .get_mut(&node_id)
+                    .and_then(|tracked_node| tracked_node.tracked_partitions.get_mut(&partition))
+                {
+                    let db_sort_key = M::to_db_sort_key(&substate_key);
+                    tracked_partition.substates.remove(&db_sort_key);
+                }
+            }
+        }
+
         (self.tracked_nodes, self.deleted_partitions)
     }
 

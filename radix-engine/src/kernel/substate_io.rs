@@ -262,12 +262,20 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                         .map_err(CallbackError::CallbackError)?;
                 }
                 SubstateDevice::Store => {
-                    if self.heap_transient_substates.is_transient(
-                        src_node_id,
-                        src_partition_number,
-                        &substate_key,
-                    ) {
-                        continue;
+                    // This should never actually occur since Vaults/Buckets which use transient substates are never globalized
+                    if let Some(transient_substates) = self
+                        .heap_transient_substates
+                        .transient_substates
+                        .get_mut(src_node_id)
+                    {
+                        if transient_substates.remove(&(src_partition_number, substate_key.clone()))
+                        {
+                            self.store.mark_as_transient(
+                                *dest_node_id,
+                                dest_partition_number,
+                                substate_key.clone(),
+                            )
+                        }
                     }
 
                     // Recursively move nodes to store

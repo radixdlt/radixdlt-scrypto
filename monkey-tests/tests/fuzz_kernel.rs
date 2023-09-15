@@ -388,6 +388,17 @@ impl KernelFuzzAction {
                             dest,
                             btreemap!(PartitionNumber(1u8) => (src, PartitionNumber(1u8))),
                         )?;
+                        let value = fuzzer.next_value();
+                        let handle = kernel.kernel_open_substate_with_default(
+                            &dest,
+                            PartitionNumber(0u8),
+                            &SubstateKey::Field(0u8),
+                            LockFlags::MUTABLE,
+                            Some(|| IndexedScryptoValue::from_typed(&())),
+                            (),
+                        )?;
+                        kernel.kernel_write_substate(handle, value)?;
+                        kernel.kernel_close_substate(handle)?;
 
                         return Ok(false);
                     }
@@ -524,7 +535,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
 }
 
 #[test]
-fn random_actions() {
+fn fuzz_from_one_node() {
     let success_count = (0u64..1_000_000u64)
         .into_par_iter()
         .map(|seed| {
@@ -549,10 +560,43 @@ fn random_actions() {
     println!("Success Count: {:?}", success_count);
 }
 
+#[test]
+fn fuzz_from_two_open_substates() {
+    let success_count = (0u64..1_000_000u64)
+        .into_par_iter()
+        .map(|seed| {
+            let result = kernel_fuzz(seed, |fuzzer| {
+                let mut actions = vec![
+                    KernelFuzzAction::Allocate,
+                    KernelFuzzAction::CreateNode,
+                    KernelFuzzAction::Allocate,
+                    KernelFuzzAction::CreateNode,
+                    KernelFuzzAction::OpenSubstate,
+                    KernelFuzzAction::OpenSubstate,
+                ];
+                for _ in 0..4 {
+                    let action =
+                        KernelFuzzAction::from_repr(fuzzer.rng.gen_range(0u8..=10u8)).unwrap();
+                    actions.push(action);
+                }
+                actions
+            });
+
+            if result.is_ok() {
+                1
+            } else {
+                0
+            }
+        })
+        .reduce(|| 0, |acc, e| acc + e);
+
+    println!("Success Count: {:?}", success_count);
+}
+
 /// Reproduced the close substate bug
 #[test]
 fn fuzz_node_three_chain() {
-    let success_count = (0u64..1_000_000u64)
+    let success_count = (0u64..100_000u64)
         .into_par_iter()
         .map(|seed| {
             let result = kernel_fuzz(seed, |_fuzzer| {

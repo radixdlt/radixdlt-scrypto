@@ -2,7 +2,6 @@ use crate::blueprints::account::AccountBlueprint;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -62,11 +61,10 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_SECURIFY_IDENT => {
-                let receiver = Runtime::get_node_id(api)?;
                 let _input: AccountSecurifyInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::securify(&receiver, api)?;
+                let rtn = AccountBlueprint::securify(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

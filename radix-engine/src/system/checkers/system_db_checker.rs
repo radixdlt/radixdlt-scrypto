@@ -81,7 +81,7 @@ pub enum SystemPartitionCheckError {
     InvalidKeyValueStoreKey,
     InvalidKeyValueStoreValue,
     InvalidFieldKey,
-    ContainsFieldWhichShouldNotExist(BlueprintId, u8),
+    ContainsFieldWhichShouldNotExist(BlueprintId, NodeId, u8),
     InvalidFieldValue,
     MissingFieldSchema(SystemReaderError),
     MissingKeyValueCollectionKeySchema(SystemReaderError),
@@ -555,6 +555,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     return Err(
                                         SystemPartitionCheckError::ContainsFieldWhichShouldNotExist(
                                             object_info.blueprint_info.blueprint_id.clone(),
+                                            node_checker_state.node_id,
                                             field_index,
                                         ),
                                     );
