@@ -22,6 +22,7 @@ use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use scrypto::api::node_modules::*;
+use scrypto_test::prelude::AuthError;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -3370,5 +3371,27 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
             ))
         )
     });
-    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_metadata_of_consensus_manager() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .set_metadata(CONSENSUS_MANAGER, "hi", "hello")
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _
+            )))
+        )
+    });
 }
