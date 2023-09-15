@@ -119,6 +119,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
+        let mut system = SystemService::new(api);
+
         // Allocate global addresses
         let mut global_address_reservations = Vec::new();
         for PreAllocatedAddress {
@@ -126,14 +128,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             address,
         } in pre_allocated_addresses
         {
-            let mut system = SystemService::new(api);
             let global_address_reservation =
                 system.prepare_global_address(blueprint_id.clone(), address.clone())?;
             global_address_reservations.push(global_address_reservation);
         }
 
         // Call TX processor
-        let mut system = SystemService::new(api);
         let rtn = system.call_function(
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
