@@ -164,7 +164,6 @@ mod role_assignment_of_role_assignment {
             let role_assignment =
                 RoleAssignment::new(OwnerRole::Updatable(rule!(allow_all)), indexmap!());
 
-            // We can set any role under RoleAssignment, including reserved ones.
             role_assignment.set_role_assignment_role("_reserved_key", rule!(deny_all));
 
             // Clean up
