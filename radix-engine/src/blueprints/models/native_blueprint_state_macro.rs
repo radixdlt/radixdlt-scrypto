@@ -1053,8 +1053,5 @@ mod tests {
     impl SortedIndexKeyContentSource<TestBlueprintMyCoolSortedIndexKeyPayload>
         for ExampleSortedIndexKey
     {
-        fn into_content(self) -> BlueprintVersion {
-            self.1
-        }
     }
 }

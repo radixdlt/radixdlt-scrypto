@@ -7,7 +7,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 pub mod account;
 pub mod component;
-pub mod consensus_manager;
 pub mod modules;
 pub mod resource;
 pub mod runtime;
