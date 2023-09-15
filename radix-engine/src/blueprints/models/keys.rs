@@ -26,43 +26,11 @@ macro_rules! declare_key_new_type {
                 pub content: $content_type,
             }
 
-        impl $payload_type_name {
-            pub fn new($sort_prefix_property_name: u16, content: $content_type) -> Self {
-                Self {
-                    $sort_prefix_property_name,
-                    content,
-                }
-            }
-
-            pub fn sort_prefix(&self) -> u16 {
-                self.$sort_prefix_property_name
-            }
-        }
-
-        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            core::convert::AsRef<$content_type>
-            for $payload_type_name $(< $( $lt ),+ >)?
-        {
-            fn as_ref(&self) -> &$content_type {
-                &self.content
-            }
-        }
-
-        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            core::convert::AsMut<$content_type>
-            for $payload_type_name $(< $( $lt ),+ >)?
-        {
-            fn as_mut(&mut self) -> &mut $content_type {
-                &mut self.content
-            }
-        }
-
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             SortedIndexKeyPayload
             for $payload_type_name $(< $( $lt ),+ >)?
         {
             type Content = $content_type;
-            type FullContent = $full_content_type;
 
             fn from_sort_key_and_content(sort_prefix: u16, content: Self::Content) -> Self {
                 Self {
@@ -148,24 +116,6 @@ macro_rules! declare_key_new_type {
         }
 
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            core::convert::AsRef<$content_type>
-            for $payload_type_name $(< $( $lt ),+ >)?
-        {
-            fn as_ref(&self) -> &$content_type {
-                &self.content
-            }
-        }
-
-        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            core::convert::AsMut<$content_type>
-            for $payload_type_name $(< $( $lt ),+ >)?
-        {
-            fn as_mut(&mut self) -> &mut $content_type {
-                &mut self.content
-            }
-        }
-
-        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             TryFrom<&SubstateKey>
             for $payload_type_name $(< $( $lt ),+ >)?
         {
@@ -204,14 +154,11 @@ pub(crate) use declare_key_new_type;
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` key of a particular key value collection.
 pub trait KeyValueKeyPayload:
-    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
+    Sized + From<Self::Content>
 {
     type Content: KeyValueKeyContentSource<Self>;
 
     fn into_content(self) -> Self::Content;
-    fn from_content(inner_content: Self::Content) -> Self {
-        Self::from(inner_content)
-    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -229,14 +176,11 @@ pub trait KeyValueKeyContentSource<Payload: KeyValueKeyPayload>: Sized {
 /// This trait is intended to be implemented by an explicit new type for the given
 /// `{ content: T }` key of a particular index collection.
 pub trait IndexKeyPayload:
-    Sized + AsRef<Self::Content> + AsMut<Self::Content> + From<Self::Content>
+    Sized + From<Self::Content>
 {
     type Content: IndexKeyContentSource<Self>;
 
     fn into_content(self) -> Self::Content;
-    fn from_content(content: Self::Content) -> Self {
-        Self::from(content)
-    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -253,9 +197,8 @@ pub trait IndexKeyContentSource<Payload: IndexKeyPayload>: Sized {
 
 /// This trait is intended to be implemented by an explicit new type for the given
 /// `{ sort_index: u16, content: T }` key for a particular sorted index collection.
-pub trait SortedIndexKeyPayload: Sized + AsRef<Self::Content> + AsMut<Self::Content> {
+pub trait SortedIndexKeyPayload: Sized {
     type Content;
-    type FullContent: SortedIndexKeyFullContent<Self>;
 
     fn from_sort_key_and_content(sort_key: u16, content: Self::Content) -> Self;
 }
@@ -269,17 +212,5 @@ pub trait SortedIndexKeyPayload: Sized + AsRef<Self::Content> + AsMut<Self::Cont
 /// * This trait uses a generic, because the same type might be usable as a key for multiple
 ///   explicit substates
 pub trait SortedIndexKeyContentSource<Payload: SortedIndexKeyPayload>: Sized {
-    fn sort_key(&self) -> u16;
     fn into_content(self) -> Payload::Content;
-
-    fn into_sort_key_and_content(self) -> (u16, Payload::Content) {
-        (self.sort_key(), self.into_content())
-    }
-}
-
-/// This trait is intended to be implemented by the canonical content
-/// of a key for a particular sorted index collection.
-pub trait SortedIndexKeyFullContent<Payload: SortedIndexKeyPayload>:
-    SortedIndexKeyContentSource<Payload>
-{
 }
