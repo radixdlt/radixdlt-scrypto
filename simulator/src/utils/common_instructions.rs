@@ -580,7 +580,10 @@ mod test {
 
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference);
         let type_validation = TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-            ReferenceValidation::IsGlobalTyped(Some(IDENTITY_PACKAGE), IDENTITY_BLUEPRINT.to_string()),
+            ReferenceValidation::IsGlobalTyped(
+                Some(IDENTITY_PACKAGE),
+                IDENTITY_BLUEPRINT.to_string(),
+            ),
         ));
 
         // Act

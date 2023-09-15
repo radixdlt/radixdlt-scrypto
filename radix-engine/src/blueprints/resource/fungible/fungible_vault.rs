@@ -373,12 +373,7 @@ impl FungibleVaultBlueprint {
             ))
     }
 
-    pub fn lock_fee<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        contingent: bool,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub fn lock_fee<Y>(amount: Decimal, contingent: bool, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -423,6 +418,7 @@ impl FungibleVaultBlueprint {
         })?;
 
         // Credit cost units
+        let receiver = Runtime::get_node_id(api)?;
         let changes = api.credit_cost_units(receiver.clone().into(), fee, contingent)?;
 
         // Keep changes

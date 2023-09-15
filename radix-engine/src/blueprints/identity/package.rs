@@ -152,12 +152,11 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_SECURIFY_IDENT => {
-                let receiver = Runtime::get_node_id(api)?;
                 let _input: IdentitySecurifyToSingleBadgeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::securify(&receiver, api)?;
+                let rtn = IdentityBlueprint::securify(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -311,10 +310,11 @@ impl IdentityBlueprint {
         Ok(())
     }
 
-    fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    fn securify<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        let receiver = Runtime::get_node_id(api)?;
         let owner_badge_data = IdentityOwnerBadgeData {
             name: "Identity Owner Badge".into(),
             identity: ComponentAddress::new_or_panic(receiver.0),

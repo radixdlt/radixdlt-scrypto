@@ -9,9 +9,79 @@ pub struct TestNFData {
 
 #[blueprint]
 mod resource_test {
-    struct ResourceTest;
+    struct ResourceTest {
+        vault: Vault,
+        data: String,
+    }
 
     impl ResourceTest {
+        pub fn take_from_vault_after_mint() {
+            let bucket: Bucket =
+                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                    .mint_initial_supply(vec![(
+                        0u64.into(),
+                        TestNFData {
+                            name: "name".to_string(),
+                            available: false,
+                        },
+                    )])
+                    .into();
+            let global = Self {
+                vault: Vault::new(bucket.resource_address()),
+                data: "hi".to_string(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+
+            global.take_from_vault_after_mint_helper(bucket);
+        }
+
+        pub fn take_from_vault_after_mint_helper(&mut self, bucket: Bucket) {
+            self.vault.put(bucket);
+            let bucket = self.vault.take(dec!(1));
+            self.vault.put(bucket);
+            self.data = "hello".to_string();
+        }
+
+        pub fn query_nonexistent_and_mint() {
+            let resource_manager =
+                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                    .mint_roles(mint_roles! {
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(allow_all);
+                    })
+                    .burn_roles(burn_roles! {
+                        burner => rule!(allow_all);
+                        burner_updater => rule!(allow_all);
+                    })
+                    .create_with_no_initial_supply();
+
+            let global = Self {
+                vault: Vault::new(resource_manager.address()),
+                data: "hi".to_string(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+
+            global.query_nonexistent_and_mint_helper();
+        }
+
+        pub fn query_nonexistent_and_mint_helper(&mut self) {
+            self.vault
+                .as_non_fungible()
+                .contains_non_fungible(&NonFungibleLocalId::integer(0));
+            let bucket = self.vault.resource_manager().mint_non_fungible(
+                &NonFungibleLocalId::integer(0),
+                TestNFData {
+                    name: "name".to_string(),
+                    available: false,
+                },
+            );
+            self.vault.put(bucket);
+        }
+
         pub fn set_mintable_with_self_resource_address() {
             let super_admin_manager: ResourceManager =
                 ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)

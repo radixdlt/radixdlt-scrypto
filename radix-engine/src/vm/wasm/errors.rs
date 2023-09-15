@@ -31,7 +31,7 @@ pub enum PrepareError {
     /// Too many function parameters
     TooManyFunctionParams,
     /// Too many function local variables
-    TooManyFunctionLocals,
+    TooManyFunctionLocals { max: u32, actual: u32 },
     /// Too many globals
     TooManyGlobals,
     /// No export section
