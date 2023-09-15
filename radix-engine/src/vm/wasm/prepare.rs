@@ -1534,7 +1534,9 @@ mod tests {
                 (import "env" "gas" (func $some_func (param i32 i32 i32 i32 i32 i32 i32 i32)))
             )
             "#,
-            PrepareError::RejectedByInstructionMetering{reason: "dupa".to_string()},
+            PrepareError::RejectedByInstructionMetering {
+                reason: "dupa".to_string()
+            },
             |x| WasmModule::inject_instruction_metering(x, &instrumenter_config)
         );
     }
