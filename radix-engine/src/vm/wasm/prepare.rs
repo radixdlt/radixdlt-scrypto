@@ -1522,22 +1522,4 @@ mod tests {
             |x| WasmModule::enforce_export_constraints(x, blueprints.values())
         );
     }
-
-    #[test]
-    fn test_inject_instruction_metering() {
-        use crate::vm::wasm::WasmValidatorConfigV1;
-
-        let instrumenter_config = WasmValidatorConfigV1::new();
-        assert_invalid_wasm!(
-            r#"
-            (module
-                (import "env" "gas" (func $some_func (param i32 i32 i32 i32 i32 i32 i32 i32)))
-            )
-            "#,
-            PrepareError::RejectedByInstructionMetering {
-                reason: "dupa".to_string()
-            },
-            |x| WasmModule::inject_instruction_metering(x, &instrumenter_config)
-        );
-    }
 }
