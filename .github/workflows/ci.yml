@@ -248,6 +248,9 @@ jobs:
       run: |
         cargo nextest run \
           --no-default-features --features alloc \
+          -p radix-engine-common \
+          -p radix-engine-derive \
+          -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests
 
@@ -267,6 +270,9 @@ jobs:
       run: |
         cargo nextest run \
           --features wasmer \
+          -p radix-engine-common \
+          -p radix-engine-derive \
+          -p radix-engine-interface \
           -p radix-engine \
           -p radix-engine-tests
 
