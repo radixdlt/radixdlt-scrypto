@@ -78,6 +78,10 @@ pub trait FieldPayload: Sized + AsMut<Self::Content> + From<Self::Content> {
     fn from_content_source<T: FieldContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
     }
+
+    fn into_locked_substate(self) -> FieldSubstate<Self> {
+        FieldSubstate::new_locked_field(self)
+    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -93,6 +97,10 @@ pub trait FieldContentSource<Payload: FieldPayload>: Sized {
 
     fn into_payload(self) -> Payload {
         Payload::from_content_source(self)
+    }
+
+    fn into_locked_substate(self) -> FieldSubstate<Payload> {
+        self.into_payload().into_locked_substate()
     }
 }
 
@@ -110,6 +118,10 @@ pub trait KeyValueEntryPayload: Sized + AsMut<Self::Content> + From<Self::Conten
     fn from_content_source<T: KeyValueEntryContentSource<Self>>(content: T) -> Self {
         Self::from_content(content.into_content())
     }
+
+    fn into_locked_substate(self) -> KeyValueEntrySubstate<Self> {
+        KeyValueEntrySubstate::entry(self)
+    }
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -125,6 +137,10 @@ pub trait KeyValueEntryContentSource<Payload: KeyValueEntryPayload>: Sized {
 
     fn into_payload(self) -> Payload {
         Payload::from_content_source(self)
+    }
+
+    fn into_locked_substate(self) -> KeyValueEntrySubstate<Payload> {
+        self.into_payload().into_locked_substate()
     }
 }
 
