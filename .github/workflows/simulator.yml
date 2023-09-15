@@ -1,0 +1,28 @@
+name: Simulator
+
+on:
+  push:
+    branch:
+      - chore/simulator-image
+
+jobs:
+  build-simulator:
+    name: Build simulator
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: ubuntu-latest
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "scrypto-simulator"
+      tags: |
+          type=sha,event=pr
+          type=sha,event=branch
+          type=semver,pattern={{version}}
+      # build information
+      restore_artifact: "false"
+      context: "."
+      dockerfile: "./simulator/Dockerfile"
+      platforms: "linux/amd64,linux/arm64"
+    secrets:
+      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
