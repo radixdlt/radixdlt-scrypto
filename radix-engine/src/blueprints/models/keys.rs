@@ -105,17 +105,6 @@ macro_rules! declare_key_new_type {
             }
 
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            core::convert::From<$content_type>
-            for $payload_type_name $(< $( $lt ),+ >)?
-        {
-            fn from(value: $content_type) -> Self {
-                Self {
-                    content: value,
-                }
-            }
-        }
-
-        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             TryFrom<&SubstateKey>
             for $payload_type_name $(< $( $lt ),+ >)?
         {
@@ -132,19 +121,12 @@ macro_rules! declare_key_new_type {
             for $payload_type_name $(< $( $lt ),+ >)?
         {
             type Content = $content_type;
-
-            fn into_content(self) -> Self::Content {
-                self.content
-            }
         }
 
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             $content_trait<$payload_type_name$(< $( $lt ),+ >)?>
             for $content_type
         {
-            fn into_content(self) -> $content_type {
-                self
-            }
         }
     }
 }
@@ -153,10 +135,8 @@ pub(crate) use declare_key_new_type;
 
 /// This trait is intended to be implemented by an explicit new type for for the given
 /// `{ content: T }` key of a particular key value collection.
-pub trait KeyValueKeyPayload: Sized + From<Self::Content> {
+pub trait KeyValueKeyPayload: Sized {
     type Content: KeyValueKeyContentSource<Self>;
-
-    fn into_content(self) -> Self::Content;
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -167,16 +147,12 @@ pub trait KeyValueKeyPayload: Sized + From<Self::Content> {
 /// * This trait is only one way - from value into content
 /// * This trait uses a generic, because the same type might be usable as a key for multiple
 ///   substates
-pub trait KeyValueKeyContentSource<Payload: KeyValueKeyPayload>: Sized {
-    fn into_content(self) -> Payload::Content;
-}
+pub trait KeyValueKeyContentSource<Payload: KeyValueKeyPayload>: Sized {}
 
 /// This trait is intended to be implemented by an explicit new type for the given
 /// `{ content: T }` key of a particular index collection.
-pub trait IndexKeyPayload: Sized + From<Self::Content> {
+pub trait IndexKeyPayload: Sized {
     type Content: IndexKeyContentSource<Self>;
-
-    fn into_content(self) -> Self::Content;
 }
 
 /// This trait is intended to be implemented by types which embody the content
@@ -187,9 +163,7 @@ pub trait IndexKeyPayload: Sized + From<Self::Content> {
 /// * This trait is only one way - from value into content
 /// * This trait uses a generic, because the same type might be usable as a key for multiple
 ///   substates
-pub trait IndexKeyContentSource<Payload: IndexKeyPayload>: Sized {
-    fn into_content(self) -> Payload::Content;
-}
+pub trait IndexKeyContentSource<Payload: IndexKeyPayload>: Sized {}
 
 /// This trait is intended to be implemented by an explicit new type for the given
 /// `{ sort_index: u16, content: T }` key for a particular sorted index collection.
@@ -207,6 +181,4 @@ pub trait SortedIndexKeyPayload: Sized {
 /// * This trait is only one way - from value into content
 /// * This trait uses a generic, because the same type might be usable as a key for multiple
 ///   explicit substates
-pub trait SortedIndexKeyContentSource<Payload: SortedIndexKeyPayload>: Sized {
-    fn into_content(self) -> Payload::Content;
-}
+pub trait SortedIndexKeyContentSource<Payload: SortedIndexKeyPayload>: Sized {}

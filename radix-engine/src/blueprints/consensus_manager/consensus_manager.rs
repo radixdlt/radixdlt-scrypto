@@ -310,12 +310,6 @@ pub struct ValidatorByStakeKey {
 impl SortedIndexKeyContentSource<ConsensusManagerRegisteredValidatorByStakeKeyPayload>
     for ValidatorByStakeKey
 {
-    fn into_content(
-        self,
-    ) -> <ConsensusManagerRegisteredValidatorByStakeKeyPayload as SortedIndexKeyPayload>::Content
-    {
-        self.validator_address
-    }
 }
 
 pub type ConsensusManagerConfigurationV1 = ConsensusManagerConfigSubstate;
