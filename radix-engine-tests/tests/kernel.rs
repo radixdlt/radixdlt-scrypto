@@ -269,7 +269,7 @@ fn kernel_move_node_via_create_with_opened_substate(
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel_for_test_only();
+    let mut kernel = kernel_boot.create_kernel();
 
     let child_id = {
         let child_id = kernel
@@ -411,7 +411,7 @@ fn kernel_close_substate_should_fail_if_opened_child_exists() {
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel_for_test_only();
+    let mut kernel = kernel_boot.create_kernel();
     let mut create_node = || {
         let id = kernel
             .kernel_allocate_node_id(EntityType::InternalKeyValueStore)

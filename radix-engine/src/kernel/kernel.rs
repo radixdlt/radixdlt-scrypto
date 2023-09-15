@@ -37,7 +37,7 @@ pub struct KernelBoot<'g, M: KernelCallbackObject, S: CommitableSubstateStore> {
 }
 
 impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
-    pub fn create_kernel_for_test_only(&mut self) -> Kernel<M, S> {
+    pub fn create_kernel(&mut self) -> Kernel<M, S> {
         Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
@@ -58,7 +58,7 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
-        self,
+        mut self,
         manifest_encoded_instructions: &'a [u8],
         pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
         references: &'a IndexSet<Reference>,
@@ -69,20 +69,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, 
             v.borrow_mut();
         });
 
-        let mut kernel = Kernel {
-            substate_io: SubstateIO {
-                heap: Heap::new(),
-                store: self.store,
-                non_global_node_refs: NonGlobalNodeRefs::new(),
-                substate_locks: SubstateLocks::new(),
-                heap_transient_substates: TransientSubstates::new(),
-                pinned_to_heap: BTreeSet::new(),
-            },
-            id_allocator: self.id_allocator,
-            current_frame: CallFrame::new_root(M::CallFrameData::root()),
-            prev_frame_stack: vec![],
-            callback: self.callback,
-        };
+        let mut kernel = self.create_kernel();
 
         M::on_init(&mut kernel)?;
 
