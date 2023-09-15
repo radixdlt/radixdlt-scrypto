@@ -452,8 +452,8 @@ impl KernelFuzzAction {
                 if let Some(node_id) = fuzzer.next_node() {
                     kernel.kernel_mark_substate_as_transient(
                         node_id,
-                        PartitionNumber(0u8),
-                        SubstateKey::Field(0u8),
+                        PartitionNumber(1u8),
+                        SubstateKey::Field(1u8),
                     )?;
                     return Ok(false);
                 }
@@ -534,16 +534,19 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
         }
     }
 
-    let (tracked_nodes, deleted_partitions) = track.finalize();
-    let state_updates =
-        to_state_updates::<SpreadPrefixKeyMapper>(tracked_nodes, deleted_partitions);
+    let result = track.finalize();
+    if let Ok((tracked_nodes, deleted_partitions)) = result {
+        let state_updates =
+            to_state_updates::<SpreadPrefixKeyMapper>(tracked_nodes, deleted_partitions);
 
-    let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-    substate_db.commit(&database_updates);
-    let mut checker = KernelDatabaseChecker::new();
-    checker
-        .check_db(&substate_db)
-        .expect(&format!("Database should be consistent: {:?}", actions));
+        let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+        substate_db.commit(&database_updates);
+        let mut checker = KernelDatabaseChecker::new();
+        checker.check_db(&substate_db).expect(&format!(
+            "Database is not consistent at seed: {:?} actions: {:?}",
+            seed, actions
+        ));
+    }
 
     Ok(())
 }

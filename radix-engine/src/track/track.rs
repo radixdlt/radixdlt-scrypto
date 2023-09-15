@@ -18,6 +18,11 @@ use sbor::rust::mem;
 
 use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, StoreCommitInfo};
 
+#[derive(Debug)]
+pub enum TrackFinalizeError {
+    TransientSubstateOwnsNode,
+}
+
 /// Transaction-wide states and side effects
 pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
     /// Substate database, use `get_substate_from_db` and `list_entries_from_db` for access
@@ -176,10 +181,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     ///  Returns the state changes and dependencies.
     pub fn finalize(
         mut self,
-    ) -> (
-        IndexMap<NodeId, TrackedNode>,
-        IndexSet<(NodeId, PartitionNumber)>,
-    ) {
+    ) -> Result<
+        (
+            IndexMap<NodeId, TrackedNode>,
+            IndexSet<(NodeId, PartitionNumber)>,
+        ),
+        TrackFinalizeError,
+    > {
         for (node_id, transient_substates) in self.transient_substates.transient_substates {
             for (partition, substate_key) in transient_substates {
                 if let Some(tracked_partition) = self
@@ -188,12 +196,19 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                     .and_then(|tracked_node| tracked_node.tracked_partitions.get_mut(&partition))
                 {
                     let db_sort_key = M::to_db_sort_key(&substate_key);
-                    tracked_partition.substates.remove(&db_sort_key);
+                    let tracked_substate = tracked_partition.substates.remove(&db_sort_key);
+                    if let Some(substate) =
+                        tracked_substate.and_then(|s| s.substate_value.into_value())
+                    {
+                        if !substate.owned_nodes().is_empty() {
+                            return Err(TrackFinalizeError::TransientSubstateOwnsNode);
+                        }
+                    }
                 }
             }
         }
 
-        (self.tracked_nodes, self.deleted_partitions)
+        Ok((self.tracked_nodes, self.deleted_partitions))
     }
 
     fn get_tracked_partition(

@@ -382,7 +382,9 @@ where
                             execution_trace_module.finalize(&paying_vaults, is_success);
 
                         // Finalize track
-                        let (tracked_nodes, deleted_partitions) = track.finalize();
+                        let (tracked_nodes, deleted_partitions) = track.finalize().expect(
+                            "System invariants should prevent transient substate from owning nodes",
+                        );
 
                         let system_structure = SystemStructure::resolve(
                             self.substate_db,
