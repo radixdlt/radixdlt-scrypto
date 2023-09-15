@@ -2,10 +2,16 @@ name: Simulator
 
 on:
   push:
-    branch:
+    branches:
       - chore/simulator-image
 
 jobs:
+  strategy:
+    fail-fast: true
+    matrix:
+      platform:
+        - linux/amd64
+        - linux/arm64
   build-simulator:
     name: Build simulator
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
@@ -22,7 +28,7 @@ jobs:
       restore_artifact: "false"
       context: "."
       dockerfile: "./simulator/Dockerfile"
-      platforms: "linux/amd64,linux/arm64"
+      platforms: ${{ matrix.platform }}
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
