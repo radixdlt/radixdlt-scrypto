@@ -24,7 +24,7 @@ use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_substates::{FieldSubstate, SubstateMutability};
 use crate::track::interface::CommitableSubstateStore;
-use crate::track::{to_state_updates, Track};
+use crate::track::{to_state_updates, Track, TrackFinalizeError};
 use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
@@ -382,9 +382,14 @@ where
                             execution_trace_module.finalize(&paying_vaults, is_success);
 
                         // Finalize track
-                        let (tracked_nodes, deleted_partitions) = track.finalize().expect(
-                            "System invariants should prevent transient substate from owning nodes",
-                        );
+                        let (tracked_nodes, deleted_partitions) = {
+                            match track.finalize() {
+                                Ok(result) => result,
+                                Err(TrackFinalizeError::TransientSubstateOwnsNode) => {
+                                    panic!("System invariants should prevent transient substate from owning nodes");
+                                }
+                            }
+                        };
 
                         let system_structure = SystemStructure::resolve(
                             self.substate_db,
