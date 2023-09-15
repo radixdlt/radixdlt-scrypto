@@ -247,7 +247,14 @@ fn test_set_role_of_role_assignment_v2() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::UsedReservedRole(..)
+            ))
+        )
+    });
 }
 
 #[test]
