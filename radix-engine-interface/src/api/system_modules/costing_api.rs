@@ -1,19 +1,13 @@
 use crate::blueprints::resource::LiquidFungibleResource;
 use crate::types::*;
 use radix_engine_common::math::Decimal;
-use radix_engine_common::types::*;
 
 pub trait ClientCostingApi<E> {
     /// Check if costing is enabled.
     fn start_credit_cost_units(&mut self) -> Result<bool, E>;
 
     /// Add cost units to the reserve. This should never fail.
-    fn credit_cost_units(
-        &mut self,
-        vault_id: NodeId,
-        locked_fee: LiquidFungibleResource,
-        contingent: bool,
-    ) -> Result<(), E>;
+    fn credit_cost_units(&mut self, locked_fee: LiquidFungibleResource, contingent: bool);
 
     fn consume_cost_units(&mut self, costing_entry: ClientCostingEntry) -> Result<(), E>;
 

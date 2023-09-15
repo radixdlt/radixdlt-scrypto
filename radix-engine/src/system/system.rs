@@ -582,7 +582,7 @@ where
                 Emitter::Method(node_id, module_id.into()),
                 event_name,
             )),
-            EmitterActor::CurrentActor => match self.current_actor()? {
+            EmitterActor::CurrentActor => match self.current_actor() {
                 Actor::Method(MethodActor {
                     method_type,
                     node_id,
@@ -656,7 +656,7 @@ where
     }
 
     pub fn get_actor_type_target(&mut self) -> Result<BlueprintTypeTarget, RuntimeError> {
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
         match actor {
             Actor::Root => Err(RuntimeError::SystemError(SystemError::RootHasNoType)),
             Actor::BlueprintHook(actor) => Ok(BlueprintTypeTarget {
@@ -696,7 +696,7 @@ where
         &mut self,
         actor_object_type: ActorStateRef,
     ) -> Result<(NodeId, Option<AttachedModuleId>), RuntimeError> {
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
         let object_id = actor
             .get_object_id()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAnObject))?;
@@ -906,7 +906,7 @@ where
 
         // For simplicity, a rule is enforced at system layer: only the package can globalize a node
         // In the future, we may consider allowing customization at blueprint level.
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
         if Some(reserved_blueprint_id.package_address) != actor.package_address() {
             return Err(RuntimeError::SystemError(
                 SystemError::InvalidGlobalizeAccess(Box::new(InvalidGlobalizeAccess {
@@ -1059,12 +1059,12 @@ where
         Ok(global_address)
     }
 
-    pub fn current_actor(&mut self) -> Result<Actor, RuntimeError> {
-        Ok(self
-            .api
+    #[catch_unwind_ignore]
+    pub fn current_actor(&mut self) -> Actor {
+        self.api
             .kernel_get_system_state()
             .current_call_frame
-            .clone())
+            .clone()
     }
 
     pub fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
@@ -1206,7 +1206,7 @@ where
         fields: IndexMap<u8, FieldValue>,
         kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
         let package_address = actor
             .blueprint_id()
             .map(|b| b.package_address)
@@ -1509,7 +1509,7 @@ where
         // For simplicity, a rule is enforced at system layer: only the package can drop a node
         // In the future, we may consider allowing customization at blueprint level.
         let info = self.get_object_info(node_id)?;
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
 
         let instance_context_check = {
             // Allow proofs to be dropped on their own
@@ -2235,18 +2235,16 @@ where
     }
 
     #[trace_resources]
-    fn credit_cost_units(
-        &mut self,
-        vault_id: NodeId,
-        locked_fee: LiquidFungibleResource,
-        contingent: bool,
-    ) -> Result<(), RuntimeError> {
+    #[catch_unwind_ignore]
+    fn credit_cost_units(&mut self, locked_fee: LiquidFungibleResource, contingent: bool) {
+        let actor = self.current_actor();
+        let vault_id = actor
+            .node_id()
+            .expect("Caller should only be fungible vault method");
         self.api
             .kernel_get_system()
             .modules
             .credit_cost_units(vault_id, locked_fee, contingent);
-
-        Ok(())
     }
 
     fn execution_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
@@ -2376,7 +2374,7 @@ where
             .modules
             .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
-        self.current_actor()?
+        self.current_actor()
             .blueprint_id()
             .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
     }
@@ -2392,7 +2390,7 @@ where
 
         let node_id = match actor_ref {
             ActorObjectRef::SELF => {
-                self.current_actor()?
+                self.current_actor()
                     .node_id()
                     .ok_or(RuntimeError::SystemError(
                         SystemError::ActorNodeIdDoesNotExist,
@@ -2418,7 +2416,7 @@ where
                 }?
             }
             ActorObjectRef::Global => {
-                let actor = self.current_actor()?;
+                let actor = self.current_actor();
                 if actor.is_direct_access() {
                     return Err(RuntimeError::SystemError(
                         SystemError::GlobalAddressDoesNotExist,
@@ -2443,7 +2441,7 @@ where
                 }
             }
             ActorObjectRef::AuthZone => self
-                .current_actor()?
+                .current_actor()
                 .self_auth_zone()
                 .ok_or_else(|| RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))?,
         };

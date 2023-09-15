@@ -182,8 +182,7 @@ impl CostingModule {
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) {
-        self.fee_reserve
-            .lock_fee(vault_id, locked_fee, contingent);
+        self.fee_reserve.lock_fee(vault_id, locked_fee, contingent);
     }
 }
 

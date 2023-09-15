@@ -646,7 +646,8 @@ impl SystemModuleMixer {
         contingent: bool,
     ) {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing.credit_cost_units(vault_id, locked_fee, contingent);
+            self.costing
+                .credit_cost_units(vault_id, locked_fee, contingent);
         } else {
             panic!("Fungible Vault Application layer should prevent call to credit if costing not enabled");
         }

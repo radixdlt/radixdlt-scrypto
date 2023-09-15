@@ -250,7 +250,7 @@ impl AuthModule {
                 true
             };
 
-            let current_actor = system.current_actor()?;
+            let current_actor = system.current_actor();
             let local_package_address = current_actor.package_address();
 
             // Retrieve global caller property of next auth zone
@@ -293,7 +293,7 @@ impl AuthModule {
                 None
             } else {
                 system
-                    .current_actor()?
+                    .current_actor()
                     .self_auth_zone()
                     .map(|x| Reference(x))
             };

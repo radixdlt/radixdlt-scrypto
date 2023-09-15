@@ -436,8 +436,7 @@ impl FungibleVaultBlueprint {
         // and emitting an event
 
         // Credit cost units
-        let receiver = Runtime::get_node_id(api)?;
-        api.credit_cost_units(receiver.clone().into(), fee, contingent).expect("This should never fail.");
+        api.credit_cost_units(fee, contingent);
 
         // Emitting an event once the fee has been locked
         Runtime::emit_event_no_revert(api, LockFeeEvent { amount })?;
