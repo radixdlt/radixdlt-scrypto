@@ -8,7 +8,6 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
@@ -1440,16 +1439,10 @@ impl ResourceNativePackage {
             }
 
             FUNGIBLE_VAULT_LOCK_FEE_IDENT => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: FungibleVaultLockFeeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleVaultBlueprint::lock_fee(
-                    &receiver,
-                    input.amount,
-                    input.contingent,
-                    api,
-                )?;
+                let rtn = FungibleVaultBlueprint::lock_fee(input.amount, input.contingent, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
@@ -1629,14 +1622,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleVaultCreateProofOfNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleVaultBlueprint::create_proof_of_non_fungibles(
-                    &receiver, input.ids, api,
-                )?;
+                let rtn = NonFungibleVaultBlueprint::create_proof_of_non_fungibles(input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
@@ -1821,21 +1811,18 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: FungibleBucketCreateProofOfAmountInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn =
-                    FungibleBucketBlueprint::create_proof_of_amount(&receiver, input.amount, api)?;
+                let rtn = FungibleBucketBlueprint::create_proof_of_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let _input: BucketCreateProofOfAllInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleBucketBlueprint::create_proof_of_all(&receiver, api)?;
+                let rtn = FungibleBucketBlueprint::create_proof_of_all(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME => {
@@ -1901,22 +1888,19 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&address))
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleBucketCreateProofOfNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleBucketBlueprint::create_proof_of_non_fungibles(
-                    &receiver, input.ids, api,
-                )?;
+                let rtn =
+                    NonFungibleBucketBlueprint::create_proof_of_non_fungibles(input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let _input: BucketCreateProofOfAllInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleBucketBlueprint::create_proof_of_all(&receiver, api)?;
+                let rtn = NonFungibleBucketBlueprint::create_proof_of_all(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 

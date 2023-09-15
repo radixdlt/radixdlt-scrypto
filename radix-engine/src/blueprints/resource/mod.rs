@@ -5,7 +5,6 @@ mod fungible;
 mod non_fungible;
 mod package;
 mod proof_common;
-mod resource_manager_common;
 mod vault_common;
 mod worktop;
 
@@ -16,6 +15,5 @@ pub use fungible::*;
 pub use non_fungible::*;
 pub use package::*;
 pub use proof_common::*;
-pub use resource_manager_common::*;
 pub use vault_common::*;
 pub use worktop::*;
