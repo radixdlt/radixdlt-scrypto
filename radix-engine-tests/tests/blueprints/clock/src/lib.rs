@@ -110,5 +110,9 @@ mod clock_test {
         pub fn get_current_time_rounded_to_minutes() -> i64 {
             Clock::current_time_rounded_to_minutes().seconds_since_unix_epoch
         }
+
+        pub fn compare(time: Instant) -> bool {
+            Clock::current_time_is_strictly_before(time, TimePrecision::Minute)
+        }
     }
 }

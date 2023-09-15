@@ -223,6 +223,7 @@ pub enum ConsensusManagerError {
     NotXrd,
     UnexpectedDecimalComputationError,
     EpochMathOverflow,
+    InvalidConsensusTime(i64),
 }
 
 declare_native_blueprint_state! {
@@ -578,7 +579,11 @@ impl ConsensusManagerBlueprint {
                 validator_statistics: Vec::new(),
             };
             let minute_timestamp = ProposerMinuteTimestampSubstate {
-                epoch_minute: Self::milli_to_minute(initial_time_milli),
+                epoch_minute: Self::milli_to_minute(initial_time_milli).ok_or(
+                    RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::InvalidConsensusTime(initial_time_milli),
+                    )),
+                )?,
             };
             let milli_timestamp = ProposerMilliTimestampSubstate {
                 epoch_milli: initial_time_milli,
@@ -735,9 +740,21 @@ impl ConsensusManagerBlueprint {
     {
         match precision {
             TimePrecision::Minute => {
-                let other_epoch_minute = Self::milli_to_minute(
-                    other_arbitrary_precision_instant.seconds_since_unix_epoch * MILLIS_IN_SECOND,
-                );
+                let other_epoch_minute = other_arbitrary_precision_instant
+                    .seconds_since_unix_epoch
+                    .checked_mul(MILLIS_IN_SECOND)
+                    .and_then(|result| Self::milli_to_minute(result))
+                    .unwrap_or_else(|| {
+                        // This is to deal with overflows, i32 MAX and MIN values should work with current time
+                        if other_arbitrary_precision_instant
+                            .seconds_since_unix_epoch
+                            .is_negative()
+                        {
+                            i32::MIN
+                        } else {
+                            i32::MAX
+                        }
+                    });
 
                 let handle = api.actor_open_field(
                     ACTOR_STATE_SELF,
@@ -765,8 +782,8 @@ impl ConsensusManagerBlueprint {
         Instant::new(epoch_minute as i64 * SECONDS_IN_MINUTE)
     }
 
-    fn milli_to_minute(epoch_milli: i64) -> i32 {
-        i32::try_from(epoch_milli / MILLIS_IN_MINUTE).unwrap() // safe until A.D. 5700
+    fn milli_to_minute(epoch_milli: i64) -> Option<i32> {
+        i32::try_from(epoch_milli / MILLIS_IN_MINUTE).ok() // safe until A.D. 5700
     }
 
     pub(crate) fn next_round<Y>(
@@ -959,7 +976,11 @@ impl ConsensusManagerBlueprint {
         }
         api.field_close(handle)?;
 
-        let new_rounded_value = Self::milli_to_minute(current_time_ms);
+        let new_rounded_value = Self::milli_to_minute(current_time_ms).ok_or(
+            RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                ConsensusManagerError::InvalidConsensusTime(current_time_ms),
+            )),
+        )?;
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ConsensusManagerField::ProposerMinuteTimestamp.into(),
