@@ -93,7 +93,7 @@ impl Default for PartitionDatabaseUpdates {
 }
 
 /// An update of a single substate's value.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Sbor, PartialOrd, Ord)]
 pub enum DatabaseUpdate {
     Set(DbSubstateValue),
     Delete,

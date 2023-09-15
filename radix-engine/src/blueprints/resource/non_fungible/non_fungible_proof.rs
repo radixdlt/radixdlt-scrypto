@@ -101,8 +101,8 @@ impl NonFungibleProofBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                0u8 => FieldValue::new(&moveable),
-                1u8 => FieldValue::new(&clone),
+                NonFungibleProofField::Moveable.field_index() => FieldValue::new(&moveable),
+                NonFungibleProofField::ProofRefs.field_index() => FieldValue::new(&clone),
             },
         )?;
 

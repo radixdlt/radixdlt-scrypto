@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, LockFlags, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
@@ -111,11 +112,7 @@ impl FungibleBucketBlueprint {
         Ok(resource_address)
     }
 
-    pub fn create_proof_of_amount<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
+    pub fn create_proof_of_amount<Y>(amount: Decimal, api: &mut Y) -> Result<Proof, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -128,11 +125,12 @@ impl FungibleBucketBlueprint {
 
         Self::lock_amount(amount, api)?;
 
+        let receiver = Runtime::get_node_id(api)?;
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof_evidence = FungibleProofSubstate::new(
             amount,
             indexmap!(
-                LocalRef::Bucket(Reference(receiver.clone())) => amount
+                LocalRef::Bucket(Reference(receiver)) => amount
             ),
         )
         .map_err(|e| {
@@ -151,11 +149,11 @@ impl FungibleBucketBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-    pub fn create_proof_of_all<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
+    pub fn create_proof_of_all<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        Self::create_proof_of_amount(receiver, Self::get_amount(api)?, api)
+        Self::create_proof_of_amount(Self::get_amount(api)?, api)
     }
 
     //===================

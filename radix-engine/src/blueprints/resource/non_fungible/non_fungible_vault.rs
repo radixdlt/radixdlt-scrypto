@@ -2,7 +2,6 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
@@ -365,7 +364,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::take_advanced(amount, WithdrawStrategy::Exact, api)
     }
@@ -376,7 +375,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
@@ -433,6 +432,7 @@ impl NonFungibleVaultBlueprint {
         Self::assert_not_frozen(VaultFreezeFlags::DEPOSIT, api)?;
 
         // Drop other bucket
+        // This will fail if bucket is not an inner object of the current non-fungible resource
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
         let ids = other_bucket.liquid.ids().clone();
 
@@ -446,7 +446,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
             .checked_add(Self::locked_amount(api)?)
@@ -460,7 +460,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let ids = Self::locked_non_fungible_local_ids(u32::MAX, api)?;
         if ids.contains(&id) {
@@ -507,7 +507,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn recall<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_recallable(api)?;
 
@@ -529,7 +529,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn freeze<Y>(to_freeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_freezable(api)?;
 
@@ -553,7 +553,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn unfreeze<Y>(to_unfreeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_freezable(api)?;
 
@@ -579,7 +579,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_recallable(api)?;
 
@@ -594,20 +594,20 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn create_proof_of_non_fungibles<Y>(
-        receiver: &NodeId,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::lock_non_fungibles(&ids, api)?;
 
         let proof_info = ProofMoveableSubstate { restricted: false };
+        let receiver = Runtime::get_node_id(api)?;
         let proof_evidence = NonFungibleProofSubstate::new(
             ids.clone(),
             indexmap!(
-                LocalRef::Vault(Reference(receiver.clone().into()))=> ids
+                LocalRef::Vault(Reference(receiver.into()))=> ids
             ),
         )
         .map_err(|e| {
@@ -616,8 +616,8 @@ impl NonFungibleVaultBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                0u8 => FieldValue::new(&proof_info),
-                1u8 => FieldValue::new(&proof_evidence),
+                NonFungibleProofField::Moveable.field_index() => FieldValue::new(&proof_info),
+                NonFungibleProofField::ProofRefs.field_index() => FieldValue::new(&proof_evidence),
             },
         )?;
         Ok(Proof(Own(proof_id)))
@@ -625,7 +625,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn burn<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
 
@@ -638,7 +638,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
 
@@ -655,7 +655,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
