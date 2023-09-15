@@ -645,16 +645,17 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub fn securify<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        let receiver = Runtime::get_node_id(api)?;
         let owner_badge_data = AccountOwnerBadgeData {
             name: "Account Owner Badge".into(),
             account: ComponentAddress::new_or_panic(receiver.0),
         };
         SecurifiedAccount::securify(
-            receiver,
+            &receiver,
             owner_badge_data,
             Some(NonFungibleLocalId::bytes(receiver.0).unwrap()),
             api,
