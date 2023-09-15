@@ -14,6 +14,7 @@ use crate::errors::*;
 use crate::internal_prelude::KeyValueEntrySubstateV1;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
+use crate::kernel::kernel_callback_api::*;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::*;
@@ -185,6 +186,22 @@ impl ExecutionConfig {
     }
 }
 
+impl<C: SystemCallbackObject> WrappedSystem<C> for SystemConfig<C> {
+    type Init = ();
+
+    fn create(config: SystemConfig<C>, _: ()) -> Self {
+        config
+    }
+
+    fn system_mut(&mut self) -> &mut SystemConfig<C> {
+        self
+    }
+
+    fn to_system(self) -> SystemConfig<C> {
+        self
+    }
+}
+
 /// An executor that runs transactions.
 /// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
 /// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
@@ -205,11 +222,12 @@ where
         Self { substate_db, vm }
     }
 
-    pub fn execute(
+    pub fn execute<T: WrappedSystem<V>>(
         &mut self,
         executable: &Executable,
         costing_parameters: &CostingParameters,
         execution_config: &ExecutionConfig,
+        init: T::Init,
     ) -> TransactionReceipt {
         let fee_reserve = SystemLoanFeeReserve::new(
             costing_parameters,
@@ -266,12 +284,13 @@ where
                 let (
                     interpretation_result,
                     (mut costing_module, runtime_module, execution_trace_module),
-                ) = self.interpret_manifest(
+                ) = self.interpret_manifest::<T>(
                     &mut track,
                     executable,
                     execution_config,
                     fee_reserve,
                     fee_table,
+                    init,
                 );
 
                 #[cfg(not(feature = "alloc"))]
@@ -545,13 +564,14 @@ where
         Ok(())
     }
 
-    fn interpret_manifest(
+    fn interpret_manifest<T: WrappedSystem<V>>(
         &self,
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         executable: &Executable,
         execution_config: &ExecutionConfig,
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
+        init: T::Init,
     ) -> (
         Result<Vec<InstructionOutput>, RuntimeError>,
         (
@@ -561,7 +581,7 @@ where
         ),
     ) {
         let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
-        let mut system = SystemConfig {
+        let system = SystemConfig {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
@@ -579,9 +599,11 @@ where
             ),
         };
 
+        let mut wrapped_system = T::create(system, init);
+
         let kernel_boot = KernelBoot {
             id_allocator: &mut id_allocator,
-            callback: &mut system,
+            callback: &mut wrapped_system,
             store: track,
         };
 
@@ -593,6 +615,8 @@ where
                 executable.blobs(),
             )
             .and_then(|x| {
+                let system = wrapped_system.system_mut();
+
                 // Note that if a transactions fails during this phase, the costing is
                 // done as if it would succeed.
 
@@ -648,6 +672,7 @@ where
                 output
             });
 
+        let system = wrapped_system.to_system();
         (interpretation_result, system.modules.unpack())
     }
 
@@ -1159,10 +1184,33 @@ pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_db, vm).execute(
+    execute_transaction_with_system::<S, V, SystemConfig<V>>(
+        substate_db,
+        vm,
+        costing_parameters,
+        execution_config,
+        transaction,
+        (),
+    )
+}
+
+pub fn execute_transaction_with_system<
+    S: SubstateDatabase,
+    V: SystemCallbackObject + Clone,
+    T: WrappedSystem<V>,
+>(
+    substate_db: &S,
+    vm: V,
+    costing_parameters: &CostingParameters,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+    init: T::Init,
+) -> TransactionReceipt {
+    TransactionExecutor::new(substate_db, vm).execute::<T>(
         transaction,
         costing_parameters,
         execution_config,
+        init,
     )
 }
 
@@ -1170,4 +1218,12 @@ enum TransactionResultType {
     Commit(Result<Vec<InstructionOutput>, RuntimeError>),
     Reject(RejectionReason),
     Abort(AbortReason),
+}
+
+pub trait WrappedSystem<C: SystemCallbackObject>: KernelCallbackObject {
+    type Init;
+
+    fn create(config: SystemConfig<C>, init: Self::Init) -> Self;
+    fn system_mut(&mut self) -> &mut SystemConfig<C>;
+    fn to_system(self) -> SystemConfig<C>;
 }

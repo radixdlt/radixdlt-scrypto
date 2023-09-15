@@ -18,6 +18,7 @@ use crate::validator::ValidatorFuzzAction;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
 use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
+use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
 use radix_engine::prelude::node_modules::ModuleConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
 use radix_engine::types::*;
@@ -36,6 +37,7 @@ use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use scrypto::prelude::{ToRoleEntry, Zero};
+use scrypto_unit::InjectSystemCostingError;
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
@@ -633,7 +635,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         }
     }
 
-    pub fn run_fuzz(num_tests: u64, num_txns: u64) {
+    pub fn run_fuzz(num_tests: u64, num_txns: u64, inject_costing_error: bool) {
         let mut summed_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
 
@@ -642,40 +644,49 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             .into_par_iter()
             .map(|seed| {
                 let mut fuzz_test = Self::new(seed);
-                fuzz_test.run_single_fuzz(num_txns)
+                let err_after_acount = if inject_costing_error {
+                    let err_after_count = fuzz_test.fuzzer.rng.gen_range(200u64..500u64);
+                    Some(err_after_count)
+                } else {
+                    None
+                };
+                fuzz_test.run_single_fuzz(num_txns, err_after_acount)
             })
             .collect();
 
-        for run_result in results {
-            for (txn, txn_results) in run_result {
-                for (txn_result, count) in txn_results {
-                    summed_results
-                        .entry(txn.clone())
-                        .or_default()
-                        .entry(txn_result)
-                        .or_default()
-                        .add_assign(&count);
+        if !inject_costing_error {
+            for run_result in results {
+                for (txn, txn_results) in run_result {
+                    for (txn_result, count) in txn_results {
+                        summed_results
+                            .entry(txn.clone())
+                            .or_default()
+                            .entry(txn_result)
+                            .or_default()
+                            .add_assign(&count);
+                    }
                 }
             }
-        }
 
-        let mut missing_success = BTreeSet::new();
-        for (intent, results) in &summed_results {
-            if !results.contains_key(&FuzzTxnResult::Success) {
-                missing_success.insert(intent);
+            let mut missing_success = BTreeSet::new();
+            for (intent, results) in &summed_results {
+                if !results.contains_key(&FuzzTxnResult::Success) {
+                    missing_success.insert(intent);
+                }
             }
-        }
 
-        if !missing_success.is_empty() {
-            panic!("Missing intent success: {:#?}", missing_success);
-        }
+            if !missing_success.is_empty() {
+                panic!("Missing intent success: {:#?}", missing_success);
+            }
 
-        println!("{:#?}", summed_results);
+            println!("{:#?}", summed_results);
+        }
     }
 
     fn run_single_fuzz(
         &mut self,
         num_txns: u64,
+        error_after_system_callback_count: Option<u64>,
     ) -> BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> {
         let mut fuzz_results: BTreeMap<FuzzTxnIntent, BTreeMap<FuzzTxnResult, u64>> =
             BTreeMap::new();
@@ -708,13 +719,25 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 let manifest = builder
                     .deposit_batch(self.validators[0].account_address)
                     .build();
-                let receipt = self.test_runner.execute_manifest_with_fee_from_faucet(
-                    manifest,
-                    self.fuzzer.next_fee(),
-                    vec![NonFungibleGlobalId::from_public_key(
-                        &self.account_public_key,
-                    )],
-                );
+
+                let receipt = if let Some(error_after_count) = error_after_system_callback_count {
+                    self.test_runner.execute_manifest_with_fee_from_faucet_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
+                        manifest,
+                        self.fuzzer.next_fee(),
+                        vec![NonFungibleGlobalId::from_public_key(
+                            &self.account_public_key,
+                        )],
+                        error_after_count,
+                    )
+                } else {
+                    self.test_runner.execute_manifest_with_fee_from_faucet(
+                        manifest,
+                        self.fuzzer.next_fee(),
+                        vec![NonFungibleGlobalId::from_public_key(
+                            &self.account_public_key,
+                        )],
+                    )
+                };
 
                 let result = receipt.result;
                 match result {
@@ -736,6 +759,17 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                                     validator_address: *validator_address,
                                 });
                             });
+
+                        if let TransactionOutcome::Failure(RuntimeError::VmError(
+                            VmError::Native(NativeRuntimeError::Trap {
+                                export_name,
+                                input,
+                                error,
+                            }),
+                        )) = &commit_result.outcome
+                        {
+                            panic!("Native panic: {:?} {:?} {:?}", export_name, input, error);
+                        }
 
                         FuzzTxnResult::from_outcome(&commit_result.outcome, trivial)
                     }

@@ -13,5 +13,5 @@ fn fuzz_one_pool() {
         }
     }
 
-    FuzzTest::<OneResourcePoolFuzzer>::run_fuzz(32, 100);
+    FuzzTest::<OneResourcePoolFuzzer>::run_fuzz(32, 100, false);
 }

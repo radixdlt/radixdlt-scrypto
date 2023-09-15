@@ -22,5 +22,5 @@ fn fuzz_resource() {
         }
     }
 
-    FuzzTest::<ResourceFuzzer>::run_fuzz(10, 15000);
+    FuzzTest::<ResourceFuzzer>::run_fuzz(10, 15000, false);
 }

@@ -10,14 +10,16 @@ use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRI
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::checkers::*;
+use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, BalanceChange, CommitResult, CostingParameters,
-    ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction_with_system, BalanceChange, CommitResult,
+    CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
+    WrappedSystem,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
@@ -1339,6 +1341,31 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         self.execute_manifest(manifest, initial_proofs)
     }
 
+    pub fn execute_manifest_with_fee_from_faucet_with_system<
+        'a,
+        T,
+        R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>,
+    >(
+        &'a mut self,
+        mut manifest: TransactionManifestV1,
+        amount: Decimal,
+        initial_proofs: T,
+        init: R::Init,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        manifest.instructions.insert(
+            0,
+            transaction::model::InstructionV1::CallMethod {
+                address: self.faucet_component().into(),
+                method_name: "lock_fee".to_string(),
+                args: manifest_args!(amount).into(),
+            },
+        );
+        self.execute_manifest_with_system::<'a, T, R>(manifest, initial_proofs, init)
+    }
+
     pub fn execute_manifest_ignoring_fee<T>(
         &mut self,
         mut manifest: TransactionManifestV1,
@@ -1389,6 +1416,27 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         )
     }
 
+    pub fn execute_manifest_with_system<'a, T, R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+        &'a mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+        init: R::Init,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction_with_system::<R>(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            CostingParameters::default(),
+            ExecutionConfig::for_test_transaction(),
+            init,
+        )
+    }
+
     pub fn execute_manifest_with_costing_params<T>(
         &mut self,
         manifest: TransactionManifestV1,
@@ -1433,7 +1481,22 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         &mut self,
         executable: Executable,
         costing_parameters: CostingParameters,
+        execution_config: ExecutionConfig,
+    ) -> TransactionReceipt {
+        self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
+            executable,
+            costing_parameters,
+            execution_config,
+            (),
+        )
+    }
+
+    pub fn execute_transaction_with_system<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+        &'a mut self,
+        executable: Executable,
+        costing_parameters: CostingParameters,
         mut execution_config: ExecutionConfig,
+        init: T::Init,
     ) -> TransactionReceipt {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
@@ -1451,12 +1514,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             native_vm: self.native_vm.clone(),
         };
 
-        let transaction_receipt = execute_transaction(
+        let transaction_receipt = execute_transaction_with_system::<_, _, T>(
             &mut self.database,
             vm,
             &costing_parameters,
             &execution_config,
             &executable,
+            init,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit

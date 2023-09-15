@@ -12,6 +12,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use scrypto_unit::InjectSystemCostingError;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -140,6 +141,30 @@ fn scenario_1() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn scenario_1_with_injected_costing_error() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut test_runner);
+
+    let mut inject_err_after_count = 1u64;
+
+    loop {
+        let manifest = ManifestBuilder::new()
+            .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
+            .call_method(env.swappy, "protected_method", manifest_args!())
+            .build();
+        let receipt = test_runner.execute_manifest_with_fee_from_faucet_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
+            manifest, dec!("500"), vec![env.virtua_sig.clone()], inject_err_after_count);
+        if receipt.is_commit_success() {
+            break;
+        }
+
+        inject_err_after_count += 1u64;
+    }
+
+    println!("Count: {:?}", inject_err_after_count);
 }
 
 #[test]

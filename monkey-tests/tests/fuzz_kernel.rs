@@ -23,6 +23,7 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use transaction::model::PreAllocatedAddress;
 
 struct TestCallFrameData;
 
@@ -52,6 +53,19 @@ struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
+
+    fn start<Y>(
+        _: &mut Y,
+        _: &[u8],
+        _: &Vec<PreAllocatedAddress>,
+        _: &IndexSet<Reference>,
+        _: &IndexMap<Hash, Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        unreachable!()
+    }
 
     fn on_init<Y>(_api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -505,7 +519,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel_for_test_only();
+    let mut kernel = kernel_boot.create_kernel();
 
     let mut fuzzer = KernelFuzzer::new(seed);
 

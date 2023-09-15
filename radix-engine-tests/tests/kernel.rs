@@ -19,6 +19,7 @@ use radix_engine::track::Track;
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use transaction::model::PreAllocatedAddress;
 
 struct TestCallFrameData;
 
@@ -54,6 +55,19 @@ impl KernelCallbackObject for TestCallbackObject {
         Y: KernelApi<Self>,
     {
         Ok(())
+    }
+
+    fn start<Y>(
+        _api: &mut Y,
+        _manifest_encoded_instructions: &[u8],
+        _pre_allocated_addresses: &Vec<PreAllocatedAddress>,
+        _references: &IndexSet<Reference>,
+        _blobs: &IndexMap<Hash, Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        unreachable!()
     }
 
     fn on_teardown<Y>(_api: &mut Y) -> Result<(), RuntimeError>
@@ -255,7 +269,7 @@ fn kernel_move_node_via_create_with_opened_substate(
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel_for_test_only();
+    let mut kernel = kernel_boot.create_kernel();
 
     let child_id = {
         let child_id = kernel
@@ -397,7 +411,7 @@ fn kernel_close_substate_should_fail_if_opened_child_exists() {
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel_for_test_only();
+    let mut kernel = kernel_boot.create_kernel();
     let mut create_node = || {
         let id = kernel
             .kernel_allocate_node_id(EntityType::InternalKeyValueStore)

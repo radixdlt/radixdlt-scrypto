@@ -68,7 +68,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         callback: &mut system,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel_for_test_only();
+    let mut kernel = kernel_boot.create_kernel();
 
     // Lock package substate
     let result = kernel.kernel_open_substate(
