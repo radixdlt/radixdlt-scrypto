@@ -147,6 +147,7 @@ impl SystemModuleMixer {
                 execution_cost_breakdown: index_map_new(),
                 finalization_cost_breakdown: index_map_new(),
                 storage_cost_breakdown: index_map_new(),
+                on_apply_cost: Default::default(),
             },
             auth: AuthModule {
                 params: auth_zone_params.clone(),
@@ -569,6 +570,22 @@ impl SystemModuleMixer {
     pub fn costing(&mut self) -> Option<&CostingModule> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             Some(&self.costing)
+        } else {
+            None
+        }
+    }
+
+    pub fn costing_mut(&mut self) -> Option<&mut CostingModule> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            Some(&mut self.costing)
+        } else {
+            None
+        }
+    }
+
+    pub fn limits_mut(&mut self) -> Option<&mut LimitsModule> {
+        if self.enabled_modules.contains(EnabledModules::LIMITS) {
+            Some(&mut self.limits)
         } else {
             None
         }

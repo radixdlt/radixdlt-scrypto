@@ -395,7 +395,7 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        if !api.start_credit_cost_units().unwrap() {
+        if !api.start_credit_cost_units()? {
             Runtime::emit_event_no_revert(api, LockFeeEvent { amount })?;
             return Ok(());
         }
