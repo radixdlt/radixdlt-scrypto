@@ -35,6 +35,38 @@ impl CanBeAbortion for CostingError {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub enum OnApplyCost {
+    #[default]
+    Normal,
+    ForceFailOnCount {
+        fail_after: Rc<RefCell<u64>>,
+    },
+}
+
+impl OnApplyCost {
+    pub fn on_call(&mut self) -> Result<(), RuntimeError> {
+        match self {
+            OnApplyCost::Normal => {}
+            OnApplyCost::ForceFailOnCount { fail_after } => {
+                *fail_after.borrow_mut() -= 1;
+                if *fail_after.borrow() == 0 {
+                    return Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::CostingError(CostingError::FeeReserveError(
+                            FeeReserveError::InsufficientBalance {
+                                required: Decimal::MAX,
+                                remaining: Decimal::ONE,
+                            },
+                        )),
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CostingModule {
     pub fee_reserve: SystemLoanFeeReserve,
@@ -48,6 +80,8 @@ pub struct CostingModule {
     pub execution_cost_breakdown: IndexMap<String, u32>,
     pub finalization_cost_breakdown: IndexMap<String, u32>,
     pub storage_cost_breakdown: IndexMap<StorageType, usize>,
+
+    pub on_apply_cost: OnApplyCost,
 }
 
 impl CostingModule {
@@ -59,6 +93,8 @@ impl CostingModule {
         &mut self,
         costing_entry: ExecutionCostingEntry,
     ) -> Result<(), RuntimeError> {
+        self.on_apply_cost.on_call()?;
+
         let cost_units = costing_entry.to_execution_cost_units(&self.fee_table);
 
         self.fee_reserve
@@ -84,6 +120,8 @@ impl CostingModule {
         &mut self,
         costing_entry: ExecutionCostingEntry,
     ) -> Result<(), RuntimeError> {
+        self.on_apply_cost.on_call()?;
+
         let cost_units = costing_entry.to_execution_cost_units(&self.fee_table);
 
         self.fee_reserve
@@ -110,6 +148,8 @@ impl CostingModule {
         storage_type: StorageType,
         size_increase: usize,
     ) -> Result<(), RuntimeError> {
+        self.on_apply_cost.on_call()?;
+
         self.fee_reserve
             .consume_deferred_storage(storage_type, size_increase)
             .map_err(|e| {
@@ -132,6 +172,8 @@ impl CostingModule {
         &mut self,
         costing_entry: FinalizationCostingEntry,
     ) -> Result<(), RuntimeError> {
+        self.on_apply_cost.on_call()?;
+
         let cost_units = costing_entry.to_finalization_cost_units(&self.fee_table);
 
         self.fee_reserve
@@ -158,6 +200,8 @@ impl CostingModule {
         storage_type: StorageType,
         size_increase: usize,
     ) -> Result<(), RuntimeError> {
+        self.on_apply_cost.on_call()?;
+
         self.fee_reserve
             .consume_storage(storage_type, size_increase)
             .map_err(|e| {
@@ -191,6 +235,12 @@ pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
     royalty_amount: RoyaltyAmount,
     recipient: RoyaltyRecipient,
 ) -> Result<(), RuntimeError> {
+    api.kernel_get_system()
+        .modules
+        .costing
+        .on_apply_cost
+        .on_call()?;
+
     api.kernel_get_system()
         .modules
         .costing
