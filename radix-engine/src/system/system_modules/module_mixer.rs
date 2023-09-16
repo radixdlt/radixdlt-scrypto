@@ -501,15 +501,24 @@ impl SystemModuleMixer {
         Ok(())
     }
 
-    pub fn add_event(&mut self, event: Event) -> Result<(), RuntimeError> {
+    pub fn reserve_event(&mut self) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            if self.transaction_runtime.events.len() >= self.limits.config().max_number_of_events {
+            if self.transaction_runtime.events.len() + 1
+                >= self.limits.config().max_number_of_events
+            {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(
                         TransactionLimitsError::TooManyEvents,
                     ),
                 ));
             }
+        }
+
+        Ok(())
+    }
+
+    pub fn use_reserved_event(&mut self, event: Event) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if event.payload.len() > self.limits.config().max_event_size {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(
@@ -526,9 +535,15 @@ impl SystemModuleMixer {
             .enabled_modules
             .contains(EnabledModules::TRANSACTION_RUNTIME)
         {
-            self.transaction_runtime.add_event(event)
+            self.transaction_runtime.add_event(event);
         }
 
+        Ok(())
+    }
+
+    pub fn add_event(&mut self, event: Event) -> Result<(), RuntimeError> {
+        self.reserve_event()?;
+        self.use_reserved_event(event)?;
         Ok(())
     }
 

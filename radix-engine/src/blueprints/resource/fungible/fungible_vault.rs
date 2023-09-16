@@ -395,7 +395,7 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        if !api.start_credit_cost_units().unwrap() {
+        if !api.start_credit_cost_units()? {
             Runtime::emit_event_no_revert(api, LockFeeEvent { amount })?;
             return Ok(());
         }
@@ -434,12 +434,7 @@ impl FungibleVaultBlueprint {
         // At this point the vault fee take is guaranteed to be force-written
         // so we must take care not to error out before crediting the cost units
         // and emitting an event
-
-        // Credit cost units
         api.credit_cost_units(fee, contingent);
-
-        // Emitting an event once the fee has been locked
-        Runtime::emit_event_no_revert(api, LockFeeEvent { amount })?;
 
         Ok(())
     }

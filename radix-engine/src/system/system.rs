@@ -1,6 +1,7 @@
 use super::id_allocation::IDAllocation;
 use super::system_modules::costing::ExecutionCostingEntry;
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
+use crate::blueprints::resource::LockFeeEvent;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
@@ -2220,31 +2221,68 @@ where
             })
     }
 
+    #[trace_resources]
     fn start_credit_cost_units(&mut self) -> Result<bool, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
-
-        Ok(self
+        let costing_enabled = self
             .api
             .kernel_get_system()
             .modules
             .enabled_modules
-            .contains(EnabledModules::COSTING))
+            .contains(EnabledModules::COSTING);
+
+        // We do both costing and limit checking up front
+        {
+            self.api
+                .kernel_get_system()
+                .modules
+                .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
+
+            if costing_enabled {
+                self.api.kernel_get_system().modules.reserve_event()?;
+            }
+        }
+
+        Ok(costing_enabled)
     }
 
     #[trace_resources]
     #[catch_unwind_ignore]
     fn credit_cost_units(&mut self, locked_fee: LiquidFungibleResource, contingent: bool) {
-        let actor = self.current_actor();
-        let vault_id = actor
+        // Credit cost units
+        let vault_id = self
+            .current_actor()
             .node_id()
             .expect("Caller should only be fungible vault method");
-        self.api
-            .kernel_get_system()
-            .modules
-            .credit_cost_units(vault_id, locked_fee, contingent);
+        self.api.kernel_get_system().modules.credit_cost_units(
+            vault_id,
+            locked_fee.clone(),
+            contingent,
+        );
+
+        // Emit Locked Fee event
+        {
+            let type_identifier = EventTypeIdentifier(
+                Emitter::Method(vault_id, ObjectModuleId::Main),
+                LockFeeEvent::EVENT_NAME.to_string(),
+            );
+
+            let lock_fee_event = LockFeeEvent {
+                amount: locked_fee.amount(),
+            };
+            let payload = scrypto_encode(&lock_fee_event).unwrap();
+
+            let event = Event {
+                type_identifier,
+                payload,
+                flags: EventFlags::FORCE_WRITE,
+            };
+
+            self.api
+                .kernel_get_system()
+                .modules
+                .use_reserved_event(event)
+                .expect("Event should never exceed size.");
+        }
     }
 
     fn execution_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
