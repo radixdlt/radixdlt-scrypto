@@ -2222,7 +2222,7 @@ where
     }
 
     #[trace_resources]
-    fn start_credit_cost_units(&mut self) -> Result<bool, RuntimeError> {
+    fn start_credit_cost_units(&mut self, amount: Decimal) -> Result<bool, RuntimeError> {
         let costing_enabled = self
             .api
             .kernel_get_system()
@@ -2230,16 +2230,33 @@ where
             .enabled_modules
             .contains(EnabledModules::COSTING);
 
-        // We do both costing and limit checking up front
-        {
-            self.api
-                .kernel_get_system()
-                .modules
-                .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
+        // We do costing up front
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
 
-            if costing_enabled {
-                self.api.kernel_get_system().modules.reserve_event()?;
-            }
+        let event_data = {
+            let lock_fee_event = LockFeeEvent { amount };
+            scrypto_encode(&lock_fee_event).unwrap()
+        };
+
+        // If costing is enabled, reserve event and pay for the event up front for the call to credit_cost_units()
+        // Otherwise, we just simulate the call
+        if costing_enabled {
+            self.api.kernel_get_system().modules.reserve_event()?;
+            self.api.kernel_get_system().modules.apply_execution_cost(
+                ExecutionCostingEntry::EmitEvent {
+                    size: event_data.len(),
+                },
+            )?;
+        } else {
+            self.emit_event_internal(
+                EmitterActor::CurrentActor,
+                LockFeeEvent::EVENT_NAME.to_string(),
+                event_data,
+                EventFlags::FORCE_WRITE,
+            )?;
         }
 
         Ok(costing_enabled)

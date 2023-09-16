@@ -395,8 +395,7 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        if !api.start_credit_cost_units()? {
-            Runtime::emit_event_no_revert(api, LockFeeEvent { amount })?;
+        if !api.start_credit_cost_units(amount)? {
             return Ok(());
         }
 
@@ -427,6 +426,8 @@ impl FungibleVaultBlueprint {
                 vault_handle,
                 &FungibleVaultBalanceFieldPayload::from_content_source(vault),
             )?;
+
+            // Force write flush only occurs if .field_close succeeds
             api.field_close(vault_handle)?;
             fee
         };

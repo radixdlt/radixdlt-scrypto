@@ -259,7 +259,7 @@ implement_client_api! {
         panic: (&mut self, message: String) -> Result<(), RuntimeError>,
     },
     ClientCostingApi: {
-        start_credit_cost_units: (&mut self) -> Result<bool, RuntimeError>,
+        start_credit_cost_units: (&mut self, amount: Decimal) -> Result<bool, RuntimeError>,
         credit_cost_units: (
             &mut self,
             locked_fee: LiquidFungibleResource,
