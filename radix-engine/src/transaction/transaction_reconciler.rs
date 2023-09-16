@@ -10,8 +10,9 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
 use radix_engine_store_interface::interface::SubstateDatabase;
+use sbor::rust::ops::AddAssign;
 use sbor::rust::ops::Neg;
-use std::ops::AddAssign;
+use sbor::rust::vec::Vec;
 use utils::prelude::IndexMap;
 use utils::{btreeset, indexmap};
 

@@ -1060,7 +1060,7 @@ where
         Ok(global_address)
     }
 
-    #[catch_unwind_ignore]
+    #[cfg_attr(feature = "std", catch_unwind_ignore)]
     pub fn current_actor(&mut self) -> Actor {
         self.api
             .kernel_get_system_state()
@@ -2263,7 +2263,7 @@ where
     }
 
     #[trace_resources]
-    #[catch_unwind_ignore]
+    #[cfg_attr(feature = "std", catch_unwind_ignore)]
     fn credit_cost_units(&mut self, locked_fee: LiquidFungibleResource, contingent: bool) {
         // Credit cost units
         let vault_id = self
