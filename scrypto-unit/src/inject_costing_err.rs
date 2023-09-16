@@ -57,12 +57,14 @@ impl<K: KernelCallbackObject> InjectCostingError<K> {
     fn maybe_err(&mut self) -> Result<(), RuntimeError> {
         *self.fail_after.borrow_mut() -= 1;
         if *self.fail_after.borrow() == 0 {
-            return Err(RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::FeeReserveError(FeeReserveError::InsufficientBalance {
-                    required: Decimal::MAX,
-                    remaining: Decimal::ONE,
-                }),
-            )));
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::CostingError(CostingError::FeeReserveError(
+                    FeeReserveError::InsufficientBalance {
+                        required: Decimal::MAX,
+                        remaining: Decimal::ONE,
+                    },
+                )),
+            ));
         }
 
         Ok(())
