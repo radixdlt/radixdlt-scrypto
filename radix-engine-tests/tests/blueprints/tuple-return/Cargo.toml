@@ -4,15 +4,15 @@ version = "0.13.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../../../../sbor" }
-scrypto = { path = "../../../../scrypto" }
-
-[dev-dependencies]
-radix-engine = { path = "../../../../radix-engine" }
+sbor = { path = "../../../../sbor", default-features = false }
+scrypto = { path = "../../../../scrypto", default-features = false }
 
 [features]
-default = []
+default = ["std"]
 test = []
+
+std = ["sbor/std", "scrypto/std"]
+alloc = ["sbor/alloc", "scrypto/alloc"]
 
 [lib]
 doctest = false
