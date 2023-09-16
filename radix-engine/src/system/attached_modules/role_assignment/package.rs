@@ -1,7 +1,7 @@
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
-use crate::system::node_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
+use crate::system::attached_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -35,6 +35,7 @@ pub enum RoleAssignmentError {
     ExceededMaxRoleNameLen { limit: usize, actual: usize },
     ExceededMaxAccessRuleDepth,
     ExceededMaxAccessRuleNodes,
+    ExceededMaxRoles,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -420,6 +421,10 @@ impl RoleAssignmentNativePackage {
         let mut role_entries = index_map_new();
 
         for (module, roles) in roles {
+            if roles.data.len() > MAX_ROLES {
+                return Err(RoleAssignmentError::ExceededMaxRoles);
+            }
+
             for (role_key, role_def) in roles.data {
                 if Self::is_reserved_role_key(&role_key) {
                     return Err(RoleAssignmentError::UsedReservedRole(

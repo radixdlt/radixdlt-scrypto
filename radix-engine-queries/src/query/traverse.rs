@@ -1,6 +1,6 @@
 use radix_engine::blueprints::resource::*;
 use radix_engine::prelude::*;
-use radix_engine::system::node_modules::royalty::{
+use radix_engine::system::attached_modules::royalty::{
     ComponentRoyaltyAccumulatorFieldPayload, ComponentRoyaltyField,
 };
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
