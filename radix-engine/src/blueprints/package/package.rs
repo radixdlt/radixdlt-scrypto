@@ -1,5 +1,5 @@
 use super::substates::*;
-use crate::blueprints::util::SecurifiedRoleAssignment;
+use crate::blueprints::util::{check_name, InvalidNameError, SecurifiedRoleAssignment};
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
@@ -58,10 +58,7 @@ pub enum PackageError {
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
-    InvalidName {
-        name: String,
-        violating_char: Option<String>,
-    },
+    InvalidName(InvalidNameError),
     MissingOuterBlueprint,
     WasmUnsupported(String),
     InvalidLocalTypeId(LocalTypeId),
@@ -142,6 +139,12 @@ pub enum PackageError {
 
     RoyaltiesNotEnabled,
     RoyaltyAmountIsNegative(RoyaltyAmount),
+}
+
+impl From<InvalidNameError> for PackageError {
+    fn from(error: InvalidNameError) -> Self {
+        Self::InvalidName(error)
+    }
 }
 
 fn validate_package_schema(
@@ -553,33 +556,8 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
 }
 
 fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
-    let condition = |name: &str| {
-        let mut iter = name.chars();
-        match iter.next() {
-            Some('A'..='Z' | 'a'..='z' | '_') => {
-                for char in iter {
-                    if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
-                        return Err(PackageError::InvalidName {
-                            name: name.to_owned(),
-                            violating_char: Some(char.to_string()),
-                        });
-                    }
-                }
-                Ok(())
-            }
-            Some(char) => Err(PackageError::InvalidName {
-                name: name.to_owned(),
-                violating_char: Some(char.to_string()),
-            }),
-            None => Err(PackageError::InvalidName {
-                name: name.to_owned(),
-                violating_char: None,
-            }),
-        }
-    };
-
     for (bp_name, bp_init) in definition.blueprints.iter() {
-        condition(bp_name)?;
+        check_name(bp_name)?;
         if bp_name.len() > MAX_BLUEPRINT_NAME_LEN {
             return Err(PackageError::ExceededMaxBlueprintNameLen {
                 limit: MAX_BLUEPRINT_NAME_LEN,
@@ -595,7 +573,7 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
                 });
             }
 
-            condition(name)?;
+            check_name(name)?;
         }
 
         for (name, _) in bp_init.schema.types.type_schema.iter() {
@@ -606,7 +584,7 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
                 });
             }
 
-            condition(name)?;
+            check_name(name)?;
         }
 
         for (name, _) in bp_init.schema.functions.functions.iter() {
@@ -617,11 +595,11 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
                 });
             }
 
-            condition(name)?;
+            check_name(name)?;
         }
 
         for (_, export_name) in bp_init.schema.hooks.hooks.iter() {
-            condition(export_name)?;
+            check_name(export_name)?;
         }
 
         for name in bp_init.feature_set.iter() {
@@ -632,18 +610,18 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
                 });
             }
 
-            condition(name)?;
+            check_name(name)?;
         }
 
         if let PackageRoyaltyConfig::Enabled(list) = &bp_init.royalty_config {
             for (name, _) in list.iter() {
-                condition(name)?;
+                check_name(name)?;
             }
         }
 
         if let FunctionAuth::AccessRules(list) = &bp_init.auth_config.function_auth {
             for (name, _) in list.iter() {
-                condition(name)?;
+                check_name(name)?;
             }
         }
 
@@ -658,15 +636,15 @@ fn validate_names(definition: &PackageDefinition) -> Result<(), PackageError> {
                             actual: role_key.key.len(),
                         });
                     }
-                    condition(&role_key.key)?;
+                    check_name(&role_key.key)?;
                 }
             }
 
             for (key, accessibility) in static_roles.methods.iter() {
-                condition(&key.ident)?;
+                check_name(&key.ident)?;
                 if let MethodAccessibility::RoleProtected(role_list) = accessibility {
                     for role_key in &role_list.list {
-                        condition(&role_key.key)?;
+                        check_name(&role_key.key)?;
                     }
                 }
             }
