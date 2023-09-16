@@ -36,6 +36,7 @@ pub enum RoleAssignmentError {
     ExceededMaxAccessRuleDepth,
     ExceededMaxAccessRuleNodes,
     ExceededMaxRoles,
+    CannotSetRoleIfNotAttached,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -132,7 +133,7 @@ impl RoleAssignmentNativePackage {
                     aggregator.add_child_type_and_descendents::<RoleAssignmentSetInput>(),
                 ),
                 output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<RoleAssignmentSetRoleOutput>(),
+                    aggregator.add_child_type_and_descendents::<RoleAssignmentSetOutput>(),
                 ),
                 export: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
             },
@@ -569,6 +570,19 @@ impl RoleAssignmentNativePackage {
         Self::verify_access_rule(&rule).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
         })?;
+
+        // Only allow this method to be called on attached role assignment modules.
+        // This is currently implemented to prevent unbounded number of roles from
+        // being created.
+        api.actor_get_node_id(ACTOR_REF_GLOBAL)
+            .map_err(|e| match e {
+                RuntimeError::SystemError(SystemError::GlobalAddressDoesNotExist) => {
+                    RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                        RoleAssignmentError::CannotSetRoleIfNotAttached,
+                    ))
+                }
+                _ => e,
+            })?;
 
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
