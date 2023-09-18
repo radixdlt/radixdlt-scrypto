@@ -221,3 +221,38 @@ impl VmInvoke for NullVmInvoke {
         panic!("Invocation was called on null VmInvoke");
     }
 }
+
+#[derive(Clone)]
+pub struct OverridePackageCode<C: VmInvoke + Clone> {
+    custom_package_code_id: u64,
+    custom_invoke: C,
+}
+
+impl<C: VmInvoke + Clone> OverridePackageCode<C> {
+    pub fn new(custom_package_code_id: u64, custom_invoke: C) -> Self {
+        Self {
+            custom_package_code_id,
+            custom_invoke,
+        }
+    }
+}
+
+impl<C: VmInvoke + Clone> NativeVmExtension for OverridePackageCode<C> {
+    type Instance = C;
+
+    fn try_create_instance(&self, code: &[u8]) -> Option<C> {
+        let code_id = {
+            let code: [u8; 8] = match code.clone().try_into() {
+                Ok(code) => code,
+                Err(..) => return None,
+            };
+            u64::from_be_bytes(code)
+        };
+
+        if self.custom_package_code_id == code_id {
+            Some(self.custom_invoke.clone())
+        } else {
+            None
+        }
+    }
+}
