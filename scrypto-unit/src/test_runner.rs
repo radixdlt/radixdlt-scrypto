@@ -2497,7 +2497,10 @@ impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
                         assert_eq!(reported_resource, traversed_resource);
                         change
                     })
-                    .reduce(|left, right| left + right)
+                    .reduce(|mut left, right| {
+                        left.add_assign(right);
+                        left
+                    })
                     .map(|change| (traversed_resource, change))
             })
             .collect()

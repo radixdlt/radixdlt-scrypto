@@ -147,6 +147,7 @@ impl SystemModuleMixer {
                 execution_cost_breakdown: index_map_new(),
                 finalization_cost_breakdown: index_map_new(),
                 storage_cost_breakdown: index_map_new(),
+                on_apply_cost: Default::default(),
             },
             auth: AuthModule {
                 params: auth_zone_params.clone(),
@@ -501,7 +502,7 @@ impl SystemModuleMixer {
         Ok(())
     }
 
-    pub fn add_event(&mut self, event: Event) -> Result<(), RuntimeError> {
+    pub fn assert_can_add_event(&mut self) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if self.transaction_runtime.events.len() >= self.limits.config().max_number_of_events {
                 return Err(RuntimeError::SystemModuleError(
@@ -510,6 +511,13 @@ impl SystemModuleMixer {
                     ),
                 ));
             }
+        }
+
+        Ok(())
+    }
+
+    pub fn add_event_unchecked(&mut self, event: Event) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if event.payload.len() > self.limits.config().max_event_size {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(
@@ -526,9 +534,15 @@ impl SystemModuleMixer {
             .enabled_modules
             .contains(EnabledModules::TRANSACTION_RUNTIME)
         {
-            self.transaction_runtime.add_event(event)
+            self.transaction_runtime.add_event(event);
         }
 
+        Ok(())
+    }
+
+    pub fn checked_add_event(&mut self, event: Event) -> Result<(), RuntimeError> {
+        self.assert_can_add_event()?;
+        self.add_event_unchecked(event)?;
         Ok(())
     }
 
@@ -569,6 +583,22 @@ impl SystemModuleMixer {
     pub fn costing(&mut self) -> Option<&CostingModule> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             Some(&self.costing)
+        } else {
+            None
+        }
+    }
+
+    pub fn costing_mut(&mut self) -> Option<&mut CostingModule> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            Some(&mut self.costing)
+        } else {
+            None
+        }
+    }
+
+    pub fn limits_mut(&mut self) -> Option<&mut LimitsModule> {
+        if self.enabled_modules.contains(EnabledModules::LIMITS) {
+            Some(&mut self.limits)
         } else {
             None
         }
@@ -644,12 +674,12 @@ impl SystemModuleMixer {
         vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<LiquidFungibleResource, RuntimeError> {
+    ) {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing
-                .credit_cost_units(vault_id, locked_fee, contingent)
+                .credit_cost_units(vault_id, locked_fee, contingent);
         } else {
-            Ok(locked_fee)
+            panic!("Fungible Vault Application layer should prevent call to credit if costing not enabled");
         }
     }
 

@@ -88,7 +88,7 @@ pub enum WriteSubstateEvent<'a> {
 
 #[derive(Debug)]
 pub enum CloseSubstateEvent {
-    End(SubstateHandle),
+    Start(SubstateHandle),
 }
 
 #[derive(Debug)]

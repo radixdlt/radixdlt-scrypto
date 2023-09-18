@@ -395,49 +395,47 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        // Lock the substate (with special flags)
-        let vault_handle = api.actor_open_field(
-            ACTOR_STATE_SELF,
-            FungibleVaultField::Balance.into(),
-            LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
-        )?;
-
-        // Take fee from the vault
-        let mut vault = api
-            .field_read_typed::<FungibleVaultBalanceFieldPayload>(vault_handle)?
-            .into_latest();
-        let fee = vault.take_by_amount(amount).map_err(|e| {
-            let vault_error = match e {
-                ResourceError::InsufficientBalance { requested, actual } => {
-                    VaultError::LockFeeInsufficientBalance { requested, actual }
-                }
-                _ => VaultError::ResourceError(e),
-            };
-
-            RuntimeError::ApplicationError(ApplicationError::VaultError(vault_error))
-        })?;
-
-        // Credit cost units
-        let receiver = Runtime::get_node_id(api)?;
-        let changes = api.credit_cost_units(receiver.clone().into(), fee, contingent)?;
-
-        // Keep changes
-        if !changes.is_empty() {
-            // This will only occur if costing module is turned off for whatever reason.
-            // There is probably a nicer interface which doesn't require this sort of logic but
-            // this is good enough for now.
-            vault.put(changes);
+        if !api.start_lock_fee(amount)? {
+            return Ok(());
         }
 
-        // Flush updates
-        api.field_write_typed(
-            vault_handle,
-            &FungibleVaultBalanceFieldPayload::from_content_source(vault),
-        )?;
-        api.field_close(vault_handle)?;
+        // Take fee from the vault
+        let fee = {
+            // Lock the substate (with special flags)
+            let vault_handle = api.actor_open_field(
+                ACTOR_STATE_SELF,
+                FungibleVaultField::Balance.into(),
+                LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
+            )?;
 
-        // Emitting an event once the fee has been locked
-        Runtime::emit_event_no_revert(api, events::fungible_vault::LockFeeEvent { amount })?;
+            let mut vault = api
+                .field_read_typed::<FungibleVaultBalanceFieldPayload>(vault_handle)?
+                .into_latest();
+            let fee = vault.take_by_amount(amount).map_err(|e| {
+                let vault_error = match e {
+                    ResourceError::InsufficientBalance { requested, actual } => {
+                        VaultError::LockFeeInsufficientBalance { requested, actual }
+                    }
+                    _ => VaultError::ResourceError(e),
+                };
+
+                RuntimeError::ApplicationError(ApplicationError::VaultError(vault_error))
+            })?;
+            // Flush updates
+            api.field_write_typed(
+                vault_handle,
+                &FungibleVaultBalanceFieldPayload::from_content_source(vault),
+            )?;
+
+            // Force write flush only occurs if field_close succeeds
+            api.field_close(vault_handle)?;
+            fee
+        };
+
+        // At this point the vault fee take is guaranteed to be force-written
+        // so we must take care not to error out before crediting the cost units
+        // and emitting an event
+        api.lock_fee(fee, contingent);
 
         Ok(())
     }
