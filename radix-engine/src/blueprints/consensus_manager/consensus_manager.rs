@@ -1487,3 +1487,39 @@ impl ValidatorInfo {
             ))?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_to_reliability_factor() {
+        let min_required_reliability = dec!("0.8");
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0"), min_required_reliability),
+            Ok(dec!("0"))
+        );
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0.4"), min_required_reliability),
+            Ok(dec!("0"))
+        );
+
+        // Is the following rescaling desired?
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0.8"), min_required_reliability),
+            Ok(dec!("0"))
+        );
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0.9"), min_required_reliability),
+            Ok(dec!("0.5"))
+        );
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0.95"), min_required_reliability),
+            Ok(dec!("0.75"))
+        );
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("1"), min_required_reliability),
+            Ok(dec!("1"))
+        );
+    }
+}
