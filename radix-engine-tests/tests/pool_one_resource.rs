@@ -175,6 +175,19 @@ fn initial_contribution_to_pool_check_amount() {
 }
 
 #[test]
+fn pool_check_debug_output() {
+    // Arrange
+    let input_args_empty = OneResourcePoolGetVaultAmountManifestInput;
+    let _debug_fmt_coverage = format!("{:?}", input_args_empty);
+
+    let input_args = OneResourcePoolProtectedWithdrawManifestInput {
+        amount: 10.into(),
+        withdraw_strategy: WithdrawStrategy::Rounded(RoundingMode::ToZero),
+    };
+    let _debug_fmt_coverage = format!("{:?}", input_args);
+}
+
+#[test]
 fn contribution_to_pool_mints_expected_amount_1() {
     // Arrange
     let mut test_runner = TestEnvironment::new(18);
@@ -713,21 +726,18 @@ impl TestEnvironment {
             account,
         );
 
-        let input_args = OneResourcePoolInstantiateManifestInput {
-            resource_address,
-            pool_manager_rule: rule!(require(virtual_signature_badge)),
-            owner_role,
-            address_reservation: None,
-        };
-        let _debug_fmt_coverage = format!("{:?}", input_args);
-
         let (pool_component, pool_unit_resource) = {
             let manifest = ManifestBuilder::new()
                 .call_function(
                     POOL_PACKAGE,
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
                     ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    input_args,
+                    OneResourcePoolInstantiateManifestInput {
+                        resource_address,
+                        pool_manager_rule: rule!(require(virtual_signature_badge)),
+                        owner_role,
+                        address_reservation: None,
+                    },
                 )
                 .build();
             let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -853,14 +863,11 @@ impl TestEnvironment {
     }
 
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {
-        let input_args = OneResourcePoolGetVaultAmountManifestInput;
-        let _debug_fmt_coverage = format!("{:?}", input_args);
-
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
-                input_args,
+                OneResourcePoolGetVaultAmountManifestInput,
             )
             .build();
         let receipt = self.execute_manifest(manifest, sign);
