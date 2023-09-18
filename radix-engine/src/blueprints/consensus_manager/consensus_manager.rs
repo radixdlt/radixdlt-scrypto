@@ -1379,7 +1379,7 @@ impl ConsensusManagerBlueprint {
                 .checked_add(
                     validator_rewards
                         .proposer_rewards
-                        .get(&index)
+                        .get(index)
                         .cloned()
                         .unwrap_or_default(),
                 )
