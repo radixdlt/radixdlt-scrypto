@@ -1,7 +1,6 @@
 use crate::*;
 use core::str::FromStr;
-use sbor::rust::fmt;
-use sbor::rust::fmt::Debug;
+use sbor::rust::prelude::*;
 
 /// Represents the level of a log message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor, Ord, PartialOrd, Default)]

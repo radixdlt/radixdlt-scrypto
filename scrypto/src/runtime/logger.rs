@@ -6,7 +6,6 @@ use sbor::rust::string::String;
 #[derive(Debug)]
 pub struct Logger {}
 
-#[allow(unused_variables)]
 impl Logger {
     /// Emits a TRACE message.
     pub fn trace(message: String) {
