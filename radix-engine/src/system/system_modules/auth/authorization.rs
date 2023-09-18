@@ -1,7 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_modules::role_assignment::{
+use crate::system::attached_modules::role_assignment::{
     RoleAssignmentAccessRuleEntryPayload, RoleAssignmentOwnerFieldPayload,
 };
 use crate::system::system_modules::auth::{

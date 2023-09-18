@@ -2,8 +2,8 @@ use super::substates::*;
 use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
+use crate::system::attached_modules::metadata::MetadataNativePackage;
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::system_modules::costing::{
     apply_royalty_cost, CostingError, FeeReserveError, RoyaltyRecipient,
 };
@@ -25,8 +25,8 @@ use sbor::LocalTypeId;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::role_assignment::*;
-use crate::system::node_modules::royalty::RoyaltyUtil;
+use crate::system::attached_modules::role_assignment::*;
+use crate::system::attached_modules::royalty::RoyaltyUtil;
 use crate::system::system::*;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;

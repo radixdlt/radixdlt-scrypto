@@ -57,6 +57,22 @@ macro_rules! test_impl {
 
             paste! {
                 #[test]
+                fn [<test_display_$i:lower>]() {
+                    #[cfg(feature = "alloc")]
+                    use sbor::prelude::format;
+
+                    let x = <$i>::MAX;
+                    let _f = format!("{:?}", x);
+                    let _f = format!("{}", x);
+
+                    #[cfg(not(feature = "alloc"))]
+                    let _f = format!("{}", [< Parse $i Error >] ::NegativeToUnsigned);
+
+                    #[cfg(not(feature = "alloc"))]
+                    let _f = format!("{:?}", [< Parse $i Error >] ::NegativeToUnsigned);
+                }
+
+                #[test]
                 #[should_panic]
                 fn [<test_add_overflow_$i:lower>]() {
                     let _ = <$i>::MAX + <$i>::try_from(1u8).unwrap(); // panics on overflow
@@ -155,6 +171,12 @@ macro_rules! test_impl {
 //                }
 //
                 #[test]
+                fn [<test_default_$i:lower>]() {
+                    let zero = <$i>::try_from(0u8).unwrap();
+                    assert_eq!(zero, <$i>::default());
+                }
+
+                #[test]
                 fn [<test_zero_$i:lower>]() {
                     let zero = <$i>::try_from(0u8).unwrap();
                     assert_eq!(zero, <$i>::zero());
@@ -245,8 +267,23 @@ macro_rules! test_math {
                 const MAX_BYTES: usize = if A_BYTES > B_BYTES { A_BYTES } else { B_BYTES };
                 let a: $i = BigInt::from_bytes_le(Sign::Plus, &[2u8; A_BYTES]).try_into().unwrap();
                 let b: $t = BigInt::from_bytes_le(Sign::Plus, &[2u8; B_BYTES]).try_into().unwrap();
-                let expect = BigInt::from_bytes_le(Sign::Plus, &[4u8; MAX_BYTES]);
-                assert_eq!(a.add(b), expect.try_into().unwrap());
+                let expect: $i = BigInt::from_bytes_le(Sign::Plus, &[4u8; MAX_BYTES]).try_into().unwrap();
+                assert_eq!(a.add(b), expect);
+                assert_eq!(&a.add(b), &expect);
+                assert_eq!(a.add(&b), expect);
+                assert_eq!(&a.add(&b), &expect);
+                assert_eq!(a + b, expect);
+                assert_eq!(&a + b, expect);
+                assert_eq!(a + &b, expect);
+                assert_eq!(&a + &b, expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[2u8; A_BYTES]).try_into().unwrap();
+                a += b;
+                assert_eq!(a, expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[2u8; A_BYTES]).try_into().unwrap();
+                a += &b;
+                assert_eq!(a, expect);
             }
 
             #[test]
@@ -280,8 +317,23 @@ macro_rules! test_math {
                 const MAX_BYTES: usize = if A_BYTES > B_BYTES { A_BYTES } else { B_BYTES };
                 let a: $i = BigInt::from_bytes_le(Sign::Plus, &[2u8; A_BYTES]).try_into().unwrap();
                 let b: $t = BigInt::from_bytes_le(Sign::Plus, &[2u8; B_BYTES]).try_into().unwrap();
-                let expect = BigInt::from_bytes_le(Sign::Plus, &[0u8; MAX_BYTES]);
-                assert_eq!(a.sub(b), expect.try_into().unwrap());
+                let expect: $i = BigInt::from_bytes_le(Sign::Plus, &[0u8; MAX_BYTES]).try_into().unwrap();
+                assert_eq!(a.sub(b), expect);
+                assert_eq!(&a.sub(b), &expect);
+                assert_eq!(a.sub(&b), expect);
+                assert_eq!(&a.sub(&b), &expect);
+                assert_eq!(a - b, expect);
+                assert_eq!(&a - b, expect);
+                assert_eq!(a - &b, expect);
+                assert_eq!(&a - &b, expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[2u8; A_BYTES]).try_into().unwrap();
+                a -= b;
+                assert_eq!(a, expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[2u8; A_BYTES]).try_into().unwrap();
+                a -= &b;
+                assert_eq!(a, expect);
             }
 
             #[test]
@@ -291,8 +343,23 @@ macro_rules! test_math {
                 const MAX_BYTES: usize = if A_BYTES > B_BYTES { A_BYTES } else { B_BYTES };
                 let a: $i = BigInt::from_bytes_le(Sign::Plus, &[2u8; A_BYTES]).try_into().unwrap();
                 let b: $t = 2u8.try_into().unwrap();
-                let expect = BigInt::from_bytes_le(Sign::Plus, &[4u8; MAX_BYTES]);
-                assert_eq!(a.mul(b), expect.try_into().unwrap());
+                let expect: $i = BigInt::from_bytes_le(Sign::Plus, &[4u8; MAX_BYTES]).try_into().unwrap();
+                assert_eq!(a.mul(b), expect);
+                assert_eq!(&a.mul(b), &expect);
+                assert_eq!(a.mul(&b), expect);
+                assert_eq!(&a.mul(&b), &expect);
+                assert_eq!(a * b, expect);
+                assert_eq!(&a * b, expect);
+                assert_eq!(a * &b, expect);
+                assert_eq!(&a * &b, expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[2u8; A_BYTES]).try_into().unwrap();
+                a *= b;
+                assert_eq!(a, expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[2u8; A_BYTES]).try_into().unwrap();
+                a *= &b;
+                assert_eq!(a, expect);
             }
 
             #[test]
@@ -300,7 +367,23 @@ macro_rules! test_math {
                 const A_BYTES: usize = (<$i>::BITS / 8) as usize;
                 let a: $i = BigInt::from_bytes_le(Sign::Plus, &[4u8; A_BYTES]).try_into().unwrap();
                 let b: $i = BigInt::from_bytes_le(Sign::Plus, &[4u8; A_BYTES]).try_into().unwrap();
-                assert_eq!(a.div(b).to_string(), "1");
+                let expect = $i::try_from(1).unwrap();
+                assert_eq!(a.div(b), expect);
+                assert_eq!(&a.div(b), &expect);
+                assert_eq!(a.div(&b), expect);
+                assert_eq!(&a.div(&b), &expect);
+                assert_eq!(a / b, expect);
+                assert_eq!(&a / b, expect);
+                assert_eq!(a / &b, expect);
+                assert_eq!(&a / &b, expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[4u8; A_BYTES]).try_into().unwrap();
+                a /= b;
+                assert_eq!(a, expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[4u8; A_BYTES]).try_into().unwrap();
+                a /= &b;
+                assert_eq!(a, expect);
             }
 
             #[test]
@@ -308,8 +391,16 @@ macro_rules! test_math {
                 const A_BYTES: usize = (<$i>::BITS / 8) as usize;
                 let a: $i = BigInt::from_bytes_le(Sign::Plus, &[10u8; A_BYTES]).try_into().unwrap();
                 let b: $i = 8u8.try_into().unwrap();
-                let expect = 2u8;
-                assert_eq!(a.rem(b), expect.try_into().unwrap());
+                let expect = $i::try_from(2u8).unwrap();
+                assert_eq!(a.rem(b), expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[10u8; A_BYTES]).try_into().unwrap();
+                a %= b;
+                assert_eq!(a, expect);
+
+                let mut a: $i = BigInt::from_bytes_le(Sign::Plus, &[10u8; A_BYTES]).try_into().unwrap();
+                a %= &b;
+                assert_eq!(a, expect);
             }
 
             #[test]
@@ -379,6 +470,9 @@ macro_rules! test_math {
                     expect = BigInt::from_signed_bytes_le(&[0b01010101u8; A_BYTES]).try_into().unwrap();
                 }
                 assert_eq!(a.not(), expect);
+
+                assert_eq!(!a, expect);
+                assert_eq!(!&a, expect);
             }
 
             #[test]
@@ -556,6 +650,50 @@ macro_rules! test_math {
                     a >>= i.try_into().unwrap();
                     assert_eq!(a.leading_zeros(), i as u32 + 1);
                 }
+            }
+
+            #[test]
+            fn [<test_bits_from_be_ $i:lower >]() {
+                let i = <$i>::ONE;
+                let bytes = i.to_le_bytes();
+
+                let x = <$i>::from_be(i);
+                let b : BigInt = BigInt::from_bytes_be(Sign::Plus, &bytes).try_into().unwrap();
+
+                assert_eq!(x, <$i>::try_from(b).unwrap());
+            }
+
+            #[test]
+            fn [<test_bits_from_le_ $i:lower >]() {
+                let i = <$i>::ONE;
+                let bytes = i.to_le_bytes();
+
+                let x = <$i>::from_le(i);
+                let b : BigInt = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+
+                assert_eq!(x, <$i>::try_from(b).unwrap());
+            }
+
+            #[test]
+            fn [<test_bits_to_be_ $i:lower >]() {
+                let i = <$i>::ONE;
+                let bytes = i.to_le_bytes();
+
+                let x = i.to_be();
+                let b : BigInt = BigInt::from_bytes_be(Sign::Plus, &bytes).try_into().unwrap();
+
+                assert_eq!(x, <$i>::try_from(b).unwrap());
+            }
+
+            #[test]
+            fn [<test_bits_to_le_ $i:lower >]() {
+                let i = <$i>::ONE;
+                let bytes = i.to_le_bytes();
+
+                let x = i.to_le();
+                let b : BigInt = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+
+                assert_eq!(x, <$i>::try_from(b).unwrap());
             }
 
             #[test]

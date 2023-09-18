@@ -1,7 +1,7 @@
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
-use crate::system::node_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
+use crate::system::attached_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -35,6 +35,8 @@ pub enum RoleAssignmentError {
     ExceededMaxRoleNameLen { limit: usize, actual: usize },
     ExceededMaxAccessRuleDepth,
     ExceededMaxAccessRuleNodes,
+    ExceededMaxRoles,
+    CannotSetRoleIfNotAttached,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -131,7 +133,7 @@ impl RoleAssignmentNativePackage {
                     aggregator.add_child_type_and_descendents::<RoleAssignmentSetInput>(),
                 ),
                 output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<RoleAssignmentSetRoleOutput>(),
+                    aggregator.add_child_type_and_descendents::<RoleAssignmentSetOutput>(),
                 ),
                 export: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
             },
@@ -420,6 +422,10 @@ impl RoleAssignmentNativePackage {
         let mut role_entries = index_map_new();
 
         for (module, roles) in roles {
+            if roles.data.len() > MAX_ROLES {
+                return Err(RoleAssignmentError::ExceededMaxRoles);
+            }
+
             for (role_key, role_def) in roles.data {
                 if Self::is_reserved_role_key(&role_key) {
                     return Err(RoleAssignmentError::UsedReservedRole(
@@ -564,6 +570,19 @@ impl RoleAssignmentNativePackage {
         Self::verify_access_rule(&rule).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
         })?;
+
+        // Only allow this method to be called on attached role assignment modules.
+        // This is currently implemented to prevent unbounded number of roles from
+        // being created.
+        api.actor_get_node_id(ACTOR_REF_GLOBAL)
+            .map_err(|e| match e {
+                RuntimeError::SystemError(SystemError::GlobalAddressDoesNotExist) => {
+                    RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                        RoleAssignmentError::CannotSetRoleIfNotAttached,
+                    ))
+                }
+                _ => e,
+            })?;
 
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,

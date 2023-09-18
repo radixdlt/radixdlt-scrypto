@@ -14,9 +14,9 @@ use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
 };
 use crate::internal_prelude::*;
-use crate::system::node_modules::metadata::MetadataNativePackage;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::node_modules::royalty::RoyaltyNativePackage;
+use crate::system::attached_modules::metadata::MetadataNativePackage;
+use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::system::attached_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
@@ -1144,7 +1144,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
-                    id_type: NonFungibleIdType::Bytes,
+                    id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
                     resource_roles: NonFungibleResourceRoles::default(),
