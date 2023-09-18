@@ -276,6 +276,8 @@ mod tests {
             addr2,
             Err(ParseResourceAddressError::InvalidLength(..))
         ));
+
+        #[cfg(not(feature = "alloc"))]
         println!("Error: {}", addr2.unwrap_err());
     }
 
