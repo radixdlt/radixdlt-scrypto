@@ -713,18 +713,21 @@ impl TestEnvironment {
             account,
         );
 
+        let input_args = OneResourcePoolInstantiateManifestInput {
+            resource_address,
+            pool_manager_rule: rule!(require(virtual_signature_badge)),
+            owner_role,
+            address_reservation: None,
+        };
+        let _debug_fmt_coverage = format!("{:?}", input_args);
+
         let (pool_component, pool_unit_resource) = {
             let manifest = ManifestBuilder::new()
                 .call_function(
                     POOL_PACKAGE,
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
                     ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    OneResourcePoolInstantiateManifestInput {
-                        resource_address,
-                        pool_manager_rule: rule!(require(virtual_signature_badge)),
-                        owner_role,
-                        address_reservation: None,
-                    },
+                    input_args,
                 )
                 .build();
             let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -850,11 +853,14 @@ impl TestEnvironment {
     }
 
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {
+        let input_args = OneResourcePoolGetVaultAmountManifestInput;
+        let _debug_fmt_coverage = format!("{:?}", input_args);
+
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
-                OneResourcePoolGetVaultAmountManifestInput,
+                input_args,
             )
             .build();
         let receipt = self.execute_manifest(manifest, sign);
