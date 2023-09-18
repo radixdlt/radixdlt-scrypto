@@ -61,31 +61,27 @@ fn run_cargo_build(
     no_schema: bool,
     min_log_level: Level,
 ) -> Result<(), BuildError> {
-    let mut features = Vec::<String>::new();
+    let mut features = String::new();
     if trace {
-        features.push("scrypto/trace".to_owned());
+        features.push_str(",scrypto/trace");
     }
     if no_schema {
-        features.push("scrypto/no-schema".to_owned());
+        features.push_str(",scrypto/no-schema");
     }
     if Level::Error <= min_log_level {
-        features.push("scrypto/log-error".to_owned());
+        features.push_str(",scrypto/log-error");
     }
     if Level::Warn <= min_log_level {
-        features.push("scrypto/log-warn".to_owned());
+        features.push_str(",scrypto/log-warn");
     }
     if Level::Info <= min_log_level {
-        features.push("scrypto/log-info".to_owned());
+        features.push_str(",scrypto/log-info");
     }
     if Level::Debug <= min_log_level {
-        features.push("scrypto/log-debug".to_owned());
+        features.push_str(",scrypto/log-debug");
     }
     if Level::Trace <= min_log_level {
-        features.push("scrypto/log-trace".to_owned());
-    }
-
-    if !features.is_empty() {
-        features.insert(0, "--features".to_owned());
+        features.push_str(",scrypto/log-trace");
     }
 
     let status = Command::new("cargo")
@@ -97,7 +93,11 @@ fn run_cargo_build(
         .arg(target_path.as_ref())
         .arg("--manifest-path")
         .arg(manifest_path.as_ref())
-        .args(features)
+        .args(if features.is_empty() {
+            vec![]
+        } else {
+            vec!["--features", &features[1..]]
+        })
         .status()
         .map_err(BuildError::IOError)?;
     if status.success() {

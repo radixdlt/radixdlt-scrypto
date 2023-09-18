@@ -20,7 +20,8 @@ pub struct Build {
     #[clap(long)]
     disable_wasm_opt: bool,
 
-    /// The min log level
+    /// The min log level, such as ERROR, WARN, INFO, DEBUG and TRACE.
+    /// The default is INFO.
     #[clap(long)]
     min_log_level: Option<Level>,
 }
