@@ -184,7 +184,7 @@ mod tests {
         let mut decoder = VecDecoder::<ScryptoCustomValueKind>::new(&buf_decode, 1);
         let output = Global::<SomeTypeObjectTypeInfo>::decode_body_with_value_kind(
             &mut decoder,
-            Global::<SomeTypeObjectTypeInfo>::value_kind(),
+            ComponentAddress::value_kind(),
         );
         assert!(output.is_ok());
 
@@ -214,13 +214,11 @@ mod tests {
         let buf_decode = buf.into_iter().skip(1).collect::<Vec<u8>>(); // skip Owned value kind, not used in decode_body_with_value_kind() decoding function
 
         let mut decoder = VecDecoder::<ScryptoCustomValueKind>::new(&buf_decode, 1);
-        let _output = Owned::<SomeTypeObjectTypeInfo>::decode_body_with_value_kind(
+        let output = Owned::<SomeTypeObjectTypeInfo>::decode_body_with_value_kind(
             &mut decoder,
-            Owned::<SomeTypeObjectTypeInfo>::value_kind(),
+            InternalAddress::value_kind(),
         );
-        // TODO: fails with an error because of value kind is not matching:
-        //  ScryptoCustomValueKind::Own (from Owned::<SomeTypeObjectTypeInfo>) != ScryptoCustomValueKind::Reference (from InternalAddress)
-        //assert_eq!(output.err(), None);
+        assert_eq!(output.err(), None);
 
         let describe = Owned::<SomeTypeObjectTypeInfo>::type_data();
         assert_eq!(describe.kind, TypeKind::Custom(ScryptoCustomTypeKind::Own));
