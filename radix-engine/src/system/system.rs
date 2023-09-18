@@ -609,7 +609,10 @@ where
         };
 
         // Adding the event to the event store
-        self.api.kernel_get_system().modules.add_event(event)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .checked_add_event(event)?;
 
         Ok(())
     }
@@ -2222,7 +2225,7 @@ where
     }
 
     #[trace_resources]
-    fn start_credit_cost_units(&mut self, amount: Decimal) -> Result<bool, RuntimeError> {
+    fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, RuntimeError> {
         let costing_enabled = self
             .api
             .kernel_get_system()
@@ -2244,7 +2247,10 @@ where
         // If costing is enabled, reserve event and pay for the event up front for the call to credit_cost_units()
         // Otherwise, we just simulate the call
         if costing_enabled {
-            self.api.kernel_get_system().modules.reserve_event()?;
+            self.api
+                .kernel_get_system()
+                .modules
+                .assert_can_add_event()?;
             self.api.kernel_get_system().modules.apply_execution_cost(
                 ExecutionCostingEntry::EmitEvent {
                     size: event_data.len(),
@@ -2264,7 +2270,7 @@ where
 
     #[trace_resources]
     #[cfg_attr(feature = "std", catch_unwind_ignore)]
-    fn credit_cost_units(&mut self, locked_fee: LiquidFungibleResource, contingent: bool) {
+    fn lock_fee(&mut self, locked_fee: LiquidFungibleResource, contingent: bool) {
         // Credit cost units
         let vault_id = self
             .current_actor()
@@ -2297,7 +2303,7 @@ where
             self.api
                 .kernel_get_system()
                 .modules
-                .use_reserved_event(event)
+                .add_event_unchecked(event)
                 .expect("Event should never exceed size.");
         }
     }

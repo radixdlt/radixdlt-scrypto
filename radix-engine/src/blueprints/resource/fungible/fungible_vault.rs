@@ -395,7 +395,7 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        if !api.start_credit_cost_units(amount)? {
+        if !api.start_lock_fee(amount)? {
             return Ok(());
         }
 
@@ -427,7 +427,7 @@ impl FungibleVaultBlueprint {
                 &FungibleVaultBalanceFieldPayload::from_content_source(vault),
             )?;
 
-            // Force write flush only occurs if .field_close succeeds
+            // Force write flush only occurs if field_close succeeds
             api.field_close(vault_handle)?;
             fee
         };
@@ -435,7 +435,7 @@ impl FungibleVaultBlueprint {
         // At this point the vault fee take is guaranteed to be force-written
         // so we must take care not to error out before crediting the cost units
         // and emitting an event
-        api.credit_cost_units(fee, contingent);
+        api.lock_fee(fee, contingent);
 
         Ok(())
     }

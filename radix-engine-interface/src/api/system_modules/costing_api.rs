@@ -4,10 +4,10 @@ use radix_engine_common::math::Decimal;
 
 pub trait ClientCostingApi<E> {
     /// Check if costing is enabled.
-    fn start_credit_cost_units(&mut self, amount: Decimal) -> Result<bool, E>;
+    fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, E>;
 
     /// Add cost units to the reserve. This should never fail.
-    fn credit_cost_units(&mut self, locked_fee: LiquidFungibleResource, contingent: bool);
+    fn lock_fee(&mut self, locked_fee: LiquidFungibleResource, contingent: bool);
 
     fn consume_cost_units(&mut self, costing_entry: ClientCostingEntry) -> Result<(), E>;
 
