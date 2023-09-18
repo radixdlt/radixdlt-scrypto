@@ -32,7 +32,7 @@ size4=$(ls -la ../examples/everything/target/wasm32-unknown-unknown/release/ever
 $scrypto build --path ../examples/everything --min-log-level TRACE
 size5=$(ls -la ../examples/everything/target/wasm32-unknown-unknown/release/everything.wasm | cut -d ' ' -f 5)
 
-if (( $size1 -lt $size2 && $size2 -lt $size3 && $size3 -lt $size4 && $size4 -lt $size5 )) ; then
+if [ $size1 -lt $size2 ] && [ $size2 -lt $size3 ] && [ $size3 -lt $size4 ] && [ $size4 -lt $size5 ] ; then
   echo "Size check is okay"
   exit 0
 else
