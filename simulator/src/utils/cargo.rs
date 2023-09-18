@@ -59,7 +59,7 @@ fn run_cargo_build(
     target_path: impl AsRef<OsStr>,
     trace: bool,
     no_schema: bool,
-    min_log_level: Level,
+    log_level: Level,
 ) -> Result<(), BuildError> {
     let mut features = String::new();
     if trace {
@@ -68,19 +68,19 @@ fn run_cargo_build(
     if no_schema {
         features.push_str(",scrypto/no-schema");
     }
-    if Level::Error <= min_log_level {
+    if Level::Error <= log_level {
         features.push_str(",scrypto/log-error");
     }
-    if Level::Warn <= min_log_level {
+    if Level::Warn <= log_level {
         features.push_str(",scrypto/log-warn");
     }
-    if Level::Info <= min_log_level {
+    if Level::Info <= log_level {
         features.push_str(",scrypto/log-info");
     }
-    if Level::Debug <= min_log_level {
+    if Level::Debug <= log_level {
         features.push_str(",scrypto/log-debug");
     }
-    if Level::Trace <= min_log_level {
+    if Level::Trace <= log_level {
         features.push_str(",scrypto/log-trace");
     }
 
@@ -141,7 +141,7 @@ pub fn build_package<P: AsRef<Path>>(
     trace: bool,
     force_local_target: bool,
     disable_wasm_opt: bool,
-    min_log_level: Level,
+    log_level: Level,
 ) -> Result<(PathBuf, PathBuf), BuildError> {
     let base_path = base_path.as_ref().to_owned();
 
@@ -168,7 +168,7 @@ pub fn build_package<P: AsRef<Path>>(
     out_path.push("release");
 
     // Build with SCHEMA
-    run_cargo_build(&manifest_path, &target_path, trace, false, min_log_level)?;
+    run_cargo_build(&manifest_path, &target_path, trace, false, log_level)?;
 
     // Find the binary paths
     let manifest = Manifest::from_path(&manifest_path)
@@ -199,7 +199,7 @@ pub fn build_package<P: AsRef<Path>>(
     .map_err(|err| BuildError::IOErrorAtPath(err, definition_path.clone()))?;
 
     // Build without SCHEMA
-    run_cargo_build(&manifest_path, &target_path, trace, true, min_log_level)?;
+    run_cargo_build(&manifest_path, &target_path, trace, true, log_level)?;
 
     // Optimizes the built wasm using Binaryen's wasm-opt tool. The code that follows is equivalent
     // to running the following commands in the CLI:

@@ -20,10 +20,10 @@ pub struct Build {
     #[clap(long)]
     disable_wasm_opt: bool,
 
-    /// The min log level, such as ERROR, WARN, INFO, DEBUG and TRACE.
+    /// The max log level, such as ERROR, WARN, INFO, DEBUG and TRACE.
     /// The default is INFO.
     #[clap(long)]
-    min_log_level: Option<Level>,
+    log_level: Option<Level>,
 }
 
 impl Build {
@@ -33,7 +33,7 @@ impl Build {
             self.trace,
             false,
             self.disable_wasm_opt,
-            self.min_log_level.unwrap_or(Level::default()),
+            self.log_level.unwrap_or(Level::default()),
         )
         .map(|_| ())
         .map_err(Error::BuildError)
