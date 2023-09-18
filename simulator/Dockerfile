@@ -30,4 +30,4 @@ RUN cargo install --path ./simulator \
 
 WORKDIR /src
 
-ENTRYPOINT ["scrypto"]
+ENTRYPOINT ["scrypto", "build", "--path", "/src"]
