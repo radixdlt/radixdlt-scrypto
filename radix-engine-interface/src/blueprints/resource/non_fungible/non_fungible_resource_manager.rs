@@ -407,3 +407,42 @@ impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[derive(ScryptoSbor)]
+    pub struct SomeNonFungibleData {
+        pub field: String,
+    }
+
+    impl NonFungibleData for SomeNonFungibleData {
+        const MUTABLE_FIELDS: &'static [&'static str] = &[];
+    }
+
+    #[test]
+    fn test_non_fungible_data_schema_with_self_package_replacement() {
+        pub const SOME_ADDRESS: PackageAddress =
+            PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]);
+
+        let ds: NonFungibleDataSchema = NonFungibleDataSchema::new_with_self_package_replacement::<
+            SomeNonFungibleData,
+        >(SOME_ADDRESS);
+        if let NonFungibleDataSchema::Local {
+            schema,
+            type_id,
+            mutable_fields,
+        } = ds
+        {
+            let VersionedSchema::V1(s) = schema;
+            assert_eq!(s.type_kinds.len(), 1);
+            assert_eq!(s.type_metadata.len(), 1);
+            assert_eq!(s.type_validations.len(), 1);
+            assert!(matches!(type_id, LocalTypeId::SchemaLocalIndex(0)));
+            assert!(mutable_fields.is_empty());
+        } else {
+            panic!("Wrong Non Fungible Data Schema type")
+        }
+    }
+}

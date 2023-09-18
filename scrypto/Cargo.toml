@@ -32,6 +32,12 @@ trace = ["scrypto-derive/trace"]
 # Disable schema gen in the output WASM.
 no-schema = ["scrypto-derive/no-schema"]
 
+log-error = []
+log-warn = []
+log-info = []
+log-debug = []
+log-trace = []
+
 [lib]
 doctest = false
 bench = false

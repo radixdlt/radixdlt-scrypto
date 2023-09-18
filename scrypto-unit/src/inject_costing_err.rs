@@ -11,7 +11,7 @@ use radix_engine::kernel::kernel_callback_api::{
 };
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_callback_api::SystemCallbackObject;
-use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError};
+use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use radix_engine::track::NodeSubstates;
 use radix_engine::transaction::WrappedSystem;
@@ -25,18 +25,21 @@ pub type InjectSystemCostingError<'a, E> =
     InjectCostingError<SystemConfig<Vm<'a, DefaultWasmEngine, E>>>;
 
 pub struct InjectCostingError<K: KernelCallbackObject> {
-    count: u64,
-    error_after_count: u64,
+    fail_after: Rc<RefCell<u64>>,
     callback_object: K,
 }
 
 impl<C: SystemCallbackObject> WrappedSystem<C> for InjectCostingError<SystemConfig<C>> {
     type Init = u64;
 
-    fn create(config: SystemConfig<C>, error_after_count: u64) -> Self {
+    fn create(mut config: SystemConfig<C>, error_after_count: u64) -> Self {
+        let fail_after = Rc::new(RefCell::new(error_after_count));
+        config.modules.costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
+            fail_after: fail_after.clone(),
+        };
+
         Self {
-            count: 0u64,
-            error_after_count,
+            fail_after,
             callback_object: config,
         }
     }
@@ -52,8 +55,8 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for InjectCostingError<SystemConf
 
 impl<K: KernelCallbackObject> InjectCostingError<K> {
     fn maybe_err(&mut self) -> Result<(), RuntimeError> {
-        self.count += 1;
-        if self.count == self.error_after_count {
+        *self.fail_after.borrow_mut() -= 1;
+        if *self.fail_after.borrow() == 0 {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::CostingError(CostingError::FeeReserveError(
                     FeeReserveError::InsufficientBalance {

@@ -434,13 +434,13 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok((Box::new(iter), partition_number))
     }
 
-    pub fn get_object_info<A: Into<GlobalAddress>>(
+    pub fn get_object_info<A: Into<NodeId>>(
         &self,
-        address: A,
+        node_id: A,
     ) -> Result<ObjectInfo, SystemReaderError> {
         let type_info = self
             .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                address.into().as_node_id(),
+                &node_id.into(),
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             )

@@ -1,8 +1,8 @@
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
-    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
-    CreateNodeError, DropNodeError, MovePartitionError, NonGlobalNodeRefs, OpenSubstateError,
-    PersistNodeError, TransientSubstates, WriteSubstateError,
+    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CreateNodeError, DropNodeError,
+    MovePartitionError, NonGlobalNodeRefs, OpenSubstateError, PersistNodeError, TransientSubstates,
+    WriteSubstateError,
 };
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
@@ -504,7 +504,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
     pub fn close_substate(
         &mut self,
         global_lock_handle: u32,
-    ) -> Result<(NodeId, PartitionNumber, SubstateKey, LockFlags), CloseSubstateError> {
+    ) -> (NodeId, PartitionNumber, SubstateKey, LockFlags) {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.unlock(global_lock_handle);
 
@@ -513,7 +513,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                 .force_write(&node_id, &partition_num, &substate_key);
         }
 
-        Ok((node_id, partition_num, substate_key, lock_data.flags))
+        (node_id, partition_num, substate_key, lock_data.flags)
     }
 
     pub fn set_substate<'f, E>(
