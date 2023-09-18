@@ -1,3 +1,5 @@
+use crate::engine::scrypto_env::ScryptoVmV1Api;
+use radix_engine_interface::types::Level;
 use sbor::rust::string::String;
 
 /// A utility for logging messages.
@@ -6,48 +8,28 @@ pub struct Logger {}
 
 #[allow(unused_variables)]
 impl Logger {
-    /// Emits a trace message.
+    /// Emits a TRACE message.
     pub fn trace(message: String) {
-        #[cfg(feature = "log-trace")]
-        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
-            radix_engine_interface::types::Level::Trace,
-            message,
-        );
+        ScryptoVmV1Api::sys_log(Level::Trace, message);
     }
 
-    /// Emits a debug message.
+    /// Emits a DEBUG message.
     pub fn debug(message: String) {
-        #[cfg(feature = "log-debug")]
-        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
-            radix_engine_interface::types::Level::Debug,
-            message,
-        );
+        ScryptoVmV1Api::sys_log(Level::Debug, message);
     }
 
-    /// Emits an info message.
+    /// Emits an INFO message.
     pub fn info(message: String) {
-        #[cfg(feature = "log-info")]
-        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
-            radix_engine_interface::types::Level::Info,
-            message,
-        );
+        ScryptoVmV1Api::sys_log(Level::Info, message);
     }
 
-    /// Emits a warn message.
+    /// Emits a WARN message.
     pub fn warn(message: String) {
-        #[cfg(feature = "log-warn")]
-        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
-            radix_engine_interface::types::Level::Warn,
-            message,
-        );
+        ScryptoVmV1Api::sys_log(Level::Warn, message);
     }
 
-    /// Emits an error message.
+    /// Emits an ERROR message.
     pub fn error(message: String) {
-        #[cfg(feature = "log-error")]
-        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
-            radix_engine_interface::types::Level::Error,
-            message,
-        );
+        ScryptoVmV1Api::sys_log(Level::Error, message);
     }
 }
