@@ -1,7 +1,7 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
-use radix_engine::errors::{RuntimeError, SystemError, SystemModuleError};
+use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -10,6 +10,8 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::rule;
+use radix_engine_queries::typed_substate_layout::*;
+use scrypto_test::prelude::InvalidNameError;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -319,6 +321,511 @@ fn change_lock_owner_role_rules() {
             RuntimeError::SystemModuleError(SystemModuleError::AuthError(..)),
         )
     })
+}
+
+#[test]
+fn setting_a_role_with_a_long_name_before_attachment_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
+        (ModuleId::Main, name(MAX_ROLE_NAME_LEN + 1, 'A')) => AccessRule::AllowAll
+    };
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::ExceededMaxRoleNameLen { .. },
+            ),)
+        )
+    })
+}
+
+#[test]
+fn setting_a_reserved_role_before_attachment_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
+        (ModuleId::Main, "_self_".into()) => AccessRule::AllowAll
+    };
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::UsedReservedRole { .. },
+            ),)
+        )
+    })
+}
+
+#[test]
+fn setting_any_role_in_reserved_space_before_attachment_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
+        (ModuleId::RoleAssignment, "normal_role".into()) => AccessRule::AllowAll
+    };
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::UsedReservedSpace { .. },
+            ),)
+        )
+    })
+}
+
+#[test]
+fn setting_a_reserved_role_in_reserved_space_before_attachment_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
+        (ModuleId::RoleAssignment, "_self_".into()) => AccessRule::AllowAll
+    };
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::UsedReservedSpace { .. },
+            ),)
+        )
+    })
+}
+
+#[test]
+fn creation_of_module_with_reserved_roles_before_attachment_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {
+        ModuleId::Main => RoleAssignmentInit {
+            data: indexmap! {
+                "_some_random_".into() => Some(AccessRule::DenyAll)
+            }
+        }
+    };
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::UsedReservedRole { .. },
+            ),)
+        )
+    })
+}
+
+#[test]
+fn creation_of_module_with_role_names_exceeding_maximum_length_before_attachment_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {
+        ModuleId::Main => RoleAssignmentInit {
+            data: indexmap! {
+                name(MAX_ROLE_NAME_LEN + 1, 'A').into() => Some(AccessRule::DenyAll)
+            }
+        }
+    };
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::ExceededMaxRoleNameLen { .. },
+            ),)
+        )
+    })
+}
+
+#[test]
+fn updating_a_reserved_role_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let component_address = *test_runner
+        .execute_manifest(manifest, vec![])
+        .expect_commit_success()
+        .new_component_addresses()
+        .first()
+        .unwrap();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .set_role(
+            component_address,
+            ModuleId::Main,
+            "_self_",
+            AccessRule::DenyAll,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    })
+}
+
+#[test]
+fn updating_any_role_on_reserved_space_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let component_address = *test_runner
+        .execute_manifest(manifest, vec![])
+        .expect_commit_success()
+        .new_component_addresses()
+        .first()
+        .unwrap();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .set_role(
+            component_address,
+            ModuleId::RoleAssignment,
+            "me",
+            AccessRule::DenyAll,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    })
+}
+
+#[test]
+fn updating_a_role_not_in_the_package_definition_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("role-assignment-edge-cases");
+    definition.blueprints.values_mut().for_each(|bp_def| {
+        bp_def.auth_config.method_auth =
+            MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
+                roles: RoleSpecification::Normal(indexmap! {
+                    "some_role".into() => RoleList { list: vec![] }
+                }),
+                methods: Default::default(),
+            })
+    });
+    let package_address = test_runner.publish_package_simple((code, definition));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let component_address = *test_runner
+        .execute_manifest(manifest, vec![])
+        .expect_commit_success()
+        .new_component_addresses()
+        .first()
+        .unwrap();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .set_role(
+            component_address,
+            ModuleId::Main,
+            "not_in_package_def",
+            AccessRule::DenyAll,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    })
+}
+
+#[test]
+fn updating_a_role_on_package_with_allow_all_method_accessability_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, mut definition) = PackageLoader::get("role-assignment-edge-cases");
+    definition
+        .blueprints
+        .values_mut()
+        .for_each(|bp_def| bp_def.auth_config.method_auth = MethodAuthTemplate::AllowAll);
+    let package_address = test_runner.publish_package_simple((code, definition));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let component_address = *test_runner
+        .execute_manifest(manifest, vec![])
+        .expect_commit_success()
+        .new_component_addresses()
+        .first()
+        .unwrap();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .set_role(
+            component_address,
+            ModuleId::Main,
+            "not_in_package_def",
+            AccessRule::DenyAll,
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    })
+}
+
+#[test]
+fn setting_a_role_with_invalid_utf8_characters_before_attachment_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
+        (ModuleId::Main, "Andrés".into()) => AccessRule::AllowAll
+    };
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::InvalidName(InvalidNameError::InvalidChar { .. }),
+            ))
+        )
+    })
+}
+
+#[test]
+fn creation_with_a_role_with_invalid_utf8_characters_before_attachment_fails() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+
+    let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {
+        ModuleId::Main => RoleAssignmentInit {
+            data: indexmap! {
+                "Andrés".into() => Some(AccessRule::DenyAll)
+            }
+        }
+    };
+    let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RoleAssignmentEdgeCases",
+            "instantiate",
+            manifest_args!(init_roles, set_roles),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::InvalidName(InvalidNameError::InvalidChar { .. }),
+            ))
+        )
+    })
+}
+
+fn name(len: usize, chr: char) -> String {
+    (0..len).map(|_| chr).collect()
 }
 
 struct MutableRolesTestRunner {

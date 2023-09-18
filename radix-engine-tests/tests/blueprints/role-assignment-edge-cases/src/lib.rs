@@ -9,15 +9,18 @@ mod role_assignment_edge_cases {
     struct RoleAssignmentEdgeCases;
 
     impl RoleAssignmentEdgeCases {
-        pub fn instantiate() -> Global<RoleAssignmentEdgeCases> {
+        pub fn instantiate(
+            init_roles: IndexMap<ModuleId, RoleAssignmentInit>,
+            set_roles: IndexMap<(ModuleId, String), AccessRule>,
+        ) -> Global<RoleAssignmentEdgeCases> {
             let this = Self {}.instantiate();
 
             let mut modules = index_map_new();
-            let mut roles = index_map_new();
+            let mut roles = init_roles;
 
             // Main
             {
-                roles.insert(ModuleId::Main, Default::default());
+                roles.entry(ModuleId::Main).or_default();
             }
 
             // Metadata
@@ -40,8 +43,20 @@ mod role_assignment_edge_cases {
             {
                 let role_assignment = RoleAssignment::new(OwnerRole::None, roles);
 
-                role_assignment.set_role_assignment_role(OWNER_ROLE, rule!(deny_all));
-                role_assignment.set_role_assignment_role(SELF_ROLE, rule!(deny_all));
+                for ((module_id, role_name), rule) in set_roles.into_iter() {
+                    match module_id {
+                        ModuleId::Main => &role_assignment.set_role(role_name.as_str(), rule),
+                        ModuleId::Royalty => {
+                            &role_assignment.set_component_royalties_role(role_name.as_str(), rule)
+                        }
+                        ModuleId::RoleAssignment => {
+                            &role_assignment.set_role_assignment_role(role_name.as_str(), rule)
+                        }
+                        ModuleId::Metadata => {
+                            &role_assignment.set_metadata_role(role_name.as_str(), rule)
+                        }
+                    };
+                }
 
                 modules.insert(
                     AttachedModuleId::RoleAssignment,
