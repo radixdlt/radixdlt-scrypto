@@ -1,3 +1,7 @@
+use crate::blueprints::consensus_manager::{
+    ConsensusManagerCurrentProposalStatisticFieldPayload,
+    ConsensusManagerCurrentValidatorSetFieldPayload, ConsensusManagerField,
+};
 use crate::blueprints::resource::{
     FungibleResourceManagerField, FungibleResourceManagerTotalSupplyFieldPayload,
     FungibleVaultBalanceFieldPayload, FungibleVaultField, NonFungibleResourceManagerField,
@@ -9,6 +13,7 @@ use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
 use radix_engine_common::types::{NodeId, ResourceAddress};
 use radix_engine_interface::api::FieldIndex;
+use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
@@ -130,6 +135,40 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                         non_fungible_vault_tracker.expected = Some(vault_balance.amount);
                     }
                     _ => {}
+                }
+            }
+            CONSENSUS_MANAGER_BLUEPRINT => {
+                let field: ConsensusManagerField = field_index.try_into().unwrap();
+                let mut validator_count = 0;
+                let mut stats_count = 0;
+                match field {
+                    ConsensusManagerField::CurrentValidatorSet => {
+                        let validator_set: ConsensusManagerCurrentValidatorSetFieldPayload =
+                            scrypto_decode(value).unwrap();
+
+                        let mut prev = Decimal::MAX;
+                        for validator in validator_set
+                            .into_latest()
+                            .validator_set
+                            .validators_by_stake_desc
+                        {
+                            if validator.1.stake > prev {
+                                panic!("Validator set are not in DESC order");
+                            }
+                            prev = validator.1.stake;
+                            validator_count += 1;
+                        }
+                    }
+                    ConsensusManagerField::CurrentProposalStatistic => {
+                        let stats: ConsensusManagerCurrentProposalStatisticFieldPayload =
+                            scrypto_decode(value).unwrap();
+                        stats_count = stats.into_latest().validator_statistics.len();
+                    }
+                    _ => {}
+                }
+
+                if validator_count != stats_count {
+                    panic!("Validator count != proposal statistics count")
                 }
             }
             _ => {}
