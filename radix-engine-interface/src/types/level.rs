@@ -1,12 +1,14 @@
 use crate::*;
+use core::str::FromStr;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
 /// Represents the level of a log message.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor, Ord, PartialOrd, Default)]
 pub enum Level {
     Error,
     Warn,
+    #[default]
     Info,
     Debug,
     Trace,
@@ -20,6 +22,21 @@ impl fmt::Display for Level {
             Level::Info => write!(f, "INFO"),
             Level::Debug => write!(f, "DEBUG"),
             Level::Trace => write!(f, "TRACE"),
+        }
+    }
+}
+
+impl FromStr for Level {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ERROR" => Ok(Self::Error),
+            "WARN" => Ok(Self::Warn),
+            "INFO" => Ok(Self::Info),
+            "DEBUG" => Ok(Self::Debug),
+            "TRACE" => Ok(Self::Trace),
+            _ => Err(format!("Invalid level: {}", s)),
         }
     }
 }

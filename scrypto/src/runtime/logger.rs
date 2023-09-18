@@ -1,40 +1,53 @@
-use radix_engine_interface::types::Level;
 use sbor::rust::string::String;
-
-use crate::engine::scrypto_env::ScryptoVmV1Api;
 
 /// A utility for logging messages.
 #[derive(Debug)]
 pub struct Logger {}
 
+#[allow(unused_variables)]
 impl Logger {
-    /// Emits a log to console.
-    pub fn emit_log(level: Level, message: String) {
-        ScryptoVmV1Api::sys_log(level, message);
-    }
-
     /// Emits a trace message.
     pub fn trace(message: String) {
-        Self::emit_log(Level::Trace, message);
+        #[cfg(feature = "log-trace")]
+        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
+            radix_engine_interface::types::Level::Trace,
+            message,
+        );
     }
 
     /// Emits a debug message.
     pub fn debug(message: String) {
-        Self::emit_log(Level::Debug, message);
+        #[cfg(feature = "log-debug")]
+        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
+            radix_engine_interface::types::Level::Debug,
+            message,
+        );
     }
 
     /// Emits an info message.
     pub fn info(message: String) {
-        Self::emit_log(Level::Info, message);
+        #[cfg(feature = "log-info")]
+        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
+            radix_engine_interface::types::Level::Info,
+            message,
+        );
     }
 
     /// Emits a warn message.
     pub fn warn(message: String) {
-        Self::emit_log(Level::Warn, message);
+        #[cfg(feature = "log-warn")]
+        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
+            radix_engine_interface::types::Level::Warn,
+            message,
+        );
     }
 
     /// Emits an error message.
     pub fn error(message: String) {
-        Self::emit_log(Level::Error, message);
+        #[cfg(feature = "log-error")]
+        crate::engine::scrypto_env::ScryptoVmV1Api::sys_log(
+            radix_engine_interface::types::Level::Error,
+            message,
+        );
     }
 }

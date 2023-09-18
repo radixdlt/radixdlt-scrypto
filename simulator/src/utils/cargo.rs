@@ -58,15 +58,32 @@ fn run_cargo_build(
     manifest_path: impl AsRef<OsStr>,
     target_path: impl AsRef<OsStr>,
     trace: bool,
-    no_schema_gen: bool,
+    no_schema: bool,
+    min_log_level: Level,
 ) -> Result<(), BuildError> {
     let mut features = Vec::<String>::new();
     if trace {
         features.push("scrypto/trace".to_owned());
     }
-    if no_schema_gen {
+    if no_schema {
         features.push("scrypto/no-schema".to_owned());
     }
+    if Level::Error <= min_log_level {
+        features.push("scrypto/log-error".to_owned());
+    }
+    if Level::Warn <= min_log_level {
+        features.push("scrypto/log-warn".to_owned());
+    }
+    if Level::Info <= min_log_level {
+        features.push("scrypto/log-info".to_owned());
+    }
+    if Level::Debug <= min_log_level {
+        features.push("scrypto/log-debug".to_owned());
+    }
+    if Level::Trace <= min_log_level {
+        features.push("scrypto/log-trace".to_owned());
+    }
+
     if !features.is_empty() {
         features.insert(0, "--features".to_owned());
     }
@@ -124,6 +141,7 @@ pub fn build_package<P: AsRef<Path>>(
     trace: bool,
     force_local_target: bool,
     disable_wasm_opt: bool,
+    min_log_level: Level,
 ) -> Result<(PathBuf, PathBuf), BuildError> {
     let base_path = base_path.as_ref().to_owned();
 
@@ -150,7 +168,7 @@ pub fn build_package<P: AsRef<Path>>(
     out_path.push("release");
 
     // Build with SCHEMA
-    run_cargo_build(&manifest_path, &target_path, trace, false)?;
+    run_cargo_build(&manifest_path, &target_path, trace, false, min_log_level)?;
 
     // Find the binary paths
     let manifest = Manifest::from_path(&manifest_path)
@@ -181,7 +199,7 @@ pub fn build_package<P: AsRef<Path>>(
     .map_err(|err| BuildError::IOErrorAtPath(err, definition_path.clone()))?;
 
     // Build without SCHEMA
-    run_cargo_build(&manifest_path, &target_path, trace, true)?;
+    run_cargo_build(&manifest_path, &target_path, trace, true, min_log_level)?;
 
     // Optimizes the built wasm using Binaryen's wasm-opt tool. The code that follows is equivalent
     // to running the following commands in the CLI:
@@ -204,7 +222,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    build_package(&path, false, false, false).map_err(TestError::BuildError)?;
+    build_package(&path, false, false, false, Level::Trace).map_err(TestError::BuildError)?;
 
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");
