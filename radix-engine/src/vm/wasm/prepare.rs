@@ -1128,16 +1128,28 @@ mod tests {
         FunctionSchemaInit, TypeRef,
     };
     use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
-    use wabt::wat2wasm;
+    use wabt::{wat2wasm_with_features, Features};
+
+    macro_rules! wat2wasm {
+        ($wat: expr) => {
+            {
+                let mut features = Features::new();
+                features.enable_sign_extension();
+                features.enable_mutable_globals();
+                let code = wat2wasm_with_features($wat, features).unwrap();
+                code
+            }
+        };
+    }
 
     macro_rules! assert_invalid_wasm {
         ($wat: expr, $err: expr) => {
-            let code = wat2wasm($wat).unwrap();
+            let code = wat2wasm!($wat);
             assert_eq!($err, WasmModule::init(&code).unwrap_err());
         };
 
         ($wat: expr, $err: expr, $func: expr) => {
-            let code = wat2wasm($wat).unwrap();
+            let code = wat2wasm!($wat);
             assert_eq!($err, WasmModule::init(&code).and_then($func).unwrap_err());
         };
     }
@@ -1521,5 +1533,36 @@ mod tests {
             },
             |x| WasmModule::enforce_export_constraints(x, blueprints.values())
         );
+    }
+
+    #[cfg(feature = "radix_engine_tests")]
+    #[test]
+    fn test_contains_sign_ext_ops() {
+        let code = wat2wasm!(
+            r#"
+            (module
+                (func $f
+                    (i64.const 1)
+                    (i64.extend8_s) ;; sign extension op
+                    drop
+                )
+            )
+            "#
+        );
+
+        assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops());
+
+        let code = wat2wasm!(
+            r#"
+            (module
+                (func $f
+                    (i64.const 1)
+                    drop
+                )
+            )
+            "#
+        );
+
+        assert!(!WasmModule::init(&code).unwrap().contains_sign_ext_ops());
     }
 }
