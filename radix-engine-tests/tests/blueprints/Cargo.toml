@@ -57,6 +57,7 @@ members = [
     "transaction_limits",
     "transaction_runtime",
     "tx_processor_access",
+    "tuple-return",
     "events",
     "events_invalid",
     "logger",

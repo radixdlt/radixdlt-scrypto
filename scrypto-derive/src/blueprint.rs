@@ -2,6 +2,7 @@ use crate::ast;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use radix_engine_common::address::AddressBech32Decoder;
+use regex::Regex;
 use std::collections::BTreeMap;
 use std::str::FromStr;
 use syn::parse::{Parse, ParseStream, Parser};
@@ -1687,22 +1688,7 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
                                     .unwrap(),
                             )?,
                         };
-                        let arg_type = typed.ty.as_ref();
-
-                        // We do some replacements in here for the argument types to be compatible
-                        // with the test stubs.
-                        // * Global<...> => Reference
-                        // * Owned<...> => Own
-                        let arg_type = {
-                            let str = arg_type.to_token_stream().to_string().replace(" ", "");
-                            if str.contains("Owned<") {
-                                parse_quote! { ::scrypto::prelude::Own }
-                            } else if str.contains("Global<") {
-                                parse_quote!(::scrypto::prelude::Reference)
-                            } else {
-                                arg_type.clone()
-                            }
-                        };
+                        let arg_type = type_replacement(typed.ty.as_ref(), None);
 
                         args.push(quote! { #arg_ident: #arg_type });
                         arg_idents.push(arg_ident.clone());
@@ -1730,20 +1716,7 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
 
             let rtn_type = match &impl_item.sig.output {
                 ReturnType::Default => parse_quote!(()),
-                ReturnType::Type(_, rtn_type) => {
-                    let str = rtn_type.to_token_stream().to_string().replace(" ", "");
-                    if str.contains(format!("Owned<{}>", bp_name).as_str())
-                        || str.contains(format!("Global<{}>", bp_name).as_str())
-                    {
-                        parse_quote! { Self }
-                    } else if str.contains("Owned<") {
-                        parse_quote! { ::scrypto::prelude::InternalAddress }
-                    } else if str.contains("Global<") {
-                        parse_quote! { ::scrypto::prelude::GlobalAddress }
-                    } else {
-                        rtn_type.as_ref().clone()
-                    }
-                }
+                ReturnType::Type(_, rtn_type) => type_replacement(rtn_type.as_ref(), Some(bp_name)),
             };
 
             let func = quote! {
@@ -1771,7 +1744,7 @@ fn generate_test_bindings_state(bp_struct: &ItemStruct) -> ItemStruct {
     match &mut bp_struct.fields {
         Fields::Unit => {}
         Fields::Named(named) => named.named.iter_mut().for_each(|Field { ty, vis, .. }| {
-            *ty = type_replacement(ty, bp_struct.ident.to_string().as_str());
+            *ty = type_replacement(ty, Some(bp_struct.ident.to_string().as_str()));
             *vis = Visibility::Public(VisPublic {
                 pub_token: token::Pub::default(),
             });
@@ -1781,7 +1754,7 @@ fn generate_test_bindings_state(bp_struct: &ItemStruct) -> ItemStruct {
                 .unnamed
                 .iter_mut()
                 .for_each(|Field { ty, vis, .. }| {
-                    *ty = type_replacement(ty, bp_struct.ident.to_string().as_str());
+                    *ty = type_replacement(ty, Some(bp_struct.ident.to_string().as_str()));
                     *vis = Visibility::Public(VisPublic {
                         pub_token: token::Pub::default(),
                     });
@@ -1797,19 +1770,44 @@ fn generate_test_bindings_state(bp_struct: &ItemStruct) -> ItemStruct {
     bp_struct
 }
 
-fn type_replacement(ty: &Type, bp_name: &str) -> Type {
-    let str = ty.to_token_stream().to_string().replace(" ", "");
-    if str.contains(format!("Owned<{}>", bp_name).as_str())
-        || str.contains(format!("Global<{}>", bp_name).as_str())
-    {
-        parse_quote! { Self }
-    } else if str.contains("Owned<") {
-        parse_quote! { ::scrypto::prelude::InternalAddress }
-    } else if str.contains("Global<") {
-        parse_quote! { ::scrypto::prelude::GlobalAddress }
-    } else {
-        ty.clone()
+/// This function performs the following replacement and is used for the function returns:
+///
+/// Before:
+/// ```rust,no_run
+/// fn instantiate() -> (
+///     Global<ThisBlueprint>,
+///     Global<AnotherBlueprint>,
+///     Owned<SomeOtherBlueprint>
+/// );
+/// ```
+/// After
+/// ```rust,no_run
+/// fn instantiate() -> (
+///     Self,
+///     ::scrypto::prelude::GlobalAddress,
+///     ::scrypto::prelude::InternalAddress
+/// );
+/// ```
+///
+/// Thus, each `Global<ThisBlueprint>` or `Owned<ThisBlueprint>` is replaced with `Self` and other
+/// `Global<T>` and `Owned<T>` are replaced with address types.
+fn type_replacement(ty: &Type, bp_name: Option<&str>) -> Type {
+    let global_pattern = Regex::new(r"Global<.+?>").unwrap();
+    let owned_pattern = Regex::new(r"Owned<.+?>").unwrap();
+
+    let mut str = ty.to_token_stream().to_string().replace(" ", "");
+    if let Some(bp_name) = bp_name {
+        str = str.replace(format!("Owned<{}>", bp_name).as_str(), "Self");
+        str = str.replace(format!("Global<{}>", bp_name).as_str(), "Self");
     }
+    str = global_pattern
+        .replace_all(str.as_str(), "::scrypto::prelude::Reference")
+        .into_owned();
+    str = owned_pattern
+        .replace_all(str.as_str(), "::scrypto::prelude::Own")
+        .into_owned();
+
+    parse2(proc_macro2::TokenStream::from_str(str.as_str()).unwrap()).unwrap()
 }
 
 #[cfg(test)]

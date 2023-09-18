@@ -1144,7 +1144,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
-                    id_type: NonFungibleIdType::Bytes,
+                    id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
                     resource_roles: NonFungibleResourceRoles::default(),
