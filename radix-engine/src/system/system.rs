@@ -2244,7 +2244,7 @@ where
             scrypto_encode(&lock_fee_event).unwrap()
         };
 
-        // If costing is enabled, reserve event and pay for the event up front for the call to credit_cost_units()
+        // If costing is enabled, reserve event and pay for the event up front for the call to lock_fee()
         // Otherwise, we just simulate the call
         if costing_enabled {
             self.api
