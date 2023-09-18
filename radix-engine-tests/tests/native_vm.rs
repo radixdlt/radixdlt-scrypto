@@ -3,7 +3,6 @@
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::*;
 use radix_engine::kernel::kernel::*;
-use radix_engine::kernel::kernel_api::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
@@ -124,27 +123,10 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 #[derive(Clone)]
 pub struct Extension;
 
-#[derive(Clone)]
-pub struct ExtensionInstance;
-
 impl NativeVmExtension for Extension {
-    type Instance = ExtensionInstance;
+    type Instance = NullVmInvoke;
 
     fn try_create_instance(&self, _: &[u8]) -> Option<Self::Instance> {
-        Some(ExtensionInstance)
-    }
-}
-
-impl VmInvoke for ExtensionInstance {
-    fn invoke<Y>(
-        &mut self,
-        _: &str,
-        _: &IndexedScryptoValue,
-        _: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-    {
-        panic!("This VM extension does nothing but panic. We're testing to see if the native VM code can recover from panics.")
+        Some(NullVmInvoke)
     }
 }
