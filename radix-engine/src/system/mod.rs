@@ -1,10 +1,10 @@
+pub mod attached_modules;
 pub mod bootstrap;
 #[cfg(feature = "db_checker")]
 pub mod checkers;
 pub mod id_allocation;
 pub mod module;
 pub mod node_init;
-pub mod node_modules;
 pub mod payload_validation;
 pub mod system;
 pub mod system_callback;

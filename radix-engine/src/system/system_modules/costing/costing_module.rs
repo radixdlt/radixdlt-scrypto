@@ -8,8 +8,8 @@ use crate::kernel::kernel_callback_api::{
     OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::system::attached_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::module::SystemModule;
-use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;

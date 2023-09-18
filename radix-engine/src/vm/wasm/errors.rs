@@ -33,7 +33,7 @@ pub enum PrepareError {
     /// Too many function local variables
     TooManyFunctionLocals { max: u32, actual: u32 },
     /// Too many globals
-    TooManyGlobals,
+    TooManyGlobals { max: u32, current: u32 },
     /// No export section
     NoExportSection,
     /// Missing export

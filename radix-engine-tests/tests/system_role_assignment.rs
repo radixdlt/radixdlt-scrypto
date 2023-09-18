@@ -1,6 +1,8 @@
+use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use radix_engine::system::attached_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
@@ -11,6 +13,7 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use scrypto_unit::*;
+use transaction::builder::ManifestBuilder;
 use transaction::model::{DynamicPackageAddress, InstructionV1};
 
 #[test]
@@ -127,6 +130,135 @@ fn cannot_define_role_name_larger_than_max() {
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::ExceededMaxRoleNameLen { .. }
+            ))
+        )
+    });
+}
+
+#[test]
+fn cannot_setup_more_than_50_roles() {
+    const BLUEPRINT_NAME: &str = "MyBlueprint";
+    const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
+
+    // Arrange
+    #[derive(Clone)]
+    struct TestInvoke;
+    impl VmInvoke for TestInvoke {
+        fn invoke<Y>(
+            &mut self,
+            export_name: &str,
+            _input: &IndexedScryptoValue,
+            api: &mut Y,
+        ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        {
+            match export_name {
+                "test" => {
+                    let mut data = index_map_new();
+                    for i in 0..(MAX_ROLES + 1) {
+                        data.insert(RoleKey::new(format!("role{}", i)), None);
+                    }
+
+                    let _ = RoleAssignment::create(
+                        OwnerRole::None,
+                        indexmap!(ModuleId::Main => RoleAssignmentInit {
+                            data
+                        }),
+                        api,
+                    )?;
+                    Ok(IndexedScryptoValue::from_typed(&()))
+                }
+                _ => Ok(IndexedScryptoValue::from_typed(&())),
+            }
+        }
+    }
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
+        .build();
+    let package_address = test_runner.publish_native_package(
+        CUSTOM_PACKAGE_CODE_ID,
+        PackageDefinition::new_functions_only_test_definition(
+            BLUEPRINT_NAME,
+            vec![("test", "test", false)],
+        ),
+    );
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(test_runner.faucet_component(), 500u32)
+            .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::ExceededMaxRoles
+            ))
+        )
+    });
+}
+
+#[test]
+fn cannot_set_role_before_attachment() {
+    const BLUEPRINT_NAME: &str = "MyBlueprint";
+    const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
+
+    // Arrange
+    #[derive(Clone)]
+    struct TestInvoke;
+    impl VmInvoke for TestInvoke {
+        fn invoke<Y>(
+            &mut self,
+            export_name: &str,
+            _input: &IndexedScryptoValue,
+            api: &mut Y,
+        ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        {
+            match export_name {
+                "test" => {
+                    let role_assignment =
+                        RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
+                    role_assignment.set_role(ModuleId::Main, "test", AccessRule::AllowAll, api)?;
+                    Ok(IndexedScryptoValue::from_typed(&()))
+                }
+                _ => Ok(IndexedScryptoValue::from_typed(&())),
+            }
+        }
+    }
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
+        .build();
+    let package_address = test_runner.publish_native_package(
+        CUSTOM_PACKAGE_CODE_ID,
+        PackageDefinition::new_functions_only_test_definition(
+            BLUEPRINT_NAME,
+            vec![("test", "test", false)],
+        ),
+    );
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(test_runner.faucet_component(), 500u32)
+            .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::CannotSetRoleIfNotAttached
             ))
         )
     });
