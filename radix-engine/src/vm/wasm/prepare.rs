@@ -1131,15 +1131,13 @@ mod tests {
     use wabt::{wat2wasm_with_features, Features};
 
     macro_rules! wat2wasm {
-        ($wat: expr) => {
-            {
-                let mut features = Features::new();
-                features.enable_sign_extension();
-                features.enable_mutable_globals();
-                let code = wat2wasm_with_features($wat, features).unwrap();
-                code
-            }
-        };
+        ($wat: expr) => {{
+            let mut features = Features::new();
+            features.enable_sign_extension();
+            features.enable_mutable_globals();
+            let code = wat2wasm_with_features($wat, features).unwrap();
+            code
+        }};
     }
 
     macro_rules! assert_invalid_wasm {

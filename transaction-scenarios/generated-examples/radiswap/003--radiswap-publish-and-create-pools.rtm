@@ -19,7 +19,7 @@ PUBLISH_PACKAGE_ADVANCED
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nf8r6wpp9rn8fsrcn4ns5hr55xjmv0tk5ln9c3w9rmc949klq2fd5z:#1#")
+                        NonFungibleGlobalId("resource_sim1ngqecmyyu6mv5tpd3z9x5m9r409jq5dt4j7d33s3hj4yv8avdzkmhn:#1#")
                     )
                 )
             )
@@ -521,7 +521,7 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nf8r6wpp9rn8fsrcn4ns5hr55xjmv0tk5ln9c3w9rmc949klq2fd5z:#1#")
+                        NonFungibleGlobalId("resource_sim1ngqecmyyu6mv5tpd3z9x5m9r409jq5dt4j7d33s3hj4yv8avdzkmhn:#1#")
                     )
                 )
             )
@@ -539,7 +539,7 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nf8r6wpp9rn8fsrcn4ns5hr55xjmv0tk5ln9c3w9rmc949klq2fd5z:#1#")
+                        NonFungibleGlobalId("resource_sim1ngqecmyyu6mv5tpd3z9x5m9r409jq5dt4j7d33s3hj4yv8avdzkmhn:#1#")
                     )
                 )
             )

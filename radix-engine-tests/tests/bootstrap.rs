@@ -332,6 +332,34 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
 }
 
 #[test]
+// It would be more elegant to validate some return values instead of expecting a panic.
+// But since it is a bootstrap stage we believe it is good enough.
+#[should_panic(expected = "Failure(ApplicationError(ConsensusManagerError(ExceededValidatorCount")]
+fn test_bootstrap_with_exceeded_validator_count() {
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
+    let mut substate_db = InMemorySubstateDatabase::standard();
+
+    let mut initial_config = CustomGenesis::default_consensus_manager_config();
+
+    // exceeding max validator count - expecting a panic now
+    initial_config.max_validators = ValidatorIndex::MAX as u32 + 1;
+
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+
+    let _ = bootstrapper.bootstrap_with_genesis_data(
+        vec![],
+        Epoch::of(1),
+        initial_config,
+        1,
+        Some(0),
+        Decimal::zero(),
+    );
+}
+
+#[test]
 fn test_genesis_resource_with_initial_owned_allocation() {
     test_genesis_resource_with_initial_allocation(true);
 }

@@ -1,8 +1,7 @@
 use native_sdk::resource::*;
-use radix_engine_queries::typed_substate_layout::two_resource_pool::{
-    TwoResourcePoolSubstate, VersionedTwoResourcePoolState,
-};
+use radix_engine_queries::typed_substate_layout::two_resource_pool::*;
 use scrypto_test::prelude::*;
+use tuple_return::test_bindings::*;
 
 #[test]
 fn kernel_modules_are_reset_after_calling_a_with_method() {
@@ -286,4 +285,18 @@ fn creation_of_disable_auth_and_mint_fungible_buckets_succeeds() -> Result<(), R
     assert_eq!(amount, dec!("10"));
 
     Ok(())
+}
+
+#[test]
+fn tuple_returns_work_with_scrypto_test() {
+    // Arrange
+    let mut env = TestEnvironment::new();
+    let package_address =
+        Package::compile_and_publish("./tests/blueprints/tuple-return", &mut env).unwrap();
+
+    // Act
+    let rtn = TupleReturn::instantiate(package_address, &mut env);
+
+    // Assert
+    assert!(rtn.is_ok())
 }
