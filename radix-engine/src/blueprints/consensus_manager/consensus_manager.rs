@@ -1399,13 +1399,19 @@ impl ConsensusManagerBlueprint {
                     ConsensusManagerError::UnexpectedDecimalComputationError,
                 ),
             ))?;
-        let reward_per_effective_stake = total_claimable_validator_set_rewards
-            .checked_div(total_effective_stake) // In theory, the effective stake can be zero
-            .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::ConsensusManagerError(
-                    ConsensusManagerError::UnexpectedDecimalComputationError,
-                ),
-            ))?;
+        let reward_per_effective_stake = if total_effective_stake.is_zero() {
+            // This is another extreme use case.
+            // Can the network even progress if total effective stake is zero?
+            Decimal::ZERO
+        } else {
+            total_claimable_validator_set_rewards
+                .checked_div(total_effective_stake)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?
+        };
 
         for (index, validator_info) in validator_infos {
             let as_proposer = validator_rewards
