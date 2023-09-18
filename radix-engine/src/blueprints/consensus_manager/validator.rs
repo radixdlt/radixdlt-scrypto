@@ -122,7 +122,7 @@ pub struct ValidatorProtocolUpdateReadinessSignalSubstate {
     pub protocol_version_name: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct UnstakeData {
     pub name: String,
 
