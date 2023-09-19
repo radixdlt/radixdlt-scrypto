@@ -37,7 +37,7 @@ else
   echo "Docker image $IMAGE_NAME exists, and --reuse-image flag is set. Skipping build."
 fi
 
-for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store"
+for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store" "max_transaction"
 do
   echo "Building $crate_name..."
   docker run --entrypoint=scrypto -v $PWD:/src $IMAGE_NAME:$IMAGE_TAG build --path assets/blueprints/$crate_name

@@ -5,7 +5,6 @@ RUN apt update && apt install -y \
     clang=1:11.0-51+nmu5 \
     build-essential=12.9 \
     llvm=1:11.0-51+nmu5
-#RUN rustup target add wasm32-unknown-unknown
 
 ADD simulator /app/simulator
 ADD radix-engine /app/radix-engine
