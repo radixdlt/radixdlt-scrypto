@@ -4,6 +4,7 @@ pub mod one_pool;
 pub mod resource;
 pub mod two_pool;
 pub mod validator;
+pub mod access_controller;
 
 use crate::consensus_manager::ConsensusManagerFuzzAction;
 use crate::multi_pool::MultiPoolFuzzAction;
@@ -36,11 +37,13 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use radix_engine_interface::blueprints::access_controller::RuleSet;
 use scrypto::prelude::{ToRoleEntry, Zero};
 use scrypto_unit::InjectSystemCostingError;
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
+use crate::access_controller::AccessControllerFuzzAction;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
@@ -173,12 +176,103 @@ impl SystemTestFuzzer {
         let index = self.rng.gen_range(0usize..self.non_fungibles.len());
         self.non_fungibles[index]
     }
+
+    pub fn next_resource_or_non_fungible(&mut self) -> ResourceOrNonFungible {
+        if self.rng.gen_bool(0.5) {
+            ResourceOrNonFungible::Resource(self.next_resource())
+        } else {
+            let resource = self.next_resource();
+            ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::new(resource, self.next_integer_non_fungible_id()))
+        }
+    }
+
+    pub fn next_resource_or_non_fungible_list(&mut self) -> Vec<ResourceOrNonFungible> {
+        let mut list = vec![];
+        let len = self.rng.gen_range(0usize..256usize);
+        for _ in 0..len {
+            let resource_or_non_fungible = self.next_resource_or_non_fungible();
+            list.push(resource_or_non_fungible);
+        }
+        list
+    }
+
+    pub fn next_proof_rule(&mut self) -> ProofRule {
+        match self.rng.gen_range(0u8..=4u8) {
+            0u8 => {
+                ProofRule::AllOf(self.next_resource_or_non_fungible_list())
+            }
+            1u8 => {
+                ProofRule::Require(self.next_resource_or_non_fungible())
+            }
+            2u8 => {
+                ProofRule::AmountOf(self.next_amount(), self.next_resource())
+            }
+            3u8 => {
+                ProofRule::AnyOf(self.next_resource_or_non_fungible_list())
+            }
+            _ => {
+                ProofRule::CountOf(self.rng.gen_range(0u8..=255u8), self.next_resource_or_non_fungible_list())
+            }
+        }
+    }
+
+    pub fn next_access_rule_list(&mut self, max_depth: usize) -> Vec<AccessRuleNode> {
+        let mut list = vec![];
+        let len = if max_depth == 0 {
+            0usize
+        } else {
+            self.rng.gen_range(0usize..8usize)
+        };
+
+        for _ in 0..len {
+            let proof_rule = self.next_access_rule_node(max_depth - 1);
+            list.push(proof_rule);
+        }
+        list
+    }
+
+    pub fn next_access_rule_node(&mut self, max_depth: usize) -> AccessRuleNode {
+        match self.rng.gen_range(0u8..=2u8) {
+            0u8 => {
+                AccessRuleNode::ProofRule(self.next_proof_rule())
+            }
+            1u8 => {
+                AccessRuleNode::AnyOf(self.next_access_rule_list(max_depth))
+            }
+            _ => {
+                AccessRuleNode::AllOf(self.next_access_rule_list(max_depth))
+            }
+        }
+    }
+
+    pub fn next_access_rule(&mut self) -> AccessRule {
+        match self.rng.gen_range(0u8..=2u8) {
+            0u8 => {
+                AccessRule::AllowAll
+            }
+            1u8 => {
+                AccessRule::DenyAll
+            }
+            _ => {
+                AccessRule::Protected(self.next_access_rule_node(4))
+            }
+        }
+    }
+
+    pub fn next_rule_set(&mut self) -> RuleSet {
+        RuleSet {
+            primary_role: self.next_access_rule(),
+            recovery_role: self.next_access_rule(),
+            confirmation_role: self.next_access_rule(),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum FuzzAction {
     ConsensusManager(ConsensusManagerFuzzAction),
     Validator(ValidatorFuzzAction),
+    AccessController(AccessControllerFuzzAction),
     OneResourcePool(OnePoolFuzzAction),
     TwoResourcePool(TwoPoolFuzzAction),
     MultiResourcePool(MultiPoolFuzzAction),
@@ -202,6 +296,7 @@ impl FuzzAction {
         multi_resource_pool: &MultiPoolMeta,
         fungible_component: &ResourceComponentMeta,
         non_fungible_component: &ResourceComponentMeta,
+        access_controller: ComponentAddress,
         account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {
@@ -210,6 +305,9 @@ impl FuzzAction {
             }
             FuzzAction::Validator(action) => {
                 action.add_to_manifest(uuid, builder, fuzzer, validators, account_address)
+            }
+            FuzzAction::AccessController(action) => {
+                action.add_to_manifest(uuid, builder, fuzzer, validators, access_controller)
             }
             FuzzAction::OneResourcePool(action) => {
                 action.add_to_manifest(builder, fuzzer, account_address, one_resource_pool)
@@ -319,6 +417,7 @@ pub struct FuzzTest<T: TxnFuzzer> {
     multi_resource_pool: MultiPoolMeta,
     fungible_meta: ResourceComponentMeta,
     non_fungible_meta: ResourceComponentMeta,
+    access_controller: ComponentAddress,
     account_address: ComponentAddress,
     account_public_key: PublicKey,
     cur_round: Round,
@@ -366,6 +465,25 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 claim_resource,
                 account_address: account,
             }
+        };
+
+        let access_controller = {
+            let manifest = ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .withdraw_from_account(account, XRD, 1)
+                .take_all_from_worktop(XRD, "controlled_asset")
+                .create_access_controller(
+                    "controlled_asset",
+                    rule!(require(virtual_signature_badge.clone())),
+                    rule!(require(virtual_signature_badge.clone())),
+                    rule!(require(virtual_signature_badge.clone())),
+                    Some(10),
+                )
+                .build();
+            let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge.clone()]);
+            let result = receipt.expect_commit_success();
+            let access_controller = result.new_component_addresses()[0];
+            access_controller
         };
 
         let one_resource_pool = {
@@ -628,6 +746,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             multi_resource_pool,
             fungible_meta: fungible_vault_component,
             non_fungible_meta: non_fungible_vault_component,
+            access_controller,
             account_address: account,
             account_public_key: public_key.into(),
             cur_round: Round::of(1u64),
@@ -707,6 +826,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     &self.multi_resource_pool,
                     &self.fungible_meta,
                     &self.non_fungible_meta,
+                    self.access_controller,
                     self.account_address,
                 );
 
