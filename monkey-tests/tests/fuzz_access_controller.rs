@@ -6,13 +6,9 @@ fn fuzz_access_controller() {
     struct AccessControllerFuzzer;
     impl TxnFuzzer for AccessControllerFuzzer {
         fn next_txn_intent(fuzzer: &mut SystemTestFuzzer) -> Vec<FuzzAction> {
-            match fuzzer.next(0u8..1u8) {
-                _ => {
-                    let action: AccessControllerFuzzAction =
-                        AccessControllerFuzzAction::from_repr(fuzzer.next_u8(1u8)).unwrap();
-                    vec![FuzzAction::AccessController(action)]
-                }
-            }
+            let action: AccessControllerFuzzAction =
+                AccessControllerFuzzAction::from_repr(fuzzer.next_u8(2u8)).unwrap();
+            vec![FuzzAction::AccessController(action)]
         }
     }
 

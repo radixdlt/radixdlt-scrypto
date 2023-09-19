@@ -50,6 +50,7 @@ pub struct SystemTestFuzzer {
     resources: Vec<ResourceAddress>,
     non_fungibles: Vec<ResourceAddress>,
     fungibles: Vec<ResourceAddress>,
+    rule_sets: Vec<RuleSet>,
 }
 
 impl SystemTestFuzzer {
@@ -60,6 +61,7 @@ impl SystemTestFuzzer {
             resources: Vec::new(),
             non_fungibles: Vec::new(),
             fungibles: Vec::new(),
+            rule_sets: Vec::new(),
         }
     }
 
@@ -260,10 +262,27 @@ impl SystemTestFuzzer {
     }
 
     pub fn next_rule_set(&mut self) -> RuleSet {
-        RuleSet {
-            primary_role: self.next_access_rule(),
-            recovery_role: self.next_access_rule(),
-            confirmation_role: self.next_access_rule(),
+        if self.rule_sets.is_empty() {
+            let rule_set = RuleSet {
+                primary_role: self.next_access_rule(),
+                recovery_role: self.next_access_rule(),
+                confirmation_role: self.next_access_rule(),
+            };
+            self.rule_sets.push(rule_set.clone());
+            rule_set
+        } else {
+            if self.rng.gen_bool(0.2) {
+                let index = self.rng.gen_range(0usize..self.rule_sets.len());
+                self.rule_sets[index].clone()
+            } else {
+                let rule_set = RuleSet {
+                    primary_role: self.next_access_rule(),
+                    recovery_role: self.next_access_rule(),
+                    confirmation_role: self.next_access_rule(),
+                };
+                self.rule_sets.push(rule_set.clone());
+                rule_set
+            }
         }
     }
 }
