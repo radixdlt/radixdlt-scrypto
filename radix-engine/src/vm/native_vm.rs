@@ -41,6 +41,11 @@ impl<E: NativeVmExtension> NativeVm<E> {
 
         let code: [u8; 8] = match code.clone().try_into() {
             Ok(code) => code,
+            // It should be impossible for us to get to this point here. The code argument is
+            // provided by the Vm after it reads the `PackageCodeOriginalCodeEntrySubstate`. Thus,
+            // if the code-id at this point is invalid for the native-vm, then this means that the
+            // database has been corrupted. We could safely panic here, however, we're choosing to
+            // keep the `Err` here for safety.
             Err(..) => {
                 return Err(RuntimeError::VmError(VmError::Native(
                     NativeRuntimeError::InvalidCodeId,

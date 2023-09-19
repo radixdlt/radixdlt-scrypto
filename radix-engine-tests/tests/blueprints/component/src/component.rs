@@ -43,5 +43,13 @@ mod component_test {
 
             bucket
         }
+
+        pub fn blueprint_name_function() -> String {
+            Runtime::blueprint_name()
+        }
+
+        pub fn blueprint_name_method(&self) -> String {
+            Runtime::blueprint_name()
+        }
     }
 }
