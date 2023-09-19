@@ -7,11 +7,11 @@ use crate::kernel::substate_io::SubstateDevice;
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::{
     blueprints::package::*,
-    kernel::actor::Actor,
     track::interface::{IOAccess, StoreCommit},
     types::*,
 };
 use lazy_static::lazy_static;
+use crate::system::actor::Actor;
 
 // Reference EC2 instance c5.4xlarge has CPU clock 3.4 GHz which means in 1 µs it executes 3400 instructions
 // (1 core, single-threaded operation, skipping CPU cache influence).

@@ -44,13 +44,6 @@ impl MethodActor {
             MethodType::Module(module_id) => module_id.static_blueprint(),
         }
     }
-
-    pub fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier {
-            blueprint_id: self.get_blueprint_id(),
-            ident: self.ident.to_string(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,13 +55,6 @@ pub struct FunctionActor {
 }
 
 impl FunctionActor {
-    pub fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier {
-            blueprint_id: self.blueprint_id.clone(),
-            ident: self.ident.to_string(),
-        }
-    }
-
     pub fn as_global_caller(&self) -> GlobalCaller {
         GlobalCaller::PackageBlueprint(self.blueprint_id.clone())
     }

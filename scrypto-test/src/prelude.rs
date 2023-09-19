@@ -17,7 +17,7 @@ pub use radix_engine::blueprints::transaction_processor::*;
 pub use radix_engine::blueprints::transaction_tracker::*;
 pub use radix_engine::blueprints::util::*;
 pub use radix_engine::errors::*;
-pub use radix_engine::kernel::actor::*;
+pub use radix_engine::system::actor::*;
 pub use radix_engine::kernel::call_frame::*;
 pub use radix_engine::kernel::heap::*;
 pub use radix_engine::kernel::id_allocator::*;

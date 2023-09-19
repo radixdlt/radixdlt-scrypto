@@ -3,7 +3,7 @@ use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::internal_prelude::*;
-use crate::kernel::actor::Actor;
+use crate::system::actor::Actor;
 use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;

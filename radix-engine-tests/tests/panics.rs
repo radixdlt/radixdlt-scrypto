@@ -1,5 +1,5 @@
 use radix_engine::errors::*;
-use radix_engine::kernel::actor::*;
+use radix_engine::system::actor::*;
 use radix_engine::kernel::call_frame::*;
 use radix_engine::kernel::kernel_api::*;
 #[cfg(not(feature = "alloc"))]

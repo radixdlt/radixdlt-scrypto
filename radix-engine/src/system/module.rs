@@ -1,5 +1,5 @@
 use crate::errors::RuntimeError;
-use crate::kernel::actor::Actor;
+use crate::system::actor::Actor;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};

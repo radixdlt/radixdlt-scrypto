@@ -9,7 +9,7 @@ use crate::errors::{
 use crate::errors::{EventError, SystemUpstreamError};
 use crate::internal_prelude::*;
 use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};
-use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
+use crate::system::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;

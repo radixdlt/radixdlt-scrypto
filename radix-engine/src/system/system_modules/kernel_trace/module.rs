@@ -1,4 +1,4 @@
-use crate::kernel::actor::Actor;
+use crate::system::actor::Actor;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
