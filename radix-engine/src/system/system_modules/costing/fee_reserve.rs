@@ -8,7 +8,7 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::cmp::min;
 use transaction::prelude::TransactionCostingParameters;
 
-// Note: for performance reason, `u128` is used to represent decimal in this file.
+// Note: for performance reason, `Decimal` is used to represent decimal in this file.
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FeeReserveError {
@@ -99,16 +99,16 @@ impl RoyaltyRecipient {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct SystemLoanFeeReserve {
-    execution_cost_unit_price: u128,
+    execution_cost_unit_price: Decimal,
     execution_cost_unit_limit: u32,
     execution_cost_unit_loan: u32,
 
-    finalization_cost_unit_price: u128,
+    finalization_cost_unit_price: Decimal,
     finalization_cost_unit_limit: u32,
 
-    usd_price: u128,
-    state_storage_price: u128,
-    archive_storage_price: u128,
+    usd_price: Decimal,
+    state_storage_price: Decimal,
+    archive_storage_price: Decimal,
 
     tip_percentage: u16,
 
@@ -117,14 +117,14 @@ pub struct SystemLoanFeeReserve {
     abort_when_loan_repaid: bool,
 
     /// (Cache) The effective execution cost unit price, with tips considered
-    effective_execution_cost_unit_price: u128,
+    effective_execution_cost_unit_price: Decimal,
     /// (Cache) The effective finalization cost unit price, with tips considered
-    effective_finalization_cost_unit_price: u128,
+    effective_finalization_cost_unit_price: Decimal,
 
     /// The XRD balance
-    xrd_balance: u128,
+    xrd_balance: Decimal,
     /// The amount of XRD owed to the system
-    xrd_owed: u128,
+    xrd_owed: Decimal,
 
     /// Execution costs
     execution_cost_units_committed: u32,
@@ -134,11 +134,11 @@ pub struct SystemLoanFeeReserve {
     finalization_cost_units_committed: u32,
 
     /// Royalty costs
-    royalty_cost: u128,
-    royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, u128>,
+    royalty_cost: Decimal,
+    royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, Decimal>,
 
     /// Storage Costs
-    storage_cost_committed: u128,
+    storage_cost_committed: Decimal,
     storage_cost_deferred: BTreeMap<StorageType, usize>,
 
     /// Payments made during the execution of a transaction.
@@ -161,18 +161,9 @@ fn checked_add(a: u32, b: u32) -> Result<u32, FeeReserveError> {
 }
 
 #[inline]
-fn checked_assign_add(value: &mut u32, summand: u32) -> Result<(), FeeReserveError> {
+fn checked_add_assign(value: &mut u32, summand: u32) -> Result<(), FeeReserveError> {
     *value = checked_add(*value, summand)?;
     Ok(())
-}
-
-fn transmute_u128_as_decimal(a: u128) -> Decimal {
-    Decimal(a.into())
-}
-
-fn transmute_decimal_as_u128(a: Decimal) -> Result<u128, FeeReserveError> {
-    let i192 = a.0;
-    i192.try_into().map_err(|_| FeeReserveError::Overflow)
 }
 
 impl SystemLoanFeeReserve {
@@ -208,28 +199,18 @@ impl SystemLoanFeeReserve {
 
         Self {
             // Execution costing parameters
-            execution_cost_unit_price: transmute_decimal_as_u128(
-                costing_parameters.execution_cost_unit_price,
-            )
-            .unwrap(),
+            execution_cost_unit_price: costing_parameters.execution_cost_unit_price,
             execution_cost_unit_limit: costing_parameters.execution_cost_unit_limit,
             execution_cost_unit_loan: costing_parameters.execution_cost_unit_loan,
 
             // Finalization costing parameters
-            finalization_cost_unit_price: transmute_decimal_as_u128(
-                costing_parameters.finalization_cost_unit_price,
-            )
-            .unwrap(),
+            finalization_cost_unit_price: costing_parameters.finalization_cost_unit_price,
             finalization_cost_unit_limit: costing_parameters.finalization_cost_unit_limit,
 
             // USD and storage price
-            usd_price: transmute_decimal_as_u128(costing_parameters.usd_price).unwrap(),
-            state_storage_price: transmute_decimal_as_u128(costing_parameters.state_storage_price)
-                .unwrap(),
-            archive_storage_price: transmute_decimal_as_u128(
-                costing_parameters.archive_storage_price,
-            )
-            .unwrap(),
+            usd_price: costing_parameters.usd_price,
+            state_storage_price: costing_parameters.state_storage_price,
+            archive_storage_price: costing_parameters.archive_storage_price,
 
             // Tipping percentage
             tip_percentage: transaction_costing_parameters.tip_percentage,
@@ -238,23 +219,14 @@ impl SystemLoanFeeReserve {
             abort_when_loan_repaid,
 
             // Cache
-            effective_execution_cost_unit_price: transmute_decimal_as_u128(
-                effective_execution_cost_unit_price,
-            )
-            .unwrap(),
-            effective_finalization_cost_unit_price: transmute_decimal_as_u128(
-                effective_finalization_cost_unit_price,
-            )
-            .unwrap(),
+            effective_execution_cost_unit_price: effective_execution_cost_unit_price,
+            effective_finalization_cost_unit_price: effective_finalization_cost_unit_price,
 
             // Running balance
-            xrd_balance: transmute_decimal_as_u128(
-                system_loan_in_xrd
-                    .checked_add(transaction_costing_parameters.free_credit_in_xrd)
-                    .unwrap(),
-            )
-            .unwrap(),
-            xrd_owed: transmute_decimal_as_u128(system_loan_in_xrd).unwrap(),
+            xrd_balance: system_loan_in_xrd
+                .checked_add(transaction_costing_parameters.free_credit_in_xrd)
+                .unwrap(),
+            xrd_owed: system_loan_in_xrd,
 
             // Internal states
             execution_cost_units_committed: 0,
@@ -263,9 +235,9 @@ impl SystemLoanFeeReserve {
             finalization_cost_units_committed: 0,
 
             royalty_cost_breakdown: BTreeMap::new(),
-            royalty_cost: 0,
+            royalty_cost: Decimal::ZERO,
 
-            storage_cost_committed: 0,
+            storage_cost_committed: Decimal::ZERO,
             storage_cost_deferred: BTreeMap::new(),
 
             locked_fees: Vec::new(),
@@ -277,7 +249,7 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn execution_cost_unit_price(&self) -> Decimal {
-        transmute_u128_as_decimal(self.execution_cost_unit_price)
+        self.execution_cost_unit_price
     }
 
     pub fn finalization_cost_unit_limit(&self) -> u32 {
@@ -285,11 +257,11 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn finalization_cost_unit_price(&self) -> Decimal {
-        transmute_u128_as_decimal(self.finalization_cost_unit_price)
+        self.finalization_cost_unit_price
     }
 
     pub fn usd_price(&self) -> Decimal {
-        transmute_u128_as_decimal(self.usd_price)
+        self.usd_price
     }
 
     pub fn tip_percentage(&self) -> u32 {
@@ -297,15 +269,11 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn fee_balance(&self) -> Decimal {
-        transmute_u128_as_decimal(self.xrd_balance)
+        self.xrd_balance
     }
 
     pub fn royalty_cost_breakdown(&self) -> IndexMap<RoyaltyRecipient, Decimal> {
-        self.royalty_cost_breakdown
-            .clone()
-            .into_iter()
-            .map(|(k, v)| (k, transmute_u128_as_decimal(v)))
-            .collect()
+        self.royalty_cost_breakdown.clone().into_iter().collect()
     }
 
     fn check_execution_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
@@ -337,11 +305,11 @@ impl SystemLoanFeeReserve {
     fn consume_execution_internal(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
         self.check_execution_cost_unit_limit(cost_units)?;
 
-        let amount = self.effective_execution_cost_unit_price * cost_units as u128;
+        let amount = self.effective_execution_cost_unit_price * cost_units;
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
-                required: transmute_u128_as_decimal(amount),
-                remaining: transmute_u128_as_decimal(self.xrd_balance),
+                required: amount,
+                remaining: self.xrd_balance,
             });
         } else {
             self.xrd_balance -= amount;
@@ -353,11 +321,11 @@ impl SystemLoanFeeReserve {
     fn consume_finalization_internal(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
         self.check_finalization_cost_unit_limit(cost_units)?;
 
-        let amount = self.effective_finalization_cost_unit_price * cost_units as u128;
+        let amount = self.effective_finalization_cost_unit_price * cost_units;
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
-                required: transmute_u128_as_decimal(amount),
-                remaining: transmute_u128_as_decimal(self.xrd_balance),
+                required: amount,
+                remaining: self.xrd_balance,
             });
         } else {
             self.xrd_balance -= amount;
@@ -372,19 +340,16 @@ impl SystemLoanFeeReserve {
         recipient: RoyaltyRecipient,
     ) -> Result<(), FeeReserveError> {
         let amount = match royalty_amount {
-            RoyaltyAmount::Xrd(xrd_amount) => transmute_decimal_as_u128(xrd_amount)?,
-            RoyaltyAmount::Usd(usd_amount) => {
-                transmute_decimal_as_u128(usd_amount)?
-                    .checked_mul(self.usd_price)
-                    .ok_or(FeeReserveError::Overflow)?
-                    / 1_000_000_000_000_000_000
-            }
-            RoyaltyAmount::Free => 0u128,
+            RoyaltyAmount::Xrd(xrd_amount) => xrd_amount,
+            RoyaltyAmount::Usd(usd_amount) => usd_amount
+                .checked_mul(self.usd_price)
+                .ok_or(FeeReserveError::Overflow)?,
+            RoyaltyAmount::Free => Decimal::ZERO,
         };
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
-                required: transmute_u128_as_decimal(amount),
-                remaining: transmute_u128_as_decimal(self.xrd_balance),
+                required: amount,
+                remaining: self.xrd_balance,
             });
         } else {
             self.xrd_balance -= amount;
@@ -415,9 +380,9 @@ impl SystemLoanFeeReserve {
         self.xrd_balance -= amount; // not used afterwards
 
         // Check outstanding loan
-        if self.xrd_owed != 0 {
+        if !self.xrd_owed.is_zero() {
             return Err(FeeReserveError::LoanRepaymentFailed {
-                xrd_owed: transmute_u128_as_decimal(self.xrd_owed),
+                xrd_owed: self.xrd_owed,
             });
         }
 
@@ -431,22 +396,28 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn revert_royalty(&mut self) {
-        self.xrd_balance += self.royalty_cost_breakdown.values().sum::<u128>();
+        let mut sum = Decimal::ZERO;
+        for v in self.royalty_cost_breakdown.values() {
+            sum = sum
+                .checked_add(v.clone())
+                .expect("Total royalty should not overflow due to MAX_PER_FUNCTION_ROYALTY_IN_XRD")
+        }
+        self.xrd_balance += sum;
         self.royalty_cost_breakdown.clear();
-        self.royalty_cost = 0;
+        self.royalty_cost = Decimal::ZERO;
     }
 
     #[inline]
     pub fn fully_repaid(&self) -> bool {
         // The xrd_owed state is not reset before all deferred costs are applied.
         // Thus, not checking the deferred balance
-        self.xrd_owed == 0
+        self.xrd_owed == Decimal::ZERO
     }
 }
 
 impl PreExecutionFeeReserve for SystemLoanFeeReserve {
     fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
-        checked_assign_add(&mut self.execution_cost_units_deferred, cost_units)?;
+        checked_add_assign(&mut self.execution_cost_units_deferred, cost_units)?;
 
         Ok(())
     }
@@ -518,12 +489,13 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             StorageType::State => self.state_storage_price,
             StorageType::Archive => self.archive_storage_price,
         }
-        .saturating_mul(size_increase as u128);
+        .checked_mul(size_increase)
+        .ok_or(FeeReserveError::Overflow)?;
 
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
-                required: transmute_u128_as_decimal(amount),
-                remaining: transmute_u128_as_decimal(self.xrd_balance),
+                required: amount,
+                remaining: self.xrd_balance,
             });
         } else {
             self.xrd_balance -= amount;
@@ -535,8 +507,8 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
     fn lock_fee(&mut self, vault_id: NodeId, mut fee: LiquidFungibleResource, contingent: bool) {
         // Update balance
         if !contingent {
-            self.xrd_balance += transmute_decimal_as_u128(fee.amount())
-                .expect("No overflow due to limited XRD supply");
+            // No overflow due to limited XRD supply
+            self.xrd_balance += fee.amount();
         }
 
         // Move resource
@@ -547,15 +519,15 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
     fn finalize(self) -> FeeReserveFinalizationSummary {
-        let total_execution_cost_in_xrd: Decimal =
-            transmute_u128_as_decimal(self.execution_cost_unit_price)
-                .checked_mul(self.execution_cost_units_committed)
-                .unwrap();
+        let total_execution_cost_in_xrd: Decimal = self
+            .execution_cost_unit_price
+            .checked_mul(self.execution_cost_units_committed)
+            .unwrap();
 
-        let total_finalization_cost_in_xrd =
-            transmute_u128_as_decimal(self.finalization_cost_unit_price)
-                .checked_mul(self.finalization_cost_units_committed)
-                .unwrap();
+        let total_finalization_cost_in_xrd = self
+            .finalization_cost_unit_price
+            .checked_mul(self.finalization_cost_units_committed)
+            .unwrap();
 
         let tip_percentage = Decimal::from(self.tip_percentage).checked_div(100).unwrap();
 
@@ -578,9 +550,9 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             total_execution_cost_in_xrd,
             total_finalization_cost_in_xrd,
             total_tipping_cost_in_xrd,
-            total_royalty_cost_in_xrd: transmute_u128_as_decimal(self.royalty_cost),
-            total_storage_cost_in_xrd: transmute_u128_as_decimal(self.storage_cost_committed),
-            total_bad_debt_in_xrd: transmute_u128_as_decimal(self.xrd_owed),
+            total_royalty_cost_in_xrd: self.royalty_cost,
+            total_storage_cost_in_xrd: self.storage_cost_committed,
+            total_bad_debt_in_xrd: self.xrd_owed,
             locked_fees: self.locked_fees,
             royalty_cost_breakdown,
         }
