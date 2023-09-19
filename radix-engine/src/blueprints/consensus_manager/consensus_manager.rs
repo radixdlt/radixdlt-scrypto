@@ -1362,50 +1362,82 @@ impl ConsensusManagerBlueprint {
         //===========================
         // Distribute rewards (fees)
         //===========================
-        let total_individual_amount: Decimal = {
-            let mut sum = Decimal::ZERO;
+        let mut total_effective_stake = Decimal::ZERO;
+        let mut total_claimable_proposer_rewards = Decimal::ZERO;
 
-            for v in validator_rewards.proposer_rewards.values() {
-                sum = sum.checked_add(*v).ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::ConsensusManagerError(
-                        ConsensusManagerError::UnexpectedDecimalComputationError,
-                    ),
-                ))?;
-            }
-            sum
-        };
-
-        let reward_per_staked_xrd = validator_rewards
-            .rewards_vault
-            .amount(api)?
-            .checked_sub(total_individual_amount)
-            .and_then(|amount| amount.checked_div(stake_sum_xrd))
-            .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::ConsensusManagerError(
-                    ConsensusManagerError::UnexpectedDecimalComputationError,
-                ),
-            ))?;
-        for (index, validator_info) in validator_infos {
-            let from_self = validator_rewards
-                .proposer_rewards
-                .remove(&index)
-                .unwrap_or_default();
-            let reward_amount = validator_info
-                .effective_stake_xrd
-                .checked_mul(reward_per_staked_xrd)
-                .and_then(|from_pool| from_self.checked_add(from_pool))
+        // Note that `validator_infos` are for applicable validators (i.e. stake > 0) only
+        // Being an applicable validator doesn't necessarily mean the effective stake is positive, due to reliability rescaling.
+        for (index, validator_info) in &validator_infos {
+            total_effective_stake = total_effective_stake
+                .checked_add(validator_info.effective_stake_xrd)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ConsensusManagerError(
                         ConsensusManagerError::UnexpectedDecimalComputationError,
                     ),
                 ))?;
-            if reward_amount.is_zero() {
+            total_claimable_proposer_rewards = total_claimable_proposer_rewards
+                .checked_add(
+                    validator_rewards
+                        .proposer_rewards
+                        .get(index)
+                        .cloned()
+                        .unwrap_or_default(),
+                )
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
+        }
+
+        let total_claimable_validator_set_rewards = validator_rewards
+            .rewards_vault
+            .amount(api)?
+            .checked_sub(total_claimable_proposer_rewards)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?;
+        let reward_per_effective_stake = if total_effective_stake.is_zero() {
+            // This is another extreme use case.
+            // Can the network even progress if total effective stake is zero?
+            Decimal::ZERO
+        } else {
+            total_claimable_validator_set_rewards
+                .checked_div(total_effective_stake)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?
+        };
+
+        for (index, validator_info) in validator_infos {
+            let as_proposer = validator_rewards
+                .proposer_rewards
+                .remove(&index)
+                .unwrap_or_default();
+            let as_member_of_validator_set = validator_info
+                .effective_stake_xrd
+                .checked_mul(reward_per_effective_stake)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
+            let total_rewards = as_proposer.checked_add(as_member_of_validator_set).ok_or(
+                RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                )),
+            )?;
+            if total_rewards.is_zero() {
                 continue;
             }
 
             // Note that dusted xrd (due to rounding) are kept in the vault and will
             // become retrievable next time.
-            let xrd_bucket = validator_rewards.rewards_vault.take(reward_amount, api)?;
+            let xrd_bucket = validator_rewards.rewards_vault.take(total_rewards, api)?;
 
             api.call_method(
                 validator_info.address.as_node_id(),
@@ -1413,6 +1445,10 @@ impl ConsensusManagerBlueprint {
                 scrypto_encode(&ValidatorApplyRewardInput { xrd_bucket, epoch }).unwrap(),
             )?;
         }
+
+        // For any reason, if a validator isn't included in the `validator_infos` but has accumulated
+        // proposer rewards, we reset the counter as the rewards has been distributed to other validators.
+        validator_rewards.proposer_rewards.clear();
 
         Ok(())
     }

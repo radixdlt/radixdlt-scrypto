@@ -1071,7 +1071,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        substate_io.close_substate(open_substate.global_substate_handle)?;
+        substate_io.close_substate(open_substate.global_substate_handle);
 
         let diff = open_substate.diff_on_close();
         Self::apply_diff_to_open_substate(
@@ -1087,10 +1087,10 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn close_all_substates<S: CommitableSubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
-    ) -> Result<(), CloseSubstateError> {
+    ) {
         // Closing of all substates should always be possible as no invariant needs to be maintained
         for (_lock_handle, mut open_substate) in self.open_substates.drain(..) {
-            substate_io.close_substate(open_substate.global_substate_handle)?;
+            substate_io.close_substate(open_substate.global_substate_handle);
             let diff = open_substate.diff_on_close();
             Self::apply_diff_to_open_substate(
                 &mut self.transient_references,
@@ -1099,8 +1099,6 @@ impl<C, L: Clone> CallFrame<C, L> {
                 &diff,
             );
         }
-
-        Ok(())
     }
 
     pub fn get_handle_info(&self, lock_handle: SubstateHandle) -> Option<L> {

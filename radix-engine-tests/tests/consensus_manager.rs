@@ -3580,3 +3580,64 @@ fn can_lock_owner_stake_with_zero_bucket() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next().unwrap();
+    let initial_stake_amount1 = dec!("30000");
+    let initial_stake_amount2 = dec!("0");
+    let emission_xrd_per_epoch = dec!("0");
+    let validator1_key = Secp256k1PrivateKey::from_u64(5u64).unwrap().public_key();
+    let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
+    let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
+    let staker_account = ComponentAddress::virtual_account_from_public_key(&staker_key);
+    let genesis = CustomGenesis::validators_and_single_staker(
+        vec![
+            (validator1_key, initial_stake_amount1),
+            (validator2_key, initial_stake_amount2),
+        ],
+        staker_account,
+        Decimal::ZERO,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            }),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+
+    // Do some transaction
+    let receipt1 = test_runner.execute_manifest_ignoring_fee(
+        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+        vec![],
+    );
+    let result1 = receipt1.expect_commit_success();
+
+    // Advance epoch
+    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let result2 = receipt2.expect_commit_success();
+
+    // Assert
+    let events = test_runner.extract_events_of_type::<ValidatorRewardAppliedEvent>(result2);
+    assert_eq!(events.len(), 1); // only validator 1 receives rewards
+    assert_eq!(events[0].epoch, initial_epoch);
+    assert_close_to!(
+        events[0].amount,
+        result1
+            .fee_destination
+            .to_proposer
+            .checked_add(result1.fee_destination.to_validator_set)
+            .unwrap()
+    );
+    let vault_id = test_runner.get_component_vaults(CONSENSUS_MANAGER, XRD)[0];
+    assert_close_to!(
+        test_runner.inspect_vault_balance(vault_id).unwrap(),
+        dec!(0)
+    );
+}

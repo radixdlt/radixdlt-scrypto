@@ -6,11 +6,18 @@
 ///
 /// error!("Input number: {}", 100);
 /// ```
+#[cfg(feature = "log-error")]
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::emit_log($crate::types::Level::Error, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::error(::sbor::rust::format!($($args),+));
     }};
+}
+
+#[cfg(not(feature = "log-error"))]
+#[macro_export]
+macro_rules! error {
+    ($($args: expr),+) => {{}};
 }
 
 /// Logs a `WARN` message.
@@ -21,11 +28,18 @@ macro_rules! error {
 ///
 /// warn!("Input number: {}", 100);
 /// ```
+#[cfg(feature = "log-warn")]
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::emit_log($crate::types::Level::Warn, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::warn(::sbor::rust::format!($($args),+));
     }};
+}
+
+#[cfg(not(feature = "log-warn"))]
+#[macro_export]
+macro_rules! warn {
+    ($($args: expr),+) => {{}};
 }
 
 /// Logs an `INFO` message.
@@ -36,11 +50,18 @@ macro_rules! warn {
 ///
 /// info!("Input number: {}", 100);
 /// ```
+#[cfg(feature = "log-info")]
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::emit_log($crate::types::Level::Info, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::info(::sbor::rust::format!($($args),+));
     }};
+}
+
+#[cfg(not(feature = "log-info"))]
+#[macro_export]
+macro_rules! info {
+    ($($args: expr),+) => {{}};
 }
 
 /// Logs a `DEBUG` message.
@@ -51,11 +72,18 @@ macro_rules! info {
 ///
 /// debug!("Input number: {}", 100);
 /// ```
+#[cfg(feature = "log-debug")]
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::emit_log($crate::types::Level::Debug, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::debug(::sbor::rust::format!($($args),+));
     }};
+}
+
+#[cfg(not(feature = "log-debug"))]
+#[macro_export]
+macro_rules! debug {
+    ($($args: expr),+) => {{}};
 }
 
 /// Logs a `TRACE` message.
@@ -66,11 +94,18 @@ macro_rules! debug {
 ///
 /// trace!("Input number: {}", 100);
 /// ```
+#[cfg(feature = "log-trace")]
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::emit_log($crate::types::Level::Trace, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::trace(::sbor::rust::format!($($args),+));
     }};
+}
+
+#[cfg(not(feature = "log-trace"))]
+#[macro_export]
+macro_rules! trace {
+    ($($args: expr),+) => {{}};
 }
 
 #[macro_export]

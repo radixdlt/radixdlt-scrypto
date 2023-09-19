@@ -135,6 +135,12 @@ mod everything {
         }
 
         pub fn protected_method(&self) {
+            error!("This");
+            warn!("is");
+            info!("a");
+            debug!("test");
+            trace!("message");
+
             FAUCET.lock_fee(dec!("1.0"));
         }
     }

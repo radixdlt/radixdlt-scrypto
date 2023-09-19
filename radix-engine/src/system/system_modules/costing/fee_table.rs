@@ -286,7 +286,7 @@ impl FeeTable {
     #[inline]
     pub fn close_substate_cost(&self, event: &CloseSubstateEvent) -> u32 {
         match event {
-            CloseSubstateEvent::End(..) => 4333 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            CloseSubstateEvent::Start(..) => 4333 / CPU_INSTRUCTIONS_TO_COST_UNIT,
         }
     }
 

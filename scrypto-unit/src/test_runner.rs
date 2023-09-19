@@ -83,7 +83,14 @@ impl Compile {
         let status = Command::new("cargo")
             .envs(env_vars)
             .current_dir(package_dir.as_ref())
-            .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
+            .args([
+                "build", 
+                "--target",
+                "wasm32-unknown-unknown",
+                "--release",
+                "--features", 
+                "scrypto/log-error,scrypto/log-warn,scrypto/log-info,scrypto/log-debug,scrypto/log-trace"
+            ])
             .status()
             .unwrap_or_else(|error| {
                 panic!(
@@ -2497,7 +2504,10 @@ impl<'d, D: SubstateDatabase> SubtreeVaults<'d, D> {
                         assert_eq!(reported_resource, traversed_resource);
                         change
                     })
-                    .reduce(|left, right| left + right)
+                    .reduce(|mut left, right| {
+                        left.add_assign(right);
+                        left
+                    })
                     .map(|change| (traversed_resource, change))
             })
             .collect()

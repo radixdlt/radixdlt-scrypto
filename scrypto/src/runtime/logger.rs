@@ -1,40 +1,34 @@
+use crate::engine::scrypto_env::ScryptoVmV1Api;
 use radix_engine_interface::types::Level;
 use sbor::rust::string::String;
-
-use crate::engine::scrypto_env::ScryptoVmV1Api;
 
 /// A utility for logging messages.
 #[derive(Debug)]
 pub struct Logger {}
 
 impl Logger {
-    /// Emits a log to console.
-    pub fn emit_log(level: Level, message: String) {
-        ScryptoVmV1Api::sys_log(level, message);
-    }
-
-    /// Emits a trace message.
+    /// Emits a TRACE message.
     pub fn trace(message: String) {
-        Self::emit_log(Level::Trace, message);
+        ScryptoVmV1Api::sys_log(Level::Trace, message);
     }
 
-    /// Emits a debug message.
+    /// Emits a DEBUG message.
     pub fn debug(message: String) {
-        Self::emit_log(Level::Debug, message);
+        ScryptoVmV1Api::sys_log(Level::Debug, message);
     }
 
-    /// Emits an info message.
+    /// Emits an INFO message.
     pub fn info(message: String) {
-        Self::emit_log(Level::Info, message);
+        ScryptoVmV1Api::sys_log(Level::Info, message);
     }
 
-    /// Emits a warn message.
+    /// Emits a WARN message.
     pub fn warn(message: String) {
-        Self::emit_log(Level::Warn, message);
+        ScryptoVmV1Api::sys_log(Level::Warn, message);
     }
 
-    /// Emits an error message.
+    /// Emits an ERROR message.
     pub fn error(message: String) {
-        Self::emit_log(Level::Error, message);
+        ScryptoVmV1Api::sys_log(Level::Error, message);
     }
 }

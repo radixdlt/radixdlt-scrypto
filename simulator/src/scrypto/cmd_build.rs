@@ -1,9 +1,9 @@
-use clap::Parser;
-use std::env::current_dir;
-use std::path::PathBuf;
-
 use crate::scrypto::*;
 use crate::utils::*;
+use clap::Parser;
+use radix_engine_interface::prelude::Level;
+use std::env::current_dir;
+use std::path::PathBuf;
 
 /// Build a Scrypto package
 #[derive(Parser, Debug)]
@@ -19,6 +19,11 @@ pub struct Build {
     /// When passed, this argument disables wasm-opt from running on the built wasm.
     #[clap(long)]
     disable_wasm_opt: bool,
+
+    /// The max log level, such as ERROR, WARN, INFO, DEBUG and TRACE.
+    /// The default is INFO.
+    #[clap(long)]
+    log_level: Option<Level>,
 }
 
 impl Build {
@@ -28,6 +33,7 @@ impl Build {
             self.trace,
             false,
             self.disable_wasm_opt,
+            self.log_level.unwrap_or(Level::default()),
         )
         .map(|_| ())
         .map_err(Error::BuildError)

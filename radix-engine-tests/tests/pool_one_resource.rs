@@ -175,6 +175,19 @@ fn initial_contribution_to_pool_check_amount() {
 }
 
 #[test]
+fn pool_check_debug_output() {
+    // Arrange
+    let input_args_empty = OneResourcePoolGetVaultAmountManifestInput;
+    let _debug_fmt_coverage = format!("{:?}", input_args_empty);
+
+    let input_args = OneResourcePoolProtectedWithdrawManifestInput {
+        amount: 10.into(),
+        withdraw_strategy: WithdrawStrategy::Rounded(RoundingMode::ToZero),
+    };
+    let _debug_fmt_coverage = format!("{:?}", input_args);
+}
+
+#[test]
 fn contribution_to_pool_mints_expected_amount_1() {
     // Arrange
     let mut test_runner = TestEnvironment::new(18);

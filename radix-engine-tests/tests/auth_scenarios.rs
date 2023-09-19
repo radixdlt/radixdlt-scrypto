@@ -16,7 +16,7 @@ use scrypto_unit::InjectSystemCostingError;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
-struct AuthScenariosEnv {
+pub struct AuthScenariosEnv {
     acco: ComponentAddress,
     virtua_sig: NonFungibleGlobalId,
     cerb_badge: NonFungibleGlobalId,
