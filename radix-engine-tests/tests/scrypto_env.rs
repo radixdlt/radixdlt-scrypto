@@ -1,7 +1,10 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError, SystemError};
+use radix_engine::blueprints::resource::ProofError;
+use radix_engine::errors::{
+    ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
+};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -94,6 +97,39 @@ fn test_pop_empty_auth_zone() {
         receipt.expect_commit_success().output::<Option<Proof>>(1),
         None
     );
+}
+
+#[test]
+fn test_create_signature_proof() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pub_key, _priv_key, _account) = test_runner.new_account(true);
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("scrypto_env"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "LocalAuthZoneTest",
+            "create_signature_proof",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ProofError(
+                ProofError::EmptyProofNotAllowed
+            ))
+        )
+    });
 }
 
 #[test]
