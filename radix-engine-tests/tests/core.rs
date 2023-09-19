@@ -10,6 +10,7 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use scrypto_test::prelude::{OpenSubstateError, ProcessSubstateKeyError};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -342,4 +343,36 @@ fn test_globalize_with_very_deep_own() {
         .build();
     let result = test_runner.execute_manifest(manifest, vec![]);
     result.expect_commit_failure();
+}
+
+#[test]
+fn test_insert_not_visible_global_refs_in_substate_key() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "SubstateKeyTest",
+            "insert_not_visible_global_refs_in_substate_key",
+            manifest_args![],
+        )
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::OpenSubstateError(OpenSubstateError::ProcessSubstateKeyError(
+                    ProcessSubstateKeyError::NodeNotVisible(_)
+                ))
+            ))
+        )
+    })
 }

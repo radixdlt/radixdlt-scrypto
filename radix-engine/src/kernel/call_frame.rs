@@ -28,7 +28,7 @@ pub struct CallFrameMessage {
     /// Create a "stable" transient in dest from src. The src node may
     /// have global or borrowed visibility
     /// TODO: Cleanup abstraction (perhaps by adding another type of visibility)
-    pub copy_to_stable_transient_references: Vec<NodeId>,
+    pub copy_stable_transient_references: Vec<NodeId>,
 }
 
 impl CallFrameMessage {
@@ -51,7 +51,7 @@ impl CallFrameMessage {
             move_nodes: value.owned_nodes().clone(),
             copy_global_references,
             copy_direct_access_references,
-            copy_to_stable_transient_references: references.stable_transient_references(),
+            copy_stable_transient_references: references.stable_transient_references(),
         }
     }
 
@@ -71,7 +71,7 @@ impl CallFrameMessage {
             move_nodes: value.owned_nodes().clone(),
             copy_global_references,
             copy_direct_access_references,
-            copy_to_stable_transient_references: vec![],
+            copy_stable_transient_references: vec![],
         }
     }
 
@@ -527,7 +527,7 @@ pub enum CallFrameScanKeysError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameDrainSubstatesError {
     NodeNotVisible(NodeId),
-    OwnedNodeNotSupported(NodeId),
+    NonGlobalRefNotSupported(NodeId),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
@@ -543,6 +543,7 @@ pub enum ProcessSubstateKeyError {
     NodeNotVisible(NodeId),
     DecodeError(DecodeError),
     OwnedNodeNotSupported,
+    NonGlobalRefNotSupported,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -631,7 +632,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        for node_id in message.copy_to_stable_transient_references {
+        for node_id in message.copy_stable_transient_references {
             if from.depth >= to.depth {
                 panic!("Transient references only supported for downstream calls.");
             }
@@ -863,13 +864,20 @@ impl<C, L: Clone> CallFrame<C, L> {
             SubstateKey::Sorted((_, map_key)) | SubstateKey::Map(map_key) => {
                 let key_value = IndexedScryptoValue::from_slice(map_key)
                     .map_err(|e| ProcessSubstateKeyError::DecodeError(e))?;
+
+                // Check owns
                 if !key_value.owned_nodes().is_empty() {
                     return Err(ProcessSubstateKeyError::OwnedNodeNotSupported);
                 }
 
+                // Check references
                 for reference in key_value.references() {
-                    if !self.get_node_visibility(reference).is_global() {
-                        return Err(ProcessSubstateKeyError::NodeNotVisible(reference.clone()));
+                    if !reference.is_global() {
+                        return Err(ProcessSubstateKeyError::NonGlobalRefNotSupported);
+                    }
+
+                    if !self.get_node_visibility(reference).is_visible() {
+                        return Err(ProcessSubstateKeyError::NodeNotVisible(*reference));
                     }
                 }
             }
@@ -886,12 +894,19 @@ impl<C, L: Clone> CallFrame<C, L> {
         match substate_key {
             SubstateKey::Sorted((_, map_key)) | SubstateKey::Map(map_key) => {
                 let key = IndexedScryptoValue::from_slice(map_key).unwrap();
+
+                // Check owns
+                if !key.owned_nodes().is_empty() {
+                    panic!("Unexpected owns in substate key")
+                }
+
+                // Check references
                 for reference in key.references() {
                     if reference.is_global() {
                         self.stable_references
                             .insert(reference.clone(), StableReferenceType::Global);
                     } else {
-                        return Err(ProcessSubstateKeyError::OwnedNodeNotSupported);
+                        panic!("Unexpected non-global refs in substate key")
                     }
                 }
             }
@@ -1253,14 +1268,16 @@ impl<C, L: Clone> CallFrame<C, L> {
                 CallbackError::Error(CallFrameDrainSubstatesError::ProcessSubstateKeyError(e))
             })?;
 
+            if !substate.owned_nodes().is_empty() {
+                panic!("Unexpected owns from drain_substates");
+            }
+
             for reference in substate.references() {
                 if reference.is_global() {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    return Err(CallbackError::Error(
-                        CallFrameDrainSubstatesError::OwnedNodeNotSupported(reference.clone()),
-                    ));
+                    panic!("Unexpected non-global ref from drain_substates");
                 }
             }
         }
@@ -1305,14 +1322,16 @@ impl<C, L: Clone> CallFrame<C, L> {
                     )
                 })?;
 
+            if !substate.owned_nodes().is_empty() {
+                panic!("Unexpected owns from scan_substates");
+            }
+
             for reference in substate.references() {
                 if reference.is_global() {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    return Err(CallbackError::Error(
-                        CallFrameScanSortedSubstatesError::OwnedNodeNotSupported(reference.clone()),
-                    ));
+                    panic!("Unexpected non-global ref from scan_substates");
                 }
             }
         }
