@@ -18,6 +18,8 @@ jobs:
         with:
           context: .
           file: ./simulator/Dockerfile
+      - name: Update assets
+        run: ./update-assets-docker.sh --reuse-image
 
   build-simulator-amd:
     runs-on: ubuntu-latest
@@ -31,21 +33,6 @@ jobs:
         with:
           context: .
           file: ./simulator/Dockerfile
-
-  update-assets-amd:
-    needs: build-simulator-amd
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
       - name: Update assets
-        run: ./update-assets-docker.sh
+        run: ./update-assets-docker.sh --reuse-image
 
-  update-assets-arm:
-    needs: build-simulator-arm
-    runs-on: arm64
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Update assets
-        run: ./update-assets-docker.sh
