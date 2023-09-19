@@ -1,10 +1,10 @@
-use crate::system::actor::Actor;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DropNodeEvent, OpenSubstateEvent, ReadSubstateEvent,
     WriteSubstateEvent,
 };
+use crate::system::actor::Actor;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;

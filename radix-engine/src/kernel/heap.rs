@@ -1,10 +1,6 @@
+use crate::track::interface::IOAccess;
 use crate::track::interface::{CallbackError, CanonicalSubstateKey, NodeSubstates};
 use crate::types::*;
-use crate::{blueprints::resource::*, track::interface::IOAccess};
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
-    LockedNonFungibleResource,
-};
 
 pub struct Heap {
     nodes: NonIterMap<NodeId, NodeSubstates>,

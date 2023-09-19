@@ -73,7 +73,11 @@ impl VmInvoke for TestInvoke {
                 api.key_value_entry_get(handle)?;
             }
             "invalid_event_flags" => {
-                api.actor_emit_event("event".to_string(), scrypto_encode(&()).unwrap(), EventFlags::FORCE_WRITE)?;
+                api.actor_emit_event(
+                    "event".to_string(),
+                    scrypto_encode(&()).unwrap(),
+                    EventFlags::FORCE_WRITE,
+                )?;
             }
             "new" => {
                 let metadata = Metadata::create(api)?;

@@ -1,3 +1,4 @@
+pub mod actor;
 pub mod attached_modules;
 pub mod bootstrap;
 #[cfg(feature = "db_checker")]
@@ -14,4 +15,3 @@ pub mod system_modules;
 pub mod system_substates;
 pub mod system_type_checker;
 pub mod type_info;
-pub mod actor;
