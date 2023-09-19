@@ -2,7 +2,7 @@
 set -ex
 
 # Default values
-IMAGE_NAME="simulator"
+IMAGE_NAME="docker.io/radixdlt/simulator"
 REUSE_IMAGE=false
 
 # Parse command line arguments
