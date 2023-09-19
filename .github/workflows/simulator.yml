@@ -11,7 +11,7 @@ jobs:
     outputs:
       tag: ${{ steps.setup_tags.outputs.tag }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4.0.0
         with:
           fetch-depth: 0
       - id: setup_tags
@@ -24,14 +24,14 @@ jobs:
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "simulator"
-      tag: ${{ needs.setup_tags.outputs.tag }}
+      tag: ${{ needs.tags.outputs.tag }}
       context: "."
       dockerfile: "./simulator/Dockerfile"
       platforms: "linux/amd64"
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
-      sanity_check: "./update-assets-docker.sh --reuse-image --image-tag ${{ needs.setup_tags.outputs.tag }}"
+      sanity_check: "./update-assets-docker.sh --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
