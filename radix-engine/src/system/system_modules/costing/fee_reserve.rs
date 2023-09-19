@@ -479,7 +479,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             return Ok(());
         }
         if royalty_amount.is_negative() {
-            panic!("System invariant broken: Encounter negative royalty amount")
+            panic!("System invariant broken: Encountered negative royalty amount")
         }
 
         self.consume_royalty_internal(royalty_amount, recipient)?;
