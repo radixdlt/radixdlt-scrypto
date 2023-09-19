@@ -383,3 +383,31 @@ mod compo {
         }
     }
 }
+
+#[blueprint]
+mod substate_key_test {
+    struct SubstateKeyTest {
+        kv_store: KeyValueStore<ScryptoValue, u32>,
+    }
+
+    impl SubstateKeyTest {
+        pub fn insert_not_visible_global_refs_in_substate_key() {
+            let kv_store = KeyValueStore::new();
+            kv_store.insert(
+                scrypto_decode(
+                    &scrypto_encode(&GlobalAddress::new_or_panic(
+                        [EntityType::GlobalGenericComponent as u8; NodeId::LENGTH],
+                    ))
+                    .unwrap(),
+                )
+                .unwrap(),
+                1,
+            );
+
+            Self { kv_store }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
+        }
+    }
+}
