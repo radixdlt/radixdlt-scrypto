@@ -31,3 +31,21 @@ jobs:
         with:
           context: .
           file: ./simulator/Dockerfile
+
+  update-assets-amd:
+    needs: build-simulator-amd
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Update assets
+        run: ./update-assets-docker.sh
+
+  update-assets-arm:
+    needs: build-simulator-arm
+    runs-on: arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Update assets
+        run: ./update-assets-docker.sh
