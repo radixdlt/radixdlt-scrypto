@@ -5,10 +5,6 @@ use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::*;
-use crate::system::actor::Actor;
-use crate::system::actor::BlueprintHookActor;
-use crate::system::actor::FunctionActor;
-use crate::system::actor::MethodActor;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
@@ -17,6 +13,10 @@ use crate::kernel::kernel_callback_api::{
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::system::actor::Actor;
+use crate::system::actor::BlueprintHookActor;
+use crate::system::actor::FunctionActor;
+use crate::system::actor::MethodActor;
 use crate::system::module::SystemModule;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
