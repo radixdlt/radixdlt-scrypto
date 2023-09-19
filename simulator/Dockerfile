@@ -1,7 +1,11 @@
-FROM rust:1.70.0-bullseye
+FROM rust:1.70.0-slim-bullseye as builder
 
-RUN apt update && apt install -y cmake clang build-essential llvm
-RUN rustup target add wasm32-unknown-unknown
+RUN apt update && apt install -y \
+    cmake=3.18.4-2+deb11u1 \
+    clang=1:11.0-51+nmu5 \
+    build-essential=12.9 \
+    llvm=1:11.0-51+nmu5
+#RUN rustup target add wasm32-unknown-unknown
 
 ADD simulator /app/simulator
 ADD radix-engine /app/radix-engine
@@ -24,10 +28,11 @@ ADD assets /app/assets
 
 WORKDIR /app
 
-RUN cargo install --path ./simulator \
-    && cp /app/simulator/target/release/scrypto /usr/local/bin/ \
-    && rm -rf /app
+RUN cargo install --path ./simulator
 
+FROM rust:1.70.0-slim-bullseye
+COPY --from=builder /app/simulator/target/release/scrypto /usr/local/bin/scrypto
+RUN rustup target add wasm32-unknown-unknown
 WORKDIR /src
 
 ENTRYPOINT ["scrypto", "build", "--path", "/src"]
