@@ -24,7 +24,6 @@ pub enum FeeReserveError {
         xrd_owed: Decimal,
     },
     Abort(AbortReason),
-    RoyaltyAmountIsNegative(RoyaltyAmount),
 }
 
 #[derive(Copy, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
@@ -170,8 +169,17 @@ impl SystemLoanFeeReserve {
         transaction_costing_parameters: &TransactionCostingParameters,
         abort_when_loan_repaid: bool,
     ) -> Self {
-        // NOTE: Decimal arithmetic operation safe unwrap.
-        // No chance to overflow considering current costing parameters
+        // Sanity checks
+        assert!(!costing_parameters.execution_cost_unit_price.is_negative());
+        assert!(!costing_parameters
+            .finalization_cost_unit_price
+            .is_negative());
+        assert!(!costing_parameters.usd_price.is_negative());
+        assert!(!costing_parameters.state_storage_price.is_negative());
+        assert!(!costing_parameters.archive_storage_price.is_negative());
+        assert!(!transaction_costing_parameters
+            .free_credit_in_xrd
+            .is_negative());
 
         let tip_percentage = Decimal::ONE
             .checked_add(
@@ -350,6 +358,7 @@ impl SystemLoanFeeReserve {
                 .ok_or(FeeReserveError::Overflow)?,
             RoyaltyAmount::Free => Decimal::ZERO,
         };
+
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
                 required: amount,
@@ -470,7 +479,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             return Ok(());
         }
         if royalty_amount.is_negative() {
-            return Err(FeeReserveError::RoyaltyAmountIsNegative(royalty_amount));
+            panic!("System invariant broken: Encounter negative royalty amount")
         }
 
         self.consume_royalty_internal(royalty_amount, recipient)?;
