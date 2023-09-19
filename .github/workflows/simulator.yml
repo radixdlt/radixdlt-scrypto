@@ -25,6 +25,14 @@ jobs:
       image_organization: "radixdlt"
       image_name: "simulator"
       tag: ${{ needs.setup_tags.outputs.tag }}
+      tags: |
+        type=ref,event=branch
+        type=ref,event=pr
+        type=ref,event=tag
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=semver,pattern={{major}}
+        type=sha
       context: "."
       dockerfile: "./simulator/Dockerfile"
       platforms: "linux/amd64"
