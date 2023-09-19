@@ -1,8 +1,6 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::types::*;
 use radix_engine_interface::api::{AttachedModuleId, ModuleId};
-use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
-use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstanceContext {
@@ -212,61 +210,12 @@ impl Actor {
         }
     }
 
-    pub fn is_auth_zone(&self) -> bool {
-        match self {
-            Actor::Method(MethodActor { object_info, .. }) => {
-                object_info
-                    .blueprint_info
-                    .blueprint_id
-                    .package_address
-                    .eq(&RESOURCE_PACKAGE)
-                    && object_info
-                        .blueprint_info
-                        .blueprint_id
-                        .blueprint_name
-                        .eq(AUTH_ZONE_BLUEPRINT)
-            }
-            Actor::Function { .. } => false,
-            Actor::BlueprintHook { .. } => false,
-            Actor::Root { .. } => false,
-        }
-    }
-
     pub fn is_barrier(&self) -> bool {
         match self {
             Actor::Method(MethodActor { object_info, .. }) => object_info.is_global(),
             Actor::Function { .. } => true,
             Actor::BlueprintHook { .. } => true,
             Actor::Root { .. } => false,
-        }
-    }
-
-    pub fn fn_identifier(&self) -> Option<FnIdentifier> {
-        match self {
-            Actor::Method(method_actor) => Some(method_actor.fn_identifier()),
-            Actor::Function(function_actor) => Some(function_actor.fn_identifier()),
-            _ => None,
-        }
-    }
-
-    pub fn is_transaction_processor_blueprint(&self) -> bool {
-        match self {
-            Actor::Root => false,
-            Actor::Method(MethodActor {
-                object_info:
-                    ObjectInfo {
-                        blueprint_info: BlueprintInfo { blueprint_id, .. },
-                        ..
-                    },
-                ..
-            })
-            | Actor::Function(FunctionActor { blueprint_id, .. })
-            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
-                blueprint_id.eq(&BlueprintId::new(
-                    &TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                ))
-            }
         }
     }
 

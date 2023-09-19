@@ -217,7 +217,6 @@ pub enum SystemError {
     NotAnAddressReservation,
     NotAnObject,
     NotAKeyValueStore,
-    PersistenceProhibited,
     ModulesDontHaveOuterObjects,
     ActorNodeIdDoesNotExist,
     OuterObjectDoesNotExist,

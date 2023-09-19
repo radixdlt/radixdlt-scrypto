@@ -39,6 +39,17 @@ impl VmInvoke for TestInvoke {
                 let self_node_id = api.actor_get_node_id(ACTOR_REF_SELF)?;
                 api.get_reservation_address(&self_node_id)?;
             }
+            "invalid_kv_store" => {
+                let self_node_id = api.actor_get_node_id(ACTOR_REF_SELF)?;
+                api.key_value_store_open_entry(&self_node_id, &scrypto_encode(&()).unwrap(), LockFlags::read_only())?;
+            }
+            "invalid_actor_node_id" => {
+                api.actor_get_node_id(ACTOR_REF_SELF)?;
+            }
+            "invalid_outer_object" => {
+                let self_node_id = api.actor_get_node_id(ACTOR_REF_SELF)?;
+                api.get_outer_object(&self_node_id)?;
+            }
             "new" => {
                 let metadata = Metadata::create(api)?;
                 let access_rules = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
@@ -59,7 +70,7 @@ impl VmInvoke for TestInvoke {
     }
 }
 
-fn run<F: FnOnce(TransactionReceipt)>(method: &str, on_receipt: F) {
+fn run<F: FnOnce(TransactionReceipt)>(method: &str, is_method: bool, on_receipt: F) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
@@ -73,6 +84,9 @@ fn run<F: FnOnce(TransactionReceipt)>(method: &str, on_receipt: F) {
                 ("invalid_state_handle", "invalid_state_handle", true),
                 ("invalid_ref_handle", "invalid_ref_handle", true),
                 ("invalid_address_reservation", "invalid_address_reservation", true),
+                ("invalid_kv_store", "invalid_kv_store", true),
+                ("invalid_actor_node_id", "invalid_actor_node_id", false),
+                ("invalid_outer_object", "invalid_outer_object", true),
             ],
         ),
     );
@@ -86,13 +100,23 @@ fn run<F: FnOnce(TransactionReceipt)>(method: &str, on_receipt: F) {
     let component_address = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
-            .call_method(component_address, method, manifest_args!())
-            .build(),
-        vec![],
-    );
+    let receipt = if is_method {
+        test_runner.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee(test_runner.faucet_component(), 500u32)
+                .call_method(component_address, method, manifest_args!())
+                .build(),
+            vec![],
+        )
+    } else {
+        test_runner.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee(test_runner.faucet_component(), 500u32)
+                .call_function(package_address, BLUEPRINT_NAME, method, manifest_args!())
+                .build(),
+            vec![],
+        )
+    };
 
     // Assert
     on_receipt(receipt);
@@ -100,21 +124,42 @@ fn run<F: FnOnce(TransactionReceipt)>(method: &str, on_receipt: F) {
 
 #[test]
 fn invalid_actor_state_handle_should_error() {
-    run("invalid_state_handle", |receipt| {
+    run("invalid_state_handle", true, |receipt| {
         receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::InvalidActorStateHandle)));
     });
 }
 
 #[test]
 fn invalid_actor_ref_handle_should_error() {
-    run("invalid_ref_handle", |receipt| {
+    run("invalid_ref_handle", true, |receipt| {
         receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::InvalidActorRefHandle)));
     });
 }
 
 #[test]
 fn invalid_address_reservation_should_error() {
-    run("invalid_address_reservation", |receipt| {
+    run("invalid_address_reservation", true, |receipt| {
         receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::NotAnAddressReservation)));
+    });
+}
+
+#[test]
+fn invalid_key_value_store_should_error() {
+    run("invalid_kv_store", true, |receipt| {
+        receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::NotAKeyValueStore)));
+    });
+}
+
+#[test]
+fn invalid_actor_node_id_should_error() {
+    run("invalid_actor_node_id", false, |receipt| {
+        receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::ActorNodeIdDoesNotExist)));
+    });
+}
+
+#[test]
+fn invalid_outer_object_should_error() {
+    run("invalid_outer_object", true, |receipt| {
+        receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist)));
     });
 }
