@@ -30,6 +30,6 @@ fi
 for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store"
 do
   echo "Building $crate_name..."
-  docker run -it --entrypoint=scrypto -v $PWD:/src simulator build --path assets/blueprints/$crate_name
+  docker run -it --entrypoint=scrypto -v $PWD:/src $IMAGE_NAME build --path assets/blueprints/$crate_name
   echo "Done $crate_name!"
 done
