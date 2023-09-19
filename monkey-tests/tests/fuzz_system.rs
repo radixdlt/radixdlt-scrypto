@@ -13,7 +13,7 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use sbor::basic_well_known_types::ANY_TYPE;
+use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -59,6 +59,23 @@ impl SystemFuzzer {
             LockFlags::read_only()
         } else {
             LockFlags::MUTABLE
+        }
+    }
+
+    fn next_well_known_type(&mut self) -> LocalTypeId {
+        match self.rng.gen_range(0u8..=1u8) {
+            0u8 => LocalTypeId::WellKnown(ANY_TYPE),
+            _ => LocalTypeId::WellKnown(UNIT_TYPE),
+        }
+    }
+
+    fn next_key_value_store_data_schema(&mut self) -> KeyValueStoreDataSchema {
+        let aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        KeyValueStoreDataSchema::Local {
+            additional_schema: generate_full_schema(aggregator),
+            key_type: self.next_well_known_type(),
+            value_type: self.next_well_known_type(),
+            allow_ownership: self.rng.gen_bool(0.5),
         }
     }
 }
@@ -171,13 +188,7 @@ impl VmInvoke for FuzzSystem {
             "new" => {
                 let metadata = Metadata::create(api)?;
                 let access_rules = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
-                let aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-                let kv_store = api.key_value_store_new(KeyValueStoreDataSchema::Local {
-                    additional_schema: generate_full_schema(aggregator),
-                    key_type: LocalTypeId::WellKnown(ANY_TYPE),
-                    value_type: LocalTypeId::WellKnown(ANY_TYPE),
-                    allow_ownership: true,
-                })?;
+                let kv_store = api.key_value_store_new(self.0.next_key_value_store_data_schema())?;
 
                 let node_id = api.new_simple_object(
                     BLUEPRINT_NAME,
