@@ -7,7 +7,6 @@ on:
 
 jobs:
   setup_tags:
-    name: Setup Docker tags
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.setup_tags.outputs.tag }}
@@ -17,7 +16,7 @@ jobs:
           fetch-depth: 0
       - id: setup_tags
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-  build-simulator-arm:
+  amd:
     needs: setup_tags
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
@@ -35,3 +34,13 @@ jobs:
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+  update-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: update assets
+        run: ./update-assets-docker.sh
+
