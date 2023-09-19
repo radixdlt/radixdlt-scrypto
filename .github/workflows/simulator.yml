@@ -6,33 +6,31 @@ on:
       - chore/simulator-image
 
 jobs:
-  build-simulator-arm:
-    runs-on: arm64
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./simulator/Dockerfile
-      - name: Update assets
-        run: ./update-assets-docker.sh --reuse-image
-
-  build-simulator-amd:
+  setup_tags:
+    name: Setup Docker tags
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.setup_tags.outputs.tag }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build and push
-        uses: docker/build-push-action@v5
+      - uses: actions/checkout@v2
         with:
-          context: .
-          file: ./simulator/Dockerfile
-      - name: Update assets
-        run: ./update-assets-docker.sh --reuse-image
-
+          fetch-depth: 0
+      - id: setup_tags
+        run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+  build-simulator-arm:
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: ubuntu-latest
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "simulator"
+      tag: ${{ needs.setup_tags.outputs.tag }}
+      context: "."
+      dockerfile: "./simulator/Dockerfile"
+      platforms: "linux/amd64"
+      provenance: "false"
+      scan_image: true
+      snyk_target_ref: ${{ github.ref_name }}
+    secrets:
+      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
