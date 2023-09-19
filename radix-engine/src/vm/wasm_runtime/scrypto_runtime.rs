@@ -372,24 +372,27 @@ where
 
     fn consume_wasm_execution_units(
         &mut self,
-        n: u32,
+        mut n: u32,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         // Use buffer
-        if self.wasm_execution_units_buffer >= n {
-            self.wasm_execution_units_buffer -= n;
-            return Ok(());
-        }
+        let min = u32::min(self.wasm_execution_units_buffer, n);
+        self.wasm_execution_units_buffer -= min;
+        n -= min;
 
-        // If we need to request more from the fee reserve, we round `n` up to the nearest `1_000_000`
-        let amount_to_request = ((n - 1) / 1_000_000 + 1) * 1_000_000;
-        self.api
-            .consume_cost_units(ClientCostingEntry::RunWasmCode {
-                package_address: &self.package_address,
-                export_name: &self.export_name,
-                wasm_execution_units: amount_to_request,
-            })
-            .map_err(InvokeError::downstream)?;
-        self.wasm_execution_units_buffer += amount_to_request - n;
+        // If not covered, request from the system
+        if n > 0 {
+            let amount_to_request = n
+                .checked_add(WASM_EXECUTION_COST_UNITS_BUFFER)
+                .unwrap_or(u32::MAX);
+            self.api
+                .consume_cost_units(ClientCostingEntry::RunWasmCode {
+                    package_address: &self.package_address,
+                    export_name: &self.export_name,
+                    wasm_execution_units: amount_to_request,
+                })
+                .map_err(InvokeError::downstream)?;
+            self.wasm_execution_units_buffer += amount_to_request - n;
+        }
 
         Ok(())
     }
