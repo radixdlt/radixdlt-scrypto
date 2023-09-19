@@ -8,8 +8,6 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::cmp::min;
 use transaction::prelude::TransactionCostingParameters;
 
-// Note: for performance reason, `Decimal` is used to represent decimal in this file.
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FeeReserveError {
     InsufficientBalance {
@@ -225,7 +223,7 @@ impl SystemLoanFeeReserve {
             // Running balance
             xrd_balance: system_loan_in_xrd
                 .checked_add(transaction_costing_parameters.free_credit_in_xrd)
-                .unwrap(),
+                .expect("Invalid system loan or free credit amount"),
             xrd_owed: system_loan_in_xrd,
 
             // Internal states
@@ -305,7 +303,10 @@ impl SystemLoanFeeReserve {
     fn consume_execution_internal(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
         self.check_execution_cost_unit_limit(cost_units)?;
 
-        let amount = self.effective_execution_cost_unit_price * cost_units;
+        let amount = self
+            .effective_execution_cost_unit_price
+            .checked_mul(cost_units)
+            .ok_or(FeeReserveError::Overflow)?;
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
                 required: amount,
@@ -321,7 +322,10 @@ impl SystemLoanFeeReserve {
     fn consume_finalization_internal(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
         self.check_finalization_cost_unit_limit(cost_units)?;
 
-        let amount = self.effective_finalization_cost_unit_price * cost_units;
+        let amount = self
+            .effective_finalization_cost_unit_price
+            .checked_mul(cost_units)
+            .ok_or(FeeReserveError::Overflow)?;
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance {
                 required: amount,
@@ -507,8 +511,10 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
     fn lock_fee(&mut self, vault_id: NodeId, mut fee: LiquidFungibleResource, contingent: bool) {
         // Update balance
         if !contingent {
-            // No overflow due to limited XRD supply
-            self.xrd_balance += fee.amount();
+            self.xrd_balance = self
+                .xrd_balance
+                .checked_add(fee.amount())
+                .expect("No overflow due to limited XRD supply");
         }
 
         // Move resource
