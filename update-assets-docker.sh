@@ -19,10 +19,11 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-docker image inspect "$IMAGE_NAME" 
+docker images -q "$IMAGE_NAME" 
+IMAGE_EXISTS=$(docker images -q "$IMAGE_NAME" 2>/dev/null)
 
 # Check if the Docker image exists locally
-if ! "$REUSE_IMAGE" || ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
+if [[ -z "$IMAGE_EXISTS" || ! "$REUSE_IMAGE" ]]; then
   echo "Docker image $IMAGE_NAME does not exist or --reuse-image flag not provided. Building..."
   docker build -t $IMAGE_NAME -f simulator/Dockerfile .
 else
