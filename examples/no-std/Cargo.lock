@@ -396,6 +396,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "radix-engine-common",
+ "regex",
  "sbor",
  "scrypto-schema",
  "serde",

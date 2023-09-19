@@ -17,6 +17,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::kernel::kernel_callback_api::*;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
@@ -24,7 +25,7 @@ use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_substates::{FieldSubstate, SubstateMutability};
 use crate::track::interface::CommitableSubstateStore;
-use crate::track::{to_state_updates, Track};
+use crate::track::{to_state_updates, Track, TrackFinalizeError};
 use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
@@ -382,7 +383,14 @@ where
                             execution_trace_module.finalize(&paying_vaults, is_success);
 
                         // Finalize track
-                        let (tracked_nodes, deleted_partitions) = track.finalize();
+                        let (tracked_nodes, deleted_partitions) = {
+                            match track.finalize() {
+                                Ok(result) => result,
+                                Err(TrackFinalizeError::TransientSubstateOwnsNode) => {
+                                    panic!("System invariants should prevent transient substate from owning nodes");
+                                }
+                            }
+                        };
 
                         let system_structure = SystemStructure::resolve(
                             self.substate_db,
@@ -392,6 +400,21 @@ where
 
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
+
+                        let system_reader = SystemDatabaseReader::new_with_overlay(
+                            self.substate_db,
+                            &tracked_nodes,
+                        );
+
+                        // Resource reconciliation does not currently work in preview mode
+                        if executable.costing_parameters().free_credit_in_xrd.is_zero() {
+                            reconcile_resource_state_and_events(
+                                &state_update_summary,
+                                &application_events,
+                                system_reader,
+                            );
+                        }
+
                         let state_updates = to_state_updates::<SpreadPrefixKeyMapper>(
                             tracked_nodes,
                             deleted_partitions,

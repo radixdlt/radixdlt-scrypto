@@ -58,17 +58,30 @@ fn run_cargo_build(
     manifest_path: impl AsRef<OsStr>,
     target_path: impl AsRef<OsStr>,
     trace: bool,
-    no_schema_gen: bool,
+    no_schema: bool,
+    log_level: Level,
 ) -> Result<(), BuildError> {
-    let mut features = Vec::<String>::new();
+    let mut features = String::new();
     if trace {
-        features.push("scrypto/trace".to_owned());
+        features.push_str(",scrypto/trace");
     }
-    if no_schema_gen {
-        features.push("scrypto/no-schema".to_owned());
+    if no_schema {
+        features.push_str(",scrypto/no-schema");
     }
-    if !features.is_empty() {
-        features.insert(0, "--features".to_owned());
+    if Level::Error <= log_level {
+        features.push_str(",scrypto/log-error");
+    }
+    if Level::Warn <= log_level {
+        features.push_str(",scrypto/log-warn");
+    }
+    if Level::Info <= log_level {
+        features.push_str(",scrypto/log-info");
+    }
+    if Level::Debug <= log_level {
+        features.push_str(",scrypto/log-debug");
+    }
+    if Level::Trace <= log_level {
+        features.push_str(",scrypto/log-trace");
     }
 
     let status = Command::new("cargo")
@@ -80,7 +93,11 @@ fn run_cargo_build(
         .arg(target_path.as_ref())
         .arg("--manifest-path")
         .arg(manifest_path.as_ref())
-        .args(features)
+        .args(if features.is_empty() {
+            vec![]
+        } else {
+            vec!["--features", &features[1..]]
+        })
         .status()
         .map_err(BuildError::IOError)?;
     if status.success() {
@@ -124,6 +141,7 @@ pub fn build_package<P: AsRef<Path>>(
     trace: bool,
     force_local_target: bool,
     disable_wasm_opt: bool,
+    log_level: Level,
 ) -> Result<(PathBuf, PathBuf), BuildError> {
     let base_path = base_path.as_ref().to_owned();
 
@@ -150,7 +168,7 @@ pub fn build_package<P: AsRef<Path>>(
     out_path.push("release");
 
     // Build with SCHEMA
-    run_cargo_build(&manifest_path, &target_path, trace, false)?;
+    run_cargo_build(&manifest_path, &target_path, trace, false, log_level)?;
 
     // Find the binary paths
     let manifest = Manifest::from_path(&manifest_path)
@@ -181,7 +199,7 @@ pub fn build_package<P: AsRef<Path>>(
     .map_err(|err| BuildError::IOErrorAtPath(err, definition_path.clone()))?;
 
     // Build without SCHEMA
-    run_cargo_build(&manifest_path, &target_path, trace, true)?;
+    run_cargo_build(&manifest_path, &target_path, trace, true, log_level)?;
 
     // Optimizes the built wasm using Binaryen's wasm-opt tool. The code that follows is equivalent
     // to running the following commands in the CLI:
@@ -204,7 +222,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    build_package(&path, false, false, false).map_err(TestError::BuildError)?;
+    build_package(&path, false, false, false, Level::Trace).map_err(TestError::BuildError)?;
 
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");

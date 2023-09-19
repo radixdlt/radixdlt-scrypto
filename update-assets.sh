@@ -34,7 +34,6 @@ if [[ "$BUILD_TYPE" == "--docker" ]]; then
     shift
   done
 
-
   IMAGE_EXISTS=$(docker images -q "$IMAGE_NAME" 2>/dev/null)
 
   # Check if the Docker image exists locally
@@ -66,7 +65,7 @@ elif [[ "$BUILD_TYPE" == "--local" ]]; then
   cp ../../radix-engine-tests/tests/blueprints/target/wasm32-unknown-unknown/release/large_package.{wasm,rpd} ..
   ls -al ../large_package.*
 
-  for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store"
+  for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store" "max_transaction"
   do
     echo "Building $crate_name..."
     (cd $crate_name; $scrypto build)

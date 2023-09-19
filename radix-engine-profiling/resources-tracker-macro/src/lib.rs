@@ -186,11 +186,11 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                         v.borrow_mut().start_counting(#fn_signature, qemu_call_args.as_slice());
                     });
                     let ret = #original_block;
-                    #arg_evaluate_after;
-                    #args_after_quote_array;
                     QEMU_PLUGIN.with(|v| {
                         v.borrow_mut().stop_counting(#fn_signature, qemu_call_args.as_slice());
                     });
+                    #arg_evaluate_after;
+                    #args_after_quote_array;
                     ret
                 }});
                 item.into_token_stream()

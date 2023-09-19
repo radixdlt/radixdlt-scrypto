@@ -273,14 +273,14 @@ where
             })
     }
 
-    #[trace_resources(log=entity_type)]
+    #[trace_resources]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         M::on_allocate_node_id(entity_type, self)?;
 
         self.id_allocator.allocate_node_id(entity_type)
     }
 
-    #[trace_resources(log=node_id.entity_type())]
+    #[trace_resources]
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
@@ -315,6 +315,7 @@ where
         Ok(())
     }
 
+    #[trace_resources]
     fn kernel_create_node_from(
         &mut self,
         node_id: NodeId,
@@ -385,7 +386,7 @@ where
         Ok(())
     }
 
-    #[trace_resources(log=node_id.entity_type())]
+    #[trace_resources]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<DroppedNode, RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
@@ -669,7 +670,7 @@ where
             })
     }
 
-    #[trace_resources(log=node_id.entity_type())]
+    #[trace_resources]
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
@@ -815,7 +816,7 @@ where
         Ok(value)
     }
 
-    #[trace_resources(log=value.len())]
+    #[trace_resources]
     fn kernel_write_substate(
         &mut self,
         lock_handle: SubstateHandle,
@@ -852,6 +853,13 @@ where
 
     #[trace_resources]
     fn kernel_close_substate(&mut self, lock_handle: SubstateHandle) -> Result<(), RuntimeError> {
+        // Note: It is very important that this occurs before the actual call to close_substate
+        // as we want to check limits/costing before doing the actual action. Otherwise,
+        // certain invariants might break such as a costing error occurring after a vault
+        // lock_fee has been force committed.
+        let mut read_only = as_read_only!(self);
+        M::on_close_substate(&mut read_only, CloseSubstateEvent::Start(lock_handle))?;
+
         self.current_frame
             .close_substate(&mut self.substate_io, lock_handle)
             .map_err(|e| {
@@ -859,9 +867,6 @@ where
                     CallFrameError::CloseSubstateError(e),
                 ))
             })?;
-
-        let mut read_only = as_read_only!(self);
-        M::on_close_substate(&mut read_only, CloseSubstateEvent::End(lock_handle))?;
 
         Ok(())
     }
@@ -1103,12 +1108,7 @@ where
 
             // Auto drop locks
             self.current_frame
-                .close_all_substates(&mut self.substate_io)
-                .map_err(|e| {
-                    RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::CloseSubstateError(e),
-                    ))
-                })?;
+                .close_all_substates(&mut self.substate_io);
 
             // Run
             let output = M::invoke_upstream(args, self)?;
@@ -1116,12 +1116,7 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .close_all_substates(&mut self.substate_io)
-                .map_err(|e| {
-                    RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::CloseSubstateError(e),
-                    ))
-                })?;
+                .close_all_substates(&mut self.substate_io);
 
             // Handle execution finish
             M::on_execution_finish(&message, self)?;

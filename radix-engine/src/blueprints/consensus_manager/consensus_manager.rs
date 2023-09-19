@@ -224,6 +224,10 @@ pub enum ConsensusManagerError {
     UnexpectedDecimalComputationError,
     EpochMathOverflow,
     InvalidConsensusTime(i64),
+    ExceededValidatorCount {
+        current: u32,
+        max: u32,
+    },
 }
 
 declare_native_blueprint_state! {
@@ -525,6 +529,17 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        if initial_config.max_validators > ValidatorIndex::MAX as u32 {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::ExceededValidatorCount {
+                        current: initial_config.max_validators,
+                        max: ValidatorIndex::MAX as u32,
+                    },
+                ),
+            ));
+        }
+
         {
             // TODO: remove mint and premint all tokens
             let global_id =
@@ -1244,6 +1259,8 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let mut stake_sum_xrd = Decimal::ZERO;
+
         let mut validator_infos: IndexMap<ValidatorIndex, ValidatorInfo> = index_map_new();
         for (index, (address, validator)) in validator_set
             .validators_by_stake_desc
@@ -1256,8 +1273,15 @@ impl ConsensusManagerBlueprint {
                 validator_statistics[index].clone(),
                 config.min_validator_reliability,
             )? {
+                stake_sum_xrd = stake_sum_xrd.checked_add(info.stake_xrd).ok_or(
+                    RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    )),
+                )?;
+
                 validator_infos.insert(
-                    TryInto::<u8>::try_into(index)
+                    TryInto::<ValidatorIndex>::try_into(index)
+                        // Should never happen. We made sure no more than u8::MAX validators are stored
                         .expect("Validator index exceeds the range of u8"),
                     info,
                 );
@@ -1268,22 +1292,6 @@ impl ConsensusManagerBlueprint {
         if validator_infos.is_empty() {
             return Ok(());
         }
-
-        let stake_sum_xrd = {
-            let mut sum = Decimal::ZERO;
-
-            for v in validator_infos
-                .values()
-                .map(|validator_info| validator_info.stake_xrd)
-            {
-                sum = sum.checked_add(v).ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::ConsensusManagerError(
-                        ConsensusManagerError::UnexpectedDecimalComputationError,
-                    ),
-                ))?;
-            }
-            sum
-        };
 
         //======================
         // Distribute emissions
@@ -1354,50 +1362,82 @@ impl ConsensusManagerBlueprint {
         //===========================
         // Distribute rewards (fees)
         //===========================
-        let total_individual_amount: Decimal = {
-            let mut sum = Decimal::ZERO;
+        let mut total_effective_stake = Decimal::ZERO;
+        let mut total_claimable_proposer_rewards = Decimal::ZERO;
 
-            for v in validator_rewards.proposer_rewards.values() {
-                sum = sum.checked_add(*v).ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::ConsensusManagerError(
-                        ConsensusManagerError::UnexpectedDecimalComputationError,
-                    ),
-                ))?;
-            }
-            sum
-        };
-
-        let reward_per_staked_xrd = validator_rewards
-            .rewards_vault
-            .amount(api)?
-            .checked_sub(total_individual_amount)
-            .and_then(|amount| amount.checked_div(stake_sum_xrd))
-            .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::ConsensusManagerError(
-                    ConsensusManagerError::UnexpectedDecimalComputationError,
-                ),
-            ))?;
-        for (index, validator_info) in validator_infos {
-            let from_self = validator_rewards
-                .proposer_rewards
-                .remove(&index)
-                .unwrap_or_default();
-            let reward_amount = validator_info
-                .effective_stake_xrd
-                .checked_mul(reward_per_staked_xrd)
-                .and_then(|from_pool| from_self.checked_add(from_pool))
+        // Note that `validator_infos` are for applicable validators (i.e. stake > 0) only
+        // Being an applicable validator doesn't necessarily mean the effective stake is positive, due to reliability rescaling.
+        for (index, validator_info) in &validator_infos {
+            total_effective_stake = total_effective_stake
+                .checked_add(validator_info.effective_stake_xrd)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::ConsensusManagerError(
                         ConsensusManagerError::UnexpectedDecimalComputationError,
                     ),
                 ))?;
-            if reward_amount.is_zero() {
+            total_claimable_proposer_rewards = total_claimable_proposer_rewards
+                .checked_add(
+                    validator_rewards
+                        .proposer_rewards
+                        .get(index)
+                        .cloned()
+                        .unwrap_or_default(),
+                )
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
+        }
+
+        let total_claimable_validator_set_rewards = validator_rewards
+            .rewards_vault
+            .amount(api)?
+            .checked_sub(total_claimable_proposer_rewards)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                ),
+            ))?;
+        let reward_per_effective_stake = if total_effective_stake.is_zero() {
+            // This is another extreme use case.
+            // Can the network even progress if total effective stake is zero?
+            Decimal::ZERO
+        } else {
+            total_claimable_validator_set_rewards
+                .checked_div(total_effective_stake)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?
+        };
+
+        for (index, validator_info) in validator_infos {
+            let as_proposer = validator_rewards
+                .proposer_rewards
+                .remove(&index)
+                .unwrap_or_default();
+            let as_member_of_validator_set = validator_info
+                .effective_stake_xrd
+                .checked_mul(reward_per_effective_stake)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::UnexpectedDecimalComputationError,
+                    ),
+                ))?;
+            let total_rewards = as_proposer.checked_add(as_member_of_validator_set).ok_or(
+                RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::UnexpectedDecimalComputationError,
+                )),
+            )?;
+            if total_rewards.is_zero() {
                 continue;
             }
 
             // Note that dusted xrd (due to rounding) are kept in the vault and will
             // become retrievable next time.
-            let xrd_bucket = validator_rewards.rewards_vault.take(reward_amount, api)?;
+            let xrd_bucket = validator_rewards.rewards_vault.take(total_rewards, api)?;
 
             api.call_method(
                 validator_info.address.as_node_id(),
@@ -1405,6 +1445,10 @@ impl ConsensusManagerBlueprint {
                 scrypto_encode(&ValidatorApplyRewardInput { xrd_bucket, epoch }).unwrap(),
             )?;
         }
+
+        // For any reason, if a validator isn't included in the `validator_infos` but has accumulated
+        // proposer rewards, we reset the counter as the rewards has been distributed to other validators.
+        validator_rewards.proposer_rewards.clear();
 
         Ok(())
     }
@@ -1485,5 +1529,41 @@ impl ValidatorInfo {
                     ConsensusManagerError::UnexpectedDecimalComputationError,
                 ),
             ))?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_to_reliability_factor() {
+        let min_required_reliability = dec!("0.8");
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0"), min_required_reliability),
+            Ok(dec!("0"))
+        );
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0.4"), min_required_reliability),
+            Ok(dec!("0"))
+        );
+
+        // Is the following rescaling desired?
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0.8"), min_required_reliability),
+            Ok(dec!("0"))
+        );
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0.9"), min_required_reliability),
+            Ok(dec!("0.5"))
+        );
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("0.95"), min_required_reliability),
+            Ok(dec!("0.75"))
+        );
+        assert_eq!(
+            ValidatorInfo::to_reliability_factor(dec!("1"), min_required_reliability),
+            Ok(dec!("1"))
+        );
     }
 }

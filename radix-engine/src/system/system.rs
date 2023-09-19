@@ -1,6 +1,7 @@
 use super::id_allocation::IDAllocation;
 use super::system_modules::costing::ExecutionCostingEntry;
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
+use crate::blueprints::resource::LockFeeEvent;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
@@ -18,7 +19,7 @@ use crate::system::system_callback::{
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
-use crate::system::system_modules::SystemModuleMixer;
+use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::{KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta, SystemMapper,
@@ -582,7 +583,7 @@ where
                 Emitter::Method(node_id, module_id.into()),
                 event_name,
             )),
-            EmitterActor::CurrentActor => match self.current_actor()? {
+            EmitterActor::CurrentActor => match self.current_actor() {
                 Actor::Method(MethodActor {
                     method_type,
                     node_id,
@@ -608,7 +609,10 @@ where
         };
 
         // Adding the event to the event store
-        self.api.kernel_get_system().modules.add_event(event)?;
+        self.api
+            .kernel_get_system()
+            .modules
+            .checked_add_event(event)?;
 
         Ok(())
     }
@@ -656,7 +660,7 @@ where
     }
 
     pub fn get_actor_type_target(&mut self) -> Result<BlueprintTypeTarget, RuntimeError> {
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
         match actor {
             Actor::Root => Err(RuntimeError::SystemError(SystemError::RootHasNoType)),
             Actor::BlueprintHook(actor) => Ok(BlueprintTypeTarget {
@@ -696,7 +700,7 @@ where
         &mut self,
         actor_object_type: ActorStateRef,
     ) -> Result<(NodeId, Option<AttachedModuleId>), RuntimeError> {
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
         let object_id = actor
             .get_object_id()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAnObject))?;
@@ -906,7 +910,7 @@ where
 
         // For simplicity, a rule is enforced at system layer: only the package can globalize a node
         // In the future, we may consider allowing customization at blueprint level.
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
         if Some(reserved_blueprint_id.package_address) != actor.package_address() {
             return Err(RuntimeError::SystemError(
                 SystemError::InvalidGlobalizeAccess(Box::new(InvalidGlobalizeAccess {
@@ -1059,12 +1063,12 @@ where
         Ok(global_address)
     }
 
-    pub fn current_actor(&mut self) -> Result<Actor, RuntimeError> {
-        Ok(self
-            .api
+    #[cfg_attr(feature = "std", catch_unwind_ignore)]
+    pub fn current_actor(&mut self) -> Actor {
+        self.api
             .kernel_get_system_state()
             .current_call_frame
-            .clone())
+            .clone()
     }
 
     pub fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
@@ -1206,7 +1210,7 @@ where
         fields: IndexMap<u8, FieldValue>,
         kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
         let package_address = actor
             .blueprint_id()
             .map(|b| b.package_address)
@@ -1509,7 +1513,7 @@ where
         // For simplicity, a rule is enforced at system layer: only the package can drop a node
         // In the future, we may consider allowing customization at blueprint level.
         let info = self.get_object_info(node_id)?;
-        let actor = self.current_actor()?;
+        let actor = self.current_actor();
 
         let instance_context_check = {
             // Allow proofs to be dropped on their own
@@ -2221,21 +2225,86 @@ where
     }
 
     #[trace_resources]
-    fn credit_cost_units(
-        &mut self,
-        vault_id: NodeId,
-        locked_fee: LiquidFungibleResource,
-        contingent: bool,
-    ) -> Result<LiquidFungibleResource, RuntimeError> {
+    fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, RuntimeError> {
+        let costing_enabled = self
+            .api
+            .kernel_get_system()
+            .modules
+            .enabled_modules
+            .contains(EnabledModules::COSTING);
+
+        // We do costing up front
         self.api
             .kernel_get_system()
             .modules
             .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
 
+        let event_data = {
+            let lock_fee_event = LockFeeEvent { amount };
+            scrypto_encode(&lock_fee_event).unwrap()
+        };
+
+        // If costing is enabled, reserve event and pay for the event up front for the call to lock_fee()
+        // Otherwise, we just simulate the call
+        if costing_enabled {
+            self.api
+                .kernel_get_system()
+                .modules
+                .assert_can_add_event()?;
+            self.api.kernel_get_system().modules.apply_execution_cost(
+                ExecutionCostingEntry::EmitEvent {
+                    size: event_data.len(),
+                },
+            )?;
+        } else {
+            self.emit_event_internal(
+                EmitterActor::CurrentActor,
+                LockFeeEvent::EVENT_NAME.to_string(),
+                event_data,
+                EventFlags::FORCE_WRITE,
+            )?;
+        }
+
+        Ok(costing_enabled)
+    }
+
+    #[trace_resources]
+    #[cfg_attr(feature = "std", catch_unwind_ignore)]
+    fn lock_fee(&mut self, locked_fee: LiquidFungibleResource, contingent: bool) {
+        // Credit cost units
+        let vault_id = self
+            .current_actor()
+            .node_id()
+            .expect("Caller should only be fungible vault method");
         self.api
             .kernel_get_system()
             .modules
-            .credit_cost_units(vault_id, locked_fee, contingent)
+            .lock_fee(vault_id, locked_fee.clone(), contingent);
+
+        // Emit Locked Fee event
+        {
+            let type_identifier = EventTypeIdentifier(
+                Emitter::Method(vault_id, ObjectModuleId::Main),
+                LockFeeEvent::EVENT_NAME.to_string(),
+            );
+
+            let lock_fee_event = LockFeeEvent {
+                amount: locked_fee.amount(),
+            };
+            let payload = scrypto_encode(&lock_fee_event).unwrap();
+
+            let event = Event {
+                type_identifier,
+                payload,
+                flags: EventFlags::FORCE_WRITE,
+            };
+
+            self.api
+                .kernel_get_system()
+                .modules
+                .add_event_unchecked(event)
+                .expect("Event should never exceed size.");
+        }
     }
 
     fn execution_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
@@ -2365,7 +2434,7 @@ where
             .modules
             .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
 
-        self.current_actor()?
+        self.current_actor()
             .blueprint_id()
             .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
     }
@@ -2381,7 +2450,7 @@ where
 
         let node_id = match actor_ref {
             ActorObjectRef::SELF => {
-                self.current_actor()?
+                self.current_actor()
                     .node_id()
                     .ok_or(RuntimeError::SystemError(
                         SystemError::ActorNodeIdDoesNotExist,
@@ -2407,7 +2476,7 @@ where
                 }?
             }
             ActorObjectRef::Global => {
-                let actor = self.current_actor()?;
+                let actor = self.current_actor();
                 if actor.is_direct_access() {
                     return Err(RuntimeError::SystemError(
                         SystemError::GlobalAddressDoesNotExist,
@@ -2432,7 +2501,7 @@ where
                 }
             }
             ActorObjectRef::AuthZone => self
-                .current_actor()?
+                .current_actor()
                 .self_auth_zone()
                 .ok_or_else(|| RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))?,
         };

@@ -10,9 +10,9 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node_modules::metadata::MetadataNativePackage;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::node_modules::royalty::RoyaltyNativePackage;
+use crate::system::attached_modules::metadata::MetadataNativePackage;
+use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::system::attached_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use crate::vm::VmInvoke;
@@ -41,6 +41,11 @@ impl<E: NativeVmExtension> NativeVm<E> {
 
         let code: [u8; 8] = match code.clone().try_into() {
             Ok(code) => code,
+            // It should be impossible for us to get to this point here. The code argument is
+            // provided by the Vm after it reads the `PackageCodeOriginalCodeEntrySubstate`. Thus,
+            // if the code-id at this point is invalid for the native-vm, then this means that the
+            // database has been corrupted. We could safely panic here, however, we're choosing to
+            // keep the `Err` here for safety.
             Err(..) => {
                 return Err(RuntimeError::VmError(VmError::Native(
                     NativeRuntimeError::InvalidCodeId,

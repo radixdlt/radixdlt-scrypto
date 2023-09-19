@@ -34,6 +34,8 @@ use_max_instead_of_median = ["kernel_create_wasm_instance"] # due to use of cach
 
 file_list_cnt = 1
 file_list = os.listdir(input_folder)
+overflowed_cnt = 0
+values_cnt = 0
 
 for path in file_list:
     input_file = os.path.join(input_folder, path)
@@ -97,45 +99,8 @@ for path in file_list:
             else:
                 key += "::" + native + "::" + pkg + "::" + fcn_name
 
-        # handle kernel_create_node
-        param = child.xpath("./self::kernel_create_node/@arg0")
-        if param:
-            key += "::" + param[0]
-
-        # handle kernel_get_node_info
-        param = child.xpath("./self::kernel_get_node_info/@arg0")
-        if param:
-            key += "::" + param[0]
-
-        # handle kernel_open_substate
-        param = child.xpath("./self::kernel_open_substate[@module_id | @arg0 | @arg2]")
-        if param:
-            module_id = param[0].attrib["module_id"]
-            node_id = param[0].attrib["arg0"]
-            key += "::" + module_id + "::" + node_id
-
-        # handle kernel_allocate_node_id - not using this rule
-        # param = child.xpath("./self::kernel_allocate_node_id/@entity_type")
-        # if param:
-        #     key += "::" + param[0]
-
         # handle kernel_drain_substates
         param = child.xpath("./self::kernel_drain_substates/@limit")
-        if param:
-            key += "::" + param[0]
-
-        # handle before_invoke
-#        param = child.xpath("./self::before_invoke/@arg0")
-#        if param:
-#            key += "::" + param[0]
-
-        # handle after_invoke
-        param = child.xpath("./self::after_invoke/@arg0")
-        if param:
-            key += "::" + param[0]
-
-        # handle kernel_open_substate_with_default
-        param = child.xpath("./self::kernel_open_substate_with_default/@arg0")
         if param:
             key += "::" + param[0]
 
@@ -147,27 +112,6 @@ for path in file_list:
                 key += "::heap"
             else:
                 key += "::store"
-
-        # handle kernel_scan_keys
-#        param = child.xpath("./self::kernel_scan_keys[@arg0 | @count]")
-#        if param:
-#            entity_type = param[0].attrib["arg0"]
-#            count = param[0].attrib["count"]
-#            key += "::" + entity_type + "::" + count
-
-        # handle kernel_scan_sorted_substates
-#        param = child.xpath("./self::kernel_scan_sorted_substates[@arg0 | @count]")
-#        if param:
-#            entity_type = param[0].attrib["arg0"]
-#            count = param[0].attrib["count"]
-#            key += "::" + entity_type + "::" + count
-
-        # handle kernel_set_substate
-#        param = child.xpath("./self::kernel_set_substate[@arg0 | @arg1]")
-#        if param:
-#            entity_type = param[0].attrib["arg0"]
-#            value_len = param[0].attrib["arg1"]
-#            key += "::" + entity_type + "::" + value_len
 
         # correcting parenthesis
         c1 = key.count('(')
@@ -198,6 +142,12 @@ for path in file_list:
 #        if not child.tag in api_functions:
 #            continue
 
+        # discard values overflowed after calibration apply
+        if cpu_instructions > 0xff00000000000000:
+            overflowed_cnt += 1
+            continue
+
+        values_cnt += 1
         if api_functions_ins.get(key):
             api_functions_ins[key].append(cpu_instructions)
         else:
@@ -205,6 +155,7 @@ for path in file_list:
 
 # end of xml parsing loop
 
+print(" Overflowed values count: ", overflowed_cnt, "/", values_cnt)
 
 # prepare output
 

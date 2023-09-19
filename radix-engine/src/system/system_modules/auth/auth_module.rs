@@ -6,9 +6,9 @@ use crate::internal_prelude::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
+use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -102,7 +102,7 @@ impl AuthModule {
                     (BTreeSet::new(), BTreeSet::new())
                 };
 
-            Self::on_execution_start(api, None, virtual_resources, virtual_non_fungibles)?
+            Self::create_auth_zone(api, None, virtual_resources, virtual_non_fungibles)?
         };
 
         // Check authorization
@@ -140,7 +140,7 @@ impl AuthModule {
     pub fn on_call_method<V, Y>(
         api: &mut SystemService<Y, V>,
         receiver: &NodeId,
-        obj_module_id: ModuleId,
+        module_id: ModuleId,
         direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
@@ -149,7 +149,7 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        let auth_zone = AuthModule::on_execution_start(
+        let auth_zone = AuthModule::create_auth_zone(
             api,
             Some((receiver, direct_access)),
             btreeset!(),
@@ -157,23 +157,19 @@ impl AuthModule {
         )?;
 
         // Step 1: Resolve method to permission
-        let module_id = match obj_module_id {
+        let attached_module_id = match module_id {
             ModuleId::Main => None,
             ModuleId::Metadata => Some(AttachedModuleId::Metadata),
             ModuleId::Royalty => Some(AttachedModuleId::Royalty),
             ModuleId::RoleAssignment => Some(AttachedModuleId::RoleAssignment),
         };
 
-        let blueprint_id = api.get_blueprint_info(receiver, module_id)?.blueprint_id;
+        let blueprint_id = api
+            .get_blueprint_info(receiver, attached_module_id)?
+            .blueprint_id;
 
-        let permission = Self::resolve_method_permission(
-            api,
-            &blueprint_id,
-            receiver,
-            &obj_module_id,
-            ident,
-            args,
-        )?;
+        let permission =
+            Self::resolve_method_permission(api, &blueprint_id, receiver, &module_id, ident, args)?;
 
         // Step 2: Check permission
         let fn_identifier = FnIdentifier {
@@ -206,7 +202,7 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        Self::on_execution_start(system, receiver, virtual_resources, virtual_non_fungibles)
+        Self::create_auth_zone(system, receiver, virtual_resources, virtual_non_fungibles)
     }
 
     fn copy_global_caller<V, Y>(
@@ -232,7 +228,7 @@ impl AuthModule {
         Ok((auth_zone.into_payload().global_caller, Some(handle)))
     }
 
-    fn on_execution_start<V, Y>(
+    fn create_auth_zone<V, Y>(
         system: &mut SystemService<Y, V>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
@@ -250,7 +246,7 @@ impl AuthModule {
                 true
             };
 
-            let current_actor = system.current_actor()?;
+            let current_actor = system.current_actor();
             let local_package_address = current_actor.package_address();
 
             // Retrieve global caller property of next auth zone
@@ -293,7 +289,7 @@ impl AuthModule {
                 None
             } else {
                 system
-                    .current_actor()?
+                    .current_actor()
                     .self_auth_zone()
                     .map(|x| Reference(x))
             };

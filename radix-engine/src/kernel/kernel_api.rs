@@ -85,8 +85,8 @@ pub trait KernelSubstateApi<L> {
     /// Retrieves info related to a lock
     fn kernel_get_lock_data(&mut self, lock_handle: SubstateHandle) -> Result<L, RuntimeError>;
 
-    /// Drops a lock on some substate, if the lock is writable, updates are flushed to
-    /// the store at this point.
+    /// Drops the handle on some substate, if the handle is a force write, updates are flushed.
+    /// No updates should occur if an error is returned.
     fn kernel_close_substate(&mut self, lock_handle: SubstateHandle) -> Result<(), RuntimeError>;
 
     /// Reads the value of the substate locked by the given lock handle

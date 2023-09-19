@@ -1,11 +1,12 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
+use radix_engine::blueprints::consensus_manager::UnstakeData;
 use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
 };
 use radix_engine::blueprints::resource::BucketError;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::types::*;
@@ -20,6 +21,8 @@ use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
+use scrypto::api::node_modules::*;
+use scrypto_test::prelude::AuthError;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -3247,5 +3250,394 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
     assert_eq!(
         significant_readiness["b".repeat(32).as_str()],
         Decimal::from(10)
+    );
+}
+
+#[test]
+fn cannot_unstake_with_wrong_resource() {
+    // Arrange
+    let genesis_epoch = Epoch::of(5);
+    let num_unstake_epochs = 7;
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        Decimal::ZERO,
+        account_with_su,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_num_unstake_epochs(num_unstake_epochs),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .take_all_from_worktop(XRD, "fake_stake_units")
+        .unstake_validator(validator_address, "fake_stake_units")
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(_))
+        )
+    });
+}
+
+#[test]
+fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
+    // Arrange
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next().unwrap();
+    let num_unstake_epochs = 7;
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        Decimal::ZERO,
+        account_with_su,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_num_unstake_epochs(num_unstake_epochs),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
+        .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
+        .unstake_validator(validator_address, "stake_units")
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+    receipt.expect_commit_success();
+    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
+
+    // Fake unstake receipt
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_ruid_non_fungible_resource(
+            OwnerRole::None,
+            false,
+            metadata!(),
+            NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
+            Some(vec![UnstakeData {
+                name: "Fake".to_owned(),
+                claim_epoch: Epoch::of(1),
+                claim_amount: dec!(1),
+            }]),
+        )
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let fake = receipt.expect_commit(true).new_resource_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account_with_su, fake, 1)
+        .take_all_from_worktop(fake, "unstake_receipt")
+        .claim_xrd(validator_address, "unstake_receipt")
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                ValidatorError::InvalidClaimResource
+            ))
+        )
+    });
+}
+
+#[test]
+fn test_metadata_of_consensus_manager() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .set_metadata(CONSENSUS_MANAGER, "hi", "hello")
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _
+            )))
+        )
+    });
+}
+
+//===============
+// Zero amounts
+//===============
+
+#[test]
+fn can_stake_with_zero_bucket() {
+    // Arrange
+    let genesis_epoch = Epoch::of(5);
+    let num_unstake_epochs = 7;
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        Decimal::ZERO,
+        account_with_su,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_num_unstake_epochs(num_unstake_epochs),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .take_all_from_worktop(XRD, "zero_xrd")
+        .stake_validator(validator_address, "zero_xrd")
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn can_unstake_with_zero_bucket() {
+    // Arrange
+    let genesis_epoch = Epoch::of(5);
+    let num_unstake_epochs = 7;
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        Decimal::ZERO,
+        account_with_su,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_num_unstake_epochs(num_unstake_epochs),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .take_all_from_worktop(validator_substate.stake_unit_resource, "zero_su")
+        .unstake_validator(validator_address, "zero_su")
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn can_claim_unstake_after_epochs_with_zero_bucket() {
+    // Arrange
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next().unwrap();
+    let num_unstake_epochs = 7;
+    let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        Decimal::from(10),
+        Decimal::ZERO,
+        account_with_su,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_num_unstake_epochs(num_unstake_epochs),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
+        .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
+        .unstake_validator(validator_address, "stake_units")
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+    receipt.expect_commit_success();
+    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .take_all_from_worktop(validator_substate.claim_nft, "zero_unstake_receipt")
+        .claim_xrd(validator_address, "zero_unstake_receipt")
+        .try_deposit_entire_worktop_or_abort(account_with_su, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn can_lock_owner_stake_with_zero_bucket() {
+    // Arrange
+    let total_stake_amount = dec!("10.5");
+    let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        total_stake_amount,
+        Decimal::ZERO,
+        validator_account,
+        Epoch::of(5),
+        CustomGenesis::default_consensus_manager_config(),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
+        )
+        .withdraw_from_account(
+            validator_account,
+            validator_substate.stake_unit_resource,
+            dec!(0),
+        )
+        .take_all_from_worktop(validator_substate.stake_unit_resource, "zero_su")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_method(
+                validator_address,
+                VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(lookup.bucket("zero_su")),
+            )
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next().unwrap();
+    let initial_stake_amount1 = dec!("30000");
+    let initial_stake_amount2 = dec!("0");
+    let emission_xrd_per_epoch = dec!("0");
+    let validator1_key = Secp256k1PrivateKey::from_u64(5u64).unwrap().public_key();
+    let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
+    let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
+    let staker_account = ComponentAddress::virtual_account_from_public_key(&staker_key);
+    let genesis = CustomGenesis::validators_and_single_staker(
+        vec![
+            (validator1_key, initial_stake_amount1),
+            (validator2_key, initial_stake_amount2),
+        ],
+        staker_account,
+        Decimal::ZERO,
+        genesis_epoch,
+        CustomGenesis::default_consensus_manager_config()
+            .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            }),
+    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
+
+    // Do some transaction
+    let receipt1 = test_runner.execute_manifest_ignoring_fee(
+        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+        vec![],
+    );
+    let result1 = receipt1.expect_commit_success();
+
+    // Advance epoch
+    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let result2 = receipt2.expect_commit_success();
+
+    // Assert
+    let events = test_runner.extract_events_of_type::<ValidatorRewardAppliedEvent>(result2);
+    assert_eq!(events.len(), 1); // only validator 1 receives rewards
+    assert_eq!(events[0].epoch, initial_epoch);
+    assert_close_to!(
+        events[0].amount,
+        result1
+            .fee_destination
+            .to_proposer
+            .checked_add(result1.fee_destination.to_validator_set)
+            .unwrap()
+    );
+    let vault_id = test_runner.get_component_vaults(CONSENSUS_MANAGER, XRD)[0];
+    assert_close_to!(
+        test_runner.inspect_vault_balance(vault_id).unwrap(),
+        dec!(0)
     );
 }

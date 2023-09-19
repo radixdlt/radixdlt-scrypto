@@ -1,7 +1,8 @@
+use crate::blueprints::models::*;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
-use crate::internal_prelude::*;
+use crate::blueprints::util::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
-use crate::system::node_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
+use crate::system::attached_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -26,7 +27,7 @@ use radix_engine_interface::schema::{
 };
 use radix_engine_interface::types::*;
 
-use super::SetRoleEvent;
+use super::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum RoleAssignmentError {
@@ -35,45 +36,10 @@ pub enum RoleAssignmentError {
     ExceededMaxRoleNameLen { limit: usize, actual: usize },
     ExceededMaxAccessRuleDepth,
     ExceededMaxAccessRuleNodes,
+    InvalidName(InvalidNameError),
+    ExceededMaxRoles,
+    CannotSetRoleIfNotAttached,
 }
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-#[sbor(transparent)]
-pub struct OwnerRoleSubstate {
-    pub owner_role_entry: OwnerRoleEntry,
-}
-
-declare_native_blueprint_state! {
-    blueprint_ident: RoleAssignment,
-    blueprint_snake_case: role_assignment,
-    features: {
-    },
-    fields: {
-        owner: {
-            ident: Owner,
-            field_type: {
-                kind: StaticSingleVersioned,
-            },
-            condition: Condition::Always,
-        },
-    },
-    collections: {
-        role_assignment: KeyValue {
-            entry_ident: AccessRule,
-            key_type: {
-                kind: Static,
-                content_type: ModuleRoleKey,
-            },
-            value_type: {
-                kind: StaticSingleVersioned,
-            },
-            allow_ownership: false,
-        },
-    }
-}
-
-pub type RoleAssignmentOwnerV1 = OwnerRoleSubstate;
-pub type RoleAssignmentAccessRuleV1 = AccessRule;
 
 pub struct RoleAssignmentNativePackage;
 
@@ -131,7 +97,7 @@ impl RoleAssignmentNativePackage {
                     aggregator.add_child_type_and_descendents::<RoleAssignmentSetInput>(),
                 ),
                 output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<RoleAssignmentSetRoleOutput>(),
+                    aggregator.add_child_type_and_descendents::<RoleAssignmentSetOutput>(),
                 ),
                 export: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
             },
@@ -361,7 +327,7 @@ impl RoleAssignmentNativePackage {
         role_key: &RoleKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<RoleList, RuntimeError> {
-        if Self::is_reserved_role_key(&role_key) {
+        if Self::is_reserved_role_key(&role_key) || module.eq(&ModuleId::RoleAssignment) {
             return Ok(RoleList::none());
         }
 
@@ -420,12 +386,17 @@ impl RoleAssignmentNativePackage {
         let mut role_entries = index_map_new();
 
         for (module, roles) in roles {
+            if roles.data.len() > MAX_ROLES {
+                return Err(RoleAssignmentError::ExceededMaxRoles);
+            }
+
             for (role_key, role_def) in roles.data {
                 if Self::is_reserved_role_key(&role_key) {
                     return Err(RoleAssignmentError::UsedReservedRole(
                         role_key.key.to_string(),
                     ));
                 }
+                check_name(&role_key.key).map_err(RoleAssignmentError::InvalidName)?;
 
                 if role_key.key.len() > MAX_ROLE_NAME_LEN {
                     return Err(RoleAssignmentError::ExceededMaxRoleNameLen {
@@ -540,14 +511,18 @@ impl RoleAssignmentNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if Self::is_reserved_role_key(&role_key) || module.eq(&ModuleId::RoleAssignment) {
+        if module.eq(&ModuleId::RoleAssignment) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::RoleAssignmentError(RoleAssignmentError::UsedReservedSpace),
+            ));
+        }
+        if Self::is_reserved_role_key(&role_key) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::RoleAssignmentError(RoleAssignmentError::UsedReservedRole(
                     role_key.key.to_string(),
                 )),
             ));
         }
-
         if role_key.key.len() > MAX_ROLE_NAME_LEN {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::RoleAssignmentError(
@@ -558,12 +533,30 @@ impl RoleAssignmentNativePackage {
                 ),
             ));
         }
+        check_name(&role_key.key).map_err(|error| {
+            RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                RoleAssignmentError::InvalidName(error),
+            ))
+        })?;
 
         let module_role_key = ModuleRoleKey::new(module, role_key.clone());
 
         Self::verify_access_rule(&rule).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
         })?;
+
+        // Only allow this method to be called on attached role assignment modules.
+        // This is currently implemented to prevent unbounded number of roles from
+        // being created.
+        api.actor_get_node_id(ACTOR_REF_GLOBAL)
+            .map_err(|e| match e {
+                RuntimeError::SystemError(SystemError::GlobalAddressDoesNotExist) => {
+                    RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
+                        RoleAssignmentError::CannotSetRoleIfNotAttached,
+                    ))
+                }
+                _ => e,
+            })?;
 
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
