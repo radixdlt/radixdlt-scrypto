@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,            0.57952822273,    100.0%
-- Execution Cost (XRD)                                                     ,               0.37359325,     64.5%
+Total Cost (XRD)                                                           ,            0.57952532273,    100.0%
+- Execution Cost (XRD)                                                     ,               0.37359035,     64.5%
 - Finalization Cost (XRD)                                                  ,                0.0427613,      7.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,            0.16317367273,     28.2%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  7471865,    100.0%
+Execution Cost Breakdown                                                   ,                  7471807,    100.0%
 - AfterInvoke                                                              ,                     5614,      0.1%
 - AllocateNodeId                                                           ,                     3045,      0.0%
 - BeforeInvoke                                                             ,                     3714,      0.0%
@@ -43,7 +43,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::take_advanced_FungibleVault                               ,                    44281,      0.6%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   128776,      1.7%
 - RunNativeCode::withdraw                                                  ,                    60761,      0.8%
-- RunWasmCode::Radiswap_swap                                               ,                    95244,      1.3%
+- RunWasmCode::Radiswap_swap                                               ,                    95186,      1.3%
 - ValidateTxPayload                                                        ,                    13120,      0.2%
 - VerifyTxSignatures                                                       ,                    14000,      0.2%
 - WriteSubstate                                                            ,                    19372,      0.3%

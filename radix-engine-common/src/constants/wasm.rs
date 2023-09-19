@@ -21,3 +21,5 @@ pub const MAX_NUMBER_OF_FUNCTION_LOCALS: u32 = 256;
 
 /// The number of entries in the engine cache
 pub const WASM_ENGINE_CACHE_SIZE: usize = 1000;
+
+pub const WASM_EXECUTION_COST_UNITS_BUFFER: u32 = 1_000_000;

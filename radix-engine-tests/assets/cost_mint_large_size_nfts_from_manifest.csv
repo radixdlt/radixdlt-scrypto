@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,          207.48306173518,    100.0%
-- Execution Cost (XRD)                                                     ,                2.5933143,      1.2%
+Total Cost (XRD)                                                           ,          207.48306613518,    100.0%
+- Execution Cost (XRD)                                                     ,                2.5933187,      1.2%
 - Finalization Cost (XRD)                                                  ,               2.47943445,      1.2%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,          202.41031298518,     97.6%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 51866286,    100.0%
+Execution Cost Breakdown                                                   ,                 51866374,    100.0%
 - AfterInvoke                                                              ,                     6507,      0.0%
 - AllocateNodeId                                                           ,                     1914,      0.0%
 - BeforeInvoke                                                             ,                  2093876,      4.0%
@@ -41,7 +41,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::lock_fee                                                  ,                    48283,      0.1%
 - RunNativeCode::put_NonFungibleVault                                      ,                    34850,      0.1%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   128776,      0.2%
-- RunWasmCode::Faucet_lock_fee                                             ,                    21650,      0.0%
+- RunWasmCode::Faucet_lock_fee                                             ,                    21738,      0.0%
 - SetSubstate                                                              ,                    71872,      0.1%
 - ValidateTxPayload                                                        ,                 41840720,     80.7%
 - VerifyTxSignatures                                                       ,                     7000,      0.0%
