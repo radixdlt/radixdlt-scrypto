@@ -252,11 +252,9 @@ pub enum SystemError {
     AuthTemplateDoesNotExist(CanonicalBlueprintId),
     InvalidGlobalizeAccess(Box<InvalidGlobalizeAccess>),
     InvalidDropAccess(Box<InvalidDropAccess>),
-    InvalidScryptoValue(DecodeError),
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
-    InvalidNativeSubstatesForFeature(String),
     ForceWriteEventFlagsNotAllowed,
 
     BlueprintTypeNotFound(String),

@@ -32,10 +32,12 @@ mod max_transaction {
             enc.write_size(1).unwrap();
             enc.write_value_kind(ValueKind::Array).unwrap();
             enc.write_value_kind(ValueKind::U8).unwrap();
-            enc.write_size(MAX_EVENT_SIZE 
-                - 5 /* the above */ 
-                - 3 /* the size */
-            ).unwrap();
+            enc.write_size(
+                MAX_EVENT_SIZE
+                - 5 /* the above */
+                - 3, /* the size */
+            )
+            .unwrap();
             unsafe { buf.set_len(MAX_EVENT_SIZE) };
 
             for _ in 0..n {
@@ -52,7 +54,7 @@ mod max_transaction {
         }
 
         pub fn max_state_updates(&mut self, n: u32) {
-            let max_size = MAX_SUBSTATE_VALUE_SIZE - 11; 
+            let max_size = MAX_SUBSTATE_VALUE_SIZE - 11;
 
             let mut buf = Vec::with_capacity(max_size);
             let mut enc = ScryptoEncoder::new(&mut buf, 100);
@@ -60,10 +62,12 @@ mod max_transaction {
                 .unwrap();
             enc.write_value_kind(ValueKind::Array).unwrap();
             enc.write_value_kind(ValueKind::U8).unwrap();
-            enc.write_size(max_size
+            enc.write_size(
+                max_size
                 - 3 /* the above */
-                - 3 /* the size */
-            ).unwrap();
+                - 3, /* the size */
+            )
+            .unwrap();
             unsafe { buf.set_len(max_size) };
 
             for i in 0..n {
