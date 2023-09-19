@@ -18,6 +18,7 @@ jobs:
       - id: setup_tags
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
   build-simulator-arm:
+    needs: setup_tags
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
@@ -25,14 +26,6 @@ jobs:
       image_organization: "radixdlt"
       image_name: "simulator"
       tag: ${{ needs.setup_tags.outputs.tag }}
-      tags: |
-        type=ref,event=branch
-        type=ref,event=pr
-        type=ref,event=tag
-        type=semver,pattern={{version}}
-        type=semver,pattern={{major}}.{{minor}}
-        type=semver,pattern={{major}}
-        type=sha
       context: "."
       dockerfile: "./simulator/Dockerfile"
       platforms: "linux/amd64"
