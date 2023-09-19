@@ -10,6 +10,7 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use scrypto_test::prelude::{OpenSubstateError, ProcessSubstateKeyError};
 use scrypto_unit::*;
 use transaction::prelude::*;
 
@@ -364,5 +365,14 @@ fn test_insert_not_visible_global_refs_in_substate_key() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::OpenSubstateError(OpenSubstateError::ProcessSubstateKeyError(
+                    ProcessSubstateKeyError::NodeNotVisible(_)
+                ))
+            ))
+        )
+    })
 }

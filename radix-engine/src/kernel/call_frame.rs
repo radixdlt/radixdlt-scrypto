@@ -872,10 +872,13 @@ impl<C, L: Clone> CallFrame<C, L> {
 
                 // Check references
                 for reference in key_value.references() {
-                    if !self.get_node_visibility(reference).is_global() {
+                    if !reference.is_global() {
                         return Err(ProcessSubstateKeyError::NonGlobalRefNotSupported);
                     }
-                    // YULONG: POTENTIAL BUG HERE!
+
+                    if !self.get_node_visibility(reference).is_visible() {
+                        return Err(ProcessSubstateKeyError::NodeNotVisible(*reference));
+                    }
                 }
             }
             _ => {}
