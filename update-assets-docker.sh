@@ -2,7 +2,7 @@
 set -ex
 
 # Default values
-IMAGE_NAME="docker.io/radixdlt/simulator"
+IMAGE_NAME="radixdlt/simulator"
 REUSE_IMAGE=false
 
 # Parse command line arguments
@@ -19,7 +19,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-docker images 
+docker image inspect "$IMAGE_NAME" 
 
 # Check if the Docker image exists locally
 if ! "$REUSE_IMAGE" || ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
