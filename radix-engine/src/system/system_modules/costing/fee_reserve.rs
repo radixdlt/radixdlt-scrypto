@@ -132,12 +132,12 @@ pub struct SystemLoanFeeReserve {
     finalization_cost_units_committed: u32,
 
     /// Royalty costs
-    royalty_cost: Decimal,
-    royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, Decimal>,
+    royalty_cost_committed: Decimal,
+    royalty_cost_breakdown: IndexMap<RoyaltyRecipient, Decimal>,
 
     /// Storage Costs
     storage_cost_committed: Decimal,
-    storage_cost_deferred: BTreeMap<StorageType, usize>,
+    storage_cost_deferred: IndexMap<StorageType, usize>,
 
     /// Payments made during the execution of a transaction.
     locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
@@ -232,11 +232,11 @@ impl SystemLoanFeeReserve {
 
             finalization_cost_units_committed: 0,
 
-            royalty_cost_breakdown: BTreeMap::new(),
-            royalty_cost: Decimal::ZERO,
+            royalty_cost_breakdown: index_map_new(),
+            royalty_cost_committed: Decimal::ZERO,
 
             storage_cost_committed: Decimal::ZERO,
-            storage_cost_deferred: BTreeMap::new(),
+            storage_cost_deferred: index_map_new(),
 
             locked_fees: Vec::new(),
         }
@@ -270,8 +270,8 @@ impl SystemLoanFeeReserve {
         self.xrd_balance
     }
 
-    pub fn royalty_cost_breakdown(&self) -> IndexMap<RoyaltyRecipient, Decimal> {
-        self.royalty_cost_breakdown.clone().into_iter().collect()
+    pub fn royalty_cost_breakdown(&self) -> &IndexMap<RoyaltyRecipient, Decimal> {
+        &self.royalty_cost_breakdown
     }
 
     fn check_execution_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
@@ -361,7 +361,7 @@ impl SystemLoanFeeReserve {
                 .entry(recipient)
                 .or_default()
                 .add_assign(amount);
-            self.royalty_cost += amount;
+            self.royalty_cost_committed += amount;
             Ok(())
         }
     }
@@ -400,15 +400,9 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn revert_royalty(&mut self) {
-        let mut sum = Decimal::ZERO;
-        for v in self.royalty_cost_breakdown.values() {
-            sum = sum
-                .checked_add(v.clone())
-                .expect("Total royalty should not overflow due to MAX_PER_FUNCTION_ROYALTY_IN_XRD")
-        }
-        self.xrd_balance += sum;
+        self.xrd_balance += self.royalty_cost_committed;
         self.royalty_cost_breakdown.clear();
-        self.royalty_cost = Decimal::ZERO;
+        self.royalty_cost_committed = Decimal::ZERO;
     }
 
     #[inline]
@@ -525,29 +519,28 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
     fn finalize(self) -> FeeReserveFinalizationSummary {
-        let total_execution_cost_in_xrd: Decimal = self
+        let total_execution_cost_in_xrd = self
             .execution_cost_unit_price
-            .checked_mul(self.execution_cost_units_committed)
+            .checked_mul(Decimal::from(self.execution_cost_units_committed))
             .unwrap();
 
         let total_finalization_cost_in_xrd = self
             .finalization_cost_unit_price
-            .checked_mul(self.finalization_cost_units_committed)
+            .checked_mul(Decimal::from(self.finalization_cost_units_committed))
             .unwrap();
 
-        let tip_percentage = Decimal::from(self.tip_percentage).checked_div(100).unwrap();
-
-        let mut total_tipping_cost_in_xrd: Decimal = total_execution_cost_in_xrd
+        let tip_percentage = Decimal::from(self.tip_percentage)
+            .checked_div(dec!(100))
+            .unwrap();
+        let total_tipping_cost_in_xrd = total_execution_cost_in_xrd
             .checked_mul(tip_percentage)
-            .unwrap();
-        total_tipping_cost_in_xrd = total_tipping_cost_in_xrd
+            .unwrap()
             .checked_add(
                 total_finalization_cost_in_xrd
                     .checked_mul(tip_percentage)
                     .unwrap(),
             )
             .unwrap();
-        let royalty_cost_breakdown = self.royalty_cost_breakdown();
 
         FeeReserveFinalizationSummary {
             total_execution_cost_units_consumed: self.execution_cost_units_committed,
@@ -556,11 +549,11 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             total_execution_cost_in_xrd,
             total_finalization_cost_in_xrd,
             total_tipping_cost_in_xrd,
-            total_royalty_cost_in_xrd: self.royalty_cost,
+            total_royalty_cost_in_xrd: self.royalty_cost_committed,
             total_storage_cost_in_xrd: self.storage_cost_committed,
             total_bad_debt_in_xrd: self.xrd_owed,
             locked_fees: self.locked_fees,
-            royalty_cost_breakdown,
+            royalty_cost_breakdown: self.royalty_cost_breakdown,
         }
     }
 }
