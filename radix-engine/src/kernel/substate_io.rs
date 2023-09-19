@@ -65,17 +65,6 @@ pub struct SubstateIO<'g, S: CommitableSubstateStore> {
 }
 
 impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
-    pub fn new(store: &'g mut S) -> Self {
-        Self {
-            heap: Heap::new(),
-            store,
-            non_global_node_refs: NonGlobalNodeRefs::new(),
-            substate_locks: SubstateLocks::new(),
-            heap_transient_substates: TransientSubstates::new(),
-            pinned_to_heap: BTreeSet::new(),
-        }
-    }
-
     /// Creates a new node with partitions/substates at the given device.
     /// No additional node movement occurs (For example, owned nodes in node substates
     /// are not moved and must be done manually using other interfaces)
