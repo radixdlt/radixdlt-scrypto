@@ -264,7 +264,7 @@ fn invalid_key_value_entry_handle_should_error() {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::SystemError(SystemError::NotAKeyValueEntryHandle(..))
+                RuntimeError::SystemError(SystemError::NotAKeyValueEntryHandle)
             )
         });
     });
