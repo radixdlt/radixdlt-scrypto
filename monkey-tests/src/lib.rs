@@ -1,11 +1,12 @@
+pub mod access_controller;
 pub mod consensus_manager;
 pub mod multi_pool;
 pub mod one_pool;
 pub mod resource;
 pub mod two_pool;
 pub mod validator;
-pub mod access_controller;
 
+use crate::access_controller::{AccessControllerFuzzAction, ProofFromAccountAction};
 use crate::consensus_manager::ConsensusManagerFuzzAction;
 use crate::multi_pool::MultiPoolFuzzAction;
 use crate::one_pool::OnePoolFuzzAction;
@@ -24,6 +25,7 @@ use radix_engine::prelude::node_modules::ModuleConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
 use radix_engine::types::*;
 use radix_engine::vm::OverridePackageCode;
+use radix_engine_interface::blueprints::access_controller::RuleSet;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
@@ -37,13 +39,11 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use radix_engine_interface::blueprints::access_controller::RuleSet;
 use scrypto::prelude::{ToRoleEntry, Zero};
 use scrypto_unit::InjectSystemCostingError;
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
-use crate::access_controller::AccessControllerFuzzAction;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
@@ -184,7 +184,10 @@ impl SystemTestFuzzer {
             ResourceOrNonFungible::Resource(self.next_resource())
         } else {
             let resource = self.next_resource();
-            ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::new(resource, self.next_integer_non_fungible_id()))
+            ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::new(
+                resource,
+                self.next_integer_non_fungible_id(),
+            ))
         }
     }
 
@@ -200,21 +203,14 @@ impl SystemTestFuzzer {
 
     pub fn next_proof_rule(&mut self) -> ProofRule {
         match self.rng.gen_range(0u8..=4u8) {
-            0u8 => {
-                ProofRule::AllOf(self.next_resource_or_non_fungible_list())
-            }
-            1u8 => {
-                ProofRule::Require(self.next_resource_or_non_fungible())
-            }
-            2u8 => {
-                ProofRule::AmountOf(self.next_amount(), self.next_resource())
-            }
-            3u8 => {
-                ProofRule::AnyOf(self.next_resource_or_non_fungible_list())
-            }
-            _ => {
-                ProofRule::CountOf(self.rng.gen_range(0u8..=255u8), self.next_resource_or_non_fungible_list())
-            }
+            0u8 => ProofRule::AllOf(self.next_resource_or_non_fungible_list()),
+            1u8 => ProofRule::Require(self.next_resource_or_non_fungible()),
+            2u8 => ProofRule::AmountOf(self.next_amount(), self.next_resource()),
+            3u8 => ProofRule::AnyOf(self.next_resource_or_non_fungible_list()),
+            _ => ProofRule::CountOf(
+                self.rng.gen_range(0u8..=255u8),
+                self.next_resource_or_non_fungible_list(),
+            ),
         }
     }
 
@@ -235,29 +231,17 @@ impl SystemTestFuzzer {
 
     pub fn next_access_rule_node(&mut self, max_depth: usize) -> AccessRuleNode {
         match self.rng.gen_range(0u8..=2u8) {
-            0u8 => {
-                AccessRuleNode::ProofRule(self.next_proof_rule())
-            }
-            1u8 => {
-                AccessRuleNode::AnyOf(self.next_access_rule_list(max_depth))
-            }
-            _ => {
-                AccessRuleNode::AllOf(self.next_access_rule_list(max_depth))
-            }
+            0u8 => AccessRuleNode::ProofRule(self.next_proof_rule()),
+            1u8 => AccessRuleNode::AnyOf(self.next_access_rule_list(max_depth)),
+            _ => AccessRuleNode::AllOf(self.next_access_rule_list(max_depth)),
         }
     }
 
     pub fn next_access_rule(&mut self) -> AccessRule {
         match self.rng.gen_range(0u8..=2u8) {
-            0u8 => {
-                AccessRule::AllowAll
-            }
-            1u8 => {
-                AccessRule::DenyAll
-            }
-            _ => {
-                AccessRule::Protected(self.next_access_rule_node(4))
-            }
+            0u8 => AccessRule::AllowAll,
+            1u8 => AccessRule::DenyAll,
+            _ => AccessRule::Protected(self.next_access_rule_node(4)),
         }
     }
 
@@ -289,6 +273,7 @@ impl SystemTestFuzzer {
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum FuzzAction {
+    ProofFromAccount(ProofFromAccountAction),
     ConsensusManager(ConsensusManagerFuzzAction),
     Validator(ValidatorFuzzAction),
     AccessController(AccessControllerFuzzAction),
@@ -323,6 +308,9 @@ impl FuzzAction {
                 action.add_to_manifest(uuid, builder, fuzzer, validators, account_address)
             }
             FuzzAction::Validator(action) => {
+                action.add_to_manifest(uuid, builder, fuzzer, validators, account_address)
+            }
+            FuzzAction::ProofFromAccount(action) => {
                 action.add_to_manifest(uuid, builder, fuzzer, validators, account_address)
             }
             FuzzAction::AccessController(action) => {
@@ -499,7 +487,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     Some(10),
                 )
                 .build();
-            let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge.clone()]);
+            let receipt =
+                test_runner.execute_manifest(manifest, vec![virtual_signature_badge.clone()]);
             let result = receipt.expect_commit_success();
             let access_controller = result.new_component_addresses()[0];
             access_controller
