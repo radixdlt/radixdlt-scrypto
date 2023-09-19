@@ -19,6 +19,8 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+docker images 
+
 # Check if the Docker image exists locally
 if ! "$REUSE_IMAGE" || ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
   echo "Docker image $IMAGE_NAME does not exist or --reuse-image flag not provided. Building..."
