@@ -72,6 +72,9 @@ impl VmInvoke for TestInvoke {
                 let handle = api.actor_open_field(ACTOR_STATE_SELF, 0, LockFlags::MUTABLE)?;
                 api.key_value_entry_get(handle)?;
             }
+            "invalid_event_flags" => {
+                api.actor_emit_event("event".to_string(), scrypto_encode(&()).unwrap(), EventFlags::FORCE_WRITE)?;
+            }
             "new" => {
                 let metadata = Metadata::create(api)?;
                 let access_rules = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
@@ -118,6 +121,7 @@ fn run<F: FnOnce(TransactionReceipt)>(method: &str, is_method: bool, on_receipt:
                 ("invalid_collection", "invalid_collection", true),
                 ("mutate_immutable_field", "mutate_immutable_field", true),
                 ("invalid_kv_entry_handle", "invalid_kv_entry_handle", true),
+                ("invalid_event_flags", "invalid_event_flags", true),
             ],
         ),
     );
@@ -265,6 +269,18 @@ fn invalid_key_value_entry_handle_should_error() {
             matches!(
                 e,
                 RuntimeError::SystemError(SystemError::NotAKeyValueEntryHandle)
+            )
+        });
+    });
+}
+
+#[test]
+fn invalid_event_flags() {
+    run("invalid_event_flags", true, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::ForceWriteEventFlagsNotAllowed)
             )
         });
     });

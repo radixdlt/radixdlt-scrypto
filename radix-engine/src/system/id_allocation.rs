@@ -25,15 +25,6 @@ pub enum IDAllocation {
 }
 
 impl IDAllocation {
-    pub fn is_global(&self) -> bool {
-        match self {
-            IDAllocation::Object { global, .. } => *global,
-            IDAllocation::KeyValueStore => false,
-            IDAllocation::GlobalAddressReservation => false,
-            IDAllocation::GlobalAddressPhantom { .. } => true,
-        }
-    }
-
     pub fn entity_type(&self) -> EntityType {
         match self {
             IDAllocation::Object {
