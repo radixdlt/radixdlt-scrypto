@@ -28,7 +28,7 @@ pub struct CallFrameMessage {
     /// Create a "stable" transient in dest from src. The src node may
     /// have global or borrowed visibility
     /// TODO: Cleanup abstraction (perhaps by adding another type of visibility)
-    pub copy_to_stable_transient_references: Vec<NodeId>,
+    pub copy_stable_transient_references: Vec<NodeId>,
 }
 
 impl CallFrameMessage {
@@ -51,7 +51,7 @@ impl CallFrameMessage {
             move_nodes: value.owned_nodes().clone(),
             copy_global_references,
             copy_direct_access_references,
-            copy_to_stable_transient_references: references.stable_transient_references(),
+            copy_stable_transient_references: references.stable_transient_references(),
         }
     }
 
@@ -71,7 +71,7 @@ impl CallFrameMessage {
             move_nodes: value.owned_nodes().clone(),
             copy_global_references,
             copy_direct_access_references,
-            copy_to_stable_transient_references: vec![],
+            copy_stable_transient_references: vec![],
         }
     }
 
@@ -631,7 +631,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        for node_id in message.copy_to_stable_transient_references {
+        for node_id in message.copy_stable_transient_references {
             if from.depth >= to.depth {
                 panic!("Transient references only supported for downstream calls.");
             }
