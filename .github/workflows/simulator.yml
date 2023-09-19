@@ -18,7 +18,7 @@ jobs:
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
   amd:
     needs: setup_tags
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@chore/sanity-check
     with:
       runs_on: ubuntu-latest
       image_registry: "docker.io"
@@ -31,16 +31,8 @@ jobs:
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
+      sanity_check: "update-assets-docker.sh --reuse-image"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-  update-assets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: update assets
-        run: ./update-assets-docker.sh
 
