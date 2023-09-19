@@ -31,7 +31,7 @@ jobs:
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
-      sanity_check: "./update-assets-docker.sh --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
+      sanity_check: "./update-assets.sh --docker --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
