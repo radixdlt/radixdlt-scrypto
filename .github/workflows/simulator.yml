@@ -6,7 +6,7 @@ on:
       - chore/simulator-image
 
 jobs:
-  setup_tags:
+  tags:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.setup_tags.outputs.tag }}
@@ -16,8 +16,8 @@ jobs:
           fetch-depth: 0
       - id: setup_tags
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-  amd:
-    needs: setup_tags
+  build-amd:
+    needs: tags
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@chore/sanity-check
     with:
       runs_on: ubuntu-latest
@@ -31,7 +31,7 @@ jobs:
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
-      sanity_check: "./update-assets-docker.sh --reuse-image"
+      sanity_check: "./update-assets-docker.sh --reuse-image --image-tag ${{ needs.setup_tags.outputs.tag }}"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
