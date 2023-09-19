@@ -220,7 +220,7 @@ impl CostingModule {
         Ok(())
     }
 
-    pub fn credit_cost_units(
+    pub fn lock_fee(
         &mut self,
         vault_id: NodeId,
         locked_fee: LiquidFungibleResource,

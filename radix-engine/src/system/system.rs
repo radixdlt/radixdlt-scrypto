@@ -2276,11 +2276,10 @@ where
             .current_actor()
             .node_id()
             .expect("Caller should only be fungible vault method");
-        self.api.kernel_get_system().modules.credit_cost_units(
-            vault_id,
-            locked_fee.clone(),
-            contingent,
-        );
+        self.api
+            .kernel_get_system()
+            .modules
+            .lock_fee(vault_id, locked_fee.clone(), contingent);
 
         // Emit Locked Fee event
         {
