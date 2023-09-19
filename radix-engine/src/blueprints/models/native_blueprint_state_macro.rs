@@ -1075,4 +1075,15 @@ mod tests {
             self.1
         }
     }
+
+    #[test]
+    fn validate_declare_key_new_type_macro() {
+        let mut bv = BlueprintVersion::default();
+        let mut idx_key = TestBlueprintMyCoolSortedIndexKeyPayload::new(1, bv);
+
+        assert_eq!(&bv, idx_key.as_ref());
+        assert_eq!(&mut bv, idx_key.as_mut());
+        assert_eq!((1, &bv), idx_key.as_sort_key_and_content());
+        assert_eq!((1, bv), idx_key.into_sort_key_and_content());
+    }
 }
