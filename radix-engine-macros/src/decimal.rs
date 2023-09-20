@@ -15,12 +15,31 @@ macro_rules! get_decimal {
                     Expr::Lit(lit) => match &lit.lit {
                         Lit::Str(lit_str) => $type::try_from(lit_str.value())
                             .map_err(|err| Error::new(lit_str.span(), format!("Parsing failed due to {:?}", err))),
-                        Lit::Int(lit_int) => $type::try_from(lit_int.base10_digits())
-                            .map_err(|err| Error::new(lit_int.span(), format!("Parsing failed due to {:?}", err))),
-                        Lit::Bool(lit_bool) => Ok($type::from(lit_bool.value)),
+                        Lit::Int(lit_int) => {
+                            if lit_int.suffix() != "" {
+                                Err(Error::new(
+                                    lit_int.span(),
+                                    format!("No suffix is allowed. Remove the {}.", lit_int.suffix()),
+                                ))
+                            } else {
+                                $type::try_from(lit_int.base10_digits())
+                                    .map_err(|err| Error::new(lit_int.span(), format!("Parsing failed due to {:?}", err)))
+                            }
+                        }
+                        Lit::Float(lit_float) => {
+                            if lit_float.suffix() != "" {
+                                Err(Error::new(
+                                    lit_float.span(),
+                                    format!("No suffix is allowed. Remove the {}.", lit_float.suffix()),
+                                ))
+                            } else {
+                                $type::try_from(lit_float.base10_digits())
+                                    .map_err(|err| Error::new(lit_float.span(), format!("Parsing failed due to {:?}", err)))
+                            }
+                        }
                         other_lit => Err(Error::new(
                             other_lit.span(),
-                            "Not supported literal. This macro only supports string, integer and bool literal expressions.",
+                            "This macro only supports string, integer and float literals.",
                         )),
                     },
                     Expr::Unary(unary) => match unary.op {
@@ -36,12 +55,12 @@ macro_rules! get_decimal {
                         }
                         other_unary => Err(Error::new(
                             other_unary.span(),
-                            "Not supported unary operator. This macro only supports '-' unary operator.",
+                            "This macro only supports string, integer and float literals.",
                         )),
                     },
                     other_expr => Err(Error::new(
                         other_expr.span(),
-                        "Not supported expression. This macro only supports string, integer and bool literal expressions.",
+                        "This macro only supports string, integer and float literals.",
                     )),
                 }
             }
@@ -49,6 +68,7 @@ macro_rules! get_decimal {
         }
     };
 }
+
 get_decimal!(Decimal);
 get_decimal!(PreciseDecimal);
 
