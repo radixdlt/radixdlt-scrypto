@@ -1099,4 +1099,96 @@ mod tests {
             IndexKeyContentSource::into_content(payload.into_content())
         );
     }
+
+    #[test]
+    fn validate_royalty_field_payload_mutability() {
+        let mut content = VersionedTestBlueprintRoyalty::V1(TestBlueprintRoyaltyV1);
+        let mut payload = TestBlueprintRoyaltyFieldPayload {
+            content: VersionedTestBlueprintRoyalty::V1(TestBlueprintRoyaltyV1),
+        };
+        assert_eq!(&content, payload.as_ref());
+        assert_eq!(&mut content, payload.as_mut());
+        assert_eq!(
+            &SubstateMutability::Immutable,
+            payload.into_locked_substate().mutability()
+        );
+
+        assert_eq!(
+            &SubstateMutability::Immutable,
+            TestBlueprintRoyaltyV1.into_locked_substate().mutability()
+        );
+        assert_eq!(
+            &SubstateMutability::Mutable,
+            TestBlueprintRoyaltyV1.into_mutable_substate().mutability()
+        );
+    }
+
+    #[test]
+    fn validate_key_value_store_entry_payload_mutability() {
+        fn create_payload() -> TestBlueprintMyCoolKeyValueStoreEntryPayload {
+            TestBlueprintMyCoolKeyValueStoreEntryPayload {
+                content: VersionedTestBlueprintMyCoolKeyValueStore::V1(
+                    TestBlueprintMyCoolKeyValueStoreV1,
+                ),
+            }
+        }
+
+        assert_eq!(
+            SubstateMutability::Immutable,
+            create_payload().into_locked_substate().mutability()
+        );
+        assert_eq!(
+            SubstateMutability::Mutable,
+            create_payload().into_mutable_substate().mutability()
+        );
+
+        assert_eq!(
+            SubstateMutability::Immutable,
+            create_payload()
+                .into_content()
+                .into_locked_substate()
+                .mutability()
+        );
+        assert_eq!(
+            SubstateMutability::Mutable,
+            create_payload()
+                .into_content()
+                .into_mutable_substate()
+                .mutability()
+        );
+    }
+
+    #[test]
+    fn validate_index_entry_payload() {
+        let payload = TestBlueprintMyCoolIndexEntryPayload {
+            content: VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1),
+        };
+        assert_eq!(
+            payload.into_substate().value().content,
+            VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1)
+        );
+
+        let content = VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1);
+        assert_eq!(
+            VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1),
+            content.into_substate().value().content
+        );
+    }
+
+    #[test]
+    fn validate_sorted_index_entry_payload() {
+        let payload = TestBlueprintMyCoolSortedIndexEntryPayload {
+            content: VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1),
+        };
+        assert_eq!(
+            payload.into_substate().value().content,
+            VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1)
+        );
+
+        let content = VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1);
+        assert_eq!(
+            VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1),
+            content.into_substate().value().content
+        );
+    }
 }
