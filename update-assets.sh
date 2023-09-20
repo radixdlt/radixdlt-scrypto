@@ -1,38 +1,34 @@
 #!/bin/bash
-set -ex
+set -e
 
 # Default values
 IMAGE_NAME="radixdlt/simulator"
 IMAGE_TAG="latest"
 REUSE_IMAGE=false
+BUILD_TYPE="--docker"
 
-if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 (--docker | --local) [--image-tag <TAG>] [--reuse-image]"
-  exit 1
-fi
-
-BUILD_TYPE="$1"
-shift
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --reuse-image)
+      REUSE_IMAGE=true
+      ;;
+    --image-tag)
+      shift
+      IMAGE_TAG="$1"
+      ;;
+    --local)
+      BUILD_TYPE="--local"
+      ;;
+    *)
+      echo "Invalid argument: $1"
+      exit 1
+      ;;
+  esac
+  shift
+done
 
 if [[ "$BUILD_TYPE" == "--docker" ]]; then
-
-  # Parse command line arguments
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --reuse-image)
-        REUSE_IMAGE=true
-        ;;
-      --image-tag)
-        shift
-        IMAGE_TAG="$1"
-        ;;
-      *)
-        echo "Invalid argument: $1"
-        exit 1
-        ;;
-    esac
-    shift
-  done
 
   IMAGE_EXISTS=$(docker images -q "$IMAGE_NAME" 2>/dev/null)
 
@@ -48,6 +44,9 @@ if [[ "$BUILD_TYPE" == "--docker" ]]; then
   do
     echo "Building $crate_name..."
     docker run --entrypoint=scrypto -v $PWD:/src $IMAGE_NAME:$IMAGE_TAG build --path assets/blueprints/$crate_name
+    cp \
+      assets/blueprints/target/wasm32-unknown-unknown/release/$crate_name.{wasm,rpd} \
+      assets/
     echo "Done $crate_name!"
   done
 
