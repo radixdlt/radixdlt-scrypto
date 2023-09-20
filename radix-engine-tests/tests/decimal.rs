@@ -18,11 +18,11 @@ fn test_dec_macro() {
     const X2: Decimal = dec!(-111);
     assert_eq!(X2, Decimal::try_from(-111).unwrap());
 
-    const X3: Decimal = dec!(129u128);
-    assert_eq!(X3, Decimal::try_from(129u128).unwrap());
+    const X3: Decimal = dec!(129);
+    assert_eq!(X3, Decimal::try_from(129).unwrap());
 
-    const X4: Decimal = dec!(-1_000_000_i64);
-    assert_eq!(X4, Decimal::try_from(-1_000_000_i64).unwrap());
+    const X4: Decimal = dec!(-1_000_000);
+    assert_eq!(X4, Decimal::try_from(-1_000_000).unwrap());
 
     static X5: Decimal = dec!(1);
     assert_eq!(X5, Decimal::ONE);
@@ -38,6 +38,21 @@ fn test_dec_macro() {
 
     static X9: Decimal = dec!("0.01");
     assert_eq!(X9, Decimal::ONE_HUNDREDTH);
+
+    const X10: Decimal = dec!(1.1);
+    assert_eq!(X10, Decimal::try_from("1.1").unwrap());
+
+    const X11: Decimal = dec!(1.12313214124);
+    assert_eq!(X11, Decimal::try_from("1.12313214124").unwrap());
+
+    const X12: Decimal = dec!("3138550867693340381917894711603833208051.177722232017256447");
+    assert_eq!(X12, Decimal::MAX);
+
+    const X13: Decimal = dec!("-3138550867693340381917894711603833208051.177722232017256448");
+    assert_eq!(X13, Decimal::MIN);
+
+    const X14: Decimal = dec!("0.000000000000000048");
+    assert_eq!(X14, Decimal(I192::from(48)));
 }
 
 #[test]
@@ -59,10 +74,10 @@ fn test_pdec_macro() {
     const X2: PreciseDecimal = pdec!(-111);
     assert_eq!(X2, PreciseDecimal::try_from(-111).unwrap());
 
-    const X3: PreciseDecimal = pdec!(129u128);
+    const X3: PreciseDecimal = pdec!(129);
     assert_eq!(X3, PreciseDecimal::try_from(129u128).unwrap());
 
-    const X4: PreciseDecimal = pdec!(-1_000_000_i64);
+    const X4: PreciseDecimal = pdec!(-1_000_000);
     assert_eq!(X4, PreciseDecimal::try_from(-1_000_000_i64).unwrap());
 
     static X5: PreciseDecimal = pdec!(1);
@@ -79,4 +94,18 @@ fn test_pdec_macro() {
 
     static X9: PreciseDecimal = pdec!("0.01");
     assert_eq!(X9, PreciseDecimal::ONE_HUNDREDTH);
+
+    const X10: PreciseDecimal = pdec!(21.1);
+    assert_eq!(X10, PreciseDecimal::try_from("21.1").unwrap());
+
+    const X11: PreciseDecimal = pdec!(0.12313214124);
+    assert_eq!(X11, PreciseDecimal::try_from("0.12313214124").unwrap());
+
+    const X12: PreciseDecimal =
+        pdec!("57896044618658097711785492504343953926634.992332820282019728792003956564819967");
+    assert_eq!(X12, PreciseDecimal::MAX);
+
+    const X13: PreciseDecimal =
+        pdec!("-57896044618658097711785492504343953926634.992332820282019728792003956564819968");
+    assert_eq!(X13, PreciseDecimal::MIN);
 }

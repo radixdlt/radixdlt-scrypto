@@ -1,11 +1,10 @@
 use paste::paste;
 use proc_macro::TokenStream;
 use quote::quote;
-use radix_engine_common::prelude::CheckedNeg;
+use radix_engine_common::prelude::*;
 use syn::{parse, spanned::Spanned, Error, Expr, Lit, Result, UnOp};
 
 extern crate radix_engine_common;
-use radix_engine_common::math::{Decimal, PreciseDecimal};
 
 macro_rules! get_decimal {
     ($type:ident) => {
@@ -14,13 +13,32 @@ macro_rules! get_decimal {
                 match expr {
                     Expr::Lit(lit) => match &lit.lit {
                         Lit::Str(lit_str) => $type::try_from(lit_str.value())
-                            .map_err(|err| Error::new(lit_str.span(), format!("Parsing failed due to {:?}", err))),
-                        Lit::Int(lit_int) => $type::try_from(lit_int.base10_digits())
-                            .map_err(|err| Error::new(lit_int.span(), format!("Parsing failed due to {:?}", err))),
-                        Lit::Bool(lit_bool) => Ok($type::from(lit_bool.value)),
+                            .map_err(|err| Error::new(lit_str.span(), [< $type:snake:lower _error_reason >](err).to_string())),
+                        Lit::Int(lit_int) => {
+                            if lit_int.suffix() != "" {
+                                Err(Error::new(
+                                    lit_int.span(),
+                                    format!("No suffix is allowed. Remove the {}.", lit_int.suffix()),
+                                ))
+                            } else {
+                                $type::try_from(lit_int.base10_digits())
+                                    .map_err(|err| Error::new(lit_int.span(), [< $type:snake:lower _error_reason >](err).to_string()))
+                            }
+                        }
+                        Lit::Float(lit_float) => {
+                            if lit_float.suffix() != "" {
+                                Err(Error::new(
+                                    lit_float.span(),
+                                    format!("No suffix is allowed. Remove the {}.", lit_float.suffix()),
+                                ))
+                            } else {
+                                $type::try_from(lit_float.base10_digits())
+                                    .map_err(|err| Error::new(lit_float.span(), [< $type:snake:lower _error_reason >](err).to_string()))
+                            }
+                        }
                         other_lit => Err(Error::new(
                             other_lit.span(),
-                            "Not supported literal. This macro only supports string, integer and bool literal expressions.",
+                            "This macro only supports string, integer and float literals.",
                         )),
                     },
                     Expr::Unary(unary) => match unary.op {
@@ -28,7 +46,7 @@ macro_rules! get_decimal {
                             let res = [< get_ $type:snake:lower _from_expr >](unary.expr.as_ref());
                             match res {
                                 Ok(val) => {
-                                    let val = val.checked_neg().ok_or(Error::new(unary_neg.span, "Parsing failed due to Overflow"))?;
+                                    let val = val.checked_neg().ok_or(Error::new(unary_neg.span, "Parsing failed due to overflow."))?;
                                     Ok(val)
                                 },
                                 Err(err) => Err(Error::new(unary_neg.span, err)),
@@ -36,12 +54,12 @@ macro_rules! get_decimal {
                         }
                         other_unary => Err(Error::new(
                             other_unary.span(),
-                            "Not supported unary operator. This macro only supports '-' unary operator.",
+                            "This macro only supports string, integer and float literals.",
                         )),
                     },
                     other_expr => Err(Error::new(
                         other_expr.span(),
-                        "Not supported expression. This macro only supports string, integer and bool literal expressions.",
+                        "This macro only supports string, integer and float literals.",
                     )),
                 }
             }
@@ -49,6 +67,53 @@ macro_rules! get_decimal {
         }
     };
 }
+
+fn decimal_error_reason(error: ParseDecimalError) -> &'static str {
+    match error {
+        ParseDecimalError::InvalidDigit => "There is an invalid character.",
+        ParseDecimalError::Overflow => "The number is too large to fit in a decimal.",
+        ParseDecimalError::EmptyIntegralPart => {
+            "If there is a decimal point, the number must include at least one digit before it. Use a 0 if necessary."
+        },
+        ParseDecimalError::EmptyFractionalPart => {
+            "If there is a decimal point, the number must include at least one digit after it."
+        }
+        ParseDecimalError::MoreThanEighteenDecimalPlaces => {
+            "A decimal cannot have more than eighteen decimal places."
+        }
+        ParseDecimalError::MoreThanOneDecimalPoint => {
+            "A decimal cannot have more than one decimal point."
+        }
+        ParseDecimalError::InvalidLength(_) => {
+            unreachable!("Not a possible error from the from_str function")
+        }
+    }
+}
+
+fn precise_decimal_error_reason(error: ParsePreciseDecimalError) -> &'static str {
+    match error {
+        ParsePreciseDecimalError::InvalidDigit => "There is an invalid character",
+        ParsePreciseDecimalError::Overflow => {
+            "The number being too large to fit in a precise decimal"
+        }
+        ParsePreciseDecimalError::EmptyIntegralPart => {
+            "If there is a decimal point, the number must include at least one digit before it. Use a 0 if necessary."
+        }
+        ParsePreciseDecimalError::EmptyFractionalPart => {
+            "If there is a decimal point, the number must include at least one digit after it."
+        }
+        ParsePreciseDecimalError::MoreThanThirtySixDecimalPlaces => {
+            "A precise decimal cannot have more than thirty-six decimal places."
+        }
+        ParsePreciseDecimalError::MoreThanOneDecimalPoint => {
+            "A precise decimal cannot have more than one decimal point."
+        }
+        ParsePreciseDecimalError::InvalidLength(_) => {
+            unreachable!("Not a possible error from the from_str function")
+        }
+    }
+}
+
 get_decimal!(Decimal);
 get_decimal!(PreciseDecimal);
 
