@@ -114,3 +114,7 @@ macro_rules! roles2 {
         roles
     })
 }
+
+extern crate radix_engine_macros;
+pub use radix_engine_macros::dec;
+pub use radix_engine_macros::pdec;

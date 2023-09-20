@@ -920,10 +920,26 @@ try_from_integer!(U192, U256, U320, U384, U448, U512);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dec;
     use crate::math::precise_decimal::RoundingMode;
-    use crate::pdec;
     use paste::paste;
+
+    macro_rules! test_dec {
+        // NOTE: Decimal arithmetic operation safe unwrap.
+        // In general, it is assumed that reasonable literals are provided.
+        // If not then something is definitely wrong and panic is fine.
+        ($x:literal) => {
+            $crate::math::Decimal::try_from($x).unwrap()
+        };
+    }
+
+    macro_rules! test_pdec {
+        // NOTE: Decimal arithmetic operation safe unwrap.
+        // In general, it is assumed that reasonable literals are provided.
+        // If not then something is definitely wrong and panic is fine.
+        ($x:literal) => {
+            $crate::math::PreciseDecimal::try_from($x).unwrap()
+        };
+    }
 
     #[test]
     fn test_format_precise_decimal() {
@@ -996,12 +1012,12 @@ mod tests {
             PreciseDecimal::MIN,
         );
 
-        assert_eq!(pdec!("0"), PreciseDecimal::ZERO);
-        assert_eq!(pdec!("1"), PreciseDecimal::ONE);
-        assert_eq!(pdec!("0.1"), PreciseDecimal::ONE_TENTH);
-        assert_eq!(pdec!("10"), PreciseDecimal::TEN);
-        assert_eq!(pdec!("100"), PreciseDecimal::ONE_HUNDRED);
-        assert_eq!(pdec!("0.01"), PreciseDecimal::ONE_HUNDREDTH);
+        assert_eq!(test_pdec!("0"), PreciseDecimal::ZERO);
+        assert_eq!(test_pdec!("1"), PreciseDecimal::ONE);
+        assert_eq!(test_pdec!("0.1"), PreciseDecimal::ONE_TENTH);
+        assert_eq!(test_pdec!("10"), PreciseDecimal::TEN);
+        assert_eq!(test_pdec!("100"), PreciseDecimal::ONE_HUNDRED);
+        assert_eq!(test_pdec!("0.01"), PreciseDecimal::ONE_HUNDREDTH);
 
         assert_eq!("0", PreciseDecimal::ZERO.to_string());
         assert_eq!("1", PreciseDecimal::ONE.to_string());
@@ -1049,24 +1065,26 @@ mod tests {
         let b = PreciseDecimal::from_str("1000000000").unwrap();
         assert_eq!(a.checked_mul(b).unwrap().to_string(), "1000000000000000000");
 
-        let a = PreciseDecimal::MAX.checked_div(pdec!(2)).unwrap();
+        let a = PreciseDecimal::MAX.checked_div(test_pdec!(2)).unwrap();
         let b = PreciseDecimal::from(2);
         assert_eq!(
             a.checked_mul(b).unwrap(),
-            pdec!("57896044618658097711785492504343953926634.992332820282019728792003956564819966")
+            test_pdec!(
+                "57896044618658097711785492504343953926634.992332820282019728792003956564819966"
+            )
         );
     }
 
     #[test]
     fn test_mul_overflow_by_small_precise_decimal() {
         assert!(PreciseDecimal::MAX
-            .checked_mul(pdec!("1.000000000000000000000000000000000001"))
+            .checked_mul(test_pdec!("1.000000000000000000000000000000000001"))
             .is_none());
     }
 
     #[test]
     fn test_mul_overflow_by_a_lot_precise_decimal() {
-        assert!(PreciseDecimal::MAX.checked_mul(pdec!("1.1")).is_none());
+        assert!(PreciseDecimal::MAX.checked_mul(test_pdec!("1.1")).is_none());
     }
 
     #[test]
@@ -1074,7 +1092,7 @@ mod tests {
         assert!(PreciseDecimal::MAX
             .checked_neg()
             .unwrap()
-            .checked_mul(pdec!("-1.000000000000000000000000000000000001"))
+            .checked_mul(test_pdec!("-1.000000000000000000000000000000000001"))
             .is_none());
     }
 
@@ -1128,7 +1146,9 @@ mod tests {
         let b = PreciseDecimal::from(2);
         assert_eq!(
             a.checked_div(b).unwrap(),
-            pdec!("28948022309329048855892746252171976963317.496166410141009864396001978282409983")
+            test_pdec!(
+                "28948022309329048855892746252171976963317.496166410141009864396001978282409983"
+            )
         );
     }
 
@@ -1141,49 +1161,49 @@ mod tests {
 
     #[test]
     fn test_0_pow_0_precise_decimal() {
-        let a = pdec!("0");
+        let a = test_pdec!("0");
         assert_eq!(a.checked_powi(0).unwrap().to_string(), "1");
     }
 
     #[test]
     fn test_0_powi_1_precise_decimal() {
-        let a = pdec!("0");
+        let a = test_pdec!("0");
         assert_eq!(a.checked_powi(1).unwrap().to_string(), "0");
     }
 
     #[test]
     fn test_0_powi_10_precise_decimal() {
-        let a = pdec!("0");
+        let a = test_pdec!("0");
         assert_eq!(a.checked_powi(10).unwrap().to_string(), "0");
     }
 
     #[test]
     fn test_1_powi_0_precise_decimal() {
-        let a = pdec!(1);
+        let a = test_pdec!(1);
         assert_eq!(a.checked_powi(0).unwrap().to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_1_precise_decimal() {
-        let a = pdec!(1);
+        let a = test_pdec!(1);
         assert_eq!(a.checked_powi(1).unwrap().to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_10_precise_decimal() {
-        let a = pdec!(1);
+        let a = test_pdec!(1);
         assert_eq!(a.checked_powi(10).unwrap().to_string(), "1");
     }
 
     #[test]
     fn test_2_powi_0_precise_decimal() {
-        let a = pdec!("2");
+        let a = test_pdec!("2");
         assert_eq!(a.checked_powi(0).unwrap().to_string(), "1");
     }
 
     #[test]
     fn test_2_powi_3724_precise_decimal() {
-        let a = pdec!("1.000234891009084238");
+        let a = test_pdec!("1.000234891009084238");
         assert_eq!(
             a.checked_powi(3724).unwrap().to_string(),
             "2.3979912322546748642222795591580985"
@@ -1192,66 +1212,66 @@ mod tests {
 
     #[test]
     fn test_2_powi_2_precise_decimal() {
-        let a = pdec!("2");
+        let a = test_pdec!("2");
         assert_eq!(a.checked_powi(2).unwrap().to_string(), "4");
     }
 
     #[test]
     fn test_2_powi_3_precise_decimal() {
-        let a = pdec!("2");
+        let a = test_pdec!("2");
         assert_eq!(a.checked_powi(3).unwrap().to_string(), "8");
     }
 
     #[test]
     fn test_10_powi_3_precise_decimal() {
-        let a = pdec!("10");
+        let a = test_pdec!("10");
         assert_eq!(a.checked_powi(3).unwrap().to_string(), "1000");
     }
 
     #[test]
     fn test_5_powi_2_precise_decimal() {
-        let a = pdec!("5");
+        let a = test_pdec!("5");
         assert_eq!(a.checked_powi(2).unwrap().to_string(), "25");
     }
 
     #[test]
     fn test_5_powi_minus2_precise_decimal() {
-        let a = pdec!("5");
+        let a = test_pdec!("5");
         assert_eq!(a.checked_powi(-2).unwrap().to_string(), "0.04");
     }
 
     #[test]
     fn test_10_powi_minus3_precise_decimal() {
-        let a = pdec!("10");
+        let a = test_pdec!("10");
         assert_eq!(a.checked_powi(-3).unwrap().to_string(), "0.001");
     }
 
     #[test]
     fn test_minus10_powi_minus3_precise_decimal() {
-        let a = pdec!("-10");
+        let a = test_pdec!("-10");
         assert_eq!(a.checked_powi(-3).unwrap().to_string(), "-0.001");
     }
 
     #[test]
     fn test_minus10_powi_minus2_precise_decimal() {
-        let a = pdec!("-10");
+        let a = test_pdec!("-10");
         assert_eq!(a.checked_powi(-2).unwrap().to_string(), "0.01");
     }
 
     #[test]
     fn test_minus05_powi_minus2_precise_decimal() {
-        let a = pdec!("-0.5");
+        let a = test_pdec!("-0.5");
         assert_eq!(a.checked_powi(-2).unwrap().to_string(), "4");
     }
     #[test]
     fn test_minus05_powi_minus3_precise_decimal() {
-        let a = pdec!("-0.5");
+        let a = test_pdec!("-0.5");
         assert_eq!(a.checked_powi(-3).unwrap().to_string(), "-8");
     }
 
     #[test]
     fn test_10_powi_15_precise_decimal() {
-        let a = pdec!(10i128);
+        let a = test_pdec!(10i128);
         assert_eq!(a.checked_powi(15).unwrap().to_string(), "1000000000000000");
     }
 
@@ -1270,91 +1290,78 @@ mod tests {
     #[test]
     fn test_dec_string_decimal_precise_decimal() {
         assert_eq!(
-            pdec!("1.123456789012345678").to_string(),
+            test_pdec!("1.123456789012345678").to_string(),
             "1.123456789012345678"
         );
-        assert_eq!(pdec!("-5.6").to_string(), "-5.6");
+        assert_eq!(test_pdec!("-5.6").to_string(), "-5.6");
     }
 
     #[test]
     fn test_dec_string_precise_decimal() {
-        assert_eq!(pdec!(1).to_string(), "1");
-        assert_eq!(pdec!("0").to_string(), "0");
+        assert_eq!(test_pdec!(1).to_string(), "1");
+        assert_eq!(test_pdec!("0").to_string(), "0");
     }
 
     #[test]
     fn test_dec_int_precise_decimal() {
-        assert_eq!(pdec!(1).to_string(), "1");
-        assert_eq!(pdec!(5).to_string(), "5");
+        assert_eq!(test_pdec!(1).to_string(), "1");
+        assert_eq!(test_pdec!(5).to_string(), "5");
     }
 
     #[test]
     fn test_dec_bool_precise_decimal() {
-        assert_eq!((pdec!(false)).to_string(), "0");
-    }
-
-    #[test]
-    fn test_dec_rational_precise_decimal() {
-        assert_eq!((pdec!(11235, 0)).to_string(), "11235");
-        assert_eq!((pdec!(11235, -2)).to_string(), "112.35");
-        assert_eq!((pdec!(11235, 2)).to_string(), "1123500");
-
-        //        assert_eq!(
-        //            pdec!("1120000000000000000000000000000000000000000000000000000000000000001", -64).to_string(),
-        //            "112.0000000000000000000000000000000000000000000000000000000000000001"
-        //        );
-    }
-
-    #[test]
-    #[should_panic(expected = "Shift overflow")]
-    fn test_shift_overflow_precise_decimal() {
-        // u32::MAX + 1
-        pdec!(1, 4_294_967_296i128); // use explicit type to defer error to runtime
+        assert_eq!((test_pdec!(false)).to_string(), "0");
     }
 
     #[test]
     fn test_floor_precise_decimal() {
         assert_eq!(
             PreciseDecimal::MAX.checked_floor().unwrap(),
-            pdec!("57896044618658097711785492504343953926634")
+            test_pdec!("57896044618658097711785492504343953926634")
         );
-        assert_eq!(pdec!("1.2").checked_floor().unwrap(), pdec!("1"));
-        assert_eq!(pdec!("1.0").checked_floor().unwrap(), pdec!("1"));
-        assert_eq!(pdec!("0.9").checked_floor().unwrap(), pdec!("0"));
-        assert_eq!(pdec!("0").checked_floor().unwrap(), pdec!("0"));
-        assert_eq!(pdec!("-0.1").checked_floor().unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-1").checked_floor().unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-5.2").checked_floor().unwrap(), pdec!("-6"));
+        assert_eq!(test_pdec!("1.2").checked_floor().unwrap(), test_pdec!("1"));
+        assert_eq!(test_pdec!("1.0").checked_floor().unwrap(), test_pdec!("1"));
+        assert_eq!(test_pdec!("0.9").checked_floor().unwrap(), test_pdec!("0"));
+        assert_eq!(test_pdec!("0").checked_floor().unwrap(), test_pdec!("0"));
+        assert_eq!(
+            test_pdec!("-0.1").checked_floor().unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(test_pdec!("-1").checked_floor().unwrap(), test_pdec!("-1"));
+        assert_eq!(
+            test_pdec!("-5.2").checked_floor().unwrap(),
+            test_pdec!("-6")
+        );
 
         assert_eq!(
-            pdec!(
+            test_pdec!(
                 "-57896044618658097711785492504343953926633.992332820282019728792003956564819968"
             ) // PreciseDecimal::MIN+1
             .checked_floor()
             .unwrap(),
-            pdec!("-57896044618658097711785492504343953926634")
+            test_pdec!("-57896044618658097711785492504343953926634")
         );
         assert_eq!(
-            pdec!(
+            test_pdec!(
                 "-57896044618658097711785492504343953926633.000000000000000000000000000000000001"
             )
             .checked_floor()
             .unwrap(),
-            pdec!("-57896044618658097711785492504343953926634")
+            test_pdec!("-57896044618658097711785492504343953926634")
         );
         assert_eq!(
-            pdec!(
+            test_pdec!(
                 "-57896044618658097711785492504343953926634.000000000000000000000000000000000000"
             )
             .checked_floor()
             .unwrap(),
-            pdec!("-57896044618658097711785492504343953926634")
+            test_pdec!("-57896044618658097711785492504343953926634")
         );
 
         // below shall return None due to overflow
         assert!(PreciseDecimal::MIN.checked_floor().is_none());
 
-        assert!(pdec!(
+        assert!(test_pdec!(
             "-57896044618658097711785492504343953926634.000000000000000000000000000000000001"
         )
         .checked_floor()
@@ -1363,9 +1370,9 @@ mod tests {
 
     #[test]
     fn test_abs_precise_decimal() {
-        assert_eq!(pdec!(-2).checked_abs().unwrap(), pdec!(2));
-        assert_eq!(pdec!(2).checked_abs().unwrap(), pdec!(2));
-        assert_eq!(pdec!(0).checked_abs().unwrap(), pdec!(0));
+        assert_eq!(test_pdec!(-2).checked_abs().unwrap(), test_pdec!(2));
+        assert_eq!(test_pdec!(2).checked_abs().unwrap(), test_pdec!(2));
+        assert_eq!(test_pdec!(0).checked_abs().unwrap(), test_pdec!(0));
         assert_eq!(
             PreciseDecimal::MAX.checked_abs().unwrap(),
             PreciseDecimal::MAX
@@ -1377,33 +1384,55 @@ mod tests {
 
     #[test]
     fn test_ceiling_precise_decimal() {
-        assert_eq!(pdec!("1.2").checked_ceiling().unwrap(), pdec!("2"));
-        assert_eq!(pdec!("1.0").checked_ceiling().unwrap(), pdec!("1"));
-        assert_eq!(pdec!("0.9").checked_ceiling().unwrap(), pdec!("1"));
-        assert_eq!(pdec!("0").checked_ceiling().unwrap(), pdec!("0"));
-        assert_eq!(pdec!("-0.1").checked_ceiling().unwrap(), pdec!("0"));
-        assert_eq!(pdec!("-1").checked_ceiling().unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-5.2").checked_ceiling().unwrap(), pdec!("-5"));
+        assert_eq!(
+            test_pdec!("1.2").checked_ceiling().unwrap(),
+            test_pdec!("2")
+        );
+        assert_eq!(
+            test_pdec!("1.0").checked_ceiling().unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("0.9").checked_ceiling().unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(test_pdec!("0").checked_ceiling().unwrap(), test_pdec!("0"));
+        assert_eq!(
+            test_pdec!("-0.1").checked_ceiling().unwrap(),
+            test_pdec!("0")
+        );
+        assert_eq!(
+            test_pdec!("-1").checked_ceiling().unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-5.2").checked_ceiling().unwrap(),
+            test_pdec!("-5")
+        );
         assert_eq!(
             PreciseDecimal::MIN.checked_ceiling().unwrap(),
-            pdec!("-57896044618658097711785492504343953926634")
+            test_pdec!("-57896044618658097711785492504343953926634")
         );
         assert_eq!(
-            pdec!("57896044618658097711785492504343953926633.992332820282019728792003956564819967") // PreciseDecimal::MAX-1
-                .checked_ceiling()
-                .unwrap(),
-            pdec!("57896044618658097711785492504343953926634")
+            test_pdec!(
+                "57896044618658097711785492504343953926633.992332820282019728792003956564819967"
+            ) // PreciseDecimal::MAX-1
+            .checked_ceiling()
+            .unwrap(),
+            test_pdec!("57896044618658097711785492504343953926634")
         );
         assert_eq!(
-            pdec!("57896044618658097711785492504343953926633.000000000000000000000000000000000000")
-                .checked_ceiling()
-                .unwrap(),
-            pdec!("57896044618658097711785492504343953926633")
+            test_pdec!(
+                "57896044618658097711785492504343953926633.000000000000000000000000000000000000"
+            )
+            .checked_ceiling()
+            .unwrap(),
+            test_pdec!("57896044618658097711785492504343953926633")
         );
 
         // below shall return None due to overflow
         assert!(PreciseDecimal::MAX.checked_ceiling().is_none());
-        assert!(pdec!(
+        assert!(test_pdec!(
             "57896044618658097711785492504343953926634.000000000000000000000000000000000001"
         )
         .checked_ceiling()
@@ -1413,41 +1442,83 @@ mod tests {
     #[test]
     fn test_rounding_to_zero_precise_decimal() {
         let mode = RoundingMode::ToZero;
-        assert_eq!(pdec!("1.2").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("1.0").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("0.9").checked_round(0, mode).unwrap(), pdec!("0"));
-        assert_eq!(pdec!("0").checked_round(0, mode).unwrap(), pdec!("0"));
-        assert_eq!(pdec!("-0.1").checked_round(0, mode).unwrap(), pdec!("0"));
-        assert_eq!(pdec!("-1").checked_round(0, mode).unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-5.2").checked_round(0, mode).unwrap(), pdec!("-5"));
+        assert_eq!(
+            test_pdec!("1.2").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("1.0").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("0.9").checked_round(0, mode).unwrap(),
+            test_pdec!("0")
+        );
+        assert_eq!(
+            test_pdec!("0").checked_round(0, mode).unwrap(),
+            test_pdec!("0")
+        );
+        assert_eq!(
+            test_pdec!("-0.1").checked_round(0, mode).unwrap(),
+            test_pdec!("0")
+        );
+        assert_eq!(
+            test_pdec!("-1").checked_round(0, mode).unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-5.2").checked_round(0, mode).unwrap(),
+            test_pdec!("-5")
+        );
         assert_eq!(
             PreciseDecimal::MAX.checked_round(0, mode).unwrap(),
-            pdec!("57896044618658097711785492504343953926634")
+            test_pdec!("57896044618658097711785492504343953926634")
         );
         assert_eq!(
             PreciseDecimal::MIN.checked_round(0, mode).unwrap(),
-            pdec!("-57896044618658097711785492504343953926634")
+            test_pdec!("-57896044618658097711785492504343953926634")
         );
     }
 
     #[test]
     fn test_rounding_away_from_zero_precise_decimal() {
         let mode = RoundingMode::AwayFromZero;
-        assert_eq!(pdec!("1.2").checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(pdec!("1.0").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("0.9").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("0").checked_round(0, mode).unwrap(), pdec!("0"));
-        assert_eq!(pdec!("-0.1").checked_round(0, mode).unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-1").checked_round(0, mode).unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-5.2").checked_round(0, mode).unwrap(), pdec!("-6"));
+        assert_eq!(
+            test_pdec!("1.2").checked_round(0, mode).unwrap(),
+            test_pdec!("2")
+        );
+        assert_eq!(
+            test_pdec!("1.0").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("0.9").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("0").checked_round(0, mode).unwrap(),
+            test_pdec!("0")
+        );
+        assert_eq!(
+            test_pdec!("-0.1").checked_round(0, mode).unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-1").checked_round(0, mode).unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-5.2").checked_round(0, mode).unwrap(),
+            test_pdec!("-6")
+        );
 
         // below shall return None due to overflow
         assert!(PreciseDecimal::MIN.checked_round(0, mode).is_none());
-        assert!(pdec!("-57896044618658097711785492504343953926634.1")
+        assert!(test_pdec!("-57896044618658097711785492504343953926634.1")
             .checked_round(0, mode)
             .is_none());
         assert!(PreciseDecimal::MAX.checked_round(0, mode).is_none());
-        assert!(pdec!("57896044618658097711785492504343953926634.1")
+        assert!(test_pdec!("57896044618658097711785492504343953926634.1")
             .checked_round(0, mode)
             .is_none());
     }
@@ -1456,36 +1527,66 @@ mod tests {
     fn test_rounding_midpoint_toward_zero_precise_decimal() {
         let mode = RoundingMode::ToNearestMidpointTowardZero;
         //3.5 -> 3`, `-3.5 -> -3
-        assert_eq!(pdec!("5.5").checked_round(0, mode).unwrap(), pdec!("5"));
-        assert_eq!(pdec!("2.5").checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(pdec!("1.6").checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(pdec!("1.1").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("1.0").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("-1.0").checked_round(0, mode).unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-1.1").checked_round(0, mode).unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-1.6").checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(pdec!("-2.5").checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(pdec!("-5.5").checked_round(0, mode).unwrap(), pdec!("-5"));
-
         assert_eq!(
-            pdec!("-57896044618658097711785492504343953926634.5")
-                .checked_round(0, mode)
-                .unwrap(),
-            pdec!("-57896044618658097711785492504343953926634")
+            test_pdec!("5.5").checked_round(0, mode).unwrap(),
+            test_pdec!("5")
         );
         assert_eq!(
-            pdec!("57896044618658097711785492504343953926634.5")
+            test_pdec!("2.5").checked_round(0, mode).unwrap(),
+            test_pdec!("2")
+        );
+        assert_eq!(
+            test_pdec!("1.6").checked_round(0, mode).unwrap(),
+            test_pdec!("2")
+        );
+        assert_eq!(
+            test_pdec!("1.1").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("1.0").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("-1.0").checked_round(0, mode).unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-1.1").checked_round(0, mode).unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-1.6").checked_round(0, mode).unwrap(),
+            test_pdec!("-2")
+        );
+        assert_eq!(
+            test_pdec!("-2.5").checked_round(0, mode).unwrap(),
+            test_pdec!("-2")
+        );
+        assert_eq!(
+            test_pdec!("-5.5").checked_round(0, mode).unwrap(),
+            test_pdec!("-5")
+        );
+
+        assert_eq!(
+            test_pdec!("-57896044618658097711785492504343953926634.5")
                 .checked_round(0, mode)
                 .unwrap(),
-            pdec!("57896044618658097711785492504343953926634")
+            test_pdec!("-57896044618658097711785492504343953926634")
+        );
+        assert_eq!(
+            test_pdec!("57896044618658097711785492504343953926634.5")
+                .checked_round(0, mode)
+                .unwrap(),
+            test_pdec!("57896044618658097711785492504343953926634")
         );
 
         assert!(PreciseDecimal::MIN.checked_round(0, mode).is_none());
-        assert!(pdec!("-57896044618658097711785492504343953926634.6")
+        assert!(test_pdec!("-57896044618658097711785492504343953926634.6")
             .checked_round(0, mode)
             .is_none());
         assert!(PreciseDecimal::MAX.checked_round(0, mode).is_none());
-        assert!(pdec!("57896044618658097711785492504343953926634.6")
+        assert!(test_pdec!("57896044618658097711785492504343953926634.6")
             .checked_round(0, mode)
             .is_none());
     }
@@ -1493,36 +1594,66 @@ mod tests {
     #[test]
     fn test_rounding_midpoint_away_from_zero_precise_decimal() {
         let mode = RoundingMode::ToNearestMidpointAwayFromZero;
-        assert_eq!(pdec!("5.5").checked_round(0, mode).unwrap(), pdec!("6"));
-        assert_eq!(pdec!("2.5").checked_round(0, mode).unwrap(), pdec!("3"));
-        assert_eq!(pdec!("1.6").checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(pdec!("1.1").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("1.0").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("-1.0").checked_round(0, mode).unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-1.1").checked_round(0, mode).unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-1.6").checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(pdec!("-2.5").checked_round(0, mode).unwrap(), pdec!("-3"));
-        assert_eq!(pdec!("-5.5").checked_round(0, mode).unwrap(), pdec!("-6"));
-
         assert_eq!(
-            pdec!("-57896044618658097711785492504343953926634.4")
-                .checked_round(0, mode)
-                .unwrap(),
-            pdec!("-57896044618658097711785492504343953926634")
+            test_pdec!("5.5").checked_round(0, mode).unwrap(),
+            test_pdec!("6")
         );
         assert_eq!(
-            pdec!("57896044618658097711785492504343953926634.4")
+            test_pdec!("2.5").checked_round(0, mode).unwrap(),
+            test_pdec!("3")
+        );
+        assert_eq!(
+            test_pdec!("1.6").checked_round(0, mode).unwrap(),
+            test_pdec!("2")
+        );
+        assert_eq!(
+            test_pdec!("1.1").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("1.0").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("-1.0").checked_round(0, mode).unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-1.1").checked_round(0, mode).unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-1.6").checked_round(0, mode).unwrap(),
+            test_pdec!("-2")
+        );
+        assert_eq!(
+            test_pdec!("-2.5").checked_round(0, mode).unwrap(),
+            test_pdec!("-3")
+        );
+        assert_eq!(
+            test_pdec!("-5.5").checked_round(0, mode).unwrap(),
+            test_pdec!("-6")
+        );
+
+        assert_eq!(
+            test_pdec!("-57896044618658097711785492504343953926634.4")
                 .checked_round(0, mode)
                 .unwrap(),
-            pdec!("57896044618658097711785492504343953926634")
+            test_pdec!("-57896044618658097711785492504343953926634")
+        );
+        assert_eq!(
+            test_pdec!("57896044618658097711785492504343953926634.4")
+                .checked_round(0, mode)
+                .unwrap(),
+            test_pdec!("57896044618658097711785492504343953926634")
         );
 
         assert!(PreciseDecimal::MIN.checked_round(0, mode).is_none());
-        assert!(pdec!("-57896044618658097711785492504343953926634.5")
+        assert!(test_pdec!("-57896044618658097711785492504343953926634.5")
             .checked_round(0, mode)
             .is_none());
         assert!(PreciseDecimal::MAX.checked_round(0, mode).is_none());
-        assert!(pdec!("57896044618658097711785492504343953926634.5")
+        assert!(test_pdec!("57896044618658097711785492504343953926634.5")
             .checked_round(0, mode)
             .is_none());
     }
@@ -1530,135 +1661,167 @@ mod tests {
     #[test]
     fn test_rounding_midpoint_nearest_even_precise_decimal() {
         let mode = RoundingMode::ToNearestMidpointToEven;
-        assert_eq!(pdec!("5.5").checked_round(0, mode).unwrap(), pdec!("6"));
-        assert_eq!(pdec!("2.5").checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(pdec!("1.6").checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(pdec!("1.1").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("1.0").checked_round(0, mode).unwrap(), pdec!("1"));
-        assert_eq!(pdec!("-1.0").checked_round(0, mode).unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-1.1").checked_round(0, mode).unwrap(), pdec!("-1"));
-        assert_eq!(pdec!("-1.6").checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(pdec!("-2.5").checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(pdec!("-5.5").checked_round(0, mode).unwrap(), pdec!("-6"));
+        assert_eq!(
+            test_pdec!("5.5").checked_round(0, mode).unwrap(),
+            test_pdec!("6")
+        );
+        assert_eq!(
+            test_pdec!("2.5").checked_round(0, mode).unwrap(),
+            test_pdec!("2")
+        );
+        assert_eq!(
+            test_pdec!("1.6").checked_round(0, mode).unwrap(),
+            test_pdec!("2")
+        );
+        assert_eq!(
+            test_pdec!("1.1").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("1.0").checked_round(0, mode).unwrap(),
+            test_pdec!("1")
+        );
+        assert_eq!(
+            test_pdec!("-1.0").checked_round(0, mode).unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-1.1").checked_round(0, mode).unwrap(),
+            test_pdec!("-1")
+        );
+        assert_eq!(
+            test_pdec!("-1.6").checked_round(0, mode).unwrap(),
+            test_pdec!("-2")
+        );
+        assert_eq!(
+            test_pdec!("-2.5").checked_round(0, mode).unwrap(),
+            test_pdec!("-2")
+        );
+        assert_eq!(
+            test_pdec!("-5.5").checked_round(0, mode).unwrap(),
+            test_pdec!("-6")
+        );
 
         assert_eq!(
-            pdec!("-57896044618658097711785492504343953926634.5")
+            test_pdec!("-57896044618658097711785492504343953926634.5")
                 .checked_round(0, mode)
                 .unwrap(),
-            pdec!("-57896044618658097711785492504343953926634")
+            test_pdec!("-57896044618658097711785492504343953926634")
         );
         assert_eq!(
-            pdec!("57896044618658097711785492504343953926634.5")
+            test_pdec!("57896044618658097711785492504343953926634.5")
                 .checked_round(0, mode)
                 .unwrap(),
-            pdec!("57896044618658097711785492504343953926634")
+            test_pdec!("57896044618658097711785492504343953926634")
         );
         assert!(PreciseDecimal::MIN.checked_round(0, mode).is_none());
-        assert!(pdec!("-57896044618658097711785492504343953926634.6")
+        assert!(test_pdec!("-57896044618658097711785492504343953926634.6")
             .checked_round(0, mode)
             .is_none());
         assert!(PreciseDecimal::MAX.checked_round(0, mode).is_none());
-        assert!(pdec!("57896044618658097711785492504343953926634.6")
+        assert!(test_pdec!("57896044618658097711785492504343953926634.6")
             .checked_round(0, mode)
             .is_none());
     }
 
     #[test]
     fn test_various_decimal_places_precise_decimal() {
-        let num = pdec!("2.4595");
+        let num = test_pdec!("2.4595");
         let mode = RoundingMode::AwayFromZero;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("3"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("2.46"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("3"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("2.46"));
 
         assert_eq!(
-            pdec!("57896044618658097711785492504343953926633.992332820282019728792003956564819967")
-                .checked_round(1, mode)
-                .unwrap(),
-            pdec!("57896044618658097711785492504343953926634.0")
+            test_pdec!(
+                "57896044618658097711785492504343953926633.992332820282019728792003956564819967"
+            )
+            .checked_round(1, mode)
+            .unwrap(),
+            test_pdec!("57896044618658097711785492504343953926634.0")
         );
         assert_eq!(
-            pdec!(
+            test_pdec!(
                 "-57896044618658097711785492504343953926633.992332820282019728792003956564819967"
             )
             .checked_round(1, mode)
             .unwrap(),
-            pdec!("-57896044618658097711785492504343953926634.0")
+            test_pdec!("-57896044618658097711785492504343953926634.0")
         );
 
         let mode = RoundingMode::ToZero;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("2.4"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("2.45"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("2.459"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("2.4"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("2.45"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("2.459"));
         let mode = RoundingMode::ToPositiveInfinity;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("3"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("2.46"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("3"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("2.46"));
         let mode = RoundingMode::ToNegativeInfinity;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("2.4"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("2.45"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("2.459"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("2.4"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("2.45"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("2.459"));
         let mode = RoundingMode::ToNearestMidpointAwayFromZero;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("2.46"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("2.46"));
         let mode = RoundingMode::ToNearestMidpointTowardZero;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("2.459"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("2.459"));
         let mode = RoundingMode::ToNearestMidpointToEven;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("2.46"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("2.46"));
 
-        let num = pdec!("-2.4595");
+        let num = test_pdec!("-2.4595");
         let mode = RoundingMode::AwayFromZero;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("-3"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("-2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("-2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("-2.46"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("-3"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("-2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("-2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("-2.46"));
         let mode = RoundingMode::ToZero;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("-2.4"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("-2.45"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("-2.459"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("-2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("-2.4"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("-2.45"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("-2.459"));
         let mode = RoundingMode::ToPositiveInfinity;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("-2.4"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("-2.45"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("-2.459"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("-2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("-2.4"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("-2.45"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("-2.459"));
         let mode = RoundingMode::ToNegativeInfinity;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("-3"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("-2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("-2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("-2.46"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("-3"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("-2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("-2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("-2.46"));
         let mode = RoundingMode::ToNearestMidpointAwayFromZero;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("-2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("-2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("-2.46"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("-2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("-2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("-2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("-2.46"));
         let mode = RoundingMode::ToNearestMidpointTowardZero;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("-2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("-2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("-2.459"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("-2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("-2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("-2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("-2.459"));
         let mode = RoundingMode::ToNearestMidpointToEven;
-        assert_eq!(num.checked_round(0, mode).unwrap(), pdec!("-2"));
-        assert_eq!(num.checked_round(1, mode).unwrap(), pdec!("-2.5"));
-        assert_eq!(num.checked_round(2, mode).unwrap(), pdec!("-2.46"));
-        assert_eq!(num.checked_round(3, mode).unwrap(), pdec!("-2.46"));
+        assert_eq!(num.checked_round(0, mode).unwrap(), test_pdec!("-2"));
+        assert_eq!(num.checked_round(1, mode).unwrap(), test_pdec!("-2.5"));
+        assert_eq!(num.checked_round(2, mode).unwrap(), test_pdec!("-2.46"));
+        assert_eq!(num.checked_round(3, mode).unwrap(), test_pdec!("-2.46"));
     }
 
     #[test]
     fn test_encode_decimal_value_precise_decimal() {
-        let pdec = pdec!("0");
+        let pdec = test_pdec!("0");
         let bytes = scrypto_encode(&pdec).unwrap();
         assert_eq!(bytes, {
             let mut a = [0; 34];
@@ -1670,10 +1833,10 @@ mod tests {
 
     #[test]
     fn test_decode_decimal_value_precise_decimal() {
-        let pdec = pdec!("1.23456789");
+        let pdec = test_pdec!("1.23456789");
         let bytes = scrypto_encode(&pdec).unwrap();
         let decoded: PreciseDecimal = scrypto_decode(&bytes).unwrap();
-        assert_eq!(decoded, pdec!("1.23456789"));
+        assert_eq!(decoded, test_pdec!("1.23456789"));
     }
 
     #[test]
@@ -1694,7 +1857,7 @@ mod tests {
             $(
                 #[test]
                 fn [<test_from_into_decimal_precise_decimal_ $suffix>]() {
-                    let dec = dec!($from);
+                    let dec = test_dec!($from);
                     let pdec = PreciseDecimal::from(dec);
                     assert_eq!(pdec.to_string(), $expected);
 
@@ -1790,18 +1953,18 @@ mod tests {
     fn test_truncate_precise_decimal_towards_zero() {
         for (pdec, dec) in [
             (
-                pdec!("12345678.123456789012345678901234567890123456"),
-                dec!("12345678.123456789012345678"),
+                test_pdec!("12345678.123456789012345678901234567890123456"),
+                test_dec!("12345678.123456789012345678"),
             ),
-            (pdec!(1), dec!(1)),
-            (pdec!("123.5"), dec!("123.5")),
+            (test_pdec!(1), test_dec!(1)),
+            (test_pdec!("123.5"), test_dec!("123.5")),
             (
-                pdec!("-12345678.123456789012345678901234567890123456"),
-                dec!("-12345678.123456789012345678"),
+                test_pdec!("-12345678.123456789012345678901234567890123456"),
+                test_dec!("-12345678.123456789012345678"),
             ),
             (
-                pdec!("-12345678.123456789012345678101234567890123456"),
-                dec!("-12345678.123456789012345678"),
+                test_pdec!("-12345678.123456789012345678101234567890123456"),
+                test_dec!("-12345678.123456789012345678"),
             ),
         ] {
             assert_eq!(pdec.checked_truncate(RoundingMode::ToZero).unwrap(), dec);
@@ -1812,18 +1975,18 @@ mod tests {
     fn test_truncate_precise_decimal_away_from_zero() {
         for (pdec, dec) in [
             (
-                pdec!("12345678.123456789012345678901234567890123456"),
-                dec!("12345678.123456789012345679"),
+                test_pdec!("12345678.123456789012345678901234567890123456"),
+                test_dec!("12345678.123456789012345679"),
             ),
-            (pdec!(1), dec!(1)),
-            (pdec!("123.5"), dec!("123.5")),
+            (test_pdec!(1), test_dec!(1)),
+            (test_pdec!("123.5"), test_dec!("123.5")),
             (
-                pdec!("-12345678.123456789012345678901234567890123456"),
-                dec!("-12345678.123456789012345679"),
+                test_pdec!("-12345678.123456789012345678901234567890123456"),
+                test_dec!("-12345678.123456789012345679"),
             ),
             (
-                pdec!("-12345678.123456789012345678101234567890123456"),
-                dec!("-12345678.123456789012345679"),
+                test_pdec!("-12345678.123456789012345678101234567890123456"),
+                test_dec!("-12345678.123456789012345679"),
             ),
         ] {
             assert_eq!(
@@ -1835,54 +1998,57 @@ mod tests {
 
     #[test]
     fn test_sqrt() {
-        let sqrt_of_42 = pdec!(42).checked_sqrt();
-        let sqrt_of_0 = pdec!(0).checked_sqrt();
-        let sqrt_of_negative = pdec!("-1").checked_sqrt();
+        let sqrt_of_42 = test_pdec!(42).checked_sqrt();
+        let sqrt_of_0 = test_pdec!(0).checked_sqrt();
+        let sqrt_of_negative = test_pdec!("-1").checked_sqrt();
         assert_eq!(
             sqrt_of_42.unwrap(),
-            pdec!("6.480740698407860230965967436087996657")
+            test_pdec!("6.480740698407860230965967436087996657")
         );
-        assert_eq!(sqrt_of_0.unwrap(), pdec!(0));
+        assert_eq!(sqrt_of_0.unwrap(), test_pdec!(0));
         assert_eq!(sqrt_of_negative, None);
     }
 
     #[test]
     fn test_cbrt() {
-        let cbrt_of_42 = pdec!(42).checked_cbrt().unwrap();
-        let cbrt_of_0 = pdec!(0).checked_cbrt().unwrap();
-        let cbrt_of_negative_42 = pdec!("-42").checked_cbrt().unwrap();
-        assert_eq!(cbrt_of_42, pdec!("3.476026644886449786739865219004537434"));
-        assert_eq!(cbrt_of_0, pdec!("0"));
+        let cbrt_of_42 = test_pdec!(42).checked_cbrt().unwrap();
+        let cbrt_of_0 = test_pdec!(0).checked_cbrt().unwrap();
+        let cbrt_of_negative_42 = test_pdec!("-42").checked_cbrt().unwrap();
+        assert_eq!(
+            cbrt_of_42,
+            test_pdec!("3.476026644886449786739865219004537434")
+        );
+        assert_eq!(cbrt_of_0, test_pdec!("0"));
         assert_eq!(
             cbrt_of_negative_42,
-            pdec!("-3.476026644886449786739865219004537434")
+            test_pdec!("-3.476026644886449786739865219004537434")
         );
     }
 
     #[test]
     fn test_nth_root() {
-        let root_4_42 = pdec!(42).checked_nth_root(4);
-        let root_5_42 = pdec!(42).checked_nth_root(5);
-        let root_42_42 = pdec!(42).checked_nth_root(42);
-        let root_neg_4_42 = pdec!("-42").checked_nth_root(4);
-        let root_neg_5_42 = pdec!("-42").checked_nth_root(5);
-        let root_0 = pdec!(42).checked_nth_root(0);
+        let root_4_42 = test_pdec!(42).checked_nth_root(4);
+        let root_5_42 = test_pdec!(42).checked_nth_root(5);
+        let root_42_42 = test_pdec!(42).checked_nth_root(42);
+        let root_neg_4_42 = test_pdec!("-42").checked_nth_root(4);
+        let root_neg_5_42 = test_pdec!("-42").checked_nth_root(5);
+        let root_0 = test_pdec!(42).checked_nth_root(0);
         assert_eq!(
             root_4_42.unwrap(),
-            pdec!("2.545729895021830518269788960576288685")
+            test_pdec!("2.545729895021830518269788960576288685")
         );
         assert_eq!(
             root_5_42.unwrap(),
-            pdec!("2.111785764966753912732567330550233486")
+            test_pdec!("2.111785764966753912732567330550233486")
         );
         assert_eq!(
             root_42_42.unwrap(),
-            pdec!("1.093072057934823618682784731855625786")
+            test_pdec!("1.093072057934823618682784731855625786")
         );
         assert_eq!(root_neg_4_42, None);
         assert_eq!(
             root_neg_5_42.unwrap(),
-            pdec!("-2.111785764966753912732567330550233486")
+            test_pdec!("-2.111785764966753912732567330550233486")
         );
         assert_eq!(root_0, None);
     }
@@ -1917,7 +2083,7 @@ mod tests {
     #[test]
     fn test_neg_precise_decimal() {
         let d = PreciseDecimal::ONE;
-        assert_eq!(-d, pdec!("-1"));
+        assert_eq!(-d, test_pdec!("-1"));
         let d = PreciseDecimal::MAX;
         assert_eq!(-d, PreciseDecimal(I256::MIN + I256::ONE));
     }
@@ -1956,18 +2122,18 @@ mod tests {
         assert_eq!(p1.checked_add(d1).unwrap(), d2.checked_add(p2).unwrap());
         assert_eq!(p1.checked_sub(d1).unwrap(), d2.checked_sub(p2).unwrap());
 
-        let p1 = pdec!("0.000001");
-        let d1 = dec!("0.001");
-        let d2 = dec!("0.000001");
-        let p2 = pdec!("0.001");
+        let p1 = test_pdec!("0.000001");
+        let d1 = test_dec!("0.001");
+        let d2 = test_dec!("0.000001");
+        let p2 = test_pdec!("0.001");
         assert_eq!(p1.checked_mul(d1).unwrap(), d2.checked_mul(p2).unwrap());
         assert_eq!(p1.checked_div(d1).unwrap(), d2.checked_div(p2).unwrap());
         assert_eq!(p1.checked_add(d1).unwrap(), d2.checked_add(p2).unwrap());
         assert_eq!(p1.checked_sub(d1).unwrap(), d2.checked_sub(p2).unwrap());
 
-        let p1 = pdec!("0.000000000000000001");
+        let p1 = test_pdec!("0.000000000000000001");
         let d1 = Decimal::MIN;
-        let d2 = dec!("0.000000000000000001");
+        let d2 = test_dec!("0.000000000000000001");
         let p2 = PreciseDecimal::from(Decimal::MIN);
         assert_eq!(p1.checked_mul(d1).unwrap(), d2.checked_mul(p2).unwrap());
         assert_eq!(p1.checked_div(d1).unwrap(), d2.checked_div(p2).unwrap());
@@ -1994,14 +2160,14 @@ mod tests {
             paste! {
                 #[test]
                 fn [<test_arith_precise_decimal_$type>]() {
-                    let p1 = pdec!("2");
+                    let p1 = test_pdec!("2");
                     let u1 = 4 as $type;
-                    assert_eq!(p1.checked_add(u1).unwrap(), pdec!("6"));
-                    assert_eq!(p1.checked_sub(u1).unwrap(), pdec!("-2"));
-                    assert_eq!(p1.checked_mul(u1).unwrap(), pdec!("8"));
-                    assert_eq!(p1.checked_div(u1).unwrap(), pdec!("0.5"));
+                    assert_eq!(p1.checked_add(u1).unwrap(), test_pdec!("6"));
+                    assert_eq!(p1.checked_sub(u1).unwrap(), test_pdec!("-2"));
+                    assert_eq!(p1.checked_mul(u1).unwrap(), test_pdec!("8"));
+                    assert_eq!(p1.checked_div(u1).unwrap(), test_pdec!("0.5"));
 
-                    let p1 = pdec!("2");
+                    let p1 = test_pdec!("2");
                     let u1 = $type::MAX;
                     let p2 = PreciseDecimal::from($type::MAX);
                     assert_eq!(p1.checked_add(u1).unwrap(), p1.checked_add(p2).unwrap());
@@ -2011,7 +2177,7 @@ mod tests {
 
                     let p1 = PreciseDecimal::from($type::MIN);
                     let u1 = 2 as $type;
-                    let p2 = pdec!("2");
+                    let p2 = test_pdec!("2");
                     assert_eq!(p1.checked_add(u1).unwrap(), p1.checked_add(p2).unwrap());
                     assert_eq!(p1.checked_sub(u1).unwrap(), p1.checked_sub(p2).unwrap());
                     assert_eq!(p1.checked_mul(u1).unwrap(), p1.checked_mul(p2).unwrap());
@@ -2038,16 +2204,16 @@ mod tests {
             paste! {
                 #[test]
                 fn [<test_arith_precise_decimal_$type:lower>]() {
-                    let d1 = pdec!("2");
+                    let d1 = test_pdec!("2");
                     let u1 = $type::try_from(4).unwrap();
                     let u2 = $type::try_from(2).unwrap();
-                    let d2 = pdec!("4");
+                    let d2 = test_pdec!("4");
                     assert_eq!(d1.checked_add(u1).unwrap(), u2.checked_add(d2).unwrap());
                     assert_eq!(d1.checked_sub(u1).unwrap(), u2.checked_sub(d2).unwrap());
                     assert_eq!(d1.checked_mul(u1).unwrap(), u2.checked_mul(d2).unwrap());
                     assert_eq!(d1.checked_div(u1).unwrap(), u2.checked_div(d2).unwrap());
 
-                    let d1 = pdec!("2");
+                    let d1 = test_pdec!("2");
                     let u1 = $type::MAX;
                     assert!(d1.checked_add(u1).is_none());
                     assert!(d1.checked_sub(u1).is_none());
@@ -2057,9 +2223,9 @@ mod tests {
                     let d1 = PreciseDecimal::MAX;
                     let u1 = $type::try_from(2).unwrap();
                     assert_eq!(d1.checked_add(u1), None);
-                    assert_eq!(d1.checked_sub(u1).unwrap(), PreciseDecimal::MAX - dec!("2"));
+                    assert_eq!(d1.checked_sub(u1).unwrap(), PreciseDecimal::MAX - test_dec!("2"));
                     assert_eq!(d1.checked_mul(u1), None);
-                    assert_eq!(d1.checked_div(u1).unwrap(), PreciseDecimal::MAX / dec!("2"));
+                    assert_eq!(d1.checked_div(u1).unwrap(), PreciseDecimal::MAX / test_dec!("2"));
                 }
             }
         };
@@ -2080,37 +2246,37 @@ mod tests {
             paste! {
                 #[test]
                 fn [<test_math_operands_precise_decimal_$type:lower>]() {
-                    let d1 = pdec!("2");
+                    let d1 = test_pdec!("2");
                     let u1 = $type::try_from(4).unwrap();
-                    assert_eq!(d1 + u1, pdec!("6"));
-                    assert_eq!(d1 - u1, pdec!("-2"));
-                    assert_eq!(d1 * u1, pdec!("8"));
-                    assert_eq!(d1 / u1, pdec!("0.5"));
+                    assert_eq!(d1 + u1, test_pdec!("6"));
+                    assert_eq!(d1 - u1, test_pdec!("-2"));
+                    assert_eq!(d1 * u1, test_pdec!("8"));
+                    assert_eq!(d1 / u1, test_pdec!("0.5"));
 
                     let u1 = $type::try_from(2).unwrap();
-                    let d1 = pdec!("4");
-                    assert_eq!(u1 + d1, pdec!("6"));
-                    assert_eq!(u1 - d1, pdec!("-2"));
-                    assert_eq!(u1 * d1, pdec!("8"));
-                    assert_eq!(u1 / d1, pdec!("0.5"));
+                    let d1 = test_pdec!("4");
+                    assert_eq!(u1 + d1, test_pdec!("6"));
+                    assert_eq!(u1 - d1, test_pdec!("-2"));
+                    assert_eq!(u1 * d1, test_pdec!("8"));
+                    assert_eq!(u1 / d1, test_pdec!("0.5"));
 
                     let u1 = $type::try_from(4).unwrap();
 
-                    let mut d1 = pdec!("2");
+                    let mut d1 = test_pdec!("2");
                     d1 += u1;
-                    assert_eq!(d1, pdec!("6"));
+                    assert_eq!(d1, test_pdec!("6"));
 
-                    let mut d1 = pdec!("2");
+                    let mut d1 = test_pdec!("2");
                     d1 -= u1;
-                    assert_eq!(d1, pdec!("-2"));
+                    assert_eq!(d1, test_pdec!("-2"));
 
-                    let mut d1 = pdec!("2");
+                    let mut d1 = test_pdec!("2");
                     d1 *= u1;
-                    assert_eq!(d1, pdec!("8"));
+                    assert_eq!(d1, test_pdec!("8"));
 
-                    let mut d1 = pdec!("2");
+                    let mut d1 = test_pdec!("2");
                     d1 /= u1;
-                    assert_eq!(d1, pdec!("0.5"));
+                    assert_eq!(d1, test_pdec!("0.5"));
                 }
 
                 #[test]
@@ -2241,11 +2407,11 @@ mod tests {
                 #[test]
                 fn [<test_precise_decimal_from_primitive_$type>]() {
                     let v = $type::try_from(1).unwrap();
-                    assert_eq!(PreciseDecimal::from(v), pdec!(1));
+                    assert_eq!(PreciseDecimal::from(v), test_pdec!(1));
 
                     if $type::MIN != 0 {
                         let v = $type::try_from(-1).unwrap();
-                        assert_eq!(PreciseDecimal::from(v), pdec!(-1));
+                        assert_eq!(PreciseDecimal::from(v), test_pdec!(-1));
                     }
 
                     let v = $type::MAX;
@@ -2275,12 +2441,12 @@ mod tests {
             paste! {
                 #[test]
                 fn [<test_precise_decimal_to_primitive_$type>]() {
-                    let d = pdec!(1);
+                    let d = test_pdec!(1);
                     let v = $type::try_from(1).unwrap();
                     assert_eq!($type::try_from(d).unwrap(), v);
 
                     if $type::MIN != 0 {
-                        let d = pdec!(-1);
+                        let d = test_pdec!(-1);
                         let v = $type::try_from(-1).unwrap();
                         assert_eq!($type::try_from(d).unwrap(), v);
                     }
@@ -2307,7 +2473,7 @@ mod tests {
                     let err = $type::try_from(d).unwrap_err();
                     assert_eq!(err, ParsePreciseDecimalError::Overflow);
 
-                    let d = pdec!("1.1");
+                    let d = test_pdec!("1.1");
                     let err = $type::try_from(d).unwrap_err();
                     assert_eq!(err, ParsePreciseDecimalError::InvalidDigit);
                 }

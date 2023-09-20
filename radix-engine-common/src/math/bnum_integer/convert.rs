@@ -705,7 +705,7 @@ impl_to_bytes! { U448, BUint::<7> }
 impl_to_bytes! { U512, BUint::<8> }
 impl_to_bytes! { U768, BUint::<12> }
 
-macro_rules! impl_from_u64_arr_signed {
+macro_rules! from_and_to_u64_arr_signed {
     ($($t:ident, $wrapped:ty),*) => {
         $(
             paste! {
@@ -715,13 +715,18 @@ macro_rules! impl_from_u64_arr_signed {
                         let u = BUint::<{$t::N}>::from_digits(digits);
                         Self(<$wrapped>::from_bits(u))
                     }
+
+                    pub const fn to_digits(&self) -> [u64; <$t>::N] {
+                        let u: BUint::<{$t::N}> = self.0.to_bits();
+                        *u.digits()
+                    }
                 }
             }
         )*
     };
 }
 
-macro_rules! from_u64_arr_unsigned {
+macro_rules! from_and_to_u64_arr_unsigned {
     ($($t:ident, $wrapped:ty),*) => {
         $(
             paste! {
@@ -730,24 +735,28 @@ macro_rules! from_u64_arr_unsigned {
                     pub const fn from_digits(digits: [u64; <$t>::N]) -> Self {
                         Self(<$wrapped>::from_digits(digits))
                     }
+
+                    pub const fn to_digits(&self) -> [u64; <$t>::N] {
+                        *self.0.digits()
+                    }
                 }
             }
         )*
     };
 }
 
-impl_from_u64_arr_signed! { I192, BInt::<3> }
-impl_from_u64_arr_signed! { I256, BInt::<4> }
-impl_from_u64_arr_signed! { I320, BInt::<5> }
-impl_from_u64_arr_signed! { I384, BInt::<6> }
-impl_from_u64_arr_signed! { I448, BInt::<7> }
-impl_from_u64_arr_signed! { I512, BInt::<8> }
-impl_from_u64_arr_signed! { I768, BInt::<12> }
+from_and_to_u64_arr_signed! { I192, BInt::<3> }
+from_and_to_u64_arr_signed! { I256, BInt::<4> }
+from_and_to_u64_arr_signed! { I320, BInt::<5> }
+from_and_to_u64_arr_signed! { I384, BInt::<6> }
+from_and_to_u64_arr_signed! { I448, BInt::<7> }
+from_and_to_u64_arr_signed! { I512, BInt::<8> }
+from_and_to_u64_arr_signed! { I768, BInt::<12> }
 
-from_u64_arr_unsigned! { U192, BUint::<3> }
-from_u64_arr_unsigned! { U256, BUint::<4> }
-from_u64_arr_unsigned! { U320, BUint::<5> }
-from_u64_arr_unsigned! { U384, BUint::<6> }
-from_u64_arr_unsigned! { U448, BUint::<7> }
-from_u64_arr_unsigned! { U512, BUint::<8> }
-from_u64_arr_unsigned! { U768, BUint::<12> }
+from_and_to_u64_arr_unsigned! { U192, BUint::<3> }
+from_and_to_u64_arr_unsigned! { U256, BUint::<4> }
+from_and_to_u64_arr_unsigned! { U320, BUint::<5> }
+from_and_to_u64_arr_unsigned! { U384, BUint::<6> }
+from_and_to_u64_arr_unsigned! { U448, BUint::<7> }
+from_and_to_u64_arr_unsigned! { U512, BUint::<8> }
+from_and_to_u64_arr_unsigned! { U768, BUint::<12> }
