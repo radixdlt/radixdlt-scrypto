@@ -1206,30 +1206,6 @@ mod tests {
     }
 
     #[test]
-    fn test_dec_rational_decimal() {
-        assert_eq!((dec!(11235, 0)).to_string(), "11235");
-        assert_eq!((dec!(11235, -2)).to_string(), "112.35");
-        assert_eq!((dec!(11235, 2)).to_string(), "1123500");
-
-        assert_eq!(
-            (dec!(112000000000000000001i128, -18)).to_string(),
-            "112.000000000000000001"
-        );
-
-        assert_eq!(
-            (dec!(112000000000000000001i128, -18)).to_string(),
-            "112.000000000000000001"
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "Shift overflow")]
-    fn test_shift_overflow_decimal() {
-        // u32::MAX + 1
-        dec!(1, 4_294_967_296i128); // use explicit type to defer error to runtime
-    }
-
-    #[test]
     fn test_floor_decimal() {
         assert_eq!(
             Decimal::MAX.checked_floor().unwrap(),

@@ -1294,25 +1294,6 @@ mod tests {
     }
 
     #[test]
-    fn test_dec_rational_precise_decimal() {
-        assert_eq!((pdec!(11235, 0)).to_string(), "11235");
-        assert_eq!((pdec!(11235, -2)).to_string(), "112.35");
-        assert_eq!((pdec!(11235, 2)).to_string(), "1123500");
-
-        //        assert_eq!(
-        //            pdec!("1120000000000000000000000000000000000000000000000000000000000000001", -64).to_string(),
-        //            "112.0000000000000000000000000000000000000000000000000000000000000001"
-        //        );
-    }
-
-    #[test]
-    #[should_panic(expected = "Shift overflow")]
-    fn test_shift_overflow_precise_decimal() {
-        // u32::MAX + 1
-        pdec!(1, 4_294_967_296i128); // use explicit type to defer error to runtime
-    }
-
-    #[test]
     fn test_floor_precise_decimal() {
         assert_eq!(
             PreciseDecimal::MAX.checked_floor().unwrap(),

@@ -32,32 +32,6 @@ macro_rules! dec {
     ($x:literal) => {
         $crate::math::Decimal::try_from($x).unwrap()
     };
-    ($base:literal, $shift:literal) => {
-        // Base can be any type that converts into a Decimal, and shift must support
-        // comparison and `-` unary operation, enforced by rustc.
-        {
-            let base = $crate::math::Decimal::try_from($base).unwrap();
-            if $shift >= 0 {
-                base.checked_mul(
-                    $crate::math::Decimal::try_from(
-                        $crate::math::I192::from(10u8)
-                            .pow(u32::try_from($shift).expect("Shift overflow")),
-                    )
-                    .expect("Shift overflow"),
-                )
-                .expect("Overflow")
-            } else {
-                base.checked_div(
-                    $crate::math::Decimal::try_from(
-                        $crate::math::I192::from(10u8)
-                            .pow(u32::try_from(-$shift).expect("Shift overflow")),
-                    )
-                    .expect("Shift overflow"),
-                )
-                .expect("Overflow")
-            }
-        }
-    };
 }
 
 /// Creates a safe integer from literals.
@@ -107,33 +81,6 @@ macro_rules! pdec {
     // If not then something is definitely wrong and panic is fine.
     ($x:literal) => {
         $crate::math::PreciseDecimal::try_from($x).unwrap()
-    };
-
-    ($base:literal, $shift:literal) => {
-        // Base can be any type that converts into a PreciseDecimal, and shift must support
-        // comparison and `-` unary operation, enforced by rustc.
-        {
-            let base = $crate::math::PreciseDecimal::try_from($base).unwrap();
-            if $shift >= 0 {
-                base.checked_mul(
-                    $crate::math::PreciseDecimal::try_from(
-                        $crate::math::I256::from(10u8)
-                            .pow(u32::try_from($shift).expect("Shift overflow")),
-                    )
-                    .expect("Shift overflow"),
-                )
-                .expect("Overflow")
-            } else {
-                base.checked_div(
-                    $crate::math::PreciseDecimal::try_from(
-                        $crate::math::I256::from(10u8)
-                            .pow(u32::try_from(-$shift).expect("Shift overflow")),
-                    )
-                    .expect("Shift overflow"),
-                )
-                .expect("Overflow")
-            }
-        }
     };
 }
 
