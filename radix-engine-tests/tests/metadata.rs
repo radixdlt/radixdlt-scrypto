@@ -217,10 +217,7 @@ fn cannot_set_metadata_if_initialized_empty_locked() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-        )
+        matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
     });
 }
 

@@ -76,10 +76,7 @@ fn mint_and_burn_of_non_fungible_2x_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-        )
+        matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
     })
 }
 
@@ -110,9 +107,6 @@ fn mint_of_previously_minted_burned_non_fungible_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-        )
+        matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
     })
 }

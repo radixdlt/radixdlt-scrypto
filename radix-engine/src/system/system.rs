@@ -1855,9 +1855,7 @@ where
             })?;
 
             if let LockStatus::Locked = lock_status {
-                return Err(RuntimeError::SystemError(
-                    SystemError::MutatingImmutableSubstate,
-                ));
+                return Err(RuntimeError::SystemError(SystemError::SubstateLocked));
             }
         }
 
@@ -2601,9 +2599,10 @@ where
             })?;
 
             if let LockStatus::Locked = lock_status {
-                return Err(RuntimeError::SystemError(
-                    SystemError::MutatingImmutableFieldSubstate(object_handle, field_index),
-                ));
+                return Err(RuntimeError::SystemError(SystemError::FieldSubstateLocked(
+                    object_handle,
+                    field_index,
+                )));
             }
         }
 
@@ -2707,9 +2706,7 @@ where
                 self.api.kernel_read_substate(handle)?.as_typed().unwrap();
 
             if !substate.is_not_locked() {
-                return Err(RuntimeError::SystemError(
-                    SystemError::MutatingImmutableSubstate,
-                ));
+                return Err(RuntimeError::SystemError(SystemError::SubstateLocked));
             }
         }
 

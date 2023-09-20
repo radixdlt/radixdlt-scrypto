@@ -56,10 +56,7 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
 pub fn cannot_set_pool_vault_number_metadata() {
     test_set_metadata("pool_vault_number", true, true, |receipt| {
         receipt.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-            )
+            matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
         });
     });
 }
@@ -68,10 +65,7 @@ pub fn cannot_set_pool_vault_number_metadata() {
 pub fn cannot_set_pool_resources_metadata() {
     test_set_metadata("pool_resources", true, true, |receipt| {
         receipt.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-            )
+            matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
         });
     });
 }
@@ -80,10 +74,7 @@ pub fn cannot_set_pool_resources_metadata() {
 pub fn cannot_set_pool_unit_metadata() {
     test_set_metadata("pool_unit", true, true, |receipt| {
         receipt.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-            )
+            matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
         });
     });
 }
@@ -111,10 +102,7 @@ pub fn cannot_set_some_arbitrary_metadata_if_not_owner() {
 pub fn cannot_set_pool_resource_pool_metadata() {
     test_set_metadata("pool", false, true, |receipt| {
         receipt.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-            )
+            matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
         });
     });
 }

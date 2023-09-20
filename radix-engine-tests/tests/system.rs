@@ -165,10 +165,7 @@ fn test_write_after_locking_key_value_store_entry() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-        )
+        matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
     })
 }
 
@@ -192,10 +189,7 @@ fn test_write_after_locking_key_value_collection_entry() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-        )
+        matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
     })
 }
 

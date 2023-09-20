@@ -260,7 +260,7 @@ fn mutating_immutable_field_should_error() {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableFieldSubstate(..))
+                RuntimeError::SystemError(SystemError::FieldSubstateLocked(..))
             )
         });
     });

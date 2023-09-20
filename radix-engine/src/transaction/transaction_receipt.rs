@@ -513,10 +513,7 @@ impl TransactionReceipt {
 
     pub fn expect_auth_mutability_failure(&self) {
         self.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-            )
+            matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
         })
     }
 
