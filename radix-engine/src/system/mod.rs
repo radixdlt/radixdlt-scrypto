@@ -1,3 +1,4 @@
+pub mod actor;
 pub mod attached_modules;
 pub mod bootstrap;
 #[cfg(feature = "db_checker")]

@@ -43,6 +43,10 @@ mod local_auth_zone {
         pub fn pop_empty_auth_zone() -> Option<Proof> {
             LocalAuthZone::pop()
         }
+
+        pub fn create_signature_proof() {
+            let _ = LocalAuthZone::create_proof_of_all(SECP256K1_SIGNATURE_VIRTUAL_BADGE);
+        }
     }
 }
 

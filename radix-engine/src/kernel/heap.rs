@@ -1,10 +1,6 @@
+use crate::track::interface::IOAccess;
 use crate::track::interface::{CallbackError, CanonicalSubstateKey, NodeSubstates};
 use crate::types::*;
-use crate::{blueprints::resource::*, track::interface::IOAccess};
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
-    LockedNonFungibleResource,
-};
 
 pub struct Heap {
     nodes: NonIterMap<NodeId, NodeSubstates>,
@@ -305,78 +301,6 @@ impl Heap {
         }
 
         Ok(node_substates)
-    }
-}
-
-#[derive(Debug)]
-pub struct DroppedFungibleBucket {
-    pub liquid: LiquidFungibleResource,
-    pub locked: LockedFungibleResource,
-}
-
-#[derive(Debug)]
-pub struct DroppedNonFungibleBucket {
-    pub liquid: LiquidNonFungibleResource,
-    pub locked: LockedNonFungibleResource,
-}
-
-impl Into<DroppedFungibleBucket> for Vec<Vec<u8>> {
-    fn into(self) -> DroppedFungibleBucket {
-        let liquid: LiquidFungibleResource =
-            scrypto_decode(&self[FungibleBucketField::Liquid as usize]).unwrap();
-        let locked: LockedFungibleResource =
-            scrypto_decode(&self[FungibleBucketField::Locked as usize]).unwrap();
-
-        DroppedFungibleBucket { liquid, locked }
-    }
-}
-
-impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
-    fn into(self) -> DroppedNonFungibleBucket {
-        let liquid: LiquidNonFungibleResource =
-            scrypto_decode(&self[NonFungibleBucketField::Liquid as usize]).unwrap();
-        let locked: LockedNonFungibleResource =
-            scrypto_decode(&self[NonFungibleBucketField::Locked as usize]).unwrap();
-
-        DroppedNonFungibleBucket { liquid, locked }
-    }
-}
-
-pub struct DroppedFungibleProof {
-    pub moveable: ProofMoveableSubstate,
-    pub fungible_proof: FungibleProofSubstate,
-}
-
-pub struct DroppedNonFungibleProof {
-    pub moveable: ProofMoveableSubstate,
-    pub non_fungible_proof: NonFungibleProofSubstate,
-}
-
-impl Into<DroppedFungibleProof> for Vec<Vec<u8>> {
-    fn into(self) -> DroppedFungibleProof {
-        let moveable: ProofMoveableSubstate =
-            scrypto_decode(&self[FungibleProofField::Moveable as usize]).unwrap();
-        let fungible_proof: FungibleProofSubstate =
-            scrypto_decode(&self[FungibleProofField::ProofRefs as usize]).unwrap();
-
-        DroppedFungibleProof {
-            moveable,
-            fungible_proof,
-        }
-    }
-}
-
-impl Into<DroppedNonFungibleProof> for Vec<Vec<u8>> {
-    fn into(self) -> DroppedNonFungibleProof {
-        let moveable: ProofMoveableSubstate =
-            scrypto_decode(&self[FungibleProofField::Moveable as usize]).unwrap();
-        let non_fungible_proof: NonFungibleProofSubstate =
-            scrypto_decode(&self[FungibleProofField::ProofRefs as usize]).unwrap();
-
-        DroppedNonFungibleProof {
-            moveable,
-            non_fungible_proof,
-        }
     }
 }
 

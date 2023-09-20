@@ -511,15 +511,6 @@ impl TransactionReceipt {
         })
     }
 
-    pub fn expect_auth_mutability_failure(&self) {
-        self.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-            )
-        })
-    }
-
     pub fn effective_execution_cost_unit_price(&self) -> Decimal {
         let one_percent = Decimal::ONE_HUNDREDTH;
 

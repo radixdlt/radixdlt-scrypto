@@ -209,6 +209,44 @@ fn test_basic_package_missing_export() {
 }
 
 #[test]
+fn bad_scrypto_schema_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    // Act
+    let (code, mut definition) = PackageLoader::get("package");
+    let blueprint_schema = &mut definition
+        .blueprints
+        .iter_mut()
+        .next()
+        .unwrap()
+        .1
+        .schema
+        .schema;
+    blueprint_schema
+        .v1_mut()
+        .type_metadata
+        .push(TypeMetadata::unnamed());
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidBlueprintSchema(..)
+            ))
+        )
+    });
+}
+
+#[test]
 fn bad_function_schema_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

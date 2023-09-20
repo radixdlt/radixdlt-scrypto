@@ -64,7 +64,7 @@ impl WorktopBlueprint {
         let resources = core::mem::replace(&mut worktop.resources, index_map_new());
         api.kernel_write_substate(
             handle,
-            IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(worktop)),
+            IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(worktop)),
         )?;
         api.kernel_close_substate(handle)?;
 

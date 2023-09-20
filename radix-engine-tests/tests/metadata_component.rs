@@ -341,7 +341,7 @@ fn cannot_set_address_metadata_after_freezing() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
         )
     });
 }

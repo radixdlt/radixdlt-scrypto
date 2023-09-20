@@ -3,9 +3,9 @@ use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::internal_prelude::*;
-use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
+use crate::system::actor::Actor;
 use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
@@ -315,7 +315,7 @@ impl AuthModule {
             self_auth_zone,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
-                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(auth_zone))
+                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(auth_zone))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint_info: BlueprintInfo {
@@ -362,7 +362,7 @@ impl AuthModule {
         let proofs = core::mem::replace(&mut auth_zone.proofs, Vec::new());
         api.kernel_write_substate(
             handle,
-            IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(auth_zone)),
+            IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(auth_zone)),
         )?;
         api.kernel_close_substate(handle)?;
 
