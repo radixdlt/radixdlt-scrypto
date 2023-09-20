@@ -479,7 +479,7 @@ impl SystemMapper {
                 let lock_status = if field.locked {
                     LockStatus::Locked
                 } else {
-                    LockStatus::NotLocked
+                    LockStatus::Unlocked
                 };
 
                 let substate = FieldSubstate::new_field(payload, lock_status);
@@ -508,7 +508,7 @@ impl SystemMapper {
                     let kv_entry = if kv_entry.locked {
                         KeyValueEntrySubstate::locked_entry(value)
                     } else {
-                        KeyValueEntrySubstate::not_locked_entry(value)
+                        KeyValueEntrySubstate::unlocked_entry(value)
                     };
                     kv_entry
                 } else {

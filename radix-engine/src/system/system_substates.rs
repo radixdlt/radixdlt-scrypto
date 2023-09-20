@@ -24,8 +24,8 @@ impl<V> FieldSubstate<V> {
         })
     }
 
-    pub fn new_not_locked_field(payload: V) -> Self {
-        Self::new_field(payload, LockStatus::NotLocked)
+    pub fn new_unlocked_field(payload: V) -> Self {
+        Self::new_field(payload, LockStatus::Unlocked)
     }
 
     pub fn new_locked_field(payload: V) -> Self {
@@ -66,7 +66,7 @@ impl<V> FieldSubstate<V> {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum LockStatus {
-    NotLocked,
+    Unlocked,
     Locked,
 }
 
@@ -101,18 +101,18 @@ impl<V> KeyValueEntrySubstate<V> {
         }
     }
 
-    pub fn is_not_locked(&self) -> bool {
+    pub fn is_unlocked(&self) -> bool {
         match self {
             KeyValueEntrySubstate::V1(substate) => {
-                matches!(substate.lock_status, LockStatus::NotLocked)
+                matches!(substate.lock_status, LockStatus::Unlocked)
             }
         }
     }
 
-    pub fn not_locked_entry(value: V) -> Self {
+    pub fn unlocked_entry(value: V) -> Self {
         Self::V1(KeyValueEntrySubstateV1 {
             value: Some(value),
-            lock_status: LockStatus::NotLocked,
+            lock_status: LockStatus::Unlocked,
         })
     }
 
@@ -147,7 +147,7 @@ impl<V> Default for KeyValueEntrySubstate<V> {
     fn default() -> Self {
         Self::V1(KeyValueEntrySubstateV1 {
             value: None,
-            lock_status: LockStatus::NotLocked,
+            lock_status: LockStatus::Unlocked,
         })
     }
 }

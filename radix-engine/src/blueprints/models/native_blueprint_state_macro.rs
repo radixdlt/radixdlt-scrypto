@@ -855,7 +855,7 @@ mod helper_macros {
                     value: $entry_substate.value.map(|v| scrypto_encode(&v).unwrap()),
                     locked: match $entry_substate.lock_status {
                         LockStatus::Locked => true,
-                        LockStatus::NotLocked => false,
+                        LockStatus::Unlocked => false,
                     },
                 }
             }

@@ -1148,7 +1148,7 @@ where
         let value: ScryptoValue =
             scrypto_decode(&buffer).expect("Should be valid due to payload check");
 
-        let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(value));
+        let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(value));
 
         self.api.kernel_write_substate(handle, substate)?;
 
@@ -1698,7 +1698,7 @@ where
             IndexedScryptoValue::from_slice(&buffer).expect("Should be valid due to payload check");
 
         let value = substate.as_scrypto_value().clone();
-        let kv_entry = KeyValueEntrySubstate::not_locked_entry(value);
+        let kv_entry = KeyValueEntrySubstate::unlocked_entry(value);
         let indexed = IndexedScryptoValue::from_typed(&kv_entry);
 
         self.api.kernel_write_substate(handle, indexed)?;
@@ -2583,7 +2583,7 @@ where
                     &SubstateKey::Field(field_index),
                     flags,
                     Some(|| {
-                        IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(
+                        IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(
                             default_value,
                         ))
                     }),
@@ -2705,7 +2705,7 @@ where
             let substate: KeyValueEntrySubstate<ScryptoValue> =
                 self.api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            if !substate.is_not_locked() {
+            if !substate.is_unlocked() {
                 return Err(RuntimeError::SystemError(SystemError::SubstateLocked));
             }
         }

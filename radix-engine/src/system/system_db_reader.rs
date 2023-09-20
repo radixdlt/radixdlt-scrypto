@@ -1141,7 +1141,7 @@ impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter
             node_id,
             partition_number,
             &SubstateKey::Field(field_index),
-            &FieldSubstate::new_field(value, LockStatus::NotLocked),
+            &FieldSubstate::new_field(value, LockStatus::Unlocked),
         );
 
         Ok(())
