@@ -23,7 +23,6 @@ macro_rules! get_decimal {
                             "Not supported literal. This macro only supports string, integer and bool literal expressions.",
                         )),
                     },
-                    Expr::Group(group) => [< get_ $type:snake:lower _from_expr >](&group.expr),
                     Expr::Unary(unary) => match unary.op {
                         UnOp::Neg(unary_neg) => {
                             let res = [< get_ $type:snake:lower _from_expr >](unary.expr.as_ref());
