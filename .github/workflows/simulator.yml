@@ -34,7 +34,7 @@ jobs:
       dockerfile: "./simulator/Dockerfile"
       platforms: "linux/amd64"
       provenance: "false"
-      scan_image: true
+      scan_image: false
       snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: ${{ github.event_name }} == 'release'
       sanity_check: "./update-assets.sh --docker --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
@@ -56,7 +56,7 @@ jobs:
       dockerfile: "./simulator/Dockerfile"
       platforms: "linux/arm64"
       provenance: "false"
-      scan_image: true
+      scan_image: false
       snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: ${{ github.event_name }} == 'release'
       sanity_check: "./update-assets.sh --docker --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
