@@ -1,5 +1,6 @@
 use crate::types::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
+use num_traits::CheckedAdd;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 use syn::Ident;
 use wasm_instrument::{
@@ -902,7 +903,9 @@ impl WasmModule {
                 // Number of locals of some type
                 let (count, _ty) =
                     local.map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
-                locals_count += count;
+                locals_count = locals_count
+                    .checked_add(&count)
+                    .ok_or(PrepareError::Overflow)?;
             }
 
             if locals_count > max_number_of_function_locals {
