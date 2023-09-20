@@ -994,7 +994,12 @@ mod tests {
                 description: "Some generic parameter called Abc",
             }
         },
-        features: {},
+        features: {
+            some_feature: {
+                ident: Feature,
+                description: "Some feature",
+            }
+        },
         fields: {
             royalty:  {
                 ident: Royalty,
@@ -1156,6 +1161,8 @@ mod tests {
                 .into_mutable_substate()
                 .mutability()
         );
+
+        assert!(create_payload().as_latest_ref().is_some());
     }
 
     #[test]
@@ -1190,5 +1197,41 @@ mod tests {
             VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1),
             content.into_substate().value().content
         );
+    }
+
+    #[test]
+    fn test_blueprint_field_try_from() {
+        assert!(TestBlueprintField::try_from(&SubstateKey::Field(0)).is_ok());
+        assert!(TestBlueprintField::try_from(&SubstateKey::Map(Vec::new())).is_err());
+    }
+
+    #[test]
+    fn validate_blueprint_field_index() {
+        let field = TestBlueprintField::Royalty;
+        assert_eq!(0, FieldDescriptor::field_index(&field));
+
+        let field = TestBlueprintField::GenericField;
+        assert_eq!(1, FieldDescriptor::field_index(&field));
+    }
+
+    #[test]
+    fn test_substate_key_partition() {
+        assert!(TestBlueprintTypedSubstateKey::for_key_at_partition_offset(
+            PartitionOffset(0),
+            &SubstateKey::Field(0)
+        )
+        .is_err());
+
+        assert!(TestBlueprintTypedSubstateKey::for_key_in_partition(
+            &TestBlueprintPartitionOffset::Field,
+            &SubstateKey::Field(0)
+        )
+        .is_ok());
+
+        assert!(TestBlueprintTypedSubstateKey::for_key_in_partition(
+            &TestBlueprintPartitionOffset::MyCoolIndexIndex,
+            &SubstateKey::Map(vec![92, 0])
+        )
+        .is_err());
     }
 }
