@@ -23,6 +23,21 @@ fn test_dec_macro() {
 
     const X4: Decimal = dec!(-1_000_000_i64);
     assert_eq!(X4, Decimal::try_from(-1_000_000_i64).unwrap());
+
+    static X5: Decimal = dec!(1);
+    assert_eq!(X5, Decimal::ONE);
+
+    static X6: Decimal = dec!(10);
+    assert_eq!(X6, Decimal::TEN);
+
+    static X7: Decimal = dec!(100);
+    assert_eq!(X7, Decimal::ONE_HUNDRED);
+
+    static X8: Decimal = dec!("0.1");
+    assert_eq!(X8, Decimal::ONE_TENTH);
+
+    static X9: Decimal = dec!("0.01");
+    assert_eq!(X9, Decimal::ONE_HUNDREDTH);
 }
 
 #[test]
@@ -49,4 +64,19 @@ fn test_pdec_macro() {
 
     const X4: PreciseDecimal = pdec!(-1_000_000_i64);
     assert_eq!(X4, PreciseDecimal::try_from(-1_000_000_i64).unwrap());
+
+    static X5: PreciseDecimal = pdec!(1);
+    assert_eq!(X5, PreciseDecimal::ONE);
+
+    static X6: PreciseDecimal = pdec!(10);
+    assert_eq!(X6, PreciseDecimal::TEN);
+
+    static X7: PreciseDecimal = pdec!(100);
+    assert_eq!(X7, PreciseDecimal::ONE_HUNDRED);
+
+    static X8: PreciseDecimal = pdec!("0.1");
+    assert_eq!(X8, PreciseDecimal::ONE_TENTH);
+
+    static X9: PreciseDecimal = pdec!("0.01");
+    assert_eq!(X9, PreciseDecimal::ONE_HUNDREDTH);
 }
