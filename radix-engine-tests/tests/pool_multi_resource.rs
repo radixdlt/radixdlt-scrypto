@@ -61,7 +61,7 @@ pub fn cannot_set_pool_vault_number_metadata() {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+                RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
             )
         });
     });
@@ -73,7 +73,7 @@ pub fn cannot_set_pool_resources_metadata() {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+                RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
             )
         });
     });
@@ -85,7 +85,7 @@ pub fn cannot_set_pool_unit_metadata() {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+                RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
             )
         });
     });
@@ -116,7 +116,7 @@ pub fn cannot_set_pool_resource_pool_metadata() {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+                RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
             )
         });
     });

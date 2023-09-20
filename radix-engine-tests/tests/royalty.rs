@@ -470,7 +470,7 @@ fn cannot_set_royalty_after_locking() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
         )
     });
 }

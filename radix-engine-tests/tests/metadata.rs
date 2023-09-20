@@ -219,7 +219,7 @@ fn cannot_set_metadata_if_initialized_empty_locked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
         )
     });
 }

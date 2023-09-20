@@ -20,7 +20,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
-use crate::system::system_substates::{KeyValueEntrySubstate, SubstateMutability};
+use crate::system::system_substates::{KeyValueEntrySubstate, LockStatus};
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta, SystemMapper,
 };
@@ -1148,7 +1148,7 @@ where
         let value: ScryptoValue =
             scrypto_decode(&buffer).expect("Should be valid due to payload check");
 
-        let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(value));
+        let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(value));
 
         self.api.kernel_write_substate(handle, substate)?;
 
@@ -1698,7 +1698,7 @@ where
             IndexedScryptoValue::from_slice(&buffer).expect("Should be valid due to payload check");
 
         let value = substate.as_scrypto_value().clone();
-        let kv_entry = KeyValueEntrySubstate::entry(value);
+        let kv_entry = KeyValueEntrySubstate::unlocked_entry(value);
         let indexed = IndexedScryptoValue::from_typed(&kv_entry);
 
         self.api.kernel_write_substate(handle, indexed)?;
@@ -1849,15 +1849,13 @@ where
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
-            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+            let lock_status = self.api.kernel_read_substate(handle).map(|v| {
                 let kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-                kv_entry.mutability()
+                kv_entry.lock_status()
             })?;
 
-            if let SubstateMutability::Immutable = mutability {
-                return Err(RuntimeError::SystemError(
-                    SystemError::MutatingImmutableSubstate,
-                ));
+            if let LockStatus::Locked = lock_status {
+                return Err(RuntimeError::SystemError(SystemError::KeyValueEntryLocked));
             }
         }
 
@@ -2585,7 +2583,7 @@ where
                     &SubstateKey::Field(field_index),
                     flags,
                     Some(|| {
-                        IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
+                        IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(
                             default_value,
                         ))
                     }),
@@ -2595,15 +2593,16 @@ where
         };
 
         if flags.contains(LockFlags::MUTABLE) {
-            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+            let lock_status = self.api.kernel_read_substate(handle).map(|v| {
                 let field: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
-                field.into_mutability()
+                field.into_lock_status()
             })?;
 
-            if let SubstateMutability::Immutable = mutability {
-                return Err(RuntimeError::SystemError(
-                    SystemError::MutatingImmutableFieldSubstate(object_handle, field_index),
-                ));
+            if let LockStatus::Locked = lock_status {
+                return Err(RuntimeError::SystemError(SystemError::FieldLocked(
+                    object_handle,
+                    field_index,
+                )));
             }
         }
 
@@ -2706,10 +2705,8 @@ where
             let substate: KeyValueEntrySubstate<ScryptoValue> =
                 self.api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            if !substate.is_mutable() {
-                return Err(RuntimeError::SystemError(
-                    SystemError::MutatingImmutableSubstate,
-                ));
+            if substate.is_locked() {
+                return Err(RuntimeError::SystemError(SystemError::KeyValueEntryLocked));
             }
         }
 
