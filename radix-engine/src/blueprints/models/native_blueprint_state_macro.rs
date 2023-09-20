@@ -1114,17 +1114,19 @@ mod tests {
         assert_eq!(&content, payload.as_ref());
         assert_eq!(&mut content, payload.as_mut());
         assert_eq!(
-            &SubstateMutability::Immutable,
-            payload.into_locked_substate().mutability()
+            &LockStatus::Locked,
+            payload.into_locked_substate().lock_status()
         );
 
         assert_eq!(
-            &SubstateMutability::Immutable,
-            TestBlueprintRoyaltyV1.into_locked_substate().mutability()
+            &LockStatus::Locked,
+            TestBlueprintRoyaltyV1.into_locked_substate().lock_status()
         );
         assert_eq!(
-            &SubstateMutability::Mutable,
-            TestBlueprintRoyaltyV1.into_mutable_substate().mutability()
+            &LockStatus::Unlocked,
+            TestBlueprintRoyaltyV1
+                .into_unlocked_substate()
+                .lock_status()
         );
     }
 
@@ -1139,27 +1141,27 @@ mod tests {
         }
 
         assert_eq!(
-            SubstateMutability::Immutable,
-            create_payload().into_locked_substate().mutability()
+            LockStatus::Locked,
+            create_payload().into_locked_substate().lock_status()
         );
         assert_eq!(
-            SubstateMutability::Mutable,
-            create_payload().into_mutable_substate().mutability()
+            LockStatus::Unlocked,
+            create_payload().into_unlocked_substate().lock_status()
         );
 
         assert_eq!(
-            SubstateMutability::Immutable,
+            LockStatus::Locked,
             create_payload()
                 .into_content()
                 .into_locked_substate()
-                .mutability()
+                .lock_status()
         );
         assert_eq!(
-            SubstateMutability::Mutable,
+            LockStatus::Unlocked,
             create_payload()
                 .into_content()
-                .into_mutable_substate()
-                .mutability()
+                .into_unlocked_substate()
+                .lock_status()
         );
 
         assert!(create_payload().as_latest_ref().is_some());
