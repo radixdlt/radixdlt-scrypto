@@ -39,7 +39,7 @@ if [[ "$BUILD_TYPE" == "--docker" ]]; then
   # Check if the Docker image exists locally
   if [[ -z "$IMAGE_EXISTS" || ! "$REUSE_IMAGE" ]]; then
     echo "Docker image $IMAGE_NAME does not exist or --reuse-image flag not provided. Building..."
-    docker build -t $IMAGE_NAME -f simulator/Dockerfile .
+    docker build -t $IMAGE_NAME .
   else
     echo "Docker image $IMAGE_NAME exists, and --reuse-image flag is set. Skipping build."
   fi

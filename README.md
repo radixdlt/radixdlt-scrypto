@@ -94,20 +94,28 @@ scrypto test
 **Note:** The commands use the default account as transaction sender.
 
 ## Playing with the simulator
-Within the simulator directory, there's a Dockerfile that you should be able to use to build a docker image which will contain all the dependencies needed to be able 
-to build a blueprint using scrypto
+We provide a docker image so that you can build your blueprints 
 
-Build the docker image like
-``` docker build -t radixdlt/simulator -f simulator/Dockerfile .```
+### Using local docker image
+The Dockerfile in the root of the repo should be work to build a docker image which will contain all the dependencies needed to be able build a blueprint using scrypto. 
+
+Build the docker image like. From the repo root
+```
+docker build -t radixdlt/simulator .
+```
 
 Then build your package by just running
 ```
-docker run -v <your-blueprint-directory>:/src simulator
+docker run -v <your-blueprint-directory>:/src radixdlt/simulator
 ```
 
+### Using published docker image
 If you would like to avoid building the docker image, you can skip the build step and do the second step directly, docker will automatically download the docker image we publish
 
-
+Build your blueprints directly with
+```
+docker run -v <your-blueprint-directory>:/src radixdlt/simulator
+```
 
 
 ## Project Layout
