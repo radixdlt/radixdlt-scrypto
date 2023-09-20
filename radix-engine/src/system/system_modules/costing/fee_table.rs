@@ -232,11 +232,10 @@ impl FeeTable {
     }
 
     #[inline]
-    // TODO: Rename to 'create_node_from_cost' as this event is emited from kernel_create_node_from()
     pub fn move_module_cost(&self, event: &MoveModuleEvent) -> u32 {
         match event {
             MoveModuleEvent::IOAccess(io_access) => add(
-                138153 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+                4791 / CPU_INSTRUCTIONS_TO_COST_UNIT,
                 self.io_access_cost(io_access),
             ),
         }
