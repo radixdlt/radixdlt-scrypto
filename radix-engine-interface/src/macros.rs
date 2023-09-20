@@ -115,26 +115,6 @@ macro_rules! roles2 {
     })
 }
 
-/// Creates a `Decimal` from literals.
-///
-#[macro_export]
-macro_rules! dec {
-    // NOTE: Decimal arithmetic operation safe unwrap.
-    // In general, it is assumed that reasonable literals are provided.
-    // If not then something is definitely wrong and panic is fine.
-    ($x:literal) => {
-        radix_engine_common::math::Decimal::try_from($x).unwrap()
-    };
-}
-
-/// Creates a `PreciseDecimal` from literals.
-///
-#[macro_export]
-macro_rules! pdec {
-    // NOTE: PreciseDecimal arithmetic operation safe unwrap.
-    // In general, it is assumed that reasonable literals are provided.
-    // If not then something is definitely wrong and panic is fine.
-    ($x:literal) => {
-        radix_engine_common::math::PreciseDecimal::try_from($x).unwrap()
-    };
-}
+extern crate radix_engine_macros;
+pub use radix_engine_macros::dec;
+pub use radix_engine_macros::pdec;
