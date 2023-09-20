@@ -1,11 +1,10 @@
 use paste::paste;
 use proc_macro::TokenStream;
 use quote::quote;
-use radix_engine_common::prelude::CheckedNeg;
+use radix_engine_common::prelude::*;
 use syn::{parse, spanned::Spanned, Error, Expr, Lit, Result, UnOp};
 
 extern crate radix_engine_common;
-use radix_engine_common::math::{Decimal, PreciseDecimal};
 
 macro_rules! get_decimal {
     ($type:ident) => {
@@ -14,7 +13,7 @@ macro_rules! get_decimal {
                 match expr {
                     Expr::Lit(lit) => match &lit.lit {
                         Lit::Str(lit_str) => $type::try_from(lit_str.value())
-                            .map_err(|err| Error::new(lit_str.span(), format!("Parsing failed due to {:?}", err))),
+                            .map_err(|err| Error::new(lit_str.span(), [< $type:snake:lower _error_reason >](err).to_string())),
                         Lit::Int(lit_int) => {
                             if lit_int.suffix() != "" {
                                 Err(Error::new(
@@ -23,7 +22,7 @@ macro_rules! get_decimal {
                                 ))
                             } else {
                                 $type::try_from(lit_int.base10_digits())
-                                    .map_err(|err| Error::new(lit_int.span(), format!("Parsing failed due to {:?}", err)))
+                                    .map_err(|err| Error::new(lit_int.span(), [< $type:snake:lower _error_reason >](err).to_string()))
                             }
                         }
                         Lit::Float(lit_float) => {
@@ -34,7 +33,7 @@ macro_rules! get_decimal {
                                 ))
                             } else {
                                 $type::try_from(lit_float.base10_digits())
-                                    .map_err(|err| Error::new(lit_float.span(), format!("Parsing failed due to {:?}", err)))
+                                    .map_err(|err| Error::new(lit_float.span(), [< $type:snake:lower _error_reason >](err).to_string()))
                             }
                         }
                         other_lit => Err(Error::new(
@@ -47,7 +46,7 @@ macro_rules! get_decimal {
                             let res = [< get_ $type:snake:lower _from_expr >](unary.expr.as_ref());
                             match res {
                                 Ok(val) => {
-                                    let val = val.checked_neg().ok_or(Error::new(unary_neg.span, "Parsing failed due to Overflow"))?;
+                                    let val = val.checked_neg().ok_or(Error::new(unary_neg.span, "Parsing failed due to overflow."))?;
                                     Ok(val)
                                 },
                                 Err(err) => Err(Error::new(unary_neg.span, err)),
@@ -67,6 +66,46 @@ macro_rules! get_decimal {
 
         }
     };
+}
+
+fn decimal_error_reason(error: ParseDecimalError) -> &'static str {
+    match error {
+        ParseDecimalError::InvalidDigit => "There is an invalid character.",
+        ParseDecimalError::Overflow => "The number is too large to fit in a decimal.",
+        ParseDecimalError::EmptyFractionalPart => {
+            "The number cannot have an empty fractional part."
+        }
+        ParseDecimalError::MoreThanEighteenDecimalPlaces => {
+            "A decimal cannot have more than eighteen decimal places."
+        }
+        ParseDecimalError::MoreThanOneDecimalPoint => {
+            "A decimal cannot have more than one decimal point."
+        }
+        ParseDecimalError::InvalidLength(_) => {
+            unreachable!("Not a possible error from the from_str function")
+        }
+    }
+}
+
+fn precise_decimal_error_reason(error: ParsePreciseDecimalError) -> &'static str {
+    match error {
+        ParsePreciseDecimalError::InvalidDigit => "There is an invalid character",
+        ParsePreciseDecimalError::Overflow => {
+            "The number being too large to fit in a precise decimal"
+        }
+        ParsePreciseDecimalError::EmptyFractionalPart => {
+            "The number cannot have an empty fractional part."
+        }
+        ParsePreciseDecimalError::MoreThanThirtySixDecimalPlaces => {
+            "A precise decimal cannot have more than thirty-six decimal places."
+        }
+        ParsePreciseDecimalError::MoreThanOneDecimalPoint => {
+            "A precise decimal cannot have more than one decimal point."
+        }
+        ParsePreciseDecimalError::InvalidLength(_) => {
+            unreachable!("Not a possible error from the from_str function")
+        }
+    }
 }
 
 get_decimal!(Decimal);

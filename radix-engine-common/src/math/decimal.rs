@@ -742,18 +742,22 @@ impl FromStr for Decimal {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let v: Vec<&str> = s.split('.').collect();
 
+        if v.len() > 2 {
+            return Err(ParseDecimalError::MoreThanOneDecimalPoint);
+        }
+
         let integer_part = match I192::from_str(v[0]) {
             Ok(val) => val,
             Err(err) => match err {
                 ParseI192Error::NegativeToUnsigned => {
-                    unreachable!("Not possible to be thrown by from_str")
+                    unreachable!("NegativeToUnsigned is only for parsing unsigned types, not I192")
                 }
                 ParseI192Error::Overflow => return Err(ParseDecimalError::Overflow),
                 ParseI192Error::InvalidLength => {
-                    unreachable!("Not possible to be thrown by from_str")
+                    unreachable!("InvalidLength is only for parsing &[u8], not &str")
                 }
                 ParseI192Error::InvalidDigit => return Err(ParseDecimalError::InvalidDigit),
-                ParseI192Error::Empty => I192::ZERO,
+                ParseI192Error::Empty => I192::ZERO, // Allows parsing ".123"
             },
         };
 
@@ -772,11 +776,13 @@ impl FromStr for Decimal {
                 Ok(val) => val,
                 Err(err) => match err {
                     ParseI192Error::NegativeToUnsigned => {
-                        unreachable!("Not possible to be thrown by from_str")
+                        unreachable!(
+                            "NegativeToUnsigned is only for parsing unsigned types, no I192"
+                        )
                     }
                     ParseI192Error::Overflow => return Err(ParseDecimalError::Overflow),
                     ParseI192Error::InvalidLength => {
-                        unreachable!("Not possible to be thrown by from_str")
+                        unreachable!("InvalidLength is only for parsing &[u8], not &str")
                     }
                     ParseI192Error::InvalidDigit => return Err(ParseDecimalError::InvalidDigit),
                     ParseI192Error::Empty => return Err(ParseDecimalError::EmptyFractionalPart),
@@ -841,11 +847,11 @@ impl fmt::Debug for Decimal {
 /// Represents an error when parsing Decimal from another type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseDecimalError {
-    InvalidDecimal(String),
     InvalidDigit,
     Overflow,
     EmptyFractionalPart,
     MoreThanEighteenDecimalPlaces,
+    MoreThanOneDecimalPoint,
     InvalidLength(usize),
 }
 

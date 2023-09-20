@@ -224,7 +224,7 @@ macro_rules! impl_from_string {
                                 core::num::IntErrorKind::InvalidDigit => [<Parse $t Error>]::InvalidDigit,
                                 core::num::IntErrorKind::PosOverflow => [<Parse $t Error>]::Overflow,
                                 core::num::IntErrorKind::NegOverflow => [<Parse $t Error>]::Overflow,
-                                core::num::IntErrorKind::Zero => unreachable!(),
+                                core::num::IntErrorKind::Zero => unreachable!("Zero is only issued for non-zero type"),
                                 _ => [<Parse $t Error>]::InvalidDigit, // Enum is non-exhaustive, sensible fallback is InvalidDigit
                             })
                         }

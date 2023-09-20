@@ -780,15 +780,19 @@ impl FromStr for PreciseDecimal {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let v: Vec<&str> = s.split('.').collect();
 
+        if v.len() > 2 {
+            return Err(ParsePreciseDecimalError::MoreThanOneDecimalPoint);
+        }
+
         let integer_part = match I256::from_str(v[0]) {
             Ok(val) => val,
             Err(err) => match err {
                 ParseI256Error::NegativeToUnsigned => {
-                    unreachable!("Not possible to be thrown by from_str")
+                    unreachable!("NegativeToUnsigned is only for parsing unsigned types, not I256")
                 }
                 ParseI256Error::Overflow => return Err(ParsePreciseDecimalError::Overflow),
                 ParseI256Error::InvalidLength => {
-                    unreachable!("Not possible to be thrown by from_str")
+                    unreachable!("InvalidLength is only for parsing &[u8], not &str")
                 }
                 ParseI256Error::InvalidDigit => return Err(ParsePreciseDecimalError::InvalidDigit),
                 ParseI256Error::Empty => I256::ZERO,
@@ -810,11 +814,13 @@ impl FromStr for PreciseDecimal {
                 Ok(val) => val,
                 Err(err) => match err {
                     ParseI256Error::NegativeToUnsigned => {
-                        unreachable!("Not possible to be thrown by from_str")
+                        unreachable!(
+                            "NegativeToUnsigned is only for parsing unsigned types, not I256"
+                        )
                     }
                     ParseI256Error::Overflow => return Err(ParsePreciseDecimalError::Overflow),
                     ParseI256Error::InvalidLength => {
-                        unreachable!("Not possible to be thrown by from_str")
+                        unreachable!("InvalidLength is only for parsing &[u8], not &str")
                     }
                     ParseI256Error::InvalidDigit => {
                         return Err(ParsePreciseDecimalError::InvalidDigit)
@@ -883,11 +889,11 @@ impl fmt::Debug for PreciseDecimal {
 /// Represents an error when parsing PreciseDecimal from another type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParsePreciseDecimalError {
-    InvalidDecimal(String),
     InvalidDigit,
     Overflow,
     EmptyFractionalPart,
     MoreThanThirtySixDecimalPlaces,
+    MoreThanOneDecimalPoint,
     InvalidLength(usize),
 }
 
