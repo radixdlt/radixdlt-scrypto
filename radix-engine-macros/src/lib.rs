@@ -1,10 +1,13 @@
+use proc_macro::TokenStream;
+
 #[cfg(not(panic = "unwind"))]
 compile_error!("The `catch_unwind` crate requires that `panic = \"unwind\"` in the profile");
 
-use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::{quote, ToTokens};
-use syn::*;
+mod unwind;
+use unwind::handle_catch_unwind;
+
+mod decimal;
+use decimal::{to_decimal, to_precise_decimal};
 
 #[proc_macro_attribute]
 pub fn catch_unwind(metadata: TokenStream, input: TokenStream) -> TokenStream {
@@ -18,40 +21,34 @@ pub fn ignore(_: TokenStream, input: TokenStream) -> TokenStream {
     input
 }
 
-fn handle_catch_unwind(metadata: TokenStream2, input: TokenStream2) -> Result<TokenStream2> {
-    let rtn_transformer = parse2::<Path>(metadata)?;
-
-    if let Ok(mut item_fn) = parse2::<ItemFn>(input.clone()) {
-        process_function(&mut item_fn.attrs, &mut item_fn.block, &rtn_transformer);
-        Ok(quote! { #item_fn })
-    } else if let Ok(mut item_impl) = parse2::<ItemImpl>(input) {
-        for item in item_impl.items.iter_mut() {
-            if let ImplItem::Method(method) = item {
-                process_function(&mut method.attrs, &mut method.block, &rtn_transformer)
-            }
-        }
-        Ok(quote! { #item_impl })
-    } else {
-        Err(Error::new(
-            Span::call_site(),
-            "Only functions and impls are supported by `catch_unwind`.",
-        ))
-    }
+/// Creates a `Decimal` from literals.
+/// It is a compile-time macro. It allows to declare constants and statics.
+/// Example:
+///  const D1: Decimal = dec!("1111.11111")
+///  const D2: Decimal = dec!("-1111.11111")
+///  const D3: Decimal = dec!(1)
+///  const D4: Decimal = dec!(-1_0000_000_u128)
+///
+// NOTE: Decimal arithmetic operation safe unwrap.
+// In general, it is assumed that reasonable literals are provided.
+// If not then something is definitely wrong and panic is fine.
+#[proc_macro]
+pub fn dec(input: TokenStream) -> TokenStream {
+    to_decimal(input)
 }
 
-fn process_function(attrs: &mut Vec<Attribute>, block: &mut Block, rtn_transformer: &Path) {
-    if let Some((index, _)) = attrs.iter().enumerate().find(|(_, attribute)| {
-        (&(*attribute).clone())
-            .into_token_stream()
-            .to_string()
-            .contains("catch_unwind_ignore")
-    }) {
-        attrs.remove(index);
-        return;
-    }
-
-    let transformed_block: Block = parse_quote! { {
-        #rtn_transformer(::std::panic::catch_unwind(::std::panic::AssertUnwindSafe(crate::utils::fn_once(|| #block))))
-    } };
-    *block = transformed_block;
+/// Creates a `PreciseDecimal` from literals.
+/// It is a compile-time macro. It allows to declare constants and statics.
+/// Example:
+///  const D1: PreciseDecimal = pdec!("1111.11111")
+///  const D2: PreciseDecimal = pdec!("-1111.11111")
+///  const D3: PreciseDecimal = pdec!(1)
+///  const D4: PreciseDecimal = pdec!(-1_0000_000_u128)
+///
+// NOTE: Decimal arithmetic operation safe unwrap.
+// In general, it is assumed that reasonable literals are provided.
+// If not then something is definitely wrong and panic is fine.
+#[proc_macro]
+pub fn pdec(input: TokenStream) -> TokenStream {
+    to_precise_decimal(input)
 }
