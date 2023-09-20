@@ -14,9 +14,9 @@ macro_rules! get_decimal {
                 match expr {
                     Expr::Lit(lit) => match &lit.lit {
                         Lit::Str(lit_str) => $type::try_from(lit_str.value())
-                            .map_err(|err| Error::new(lit_str.span(), format!("Parsing failed due to {:?}", err.to_string()))),
+                            .map_err(|err| Error::new(lit_str.span(), format!("Parsing failed due to {:?}", err))),
                         Lit::Int(lit_int) => $type::try_from(lit_int.base10_digits())
-                            .map_err(|err| Error::new(lit_int.span(), format!("Parsing failed due to {:?}", err.to_string()))),
+                            .map_err(|err| Error::new(lit_int.span(), format!("Parsing failed due to {:?}", err))),
                         Lit::Bool(lit_bool) => Ok($type::from(lit_bool.value)),
                         other_lit => Err(Error::new(
                             other_lit.span(),
@@ -31,7 +31,7 @@ macro_rules! get_decimal {
                                     let val = val.checked_neg().ok_or(Error::new(unary_neg.span, "Parsing failed due to Overflow"))?;
                                     Ok(val)
                                 },
-                                Err(err) => Err(syn::Error::new(unary_neg.span, err.to_string())),
+                                Err(err) => Err(Error::new(unary_neg.span, err)),
                             }
                         }
                         other_unary => Err(Error::new(
