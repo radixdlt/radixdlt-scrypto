@@ -175,6 +175,17 @@ impl CustomGenesis {
         )
     }
 
+    pub fn with_faucet_supply(faucet_supply: Decimal) -> CustomGenesis {
+        CustomGenesis {
+            genesis_data_chunks: vec![],
+            genesis_epoch: Epoch::of(1u64),
+            initial_config: Self::default_consensus_manager_config(),
+            initial_time_ms: 0,
+            initial_current_leader: None,
+            faucet_supply,
+        }
+    }
+
     pub fn default_with_xrd_amount(
         xrd_amount: Decimal,
         genesis_epoch: Epoch,
