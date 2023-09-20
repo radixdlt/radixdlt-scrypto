@@ -88,14 +88,6 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
-impl RuntimeError {
-    pub const fn update_substate(e: CloseSubstateError) -> Self {
-        Self::KernelError(KernelError::CallFrameError(
-            CallFrameError::CloseSubstateError(e),
-        ))
-    }
-}
-
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
         RuntimeError::KernelError(error.into())

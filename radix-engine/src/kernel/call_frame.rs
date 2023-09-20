@@ -74,10 +74,6 @@ impl CallFrameMessage {
             copy_stable_transient_references: vec![],
         }
     }
-
-    pub fn add_move_node(&mut self, node_id: NodeId) {
-        self.move_nodes.push(node_id)
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
