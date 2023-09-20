@@ -4,10 +4,10 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::kernel::substate_io::SubstateDevice;
+use crate::system::actor::Actor;
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::{
     blueprints::package::*,
-    kernel::actor::Actor,
     track::interface::{IOAccess, StoreCommit},
     types::*,
 };

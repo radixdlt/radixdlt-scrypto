@@ -1,13 +1,13 @@
 use super::*;
 use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
-use crate::kernel::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
     OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::system::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::system::attached_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
