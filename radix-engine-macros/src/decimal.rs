@@ -75,7 +75,7 @@ pub fn to_precise_decimal(input: TokenStream) -> TokenStream {
     let i0 = arr[0];
     let i1 = arr[1];
     let i2 = arr[2];
-    let i3 = arr[2];
+    let i3 = arr[3];
 
     TokenStream::from(quote! {
         radix_engine_common::math::PreciseDecimal(radix_engine_common::math::I256::from_digits([#i0, #i1, #i2, #i3]))
