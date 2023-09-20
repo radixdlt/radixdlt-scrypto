@@ -11,9 +11,9 @@ mod test_decimal {
                 .unwrap()
                 .checked_sub(
                     dec!("3.5")
-                        .checked_mul(dec!(5, 6))
+                        .checked_mul(dec!(5_000_000))
                         .unwrap()
-                        .checked_div(dec!("7", -8))
+                        .checked_div(dec!("0.00000007"))
                         .unwrap(),
                 )
                 .unwrap()
@@ -24,9 +24,9 @@ mod test_decimal {
                 .unwrap()
                 .checked_sub(
                     pdec!("3.5")
-                        .checked_mul(pdec!(5, 6))
+                        .checked_mul(pdec!(5_000_000))
                         .unwrap()
-                        .checked_div(pdec!("7", -8))
+                        .checked_div(pdec!("0.00000007"))
                         .unwrap(),
                 )
                 .unwrap()
