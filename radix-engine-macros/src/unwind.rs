@@ -39,4 +39,3 @@ fn process_function(attrs: &mut Vec<Attribute>, block: &mut Block, rtn_transform
     } };
     *block = transformed_block;
 }
-
