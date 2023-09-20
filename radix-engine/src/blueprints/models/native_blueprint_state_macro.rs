@@ -1077,7 +1077,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_declare_key_new_type_macro() {
+    fn validate_declare_sorted_index_key_new_type_macro() {
         let mut bv = BlueprintVersion::default();
         let mut idx_key = TestBlueprintMyCoolSortedIndexKeyPayload::new(1, bv);
 
@@ -1085,5 +1085,18 @@ mod tests {
         assert_eq!(&mut bv, idx_key.as_mut());
         assert_eq!((1, &bv), idx_key.as_sort_key_and_content());
         assert_eq!((1, bv), idx_key.into_sort_key_and_content());
+    }
+
+    #[test]
+    fn validate_declare_index_key_new_type_macro() {
+        let mut bv = BlueprintVersion::default();
+        let mut payload = TestBlueprintMyCoolIndexKeyPayload::from(bv);
+
+        assert_eq!(&bv, payload.as_ref());
+        assert_eq!(&mut bv, payload.as_mut());
+        assert_eq!(
+            bv,
+            IndexKeyContentSource::into_content(payload.into_content())
+        );
     }
 }
