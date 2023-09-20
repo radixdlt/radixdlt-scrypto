@@ -31,7 +31,7 @@ jobs:
       image_name: "simulator"
       tag: ${{ needs.tags.outputs.tag }}
       context: "."
-      dockerfile: "./simulator/Dockerfile"
+      dockerfile: "Dockerfile"
       platforms: "linux/amd64"
       provenance: "false"
       scan_image: false
@@ -53,7 +53,7 @@ jobs:
       image_name: "simulator"
       tag: ${{ needs.tags.outputs.tag }}
       context: "."
-      dockerfile: "./simulator/Dockerfile"
+      dockerfile: "Dockerfile"
       platforms: "linux/arm64"
       provenance: "false"
       scan_image: false
