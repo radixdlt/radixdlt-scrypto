@@ -36,11 +36,22 @@ mod faucet {
             let epoch = Runtime::current_epoch();
             assert!(self.transactions.get(&transaction_hash).is_none());
             self.transactions.insert(transaction_hash, epoch);
-            self.vault.take(10000)
+
+            let amount: Decimal = 10000.into();
+
+            if self.vault.amount() < amount {
+                panic!("The faucet doesn't have funds on this environment. You will need to source XRD another way.")
+            }
+
+            self.vault.take(amount)
         }
 
         /// Locks fee
         pub fn lock_fee(&mut self, amount: Decimal) {
+            if self.vault.amount() < amount {
+                panic!("The faucet doesn't have funds on this environment. Consider locking fee from an account instead.")
+            }
+
             self.vault.as_fungible().lock_fee(amount);
         }
     }

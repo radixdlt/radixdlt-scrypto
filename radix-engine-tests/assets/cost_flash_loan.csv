@@ -1,11 +1,11 @@
-Total Cost (XRD)                                                           ,            0.64123397592,    100.0%
-- Execution Cost (XRD)                                                     ,               0.48080275,     75.0%
+Total Cost (XRD)                                                           ,            0.64064157592,    100.0%
+- Execution Cost (XRD)                                                     ,               0.48021035,     75.0%
 - Finalization Cost (XRD)                                                  ,                0.0322574,      5.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,            0.12817382592,     20.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  9616055,    100.0%
+Execution Cost Breakdown                                                   ,                  9604207,    100.0%
 - AfterInvoke                                                              ,                     1884,      0.0%
 - AllocateNodeId                                                           ,                     5141,      0.1%
 - BeforeInvoke                                                             ,                     7694,      0.1%
@@ -20,13 +20,13 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   259797,      2.7%
 - OpenSubstate::GlobalGenericComponent                                     ,                    47692,      0.5%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                   632452,      6.6%
-- OpenSubstate::GlobalPackage                                              ,                  3478882,     36.2%
+- OpenSubstate::GlobalPackage                                              ,                  3475442,     36.2%
 - OpenSubstate::InternalFungibleVault                                      ,                   290575,      3.0%
 - OpenSubstate::InternalGenericComponent                                   ,                   211658,      2.2%
 - PinNode                                                                  ,                      636,      0.0%
-- PrepareWasmCode                                                          ,                  1043780,     10.9%
+- PrepareWasmCode                                                          ,                  1040424,     10.8%
 - QueryActor                                                               ,                    10500,      0.1%
-- ReadSubstate                                                             ,                  1401381,     14.6%
+- ReadSubstate                                                             ,                  1398025,     14.6%
 - RunNativeCode::AuthZone_pop                                              ,                    33696,      0.4%
 - RunNativeCode::AuthZone_push                                             ,                    47700,      0.5%
 - RunNativeCode::Worktop_drain                                             ,                    11224,      0.1%
@@ -54,8 +54,8 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   121257,      1.3%
 - RunNativeCode::unlock_amount_FungibleVault                               ,                    46544,      0.5%
 - RunNativeCode::withdraw                                                  ,                    57851,      0.6%
-- RunWasmCode::BasicFlashLoan_repay_loan                                   ,                    76937,      0.8%
-- RunWasmCode::BasicFlashLoan_take_loan                                    ,                    91852,      1.0%
+- RunWasmCode::BasicFlashLoan_repay_loan                                   ,                    75870,      0.8%
+- RunWasmCode::BasicFlashLoan_take_loan                                    ,                    91223,      0.9%
 - ValidateTxPayload                                                        ,                    18800,      0.2%
 - VerifyTxSignatures                                                       ,                    14000,      0.1%
 - WriteSubstate                                                            ,                    33968,      0.4%
