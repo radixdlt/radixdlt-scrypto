@@ -468,7 +468,10 @@ fn cannot_set_royalty_after_locking() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
+        )
     });
 }
 

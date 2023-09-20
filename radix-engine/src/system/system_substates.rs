@@ -101,10 +101,10 @@ impl<V> KeyValueEntrySubstate<V> {
         }
     }
 
-    pub fn is_unlocked(&self) -> bool {
+    pub fn is_locked(&self) -> bool {
         match self {
             KeyValueEntrySubstate::V1(substate) => {
-                matches!(substate.lock_status, LockStatus::Unlocked)
+                matches!(substate.lock_status, LockStatus::Locked)
             }
         }
     }

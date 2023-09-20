@@ -258,10 +258,7 @@ fn invalid_collection_should_error() {
 fn mutating_immutable_field_should_error() {
     run("mutate_immutable_field", true, |receipt| {
         receipt.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::SystemError(SystemError::FieldSubstateLocked(..))
-            )
+            matches!(e, RuntimeError::SystemError(SystemError::FieldLocked(..)))
         });
     });
 }

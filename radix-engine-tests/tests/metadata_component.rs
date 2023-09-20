@@ -339,7 +339,10 @@ fn cannot_set_address_metadata_after_freezing() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::SystemError(SystemError::SubstateLocked))
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
+        )
     });
 }
 

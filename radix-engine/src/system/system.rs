@@ -1855,7 +1855,7 @@ where
             })?;
 
             if let LockStatus::Locked = lock_status {
-                return Err(RuntimeError::SystemError(SystemError::SubstateLocked));
+                return Err(RuntimeError::SystemError(SystemError::KeyValueEntryLocked));
             }
         }
 
@@ -2599,7 +2599,7 @@ where
             })?;
 
             if let LockStatus::Locked = lock_status {
-                return Err(RuntimeError::SystemError(SystemError::FieldSubstateLocked(
+                return Err(RuntimeError::SystemError(SystemError::FieldLocked(
                     object_handle,
                     field_index,
                 )));
@@ -2705,8 +2705,8 @@ where
             let substate: KeyValueEntrySubstate<ScryptoValue> =
                 self.api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            if !substate.is_unlocked() {
-                return Err(RuntimeError::SystemError(SystemError::SubstateLocked));
+            if substate.is_locked() {
+                return Err(RuntimeError::SystemError(SystemError::KeyValueEntryLocked));
             }
         }
 
