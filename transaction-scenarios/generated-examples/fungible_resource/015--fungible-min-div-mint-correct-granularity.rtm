@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 MINT_FUNGIBLE
-    Address("resource_sim1t5x90l22738fraa90s5n875yaxytmxypet9jn5mv0mdv5cvl330dun")
+    Address("resource_sim1t5lam43hk5fg9h2x7a8zgpfxsd78539kzm4h0xugldymfexuh2wzru")
     Decimal("166")
 ;
 CALL_METHOD

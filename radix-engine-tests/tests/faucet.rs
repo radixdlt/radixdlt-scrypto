@@ -1,11 +1,6 @@
 mod package_loader;
 
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use rand::prelude::SliceRandom;
-use rand::Rng;
-use rand_chacha;
-use rand_chacha::rand_core::SeedableRng;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
