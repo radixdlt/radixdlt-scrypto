@@ -7,9 +7,14 @@ edition = "2021"
 proc-macro2 = "1.0.66"
 quote = "1.0.33"
 syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
-radix-engine-common = { path = "../radix-engine-common" }
+radix-engine-common= { path = "../radix-engine-common", default-features = false }
 
 [lib]
 doctest = false
 proc-macro = true
 bench = false
+
+[features]
+default = ["std"]
+std = ["radix-engine-common/std"]
+alloc = ["radix-engine-common/alloc"]
