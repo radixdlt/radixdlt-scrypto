@@ -1,9 +1,14 @@
 name: Simulator
 
 on:
+  pull_request:
+  release:
+    types: [published]
   push:
     branches:
-      - chore/simulator-image
+      - develop
+      - main
+      - release\/*
 
 jobs:
   tags:
@@ -31,8 +36,9 @@ jobs:
       provenance: "false"
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: ${{ github.event_name }} == 'release'
       sanity_check: "./update-assets.sh --docker --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
