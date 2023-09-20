@@ -745,15 +745,21 @@ impl FromStr for Decimal {
         let integer_part = match I192::from_str(v[0]) {
             Ok(val) => val,
             Err(err) => match err {
-                ParseI192Error::NegativeToUnsigned => unreachable!("Not possible to be thrown by from_str"),
+                ParseI192Error::NegativeToUnsigned => {
+                    unreachable!("Not possible to be thrown by from_str")
+                }
                 ParseI192Error::Overflow => return Err(ParseDecimalError::Overflow),
-                ParseI192Error::InvalidLength => unreachable!("Not possible to be thrown by from_str"),
+                ParseI192Error::InvalidLength => {
+                    unreachable!("Not possible to be thrown by from_str")
+                }
                 ParseI192Error::InvalidDigit => return Err(ParseDecimalError::InvalidDigit),
                 ParseI192Error::Empty => I192::ZERO,
             },
         };
 
-        let mut subunits = integer_part.checked_mul(Self::ONE.0).ok_or(ParseDecimalError::Overflow)?;
+        let mut subunits = integer_part
+            .checked_mul(Self::ONE.0)
+            .ok_or(ParseDecimalError::Overflow)?;
 
         if v.len() == 2 {
             let scale = if let Some(scale) = Self::SCALE.checked_sub(v[1].len() as u32) {
@@ -765,23 +771,33 @@ impl FromStr for Decimal {
             let fractional_part = match I192::from_str(v[1]) {
                 Ok(val) => val,
                 Err(err) => match err {
-                    ParseI192Error::NegativeToUnsigned => unreachable!("Not possible to be thrown by from_str"),
+                    ParseI192Error::NegativeToUnsigned => {
+                        unreachable!("Not possible to be thrown by from_str")
+                    }
                     ParseI192Error::Overflow => return Err(ParseDecimalError::Overflow),
-                    ParseI192Error::InvalidLength => unreachable!("Not possible to be thrown by from_str"),
+                    ParseI192Error::InvalidLength => {
+                        unreachable!("Not possible to be thrown by from_str")
+                    }
                     ParseI192Error::InvalidDigit => return Err(ParseDecimalError::InvalidDigit),
                     ParseI192Error::Empty => return Err(ParseDecimalError::EmptyFractionalPart),
                 },
             };
 
             // The product of these must be less than Self::SCALE
-            let fractional_subunits = fractional_part.checked_mul(I192::TEN.pow(scale)).expect("No overflow possible");
+            let fractional_subunits = fractional_part
+                .checked_mul(I192::TEN.pow(scale))
+                .expect("No overflow possible");
 
             // if input is -0. then from_str returns 0 and we loose '-' sign.
             // Therefore check for '-' in input directly
             if integer_part.is_negative() || v[0].starts_with('-') {
-                subunits = subunits.checked_sub(fractional_subunits).ok_or(ParseDecimalError::Overflow)?;
+                subunits = subunits
+                    .checked_sub(fractional_subunits)
+                    .ok_or(ParseDecimalError::Overflow)?;
             } else {
-                subunits = subunits.checked_add(fractional_subunits).ok_or(ParseDecimalError::Overflow)?;
+                subunits = subunits
+                    .checked_add(fractional_subunits)
+                    .ok_or(ParseDecimalError::Overflow)?;
             }
         }
         Ok(Self(subunits))

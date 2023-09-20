@@ -783,15 +783,21 @@ impl FromStr for PreciseDecimal {
         let integer_part = match I256::from_str(v[0]) {
             Ok(val) => val,
             Err(err) => match err {
-                ParseI256Error::NegativeToUnsigned => unreachable!("Not possible to be thrown by from_str"),
+                ParseI256Error::NegativeToUnsigned => {
+                    unreachable!("Not possible to be thrown by from_str")
+                }
                 ParseI256Error::Overflow => return Err(ParsePreciseDecimalError::Overflow),
-                ParseI256Error::InvalidLength => unreachable!("Not possible to be thrown by from_str"),
+                ParseI256Error::InvalidLength => {
+                    unreachable!("Not possible to be thrown by from_str")
+                }
                 ParseI256Error::InvalidDigit => return Err(ParsePreciseDecimalError::InvalidDigit),
                 ParseI256Error::Empty => I256::ZERO,
             },
         };
 
-        let mut subunits = integer_part.checked_mul(Self::ONE.0).ok_or(ParsePreciseDecimalError::Overflow)?;
+        let mut subunits = integer_part
+            .checked_mul(Self::ONE.0)
+            .ok_or(ParsePreciseDecimalError::Overflow)?;
 
         if v.len() == 2 {
             let scale = if let Some(scale) = Self::SCALE.checked_sub(v[1].len() as u32) {
@@ -803,23 +809,37 @@ impl FromStr for PreciseDecimal {
             let fractional_part = match I256::from_str(v[1]) {
                 Ok(val) => val,
                 Err(err) => match err {
-                    ParseI256Error::NegativeToUnsigned => unreachable!("Not possible to be thrown by from_str"),
+                    ParseI256Error::NegativeToUnsigned => {
+                        unreachable!("Not possible to be thrown by from_str")
+                    }
                     ParseI256Error::Overflow => return Err(ParsePreciseDecimalError::Overflow),
-                    ParseI256Error::InvalidLength => unreachable!("Not possible to be thrown by from_str"),
-                    ParseI256Error::InvalidDigit => return Err(ParsePreciseDecimalError::InvalidDigit),
-                    ParseI256Error::Empty => return Err(ParsePreciseDecimalError::EmptyFractionalPart),
+                    ParseI256Error::InvalidLength => {
+                        unreachable!("Not possible to be thrown by from_str")
+                    }
+                    ParseI256Error::InvalidDigit => {
+                        return Err(ParsePreciseDecimalError::InvalidDigit)
+                    }
+                    ParseI256Error::Empty => {
+                        return Err(ParsePreciseDecimalError::EmptyFractionalPart)
+                    }
                 },
             };
 
             // The product of these must be less than Self::SCALE
-            let fractional_subunits = fractional_part.checked_mul(I256::TEN.pow(scale)).expect("No overflow possible");
+            let fractional_subunits = fractional_part
+                .checked_mul(I256::TEN.pow(scale))
+                .expect("No overflow possible");
 
             // if input is -0. then from_str returns 0 and we loose '-' sign.
             // Therefore check for '-' in input directly
             if integer_part.is_negative() || v[0].starts_with('-') {
-                subunits = subunits.checked_sub(fractional_subunits).ok_or(ParsePreciseDecimalError::Overflow)?;
+                subunits = subunits
+                    .checked_sub(fractional_subunits)
+                    .ok_or(ParsePreciseDecimalError::Overflow)?;
             } else {
-                subunits = subunits.checked_add(fractional_subunits).ok_or(ParsePreciseDecimalError::Overflow)?;
+                subunits = subunits
+                    .checked_add(fractional_subunits)
+                    .ok_or(ParsePreciseDecimalError::Overflow)?;
             }
         }
         Ok(Self(subunits))
@@ -1023,7 +1043,9 @@ mod tests {
             PreciseDecimal::MAX,
         );
         assert_eq!(
-            PreciseDecimal::from_str("57896044618658097711785492504343953926634.992332820282019728792003956564819968"),
+            PreciseDecimal::from_str(
+                "57896044618658097711785492504343953926634.992332820282019728792003956564819968"
+            ),
             Err(ParsePreciseDecimalError::Overflow),
         );
         assert_eq!(
@@ -1038,7 +1060,9 @@ mod tests {
             PreciseDecimal::MIN,
         );
         assert_eq!(
-            PreciseDecimal::from_str("-57896044618658097711785492504343953926634.992332820282019728792003956564819969"),
+            PreciseDecimal::from_str(
+                "-57896044618658097711785492504343953926634.992332820282019728792003956564819969"
+            ),
             Err(ParsePreciseDecimalError::Overflow),
         );
         assert_eq!(
