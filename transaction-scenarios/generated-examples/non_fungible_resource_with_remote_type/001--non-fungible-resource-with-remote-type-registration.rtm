@@ -122,6 +122,22 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<14u8>(
                                     Array<Enum>(
                                         Enum<0u8>(
+                                            230u8
+                                        ),
+                                        Enum<0u8>(
+                                            133u8
+                                        ),
+                                        Enum<0u8>(
+                                            133u8
+                                        ),
+                                        Enum<0u8>(
+                                            132u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
                                             192u8
                                         ),
                                         Enum<1u8>(
@@ -263,6 +279,21 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
+                                        "InstantiationEvent"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "owner_role",
+                                                "resource_address1",
+                                                "resource_address2",
+                                                "component_address"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
                                         "RemoveLiquidityEvent"
                                     ),
                                     Enum<1u8>(
@@ -328,6 +359,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(),
                                 Enum<0u8>(),
+                                Enum<0u8>(),
                                 Enum<0u8>()
                             )
                         )
@@ -352,20 +384,25 @@ PUBLISH_PACKAGE_ADVANCED
                                 10u64
                             )
                         ),
-                        "RemoveLiquidityEvent" => Enum<0u8>(
+                        "InstantiationEvent" => Enum<0u8>(
                             Enum<1u8>(
                                 13u64
                             )
                         ),
-                        "SwapEvent" => Enum<0u8>(
+                        "RemoveLiquidityEvent" => Enum<0u8>(
                             Enum<1u8>(
                                 14u64
+                            )
+                        ),
+                        "SwapEvent" => Enum<0u8>(
+                            Enum<1u8>(
+                                15u64
                             )
                         )
                     ),
                     Map<String, Enum>(
                         "RemoveLiquidityEvent" => Enum<1u8>(
-                            13u64
+                            14u64
                         )
                     ),
                     Tuple(
@@ -461,7 +498,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("5ac3c0197ffedd42bd66d9cb80455da64a74df92acccee36c924439f0d82aa7f")
+    Blob("70fca0bc6630134acc829b3a527e09e4d33765e4b6fe42fe465038dbd0217508")
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(

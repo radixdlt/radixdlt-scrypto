@@ -6,7 +6,7 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "withdraw_non_fungibles"
-    Address("resource_sim1ntyvf6wkx4qxnztt20ahymmq95yees29m08zyd3lelvfl8vs88qtlv")
+    Address("resource_sim1ntek64g76jh94ykekzvcp44svlzue5dve9grl09y3runtk9wue9d28")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#4#"),
         NonFungibleLocalId("#8#")

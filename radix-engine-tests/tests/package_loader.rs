@@ -25,6 +25,7 @@ mod package_loader {
 }
 
 #[cfg(not(feature = "compile-blueprints-at-build-time"))]
+#[allow(unused)]
 mod package_loader {
     use radix_engine_common::prelude::*;
     use radix_engine_queries::typed_substate_layout::*;
