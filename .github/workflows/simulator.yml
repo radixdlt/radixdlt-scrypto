@@ -43,24 +43,3 @@ jobs:
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
-  build-arm:
-    needs: tags
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
-    with:
-      runs_on: arm64
-      image_registry: "docker.io"
-      image_organization: "radixdlt"
-      image_name: "simulator"
-      tag: ${{ needs.tags.outputs.tag }}
-      context: "."
-      dockerfile: "Dockerfile"
-      platforms: "linux/arm64"
-      provenance: "false"
-      scan_image: false
-      snyk_target_ref: ${{ github.ref_name }}
-      enable_dockerhub: ${{ github.event_name }} == 'release'
-      post_script: "./update-assets.sh --docker --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
-    secrets:
-      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}

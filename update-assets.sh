@@ -4,14 +4,14 @@ set -e
 # Default values
 IMAGE_NAME="radixdlt/simulator"
 IMAGE_TAG="latest"
-REUSE_IMAGE=false
+REUSE_IMAGE="false"
 BUILD_TYPE="--docker"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --reuse-image)
-      REUSE_IMAGE=true
+      REUSE_IMAGE="true"
       ;;
     --image-tag)
       shift
@@ -30,14 +30,12 @@ done
 
 if [[ "$BUILD_TYPE" == "--docker" ]]; then
 
-  IMAGE_EXISTS=$(docker images -q "$IMAGE_NAME" 2>/dev/null)
-
   # Check if the Docker image exists locally
-  if [[ -z "$IMAGE_EXISTS" || ! "$REUSE_IMAGE" ]]; then
-    echo "Docker image $IMAGE_NAME does not exist or --reuse-image flag not provided. Building..."
+  if [[  "$REUSE_IMAGE" == "false" ]]; then
+    echo "--reuse-image flag not provided. Building..."
     docker build -t $IMAGE_NAME .
   else
-    echo "Docker image $IMAGE_NAME exists, and --reuse-image flag is set. Skipping build."
+    echo "--reuse-image flag is set. Skipping build."
   fi
 
   for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store" "max_transaction"
