@@ -795,7 +795,9 @@ impl FromStr for PreciseDecimal {
                     unreachable!("InvalidLength is only for parsing &[u8], not &str")
                 }
                 ParseI256Error::InvalidDigit => return Err(ParsePreciseDecimalError::InvalidDigit),
-                ParseI256Error::Empty => I256::ZERO,
+                // We have decided to be restrictive to force people to type "0.123" instead of ".123"
+                // for clarity, and to align with how rust's float literal works
+                ParseI256Error::Empty => return Err(ParsePreciseDecimalError::EmptyIntegralPart),
             },
         };
 
@@ -891,6 +893,7 @@ impl fmt::Debug for PreciseDecimal {
 pub enum ParsePreciseDecimalError {
     InvalidDigit,
     Overflow,
+    EmptyIntegralPart,
     EmptyFractionalPart,
     MoreThanThirtySixDecimalPlaces,
     MoreThanOneDecimalPoint,
@@ -1072,8 +1075,8 @@ mod tests {
             Err(ParsePreciseDecimalError::Overflow),
         );
         assert_eq!(
-            PreciseDecimal::from_str(".000000000000000231").unwrap(),
-            PreciseDecimal(I256::from(231) * I256::TEN.pow(18)),
+            PreciseDecimal::from_str(".000000000000000231"),
+            Err(ParsePreciseDecimalError::EmptyIntegralPart),
         );
         assert_eq!(
             PreciseDecimal::from_str("231."),

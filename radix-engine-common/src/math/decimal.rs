@@ -757,7 +757,9 @@ impl FromStr for Decimal {
                     unreachable!("InvalidLength is only for parsing &[u8], not &str")
                 }
                 ParseI192Error::InvalidDigit => return Err(ParseDecimalError::InvalidDigit),
-                ParseI192Error::Empty => I192::ZERO, // Allows parsing ".123"
+                // We have decided to be restrictive to force people to type "0.123" instead of ".123"
+                // for clarity, and to align with how rust's float literal works
+                ParseI192Error::Empty => return Err(ParseDecimalError::EmptyIntegralPart),
             },
         };
 
@@ -849,6 +851,7 @@ impl fmt::Debug for Decimal {
 pub enum ParseDecimalError {
     InvalidDigit,
     Overflow,
+    EmptyIntegralPart,
     EmptyFractionalPart,
     MoreThanEighteenDecimalPlaces,
     MoreThanOneDecimalPoint,
@@ -980,8 +983,8 @@ mod tests {
             Err(ParseDecimalError::Overflow),
         );
         assert_eq!(
-            Decimal::from_str(".000000000000000231").unwrap(),
-            Decimal(231.into()),
+            Decimal::from_str(".000000000000000231"),
+            Err(ParseDecimalError::EmptyIntegralPart),
         );
         assert_eq!(
             Decimal::from_str("231."),

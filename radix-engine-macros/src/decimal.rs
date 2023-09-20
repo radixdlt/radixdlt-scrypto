@@ -72,8 +72,11 @@ fn decimal_error_reason(error: ParseDecimalError) -> &'static str {
     match error {
         ParseDecimalError::InvalidDigit => "There is an invalid character.",
         ParseDecimalError::Overflow => "The number is too large to fit in a decimal.",
+        ParseDecimalError::EmptyIntegralPart => {
+            "If there is a decimal point, the number must include at least one digit before it. Use a 0 if necessary."
+        },
         ParseDecimalError::EmptyFractionalPart => {
-            "The number cannot have an empty fractional part."
+            "If there is a decimal point, the number must include at least one digit after it."
         }
         ParseDecimalError::MoreThanEighteenDecimalPlaces => {
             "A decimal cannot have more than eighteen decimal places."
@@ -93,8 +96,11 @@ fn precise_decimal_error_reason(error: ParsePreciseDecimalError) -> &'static str
         ParsePreciseDecimalError::Overflow => {
             "The number being too large to fit in a precise decimal"
         }
+        ParsePreciseDecimalError::EmptyIntegralPart => {
+            "If there is a decimal point, the number must include at least one digit before it. Use a 0 if necessary."
+        }
         ParsePreciseDecimalError::EmptyFractionalPart => {
-            "The number cannot have an empty fractional part."
+            "If there is a decimal point, the number must include at least one digit after it."
         }
         ParsePreciseDecimalError::MoreThanThirtySixDecimalPlaces => {
             "A precise decimal cannot have more than thirty-six decimal places."

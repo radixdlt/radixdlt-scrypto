@@ -51,7 +51,7 @@ fn test_dec_macro() {
     const X13: Decimal = dec!("-3138550867693340381917894711603833208051.177722232017256448");
     assert_eq!(X13, Decimal::MIN);
 
-    const X14: Decimal = dec!(".000000000000000048");
+    const X14: Decimal = dec!("0.000000000000000048");
     assert_eq!(X14, Decimal(I192::from(48)));
 }
 
