@@ -93,6 +93,31 @@ scrypto test
 
 **Note:** The commands use the default account as transaction sender.
 
+## Compile blueprints with dockerized simulator
+Follow this guide to build reproducible WASM and RDP files for your Scrypto blueprints.
+
+### Using local docker image
+The Dockerfile in the root of the repo should be work to build a docker image which will contain all the dependencies needed to be able build a blueprint using scrypto. 
+
+Build the docker image like. From the repo root
+```
+docker build -t radixdlt/simulator .
+```
+
+Then build your package by just running
+```
+docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
+```
+
+### Using published docker image
+If you would like to avoid building the docker image, you can skip the build step and do the second step directly, docker will automatically download the docker image we publish
+
+Build your blueprints directly with
+```
+docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
+```
+
+
 ## Project Layout
 
 - `sbor`: The binary data format used by Scrypto.
