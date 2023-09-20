@@ -1095,6 +1095,10 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
+    pub fn open_substates(&self) -> Vec<u32> {
+        self.open_substates.keys().cloned().into_iter().collect()
+    }
+
     pub fn close_all_substates<S: CommitableSubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
