@@ -707,10 +707,8 @@ impl TryFrom<&[u8]> for Decimal {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() == Self::BITS / 8 {
-            match I192::try_from(slice) {
-                Ok(val) => Ok(Self(val)),
-                Err(_) => Err(ParseDecimalError::Overflow),
-            }
+            let val = I192::try_from(slice).expect("Length should have already been checked.");
+            Ok(Self(val))
         } else {
             Err(ParseDecimalError::InvalidLength(slice.len()))
         }
@@ -980,6 +978,18 @@ mod tests {
         let a = Decimal::MAX;
         let b = test_dec!(1);
         assert_eq!(a.checked_mul(b).unwrap(), Decimal::MAX);
+    }
+
+    #[test]
+    fn test_mul_to_max_decimal() {
+        let a = Decimal::MAX.checked_sqrt().unwrap();
+        a.checked_mul(a).unwrap();
+    }
+
+    #[test]
+    fn test_mul_to_minimum_overflow_decimal() {
+        let a = Decimal::MAX.checked_sqrt().unwrap();
+        assert!(a.checked_mul(a + Decimal(I192::ONE)).is_none());
     }
 
     #[test]
