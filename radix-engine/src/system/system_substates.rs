@@ -4,7 +4,7 @@ use crate::internal_prelude::*;
 #[sbor(categorize_types = "")]
 pub struct FieldSubstateV1<V> {
     pub payload: V,
-    pub mutability: SubstateMutability,
+    pub lock_status: LockStatus,
 }
 
 // Note - we manually version these instead of using the defined_versioned! macro,
@@ -17,26 +17,26 @@ pub enum FieldSubstate<T> {
 }
 
 impl<V> FieldSubstate<V> {
-    pub fn new_field(payload: V, mutability: SubstateMutability) -> Self {
+    pub fn new_field(payload: V, lock_status: LockStatus) -> Self {
         FieldSubstate::V1(FieldSubstateV1 {
             payload,
-            mutability,
+            lock_status,
         })
     }
 
-    pub fn new_mutable_field(payload: V) -> Self {
-        Self::new_field(payload, SubstateMutability::Mutable)
+    pub fn new_not_locked_field(payload: V) -> Self {
+        Self::new_field(payload, LockStatus::NotLocked)
     }
 
     pub fn new_locked_field(payload: V) -> Self {
-        Self::new_field(payload, SubstateMutability::Immutable)
+        Self::new_field(payload, LockStatus::Locked)
     }
 
     pub fn lock(&mut self) {
-        let mutability = match self {
-            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
+        let lock_status = match self {
+            FieldSubstate::V1(FieldSubstateV1 { lock_status, .. }) => lock_status,
         };
-        *mutability = SubstateMutability::Immutable;
+        *lock_status = LockStatus::Locked;
     }
 
     pub fn payload(&self) -> &V {
@@ -45,9 +45,9 @@ impl<V> FieldSubstate<V> {
         }
     }
 
-    pub fn mutability(&self) -> &SubstateMutability {
+    pub fn lock_status(&self) -> &LockStatus {
         match self {
-            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
+            FieldSubstate::V1(FieldSubstateV1 { lock_status, .. }) => lock_status,
         }
     }
 
@@ -57,24 +57,24 @@ impl<V> FieldSubstate<V> {
         }
     }
 
-    pub fn into_mutability(self) -> SubstateMutability {
+    pub fn into_lock_status(self) -> LockStatus {
         match self {
-            FieldSubstate::V1(FieldSubstateV1 { mutability, .. }) => mutability,
+            FieldSubstate::V1(FieldSubstateV1 { lock_status, .. }) => lock_status,
         }
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SubstateMutability {
-    Mutable,
-    Immutable,
+pub enum LockStatus {
+    NotLocked,
+    Locked,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(categorize_types = "")]
 pub struct KeyValueEntrySubstateV1<V> {
     pub value: Option<V>,
-    pub mutability: SubstateMutability,
+    pub lock_status: LockStatus,
 }
 
 // Note - we manually version these instead of using the defined_versioned! macro,
@@ -90,7 +90,7 @@ impl<V> KeyValueEntrySubstate<V> {
     pub fn lock(&mut self) {
         match self {
             KeyValueEntrySubstate::V1(substate) => {
-                substate.mutability = SubstateMutability::Immutable;
+                substate.lock_status = LockStatus::Locked;
             }
         }
     }
@@ -101,32 +101,32 @@ impl<V> KeyValueEntrySubstate<V> {
         }
     }
 
-    pub fn is_mutable(&self) -> bool {
+    pub fn is_not_locked(&self) -> bool {
         match self {
             KeyValueEntrySubstate::V1(substate) => {
-                matches!(substate.mutability, SubstateMutability::Mutable)
+                matches!(substate.lock_status, LockStatus::NotLocked)
             }
         }
     }
 
-    pub fn entry(value: V) -> Self {
+    pub fn not_locked_entry(value: V) -> Self {
         Self::V1(KeyValueEntrySubstateV1 {
             value: Some(value),
-            mutability: SubstateMutability::Mutable,
+            lock_status: LockStatus::NotLocked,
         })
     }
 
     pub fn locked_entry(value: V) -> Self {
         Self::V1(KeyValueEntrySubstateV1 {
             value: Some(value),
-            mutability: SubstateMutability::Immutable,
+            lock_status: LockStatus::Locked,
         })
     }
 
     pub fn locked_empty_entry() -> Self {
         Self::V1(KeyValueEntrySubstateV1 {
             value: None,
-            mutability: SubstateMutability::Immutable,
+            lock_status: LockStatus::Locked,
         })
     }
 
@@ -136,9 +136,9 @@ impl<V> KeyValueEntrySubstate<V> {
         }
     }
 
-    pub fn mutability(&self) -> SubstateMutability {
+    pub fn lock_status(&self) -> LockStatus {
         match self {
-            KeyValueEntrySubstate::V1(substate) => substate.mutability.clone(),
+            KeyValueEntrySubstate::V1(substate) => substate.lock_status.clone(),
         }
     }
 }
@@ -147,7 +147,7 @@ impl<V> Default for KeyValueEntrySubstate<V> {
     fn default() -> Self {
         Self::V1(KeyValueEntrySubstateV1 {
             value: None,
-            mutability: SubstateMutability::Mutable,
+            lock_status: LockStatus::NotLocked,
         })
     }
 }

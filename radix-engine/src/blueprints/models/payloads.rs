@@ -95,8 +95,8 @@ pub trait FieldPayload:
         FieldSubstate::new_locked_field(self)
     }
 
-    fn into_mutable_substate(self) -> FieldSubstate<Self> {
-        FieldSubstate::new_mutable_field(self)
+    fn into_not_locked_substate(self) -> FieldSubstate<Self> {
+        FieldSubstate::new_not_locked_field(self)
     }
 }
 
@@ -119,8 +119,8 @@ pub trait FieldContentSource<Payload: FieldPayload>: Sized {
         self.into_payload().into_locked_substate()
     }
 
-    fn into_mutable_substate(self) -> FieldSubstate<Payload> {
-        self.into_payload().into_mutable_substate()
+    fn into_not_locked_substate(self) -> FieldSubstate<Payload> {
+        self.into_payload().into_not_locked_substate()
     }
 }
 
@@ -142,11 +142,11 @@ pub trait KeyValueEntryPayload:
     }
 
     fn into_locked_substate(self) -> KeyValueEntrySubstate<Self> {
-        KeyValueEntrySubstate::entry(self)
+        KeyValueEntrySubstate::locked_entry(self)
     }
 
-    fn into_mutable_substate(self) -> KeyValueEntrySubstate<Self> {
-        KeyValueEntrySubstate::locked_entry(self)
+    fn into_not_locked_substate(self) -> KeyValueEntrySubstate<Self> {
+        KeyValueEntrySubstate::not_locked_entry(self)
     }
 }
 
@@ -169,8 +169,8 @@ pub trait KeyValueEntryContentSource<Payload: KeyValueEntryPayload>: Sized {
         self.into_payload().into_locked_substate()
     }
 
-    fn into_mutable_substate(self) -> KeyValueEntrySubstate<Payload> {
-        self.into_payload().into_mutable_substate()
+    fn into_not_locked_substate(self) -> KeyValueEntrySubstate<Payload> {
+        self.into_payload().into_not_locked_substate()
     }
 }
 

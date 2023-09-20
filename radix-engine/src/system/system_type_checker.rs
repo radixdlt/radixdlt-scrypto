@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::KernelApi;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
+use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, LockStatus};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -476,13 +476,13 @@ impl SystemMapper {
                 let payload: ScryptoValue =
                     scrypto_decode(&field.value).expect("Checked by payload-schema validation");
 
-                let mutability = if field.locked {
-                    SubstateMutability::Immutable
+                let lock_status = if field.locked {
+                    LockStatus::Locked
                 } else {
-                    SubstateMutability::Mutable
+                    LockStatus::NotLocked
                 };
 
-                let substate = FieldSubstate::new_field(payload, mutability);
+                let substate = FieldSubstate::new_field(payload, lock_status);
 
                 let value = IndexedScryptoValue::from_typed(&substate);
                 field_partition.insert(SubstateKey::Field(index), value);
@@ -508,7 +508,7 @@ impl SystemMapper {
                     let kv_entry = if kv_entry.locked {
                         KeyValueEntrySubstate::locked_entry(value)
                     } else {
-                        KeyValueEntrySubstate::entry(value)
+                        KeyValueEntrySubstate::not_locked_entry(value)
                     };
                     kv_entry
                 } else {

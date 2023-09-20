@@ -23,7 +23,7 @@ use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
-use crate::system::system_substates::{FieldSubstate, SubstateMutability};
+use crate::system::system_substates::{FieldSubstate, LockStatus};
 use crate::track::interface::CommitableSubstateStore;
 use crate::track::{to_state_updates, Track, TrackFinalizeError};
 use crate::transaction::*;
@@ -767,7 +767,7 @@ where
             vault_balance.put(LiquidFungibleResource::new(amount));
             let updated_substate_content =
                 FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
-                    .into_mutable_substate();
+                    .into_not_locked_substate();
             track
                 .set_substate(
                     node_id,
@@ -826,7 +826,7 @@ where
             vault_balance.put(locked);
             let updated_substate_content =
                 FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
-                    .into_mutable_substate();
+                    .into_not_locked_substate();
             track
                 .set_substate(
                     vault_id,
@@ -924,7 +924,7 @@ where
                     CONSENSUS_MANAGER.into_node_id(),
                     MAIN_BASE_PARTITION,
                     ConsensusManagerField::ValidatorRewards.into(),
-                    IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
+                    IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(
                         ConsensusManagerValidatorRewardsFieldPayload::from_content_source(rewards),
                     )),
                     &mut |_| -> Result<(), ()> { Ok(()) },
@@ -947,7 +947,7 @@ where
             vault_balance.put(collected_fees.take_by_amount(total_amount).unwrap());
             let updated_substate_content =
                 FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
-                    .into_mutable_substate();
+                    .into_not_locked_substate();
             track
                 .set_substate(
                     vault_node_id,
@@ -1025,7 +1025,7 @@ where
                                     TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
                                 }),
                                 // TODO: maybe make it immutable, but how does this affect partition deletion?
-                                mutability: SubstateMutability::Mutable,
+                                lock_status: LockStatus::NotLocked,
                             },
                         )),
                         &mut |_| -> Result<(), ()> { Ok(()) },
@@ -1057,7 +1057,7 @@ where
                 TRANSACTION_TRACKER.into_node_id(),
                 MAIN_BASE_PARTITION,
                 TransactionTrackerField::TransactionTracker.into(),
-                IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(
+                IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(
                     TransactionTrackerSubstate::V1(transaction_tracker),
                 )),
                 &mut |_| -> Result<(), ()> { Ok(()) },

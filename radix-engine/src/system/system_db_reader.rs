@@ -25,7 +25,7 @@ use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
 use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
-use crate::system::system_substates::SubstateMutability;
+use crate::system::system_substates::LockStatus;
 use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
 };
@@ -1141,7 +1141,7 @@ impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter
             node_id,
             partition_number,
             &SubstateKey::Field(field_index),
-            &FieldSubstate::new_field(value, SubstateMutability::Mutable),
+            &FieldSubstate::new_field(value, LockStatus::NotLocked),
         );
 
         Ok(())

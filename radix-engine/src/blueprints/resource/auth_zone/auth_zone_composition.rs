@@ -36,12 +36,12 @@ impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
     fn from(value: ComposedProof) -> Self {
         match value {
             ComposedProof::Fungible(info, proof, ..) => btreemap!(
-                FungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(info)),
-                FungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(proof)),
+                FungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(info)),
+                FungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(proof)),
             ),
             ComposedProof::NonFungible(info, proof, ..) => btreemap!(
-                NonFungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(info)),
-                NonFungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(proof)),
+                NonFungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(info)),
+                NonFungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(proof)),
             ),
         }
     }

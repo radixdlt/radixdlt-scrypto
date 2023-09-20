@@ -315,7 +315,7 @@ impl AuthModule {
             self_auth_zone,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
-                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(auth_zone))
+                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(auth_zone))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint_info: BlueprintInfo {
@@ -362,7 +362,7 @@ impl AuthModule {
         let proofs = core::mem::replace(&mut auth_zone.proofs, Vec::new());
         api.kernel_write_substate(
             handle,
-            IndexedScryptoValue::from_typed(&FieldSubstate::new_mutable_field(auth_zone)),
+            IndexedScryptoValue::from_typed(&FieldSubstate::new_not_locked_field(auth_zone)),
         )?;
         api.kernel_close_substate(handle)?;
 

@@ -853,9 +853,9 @@ mod helper_macros {
             paste::paste! {
                 KVEntry {
                     value: $entry_substate.value.map(|v| scrypto_encode(&v).unwrap()),
-                    locked: match $entry_substate.mutability {
-                        SubstateMutability::Mutable => true,
-                        SubstateMutability::Immutable => false,
+                    locked: match $entry_substate.lock_status {
+                        LockStatus::Locked => true,
+                        LockStatus::NotLocked => false,
                     },
                 }
             }
