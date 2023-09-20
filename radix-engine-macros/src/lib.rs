@@ -34,7 +34,7 @@ pub fn ignore(_: TokenStream, input: TokenStream) -> TokenStream {
 // If not then something is definitely wrong and panic is fine.
 #[proc_macro]
 pub fn dec(input: TokenStream) -> TokenStream {
-    to_decimal(input)
+    to_decimal(input).unwrap_or_else(|err| err.to_compile_error().into())
 }
 
 /// Creates a `PreciseDecimal` from literals.
@@ -50,5 +50,5 @@ pub fn dec(input: TokenStream) -> TokenStream {
 // If not then something is definitely wrong and panic is fine.
 #[proc_macro]
 pub fn pdec(input: TokenStream) -> TokenStream {
-    to_precise_decimal(input)
+    to_precise_decimal(input).unwrap_or_else(|err| err.to_compile_error().into())
 }
