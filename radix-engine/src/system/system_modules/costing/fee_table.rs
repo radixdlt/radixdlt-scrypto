@@ -171,18 +171,12 @@ impl FeeTable {
 
     #[inline]
     pub fn before_invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
-        add(
-            10 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::data_processing_cost(input_size),
-        )
+        Self::data_processing_cost(input_size)
     }
 
     #[inline]
     pub fn after_invoke_cost(&self, input_size: usize) -> u32 {
-        add(
-            6 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-            Self::data_processing_cost(input_size),
-        )
+        Self::data_processing_cost(input_size)
     }
 
     #[inline]
