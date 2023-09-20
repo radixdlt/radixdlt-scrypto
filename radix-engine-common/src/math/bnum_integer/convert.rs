@@ -58,7 +58,7 @@ impl_to_primitive! { U448, BUint::<7>, (u8, u16, u32, u64, u128, usize, i8, i16,
 impl_to_primitive! { U512, BUint::<8>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
 impl_to_primitive! { U768, BUint::<12>, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize) }
 
-macro_rules! impl_from_builtin{
+macro_rules! impl_from_builtin {
     ($t:ident, $wrapped:ty, ($($o:ident),*)) => {
         paste! {
             $(
@@ -73,7 +73,7 @@ macro_rules! impl_from_builtin{
     };
 }
 
-macro_rules! impl_try_from_builtin{
+macro_rules! impl_try_from_builtin {
     ($t:ident, $wrapped:ty, ($($o:ident),*)) => {
         paste! {
             $(
@@ -92,7 +92,7 @@ macro_rules! impl_try_from_builtin{
     };
 }
 
-macro_rules! impl_to_builtin{
+macro_rules! impl_to_builtin {
     ($t:ident, $wrapped:ty, ($($o:ident),*)) => {
         paste! {
             $(
@@ -219,7 +219,14 @@ macro_rules! impl_from_string {
                     fn from_str(val: &str) -> Result<Self, Self::Err> {
                         match <$wrapped>::from_str(val) {
                             Ok(val) => Ok(Self(val)),
-                            Err(_) => Err([<Parse $t Error>]::InvalidDigit),
+                            Err(err) => Err(match err.kind() {
+                                core::num::IntErrorKind::Empty => [<Parse $t Error>]::Empty,
+                                core::num::IntErrorKind::InvalidDigit => [<Parse $t Error>]::InvalidDigit,
+                                core::num::IntErrorKind::PosOverflow => [<Parse $t Error>]::Overflow,
+                                core::num::IntErrorKind::NegOverflow => [<Parse $t Error>]::Overflow,
+                                core::num::IntErrorKind::Zero => unreachable!(),
+                                _ => [<Parse $t Error>]::InvalidDigit, // Enum is non-exhaustive, sensible fallback is InvalidDigit
+                            })
                         }
                     }
                 }

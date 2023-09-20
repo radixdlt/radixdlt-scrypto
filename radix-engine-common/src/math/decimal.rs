@@ -740,36 +740,51 @@ impl FromStr for Decimal {
     type Err = ParseDecimalError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tens = I192::TEN;
         let v: Vec<&str> = s.split('.').collect();
 
-        let mut int = match I192::from_str(v[0]) {
+        let integer_part = match I192::from_str(v[0]) {
             Ok(val) => val,
-            Err(_) => return Err(ParseDecimalError::InvalidDigit),
+            Err(err) => match err {
+                ParseI192Error::NegativeToUnsigned => unreachable!("Not possible to be thrown by from_str"),
+                ParseI192Error::Overflow => return Err(ParseDecimalError::Overflow),
+                ParseI192Error::InvalidLength => unreachable!("Not possible to be thrown by from_str"),
+                ParseI192Error::InvalidDigit => return Err(ParseDecimalError::InvalidDigit),
+                ParseI192Error::Empty => I192::ZERO,
+            },
         };
 
-        int *= tens.pow(Self::SCALE);
+        let mut subunits = integer_part.checked_mul(Self::ONE.0).ok_or(ParseDecimalError::Overflow)?;
 
         if v.len() == 2 {
             let scale = if let Some(scale) = Self::SCALE.checked_sub(v[1].len() as u32) {
                 Ok(scale)
             } else {
-                Err(Self::Err::UnsupportedDecimalPlace)
+                Err(Self::Err::MoreThanEighteenDecimalPlaces)
             }?;
 
-            let frac = match I192::from_str(v[1]) {
+            let fractional_part = match I192::from_str(v[1]) {
                 Ok(val) => val,
-                Err(_) => return Err(ParseDecimalError::InvalidDigit),
+                Err(err) => match err {
+                    ParseI192Error::NegativeToUnsigned => unreachable!("Not possible to be thrown by from_str"),
+                    ParseI192Error::Overflow => return Err(ParseDecimalError::Overflow),
+                    ParseI192Error::InvalidLength => unreachable!("Not possible to be thrown by from_str"),
+                    ParseI192Error::InvalidDigit => return Err(ParseDecimalError::InvalidDigit),
+                    ParseI192Error::Empty => return Err(ParseDecimalError::EmptyFractionalPart),
+                },
             };
+
+            // The product of these must be less than Self::SCALE
+            let fractional_subunits = fractional_part.checked_mul(I192::TEN.pow(scale)).expect("No overflow possible");
+
             // if input is -0. then from_str returns 0 and we loose '-' sign.
             // Therefore check for '-' in input directly
-            if int.is_negative() || v[0].starts_with('-') {
-                int -= frac * tens.pow(scale);
+            if integer_part.is_negative() || v[0].starts_with('-') {
+                subunits = subunits.checked_sub(fractional_subunits).ok_or(ParseDecimalError::Overflow)?;
             } else {
-                int += frac * tens.pow(scale);
+                subunits = subunits.checked_add(fractional_subunits).ok_or(ParseDecimalError::Overflow)?;
             }
         }
-        Ok(Self(int))
+        Ok(Self(subunits))
     }
 }
 
@@ -811,11 +826,11 @@ impl fmt::Debug for Decimal {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseDecimalError {
     InvalidDecimal(String),
-    InvalidChar(char),
     InvalidDigit,
-    UnsupportedDecimalPlace,
-    InvalidLength(usize),
     Overflow,
+    EmptyFractionalPart,
+    MoreThanEighteenDecimalPlaces,
+    InvalidLength(usize),
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -905,6 +920,10 @@ mod tests {
             Decimal(1i128.into()),
         );
         assert_eq!(
+            Decimal::from_str("0.0000000000000000001"),
+            Err(ParseDecimalError::MoreThanEighteenDecimalPlaces),
+        );
+        assert_eq!(
             Decimal::from_str("0.123456789123456789").unwrap(),
             Decimal(123456789123456789i128.into()),
         );
@@ -922,9 +941,29 @@ mod tests {
             Decimal::MAX,
         );
         assert_eq!(
+            Decimal::from_str("3138550867693340381917894711603833208051.177722232017256448"),
+            Err(ParseDecimalError::Overflow),
+        );
+        assert_eq!(
+            Decimal::from_str("3138550867693340381917894711603833208052.177722232017256447"),
+            Err(ParseDecimalError::Overflow),
+        );
+        assert_eq!(
             Decimal::from_str("-3138550867693340381917894711603833208051.177722232017256448")
                 .unwrap(),
             Decimal::MIN,
+        );
+        assert_eq!(
+            Decimal::from_str("-3138550867693340381917894711603833208051.177722232017256449"),
+            Err(ParseDecimalError::Overflow),
+        );
+        assert_eq!(
+            Decimal::from_str(".000000000000000231").unwrap(),
+            Decimal(231.into()),
+        );
+        assert_eq!(
+            Decimal::from_str("231."),
+            Err(ParseDecimalError::EmptyFractionalPart),
         );
 
         assert_eq!(test_dec!("0"), Decimal::ZERO);
@@ -1886,7 +1925,7 @@ mod tests {
         // Assert
         assert!(matches!(
             decimal,
-            Err(ParseDecimalError::UnsupportedDecimalPlace)
+            Err(ParseDecimalError::MoreThanEighteenDecimalPlaces)
         ))
     }
 

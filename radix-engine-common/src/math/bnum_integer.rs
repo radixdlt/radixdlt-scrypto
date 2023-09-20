@@ -515,9 +515,10 @@ macro_rules! error {
                 #[derive(Debug, Clone, PartialEq, Eq)]
                 pub enum [<Parse $t Error>] {
                     NegativeToUnsigned,
-                    Overflow,
                     InvalidLength,
                     InvalidDigit,
+                    Empty,
+                    Overflow,
                 }
 
                 #[cfg(not(feature = "alloc"))]
