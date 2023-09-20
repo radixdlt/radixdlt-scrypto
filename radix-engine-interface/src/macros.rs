@@ -114,3 +114,78 @@ macro_rules! roles2 {
         roles
     })
 }
+
+/// Creates a `Decimal` from literals.
+///
+#[macro_export]
+macro_rules! dec {
+    (0) => {
+        radix_engine_common::math::Decimal::ZERO
+    };
+    ("0") => {
+        radix_engine_common::math::Decimal::ZERO
+    };
+    ("0.1") => {
+        radix_engine_common::math::Decimal::ONE_TENTH
+    };
+    ("1" | 1) => {
+        radix_engine_common::math::Decimal::ONE
+    };
+    (10) => {
+        radix_engine_common::math::Decimal::TEN
+    };
+    ("10") => {
+        radix_engine_common::math::Decimal::TEN
+    };
+    (100) => {
+        radix_engine_common::math::Decimal::ONE_HUNDRED
+    };
+    ("100") => {
+        radix_engine_common::math::Decimal::ONE_HUNDRED
+    };
+    // NOTE: Decimal arithmetic operation safe unwrap.
+    // In general, it is assumed that reasonable literals are provided.
+    // If not then something is definitely wrong and panic is fine.
+    ($x:literal) => {
+        radix_engine_common::math::Decimal::try_from($x).unwrap()
+    };
+}
+
+/// Creates a `PreciseDecimal` from literals.
+///
+#[macro_export]
+macro_rules! pdec {
+    (0) => {
+        radix_engine_common::math::PreciseDecimal::ZERO
+    };
+    ("0") => {
+        radix_engine_common::math::PreciseDecimal::ZERO
+    };
+    ("0.1") => {
+        radix_engine_common::math::PreciseDecimal::ONE_TENTH
+    };
+    (1) => {
+        radix_engine_common::math::PreciseDecimal::ONE
+    };
+    ("1") => {
+        radix_engine_common::math::PreciseDecimal::ONE
+    };
+    (10) => {
+        radix_engine_common::math::PreciseDecimal::TEN
+    };
+    ("10") => {
+        radix_engine_common::math::PreciseDecimal::TEN
+    };
+    (100) => {
+        radix_engine_common::math::PreciseDecimal::ONE_HUNDRED
+    };
+    ("100") => {
+        radix_engine_common::math::PreciseDecimal::ONE_HUNDRED
+    };
+    // NOTE: PreciseDecimal arithmetic operation safe unwrap.
+    // In general, it is assumed that reasonable literals are provided.
+    // If not then something is definitely wrong and panic is fine.
+    ($x:literal) => {
+        radix_engine_common::math::PreciseDecimal::try_from($x).unwrap()
+    };
+}
