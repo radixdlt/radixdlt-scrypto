@@ -37,7 +37,7 @@ jobs:
       scan_image: false
       snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: ${{ github.event_name }} == 'release'
-      post_script: "./update-assets.sh --docker --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
+      post_script: "./update-assets.sh --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
