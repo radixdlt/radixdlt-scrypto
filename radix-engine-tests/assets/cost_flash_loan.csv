@@ -1,15 +1,15 @@
-Total Cost (XRD)                                                           ,            0.64117592592,    100.0%
-- Execution Cost (XRD)                                                     ,                0.4807447,     75.0%
+Total Cost (XRD)                                                           ,            0.64123397592,    100.0%
+- Execution Cost (XRD)                                                     ,               0.48080275,     75.0%
 - Finalization Cost (XRD)                                                  ,                0.0322574,      5.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,            0.12817382592,     20.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  9614894,    100.0%
+Execution Cost Breakdown                                                   ,                  9616055,    100.0%
 - AfterInvoke                                                              ,                     1884,      0.0%
 - AllocateNodeId                                                           ,                     5141,      0.1%
 - BeforeInvoke                                                             ,                     7694,      0.1%
-- CloseSubstate                                                            ,                   114552,      1.2%
+- CloseSubstate                                                            ,                   115713,      1.2%
 - CreateNode                                                               ,                    46952,      0.5%
 - DropNode                                                                 ,                    83363,      0.9%
 - EmitEvent                                                                ,                     5176,      0.1%

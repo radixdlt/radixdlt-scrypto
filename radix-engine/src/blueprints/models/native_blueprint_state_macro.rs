@@ -994,7 +994,12 @@ mod tests {
                 description: "Some generic parameter called Abc",
             }
         },
-        features: {},
+        features: {
+            some_feature: {
+                ident: Feature,
+                description: "Some feature",
+            }
+        },
         fields: {
             royalty:  {
                 ident: Royalty,
@@ -1074,5 +1079,161 @@ mod tests {
         fn into_content(self) -> BlueprintVersion {
             self.1
         }
+    }
+
+    #[test]
+    fn validate_declare_sorted_index_key_new_type_macro() {
+        let mut bv = BlueprintVersion::default();
+        let mut idx_key = TestBlueprintMyCoolSortedIndexKeyPayload::new(1, bv);
+
+        assert_eq!(&bv, idx_key.as_ref());
+        assert_eq!(&mut bv, idx_key.as_mut());
+        assert_eq!((1, &bv), idx_key.as_sort_key_and_content());
+        assert_eq!((1, bv), idx_key.into_sort_key_and_content());
+    }
+
+    #[test]
+    fn validate_declare_index_key_new_type_macro() {
+        let mut bv = BlueprintVersion::default();
+        let mut payload = TestBlueprintMyCoolIndexKeyPayload::from(bv);
+
+        assert_eq!(&bv, payload.as_ref());
+        assert_eq!(&mut bv, payload.as_mut());
+        assert_eq!(
+            bv,
+            IndexKeyContentSource::into_content(payload.into_content())
+        );
+    }
+
+    #[test]
+    fn validate_royalty_field_payload_mutability() {
+        let mut content = VersionedTestBlueprintRoyalty::V1(TestBlueprintRoyaltyV1);
+        let mut payload = TestBlueprintRoyaltyFieldPayload {
+            content: VersionedTestBlueprintRoyalty::V1(TestBlueprintRoyaltyV1),
+        };
+        assert_eq!(&content, payload.as_ref());
+        assert_eq!(&mut content, payload.as_mut());
+        assert_eq!(
+            &LockStatus::Locked,
+            payload.into_locked_substate().lock_status()
+        );
+
+        assert_eq!(
+            &LockStatus::Locked,
+            TestBlueprintRoyaltyV1.into_locked_substate().lock_status()
+        );
+        assert_eq!(
+            &LockStatus::Unlocked,
+            TestBlueprintRoyaltyV1
+                .into_unlocked_substate()
+                .lock_status()
+        );
+    }
+
+    #[test]
+    fn validate_key_value_store_entry_payload_mutability() {
+        fn create_payload() -> TestBlueprintMyCoolKeyValueStoreEntryPayload {
+            TestBlueprintMyCoolKeyValueStoreEntryPayload {
+                content: VersionedTestBlueprintMyCoolKeyValueStore::V1(
+                    TestBlueprintMyCoolKeyValueStoreV1,
+                ),
+            }
+        }
+
+        assert_eq!(
+            LockStatus::Locked,
+            create_payload().into_locked_substate().lock_status()
+        );
+        assert_eq!(
+            LockStatus::Unlocked,
+            create_payload().into_unlocked_substate().lock_status()
+        );
+
+        assert_eq!(
+            LockStatus::Locked,
+            create_payload()
+                .into_content()
+                .into_locked_substate()
+                .lock_status()
+        );
+        assert_eq!(
+            LockStatus::Unlocked,
+            create_payload()
+                .into_content()
+                .into_unlocked_substate()
+                .lock_status()
+        );
+
+        assert!(create_payload().as_latest_ref().is_some());
+    }
+
+    #[test]
+    fn validate_index_entry_payload() {
+        let payload = TestBlueprintMyCoolIndexEntryPayload {
+            content: VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1),
+        };
+        assert_eq!(
+            payload.into_substate().value().content,
+            VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1)
+        );
+
+        let content = VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1);
+        assert_eq!(
+            VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1),
+            content.into_substate().value().content
+        );
+    }
+
+    #[test]
+    fn validate_sorted_index_entry_payload() {
+        let payload = TestBlueprintMyCoolSortedIndexEntryPayload {
+            content: VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1),
+        };
+        assert_eq!(
+            payload.into_substate().value().content,
+            VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1)
+        );
+
+        let content = VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1);
+        assert_eq!(
+            VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1),
+            content.into_substate().value().content
+        );
+    }
+
+    #[test]
+    fn test_blueprint_field_try_from() {
+        assert!(TestBlueprintField::try_from(&SubstateKey::Field(0)).is_ok());
+        assert!(TestBlueprintField::try_from(&SubstateKey::Map(Vec::new())).is_err());
+    }
+
+    #[test]
+    fn validate_blueprint_field_index() {
+        let field = TestBlueprintField::Royalty;
+        assert_eq!(0, FieldDescriptor::field_index(&field));
+
+        let field = TestBlueprintField::GenericField;
+        assert_eq!(1, FieldDescriptor::field_index(&field));
+    }
+
+    #[test]
+    fn test_substate_key_partition() {
+        assert!(TestBlueprintTypedSubstateKey::for_key_at_partition_offset(
+            PartitionOffset(0),
+            &SubstateKey::Field(0)
+        )
+        .is_err());
+
+        assert!(TestBlueprintTypedSubstateKey::for_key_in_partition(
+            &TestBlueprintPartitionOffset::Field,
+            &SubstateKey::Field(0)
+        )
+        .is_ok());
+
+        assert!(TestBlueprintTypedSubstateKey::for_key_in_partition(
+            &TestBlueprintPartitionOffset::MyCoolIndexIndex,
+            &SubstateKey::Map(vec![92, 0])
+        )
+        .is_err());
     }
 }
