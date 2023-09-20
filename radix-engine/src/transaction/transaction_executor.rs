@@ -754,7 +754,7 @@ where
         let mut events = Vec::<(EventTypeIdentifier, Vec<u8>)>::new();
 
         // Distribute royalty
-        for (recipient, amount) in fee_reserve.royalty_cost_breakdown() {
+        for (recipient, amount) in fee_reserve.royalty_cost_breakdown().clone() {
             let node_id = recipient.vault_id();
             let substate_key = FungibleVaultField::Balance.into();
             let mut vault_balance = track

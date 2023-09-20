@@ -1,7 +1,5 @@
 use crate::errors::*;
-use crate::system::system_modules::costing::{
-    apply_royalty_cost, CostingError, FeeReserveError, RoyaltyRecipient,
-};
+use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::types::*;
 use native_sdk::resource::NativeVault;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -488,15 +486,10 @@ impl ComponentRoyaltyBlueprint {
                 .unwrap_or(RoyaltyAmount::Free)
         };
 
-        // This should always be false and this code path should never be visited. This is because
-        // we check for negative royalties at the instantiation time of the royalty module.
-        if royalty_charge.is_negative() {
-            return Err(RuntimeError::SystemModuleError(
-                SystemModuleError::CostingError(CostingError::FeeReserveError(
-                    FeeReserveError::RoyaltyAmountIsNegative(royalty_charge),
-                )),
-            ));
-        }
+        // We check for negative royalties at the instantiation time of the royalty module,
+        // and whenever the royalty amount is updated
+        assert!(!royalty_charge.is_negative());
+
         if royalty_charge.is_non_zero() {
             let vault_id = component_royalty.royalty_vault.0;
             let component_address = ComponentAddress::new_or_panic(receiver.0);
