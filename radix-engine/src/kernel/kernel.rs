@@ -1107,6 +1107,9 @@ where
             M::on_execution_start(self)?;
 
             // Auto drop locks
+            for handle in self.current_frame.open_substates() {
+                M::on_close_substate(self, CloseSubstateEvent::Start(handle))?;
+            }
             self.current_frame
                 .close_all_substates(&mut self.substate_io);
 
@@ -1115,6 +1118,9 @@ where
             let message = CallFrameMessage::from_output(&output);
 
             // Auto-drop locks again in case module forgot to drop
+            for handle in self.current_frame.open_substates() {
+                M::on_close_substate(self, CloseSubstateEvent::Start(handle))?;
+            }
             self.current_frame
                 .close_all_substates(&mut self.substate_io);
 
