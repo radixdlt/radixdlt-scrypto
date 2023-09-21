@@ -94,7 +94,7 @@ fn precise_decimal_error_reason(error: ParsePreciseDecimalError) -> &'static str
     match error {
         ParsePreciseDecimalError::InvalidDigit => "There is an invalid character",
         ParsePreciseDecimalError::Overflow => {
-            "The number being too large to fit in a precise decimal"
+            "The number is too large to fit in a precise decimal."
         }
         ParsePreciseDecimalError::EmptyIntegralPart => {
             "If there is a decimal point, the number must include at least one digit before it. Use a 0 if necessary."
