@@ -1,0 +1,5 @@
+error: This macro only supports string, integer and float literals.
+ --> src/pdec_err_multiple_negations.rs:4:30
+  |
+4 |     const X: Decimal = dec!(--1);
+  |                              ^

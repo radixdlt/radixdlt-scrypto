@@ -8,7 +8,7 @@ use transaction::prelude::*;
 use trybuild;
 
 #[test]
-fn test_dec_macro_try_build() {
+fn test_dec_macro_try_compile() {
     // Change CARGO_MANIFEST_DIR to tests/dec_macros, where the dec_macros test crate is located.
     // By default 'trybuild' crate uses current manifest dir, but it does not work with
     // radix-engine-tests dir (presumably too complicated set of dependencies and features).
@@ -24,6 +24,8 @@ fn test_dec_macro_try_build() {
     // Paths must be relative to the manifest_dir
     t.pass("src/dec_success.rs");
     t.compile_fail("src/dec_err_*.rs");
+    t.pass("src/pdec_success.rs");
+    t.compile_fail("src/pdec_err_*.rs");
 }
 
 #[test]
@@ -87,7 +89,7 @@ fn test_dec_macro_valid() {
 }
 
 #[test]
-fn test_pdec_macro() {
+fn test_pdec_macro_valid() {
     let x1 = pdec!("1.1");
     assert_eq!(x1, PreciseDecimal::try_from("1.1").unwrap());
 

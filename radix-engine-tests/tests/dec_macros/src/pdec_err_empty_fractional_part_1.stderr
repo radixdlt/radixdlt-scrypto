@@ -1,0 +1,5 @@
+error: If there is a decimal point, the number must include at least one digit after it.
+ --> src/pdec_err_empty_fractional_part_1.rs:4:37
+  |
+4 |     const X: PreciseDecimal = pdec!(1.);
+  |                                     ^^
