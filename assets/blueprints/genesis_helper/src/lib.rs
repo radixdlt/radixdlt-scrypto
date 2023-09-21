@@ -201,7 +201,6 @@ mod genesis_helper {
 
             if let Some(mut owner) = resource.owner {
                 // create owner badge
-                // TODO: Should we use securify style non fungible resource for the owner badge?
                 let owner_badge = ResourceBuilder::new_fungible(OwnerRole::None)
                     .divisibility(DIVISIBILITY_NONE)
                     .metadata(metadata! {
@@ -240,6 +239,10 @@ mod genesis_helper {
             } else {
                 // create resource
                 ResourceBuilder::new_fungible(OwnerRole::None)
+                    .mint_roles(mint_roles! {
+                        minter => rule!(deny_all);
+                        minter_updater => rule!(deny_all);
+                    })
                     .metadata(ModuleConfig {
                         init: metadata.into(),
                         roles: RoleAssignmentInit::default(),
