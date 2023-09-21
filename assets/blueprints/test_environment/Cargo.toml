@@ -1,6 +1,6 @@
 [package]
 name = "test_environment"
-version = "1.0.0-rc1"
+version = "1.0.0-dev"
 edition = "2021"
 
 [dependencies]
