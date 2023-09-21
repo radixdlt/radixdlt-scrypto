@@ -739,10 +739,8 @@ impl TryFrom<&[u8]> for PreciseDecimal {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() == Self::BITS / 8 {
-            match I256::try_from(slice) {
-                Ok(val) => Ok(Self(val)),
-                Err(_) => Err(ParsePreciseDecimalError::Overflow),
-            }
+            let val = I256::try_from(slice).expect("Length should have already been checked.");
+            Ok(Self(val))
         } else {
             Err(ParsePreciseDecimalError::InvalidLength(slice.len()))
         }
@@ -1144,6 +1142,18 @@ mod tests {
                 "57896044618658097711785492504343953926634.992332820282019728792003956564819966"
             )
         );
+    }
+
+    #[test]
+    fn test_mul_to_max_precise_decimal() {
+        let a = PreciseDecimal::MAX.checked_sqrt().unwrap();
+        a.checked_mul(a).unwrap();
+    }
+
+    #[test]
+    fn test_mul_to_minimum_overflow_decimal() {
+        let a = PreciseDecimal::MAX.checked_sqrt().unwrap();
+        assert!(a.checked_mul(a + PreciseDecimal(I256::ONE)).is_none());
     }
 
     #[test]
