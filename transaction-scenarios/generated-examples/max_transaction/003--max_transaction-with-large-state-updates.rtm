@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 CALL_METHOD
-    Address("component_sim1cq97km8l03g9fmf6kc42dtmgjgm3l4u50y9wl9tv5hmzypjnvfcx2v")
+    Address("component_sim1cp6465xjrxerp9gtwrgyz087ahuc9kxpc5ym4mfs4zkutys3je5w63")
     "max_state_updates"
     21u32
 ;
