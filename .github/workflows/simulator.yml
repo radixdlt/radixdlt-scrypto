@@ -1,4 +1,4 @@
-name: Simulator
+name: scrypto builder ci
 
 on:
   pull_request:
@@ -25,7 +25,7 @@ jobs:
     needs: tags
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: ubuntu-latest
+      runs_on: ubuntu-latest-16-cores
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "simulator"
