@@ -5,6 +5,9 @@ on:
     inputs:
       image-label:
         description: "Docker image label to be published"
+  push:
+    branches:
+      - chore/publish-simulator-image
 
 jobs:
   build-amd:
