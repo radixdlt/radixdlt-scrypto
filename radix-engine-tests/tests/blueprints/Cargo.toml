@@ -65,7 +65,8 @@ members = [
     "wasm_non_mvp",
     "royalty-edge-cases",
     "system_wasm_buffers",
-    "event-replacement"
+    "event-replacement",
+    "decimal"
 ]
 
 [profile.release]

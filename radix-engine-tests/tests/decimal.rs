@@ -1,5 +1,57 @@
+mod package_loader;
+use package_loader::PackageLoader;
 use radix_engine_common::math::*;
 use radix_engine_interface::{dec, pdec};
+use scrypto_unit::*;
+use transaction::prelude::*;
+
+#[test]
+fn test_dec_macro_in_scrypto() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("decimal"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "DecimalTest",
+            "test_dec_macro",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let output = result.outcome.expect_success();
+    output[1].expect_return_value(&Decimal::from(6666));
+}
+
+#[test]
+fn test_pdec_macro_in_scrypto() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("decimal"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "DecimalTest",
+            "test_pdec_macro",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let output = result.outcome.expect_success();
+    output[1].expect_return_value(&PreciseDecimal::from(6666));
+}
 
 #[test]
 fn test_dec_macro() {
