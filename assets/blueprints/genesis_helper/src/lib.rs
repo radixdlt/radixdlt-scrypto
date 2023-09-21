@@ -210,14 +210,12 @@ mod genesis_helper {
                                 String::from_metadata_value(metadata.get("symbol").unwrap().clone())
                                     .unwrap()
                             ), locked;
+                            "tags" => vec!["badge".to_string()], locked;
                         }
                     })
                     .mint_initial_supply(1);
 
                 let owner_badge_address = owner_badge.resource_address();
-
-                let resource_mgr = owner_badge.resource_manager();
-                resource_mgr.set_metadata("tags", vec!["badge".to_string()]);
 
                 owner.deposit(owner_badge.into());
 
