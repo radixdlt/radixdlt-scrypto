@@ -17,7 +17,7 @@ jobs:
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "scrypto-builder"
-      tag: ${{ image-label }}
+      tag: latest
       context: "."
       dockerfile: "Dockerfile"
       platforms: "linux/amd64"
@@ -25,7 +25,7 @@ jobs:
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: true
-      post_script: "./update-assets.sh --reuse-image --image-tag ${{ image-label }}"
+      post_script: "./update-assets.sh --reuse-image --image-tag latest"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
