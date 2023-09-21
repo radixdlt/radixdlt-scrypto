@@ -38,6 +38,7 @@ paste = { version = "1.0.13" }
 lazy_static = { version = "1.4.0" }
 hex = { version = "0.4.3", default-features = false }
 tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], default-features = false }
+trybuild = { version = "1.0.85" }
 
 [build-dependencies]
 walkdir = { version = "2.3.3", optional = true }

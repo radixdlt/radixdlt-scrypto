@@ -3,7 +3,28 @@ use package_loader::PackageLoader;
 use radix_engine_common::math::*;
 use radix_engine_interface::{dec, pdec};
 use scrypto_unit::*;
+use std::env;
 use transaction::prelude::*;
+use trybuild;
+
+#[test]
+fn test_dec_macro_try_build() {
+    println!("current_dir = {:?}", env::current_dir());
+    // Change CARGO_MANIFEST_DIR to tests/dec_macros, where the dec_macros test crate is located.
+    // By default 'trybuild' crate uses current manifest dir, but it does not work with
+    // radix-engine-tests dir (presumably too complicated set of dependencies and features)
+    let manifest_dir = env::current_dir().unwrap().join("tests/dec_macros");
+    env::set_var("CARGO_MANIFEST_DIR", &manifest_dir);
+
+    // Also change the current dir to the 'dec_macros' dir.
+    // Otherwise 'trybuild' will not be able to find files to compile.
+    assert!(env::set_current_dir(manifest_dir).is_ok());
+
+    let t = trybuild::TestCases::new();
+    // Paths must be relative to the manifest_dir
+    t.pass("src/dec_success.rs");
+    t.compile_fail("src/dec_invalid_expression.rs");
+}
 
 #[test]
 fn test_dec_macro_in_scrypto() {

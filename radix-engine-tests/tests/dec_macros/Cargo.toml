@@ -1,0 +1,30 @@
+[workspace]
+members = ["."]
+
+[package]
+name = "dec_macros"
+version = "1.0.0-rc1"
+edition = "2021"
+
+[dependencies]
+radix-engine-interface = { path = "../../../radix-engine-interface", default-features = false }
+
+# Stub lib to make 'trybuild' crate happy
+[lib]
+path = "src/lib.rs"
+
+# Below targets are not required to for the 'dec_macro' tests.
+# Adding them to allow quick verification with 'cargo build' command
+[[bin]]
+name = "dec_success"
+path = "src/dec_success.rs"
+
+[[bin]]
+name = "dec_invalid_expression"
+path = "src/dec_invalid_expression.rs"
+
+[features]
+default = ["std"]
+std = ["radix-engine-interface/std"]
+alloc = ["radix-engine-interface/alloc"]
+
