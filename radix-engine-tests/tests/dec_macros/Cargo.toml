@@ -14,14 +14,15 @@ radix-engine-interface = { path = "../../../radix-engine-interface", default-fea
 path = "src/lib.rs"
 
 # Below targets are not required to for the 'dec_macro' tests.
-# Adding them to allow quick verification with 'cargo build' command
+# Adding just a few as a template.
+# If one needs to build some other target with 'cargo build' then below shall be updated.
 [[bin]]
 name = "dec_success"
 path = "src/dec_success.rs"
 
 [[bin]]
-name = "dec_invalid_expression"
-path = "src/dec_invalid_expression.rs"
+name = "dec_err_expr_not_supported"
+path = "src/dec_err_expr_not_supported.rs"
 
 [features]
 default = ["std"]
