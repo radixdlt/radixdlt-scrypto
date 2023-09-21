@@ -1,4 +1,4 @@
-name: Simulator
+name: scrypto builder publish
 
 on:
   workflow_dispatch:
