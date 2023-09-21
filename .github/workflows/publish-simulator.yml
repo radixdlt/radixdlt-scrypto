@@ -5,29 +5,8 @@ on:
     inputs:
       image-label:
         description: "Docker image label to be published"
-  push:
-    branches:
-      - chore/publish-simulator-image
 
 jobs:
-
-  oidc_debugger:
-    permissions:
-      contents: read
-      id-token: write
-    runs-on: ubuntu-latest
-    name: A test of the oidc debugger
-    steps:
-      - name: Checkout actions-oidc-debugger
-        uses: actions/checkout@v3
-        with:
-          repository: github/actions-oidc-debugger
-          ref: main
-          path: ./.github/actions/actions-oidc-debugger
-      - name: Debug OIDC Claims
-        uses: ./.github/actions/actions-oidc-debugger
-        with:
-          audience: 'https://github.com/github'
 
   build-amd:
     needs: oidc_debugger
@@ -38,7 +17,7 @@ jobs:
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "scrypto-builder"
-      tag: latest
+      tag: ${{ inputs.image-label }}
       context: "."
       dockerfile: "Dockerfile"
       platforms: "linux/amd64"
