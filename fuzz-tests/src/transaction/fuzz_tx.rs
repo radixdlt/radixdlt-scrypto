@@ -13,7 +13,6 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 #[cfg(feature = "dummy_fuzzing")]
 use radix_engine_interface::data::manifest::manifest_decode;
-use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use scrypto_unit::{DefaultTestRunner, TestRunnerBuilder, TestRunnerSnapshot};
 #[cfg(test)]
 use std::panic::{catch_unwind, AssertUnwindSafe};

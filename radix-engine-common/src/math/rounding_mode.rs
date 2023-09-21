@@ -1,9 +1,12 @@
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use core::cmp::Ordering;
 use sbor::Sbor;
 
 /// Defines the rounding strategy.
 ///
 /// Following the same naming convention as https://docs.rs/rust_decimal/latest/rust_decimal/enum.RoundingStrategy.html.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
 pub enum RoundingMode {
     /// The number is always rounded toward positive infinity, e.g. `3.1 -> 4`, `-3.1 -> -3`.
