@@ -1,7 +1,6 @@
 use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry, StorageType};
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
@@ -12,6 +11,7 @@ use crate::kernel::kernel_callback_api::{
 };
 #[cfg(feature = "resource_tracker")]
 use crate::kernel::substate_io::SubstateDevice;
+use crate::system::actor::Actor;
 use crate::system::module::SystemModule;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
@@ -669,15 +669,14 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn credit_cost_units(
+    pub fn lock_fee(
         &mut self,
         vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing
-                .credit_cost_units(vault_id, locked_fee, contingent);
+            self.costing.lock_fee(vault_id, locked_fee, contingent);
         } else {
             panic!("Fungible Vault Application layer should prevent call to credit if costing not enabled");
         }

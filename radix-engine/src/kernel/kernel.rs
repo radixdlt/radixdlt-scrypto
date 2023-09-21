@@ -273,14 +273,14 @@ where
             })
     }
 
-    #[trace_resources(log=entity_type)]
+    #[trace_resources]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         M::on_allocate_node_id(entity_type, self)?;
 
         self.id_allocator.allocate_node_id(entity_type)
     }
 
-    #[trace_resources(log=node_id.entity_type())]
+    #[trace_resources]
     fn kernel_create_node(
         &mut self,
         node_id: NodeId,
@@ -315,6 +315,7 @@ where
         Ok(())
     }
 
+    #[trace_resources]
     fn kernel_create_node_from(
         &mut self,
         node_id: NodeId,
@@ -385,7 +386,7 @@ where
         Ok(())
     }
 
-    #[trace_resources(log=node_id.entity_type())]
+    #[trace_resources]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<DroppedNode, RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
@@ -669,7 +670,7 @@ where
             })
     }
 
-    #[trace_resources(log=node_id.entity_type())]
+    #[trace_resources]
     fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
@@ -815,7 +816,7 @@ where
         Ok(value)
     }
 
-    #[trace_resources(log=value.len())]
+    #[trace_resources]
     fn kernel_write_substate(
         &mut self,
         lock_handle: SubstateHandle,
@@ -1106,6 +1107,9 @@ where
             M::on_execution_start(self)?;
 
             // Auto drop locks
+            for handle in self.current_frame.open_substates() {
+                M::on_close_substate(self, CloseSubstateEvent::Start(handle))?;
+            }
             self.current_frame
                 .close_all_substates(&mut self.substate_io);
 
@@ -1114,6 +1118,9 @@ where
             let message = CallFrameMessage::from_output(&output);
 
             // Auto-drop locks again in case module forgot to drop
+            for handle in self.current_frame.open_substates() {
+                M::on_close_substate(self, CloseSubstateEvent::Start(handle))?;
+            }
             self.current_frame
                 .close_all_substates(&mut self.substate_io);
 

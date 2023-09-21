@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-store-interface"
-version = "0.13.0"
+version = "1.0.0-dev"
 edition = "2021"
 
 [dependencies]

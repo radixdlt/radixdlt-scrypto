@@ -1,10 +1,10 @@
-use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent, OpenSubstateEvent,
     ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
     SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::system::actor::Actor;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -63,7 +63,7 @@ impl LimitsModule {
         &self.config
     }
 
-    pub fn process_substate_key(&mut self, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
+    pub fn process_substate_key(&self, substate_key: &SubstateKey) -> Result<(), RuntimeError> {
         let len = match substate_key {
             SubstateKey::Map(map_key) => map_key.len(),
             SubstateKey::Sorted((_sort_key, map_key)) => map_key.len() + 2,
@@ -74,6 +74,18 @@ impl LimitsModule {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxSubstateKeySizeExceeded(len),
+                ),
+            ));
+        }
+
+        Ok(())
+    }
+
+    pub fn process_substate_value(&self, value: &IndexedScryptoValue) -> Result<(), RuntimeError> {
+        if value.len() > self.config.max_substate_value_size {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
                 ),
             ));
         }
@@ -180,18 +192,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
 
         match event {
             CreateNodeEvent::Start(_node_id, node_substates) => {
-                let max_substate_value_size = limits.config.max_substate_value_size;
                 for partitions in node_substates.values() {
                     for (key, value) in partitions {
-                        if value.len() > max_substate_value_size {
-                            return Err(RuntimeError::SystemModuleError(
-                                SystemModuleError::TransactionLimitsError(
-                                    TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
-                                ),
-                            ));
-                        }
-
                         limits.process_substate_key(key)?;
+                        limits.process_substate_value(value)?;
                     }
                 }
             }
@@ -280,23 +284,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api: &mut Y,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        let limits = &mut api.kernel_get_system().modules.limits.config;
+        let limits = &mut api.kernel_get_system().modules.limits;
 
         match event {
+            WriteSubstateEvent::Start { value, .. } => {
+                limits.process_substate_value(value)?;
+            }
             WriteSubstateEvent::IOAccess(io_access) => {
                 api.kernel_get_system()
                     .modules
                     .limits
                     .process_io_access(io_access)?;
-            }
-            WriteSubstateEvent::Start { value, .. } => {
-                if value.len() > limits.max_substate_value_size {
-                    return Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::TransactionLimitsError(
-                            TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
-                        ),
-                    ));
-                }
             }
         }
 
@@ -308,8 +306,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            SetSubstateEvent::Start(_node_id, _partition_num, substate_key, ..) => {
+            SetSubstateEvent::Start(_node_id, _partition_num, substate_key, substate_value) => {
                 system.modules.limits.process_substate_key(substate_key)?;
+                system
+                    .modules
+                    .limits
+                    .process_substate_value(substate_value)?;
             }
             SetSubstateEvent::IOAccess(io_access) => {
                 system.modules.limits.process_io_access(io_access)?;

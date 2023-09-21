@@ -167,7 +167,7 @@ fn test_write_after_locking_key_value_store_entry() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
         )
     })
 }
@@ -194,7 +194,7 @@ fn test_write_after_locking_key_value_collection_entry() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            RuntimeError::SystemError(SystemError::KeyValueEntryLocked)
         )
     })
 }

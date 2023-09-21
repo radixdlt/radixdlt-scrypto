@@ -19,7 +19,7 @@ PUBLISH_PACKAGE_ADVANCED
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ngqecmyyu6mv5tpd3z9x5m9r409jq5dt4j7d33s3hj4yv8avdzkmhn:#1#")
+                        NonFungibleGlobalId("resource_sim1n2yc7a27rl4q6pee9y8x42z7efevyrj90p79pqsy887mpgfx4ptern:#1#")
                     )
                 )
             )
@@ -136,6 +136,22 @@ PUBLISH_PACKAGE_ADVANCED
                                         ),
                                         Enum<0u8>(
                                             192u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            230u8
+                                        ),
+                                        Enum<0u8>(
+                                            133u8
+                                        ),
+                                        Enum<0u8>(
+                                            133u8
+                                        ),
+                                        Enum<0u8>(
+                                            132u8
                                         )
                                     )
                                 ),
@@ -283,6 +299,21 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
+                                        "InstantiationEvent"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "owner_role",
+                                                "resource_address1",
+                                                "resource_address2",
+                                                "component_address"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
                                         "RemoveLiquidityEvent"
                                     ),
                                     Enum<1u8>(
@@ -348,6 +379,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(),
                                 Enum<0u8>(),
+                                Enum<0u8>(),
                                 Enum<0u8>()
                             )
                         )
@@ -372,14 +404,19 @@ PUBLISH_PACKAGE_ADVANCED
                                 10u64
                             )
                         ),
-                        "RemoveLiquidityEvent" => Enum<0u8>(
+                        "InstantiationEvent" => Enum<0u8>(
                             Enum<1u8>(
                                 13u64
                             )
                         ),
-                        "SwapEvent" => Enum<0u8>(
+                        "RemoveLiquidityEvent" => Enum<0u8>(
                             Enum<1u8>(
                                 14u64
+                            )
+                        ),
+                        "SwapEvent" => Enum<0u8>(
+                            Enum<1u8>(
+                                15u64
                             )
                         )
                     ),
@@ -477,7 +514,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("5ac3c0197ffedd42bd66d9cb80455da64a74df92acccee36c924439f0d82aa7f")
+    Blob("7de9a3356a2c4bf0391c3988582aa951bb7ae4f772c9746d98bf85ddae836fc2")
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(
@@ -521,14 +558,14 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ngqecmyyu6mv5tpd3z9x5m9r409jq5dt4j7d33s3hj4yv8avdzkmhn:#1#")
+                        NonFungibleGlobalId("resource_sim1n2yc7a27rl4q6pee9y8x42z7efevyrj90p79pqsy887mpgfx4ptern:#1#")
                     )
                 )
             )
         )
     )
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Address("resource_sim1t4qdxqlkd0a78h89ugnc2t73upk89y4m0rymza4zst2gj8e5lj9l7q")
+    Address("resource_sim1t56tgwvyg3eqfqfg608qfu3dw40ued2sd7x7zhj4hh630pk93cupfj")
 ;
 CALL_FUNCTION
     NamedAddress("radiswap_package")
@@ -539,14 +576,14 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ngqecmyyu6mv5tpd3z9x5m9r409jq5dt4j7d33s3hj4yv8avdzkmhn:#1#")
+                        NonFungibleGlobalId("resource_sim1n2yc7a27rl4q6pee9y8x42z7efevyrj90p79pqsy887mpgfx4ptern:#1#")
                     )
                 )
             )
         )
     )
-    Address("resource_sim1t4tzmdekyeq0ylqcn7preshg4kp6vapd9xhfrsuw6ffduk4geff78m")
-    Address("resource_sim1tkfj764awkv5mqu20xynp0dw3ps475djjzfzzsd72qjsd7wuk29dpr")
+    Address("resource_sim1tkdt9ky6cpl2hd4us2z3pf4mdswegevger6lgyqytw7pzgnzvmga9z")
+    Address("resource_sim1thp502y607ms9dnfn5hxnfqsytefvwzf3etuacj3zcyzfarcyusznx")
 ;
 CALL_METHOD
     Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")

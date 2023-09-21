@@ -1,0 +1,10 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("component_sim1cp6465xjrxerp9gtwrgyz087ahuc9kxpc5ym4mfs4zkutys3je5w63")
+    "max_state_updates"
+    21u32
+;

@@ -68,8 +68,7 @@ pub mod prelude {
     pub use super::time::*;
     pub use super::types::*;
     pub use crate::{
-        dec, define_wrapped_hash, i, manifest_args, pdec, scrypto_args,
-        to_manifest_value_and_unwrap,
+        define_wrapped_hash, i, manifest_args, scrypto_args, to_manifest_value_and_unwrap,
     };
 }
 

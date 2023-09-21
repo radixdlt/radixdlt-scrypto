@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine"
-version = "0.13.0"
+version = "1.0.0-dev"
 edition = "2021"
 
 [dependencies]
@@ -22,7 +22,7 @@ perfcnt = { version = "0.8.0", optional = true }
 radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"] }
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 paste = { version = "1.0.13" }
-radix-engine-macros = { path = "../radix-engine-macros" }
+radix-engine-macros = { path = "../radix-engine-macros", default-features = false }
 const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
 
 # WASM validation
@@ -59,8 +59,8 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std", "wasm-instrument/std" ]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "radix-engine-macros/std", "utils/std", "serde_json?/std", "wasm-instrument/std" ]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "radix-engine-macros/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).

@@ -56,6 +56,8 @@ pub enum PrepareError {
     /// Wrap errors returned by wasmparser
     /// It is wrapped to String, because wasmparser error (BinaryReaderError) members cannot derive: Sbor, Eq and PartialEq
     WasmParserError(String),
+    /// An overflow occurred in some of the internal math
+    Overflow,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]

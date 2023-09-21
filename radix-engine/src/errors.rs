@@ -88,14 +88,6 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
-impl RuntimeError {
-    pub const fn update_substate(e: CloseSubstateError) -> Self {
-        Self::KernelError(KernelError::CallFrameError(
-            CallFrameError::CloseSubstateError(e),
-        ))
-    }
-}
-
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
         RuntimeError::KernelError(error.into())
@@ -217,7 +209,6 @@ pub enum SystemError {
     NotAnAddressReservation,
     NotAnObject,
     NotAKeyValueStore,
-    PersistenceProhibited,
     ModulesDontHaveOuterObjects,
     ActorNodeIdDoesNotExist,
     OuterObjectDoesNotExist,
@@ -234,8 +225,8 @@ pub enum SystemError {
         BlueprintPartitionType,
         BlueprintPartitionType,
     ),
-    MutatingImmutableSubstate,
-    MutatingImmutableFieldSubstate(ActorStateHandle, u8),
+    KeyValueEntryLocked,
+    FieldLocked(ActorStateHandle, u8),
     ObjectModuleDoesNotExist(AttachedModuleId),
     NotAKeyValueEntryHandle,
     NotAKeyValueEntryWriteHandle,
@@ -253,11 +244,9 @@ pub enum SystemError {
     AuthTemplateDoesNotExist(CanonicalBlueprintId),
     InvalidGlobalizeAccess(Box<InvalidGlobalizeAccess>),
     InvalidDropAccess(Box<InvalidDropAccess>),
-    InvalidScryptoValue(DecodeError),
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
     TransactionRuntimeModuleNotEnabled,
-    InvalidNativeSubstatesForFeature(String),
     ForceWriteEventFlagsNotAllowed,
 
     BlueprintTypeNotFound(String),

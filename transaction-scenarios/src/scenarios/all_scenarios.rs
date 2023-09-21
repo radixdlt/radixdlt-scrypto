@@ -42,6 +42,9 @@ impl Iterator for AllScenariosIterator {
             9 => Some(Box::new(|core| {
                 kv_store_with_remote_type::KVStoreScenarioCreator::create(core)
             })),
+            10 => Some(Box::new(|core| {
+                max_transaction::MaxTransactionScenarioCreator::create(core)
+            })),
             _ => None,
         }
     }

@@ -582,6 +582,7 @@ pub fn resolve_scrypto_well_known_type(
 mod tests {
     use super::well_known_scrypto_custom_types::*;
     use super::*;
+    use crate::math::{Decimal, PreciseDecimal};
 
     #[test]
     fn test_custom_type_values_are_valid() {
@@ -590,8 +591,8 @@ mod tests {
         // But I've kept them in the list below for completeness, in order with the types above - as a comment.
 
         // MISC TYPES
-        test_equivalence(DECIMAL_TYPE, dec!(1));
-        test_equivalence(PRECISE_DECIMAL_TYPE, pdec!(1));
+        test_equivalence(DECIMAL_TYPE, Decimal::from(1));
+        test_equivalence(PRECISE_DECIMAL_TYPE, PreciseDecimal::from(1));
         test_equivalence(NON_FUNGIBLE_LOCAL_ID_TYPE, NonFungibleLocalId::integer(2));
         // NonFungibleGlobalId - tested in interface crate
         test_equivalence(INSTANT_TYPE, Instant::new(0));

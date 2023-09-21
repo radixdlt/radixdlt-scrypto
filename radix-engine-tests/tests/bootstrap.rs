@@ -14,6 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Uncheck
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use scrypto_test::prelude::KeyValueEntrySubstate;
 use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
@@ -306,6 +307,23 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     if owned_resource {
         let created_owner_badge = resource_creation_commit.new_resource_addresses()[1];
         let owner_badge_vault = resource_creation_commit.new_vault_addresses()[0];
+
+        // check if the metadata exists and is locked
+        let reader = SystemDatabaseReader::new(&substate_db);
+        let substate = reader
+            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<VersionedMetadataEntry>>(
+                created_owner_badge.as_node_id(),
+                METADATA_BASE_PARTITION,
+                &SubstateKey::Map(scrypto_encode("tags").unwrap()),
+            )
+            .unwrap();
+        assert!(substate.is_locked());
+        assert_eq!(
+            substate.into_value(),
+            Some(VersionedMetadataEntry::V1(MetadataValue::StringArray(
+                vec!["badge".to_owned()]
+            )))
+        );
 
         assert_eq!(
             resource_creation_commit
