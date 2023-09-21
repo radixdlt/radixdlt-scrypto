@@ -199,8 +199,8 @@ mod genesis_helper {
         fn create_resource(resource: GenesisResource) -> () {
             let metadata: BTreeMap<String, MetadataValue> = resource.metadata.into_iter().collect();
 
-            let owner_badge_address = if let Some(mut owner) = resource.owner {
-                // TODO: Should we use securify style non fungible resource for the owner badge?
+            if let Some(mut owner) = resource.owner {
+                // create owner badge
                 let owner_badge = ResourceBuilder::new_fungible(OwnerRole::None)
                     .divisibility(DIVISIBILITY_NONE)
                     .metadata(metadata! {
@@ -210,28 +210,18 @@ mod genesis_helper {
                                 String::from_metadata_value(metadata.get("symbol").unwrap().clone())
                                     .unwrap()
                             ), locked;
+                            "tags" => vec!["badge".to_string()], locked;
                         }
                     })
                     .mint_initial_supply(1);
 
                 let owner_badge_address = owner_badge.resource_address();
-
-                let resource_mgr = owner_badge.resource_manager();
-                resource_mgr.set_metadata("tags", vec!["badge".to_string()]);
-
                 owner.deposit(owner_badge.into());
 
-                Some(owner_badge_address)
-            } else {
-                None
-            };
-
-            let owner_role = match owner_badge_address {
-                None => OwnerRole::None,
-                Some(owner_badge_address) => OwnerRole::Fixed(rule!(require(owner_badge_address))),
-            };
-
-            ResourceBuilder::new_fungible(owner_role)
+                // create resource
+                ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                    owner_badge_address
+                ))))
                 .mint_roles(mint_roles! {
                     minter => OWNER;
                     minter_updater => OWNER;
@@ -246,6 +236,20 @@ mod genesis_helper {
                 })
                 .with_address(resource.address_reservation)
                 .create_with_no_initial_supply();
+            } else {
+                // create resource
+                ResourceBuilder::new_fungible(OwnerRole::None)
+                    .mint_roles(mint_roles! {
+                        minter => rule!(deny_all);
+                        minter_updater => rule!(deny_all);
+                    })
+                    .metadata(ModuleConfig {
+                        init: metadata.into(),
+                        roles: RoleAssignmentInit::default(),
+                    })
+                    .with_address(resource.address_reservation)
+                    .create_with_no_initial_supply();
+            };
         }
 
         fn allocate_resources(
