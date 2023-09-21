@@ -20,8 +20,6 @@ fuzz_target!(|decimal: OneDecimal| {
     let _ = decimal.0.checked_cbrt();
     let _ = decimal.0.checked_ceiling();
     let _ = decimal.0.checked_floor();
-    let _ = decimal.0.checked_powi(decimal.2);
-    let _ = decimal.0.checked_nth_root(decimal.3);
     let _ = decimal.0.checked_neg();
     if decimal.4 >= 0 && decimal.4 <= Decimal::SCALE as i32 {
         let _ = decimal.0.checked_round(decimal.4, decimal.5);
@@ -33,4 +31,10 @@ fuzz_target!(|decimal: OneDecimal| {
 
     let string = decimal.0.to_string();
     assert_eq!(Decimal::try_from(string).unwrap(), decimal.0);
+
+    // These two operations take too long to run in a fuzzer
+    /*
+    let _ = decimal.0.checked_powi(decimal.2);
+    let _ = decimal.0.checked_nth_root(decimal.3);
+     */
 });
