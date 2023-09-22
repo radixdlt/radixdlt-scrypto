@@ -1,15 +1,48 @@
+mod package_loader;
+use package_loader::PackageLoader;
 use radix_engine_common::math::*;
 use radix_engine_interface::{dec, pdec};
+use scrypto_unit::*;
+use std::env;
+use transaction::prelude::*;
+use trybuild;
 
 #[test]
-fn test_dec_macro() {
+fn test_dec_macro_try_compile() {
+    // Change CARGO_MANIFEST_DIR to tests/dec_macros, where the dec_macros test crate is located.
+    // By default 'trybuild' crate uses current manifest dir, but it does not work with
+    // radix-engine-tests dir (presumably too complicated set of dependencies and features).
+    let manifest_dir = env::current_dir().unwrap().join("tests/dec_macros");
+    env::set_var("CARGO_MANIFEST_DIR", &manifest_dir);
+
+    // Also change the current dir to the 'dec_macros' dir.
+    // Otherwise 'trybuild' will not be able to find files to compile.
+    assert!(env::set_current_dir(manifest_dir).is_ok());
+
+    let t = trybuild::TestCases::new();
+
+    // Paths must be relative to the manifest_dir
+    t.pass("src/dec_success.rs");
+    t.compile_fail("src/dec_err_*.rs");
+    t.pass("src/pdec_success.rs");
+    t.compile_fail("src/pdec_err_*.rs");
+}
+
+#[test]
+fn test_dec_macro_valid() {
     let x1 = dec!("1.1");
     assert_eq!(x1, Decimal::try_from("1.1").unwrap());
 
     let x2 = dec!("3138550867693340381917894711603833208051.177722232017256447");
     assert_eq!(x2, Decimal::MAX);
 
+    let x2 = dec!(3138550867693340381917894711603833208051.177722232017256447);
+    assert_eq!(x2, Decimal::MAX);
+
     let x3 = dec!("-3138550867693340381917894711603833208051.177722232017256448");
+    assert_eq!(x3, Decimal::MIN);
+
+    let x3 = dec!(-3138550867693340381917894711603833208051.177722232017256448);
     assert_eq!(x3, Decimal::MIN);
 
     const X1: Decimal = dec!("111111.10");
@@ -56,7 +89,7 @@ fn test_dec_macro() {
 }
 
 #[test]
-fn test_pdec_macro() {
+fn test_pdec_macro_valid() {
     let x1 = pdec!("1.1");
     assert_eq!(x1, PreciseDecimal::try_from("1.1").unwrap());
 
@@ -64,8 +97,14 @@ fn test_pdec_macro() {
         pdec!("57896044618658097711785492504343953926634.992332820282019728792003956564819967");
     assert_eq!(x2, PreciseDecimal::MAX);
 
+    let x2 = pdec!(57896044618658097711785492504343953926634.992332820282019728792003956564819967);
+    assert_eq!(x2, PreciseDecimal::MAX);
+
     let x3 =
         pdec!("-57896044618658097711785492504343953926634.992332820282019728792003956564819968");
+    assert_eq!(x3, PreciseDecimal::MIN);
+
+    let x3 = pdec!(-57896044618658097711785492504343953926634.992332820282019728792003956564819968);
     assert_eq!(x3, PreciseDecimal::MIN);
 
     const X1: PreciseDecimal = pdec!("111111.10");
@@ -108,4 +147,51 @@ fn test_pdec_macro() {
     const X13: PreciseDecimal =
         pdec!("-57896044618658097711785492504343953926634.992332820282019728792003956564819968");
     assert_eq!(X13, PreciseDecimal::MIN);
+}
+#[test]
+fn test_dec_macro_in_scrypto() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("decimal"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "DecimalTest",
+            "test_dec_macro",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let output = result.outcome.expect_success();
+    output[1].expect_return_value(&Decimal::from(6666));
+}
+
+#[test]
+fn test_pdec_macro_in_scrypto() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("decimal"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "DecimalTest",
+            "test_pdec_macro",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let output = result.outcome.expect_success();
+    output[1].expect_return_value(&PreciseDecimal::from(6666));
 }

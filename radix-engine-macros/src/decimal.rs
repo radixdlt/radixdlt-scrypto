@@ -9,11 +9,22 @@ extern crate radix_engine_common;
 macro_rules! get_decimal {
     ($type:ident) => {
        paste! {
-             fn [< get_ $type:snake:lower _from_expr >](expr: &Expr) -> Result<$type> {
+             fn [< get_ $type:snake:lower _from_expr >](expr: &Expr, negate: bool) -> Result<$type> {
                 match expr {
                     Expr::Lit(lit) => match &lit.lit {
-                        Lit::Str(lit_str) => $type::try_from(lit_str.value())
-                            .map_err(|err| Error::new(lit_str.span(), [< $type:snake:lower _error_reason >](err).to_string())),
+                        Lit::Str(lit_str) => {
+                            // Do not allow string literal preceeded with '-', eg. -"12.3"
+                            if !negate {
+                                $type::try_from(lit_str.value())
+                                    .map_err(|err| Error::new(lit_str.span(), [< $type:snake:lower _error_reason >](err).to_string()))
+                            }
+                            else {
+                                Err(Error::new(
+                                    lit_str.span(),
+                                    "This macro only supports string, integer and float literals.",
+                                ))
+                            }
+                        },
                         Lit::Int(lit_int) => {
                             if lit_int.suffix() != "" {
                                 Err(Error::new(
@@ -21,8 +32,16 @@ macro_rules! get_decimal {
                                     format!("No suffix is allowed. Remove the {}.", lit_int.suffix()),
                                 ))
                             } else {
-                                $type::try_from(lit_int.base10_digits())
-                                    .map_err(|err| Error::new(lit_int.span(), [< $type:snake:lower _error_reason >](err).to_string()))
+                                let mut val = $type::try_from(lit_int.base10_digits())
+                                    .map_err(|err| Error::new(lit_int.span(), [< $type:snake:lower _error_reason >](err).to_string()))?;
+
+                                // Negate received value if negate flag is set.
+                                // Safe from overflow.
+                                if negate {
+                                    val = val.checked_neg()
+                                        .ok_or(Error::new(lit_int.span(), [< $type:snake:lower _error_reason >]([< Parse $type Error >]::Overflow).to_string()))?;
+                                }
+                                Ok(val)
                             }
                         }
                         Lit::Float(lit_float) => {
@@ -32,7 +51,19 @@ macro_rules! get_decimal {
                                     format!("No suffix is allowed. Remove the {}.", lit_float.suffix()),
                                 ))
                             } else {
-                                $type::try_from(lit_float.base10_digits())
+                                let digits = lit_float.base10_digits();
+
+                                // Preceed the literal digits with '-" if negate flag is set.
+                                // And then convert received string to decimal.
+                                // This is to avoid negation of the received decimal, which
+                                // overflows for MIN value.
+                                let s = if negate {
+                                    "-".to_string() + digits
+                                } else {
+                                    digits.to_string()
+                                };
+
+                                $type::try_from(s)
                                     .map_err(|err| Error::new(lit_float.span(), [< $type:snake:lower _error_reason >](err).to_string()))
                             }
                         }
@@ -43,13 +74,15 @@ macro_rules! get_decimal {
                     },
                     Expr::Unary(unary) => match unary.op {
                         UnOp::Neg(unary_neg) => {
-                            let res = [< get_ $type:snake:lower _from_expr >](unary.expr.as_ref());
-                            match res {
-                                Ok(val) => {
-                                    let val = val.checked_neg().ok_or(Error::new(unary_neg.span, "Parsing failed due to overflow."))?;
-                                    Ok(val)
-                                },
-                                Err(err) => Err(Error::new(unary_neg.span, err)),
+                            // Do not allow multiple '-'
+                            if !negate {
+                                [< get_ $type:snake:lower _from_expr >](unary.expr.as_ref(), true)
+                            }
+                            else {
+                                Err(Error::new(
+                                    unary_neg.span(),
+                                    "This macro only supports string, integer and float literals.",
+                                ))
                             }
                         }
                         other_unary => Err(Error::new(
@@ -121,7 +154,7 @@ pub fn to_decimal(input: TokenStream) -> Result<TokenStream> {
     // Parse the input into an Expression
     let expr = parse::<Expr>(input)?;
 
-    let decimal = get_decimal_from_expr(&expr)?;
+    let decimal = get_decimal_from_expr(&expr, false)?;
     let int = decimal.0;
     let arr = int.to_digits();
     let i0 = arr[0];
@@ -137,7 +170,7 @@ pub fn to_precise_decimal(input: TokenStream) -> Result<TokenStream> {
     // Parse the input into an Expression
     let expr = parse::<Expr>(input)?;
 
-    let decimal = get_precise_decimal_from_expr(&expr)?;
+    let decimal = get_precise_decimal_from_expr(&expr, false)?;
     let int = decimal.0;
     let arr = int.to_digits();
     let i0 = arr[0];

@@ -1,0 +1,5 @@
+error: If there is a decimal point, the number must include at least one digit before it. Use a 0 if necessary.
+ --> src/pdec_err_empty_integral_part.rs:4:37
+  |
+4 |     const X: PreciseDecimal = pdec!(".0");
+  |                                     ^^^^
