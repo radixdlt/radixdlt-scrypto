@@ -1,0 +1,31 @@
+name: Publish scrypto-builder image
+
+on:
+  workflow_dispatch:
+    inputs:
+      image-label:
+        description: "Docker image label to be published"
+
+jobs:
+
+  build-amd:
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: ubuntu-latest-16-cores
+      environment: "release"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "scrypto-builder"
+      tag: ${{ inputs.image-label }}
+      context: "."
+      dockerfile: "Dockerfile"
+      platforms: "linux/amd64"
+      provenance: "false"
+      scan_image: true
+      snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: true
+    secrets:
+      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+

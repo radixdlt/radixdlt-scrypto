@@ -1,0 +1,5 @@
+error: This macro only supports string, integer and float literals.
+ --> src/dec_invalid_expression.rs:5:29
+  |
+5 |     const X: Decimal = dec!('a');
+  |                             ^^^
