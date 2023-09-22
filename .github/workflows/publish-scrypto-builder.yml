@@ -9,7 +9,6 @@ on:
 jobs:
 
   build-amd:
-    needs: oidc_debugger
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest-16-cores
