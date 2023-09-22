@@ -11,7 +11,7 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
 The code in this repository is released under the [Radix License, Version 1.0](LICENSE) and includes modified third party work which is reproduced here pursuant to the Apache 2.0 licensing regime.
 Where third party software has been used this is identified together with the appropriate open-source licence.
 
-Software published from this repository, including libraries, CLIs and docker images, is licensed under the [Radix Software EULA](http://www.radixdlt.com/terms/genericEULA).
+Binaries, including libraries, CLIs and docker images, are licensed under the [Radix Software EULA](http://www.radixdlt.com/terms/genericEULA).
 
 ## Installation
 
