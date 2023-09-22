@@ -3,7 +3,7 @@
 
 [package]
 name = "simulator"
-version = "1.0.0-dev"
+version = "1.0.0"
 edition = "2021"
 
 [dependencies]
