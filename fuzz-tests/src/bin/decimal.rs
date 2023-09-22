@@ -4,14 +4,15 @@ use arbitrary::Arbitrary;
 #[cfg(feature = "libfuzzer-sys")]
 use libfuzzer_sys::fuzz_target;
 
+#[cfg(feature = "afl")]
+use afl::fuzz;
+
 use radix_engine_common::math::*;
 
 #[derive(Debug, Arbitrary)]
 struct OneDecimal(Decimal, Decimal, i64, u32, i32, RoundingMode);
 
-// Fuzzer entry points
-#[cfg(feature = "libfuzzer-sys")]
-fuzz_target!(|decimal: OneDecimal| {
+fn fuzz_decimal(decimal: OneDecimal) {
     let _ = decimal.0.checked_sqrt();
     let _ = decimal.0.is_positive();
     let _ = decimal.0.is_negative();
@@ -50,4 +51,19 @@ fuzz_target!(|decimal: OneDecimal| {
     let _ = decimal.0.checked_powi(decimal.2);
     let _ = decimal.0.checked_nth_root(decimal.3);
      */
+}
+
+// Fuzzer entry points
+#[cfg(feature = "libfuzzer-sys")]
+fuzz_target!(|decimal: OneDecimal| {
+    fuzz_decimal(decimal);
 });
+
+
+#[cfg(feature = "afl")]
+fn main() {
+    fuzz!(|decimal: OneDecimal| {
+        fuzz_decimal(decimal);
+    });
+}
+
