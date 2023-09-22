@@ -255,7 +255,7 @@ impl SystemTestFuzzer {
             self.rule_sets.push(rule_set.clone());
             rule_set
         } else {
-            if self.rng.gen_bool(0.2) {
+            if self.rng.gen_bool(0.9) {
                 let index = self.rng.gen_range(0usize..self.rule_sets.len());
                 self.rule_sets[index].clone()
             } else {

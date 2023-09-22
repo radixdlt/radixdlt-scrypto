@@ -5,7 +5,6 @@ use radix_engine_interface::blueprints::access_controller::{
     AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput,
     ACCESS_CONTROLLER_CREATE_PROOF_IDENT, ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
     ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-    ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
 };
 use radix_engine_interface::types::FromRepr;
 use transaction::builder::ManifestBuilder;
