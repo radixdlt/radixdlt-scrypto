@@ -29,6 +29,19 @@ fuzz_target!(|decimal: OneDecimal| {
     let _ = decimal.0.checked_mul(decimal.1);
     let _ = decimal.0.checked_div(decimal.1);
 
+    let _ = i8::try_from(decimal.0);
+    let _ = i16::try_from(decimal.0);
+    let _ = i32::try_from(decimal.0);
+    let _ = i64::try_from(decimal.0);
+    let _ = i128::try_from(decimal.0);
+    let _ = isize::try_from(decimal.0);
+    let _ = u8::try_from(decimal.0);
+    let _ = u16::try_from(decimal.0);
+    let _ = u32::try_from(decimal.0);
+    let _ = u64::try_from(decimal.0);
+    let _ = u128::try_from(decimal.0);
+    let _ = usize::try_from(decimal.0);
+
     let string = decimal.0.to_string();
     assert_eq!(Decimal::try_from(string).unwrap(), decimal.0);
 
