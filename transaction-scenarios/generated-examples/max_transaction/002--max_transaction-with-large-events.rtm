@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 CALL_FUNCTION
-    Address("package_sim1pkw9lf0t3rgsfrzwysktptfftcqaunvstkd4etnjhu3kk59jqc2th6")
+    Address("package_sim1p4agndm4a6vln2qphdm5vxy8l6qy4yz6e4edp0s2lxpeag2g8xv7sf")
     "MaxTransaction"
     "max_events"
     255u32

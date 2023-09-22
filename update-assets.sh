@@ -2,7 +2,7 @@
 set -e
 
 # Default values
-IMAGE_NAME="radixdlt/simulator"
+IMAGE_NAME="radixdlt/scrypto-builder"
 IMAGE_TAG="latest"
 REUSE_IMAGE="false"
 BUILD_TYPE="--docker"
