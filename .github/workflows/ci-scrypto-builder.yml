@@ -1,4 +1,4 @@
-name: Publish scrypto-builder image
+name: Build scrypto-builder image
 
 on:
   push:

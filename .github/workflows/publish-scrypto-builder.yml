@@ -1,4 +1,4 @@
-name: scrypto builder publish
+name: Publish scrypto-builder image
 
 on:
   workflow_dispatch:
