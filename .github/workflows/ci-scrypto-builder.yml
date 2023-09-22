@@ -1,9 +1,6 @@
-name: Simulator
+name: Build scrypto-builder image
 
 on:
-  pull_request:
-  release:
-    types: [published]
   push:
     branches:
       - develop
@@ -25,10 +22,10 @@ jobs:
     needs: tags
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: ubuntu-latest
+      runs_on: ubuntu-latest-16-cores
       image_registry: "docker.io"
       image_organization: "radixdlt"
-      image_name: "simulator"
+      image_name: "scrypto-builder"
       tag: ${{ needs.tags.outputs.tag }}
       context: "."
       dockerfile: "Dockerfile"
@@ -36,7 +33,7 @@ jobs:
       provenance: "false"
       scan_image: false
       snyk_target_ref: ${{ github.ref_name }}
-      enable_dockerhub: ${{ github.event_name }} == 'release'
+      enable_dockerhub: false
       post_script: "./update-assets.sh --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
