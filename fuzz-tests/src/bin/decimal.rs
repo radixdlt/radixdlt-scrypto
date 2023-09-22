@@ -7,6 +7,9 @@ use libfuzzer_sys::fuzz_target;
 #[cfg(feature = "afl")]
 use afl::fuzz;
 
+#[cfg(feature = "simple-fuzzer")]
+use fuzz_tests::fuzz;
+
 use radix_engine_common::math::*;
 
 #[derive(Debug, Arbitrary)]
@@ -59,7 +62,6 @@ fuzz_target!(|decimal: OneDecimal| {
     fuzz_decimal(decimal);
 });
 
-
 #[cfg(feature = "afl")]
 fn main() {
     fuzz!(|decimal: OneDecimal| {
@@ -67,3 +69,9 @@ fn main() {
     });
 }
 
+#[cfg(feature = "simple-fuzzer")]
+fn main() {
+    fuzz!(|decimal: OneDecimal| {
+        fuzz_decimal(decimal);
+    });
+}

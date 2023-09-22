@@ -6,6 +6,9 @@ use libfuzzer_sys::fuzz_target;
 #[cfg(feature = "afl")]
 use afl::fuzz;
 
+#[cfg(feature = "simple-fuzzer")]
+use fuzz_tests::fuzz;
+
 use radix_engine_common::math::Decimal;
 
 // Fuzzer entry points
@@ -16,6 +19,13 @@ fuzz_target!(|data: String| {
 
 
 #[cfg(feature = "afl")]
+fn main() {
+    fuzz!(|data: String| {
+        let _ = Decimal::try_from(data);
+    });
+}
+
+#[cfg(feature = "simple-fuzzer")]
 fn main() {
     fuzz!(|data: String| {
         let _ = Decimal::try_from(data);
