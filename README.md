@@ -6,6 +6,13 @@ Language for building DeFi apps on Radix.
 
 Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
 
+## License
+
+The code in this repository is released under the [Radix License, Version 1.0](LICENSE) and includes modified third party work which is reproduced here pursuant to the Apache 2.0 licensing regime.
+Where third party software has been used this is identified together with the appropriate open-source licence.
+
+Published libraries, CLIs and docker images are licensed under the [Radix Software EULA](http://www.radixdlt.com/terms/genericEULA).
+
 ## Installation
 
 1. Install Rust - this requires Rust 1.60+ (if rust is already installed, upgrade with `rustup update`)
@@ -132,13 +139,3 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
 ## Contribute
 
 To learn more about how to contribute to this project, read the [Contributing Guide](./CONTRIBUTING.md).
-
-## License
-
-This software/code is licensed and used pursuant to the Radix License, Version 1.0 and includes
-modified third party work which is reproduced here pursuant to the Apache 2.0 licensing regime.
-Where third party software has been used this is identified together with the appropriate
-open-source licence.
-
-A copy of the Radix License, Version 1.0 may be found in the `LICENSE` file in the root directory of
-this repository.
