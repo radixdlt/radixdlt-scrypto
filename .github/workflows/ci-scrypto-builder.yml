@@ -3,7 +3,6 @@ name: Build scrypto-builder image
 on:
   push:
     branches:
-      - chore/avoid-builder-push
       - develop
       - main
       - release\/*
@@ -21,7 +20,7 @@ jobs:
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
   build-amd:
     needs: tags
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@chore/conditionaly-push
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest-16-cores
       image_registry: "docker.io"
