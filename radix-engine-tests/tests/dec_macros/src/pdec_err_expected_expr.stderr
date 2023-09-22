@@ -1,0 +1,5 @@
+error: expected expression
+ --> src/pdec_err_expected_expr.rs:4:29
+  |
+4 |     const X: Decimal = dec!(.1);
+  |                             ^

@@ -1,6 +1,6 @@
 [package]
 name = "fuzz-tests"
-version = "1.0.0-dev"
+version = "1.0.1-dev"
 publish = false
 edition = "2021"
 

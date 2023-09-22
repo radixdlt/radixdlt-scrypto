@@ -1,0 +1,5 @@
+error: There is an invalid character.
+ --> src/pdec_err_invalid_digit.rs:4:29
+  |
+4 |     const X: Decimal = dec!(11.12e3);
+  |                             ^^^^^^^

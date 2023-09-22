@@ -1,0 +1,5 @@
+error: A decimal cannot have more than one decimal point.
+ --> src/dec_err_more_than_one_decimal_point.rs:4:29
+  |
+4 |     const X: Decimal = dec!("1.000.0");
+  |                             ^^^^^^^^^

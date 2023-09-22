@@ -1,0 +1,5 @@
+error: No suffix is allowed. Remove the f64.
+ --> src/dec_err_float_suffix.rs:4:29
+  |
+4 |     const X: Decimal = dec!(11.12f64);
+  |                             ^^^^^^^^

@@ -1,0 +1,5 @@
+error: The number is too large to fit in a decimal.
+ --> src/pdec_err_overflow_2.rs:4:29
+  |
+4 |     const X: Decimal = dec!("-3138550867693340381917894711603833208051.177722232017256449");
+  |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
