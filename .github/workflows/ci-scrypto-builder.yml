@@ -26,7 +26,7 @@ jobs:
       runs_on: ubuntu-latest-16-cores
       image_registry: "docker.io"
       image_organization: "radixdlt"
-      image_name: "scrypto-builder"
+      image_name: "private-scrypto-builder"
       tag: ${{ needs.tags.outputs.tag }}
       context: "."
       dockerfile: "Dockerfile"
@@ -35,7 +35,6 @@ jobs:
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: false
-      push_image: false
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
