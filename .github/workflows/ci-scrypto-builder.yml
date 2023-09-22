@@ -3,6 +3,7 @@ name: Build scrypto-builder image
 on:
   push:
     branches:
+      - chore/avoid-builder-push
       - develop
       - main
       - release\/*
@@ -20,7 +21,7 @@ jobs:
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
   build-amd:
     needs: tags
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@chore/conditionaly-push
     with:
       runs_on: ubuntu-latest-16-cores
       image_registry: "docker.io"
@@ -34,6 +35,7 @@ jobs:
       scan_image: false
       snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: false
+      push_image: false
       post_script: "./update-assets.sh --reuse-image --image-tag ${{ needs.tags.outputs.tag }}"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
