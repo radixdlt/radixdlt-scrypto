@@ -104,7 +104,7 @@ function fuzzer_libfuzzer() {
     set -x
     cargo +nightly fuzz $cmd \
         --release \
-        --no-default-features --features std,libfuzzer-sys \
+        --no-default-features --features std,libfuzzer-sys,post_run_db_check\
         --fuzz-dir . \
         --no-cfg-fuzzing \
         --target-dir target-libfuzzer \
