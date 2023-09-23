@@ -13,7 +13,6 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 #[cfg(feature = "dummy_fuzzing")]
 use radix_engine_interface::data::manifest::manifest_decode;
-use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use scrypto_unit::{DefaultTestRunner, TestRunnerBuilder, TestRunnerSnapshot};
 #[cfg(test)]
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -120,30 +119,12 @@ impl TxFuzzer {
     }
 
     #[allow(unused)]
-    fn get_non_fungible_local_id(
+    fn get_non_fungible_local_ids(
         &mut self,
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<NonFungibleLocalId> {
-        let vaults = self
-            .runner
-            .get_component_vaults(component_address, resource_address);
-        let mut btree_ids = vec![];
-        for vault in vaults {
-            let mut substate_iter = self
-                .runner
-                .substate_db()
-                .list_mapped::<SpreadPrefixKeyMapper, (), MapKey>(
-                    &vault,
-                    MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
-                );
-
-            substate_iter.next().map(|(key, _value)| {
-                let id: NonFungibleLocalId = scrypto_decode(key.for_map().unwrap()).unwrap();
-                btree_ids.push(id);
-            });
-        }
-        btree_ids
+        return vec![];
     }
 
     #[allow(unused)]
@@ -190,7 +171,7 @@ impl TxFuzzer {
         // TODO: if resource_address of not NonFungible resource is given then we got panic in get_mapped_substate
         // thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: UnexpectedSize { expected: 2, actual: 1 }', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-stores/src/interface.rs:200:41
         let non_fungible_ids =
-            self.get_non_fungible_local_id(component_address, non_fungible_resource_address);
+            self.get_non_fungible_local_ids(component_address, non_fungible_resource_address);
 
         // To increase the chance of the successful transaction:
         // - fuzz fee amount for 5% of attempts

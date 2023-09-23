@@ -39,7 +39,7 @@ impl<E: NativeVmExtension> NativeVm<E> {
             return Ok(NativeVmInstance::Extension(custom_invoke));
         }
 
-        let code: [u8; 8] = match code.clone().try_into() {
+        let code: [u8; 8] = match code.try_into() {
             Ok(code) => code,
             // It should be impossible for us to get to this point here. The code argument is
             // provided by the Vm after it reads the `PackageCodeOriginalCodeEntrySubstate`. Thus,
@@ -242,7 +242,7 @@ impl<C: VmInvoke + Clone> NativeVmExtension for OverridePackageCode<C> {
 
     fn try_create_instance(&self, code: &[u8]) -> Option<C> {
         let code_id = {
-            let code: [u8; 8] = match code.clone().try_into() {
+            let code: [u8; 8] = match code.try_into() {
                 Ok(code) => code,
                 Err(..) => return None,
             };
