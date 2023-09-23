@@ -12,16 +12,17 @@ use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_common::manifest_args;
 
 use radix_engine::prelude::ManifestArgs;
-use radix_engine_common::prelude::{Own, scrypto_encode, ScryptoCustomTypeKind};
+use radix_engine_common::prelude::{NodeId, Own, ScryptoCustomTypeKind};
 use radix_engine_interface::api::{ACTOR_STATE_SELF, FieldHandle, FieldValue, KeyValueStoreDataSchema, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::{AttachedModuleId, ClientApi, OwnerRole};
 use radix_engine_interface::types::IndexedScryptoValue;
 use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
 use sbor::basic_well_known_types::ANY_TYPE;
-use scrypto_unit::TestRunnerBuilder;
+use scrypto_unit::{InjectSystemCostingError, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use utils::indexmap;
+use utils::prelude::{IndexSet, index_set_new};
 
 
 // Fuzzer entry points
@@ -30,7 +31,7 @@ fuzz_target!(|actions: SystemActions| {
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_extension(OverridePackageCode::new(
             CUSTOM_PACKAGE_CODE_ID,
-            FuzzSystem(actions),
+            FuzzSystem(actions.clone()),
         ))
         .skip_receipt_check()
         .build();
@@ -54,18 +55,23 @@ fuzz_target!(|actions: SystemActions| {
         receipt.expect_commit_success().new_component_addresses()[0]
     };
 
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+    let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32)
             .call_method(component_address, "test", manifest_args!())
-            .build(),
-        vec![],
-    );
+            .build();
+
+    test_runner
+        .execute_manifest_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<FuzzSystem>>>(
+            manifest,
+            vec![],
+            actions.inject_err_after_count,
+        );
 });
 
 #[derive(Debug, Clone, Arbitrary)]
 struct SystemActions {
-    pub actions: [SystemAction; 5],
+    inject_err_after_count: u64,
+    pub actions: Vec<SystemAction>,
 }
 
 #[derive(Debug, Clone, Arbitrary)]
@@ -75,10 +81,12 @@ enum SystemAction {
     FieldWrite(usize, Vec<u8>),
     FieldLock(usize),
     FieldClose(usize),
+    KeyValueStoreOpenEntry(usize, Vec<u8>, u32),
 }
 
 struct AppState {
     handles: Vec<FieldHandle>,
+    nodes: IndexSet<NodeId>,
 }
 
 impl SystemAction {
@@ -95,7 +103,14 @@ impl SystemAction {
             SystemAction::FieldRead(index) => {
                 if !state.handles.is_empty() {
                     let handle = state.handles[(*index) % state.handles.len()];
-                    api.field_read(handle)?;
+                    let value = api.field_read(handle)?;
+                    let value = IndexedScryptoValue::from_slice(&value).unwrap();
+                    for v in value.owned_nodes() {
+                        state.nodes.insert(*v);
+                    }
+                    for v in value.references() {
+                        state.nodes.insert(*v);
+                    }
                 }
             }
             SystemAction::FieldWrite(index, value) => {
@@ -114,6 +129,13 @@ impl SystemAction {
                 if !state.handles.is_empty() {
                     let handle = state.handles[(*index) % state.handles.len()];
                     api.field_close(handle)?;
+                }
+            }
+            SystemAction::KeyValueStoreOpenEntry(index, key, flags) => unsafe {
+                if !state.nodes.is_empty() {
+                    let node_id = state.nodes.get_index((*index) % state.nodes.len()).unwrap();
+                    let handle = api.key_value_store_open_entry(node_id, key, LockFlags::from_bits_unchecked(*flags))?;
+                    state.handles.push(handle);
                 }
             }
         }
@@ -139,7 +161,8 @@ impl VmInvoke for FuzzSystem {
         match export_name {
             "test" => {
                 let mut state = AppState {
-                    handles: vec![]
+                    handles: vec![],
+                    nodes: index_set_new(),
                 };
                 for action in &self.0.actions {
                     action.act(api, &mut state)?;
