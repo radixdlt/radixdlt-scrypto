@@ -1,8 +1,6 @@
 #![cfg_attr(feature = "libfuzzer-sys", no_main)]
-
 use arbitrary::Arbitrary;
-#[cfg(feature = "libfuzzer-sys")]
-use libfuzzer_sys::fuzz_target;
+use fuzz_tests::fuzz_template;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine::errors::RuntimeError;
@@ -25,10 +23,10 @@ use transaction::builder::ManifestBuilder;
 use utils::indexmap;
 use utils::prelude::{IndexSet, index_set_new};
 
+fuzz_template!(|actions: SystemActions| { fuzz_system(actions) });
 
 // Fuzzer entry points
-#[cfg(feature = "libfuzzer-sys")]
-fuzz_target!(|actions: SystemActions| {
+fn fuzz_system(actions: SystemActions) {
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_extension(OverridePackageCode::new(
             CUSTOM_PACKAGE_CODE_ID,
@@ -57,9 +55,9 @@ fuzz_target!(|actions: SystemActions| {
     };
 
     let manifest = ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
-            .call_method(component_address, "test", manifest_args!())
-            .build();
+        .lock_fee(test_runner.faucet_component(), 500u32)
+        .call_method(component_address, "test", manifest_args!())
+        .build();
 
     test_runner
         .execute_manifest_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<FuzzSystem>>>(
@@ -67,7 +65,7 @@ fuzz_target!(|actions: SystemActions| {
             vec![],
             actions.inject_err_after_count,
         );
-});
+}
 
 #[derive(Debug, Clone, Arbitrary)]
 struct SystemActions {
