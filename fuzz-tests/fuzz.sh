@@ -19,6 +19,8 @@ function usage() {
     echo "Available targets:"
     echo "    transaction"
     echo "    wasm_instrument"
+    echo "    decimal"
+    echo "    parse_decimal"
     echo "Available fuzzers"
     echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"
@@ -42,6 +44,7 @@ function usage() {
     echo "Available commands"
     echo "    generate-input - generate fuzzing input data"
     echo "  Subcommands:"
+    echo "        empty       - Empty input"
     echo "        raw         - Do not process generated data"
     echo "        unique      - Make the input data unique"
     echo "        minimize    - Minimize the input data"
@@ -187,7 +190,15 @@ function generate_input() {
     local raw_dir=fuzz_input/${target}_raw
     local final_dir=fuzz_input/${target}
 
-    if [ $target = "transaction" -o $target = "wasm_instrument" ] ; then
+    if [ $mode = "empty" ] ; then
+        echo "creating empty input $final_dir"
+        mkdir -p $final_dir
+        # Cannot be empty, let's use newline (0xA).
+        echo "" > ${final_dir}/empty
+        return
+    fi
+
+    if [ $target = "transaction" -o $target = "wasm_instrument" -o $target = "decimal" -o $target = "parse_decimal" ] ; then
         if [ ! -f target-afl/release/${target} ] ; then
             echo "target binary 'target-afl/release/${target}' not built. Call below command to build it"
             echo "$THIS_SCRIPT afl build"
@@ -204,19 +215,19 @@ function generate_input() {
         fi
 
 
-        if [ $target = "transaction" ] ; then
+        if [ $target = "transaction" -o $target = "decimal" -o $target = "parse_decimal" ] ; then
             # Collect input data
 
-            cargo nextest run test_generate_fuzz_input_data  --release
+            cargo nextest run test_${target}_generate_fuzz_input_data  --release
 
             if [ $mode = "raw" ] ; then
                 #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
-                mv manifest_*.raw ${curr_path}/${final_dir}
+                mv ${target}_*.raw ${curr_path}/${final_dir}
                 return
             fi
 
             #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
-            mv manifest_*.raw ${curr_path}/${raw_dir}
+            mv ${target}_*.raw ${curr_path}/${raw_dir}
 
         elif [ $target = "wasm_instrument" ] ; then
             # TODO generate more wasm inputs. and maybe smaller
@@ -238,8 +249,11 @@ function generate_input() {
             return
         fi
 
-        # `cargo afl tmin` expects AFL_MAP_SIZE to be set, we take the value which is used by `cargo afl cmin`
-        export AFL_MAP_SIZE=$(grep AFL_MAP_SIZE afl_cmin.log | sed -E 's/^.*AFL_MAP_SIZE=//g')
+        # if `cargo afl cmin` sets the AFL_MAP_SIZE, then set it also for `cargo afl tmin`
+        AFL_MAP_SIZE=$(grep AFL_MAP_SIZE afl_cmin.log | sed -E 's/^.*AFL_MAP_SIZE=//g' || true)
+        if [ "$AFL_MAP_SIZE" != "" ] ; then
+            export AFL_MAP_SIZE
+        fi
 
         # Minimize all corpus files
         pushd $cmin_dir

@@ -11,6 +11,8 @@ on:
         options:
           - transaction
           - wasm_instrument
+          - decimal
+          - parse_decimal
 
       duration_hours:
         description: 'Fuzzing duration [h]'
@@ -25,6 +27,7 @@ on:
         description: 'Fuzz input data generation mode'
         required: true
         options:
+          - empty
           - minimize
           - unique
           - raw

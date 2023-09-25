@@ -16,32 +16,20 @@
 #![cfg_attr(feature = "libfuzzer-sys", no_main)]
 
 use arbitrary::Arbitrary;
-#[cfg(feature = "libfuzzer-sys")]
-use libfuzzer_sys::fuzz_target;
 
-use radix_engine::blueprints::util::check_name;
+use fuzz_tests::fuzz_template;
 use radix_engine::errors::{RejectionReason, RuntimeError, VmError};
-use radix_engine::system::attached_modules::role_assignment::*;
-use radix_engine::system::checkers::{
-    KernelDatabaseChecker, RoleAssignmentDatabaseChecker, SystemDatabaseChecker,
-};
-use radix_engine::system::system_db_reader::*;
+use radix_engine::system::checkers::*;
 use radix_engine::transaction::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_stores::memory_db::*;
 use transaction::prelude::*;
 
-#[cfg(feature = "libfuzzer-sys")]
-fuzz_target!(|input: RoleAssignmentFuzzerInput| {
+fuzz_template!(|input: RoleAssignmentFuzzerInput| {
     // Getting the roles that we would have if the creation invocation is valid and the creation tx
     // succeeds
-    let role_keys = input
-        .creation_invocation
-        .roles
-        .values()
-        .flat_map(|value| value.data.keys().cloned())
-        .collect::<Vec<_>>();
+    let role_keys = input.initial_role_keys();
 
     // Creating a new test-runner. This test runner has the appropriate test package published and
     // ready for us to use in fuzzing
@@ -82,7 +70,7 @@ fuzz_target!(|input: RoleAssignmentFuzzerInput| {
     };
 
     // Do the first check of the invariants
-    check_invariants(test_runner.substate_db(), &[receipt], role_keys.as_slice());
+    check_invariants(test_runner.substate_db(), &[receipt], role_keys.clone());
 
     // Perform the method invocations to the role-assignment module. Each invocation is its own
     // transaction. This is because we would like for a failed invocation not to stop other ones
@@ -104,12 +92,7 @@ fuzz_target!(|input: RoleAssignmentFuzzerInput| {
         .collect::<Vec<_>>();
 
     // Do the second check of the invariants
-    check_invariants(
-        test_runner.substate_db(),
-        component_address,
-        receipts.as_slice(),
-        role_keys.as_slice(),
-    );
+    check_invariants(test_runner.substate_db(), receipts.as_slice(), role_keys);
 });
 
 fn check_invariants(
@@ -173,6 +156,19 @@ struct RoleAssignmentFuzzerInput {
     /// The method invocations to make to the role-assignment module after it has been attached to
     /// the component.
     post_attachment_invocations: Vec<RoleAssignmentMethodInvocation>,
+}
+
+impl RoleAssignmentFuzzerInput {
+    pub fn initial_role_keys(&self) -> Vec<ModuleRoleKey> {
+        self.creation_invocation
+            .roles
+            .iter()
+            .flat_map(|(module_id, RoleAssignmentInit { data: init })| {
+                init.keys()
+                    .map(|role_key| ModuleRoleKey::new(*module_id, role_key.clone()))
+            })
+            .collect()
+    }
 }
 
 #[derive(Arbitrary, Clone, Debug, ManifestSbor, ScryptoSbor)]

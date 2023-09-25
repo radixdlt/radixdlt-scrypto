@@ -18,6 +18,8 @@ use sbor::rust::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use sbor::rust::str::FromStr;
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
+#[cfg(feature = "radix_engine_fuzzing")]
+use serde::{Deserialize, Serialize};
 
 pub mod bits;
 pub mod convert;
@@ -45,7 +47,7 @@ macro_rules! types {
                 ///
                 #[doc = "`" $t "` will have the same methods and traits as"]
                 /// the built-in counterpart.
-                #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+                #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary, Serialize, Deserialize))]
                 #[derive(Clone , Copy , Eq , Hash)]
                 #[repr(transparent)]
                 pub struct $t(pub $wrap);
