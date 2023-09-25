@@ -218,30 +218,36 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomExtension>(
     );
 
     if let Some(type_name) = enum_data.enum_name {
-        write!(f, "Enum:{}(", type_name)?;
+        write!(f, "Enum:{}", type_name)?;
     } else {
-        write!(f, "Enum(")?;
+        write!(f, "Enum")?;
     }
 
-    let field_length = variant_header.length;
+    if let Some(variant_name) = enum_data.variant_name {
+        write!(f, "<{}u8:{}>", variant_header.variant, variant_name)?;
+    } else {
+        write!(f, "<{}u8>", variant_header.variant)?;
+    }
 
+    write!(f, "(")?;
+    let field_length = variant_header.length;
     match (field_length, context.print_mode) {
         (0, _) | (_, PrintMode::SingleLine) => {
-            if let Some(variant_name) = enum_data.variant_name {
-                write!(f, "{}u8:{}", variant_header.variant, variant_name)?;
-            } else {
-                write!(f, "{}u8", variant_header.variant)?;
-            }
             match enum_data.field_names {
                 Some(field_names) => {
                     for i in 0..field_length {
-                        write!(f, ", {} = ", field_names.get(i).unwrap())?;
+                        write!(
+                            f,
+                            "{}{} = ",
+                            (if i == 0 { "" } else { ", " }),
+                            field_names.get(i).unwrap()
+                        )?;
                         format_value_tree(f, traverser, context)?;
                     }
                 }
                 _ => {
-                    for _ in 0..field_length {
-                        write!(f, ", ")?;
+                    for i in 0..field_length {
+                        write!(f, "{}", (if i == 0 { "" } else { ", " }))?;
                         format_value_tree(f, traverser, context)?;
                     }
                 }
@@ -581,7 +587,7 @@ mod tests {
         );
         let payload = basic_encode(&value).unwrap();
 
-        let expected_annotated_single_line = r###"Tuple:MyComplexTupleStruct(Array<U16>(1u16, 2u16, 3u16), Array<U16>(), Array<U8>(), Array<U8>(Hex("010203")), Map<Enum:TestEnum, Tuple:MyFieldStruct>(Enum:TestEnum(0u8:UnitVariant), Tuple:MyFieldStruct(field1 = 1u64, field2 = Array<String>("hello")), Enum:TestEnum(1u8:SingleFieldVariant, field = 1u8), Tuple:MyFieldStruct(field1 = 2u64, field2 = Array<String>("world")), Enum:TestEnum(2u8:DoubleStructVariant, field1 = 1u8, field2 = 2u8), Tuple:MyFieldStruct(field1 = 3u64, field2 = Array<String>("!"))), Map<String, Tuple:MyUnitStruct>("hello", Tuple:MyUnitStruct(), "world", Tuple:MyUnitStruct()), Enum:TestEnum(0u8:UnitVariant), Enum:TestEnum(1u8:SingleFieldVariant, field = 1u8), Enum:TestEnum(2u8:DoubleStructVariant, field1 = 3u8, field2 = 5u8), Tuple:MyFieldStruct(field1 = 21u64, field2 = Array<String>("hello", "world!")), Array<Tuple:MyUnitStruct>(Tuple:MyUnitStruct(), Tuple:MyUnitStruct()), Tuple(Enum(32u8), Enum(21u8, -3i32)))"###;
+        let expected_annotated_single_line = r###"Tuple:MyComplexTupleStruct(Array<U16>(1u16, 2u16, 3u16), Array<U16>(), Array<U8>(), Array<U8>(Hex("010203")), Map<Enum:TestEnum, Tuple:MyFieldStruct>(Enum:TestEnum<0u8:UnitVariant>(), Tuple:MyFieldStruct(field1 = 1u64, field2 = Array<String>("hello")), Enum:TestEnum<1u8:SingleFieldVariant>(field = 1u8), Tuple:MyFieldStruct(field1 = 2u64, field2 = Array<String>("world")), Enum:TestEnum<2u8:DoubleStructVariant>(field1 = 1u8, field2 = 2u8), Tuple:MyFieldStruct(field1 = 3u64, field2 = Array<String>("!"))), Map<String, Tuple:MyUnitStruct>("hello", Tuple:MyUnitStruct(), "world", Tuple:MyUnitStruct()), Enum:TestEnum<0u8:UnitVariant>(), Enum:TestEnum<1u8:SingleFieldVariant>(field = 1u8), Enum:TestEnum<2u8:DoubleStructVariant>(field1 = 3u8, field2 = 5u8), Tuple:MyFieldStruct(field1 = 21u64, field2 = Array<String>("hello", "world!")), Array<Tuple:MyUnitStruct>(Tuple:MyUnitStruct(), Tuple:MyUnitStruct()), Tuple(Enum<32u8>(), Enum<21u8>(-3i32)))"###;
         let display_context = ValueDisplayParameters::Annotated {
             display_mode: DisplayMode::NestedString,
             print_mode: PrintMode::SingleLine,
@@ -590,10 +596,13 @@ mod tests {
             type_id,
             depth_limit: 64,
         };
-        assert_eq!(
-            &BasicRawPayload::new_from_valid_slice_with_checks(&payload)
+        let actual_annotated_single_line =
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
-                .to_string(display_context),
+                .to_string(display_context);
+        println!("{}", actual_annotated_single_line);
+        assert_eq!(
+            &actual_annotated_single_line,
             expected_annotated_single_line,
         );
 
@@ -607,14 +616,14 @@ mod tests {
             Array<U8>(),
             Array<U8>(Hex("010203")),
             Map<Enum:TestEnum, Tuple:MyFieldStruct>(
-                Enum:TestEnum(0u8:UnitVariant),
+                Enum:TestEnum<0u8:UnitVariant>(),
                 Tuple:MyFieldStruct(
                     field1 = 1u64,
                     field2 = Array<String>(
                         "hello",
                     ),
                 ),
-                Enum:TestEnum(
+                Enum:TestEnum<1u8:SingleFieldVariant>(
                     field = 1u8,
                 ),
                 Tuple:MyFieldStruct(
@@ -623,7 +632,7 @@ mod tests {
                         "world",
                     ),
                 ),
-                Enum:TestEnum(
+                Enum:TestEnum<2u8:DoubleStructVariant>(
                     field1 = 1u8,
                     field2 = 2u8,
                 ),
@@ -640,11 +649,11 @@ mod tests {
                 "world",
                 Tuple:MyUnitStruct(),
             ),
-            Enum:TestEnum(0u8:UnitVariant),
-            Enum:TestEnum(
+            Enum:TestEnum<0u8:UnitVariant>(),
+            Enum:TestEnum<1u8:SingleFieldVariant>(
                 field = 1u8,
             ),
-            Enum:TestEnum(
+            Enum:TestEnum<2u8:DoubleStructVariant>(
                 field1 = 3u8,
                 field2 = 5u8,
             ),
@@ -660,8 +669,8 @@ mod tests {
                 Tuple:MyUnitStruct(),
             ),
             Tuple(
-                Enum(32u8),
-                Enum(
+                Enum<32u8>(),
+                Enum<21u8>(
                     -3i32,
                 ),
             ),
@@ -678,11 +687,11 @@ mod tests {
             type_id,
             depth_limit: 64,
         };
-        assert_eq!(
-            &BasicRawPayload::new_from_valid_slice_with_checks(&payload)
+        let actual_annotated_multi_line =
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
-                .to_string(display_context),
-            expected_annotated_multi_line,
-        );
+                .to_string(display_context);
+        println!("{}", actual_annotated_multi_line);
+        assert_eq!(&actual_annotated_multi_line, expected_annotated_multi_line,);
     }
 }
