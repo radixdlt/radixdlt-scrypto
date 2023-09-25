@@ -12,7 +12,6 @@ jobs:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest-16-cores
-      environment: "release"
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "scrypto-builder"
