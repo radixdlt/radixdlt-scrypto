@@ -11,7 +11,7 @@ use afl::fuzz;
 use std::panic::AssertUnwindSafe;
 
 #[cfg(feature = "simple-fuzzer")]
-use fuzz_tests::utils::simple_fuzzer;
+use fuzz_tests::fuzz;
 
 use fuzz_tests::transaction::fuzz_tx::*;
 
@@ -50,8 +50,8 @@ fn main() {
 
     let mut fuzzer = TxFuzzer::new();
 
-    simple_fuzzer::fuzz(|data: &[u8]| -> TxStatus {
+    fuzz!(|data: &[u8]| {
         fuzzer.reset_runner();
-        fuzzer.fuzz_tx_manifest(data)
+        fuzzer.fuzz_tx_manifest(data);
     });
 }

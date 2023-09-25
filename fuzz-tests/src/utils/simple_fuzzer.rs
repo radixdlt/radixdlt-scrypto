@@ -176,10 +176,9 @@ It allows to:
     fuzzer
 }
 
-pub fn fuzz<F, S>(mut closure: F)
+pub fn fuzz_loop<F>(mut closure: F)
 where
-    S: std::fmt::Debug,
-    F: FnMut(&[u8]) -> S,
+    F: FnMut(&[u8]),
 {
     let mut fuzzer = fuzz_init();
 
@@ -187,16 +186,43 @@ where
     let start = Instant::now();
     while !fuzzer.should_stop(cnt, start.elapsed().as_millis()) {
         let data = fuzzer.get_data();
-        let status = closure(&data);
+        closure(&data);
         debug!(
-            "step= {} duration= {} ms data len={} status={:?}",
+            "step= {} duration= {} ms data len={}",
             cnt,
             start.elapsed().as_millis(),
             data.len(),
-            status
         );
-
         cnt += 1;
     }
     info!("Done {} runs in {} s ", cnt, start.elapsed().as_secs());
+}
+
+#[macro_export]
+macro_rules! fuzz {
+    ( $($x:tt)* ) => { $crate::__fuzz!($($x)*) }
+}
+
+#[macro_export]
+macro_rules! __fuzz {
+    (|$buf:ident| $body:block) => {
+        $crate::fuzz_loop(|$buf| $body);
+    };
+    (|$buf:ident: &[u8]| $body:block) => {
+        $crate::fuzz_loop(|$buf| $body);
+    };
+    (|$buf:ident: $dty: ty| $body:block) => {
+        $crate::fuzz_loop(|$buf| {
+            let $buf: $dty = {
+                let mut data = ::arbitrary::Unstructured::new($buf);
+                if let Ok(d) = ::arbitrary::Arbitrary::arbitrary(&mut data).map_err(|_| "") {
+                    d
+                } else {
+                    return;
+                }
+            };
+
+            $body
+        });
+    };
 }

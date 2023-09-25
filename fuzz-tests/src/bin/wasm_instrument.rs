@@ -7,7 +7,7 @@ use libfuzzer_sys::fuzz_target;
 use afl::fuzz;
 
 #[cfg(feature = "simple-fuzzer")]
-use fuzz_tests::utils::simple_fuzzer;
+use fuzz_tests::fuzz;
 
 use radix_engine::vm::wasm::{PrepareError, WasmModule, WasmValidatorConfigV1};
 
@@ -34,5 +34,7 @@ fn main() {
 
 #[cfg(feature = "simple-fuzzer")]
 fn main() {
-    simple_fuzzer::fuzz(fuzz_wasm);
+    fuzz!(|data: &[u8]| {
+        let _ = fuzz_wasm(data);
+    });
 }

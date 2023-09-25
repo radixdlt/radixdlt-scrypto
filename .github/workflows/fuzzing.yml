@@ -11,6 +11,8 @@ on:
         options:
           - transaction
           - wasm_instrument
+          - decimal
+          - parse_decimal
 
       duration_hours:
         description: 'Fuzzing duration [h]'
