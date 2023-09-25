@@ -82,16 +82,16 @@ mod tests {
             .drop_all_proofs()
             .then(|mut builder| {
                 builder.add_blob(vec![1, 2]);
-                builder.set_message(MessageV1::Plaintext(PlaintextMessageV1 {
-                    mime_type: "text/plain".to_owned(),
-                    message: MessageContentsV1::String("hi".to_owned()),
-                }));
                 builder
             })
             .build();
         let transaction = TransactionBuilder::new()
             .header(header_v1)
             .manifest(manifest.clone())
+            .message(MessageV1::Plaintext(PlaintextMessageV1 {
+                mime_type: "text/plain".to_owned(),
+                message: MessageContentsV1::String("hi".to_owned()),
+            }))
             .sign(&sig_1_private_key)
             .sign(&sig_2_private_key)
             .notarize(&notary_private_key)

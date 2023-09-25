@@ -86,7 +86,7 @@ impl TransactionBuilder {
     }
 
     fn transaction_intent(&self) -> IntentV1 {
-        let (instructions, blobs, message) = self
+        let (instructions, blobs) = self
             .manifest
             .clone()
             .expect("Manifest not specified")
@@ -95,7 +95,7 @@ impl TransactionBuilder {
             header: self.header.clone().expect("Header not specified"),
             instructions,
             blobs,
-            message,
+            message: self.message.clone().unwrap_or(MessageV1::None),
         }
     }
 
