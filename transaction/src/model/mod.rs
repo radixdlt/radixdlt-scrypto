@@ -88,13 +88,13 @@ mod tests {
         reconcile_manifest_sbor(
             &payload,
             r###"Enum(
-    Tuple(
-        Tuple(
-            Tuple(
-                1u8,
-                55u64,
-                66u64,
-                77u32,
+    Tuple(                  // signed intent
+        Tuple(              // intent
+            Tuple(          // header
+                1u8,        // * network id
+                55u64,      // * epoch start
+                66u64,      // * epoch end
+                77u32,      // * none
                 Enum(
                     Array<U8>(Hex("f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b")),
                 ),
@@ -122,8 +122,8 @@ mod tests {
             ),
         ),
     ),
-    Enum(
-        Tuple(
+    Enum(            // notary signature
+        Tuple(       // NOTE: unneeded struct
             Array<U8>(Hex("7483351fafd4cbbb87d76abe10f7a5b9257139ee91897f034ad4889b510673376461aa94469d3116314f6ae2c60916e960d6e8d9055c07087c0038c0468b4e08")),
         ),
     ),
@@ -134,5 +134,6 @@ mod tests {
             .validate_from_payload_bytes(&payload)
             .unwrap();
         println!("{:?}", executable);
+        // TODO: assert the full executable
     }
 }
