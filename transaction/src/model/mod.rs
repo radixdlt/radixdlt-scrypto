@@ -25,6 +25,10 @@ mod tests {
     use radix_engine_common::prelude::*;
     use sbor::representations::*;
 
+    fn hash_manifest_sbor_excluding_prefix<T: ManifestEncode>(value: T) -> Hash {
+        hash(&manifest_encode(&value).unwrap()[1..])
+    }
+
     fn reconcile_manifest_sbor(payload: &[u8], expected: &str) {
         let display_context = ValueDisplayParameters::Schemaless {
             display_mode: DisplayMode::NestedString,
@@ -166,12 +170,7 @@ Enum<3u8>(
             Executable {
                 encoded_instructions: &manifest_encode(&manifest.instructions).unwrap(),
                 references: indexset!(
-                    Reference(
-                        NodeId::try_from_hex(
-                            "c0566318c6318c64f798cacc6318c6318cf7be8af78a78f8a6318c6318c6"
-                        )
-                        .unwrap()
-                    ),
+                    Reference(FAUCET.into_node_id()),
                     // NOTE: not needed
                     Reference(SECP256K1_SIGNATURE_VIRTUAL_BADGE.into_node_id()),
                     Reference(ED25519_SIGNATURE_VIRTUAL_BADGE.into_node_id())
@@ -188,25 +187,20 @@ Enum<3u8>(
                                     TransactionDiscriminator::V1Intent as u8,
                                 ]
                                 .as_slice(),
-                                hash(
-                                    &manifest_encode(&transaction.signed_intent.intent.header)
-                                        .unwrap()[1..]
+                                hash_manifest_sbor_excluding_prefix(
+                                    &transaction.signed_intent.intent.header
+                                )
+                                .as_slice(),
+                                hash_manifest_sbor_excluding_prefix(
+                                    &transaction.signed_intent.intent.instructions
                                 )
                                 .as_slice(),
                                 hash(
-                                    &manifest_encode(
-                                        &transaction.signed_intent.intent.instructions.0
-                                    )
-                                    .unwrap()[1..]
+                                    hash(&[1, 2]) // one blob only
                                 )
                                 .as_slice(),
-                                hash(
-                                    &transaction.signed_intent.intent.blobs.blobs[0].0 // one blob only
-                                )
-                                .as_slice(),
-                                hash(
-                                    &manifest_encode(&transaction.signed_intent.intent.message)
-                                        .unwrap()[1..]
+                                hash_manifest_sbor_excluding_prefix(
+                                    &transaction.signed_intent.intent.message
                                 )
                                 .as_slice(),
                             ]
