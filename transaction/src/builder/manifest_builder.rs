@@ -86,6 +86,7 @@ pub struct ManifestBuilder {
     instructions: Vec<InstructionV1>,
     /// Blobs
     blobs: BTreeMap<Hash, Vec<u8>>,
+    message: MessageV1,
 }
 
 pub struct NewSymbols {
@@ -102,6 +103,7 @@ impl ManifestBuilder {
             registrar: ManifestNameRegistrar::new(),
             instructions: Vec::new(),
             blobs: BTreeMap::default(),
+            message: MessageV1::default(),
         }
     }
 
@@ -204,6 +206,10 @@ impl ManifestBuilder {
         let hash = hash(&blob);
         self.blobs.insert(hash, blob);
         ManifestBlobRef(hash.0)
+    }
+
+    pub fn set_message(&mut self, message: MessageV1) {
+        self.message = message;
     }
 
     /// An internal method which is used by other methods - the callers are expected to handle
@@ -2022,6 +2028,7 @@ impl ManifestBuilder {
         let manifest = TransactionManifestV1 {
             instructions: self.instructions,
             blobs: self.blobs,
+            message: self.message,
         };
         #[cfg(feature = "dump_manifest_to_file")]
         {

@@ -246,6 +246,7 @@ where
     Ok(TransactionManifestV1 {
         instructions: output,
         blobs: blobs.blobs(),
+        message: MessageV1::None,
     })
 }
 

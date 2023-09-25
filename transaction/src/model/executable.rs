@@ -78,12 +78,12 @@ impl Default for TransactionCostingParameters {
 }
 
 /// Executable form of transaction, post stateless validation.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Executable<'a> {
-    encoded_instructions: &'a [u8],
-    references: IndexSet<Reference>,
-    blobs: &'a IndexMap<Hash, Vec<u8>>,
-    context: ExecutionContext,
+    pub(crate) encoded_instructions: &'a [u8],
+    pub(crate) references: IndexSet<Reference>,
+    pub(crate) blobs: &'a IndexMap<Hash, Vec<u8>>,
+    pub(crate) context: ExecutionContext,
 }
 
 impl<'a> Executable<'a> {

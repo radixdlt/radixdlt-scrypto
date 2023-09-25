@@ -1607,7 +1607,8 @@ CALL_METHOD
 
         let sk_notary = Ed25519PrivateKey::from_u64(3).unwrap();
 
-        let (instructions, blobs) = compile(manifest, &network, blob_provider)?.for_intent();
+        let (instructions, blobs, message) =
+            compile(manifest, &network, blob_provider)?.for_intent();
 
         Ok(IntentV1 {
             header: TransactionHeaderV1 {
@@ -1621,7 +1622,7 @@ CALL_METHOD
             },
             instructions,
             blobs,
-            message: MessageV1::default(),
+            message,
         })
     }
 

@@ -84,7 +84,7 @@ impl TransactionFullChildPreparable for PreparedSystemTransactionV1 {
 
 impl SystemTransactionV1 {
     pub fn new(manifest: TransactionManifestV1, hash_for_execution: Hash) -> Self {
-        let (instructions, blobs) = manifest.for_intent();
+        let (instructions, blobs, _message) = manifest.for_intent();
 
         Self {
             instructions,

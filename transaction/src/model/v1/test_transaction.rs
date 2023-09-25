@@ -28,7 +28,7 @@ impl TestTransaction {
     }
 
     pub fn new(manifest: TransactionManifestV1, hash: Hash) -> Self {
-        let (instructions, blobs) = manifest.for_intent();
+        let (instructions, blobs, _message) = manifest.for_intent();
         Self {
             instructions,
             blobs,

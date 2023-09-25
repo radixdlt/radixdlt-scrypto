@@ -16,7 +16,10 @@ pub use versioned::*;
 mod tests {
     use super::*;
     use crate::{
-        internal_prelude::{NotarizedTransactionValidator, TransactionValidator, ValidationConfig},
+        internal_prelude::{
+            NotarizedTransactionValidator, TransactionValidationError, TransactionValidator,
+            ValidationConfig,
+        },
         prelude::*,
     };
     use radix_engine_common::prelude::*;
@@ -36,7 +39,7 @@ mod tests {
         let actual = ManifestRawPayload::new_from_valid_slice_with_checks(&payload)
             .unwrap()
             .to_string(display_context);
-        let actual_clean: String = expected
+        let actual_clean: String = actual
             .trim()
             .split("\n")
             .map(|line| line.trim())
@@ -70,24 +73,32 @@ mod tests {
             notary_is_signatory: false,
             tip_percentage: 4,
         };
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .drop_all_proofs()
+            .then(|mut builder| {
+                builder.add_blob(vec![1, 2]);
+                builder.set_message(MessageV1::Plaintext(PlaintextMessageV1 {
+                    mime_type: "text/plain".to_owned(),
+                    message: MessageContentsV1::String("hi".to_owned()),
+                }));
+                builder
+            })
+            .build();
         let transaction = TransactionBuilder::new()
             .header(header_v1)
-            .manifest(
-                ManifestBuilder::new()
-                    .drop_all_proofs()
-                    .drop_all_proofs()
-                    .build(),
-            )
+            .manifest(manifest.clone())
             .sign(&sig_1_private_key)
             .sign(&sig_2_private_key)
             .notarize(&notary_private_key)
             .build();
-        let payload = transaction.to_payload_bytes().unwrap();
+        let mut payload = transaction.to_payload_bytes().unwrap();
         println!("{:?}", payload);
 
         reconcile_manifest_sbor(
             &payload,
-            r###"Enum(
+            r###"
+Enum<3u8>(
     Tuple(                  // signed intent
         Tuple(              // intent
             Tuple(          // header
@@ -95,45 +106,148 @@ mod tests {
                 55u64,      // * epoch start
                 66u64,      // * epoch end
                 77u32,      // * none
-                Enum(
+                Enum<1u8>(  // * notary public key
                     Array<U8>(Hex("f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b")),
                 ),
-                false,
-                4u16,
+                false,      // * notary is signatory
+                4u16,       // * tip percentage 4%
             ),
-            Array<Enum>(
-                Enum(80u8),
-                Enum(80u8),
+            Array<Enum>(    // instructions
+                Enum<65u8>(
+                    Address("c0566318c6318c64f798cacc6318c6318cf7be8af78a78f8a6318c6318c6"),
+                    "lock_fee",
+                    Tuple(
+                        Decimal("5000"),
+                    ),
+                ),
+                Enum<80u8>(),
             ),
-            Array<Array>(),
-            Enum(0u8),
-        ),
-        Array<Enum>(
-            Enum(
+            Array<Array>(   // blobs
+                Array<U8>(Hex("0102")),
+            ),
+            Enum<1u8>(      // message
                 Tuple(
-                    Array<U8>(Hex("01d331fdc9898abfca2fccd3f578ae8bbe2615ff4ab2e2e0ad0b92cd1523c63a262b90b71d976d040c9891a6a90aa7e31372e02cbe2af962ea65270f9b868aaf22")),
+                    "text/plain",
+                    Enum<0u8>(
+                        "hi",
+                    ),
                 ),
             ),
-            Enum(
+        ),
+        Array<Enum>(        // signature
+            Enum<0u8>(
+                Tuple(      // NOTE: unneeded struct
+                    Array<U8>(Hex("00eb7980eb88500715d6d5bacf5d2bf8d0423450d54122ba7267162a1d241d0b854e1ca8b77ce283b4812b37bb54c523c5be6cfc9d4b6998af5815917220bc31c8")),
+                ),
+            ),
+            Enum<1u8>(
                 Array<U8>(Hex("7422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674")),
-                Tuple(
-                    Array<U8>(Hex("9f76cdb109f814fde2c020fb443134ae738288f2eedede8e897e9a3253b2ec8411d93f065088f87c562ce2950c1a4c163e1c5c6f5e3f312654a797b480a51c0f")),
+                Tuple(      // NOTE: unneeded struct
+                    Array<U8>(Hex("39b5f82e2e5a40a1d6329d47736c4681fa5eec57866dd4f554a1a99fe4a7f9bf9fd72f7a8c7b7c2071fe4d6ded359c2dce61539cbfafbbfab33d3896c27e4205")),
                 ),
             ),
         ),
     ),
-    Enum(            // notary signature
-        Tuple(       // NOTE: unneeded struct
-            Array<U8>(Hex("7483351fafd4cbbb87d76abe10f7a5b9257139ee91897f034ad4889b510673376461aa94469d3116314f6ae2c60916e960d6e8d9055c07087c0038c0468b4e08")),
+    Enum<1u8>(              // notary signature
+        Tuple(              // NOTE: unneeded struct
+            Array<U8>(Hex("1a8334fd9af4622cd0f81b7e2d5f3033037f605c288c2d91e4b648fe0a2f153a60f739b1e7349dc4078e787e2db30bfb60405089c1fb7bc0c3bf8fed4a86df0e")),
         ),
     ),
-)"###,
+)
+"###,
         );
 
-        let executable = NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+        let validated = NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
             .validate_from_payload_bytes(&payload)
             .unwrap();
-        println!("{:?}", executable);
-        // TODO: assert the full executable
+        let executable = validated.get_executable();
+        assert_eq!(
+            executable,
+            Executable {
+                encoded_instructions: &manifest_encode(&manifest.instructions).unwrap(),
+                references: indexset!(
+                    Reference(
+                        NodeId::try_from_hex(
+                            "c0566318c6318c64f798cacc6318c6318cf7be8af78a78f8a6318c6318c6"
+                        )
+                        .unwrap()
+                    ),
+                    // NOTE: not needed
+                    Reference(SECP256K1_SIGNATURE_VIRTUAL_BADGE.into_node_id()),
+                    Reference(ED25519_SIGNATURE_VIRTUAL_BADGE.into_node_id())
+                ),
+                blobs: &indexmap!(
+                    hash(&[1, 2]) => vec![1, 2]
+                ),
+                context: ExecutionContext {
+                    intent_hash: TransactionIntentHash::ToCheck {
+                        intent_hash: hash(
+                            [
+                                [
+                                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                                    TransactionDiscriminator::V1Intent as u8,
+                                ]
+                                .as_slice(),
+                                hash(
+                                    &manifest_encode(&transaction.signed_intent.intent.header)
+                                        .unwrap()[1..]
+                                )
+                                .as_slice(),
+                                hash(
+                                    &manifest_encode(
+                                        &transaction.signed_intent.intent.instructions.0
+                                    )
+                                    .unwrap()[1..]
+                                )
+                                .as_slice(),
+                                hash(
+                                    &transaction.signed_intent.intent.blobs.blobs[0].0 // one blob only
+                                )
+                                .as_slice(),
+                                hash(
+                                    &manifest_encode(&transaction.signed_intent.intent.message)
+                                        .unwrap()[1..]
+                                )
+                                .as_slice(),
+                            ]
+                            .concat(),
+                        ),
+                        expiry_epoch: Epoch::of(66)
+                    },
+                    epoch_range: Some(EpochRange {
+                        start_epoch_inclusive: Epoch::of(55),
+                        end_epoch_exclusive: Epoch::of(66)
+                    }),
+                    pre_allocated_addresses: vec![],
+                    payload_size: payload.len(),
+                    num_of_signature_validations: 3,
+                    auth_zone_params: AuthZoneParams {
+                        initial_proofs: btreeset!(
+                            NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
+                            NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())
+                        ),
+                        virtual_resources: btreeset!()
+                    },
+                    costing_parameters: TransactionCostingParameters {
+                        tip_percentage: 4,
+                        free_credit_in_xrd: dec!(0)
+                    }
+                }
+            }
+        );
+
+        // Test unexpected transaction type
+        payload[2] = 4;
+        let executable = NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+            .validate_from_payload_bytes(&payload);
+        assert_eq!(
+            executable,
+            Err(TransactionValidationError::PrepareError(
+                PrepareError::UnexpectedDiscriminator {
+                    expected: 3,
+                    actual: 4
+                }
+            ))
+        )
     }
 }

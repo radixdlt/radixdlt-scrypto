@@ -11,6 +11,7 @@ use crate::internal_prelude::*;
 pub struct TransactionManifestV1 {
     pub instructions: Vec<InstructionV1>,
     pub blobs: BTreeMap<Hash, Vec<u8>>,
+    pub message: MessageV1,
 }
 
 impl TransactionManifestV1 {
@@ -23,10 +24,11 @@ impl TransactionManifestV1 {
                 .iter()
                 .map(|blob| (hash(&blob.0), blob.0.clone()))
                 .collect(),
+            message: intent.message.clone(),
         }
     }
 
-    pub fn for_intent(self) -> (InstructionsV1, BlobsV1) {
+    pub fn for_intent(self) -> (InstructionsV1, BlobsV1, MessageV1) {
         (
             InstructionsV1(self.instructions),
             BlobsV1 {
@@ -37,6 +39,7 @@ impl TransactionManifestV1 {
                     .map(|blob| BlobV1(blob))
                     .collect(),
             },
+            self.message,
         )
     }
 }
