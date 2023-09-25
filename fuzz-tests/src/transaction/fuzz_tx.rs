@@ -326,7 +326,8 @@ impl TxFuzzer {
                 InstructionDiscriminants::CreateAccountAdvanced => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
-                    let input = AccountCreateAdvancedManifestInput::arbitrary(&mut unstructured).unwrap();
+                    let input =
+                        AccountCreateAdvancedManifestInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallFunction {

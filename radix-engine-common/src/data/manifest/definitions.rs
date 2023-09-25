@@ -86,15 +86,28 @@ pub enum ManifestToRustValueError {
 }
 
 pub fn manifest_encode<T: ManifestEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
+    manifest_encode_with_depth_limit(value, MANIFEST_SBOR_V1_MAX_DEPTH)
+}
+
+pub fn manifest_encode_with_depth_limit<T: ManifestEncode + ?Sized>(
+    value: &T,
+    depth_limit: usize,
+) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let encoder = ManifestEncoder::new(&mut buf, MANIFEST_SBOR_V1_MAX_DEPTH);
+    let encoder = ManifestEncoder::new(&mut buf, depth_limit);
     encoder.encode_payload(value, MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(buf)
 }
 
 pub fn manifest_decode<T: ManifestDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    ManifestDecoder::new(buf, MANIFEST_SBOR_V1_MAX_DEPTH)
-        .decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
+    manifest_decode_with_depth_limit(buf, MANIFEST_SBOR_V1_MAX_DEPTH)
+}
+
+pub fn manifest_decode_with_depth_limit<T: ManifestDecode>(
+    buf: &[u8],
+    depth_limit: usize,
+) -> Result<T, DecodeError> {
+    ManifestDecoder::new(buf, depth_limit).decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
 }
 
 pub fn to_manifest_value<T: ManifestEncode + ?Sized>(
