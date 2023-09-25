@@ -1,20 +1,13 @@
 #![cfg_attr(feature = "libfuzzer-sys", no_main)]
-
 use arbitrary::Arbitrary;
-#[cfg(feature = "libfuzzer-sys")]
-use libfuzzer_sys::fuzz_target;
-
-#[cfg(feature = "afl")]
-use afl::fuzz;
-
-#[cfg(feature = "simple-fuzzer")]
-use fuzz_tests::fuzz;
-
+use fuzz_tests::fuzz_template;
 use radix_engine_common::math::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Arbitrary, Serialize, Deserialize)]
 struct OneDecimal(Decimal, Decimal, i64, u32, i32, RoundingMode);
+
+fuzz_template!(|decimal: OneDecimal| { fuzz_decimal(decimal) });
 
 fn fuzz_decimal(decimal: OneDecimal) {
     let _ = decimal.0.checked_sqrt();
@@ -55,26 +48,6 @@ fn fuzz_decimal(decimal: OneDecimal) {
     let _ = decimal.0.checked_powi(decimal.2);
     let _ = decimal.0.checked_nth_root(decimal.3);
      */
-}
-
-// Fuzzer entry points
-#[cfg(feature = "libfuzzer-sys")]
-fuzz_target!(|decimal: OneDecimal| {
-    fuzz_decimal(decimal);
-});
-
-#[cfg(feature = "afl")]
-fn main() {
-    fuzz!(|decimal: OneDecimal| {
-        fuzz_decimal(decimal);
-    });
-}
-
-#[cfg(feature = "simple-fuzzer")]
-fn main() {
-    fuzz!(|decimal: OneDecimal| {
-        fuzz_decimal(decimal);
-    });
 }
 
 #[test]
