@@ -19,6 +19,8 @@ function usage() {
     echo "Available targets:"
     echo "    transaction"
     echo "    wasm_instrument"
+    echo "    decimal"
+    echo "    parse_decimal"
     echo "Available fuzzers"
     echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"
@@ -42,6 +44,7 @@ function usage() {
     echo "Available commands"
     echo "    generate-input - generate fuzzing input data"
     echo "  Subcommands:"
+    echo "        empty       - Empty input"
     echo "        raw         - Do not process generated data"
     echo "        unique      - Make the input data unique"
     echo "        minimize    - Minimize the input data"
@@ -186,6 +189,14 @@ function generate_input() {
     local cmin_dir=fuzz_input/${target}_cmin
     local raw_dir=fuzz_input/${target}_raw
     local final_dir=fuzz_input/${target}
+
+    if [ $mode = "empty" ] ; then
+        echo "creating empty input $final_dir"
+        mkdir -p $final_dir
+        # Cannot be empty, let's use newline (0xA).
+        echo "" > ${final_dir}/empty
+        return
+    fi
 
     if [ $target = "transaction" -o $target = "wasm_instrument" -o $target = "decimal" -o $target = "parse_decimal" ] ; then
         if [ ! -f target-afl/release/${target} ] ; then

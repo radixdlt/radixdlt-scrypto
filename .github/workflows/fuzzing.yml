@@ -27,6 +27,7 @@ on:
         description: 'Fuzz input data generation mode'
         required: true
         options:
+          - empty
           - minimize
           - unique
           - raw
