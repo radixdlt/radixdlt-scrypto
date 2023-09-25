@@ -213,7 +213,11 @@ Enum<3u8>(
                         end_epoch_exclusive: Epoch::of(66)
                     }),
                     pre_allocated_addresses: vec![],
-                    payload_size: payload.len(),
+                    // Source of discrepancy:
+                    // * Manifest SBOR payload prefix byte: not counted
+                    // * Array header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
+                    // * Enum variant header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
+                    payload_size: payload.len() - 3,
                     num_of_signature_validations: 3,
                     auth_zone_params: AuthZoneParams {
                         initial_proofs: btreeset!(
