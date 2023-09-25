@@ -187,7 +187,7 @@ function generate_input() {
     local raw_dir=fuzz_input/${target}_raw
     local final_dir=fuzz_input/${target}
 
-    if [ $target = "transaction" -o $target = "wasm_instrument" ] ; then
+    if [ $target = "transaction" -o $target = "wasm_instrument" -o $target = "decimal" ] ; then
         if [ ! -f target-afl/release/${target} ] ; then
             echo "target binary 'target-afl/release/${target}' not built. Call below command to build it"
             echo "$THIS_SCRIPT afl build"
@@ -204,10 +204,10 @@ function generate_input() {
         fi
 
 
-        if [ $target = "transaction" ] ; then
+        if [ $target = "transaction" -o $target = "decimal" ] ; then
             # Collect input data
 
-            cargo nextest run test_transaction_generate_fuzz_input_data  --release
+            cargo nextest run test_${target}_generate_fuzz_input_data  --release
 
             if [ $mode = "raw" ] ; then
                 #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
