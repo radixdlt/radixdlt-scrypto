@@ -11,8 +11,9 @@ use afl::fuzz;
 use fuzz_tests::fuzz;
 
 use radix_engine_common::math::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Arbitrary)]
+#[derive(Debug, Arbitrary, Serialize, Deserialize)]
 struct OneDecimal(Decimal, Decimal, i64, u32, i32, RoundingMode);
 
 fn fuzz_decimal(decimal: OneDecimal) {
@@ -74,4 +75,29 @@ fn main() {
     fuzz!(|decimal: OneDecimal| {
         fuzz_decimal(decimal);
     });
+}
+
+#[test]
+fn test_decimal_generate_fuzz_input_data() {
+    use bincode::serialize;
+    use std::fs;
+
+    let mut idx = 0;
+    for d1 in [Decimal::MAX, Decimal::MIN, Decimal::ONE, -Decimal::ONE] {
+        for d2 in [Decimal::MAX, Decimal::MIN, Decimal::ONE, -Decimal::ONE] {
+            for decimal_places in [-20, -18, -10, -1, 0, 1, 10, 18, 20] {
+                for mode in [
+                    RoundingMode::ToPositiveInfinity,
+                    RoundingMode::ToZero,
+                    RoundingMode::ToNearestMidpointTowardZero,
+                ] {
+                    let d = OneDecimal(d1, d2, 1_i64, 1_u32, decimal_places, mode);
+                    let serialized = serialize(&d).unwrap();
+                    fs::write(format!("decimal_{:03?}.raw", idx), serialized)
+                        .expect("Unable to write file");
+                    idx += 1;
+                }
+            }
+        }
+    }
 }
