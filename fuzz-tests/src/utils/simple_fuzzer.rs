@@ -187,8 +187,6 @@ where
     while !fuzzer.should_stop(cnt, start.elapsed().as_millis()) {
         let data = fuzzer.get_data();
         closure(&data);
-        debug!("step= {} duration= {} ms", cnt, start.elapsed().as_millis(),);
-        closure(&data);
         debug!(
             "step= {} duration= {} ms data len={}",
             cnt,
