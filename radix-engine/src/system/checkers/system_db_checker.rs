@@ -138,6 +138,7 @@ pub trait ApplicationChecker: Default {
         &mut self,
         _info: BlueprintInfo,
         _node_id: NodeId,
+        _module_id: ModuleId,
         _field_index: FieldIndex,
         _value: &Vec<u8>,
     ) {
@@ -147,6 +148,7 @@ pub trait ApplicationChecker: Default {
         &mut self,
         _info: BlueprintInfo,
         _node_id: NodeId,
+        _module_id: ModuleId,
         _collection_index: CollectionIndex,
         _key: &Vec<u8>,
         _value: &Vec<u8>,
@@ -167,8 +169,16 @@ pub struct SystemDatabaseChecker<A: ApplicationChecker> {
 }
 
 impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
-    pub fn new() -> SystemDatabaseChecker<A> {
+    pub fn new(checker: A) -> SystemDatabaseChecker<A> {
         SystemDatabaseChecker {
+            application_checker: checker,
+        }
+    }
+}
+
+impl<A: ApplicationChecker> Default for SystemDatabaseChecker<A> {
+    fn default() -> Self {
+        Self {
             application_checker: A::default(),
         }
     }
@@ -580,15 +590,13 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     )
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
 
-                                match module_id {
-                                    ModuleId::Main => self.application_checker.on_field(
-                                        object_info.blueprint_info.clone(),
-                                        node_checker_state.node_id,
-                                        field_index,
-                                        &field_payload,
-                                    ),
-                                    _ => {}
-                                }
+                                self.application_checker.on_field(
+                                    object_info.blueprint_info.clone(),
+                                    node_checker_state.node_id,
+                                    module_id,
+                                    field_index,
+                                    &field_payload,
+                                );
 
                                 substate_count += 1;
                             }
@@ -665,16 +673,14 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     value
                                 };
 
-                                match module_id {
-                                    ModuleId::Main => self.application_checker.on_collection_entry(
-                                        object_info.blueprint_info.clone(),
-                                        node_checker_state.node_id,
-                                        collection_index,
-                                        &key,
-                                        &value,
-                                    ),
-                                    _ => {}
-                                }
+                                self.application_checker.on_collection_entry(
+                                    object_info.blueprint_info.clone(),
+                                    node_checker_state.node_id,
+                                    module_id,
+                                    collection_index,
+                                    &key,
+                                    &value,
+                                );
 
                                 substate_count += 1;
                             }
@@ -739,18 +745,14 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                         reader.validate_payload(&entry_payload, &value_schema, BLUEPRINT_PAYLOAD_MAX_DEPTH)
                                             .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
 
-                                        match module_id {
-                                            ModuleId::Main => {
-                                                self.application_checker.on_collection_entry(
-                                                    object_info.blueprint_info.clone(),
-                                                    node_checker_state.node_id,
-                                                    collection_index,
-                                                    &key,
-                                                    &entry_payload,
-                                                )
-                                            }
-                                            _ => {}
-                                        }
+                                        self.application_checker.on_collection_entry(
+                                            object_info.blueprint_info.clone(),
+                                            node_checker_state.node_id,
+                                            module_id,
+                                            collection_index,
+                                            &key,
+                                            &entry_payload,
+                                        )
                                     }
                                 }
 
@@ -823,16 +825,14 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     value
                                 };
 
-                                match module_id {
-                                    ModuleId::Main => self.application_checker.on_collection_entry(
-                                        object_info.blueprint_info.clone(),
-                                        node_checker_state.node_id,
-                                        collection_index,
-                                        &key,
-                                        &value,
-                                    ),
-                                    _ => {}
-                                }
+                                self.application_checker.on_collection_entry(
+                                    object_info.blueprint_info.clone(),
+                                    node_checker_state.node_id,
+                                    module_id,
+                                    collection_index,
+                                    &key,
+                                    &value,
+                                );
 
                                 substate_count += 1;
                             }

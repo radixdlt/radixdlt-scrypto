@@ -22,6 +22,9 @@ use libfuzzer_sys::fuzz_target;
 use radix_engine::blueprints::util::check_name;
 use radix_engine::errors::{RejectionReason, RuntimeError, VmError};
 use radix_engine::system::attached_modules::role_assignment::*;
+use radix_engine::system::checkers::{
+    KernelDatabaseChecker, RoleAssignmentDatabaseChecker, SystemDatabaseChecker,
+};
 use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -63,8 +66,7 @@ fuzz_target!(|input: RoleAssignmentFuzzerInput| {
 
     // Depending on the result of the above transaction we do different things. If it was successful
     // we get the component address, if it was a committed failure then we just return from this
-    // function and stop fuzzing, there is not much to check here. If the transaction is rejected or
-    // aborted then we panic as that is not meant to happen.
+    // function and stop fuzzing, there is not much to check here.
     let component_address = match receipt.result {
         TransactionResult::Commit(CommitResult {
             outcome: TransactionOutcome::Success(..),
@@ -80,12 +82,7 @@ fuzz_target!(|input: RoleAssignmentFuzzerInput| {
     };
 
     // Do the first check of the invariants
-    check_invariants(
-        test_runner.substate_db(),
-        component_address,
-        &[receipt],
-        role_keys.as_slice(),
-    );
+    check_invariants(test_runner.substate_db(), &[receipt], role_keys.as_slice());
 
     // Perform the method invocations to the role-assignment module. Each invocation is its own
     // transaction. This is because we would like for a failed invocation not to stop other ones
@@ -116,80 +113,19 @@ fuzz_target!(|input: RoleAssignmentFuzzerInput| {
 });
 
 fn check_invariants(
-    substate_store: &InMemorySubstateDatabase,
-    component_address: ComponentAddress,
+    substate_database: &InMemorySubstateDatabase,
     receipts: &[TransactionReceipt],
-    initial_roles: &[RoleKey],
+    initial_roles: Vec<ModuleRoleKey>,
 ) {
-    let reader = SystemDatabaseReader::new(substate_store);
+    // Verifying the role-assignment substates
+    let mut checker =
+        SystemDatabaseChecker::new(RoleAssignmentDatabaseChecker::new(Some(initial_roles)));
+    let (_, results) = checker
+        .check_db(substate_database)
+        .expect("Should not fail!");
 
-    // Verify the owner role information
-    {
-        let OwnerRoleSubstate {
-            owner_role_entry: OwnerRoleEntry { rule, .. },
-        } = reader
-            .read_object_field(
-                component_address.as_node_id(),
-                ModuleId::RoleAssignment,
-                RoleAssignmentField::Owner.field_index(),
-            )
-            .expect("Failed to read Owner field of RoleAssignment module.")
-            .as_typed::<RoleAssignmentOwnerFieldPayload>()
-            .expect("Failed to decode the contents of the owner field")
-            .into_latest();
-        if RoleAssignmentNativePackage::verify_access_rule(&rule).is_err() {
-            panic!("Owner access rule does not respect the access rules max depth and width limits. OwnerRule: {rule:?}");
-        }
-    }
-
-    // Verify the RoleAssignment collection that stores the ModuleRoleKey -> AccessRule mapping.
-    {
-        let iter = reader
-            .collection_iter(
-                component_address.as_node_id(),
-                ModuleId::RoleAssignment,
-                RoleAssignmentCollection::AccessRuleKeyValue.collection_index(),
-            )
-            .expect("Failed to read the collection information of the role assignment module");
-
-        for (substate_key, substate_value) in iter {
-            let SubstateKey::Map(map_key) = substate_key
-        else {
-            panic!("Encountered a collection that doesn't have a MapKey!")
-        };
-            let module_role_key = scrypto_decode::<ModuleRoleKey>(&map_key).unwrap();
-            let access_rule =
-                scrypto_decode::<RoleAssignmentAccessRuleEntryPayload>(&substate_value)
-                    .unwrap()
-                    .into_latest();
-
-            let mut error_messages = Vec::<&'static str>::new();
-            if RoleAssignmentNativePackage::is_reserved_role_key(&module_role_key.key) {
-                error_messages.push("Encountered a reserved role key in the RoleAssignment state");
-            }
-            if module_role_key.module == ModuleId::RoleAssignment {
-                error_messages.push("Encountered a role in a reserved space");
-            }
-            if module_role_key.key.key.len() > MAX_ROLE_NAME_LEN {
-                error_messages.push("Encountered a role with a name longer than allowed");
-            }
-            if check_name(&module_role_key.key.key).is_err() {
-                error_messages
-                    .push("Encountered a role name that does not pass the `check_name` checks.");
-            }
-            if RoleAssignmentNativePackage::verify_access_rule(&access_rule).is_err() {
-                error_messages.push(
-                "Encountered an access rule that does not comply with the depth and width limits."
-            )
-            }
-            if !initial_roles.contains(&module_role_key.key) {
-                error_messages.push("Encountered a role key in the database that was not present at the creation of the module.")
-            }
-
-            if !error_messages.is_empty() {
-                panic!("Messages: {error_messages:?}. ModuleRoleKey: {module_role_key:?}. AccessRule: {access_rule:?}");
-            }
-        }
+    if !receipts.is_empty() {
+        panic!("Found violations in the database: {:?}", results);
     }
 
     // Verify that none of the transactions panicked.

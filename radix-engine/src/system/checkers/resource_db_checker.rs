@@ -18,8 +18,8 @@ use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
-use radix_engine_interface::prelude::CheckedAdd;
 use radix_engine_interface::prelude::{BlueprintInfo, CollectionIndex};
+use radix_engine_interface::prelude::{CheckedAdd, ModuleId};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 use sbor::HasLatestVersion;
@@ -51,10 +51,11 @@ impl ApplicationChecker for ResourceDatabaseChecker {
         &mut self,
         info: BlueprintInfo,
         node_id: NodeId,
+        module_id: ModuleId,
         field_index: FieldIndex,
         value: &Vec<u8>,
     ) {
-        if !info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) {
+        if !info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) || module_id != ModuleId::Main {
             return;
         }
 
@@ -179,11 +180,12 @@ impl ApplicationChecker for ResourceDatabaseChecker {
         &mut self,
         info: BlueprintInfo,
         node_id: NodeId,
+        module_id: ModuleId,
         collection_index: CollectionIndex,
         _key: &Vec<u8>,
         _value: &Vec<u8>,
     ) {
-        if !info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) {
+        if !info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) || module_id != ModuleId::Main {
             return;
         }
 

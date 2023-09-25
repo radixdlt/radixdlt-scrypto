@@ -2447,7 +2447,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         (SystemDatabaseCheckerResults, A::ApplicationCheckerResults),
         SystemDatabaseCheckError,
     > {
-        let mut checker = SystemDatabaseChecker::<A>::new();
+        let mut checker = SystemDatabaseChecker::<A>::default();
         checker.check_db(&self.database)
     }
 
