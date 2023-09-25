@@ -207,16 +207,16 @@ function generate_input() {
         if [ $target = "transaction" ] ; then
             # Collect input data
 
-            cargo nextest run test_generate_fuzz_input_data  --release
+            cargo nextest run test_transaction_generate_fuzz_input_data  --release
 
             if [ $mode = "raw" ] ; then
                 #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
-                mv manifest_*.raw ${curr_path}/${final_dir}
+                mv ${target}_*.raw ${curr_path}/${final_dir}
                 return
             fi
 
             #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
-            mv manifest_*.raw ${curr_path}/${raw_dir}
+            mv ${target}_*.raw ${curr_path}/${raw_dir}
 
         elif [ $target = "wasm_instrument" ] ; then
             # TODO generate more wasm inputs. and maybe smaller
