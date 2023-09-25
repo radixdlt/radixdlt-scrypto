@@ -326,7 +326,8 @@ impl TxFuzzer {
                 InstructionDiscriminants::CreateAccountAdvanced => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
-                    let input = AccountCreateAdvancedManifestInput::arbitrary(&mut unstructured).unwrap();
+                    let input =
+                        AccountCreateAdvancedManifestInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallFunction {
@@ -897,7 +898,7 @@ fn test_check_fuzzed_instruction_coverage() {
 // It generates and executes manifest. If transaction successful then save the manifest data.
 #[test]
 #[cfg(not(feature = "dummy_fuzzing"))]
-fn test_generate_fuzz_input_data() {
+fn test_transaction_generate_fuzz_input_data() {
     use rand::{Rng, RngCore};
     use rand_chacha::rand_core::SeedableRng;
     use rand_chacha::ChaCha8Rng;
@@ -913,7 +914,7 @@ fn test_generate_fuzz_input_data() {
             fuzzer.reset_runner();
             if let TxStatus::CommitSuccess = fuzzer.fuzz_tx_manifest(&bytes[..]) {
                 let m_hash = hash(&bytes);
-                let path = format!("manifest_{:?}.raw", m_hash);
+                let path = format!("transaction_manifest_{:?}.raw", m_hash);
                 std::fs::write(&path, bytes).unwrap();
                 println!("manifest dumped to file {}", &path);
             }
@@ -926,7 +927,7 @@ fn test_generate_fuzz_input_data() {
 // which writes each used transaction manifest to file.
 #[test]
 #[cfg(feature = "dummy_fuzzing")]
-fn test_generate_fuzz_input_data() {
+fn test_transaction_generate_fuzz_input_data() {
     /*
     cargo nextest run -p radix-engine-tests --release --features dump_manifest_to_file
     mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}

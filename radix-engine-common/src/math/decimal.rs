@@ -9,6 +9,8 @@ use sbor::rust::format;
 use sbor::rust::ops::*;
 use sbor::rust::prelude::*;
 use sbor::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use serde::{Deserialize, Serialize};
 
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
@@ -32,7 +34,10 @@ use super::CheckedTruncate;
 /// Min            : -3138550867693340381917894711603833208051.177722232017256448
 ///
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, Serialize, Deserialize)
+)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal(pub I192);
 
