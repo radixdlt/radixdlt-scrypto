@@ -11,6 +11,7 @@
 //! 5. The access rules all respect the depth and width limits.
 //! 6. Transactions involving the role-assignment module do not panic. We check the receipt to
 //! ensure that if they've resulted in an error, it's not a native vm trap.
+//! 7. No roles may be set after the creation of the module.
 
 #![cfg_attr(feature = "libfuzzer-sys", no_main)]
 
@@ -30,6 +31,15 @@ use transaction::prelude::*;
 
 #[cfg(feature = "libfuzzer-sys")]
 fuzz_target!(|input: RoleAssignmentFuzzerInput| {
+    // Getting the roles that we would have if the creation invocation is valid and the creation tx
+    // succeeds
+    let role_keys = input
+        .creation_invocation
+        .roles
+        .values()
+        .flat_map(|value| value.data.keys().cloned())
+        .collect::<Vec<_>>();
+
     // Creating a new test-runner. This test runner has the appropriate test package published and
     // ready for us to use in fuzzing
     let (mut test_runner, package_address) = package::test_runner();
@@ -70,7 +80,12 @@ fuzz_target!(|input: RoleAssignmentFuzzerInput| {
     };
 
     // Do the first check of the invariants
-    check_invariants(test_runner.substate_db(), component_address, &[receipt]);
+    check_invariants(
+        test_runner.substate_db(),
+        component_address,
+        &[receipt],
+        role_keys.as_slice(),
+    );
 
     // Perform the method invocations to the role-assignment module. Each invocation is its own
     // transaction. This is because we would like for a failed invocation not to stop other ones
@@ -96,6 +111,7 @@ fuzz_target!(|input: RoleAssignmentFuzzerInput| {
         test_runner.substate_db(),
         component_address,
         receipts.as_slice(),
+        role_keys.as_slice(),
     );
 });
 
@@ -103,6 +119,7 @@ fn check_invariants(
     substate_store: &InMemorySubstateDatabase,
     component_address: ComponentAddress,
     receipts: &[TransactionReceipt],
+    initial_roles: &[RoleKey],
 ) {
     let reader = SystemDatabaseReader::new(substate_store);
 
@@ -164,6 +181,9 @@ fn check_invariants(
                 error_messages.push(
                 "Encountered an access rule that does not comply with the depth and width limits."
             )
+            }
+            if !initial_roles.contains(&module_role_key.key) {
+                error_messages.push("Encountered a role key in the database that was not present at the creation of the module.")
             }
 
             if !error_messages.is_empty() {
