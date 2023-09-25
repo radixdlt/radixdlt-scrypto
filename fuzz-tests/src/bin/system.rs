@@ -12,7 +12,8 @@ use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_common::manifest_args;
 
 use radix_engine::prelude::ManifestArgs;
-use radix_engine_common::prelude::{NodeId, Own, ScryptoCustomTypeKind};
+use radix_engine::types::ScryptoSbor;
+use radix_engine_common::prelude::{NodeId, Own, scrypto_encode, ScryptoCustomTypeKind};
 use radix_engine_interface::api::{ACTOR_STATE_SELF, FieldHandle, FieldValue, KeyValueStoreDataSchema, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::{AttachedModuleId, ClientApi, OwnerRole};
@@ -75,19 +76,32 @@ struct SystemActions {
 }
 
 #[derive(Debug, Clone, Arbitrary)]
+enum NodeValue {
+    Own,
+    Ref,
+}
+
+#[derive(Debug, Clone, Arbitrary)]
 enum SystemAction {
     FieldOpen(u8, u32),
     FieldRead(usize),
-    FieldWrite(usize, Vec<u8>),
+    FieldWrite(usize, Vec<(NodeValue, usize)>),
     FieldLock(usize),
     FieldClose(usize),
+    KeyValueStoreNew,
     KeyValueStoreOpenEntry(usize, Vec<u8>, u32),
     KeyValueStoreRemoveEntry(usize, Vec<u8>),
     KeyValueEntryGet(usize),
-    KeyValueEntrySet(usize, Vec<u8>),
+    KeyValueEntrySet(usize, Vec<(NodeValue, usize)>),
     KeyValueEntryRemove(usize),
     KeyValueEntryClose(usize),
     KeyValueEntryLock(usize),
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+enum NodeRef {
+    Own(Own),
+    Ref(NodeId),
 }
 
 struct AppState {
@@ -104,8 +118,26 @@ impl AppState {
         }
     }
 
-    fn get_node(&self, index: usize) -> NodeId {
-        self.nodes.get_index(index % self.nodes.len()).cloned().unwrap()
+    fn get_node(&self, index: usize) -> Option<NodeId> {
+        if self.nodes.is_empty() {
+            None
+        } else {
+            self.nodes.get_index(index % self.nodes.len()).cloned()
+        }
+    }
+
+    fn get_value(&self, value: &Vec<(NodeValue, usize)>) -> Vec<u8> {
+        let mut field = Vec::new();
+        for (node, node_index) in value {
+            if let Some(node_id) = self.get_node(*node_index) {
+                let val = match node {
+                    NodeValue::Own => NodeRef::Own(Own(node_id)),
+                    NodeValue::Ref => NodeRef::Ref(node_id),
+                };
+                field.push(val);
+            }
+        }
+        scrypto_encode(&field).unwrap()
     }
 
     fn process_value(&mut self, value: &Vec<u8>) {
@@ -136,9 +168,9 @@ impl SystemAction {
                     state.process_value(&value);
                 }
             }
-            SystemAction::FieldWrite(index, value) => {
+            SystemAction::FieldWrite(index, nodes) => {
                 if let Some(handle) = state.get_handle(*index) {
-                    api.field_write(handle, value.clone())?;
+                    api.field_write(handle, state.get_value(nodes))?;
                 }
             }
             SystemAction::FieldLock(index) => {
@@ -152,16 +184,24 @@ impl SystemAction {
                     state.handles.remove(&handle);
                 }
             }
+            SystemAction::KeyValueStoreNew => unsafe {
+                let aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+                let kv_store = api.key_value_store_new(KeyValueStoreDataSchema::Local {
+                    additional_schema: generate_full_schema(aggregator),
+                    key_type: LocalTypeId::WellKnown(ANY_TYPE),
+                    value_type: LocalTypeId::WellKnown(ANY_TYPE),
+                    allow_ownership: true,
+                })?;
+                state.nodes.insert(kv_store);
+            }
             SystemAction::KeyValueStoreOpenEntry(index, key, flags) => unsafe {
-                if !state.nodes.is_empty() {
-                    let node_id = state.get_node(*index);
+                if let Some(node_id) = state.get_node(*index) {
                     let handle = api.key_value_store_open_entry(&node_id, key, LockFlags::from_bits_unchecked(*flags))?;
                     state.handles.insert(handle);
                 }
             }
             SystemAction::KeyValueStoreRemoveEntry(index, key) => {
-                if !state.nodes.is_empty() {
-                    let node_id = state.get_node(*index);
+                if let Some(node_id) = state.get_node(*index) {
                     let value = api.key_value_store_remove_entry(&node_id, key)?;
                     state.process_value(&value);
                 }
@@ -174,7 +214,7 @@ impl SystemAction {
             }
             SystemAction::KeyValueEntrySet(index, value) => {
                 if let Some(handle) = state.get_handle(*index) {
-                    api.key_value_entry_set(handle, value.clone())?;
+                    api.key_value_entry_set(handle, state.get_value(value))?;
                 }
             }
             SystemAction::KeyValueEntryRemove(index) => {
