@@ -62,7 +62,7 @@ mod tests {
     }
 
     #[test]
-    fn transaction_bytes_recon() {
+    fn reconcile_transaction_payload() {
         let network = NetworkDefinition::mainnet();
         let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
         let sig_2_private_key = Ed25519PrivateKey::from_u64(2).unwrap();
