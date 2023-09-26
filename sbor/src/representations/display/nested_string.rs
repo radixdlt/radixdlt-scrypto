@@ -600,7 +600,7 @@ mod tests {
             BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
                 .to_string(display_context);
-        println!("{}", actual_annotated_single_line);
+        // println!("{}", actual_annotated_single_line);
         assert_eq!(
             &actual_annotated_single_line,
             expected_annotated_single_line,
@@ -691,7 +691,7 @@ mod tests {
             BasicRawPayload::new_from_valid_slice_with_checks(&payload)
                 .unwrap()
                 .to_string(display_context);
-        println!("{}", actual_annotated_multi_line);
+        // println!("{}", actual_annotated_multi_line);
         assert_eq!(&actual_annotated_multi_line, expected_annotated_multi_line,);
     }
 }
