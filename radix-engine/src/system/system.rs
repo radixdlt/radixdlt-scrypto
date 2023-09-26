@@ -127,7 +127,7 @@ where
         blueprint_interface: &BlueprintInterface,
         outer_obj_info: OuterObjectInfo,
         features: IndexSet<String>,
-        outer_blueprint_features: &IndexSet<String>,
+        outer_object_features: &IndexSet<String>,
         generic_args: GenericArgs,
         fields: IndexMap<u8, FieldValue>,
         mut kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
@@ -217,7 +217,7 @@ where
                             }
                         }
                         Condition::IfOuterFeature(feature) => {
-                            match (outer_blueprint_features.contains(feature), maybe_field) {
+                            match (outer_object_features.contains(feature), maybe_field) {
                                 (false, Some(..)) => {
                                     return Err(RuntimeError::SystemError(
                                         SystemError::CreateObjectError(Box::new(
@@ -440,13 +440,21 @@ where
         kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
-        let expected_outer_blueprint = blueprint_interface.blueprint_type.clone();
+        let blueprint_type = blueprint_interface.blueprint_type.clone();
 
         let object_features: IndexSet<String> =
             features.into_iter().map(|s| s.to_string()).collect();
+        // Validate features
+        for feature in &object_features {
+            if !blueprint_interface.feature_set.contains(feature) {
+                return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
+                    feature.to_string(),
+                )));
+            }
+        }
 
         let (outer_obj_info, outer_object_features) =
-            if let BlueprintType::Inner { outer_blueprint } = &expected_outer_blueprint {
+            if let BlueprintType::Inner { outer_blueprint } = &blueprint_type {
                 match instance_context {
                     Some(context) => {
                         let info = self.get_object_info(context.outer_object.as_node_id())?;
@@ -476,15 +484,6 @@ where
                     }
                 }
             } else {
-                // Validate features
-                for feature in &object_features {
-                    if !blueprint_interface.feature_set.contains(feature) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
-                            feature.to_string(),
-                        )));
-                    }
-                }
-
                 (OuterObjectInfo::None, index_set_new())
             };
 
