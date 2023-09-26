@@ -55,7 +55,12 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for InjectCostingError<SystemConf
 
 impl<K: KernelCallbackObject> InjectCostingError<K> {
     fn maybe_err(&mut self) -> Result<(), RuntimeError> {
+        if *self.fail_after.borrow() == 0 {
+            return Ok(());
+        }
+
         *self.fail_after.borrow_mut() -= 1;
+
         if *self.fail_after.borrow() == 0 {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::CostingError(CostingError::FeeReserveError(

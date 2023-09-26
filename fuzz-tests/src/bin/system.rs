@@ -1,5 +1,6 @@
 #![cfg_attr(feature = "libfuzzer-sys", no_main)]
 use arbitrary::Arbitrary;
+use serde::{Deserialize, Serialize};
 use fuzz_tests::fuzz_template;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
@@ -12,7 +13,7 @@ use radix_engine_common::manifest_args;
 use radix_engine::prelude::ManifestArgs;
 use radix_engine::types::ScryptoSbor;
 use radix_engine_common::prelude::{NodeId, Own, scrypto_encode, ScryptoCustomTypeKind};
-use radix_engine_interface::api::{ACTOR_STATE_SELF, FieldHandle, FieldValue, KeyValueStoreDataSchema, LockFlags};
+use radix_engine_interface::api::{ACTOR_STATE_SELF, FieldValue, KeyValueStoreDataSchema, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::{AttachedModuleId, ClientApi, OwnerRole};
 use radix_engine_interface::types::IndexedScryptoValue;
@@ -27,6 +28,7 @@ fuzz_template!(|actions: SystemActions| { fuzz_system(actions) });
 
 // Fuzzer entry points
 fn fuzz_system(actions: SystemActions) {
+
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_extension(OverridePackageCode::new(
             CUSTOM_PACKAGE_CODE_ID,
@@ -67,19 +69,19 @@ fn fuzz_system(actions: SystemActions) {
         );
 }
 
-#[derive(Debug, Clone, Arbitrary)]
+#[derive(Debug, Clone, Arbitrary, Serialize, Deserialize)]
 struct SystemActions {
     inject_err_after_count: u64,
     pub actions: Vec<SystemAction>,
 }
 
-#[derive(Debug, Clone, Arbitrary)]
+#[derive(Debug, Clone, Arbitrary, Serialize, Deserialize)]
 enum NodeValue {
     Own,
     Ref,
 }
 
-#[derive(Debug, Clone, Arbitrary)]
+#[derive(Debug, Clone, Arbitrary, Serialize, Deserialize)]
 enum SystemAction {
     FieldOpen(u8, u32),
     FieldRead(usize),
@@ -182,7 +184,7 @@ impl SystemAction {
                     state.handles.remove(&handle);
                 }
             }
-            SystemAction::KeyValueStoreNew => unsafe {
+            SystemAction::KeyValueStoreNew => {
                 let aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
                 let kv_store = api.key_value_store_new(KeyValueStoreDataSchema::Local {
                     additional_schema: generate_full_schema(aggregator),
@@ -293,5 +295,57 @@ impl VmInvoke for FuzzSystem {
         }
 
         Ok(IndexedScryptoValue::from_typed(&()))
+    }
+}
+
+
+#[test]
+fn test_system_generate_fuzz_input_data() {
+    use bincode::serialize;
+    use std::fs;
+
+    {
+        let idx = 0;
+        let actions = SystemActions {
+            inject_err_after_count: u64::MAX,
+            actions: vec![
+                SystemAction::FieldOpen(0u8, 0u32),
+                SystemAction::FieldRead(0),
+                SystemAction::FieldLock(0),
+                SystemAction::FieldWrite(0, vec![
+                    (NodeValue::Own, 0usize),
+                    (NodeValue::Ref, 0usize),
+                ]),
+                SystemAction::FieldClose(0),
+            ]
+        };
+
+        let serialized = serialize(&actions).unwrap();
+        fs::write(format!("system_{:03?}.raw", idx), serialized)
+            .expect("Unable to write file");
+    }
+
+    {
+        let idx = 1;
+        let actions = SystemActions {
+            inject_err_after_count: 8u64,
+            actions: vec![
+                SystemAction::KeyValueStoreNew,
+                SystemAction::KeyValueStoreRemoveEntry(0, scrypto_encode(&()).unwrap()),
+                SystemAction::KeyValueStoreOpenEntry(0usize, scrypto_encode(&()).unwrap(), 0u32),
+                SystemAction::KeyValueEntryLock(0),
+                SystemAction::KeyValueEntryClose(0),
+                SystemAction::KeyValueEntryGet(0),
+                SystemAction::KeyValueEntryRemove(0),
+                SystemAction::KeyValueEntrySet(0, vec![
+                    (NodeValue::Own, 0usize),
+                    (NodeValue::Ref, 0usize),
+                ]),
+            ]
+        };
+
+        let serialized = serialize(&actions).unwrap();
+        fs::write(format!("system_{:03?}.raw", idx), serialized)
+            .expect("Unable to write file");
     }
 }
