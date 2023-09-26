@@ -132,7 +132,7 @@ function fuzzer_afl() {
         set -x
         cargo afl build --release \
             --bin $target \
-            --no-default-features --features std,afl \
+            --no-default-features --features std,afl,post_run_db_check \
             --target-dir target-afl
     elif [ $cmd = "run" ] ; then
         mkdir -p afl/${target}/out
