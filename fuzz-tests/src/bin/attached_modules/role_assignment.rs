@@ -107,7 +107,7 @@ fn check_invariants(
         .check_db(substate_database)
         .expect("Should not fail!");
 
-    if !receipts.is_empty() {
+    if !results.is_empty() {
         panic!("Found violations in the database: {:?}", results);
     }
 
@@ -146,7 +146,7 @@ fn get_error_from_receipt(receipt: &TransactionReceipt) -> Option<&RuntimeError>
     }
 }
 
-#[derive(Arbitrary, Clone, Debug)]
+#[derive(Arbitrary, Clone, Debug, ScryptoSbor, serde::Serialize, serde::Deserialize)]
 struct RoleAssignmentFuzzerInput {
     /// The invocation made for the creation of the role-assignment module
     creation_invocation: RoleAssignmentCreateInput,
@@ -171,7 +171,9 @@ impl RoleAssignmentFuzzerInput {
     }
 }
 
-#[derive(Arbitrary, Clone, Debug, ManifestSbor, ScryptoSbor)]
+#[derive(
+    Arbitrary, Clone, Debug, ManifestSbor, ScryptoSbor, serde::Serialize, serde::Deserialize,
+)]
 pub enum RoleAssignmentMethodInvocation {
     Get(RoleAssignmentGetInput),
     Set(RoleAssignmentSetInput),
@@ -328,5 +330,46 @@ mod package {
         let package_address = test_runner
             .publish_native_package(PACKAGE_CODE_ID, RoleAssignmentFuzzBlueprint::definition());
         (test_runner, package_address)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn test_role_assignment_generate_fuzz_input_data() {
+        let example_inputs = vec![
+            RoleAssignmentFuzzerInput {
+                creation_invocation: RoleAssignmentCreateInput {
+                    owner_role: OwnerRoleEntry {
+                        rule: rule!(allow_all),
+                        updater: OwnerRoleUpdater::None,
+                    },
+                    roles: Default::default(),
+                },
+                pre_attachment_invocations: Default::default(),
+                post_attachment_invocations: Default::default(),
+            },
+            RoleAssignmentFuzzerInput {
+                creation_invocation: RoleAssignmentCreateInput {
+                    owner_role: OwnerRoleEntry {
+                        rule: rule!(allow_all),
+                        updater: OwnerRoleUpdater::None,
+                    },
+                    roles: Default::default(),
+                },
+                pre_attachment_invocations: Default::default(),
+                post_attachment_invocations: Default::default(),
+            },
+        ];
+
+        for (index, input) in example_inputs.into_iter().enumerate() {
+            std::fs::write(
+                format!("role_assignment_{:03?}.raw", index),
+                bincode::serialize(&input).unwrap(),
+            )
+            .unwrap();
+        }
     }
 }

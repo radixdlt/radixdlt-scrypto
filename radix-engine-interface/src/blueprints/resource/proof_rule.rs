@@ -3,7 +3,10 @@ use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(
     Debug,
     Clone,
@@ -59,7 +62,10 @@ where
 }
 
 /// Resource Proof Rules
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(
     Debug,
     Clone,
@@ -108,7 +114,10 @@ impl From<ResourceOrNonFungible> for AccessRuleNode {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(
     Debug,
     Clone,
@@ -211,7 +220,10 @@ where
     AccessRuleNode::ProofRule(ProofRule::AmountOf(amount.into(), resource.into()))
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(
     Debug,
     Clone,

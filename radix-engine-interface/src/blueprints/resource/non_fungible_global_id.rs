@@ -3,7 +3,10 @@ use crate::internal_prelude::*;
 use arbitrary::Arbitrary;
 
 /// Represents the global id of a non-fungible.
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(
     Clone,
     PartialEq,
