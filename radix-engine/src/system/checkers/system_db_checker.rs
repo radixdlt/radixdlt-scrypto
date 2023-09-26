@@ -845,3 +845,110 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
         Ok(SystemPartitionCheckResults { substate_count })
     }
 }
+
+/// Defines a composite application database checker that includes multiple other application
+/// database checkers.
+///
+/// This macro can be invoked as follows:
+///
+/// ```no_run
+/// define_composite_checker! {
+///     ResourceDatabaseChecker,
+///     RoleAssignmentDatabaseChecker
+/// }
+/// ```
+///
+/// The above macro invocation will create a [`CompositeApplicationDatabaseChecker`] struct which
+/// implements [`ApplicationChecker`]. Whenever one of the [`ApplicationChecker`] methods are called
+/// the data is passed to the [`ApplicationChecker`] implementation of the child checkers.
+#[macro_export]
+macro_rules! define_composite_checker {
+    (
+        $($ty: ident),* $(,)?
+    ) => {
+        paste::paste! {
+            #[derive(Default, Debug)]
+            pub struct CompositeApplicationDatabaseChecker {
+                $(
+                    pub [< $ty: snake >]: $ty,
+                )*
+            }
+
+            const _: () = {
+                impl CompositeApplicationDatabaseChecker {
+                    pub fn new(
+                        $(
+                            [< $ty: snake >]: $ty,
+                        )*
+                    ) -> Self {
+                        Self {
+                            $(
+                                [< $ty: snake >],
+                            )*
+                        }
+                    }
+                }
+
+                impl $crate::system::checkers::ApplicationChecker for CompositeApplicationDatabaseChecker {
+                    type ApplicationCheckerResults = (
+                        $(
+                            < $ty as $crate::system::checkers::ApplicationChecker >::ApplicationCheckerResults,
+                        )*
+                    );
+
+                    fn on_field(
+                        &mut self,
+                        info: BlueprintInfo,
+                        node_id: NodeId,
+                        module_id: ModuleId,
+                        field_index: FieldIndex,
+                        value: &Vec<u8>,
+                    ) {
+                        $(
+                            $crate::system::checkers::ApplicationChecker::on_field(
+                                &mut self. [< $ty: snake >],
+                                info.clone(),
+                                node_id,
+                                module_id,
+                                field_index,
+                                value,
+                            );
+                        )*
+                    }
+
+                    fn on_collection_entry(
+                        &mut self,
+                        info: BlueprintInfo,
+                        node_id: NodeId,
+                        module_id: ModuleId,
+                        collection_index: CollectionIndex,
+                        key: &Vec<u8>,
+                        value: &Vec<u8>,
+                    ) {
+                        $(
+                            $crate::system::checkers::ApplicationChecker::on_collection_entry(
+                                &mut self. [< $ty: snake >],
+                                info.clone(),
+                                node_id,
+                                module_id,
+                                collection_index,
+                                key,
+                                value,
+                            );
+                        )*
+                    }
+
+                    fn on_finish(&self) -> Self::ApplicationCheckerResults {
+                        (
+                            $(
+                                $crate::system::checkers::ApplicationChecker::on_finish(
+                                    &self. [< $ty: snake >],
+                                ),
+                            )*
+                        )
+                    }
+                }
+            };
+        }
+    };
+}
