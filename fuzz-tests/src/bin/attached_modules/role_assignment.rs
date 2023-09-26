@@ -26,7 +26,9 @@ use radix_engine_interface::prelude::*;
 use radix_engine_stores::memory_db::*;
 use transaction::prelude::*;
 
-fuzz_template!(|input: RoleAssignmentFuzzerInput| {
+fuzz_template!(|input: RoleAssignmentFuzzerInput| { fuzz_func(input) });
+
+fn fuzz_func(input: RoleAssignmentFuzzerInput) {
     // Getting the roles that we would have if the creation invocation is valid and the creation tx
     // succeeds
     let role_keys = input.initial_role_keys();
@@ -93,7 +95,7 @@ fuzz_template!(|input: RoleAssignmentFuzzerInput| {
 
     // Do the second check of the invariants
     check_invariants(test_runner.substate_db(), receipts.as_slice(), role_keys);
-});
+}
 
 fn check_invariants(
     substate_database: &InMemorySubstateDatabase,
@@ -359,7 +361,15 @@ mod tests {
                     },
                     roles: Default::default(),
                 },
-                pre_attachment_invocations: Default::default(),
+                pre_attachment_invocations: vec![RoleAssignmentMethodInvocation::Set(
+                    RoleAssignmentSetInput {
+                        module: ModuleId::RoleAssignment,
+                        role_key: RoleKey {
+                            key: "_owner_".to_owned(),
+                        },
+                        rule: rule!(deny_all),
+                    },
+                )],
                 post_attachment_invocations: Default::default(),
             },
         ];
