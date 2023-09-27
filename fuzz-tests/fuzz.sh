@@ -109,7 +109,7 @@ function fuzzer_libfuzzer() {
     set -x
     cargo +nightly fuzz $cmd \
         --release \
-        --no-default-features --features std,libfuzzer-sys\
+        --no-default-features --features std,libfuzzer-sys \
         --fuzz-dir . \
         --no-cfg-fuzzing \
         --target-dir target-libfuzzer \
@@ -172,7 +172,7 @@ function fuzzer_simple() {
     fi
 
     set -x
-    cargo $cmd --release \
+    cargo $cmd \
         --no-default-features --features std,simple-fuzzer \
         --bin $target \
         -- $@
