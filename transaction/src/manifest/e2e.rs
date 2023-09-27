@@ -1621,7 +1621,7 @@ CALL_METHOD
             },
             instructions,
             blobs,
-            message: MessageV1::default(),
+            message: MessageV1::None,
         })
     }
 

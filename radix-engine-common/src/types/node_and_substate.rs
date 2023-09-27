@@ -44,6 +44,11 @@ impl NodeId {
         hex::encode(&self.0)
     }
 
+    pub fn try_from_hex(hex: &str) -> Option<Self> {
+        let bytes = hex::decode(hex).ok()?;
+        Some(Self(bytes.try_into().ok()?))
+    }
+
     // TODO: gradually remove dependency on the following entity-type related methods
 
     pub const fn entity_type(&self) -> Option<EntityType> {

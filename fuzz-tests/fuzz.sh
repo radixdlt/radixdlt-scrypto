@@ -108,7 +108,7 @@ function fuzzer_libfuzzer() {
     set -x
     cargo +nightly fuzz $cmd \
         --release \
-        --no-default-features --features std,libfuzzer-sys \
+        --no-default-features --features std,libfuzzer-sys,post_run_db_check\
         --fuzz-dir . \
         --no-cfg-fuzzing \
         --target-dir target-libfuzzer \
@@ -133,7 +133,7 @@ function fuzzer_afl() {
         set -x
         cargo afl build --release \
             --bin $target \
-            --no-default-features --features std,afl \
+            --no-default-features --features std,afl,post_run_db_check \
             --target-dir target-afl
     elif [ $cmd = "run" ] ; then
         mkdir -p afl/${target}/out

@@ -49,6 +49,10 @@ impl OnApplyCost {
         match self {
             OnApplyCost::Normal => {}
             OnApplyCost::ForceFailOnCount { fail_after } => {
+                if *fail_after.borrow() == 0 {
+                    return Ok(());
+                }
+
                 *fail_after.borrow_mut() -= 1;
                 if *fail_after.borrow() == 0 {
                     return Err(RuntimeError::SystemModuleError(
