@@ -853,29 +853,35 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 ///
 /// ```no_run
 /// define_composite_checker! {
-///     ResourceDatabaseChecker,
-///     RoleAssignmentDatabaseChecker
+///     CheckerIdent,
+///     [
+///         ResourceDatabaseChecker,
+///         RoleAssignmentDatabaseChecker
+///     ]
 /// }
 /// ```
 ///
-/// The above macro invocation will create a [`CompositeApplicationDatabaseChecker`] struct which
-/// implements [`ApplicationChecker`]. Whenever one of the [`ApplicationChecker`] methods are called
-/// the data is passed to the [`ApplicationChecker`] implementation of the child checkers.
+/// The above macro invocation will create a struct with the given ident which implements
+/// [`ApplicationChecker`]. Whenever one of the [`ApplicationChecker`] methods are called the data
+/// is passed to the [`ApplicationChecker`] implementation of the child checkers.
 #[macro_export]
 macro_rules! define_composite_checker {
     (
-        $($ty: ident),* $(,)?
+        $ident: ident,
+        [
+            $($ty: ident),* $(,)?
+        ] $(,)?
     ) => {
         paste::paste! {
             #[derive(Default, Debug)]
-            pub struct CompositeApplicationDatabaseChecker {
+            pub struct $ident {
                 $(
                     pub [< $ty: snake >]: $ty,
                 )*
             }
 
             const _: () = {
-                impl CompositeApplicationDatabaseChecker {
+                impl $ident {
                     pub fn new(
                         $(
                             [< $ty: snake >]: $ty,
@@ -889,7 +895,7 @@ macro_rules! define_composite_checker {
                     }
                 }
 
-                impl $crate::system::checkers::ApplicationChecker for CompositeApplicationDatabaseChecker {
+                impl $crate::system::checkers::ApplicationChecker for $ident {
                     type ApplicationCheckerResults = (
                         $(
                             < $ty as $crate::system::checkers::ApplicationChecker >::ApplicationCheckerResults,

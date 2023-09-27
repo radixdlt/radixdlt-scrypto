@@ -503,8 +503,11 @@ impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
 
         // Defining a composite checker of all of the application db checkers we have.
         radix_engine::define_composite_checker! {
-            ResourceDatabaseChecker,
-            RoleAssignmentDatabaseChecker
+            CompositeApplicationDatabaseChecker,
+            [
+                ResourceDatabaseChecker,
+                RoleAssignmentDatabaseChecker
+            ]
         }
         let db_results = self
             .check_db::<CompositeApplicationDatabaseChecker>()
