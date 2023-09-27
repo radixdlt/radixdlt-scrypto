@@ -1,8 +1,7 @@
 #!/bin/bash
 
-set -x
+#set -x
 set -e
-set -u
 
 REPORT_PATH=./target/coverage/html
 BINARY_PATH=./target/debug
@@ -18,4 +17,6 @@ grcov --source-dir .. --binary-path $BINARY_PATH --output-path $REPORT_PATH \
     --excl-br-start "^declare_native_blueprint_state" --excl-br-stop "^}$" \
     --excl-start "^declare_native_blueprint_state" --excl-stop "^}$" \
     .
+
+echo "Coverage report available at: $REPORT_PATH"
 
