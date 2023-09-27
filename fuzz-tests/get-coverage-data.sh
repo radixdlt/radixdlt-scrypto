@@ -43,16 +43,30 @@ process_corpus_files() {
     fi
 }
 
+quit=0
+for t in $targets ; do
+    if ls fuzz-${t}-*.profraw >/dev/null 2>&1 ; then
+        echo "WARNING: Some coverage data for target already exist. Please cleanup"
+        echo "See: ls fuzz-${t}-*.profraw"
+        quit=1
+    fi
+done
+if [ $quit -eq 1 ] ; then
+    exit 1
+fi
+
 export CARGO_INCREMENTAL=0
 export RUSTFLAGS='-Cinstrument-coverage'
 
 for t in $targets ; do
     export LLVM_PROFILE_FILE="fuzz-${t}-%p-%m.profraw"
+
     list=corpus_files_$t.lst
     rm -f $list
     get_afl_corpus_files $t > $list
     get_libfuzzer_corpus_files $t >> $list
 
+    # If corpus file list not empty then get coverage
     if [ -s $list ] ; then
         echo "Getting code coverage data for target $t"
         ./fuzz.sh simple build $t
