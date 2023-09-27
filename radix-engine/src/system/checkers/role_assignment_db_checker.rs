@@ -57,9 +57,9 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
         }
 
         let Some(typed_field_index) = RoleAssignmentField::from_repr(field_index) else {
-            add_error(RoleAssignmentDatabaseCheckerError::InvalidFieldIndex(
+            add_error(RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::InvalidFieldIndex(
                 field_index,
-            ));
+            )));
             return;
         };
 
@@ -69,10 +69,10 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
                     .map(|value| value.into_latest())
                 else {
                     add_error(
-                        RoleAssignmentDatabaseCheckerError::FailedToDecodeFieldValue(
+                        RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::FailedToDecodeFieldValue(
                             typed_field_index,
                             value.clone(),
-                        ),
+                        )),
                     );
                     return;
                 };
@@ -116,9 +116,9 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
         }
 
         let Some(typed_collection_index) = RoleAssignmentCollection::from_repr(collection_index) else {
-            add_error(RoleAssignmentDatabaseCheckerError::InvalidCollectionIndex(
+            add_error(RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::InvalidCollectionIndex(
                 collection_index,
-            ));
+            )));
             return;
         };
 
@@ -128,10 +128,10 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
                     scrypto_decode::<RoleAssignmentAccessRuleKeyContent>(&key)
                 else {
                     add_error(
-                        RoleAssignmentDatabaseCheckerError::FailedToDecodeCollectionKeyOrValue(
+                        RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::FailedToDecodeCollectionKeyOrValue(
                             typed_collection_index,
                             key.clone(),
-                        ),
+                        )),
                     );
                     return;
                 };
@@ -140,10 +140,10 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
                         .map(|value| value.into_latest())
                 else {
                     add_error(
-                        RoleAssignmentDatabaseCheckerError::FailedToDecodeCollectionKeyOrValue(
+                        RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::FailedToDecodeCollectionKeyOrValue(
                             typed_collection_index,
                             value.clone(),
-                        ),
+                        )),
                     );
                     return;
                 };
@@ -270,21 +270,8 @@ pub struct LocatedRoleAssignmentDatabaseCheckerError {
 /// collected and then returned at the end of database check.
 #[derive(Debug, Clone)]
 pub enum RoleAssignmentDatabaseCheckerError {
-    /// A [`FieldIndex`] was encountered on a role-assignment module where the field index is not a
-    /// valid [`RoleAssignmentField`].
-    InvalidFieldIndex(FieldIndex),
-
-    /// A [`CollectionIndex`] was encountered on a role-assignment module where the field index is
-    /// not a valid [`RoleAssignmentCollection`].
-    InvalidCollectionIndex(CollectionIndex),
-
-    /// Attempted to decode the data as the FieldEntry associated with that field but failed to do
-    /// so.
-    FailedToDecodeFieldValue(RoleAssignmentField, Vec<u8>),
-
-    /// Attempted to decode the data as the KeyPayload or EntryPayload associated with a collection
-    /// entry but failed.
-    FailedToDecodeCollectionKeyOrValue(RoleAssignmentCollection, Vec<u8>),
+    /// Invariants that should be upheld by other parts of the system were broken.
+    UnexpectedError(UnexpectedError),
 
     /// An [`AccessRule`] was encountered which does not respect the width and depth limits.
     InvalidAccessRule(AccessRule, RoleAssignmentError),
@@ -310,6 +297,28 @@ pub enum RoleAssignmentDatabaseCheckerError {
         initial_role_keys: Vec<ModuleRoleKey>,
         role_key: ModuleRoleKey,
     },
+}
+
+/// An enum of errors that may occur and are not expected to take place. Most of the items here are
+/// checked by the system database checker but we have them as errors as we would like not to have
+/// any code paths in this checker that lead to a panic.
+#[derive(Debug, Clone)]
+pub enum UnexpectedError {
+    /// A [`FieldIndex`] was encountered on a role-assignment module where the field index is not a
+    /// valid [`RoleAssignmentField`].
+    InvalidFieldIndex(FieldIndex),
+
+    /// A [`CollectionIndex`] was encountered on a role-assignment module where the field index is
+    /// not a valid [`RoleAssignmentCollection`].
+    InvalidCollectionIndex(CollectionIndex),
+
+    /// Attempted to decode the data as the FieldEntry associated with that field but failed to do
+    /// so.
+    FailedToDecodeFieldValue(RoleAssignmentField, Vec<u8>),
+
+    /// Attempted to decode the data as the KeyPayload or EntryPayload associated with a collection
+    /// entry but failed.
+    FailedToDecodeCollectionKeyOrValue(RoleAssignmentCollection, Vec<u8>),
 }
 
 #[derive(Debug, Clone)]
