@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = { version = "0.4", optional = true }
-afl = { version = "0.12.16", optional = true }
+afl = { version = "0.14.1", optional = true }
 clap = { version = "4.1.7", optional = true }
 rand = { version = "0.8.5", optional = true }
 rand_chacha = { version = "0.3.1", optional = true }
@@ -32,13 +32,6 @@ lazy_static = "1.4.0"
 
 [dev-dependencies]
 bincode = { version = "1.3.3" }
-
-[patch.crates-io]
-# Use "resettable" `lazy_static` version to prevent incorrect AFL behaviour, eg.
-# - warnings such as "Instrumentation output varies across runs"
-# - low stability reports
-# More details: https://github.com/rust-fuzz/afl.rs#lazy_static-variables
-lazy_static = { git = "https://github.com/rust-fuzz/resettable-lazy-static.rs", rev = "c5eb91f2bde4c2f70092d1574f7145cb33ff0922" }
 
 [workspace]
 members = ["."]
