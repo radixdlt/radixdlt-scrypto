@@ -41,34 +41,37 @@ fn fuzz_func(input: RoleAssignmentFuzzerInput) {
 
     // Instantiate a new role-assignment test component and get the component address.
     let receipt = test_runner.execute_manifest(
-        TransactionManifestV1 {
-            instructions: vec![
-                InstructionV1::CallMethod {
-                    address: DynamicGlobalAddress::Static(FAUCET.into()),
-                    method_name: "lock_fee".to_owned(),
-                    args: manifest_args!(dec!("100")).into(),
-                },
-                InstructionV1::CallFunction {
-                    package_address: DynamicPackageAddress::Static(package_address),
-                    blueprint_name: package::BLUEPRINT_IDENT.to_owned(),
-                    function_name: package::ROLE_ASSIGNMENT_FUZZ_BLUEPRINT_INSTANTIATE_IDENT
-                        .to_owned(),
-                    args: manifest_decode_with_depth_limit(
-                        &manifest_encode_with_depth_limit(
-                            &package::RoleAssignmentFuzzBlueprintInstantiateInput {
-                                creation_invocation: input.creation_invocation,
-                                pre_attachment_invocations: input.pre_attachment_invocations,
-                            },
+        assert_can_be_prepared!(
+            return,
+            TransactionManifestV1 {
+                instructions: vec![
+                    InstructionV1::CallMethod {
+                        address: DynamicGlobalAddress::Static(FAUCET.into()),
+                        method_name: "lock_fee".to_owned(),
+                        args: manifest_args!(dec!("100")).into(),
+                    },
+                    InstructionV1::CallFunction {
+                        package_address: DynamicPackageAddress::Static(package_address),
+                        blueprint_name: package::BLUEPRINT_IDENT.to_owned(),
+                        function_name: package::ROLE_ASSIGNMENT_FUZZ_BLUEPRINT_INSTANTIATE_IDENT
+                            .to_owned(),
+                        args: manifest_decode_with_depth_limit(
+                            &manifest_encode_with_depth_limit(
+                                &package::RoleAssignmentFuzzBlueprintInstantiateInput {
+                                    creation_invocation: input.creation_invocation,
+                                    pre_attachment_invocations: input.pre_attachment_invocations,
+                                },
+                                usize::MAX,
+                            )
+                            .unwrap(),
                             usize::MAX,
                         )
                         .unwrap(),
-                        usize::MAX,
-                    )
-                    .unwrap(),
-                },
-            ],
-            blobs: Default::default(),
-        },
+                    },
+                ],
+                blobs: Default::default(),
+            }
+        ),
         vec![],
     );
 
@@ -100,11 +103,11 @@ fn fuzz_func(input: RoleAssignmentFuzzerInput) {
     // Perform the method invocations to the role-assignment module. Each invocation is its own
     // transaction. This is because we would like for a failed invocation not to stop other ones
     // from happening.
-    let receipts = input
-        .post_attachment_invocations
-        .into_iter()
-        .map(|invocation| {
-            let manifest = TransactionManifestV1 {
+    let mut receipts = Vec::new();
+    for invocation in input.post_attachment_invocations.into_iter() {
+        let manifest = assert_can_be_prepared!(
+            continue,
+            TransactionManifestV1 {
                 instructions: vec![
                     InstructionV1::CallMethod {
                         address: DynamicGlobalAddress::Static(FAUCET.into()),
@@ -118,10 +121,11 @@ fn fuzz_func(input: RoleAssignmentFuzzerInput) {
                     },
                 ],
                 blobs: Default::default(),
-            };
-            test_runner.execute_manifest(manifest, vec![])
-        })
-        .collect::<Vec<_>>();
+            }
+        );
+        let receipt = test_runner.execute_manifest(manifest, vec![]);
+        receipts.push(receipt);
+    }
 
     // Do the second check of the invariants
     check_invariants(
@@ -475,3 +479,18 @@ mod tests {
         vec
     }
 }
+
+macro_rules! assert_can_be_prepared {
+    ($else: expr, $manifest: expr) => {{
+        let manifest = $manifest;
+        if TestTransaction::new_from_nonce(manifest.clone(), 0)
+            .prepare()
+            .is_ok()
+        {
+            manifest
+        } else {
+            $else;
+        }
+    }};
+}
+use assert_can_be_prepared;
