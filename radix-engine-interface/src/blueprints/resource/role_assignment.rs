@@ -77,7 +77,10 @@ impl ModuleRoleKey {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(
     Debug,
     Clone,
@@ -123,7 +126,10 @@ impl RoleKey {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum OwnerRoleUpdater {
     /// Owner is fixed and cannot be updated by anyone
@@ -135,7 +141,10 @@ pub enum OwnerRoleUpdater {
     Object,
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct OwnerRoleEntry {
     pub rule: AccessRule,
@@ -237,7 +246,10 @@ impl Into<OwnerRoleEntry> for OwnerRole {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct RoleAssignmentInit {

@@ -92,7 +92,7 @@ fn test_bootstrap_receipt_should_match_constants() {
 
     assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next().unwrap());
 
-    let mut checker = SystemDatabaseChecker::<ResourceDatabaseChecker>::new();
+    let mut checker = SystemDatabaseChecker::<ResourceDatabaseChecker>::default();
     let db_results = checker
         .check_db(&substate_db)
         .expect("Database should be consistent");

@@ -368,6 +368,30 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         }
     }
 
+    pub fn build_from_snapshot(
+        self,
+        snapshot: TestRunnerSnapshot,
+    ) -> TestRunner<E, InMemorySubstateDatabase> {
+        //---------- Override configs for resource tracker ---------------
+        #[cfg(not(feature = "resource_tracker"))]
+        let trace = self.trace;
+        #[cfg(feature = "resource_tracker")]
+        let trace = false;
+        //----------------------------------------------------------------
+
+        TestRunner {
+            scrypto_vm: ScryptoVm::default(),
+            native_vm: NativeVm::new_with_extension(self.custom_extension),
+            database: snapshot.database,
+            next_private_key: snapshot.next_private_key,
+            next_transaction_nonce: snapshot.next_transaction_nonce,
+            trace,
+            collected_events: snapshot.collected_events,
+            xrd_free_credits_used: snapshot.xrd_free_credits_used,
+            skip_receipt_check: snapshot.skip_receipt_check,
+        }
+    }
+
     pub fn build_and_get_epoch(self) -> (TestRunner<E, D>, ActiveValidatorSet) {
         //---------- Override configs for resource tracker ---------------
         let bootstrap_trace = false;
@@ -477,10 +501,22 @@ impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
             .check_db(&self.database)
             .expect("Database should be consistent");
 
+        // Defining a composite checker of all of the application db checkers we have.
+        radix_engine::define_composite_checker! {
+            CompositeApplicationDatabaseChecker,
+            [
+                ResourceDatabaseChecker,
+                RoleAssignmentDatabaseChecker
+            ]
+        }
         let db_results = self
-            .check_db::<ResourceDatabaseChecker>()
+            .check_db::<CompositeApplicationDatabaseChecker>()
             .expect("Database should be consistent after running test");
         println!("{:#?}", db_results);
+
+        if !db_results.1 .1.is_empty() {
+            panic!("Role assignment violations: {:?}", db_results.1 .1);
+        }
 
         let event_results = SystemEventChecker::<ResourceEventChecker>::new()
             .check_all_events(&self.database, &self.collected_events)
@@ -490,7 +526,7 @@ impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
         // If free credits (xrd from thin air) have been used then reconciliation will fail
         // due to missing mint events
         if !self.xrd_free_credits_used {
-            ResourceReconciler::reconcile(&db_results.1, &event_results)
+            ResourceReconciler::reconcile(&db_results.1 .0, &event_results)
                 .expect("Resource reconciliation failed");
         }
     }
@@ -501,6 +537,9 @@ pub struct TestRunnerSnapshot {
     database: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
+    collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    xrd_free_credits_used: bool,
+    skip_receipt_check: bool,
 }
 
 impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
@@ -509,6 +548,9 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
             database: self.database.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
+            collected_events: self.collected_events.clone(),
+            xrd_free_credits_used: self.xrd_free_credits_used,
+            skip_receipt_check: self.skip_receipt_check,
         }
     }
 
@@ -516,6 +558,9 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
         self.database = snapshot.database;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
+        self.collected_events = snapshot.collected_events;
+        self.xrd_free_credits_used = snapshot.xrd_free_credits_used;
+        self.skip_receipt_check = snapshot.skip_receipt_check;
     }
 }
 
@@ -2447,7 +2492,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         (SystemDatabaseCheckerResults, A::ApplicationCheckerResults),
         SystemDatabaseCheckError,
     > {
-        let mut checker = SystemDatabaseChecker::<A>::new();
+        let mut checker = SystemDatabaseChecker::<A>::default();
         checker.check_db(&self.database)
     }
 

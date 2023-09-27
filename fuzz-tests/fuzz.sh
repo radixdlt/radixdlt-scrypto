@@ -21,6 +21,7 @@ function usage() {
     echo "    wasm_instrument"
     echo "    decimal"
     echo "    parse_decimal"
+    echo "    role_assignment"
     echo "Available fuzzers"
     echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"
@@ -198,7 +199,7 @@ function generate_input() {
         return
     fi
 
-    if [ $target = "transaction" -o $target = "wasm_instrument" -o $target = "decimal" -o $target = "parse_decimal" ] ; then
+    if [ $target = "transaction" -o $target = "wasm_instrument" -o $target = "decimal" -o $target = "parse_decimal" -o $target = "role_assignment" ] ; then
         if [ ! -f target-afl/release/${target} ] ; then
             echo "target binary 'target-afl/release/${target}' not built. Call below command to build it"
             echo "$THIS_SCRIPT afl build"
@@ -215,7 +216,7 @@ function generate_input() {
         fi
 
 
-        if [ $target = "transaction" -o $target = "decimal" -o $target = "parse_decimal" ] ; then
+        if [ $target = "transaction" -o $target = "decimal" -o $target = "parse_decimal" -o $target = "role_assignment" ] ; then
             # Collect input data
 
             cargo nextest run test_${target}_generate_fuzz_input_data  --release

@@ -138,6 +138,7 @@ pub trait ApplicationChecker: Default {
         &mut self,
         _info: BlueprintInfo,
         _node_id: NodeId,
+        _module_id: ModuleId,
         _field_index: FieldIndex,
         _value: &Vec<u8>,
     ) {
@@ -147,6 +148,7 @@ pub trait ApplicationChecker: Default {
         &mut self,
         _info: BlueprintInfo,
         _node_id: NodeId,
+        _module_id: ModuleId,
         _collection_index: CollectionIndex,
         _key: &Vec<u8>,
         _value: &Vec<u8>,
@@ -167,8 +169,16 @@ pub struct SystemDatabaseChecker<A: ApplicationChecker> {
 }
 
 impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
-    pub fn new() -> SystemDatabaseChecker<A> {
+    pub fn new(checker: A) -> SystemDatabaseChecker<A> {
         SystemDatabaseChecker {
+            application_checker: checker,
+        }
+    }
+}
+
+impl<A: ApplicationChecker> Default for SystemDatabaseChecker<A> {
+    fn default() -> Self {
+        Self {
             application_checker: A::default(),
         }
     }
@@ -580,15 +590,13 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     )
                                     .map_err(|_| SystemPartitionCheckError::InvalidFieldValue)?;
 
-                                match module_id {
-                                    ModuleId::Main => self.application_checker.on_field(
-                                        object_info.blueprint_info.clone(),
-                                        node_checker_state.node_id,
-                                        field_index,
-                                        &field_payload,
-                                    ),
-                                    _ => {}
-                                }
+                                self.application_checker.on_field(
+                                    object_info.blueprint_info.clone(),
+                                    node_checker_state.node_id,
+                                    module_id,
+                                    field_index,
+                                    &field_payload,
+                                );
 
                                 substate_count += 1;
                             }
@@ -665,16 +673,14 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     value
                                 };
 
-                                match module_id {
-                                    ModuleId::Main => self.application_checker.on_collection_entry(
-                                        object_info.blueprint_info.clone(),
-                                        node_checker_state.node_id,
-                                        collection_index,
-                                        &key,
-                                        &value,
-                                    ),
-                                    _ => {}
-                                }
+                                self.application_checker.on_collection_entry(
+                                    object_info.blueprint_info.clone(),
+                                    node_checker_state.node_id,
+                                    module_id,
+                                    collection_index,
+                                    &key,
+                                    &value,
+                                );
 
                                 substate_count += 1;
                             }
@@ -739,18 +745,14 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                         reader.validate_payload(&entry_payload, &value_schema, BLUEPRINT_PAYLOAD_MAX_DEPTH)
                                             .map_err(|_| SystemPartitionCheckError::InvalidKeyValueCollectionValue)?;
 
-                                        match module_id {
-                                            ModuleId::Main => {
-                                                self.application_checker.on_collection_entry(
-                                                    object_info.blueprint_info.clone(),
-                                                    node_checker_state.node_id,
-                                                    collection_index,
-                                                    &key,
-                                                    &entry_payload,
-                                                )
-                                            }
-                                            _ => {}
-                                        }
+                                        self.application_checker.on_collection_entry(
+                                            object_info.blueprint_info.clone(),
+                                            node_checker_state.node_id,
+                                            module_id,
+                                            collection_index,
+                                            &key,
+                                            &entry_payload,
+                                        )
                                     }
                                 }
 
@@ -823,16 +825,14 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     value
                                 };
 
-                                match module_id {
-                                    ModuleId::Main => self.application_checker.on_collection_entry(
-                                        object_info.blueprint_info.clone(),
-                                        node_checker_state.node_id,
-                                        collection_index,
-                                        &key,
-                                        &value,
-                                    ),
-                                    _ => {}
-                                }
+                                self.application_checker.on_collection_entry(
+                                    object_info.blueprint_info.clone(),
+                                    node_checker_state.node_id,
+                                    module_id,
+                                    collection_index,
+                                    &key,
+                                    &value,
+                                );
 
                                 substate_count += 1;
                             }
@@ -844,4 +844,117 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 
         Ok(SystemPartitionCheckResults { substate_count })
     }
+}
+
+/// Defines a composite application database checker that includes multiple other application
+/// database checkers.
+///
+/// This macro can be invoked as follows:
+///
+/// ```no_run
+/// define_composite_checker! {
+///     CheckerIdent,
+///     [
+///         ResourceDatabaseChecker,
+///         RoleAssignmentDatabaseChecker
+///     ]
+/// }
+/// ```
+///
+/// The above macro invocation will create a struct with the given ident which implements
+/// [`ApplicationChecker`]. Whenever one of the [`ApplicationChecker`] methods are called the data
+/// is passed to the [`ApplicationChecker`] implementation of the child checkers.
+#[macro_export]
+macro_rules! define_composite_checker {
+    (
+        $ident: ident,
+        [
+            $($ty: ident),* $(,)?
+        ] $(,)?
+    ) => {
+        paste::paste! {
+            #[derive(Default, Debug)]
+            pub struct $ident {
+                $(
+                    pub [< $ty: snake >]: $ty,
+                )*
+            }
+
+            const _: () = {
+                impl $ident {
+                    pub fn new(
+                        $(
+                            [< $ty: snake >]: $ty,
+                        )*
+                    ) -> Self {
+                        Self {
+                            $(
+                                [< $ty: snake >],
+                            )*
+                        }
+                    }
+                }
+
+                impl $crate::system::checkers::ApplicationChecker for $ident {
+                    type ApplicationCheckerResults = (
+                        $(
+                            < $ty as $crate::system::checkers::ApplicationChecker >::ApplicationCheckerResults,
+                        )*
+                    );
+
+                    fn on_field(
+                        &mut self,
+                        info: BlueprintInfo,
+                        node_id: NodeId,
+                        module_id: ModuleId,
+                        field_index: FieldIndex,
+                        value: &Vec<u8>,
+                    ) {
+                        $(
+                            $crate::system::checkers::ApplicationChecker::on_field(
+                                &mut self. [< $ty: snake >],
+                                info.clone(),
+                                node_id,
+                                module_id,
+                                field_index,
+                                value,
+                            );
+                        )*
+                    }
+
+                    fn on_collection_entry(
+                        &mut self,
+                        info: BlueprintInfo,
+                        node_id: NodeId,
+                        module_id: ModuleId,
+                        collection_index: CollectionIndex,
+                        key: &Vec<u8>,
+                        value: &Vec<u8>,
+                    ) {
+                        $(
+                            $crate::system::checkers::ApplicationChecker::on_collection_entry(
+                                &mut self. [< $ty: snake >],
+                                info.clone(),
+                                node_id,
+                                module_id,
+                                collection_index,
+                                key,
+                                value,
+                            );
+                        )*
+                    }
+
+                    fn on_finish(&self) -> Self::ApplicationCheckerResults {
+                        (
+                            $(
+                                $crate::system::checkers::ApplicationChecker::on_finish(
+                                    &self. [< $ty: snake >],
+                                ),
+                            )*
+                        )
+                    }
+                }
+            };
+        }
+    };
 }
