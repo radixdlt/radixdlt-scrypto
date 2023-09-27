@@ -22,6 +22,7 @@ function usage() {
     echo "    decimal"
     echo "    parse_decimal"
     echo "    role_assignment"
+    echo "    system"
     echo "Available fuzzers"
     echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"
@@ -108,7 +109,7 @@ function fuzzer_libfuzzer() {
     set -x
     cargo +nightly fuzz $cmd \
         --release \
-        --no-default-features --features std,libfuzzer-sys,post_run_db_check\
+        --no-default-features --features std,libfuzzer-sys\
         --fuzz-dir . \
         --no-cfg-fuzzing \
         --target-dir target-libfuzzer \
@@ -133,7 +134,7 @@ function fuzzer_afl() {
         set -x
         cargo afl build --release \
             --bin $target \
-            --no-default-features --features std,afl,post_run_db_check \
+            --no-default-features --features std,afl \
             --target-dir target-afl
     elif [ $cmd = "run" ] ; then
         mkdir -p afl/${target}/out
@@ -199,7 +200,7 @@ function generate_input() {
         return
     fi
 
-    if [ $target = "transaction" -o $target = "wasm_instrument" -o $target = "decimal" -o $target = "parse_decimal" -o $target = "role_assignment" ] ; then
+    if [ $target = "transaction" -o $target = "wasm_instrument" -o $target = "decimal" -o $target = "parse_decimal" -o $target = "role_assignment" -o $target = "system" ] ; then
         if [ ! -f target-afl/release/${target} ] ; then
             echo "target binary 'target-afl/release/${target}' not built. Call below command to build it"
             echo "$THIS_SCRIPT afl build"
@@ -216,7 +217,7 @@ function generate_input() {
         fi
 
 
-        if [ $target = "transaction" -o $target = "decimal" -o $target = "parse_decimal" -o $target = "role_assignment" ] ; then
+        if [ $target = "transaction" -o $target = "decimal" -o $target = "parse_decimal" -o $target = "role_assignment" -o $target = "system" ] ; then
             # Collect input data
 
             cargo nextest run test_${target}_generate_fuzz_input_data  --release

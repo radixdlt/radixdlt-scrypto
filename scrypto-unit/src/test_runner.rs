@@ -496,39 +496,7 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
 #[cfg(feature = "post_run_db_check")]
 impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
     fn drop(&mut self) {
-        let mut kernel_checker = KernelDatabaseChecker::new();
-        kernel_checker
-            .check_db(&self.database)
-            .expect("Database should be consistent");
-
-        // Defining a composite checker of all of the application db checkers we have.
-        radix_engine::define_composite_checker! {
-            CompositeApplicationDatabaseChecker,
-            [
-                ResourceDatabaseChecker,
-                RoleAssignmentDatabaseChecker
-            ]
-        }
-        let db_results = self
-            .check_db::<CompositeApplicationDatabaseChecker>()
-            .expect("Database should be consistent after running test");
-        println!("{:#?}", db_results);
-
-        if !db_results.1 .1.is_empty() {
-            panic!("Role assignment violations: {:?}", db_results.1 .1);
-        }
-
-        let event_results = SystemEventChecker::<ResourceEventChecker>::new()
-            .check_all_events(&self.database, &self.collected_events)
-            .expect("Events should be consistent");
-        println!("{:#?}", event_results);
-
-        // If free credits (xrd from thin air) have been used then reconciliation will fail
-        // due to missing mint events
-        if !self.xrd_free_credits_used {
-            ResourceReconciler::reconcile(&db_results.1 .0, &event_results)
-                .expect("Resource reconciliation failed");
-        }
+        self.check_database()
     }
 }
 
@@ -2501,6 +2469,42 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     ) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
         let mut event_checker = SystemEventChecker::<A>::new();
         event_checker.check_all_events(&self.database, self.collected_events())
+    }
+
+    pub fn check_database(&self) {
+        let mut kernel_checker = KernelDatabaseChecker::new();
+        kernel_checker
+            .check_db(&self.database)
+            .expect("Database should be consistent");
+
+        // Defining a composite checker of all of the application db checkers we have.
+        radix_engine::define_composite_checker! {
+            CompositeApplicationDatabaseChecker,
+            [
+                ResourceDatabaseChecker,
+                RoleAssignmentDatabaseChecker
+            ]
+        }
+        let db_results = self
+            .check_db::<CompositeApplicationDatabaseChecker>()
+            .expect("Database should be consistent after running test");
+        println!("{:#?}", db_results);
+
+        if !db_results.1 .1.is_empty() {
+            panic!("Role assignment violations: {:?}", db_results.1 .1);
+        }
+
+        let event_results = SystemEventChecker::<ResourceEventChecker>::new()
+            .check_all_events(&self.database, &self.collected_events)
+            .expect("Events should be consistent");
+        println!("{:#?}", event_results);
+
+        // If free credits (xrd from thin air) have been used then reconciliation will fail
+        // due to missing mint events
+        if !self.xrd_free_credits_used {
+            ResourceReconciler::reconcile(&db_results.1 .0, &event_results)
+                .expect("Resource reconciliation failed");
+        }
     }
 }
 

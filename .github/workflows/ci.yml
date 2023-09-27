@@ -429,3 +429,31 @@ jobs:
     - name: Check fuzzed instructions coverage
       run: cargo nextest run test_check_fuzzed_instruction_coverage
       working-directory: fuzz-tests
+  
+  cargo-check:
+    name: Run cargo check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest-16-cores]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: Cargo Check
+      run: cargo check --all
+  
+  cargo-check-post-run-db-check:
+    name: Run cargo check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest-16-cores]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: Cargo Check
+      run: cargo check --all --features post_run_db_check
