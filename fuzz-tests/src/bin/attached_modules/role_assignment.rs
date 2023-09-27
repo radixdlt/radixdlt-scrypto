@@ -18,8 +18,10 @@
 use arbitrary::Arbitrary;
 
 use fuzz_tests::fuzz_template;
-use radix_engine::errors::{RejectionReason, RuntimeError, VmError};
+use radix_engine::errors::*;
+use radix_engine::system::attached_modules::role_assignment::*;
 use radix_engine::system::checkers::*;
+use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::prelude::*;
@@ -39,18 +41,34 @@ fn fuzz_func(input: RoleAssignmentFuzzerInput) {
 
     // Instantiate a new role-assignment test component and get the component address.
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee_from_faucet()
-            .call_function(
-                package_address,
-                package::BLUEPRINT_IDENT,
-                package::ROLE_ASSIGNMENT_FUZZ_BLUEPRINT_INSTANTIATE_IDENT,
-                package::RoleAssignmentFuzzBlueprintInstantiateInput {
-                    creation_invocation: input.creation_invocation,
-                    pre_attachment_invocations: input.pre_attachment_invocations,
+        TransactionManifestV1 {
+            instructions: vec![
+                InstructionV1::CallMethod {
+                    address: DynamicGlobalAddress::Static(FAUCET.into()),
+                    method_name: "lock_fee".to_owned(),
+                    args: manifest_args!(dec!("100")).into(),
                 },
-            )
-            .build(),
+                InstructionV1::CallFunction {
+                    package_address: DynamicPackageAddress::Static(package_address),
+                    blueprint_name: package::BLUEPRINT_IDENT.to_owned(),
+                    function_name: package::ROLE_ASSIGNMENT_FUZZ_BLUEPRINT_INSTANTIATE_IDENT
+                        .to_owned(),
+                    args: manifest_decode_with_depth_limit(
+                        &manifest_encode_with_depth_limit(
+                            &package::RoleAssignmentFuzzBlueprintInstantiateInput {
+                                creation_invocation: input.creation_invocation,
+                                pre_attachment_invocations: input.pre_attachment_invocations,
+                            },
+                            usize::MAX,
+                        )
+                        .unwrap(),
+                        usize::MAX,
+                    )
+                    .unwrap(),
+                },
+            ],
+            blobs: Default::default(),
+        },
         vec![],
     );
 
@@ -72,7 +90,12 @@ fn fuzz_func(input: RoleAssignmentFuzzerInput) {
     };
 
     // Do the first check of the invariants
-    check_invariants(test_runner.substate_db(), &[receipt], role_keys.clone());
+    check_invariants(
+        component_address,
+        test_runner.substate_db(),
+        &[receipt],
+        role_keys.clone(),
+    );
 
     // Perform the method invocations to the role-assignment module. Each invocation is its own
     // transaction. This is because we would like for a failed invocation not to stop other ones
@@ -81,36 +104,100 @@ fn fuzz_func(input: RoleAssignmentFuzzerInput) {
         .post_attachment_invocations
         .into_iter()
         .map(|invocation| {
-            let manifest = ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .call_role_assignment_method(
-                    component_address,
-                    invocation.method_ident(),
-                    ManifestArgs::new_from_tuple_or_panic(invocation.manifest_value()),
-                )
-                .build();
+            let manifest = TransactionManifestV1 {
+                instructions: vec![
+                    InstructionV1::CallMethod {
+                        address: DynamicGlobalAddress::Static(FAUCET.into()),
+                        method_name: "lock_fee".to_owned(),
+                        args: manifest_args!(dec!("100")).into(),
+                    },
+                    InstructionV1::CallMethod {
+                        address: DynamicGlobalAddress::Static(component_address.into()),
+                        method_name: invocation.method_ident().to_owned(),
+                        args: invocation.manifest_value(),
+                    },
+                ],
+                blobs: Default::default(),
+            };
             test_runner.execute_manifest(manifest, vec![])
         })
         .collect::<Vec<_>>();
 
     // Do the second check of the invariants
-    check_invariants(test_runner.substate_db(), receipts.as_slice(), role_keys);
+    check_invariants(
+        component_address,
+        test_runner.substate_db(),
+        receipts.as_slice(),
+        role_keys,
+    );
 }
 
 fn check_invariants(
+    component_address: ComponentAddress,
     substate_database: &InMemorySubstateDatabase,
     receipts: &[TransactionReceipt],
     initial_roles: Vec<ModuleRoleKey>,
 ) {
-    // Verifying the role-assignment substates
+    // We're doing something quite un-orthodox here, we're reading the particular fields of the db
+    // that we're interested in and then calling the `RoleAssignmentDatabaseChecker` with their
+    // data. We do this to improve performance so that we're not iterating over everything in the
+    // database. We still use the RoleAssignmentDatabaseChecker as we would like the checking logic
+    // to all exist in one place so that it can be reused in an actual DB checker.
+    let reader = SystemDatabaseReader::new(substate_database);
     let mut checker =
-        SystemDatabaseChecker::new(RoleAssignmentDatabaseChecker::new(Some(initial_roles)));
-    let (_, results) = checker
-        .check_db(substate_database)
-        .expect("Should not fail!");
+        RoleAssignmentDatabaseChecker::new(initial_roles, component_address.into_node_id());
+    let blueprint_info = reader
+        .get_blueprint_type_target(component_address.as_node_id(), ModuleId::Main)
+        .unwrap()
+        .blueprint_info;
 
+    {
+        let owner_role_substate = reader
+            .read_object_field(
+                component_address.as_node_id(),
+                ModuleId::RoleAssignment,
+                RoleAssignmentField::Owner.field_index(),
+            )
+            .expect("Failed to read Owner field of RoleAssignment module.");
+
+        checker.on_field(
+            blueprint_info.clone(),
+            component_address.into_node_id(),
+            ModuleId::RoleAssignment,
+            RoleAssignmentField::Owner.field_index(),
+            owner_role_substate.as_vec_ref(),
+        );
+    }
+
+    {
+        let iter = reader
+            .collection_iter(
+                component_address.as_node_id(),
+                ModuleId::RoleAssignment,
+                RoleAssignmentCollection::AccessRuleKeyValue.collection_index(),
+            )
+            .expect("Failed to read the collection information of the role assignment module");
+
+        for (substate_key, substate_value) in iter {
+            let SubstateKey::Map(map_key) = substate_key
+            else {
+                panic!("Encountered a collection that doesn't have a MapKey!")
+            };
+
+            checker.on_collection_entry(
+                blueprint_info.clone(),
+                component_address.into_node_id(),
+                ModuleId::RoleAssignment,
+                RoleAssignmentCollection::AccessRuleKeyValue.collection_index(),
+                &map_key,
+                &substate_value,
+            )
+        }
+    }
+
+    let results = checker.on_finish();
     if !results.is_empty() {
-        panic!("Found violations in the database: {:?}", results);
+        panic!("Found violations in the database: {results:#?}");
     }
 
     // Verify that none of the transactions panicked.
@@ -313,7 +400,9 @@ mod package {
     }
 
     pub const ROLE_ASSIGNMENT_FUZZ_BLUEPRINT_INSTANTIATE_IDENT: &str = "instantiate";
-    #[derive(Arbitrary, Clone, Debug, ManifestSbor, ScryptoSbor)]
+    #[derive(
+        Arbitrary, Clone, Debug, ManifestSbor, ScryptoSbor, serde::Serialize, serde::Deserialize,
+    )]
     pub struct RoleAssignmentFuzzBlueprintInstantiateInput {
         pub creation_invocation: RoleAssignmentCreateInput,
         pub pre_attachment_invocations: Vec<RoleAssignmentMethodInvocation>,
@@ -328,58 +417,61 @@ mod package {
         let mut test_runner = TestRunnerBuilder::new()
             .with_custom_extension(OverridePackageCode::new(PACKAGE_CODE_ID, TestInvoke))
             .without_trace()
-            .build();
+            .build_from_snapshot(TEST_RUNNER_SNAPSHOT.0.clone());
         let package_address = test_runner
             .publish_native_package(PACKAGE_CODE_ID, RoleAssignmentFuzzBlueprint::definition());
         (test_runner, package_address)
+    }
+
+    lazy_static::lazy_static! {
+        static ref TEST_RUNNER_SNAPSHOT: (TestRunnerSnapshot, PackageAddress) = {
+            let mut test_runner = TestRunnerBuilder::new()
+                .with_custom_extension(OverridePackageCode::new(PACKAGE_CODE_ID, TestInvoke))
+                .without_trace()
+                .build();
+            let package_address = test_runner
+                .publish_native_package(PACKAGE_CODE_ID, RoleAssignmentFuzzBlueprint::definition());
+            (test_runner.create_snapshot(), package_address)
+        };
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use arbitrary::*;
+    use rand::{RngCore, SeedableRng};
+    use rand_chacha::*;
+
     use crate::*;
 
     #[test]
     fn test_role_assignment_generate_fuzz_input_data() {
-        let example_inputs = vec![
-            RoleAssignmentFuzzerInput {
-                creation_invocation: RoleAssignmentCreateInput {
-                    owner_role: OwnerRoleEntry {
-                        rule: rule!(allow_all),
-                        updater: OwnerRoleUpdater::None,
-                    },
-                    roles: Default::default(),
-                },
-                pre_attachment_invocations: Default::default(),
-                post_attachment_invocations: Default::default(),
-            },
-            RoleAssignmentFuzzerInput {
-                creation_invocation: RoleAssignmentCreateInput {
-                    owner_role: OwnerRoleEntry {
-                        rule: rule!(allow_all),
-                        updater: OwnerRoleUpdater::None,
-                    },
-                    roles: Default::default(),
-                },
-                pre_attachment_invocations: vec![RoleAssignmentMethodInvocation::Set(
-                    RoleAssignmentSetInput {
-                        module: ModuleId::RoleAssignment,
-                        role_key: RoleKey {
-                            key: "_owner_".to_owned(),
-                        },
-                        rule: rule!(deny_all),
-                    },
-                )],
-                post_attachment_invocations: Default::default(),
-            },
-        ];
-
-        for (index, input) in example_inputs.into_iter().enumerate() {
+        for (index, input) in gen_random(7).into_iter().enumerate() {
             std::fs::write(
                 format!("role_assignment_{:03?}.raw", index),
                 bincode::serialize(&input).unwrap(),
             )
             .unwrap();
         }
+    }
+
+    fn gen_random(n: usize) -> Vec<RoleAssignmentFuzzerInput> {
+        let mut vec = Vec::new();
+
+        while vec.len() < n {
+            let mut rng = ChaCha8Rng::from_entropy();
+            let mut bytes = [0u8; 1024 * 10];
+            rng.fill_bytes(&mut bytes);
+            let mut unstructured = Unstructured::new(&bytes);
+            let input = RoleAssignmentFuzzerInput::arbitrary(&mut unstructured).unwrap();
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                fuzz_func(input.clone());
+            }));
+            if result.is_ok() {
+                vec.push(input)
+            }
+        }
+
+        vec
     }
 }
