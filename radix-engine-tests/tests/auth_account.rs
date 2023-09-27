@@ -363,3 +363,35 @@ fn can_call_function_requiring_count_of_zero() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+#[ignore = "TODO: support virtual proofs for proof evaluation"]
+fn test_amount_of_virtual_badge() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let account = test_runner.new_account_advanced(OwnerRole::Fixed(AccessRule::Protected(
+        AccessRuleNode::ProofRule(ProofRule::AmountOf(
+            dec!(2),
+            SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+        )),
+    )));
+    let (pk0, _) = test_runner.new_key_pair();
+    let (pk1, _) = test_runner.new_key_pair();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, XRD, 1)
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![
+            NonFungibleGlobalId::from_public_key(&pk0),
+            NonFungibleGlobalId::from_public_key(&pk1),
+        ],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
