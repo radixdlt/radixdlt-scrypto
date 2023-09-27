@@ -162,7 +162,7 @@ fn check_invariants(
                 ModuleId::RoleAssignment,
                 RoleAssignmentField::Owner.field_index(),
             )
-            .expect("Failed to read Owner field of RoleAssignment module.");
+            .expect("Impossible case.");
 
         checker.on_field(
             blueprint_info.clone(),
@@ -180,12 +180,12 @@ fn check_invariants(
                 ModuleId::RoleAssignment,
                 RoleAssignmentCollection::AccessRuleKeyValue.collection_index(),
             )
-            .expect("Failed to read the collection information of the role assignment module");
+            .expect("Impossible case.");
 
         for (substate_key, substate_value) in iter {
             let SubstateKey::Map(map_key) = substate_key
             else {
-                panic!("Encountered a collection that doesn't have a MapKey!")
+                panic!("Impossible case.")
             };
 
             checker.on_collection_entry(
