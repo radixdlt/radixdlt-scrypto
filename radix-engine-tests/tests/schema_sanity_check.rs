@@ -20,10 +20,9 @@ fn check_native_function_base_costs() {
     let mut lookup: IndexMap<PackageAddress, IndexSet<String>> = index_map_new();
     let package_addresses = test_runner.find_all_packages();
     for package_address in package_addresses {
-        let blueprint_definitions = test_runner.get_package_blueprint_definitions(&package_address);
+        let blueprint_definitions = test_runner.get_blueprint_definitions(&package_address);
         for (_, definition) in blueprint_definitions {
-            let functions = definition.interface.functions;
-            for (name, _) in functions {
+            for (name, _) in definition.interface.functions {
                 let export_name = definition
                     .function_exports
                     .get(&name)
@@ -101,7 +100,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
         let schemas_by_hash = test_runner.get_package_scrypto_schemas(&package_address);
         println!("Found {} schemas", schemas_by_hash.len());
 
-        let blueprint_definitions = test_runner.get_package_blueprint_definitions(&package_address);
+        let blueprint_definitions = test_runner.get_blueprint_definitions(&package_address);
         for (key, definition) in blueprint_definitions {
             println!("Checking blueprint {:?}", key.blueprint);
             if let Some(fields) = definition.interface.state.fields {

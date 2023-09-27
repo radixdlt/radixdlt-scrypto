@@ -458,15 +458,15 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 }
 
 pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
-    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    native_vm: NativeVm<E>,
-    database: D,
-    next_private_key: u64,
-    next_transaction_nonce: u32,
-    trace: bool,
-    collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
-    xrd_free_credits_used: bool,
-    skip_receipt_check: bool,
+    pub scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    pub native_vm: NativeVm<E>,
+    pub database: D,
+    pub next_private_key: u64,
+    pub next_transaction_nonce: u32,
+    pub trace: bool,
+    pub collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    pub xrd_free_credits_used: bool,
+    pub skip_receipt_check: bool,
 }
 
 #[cfg(feature = "post_run_db_check")]
@@ -661,6 +661,16 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         node_ids
     }
 
+    pub fn find_all_globals(&self) -> Vec<GlobalAddress> {
+        let mut addresses: Vec<GlobalAddress> = self
+            .find_all_nodes()
+            .iter()
+            .filter_map(|node_id| GlobalAddress::try_from(node_id.as_bytes()).ok())
+            .collect();
+        addresses.sort();
+        addresses
+    }
+
     pub fn find_all_components(&self) -> Vec<ComponentAddress> {
         let mut addresses: Vec<ComponentAddress> = self
             .find_all_nodes()
@@ -712,7 +722,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .collect()
     }
 
-    pub fn get_package_blueprint_definitions(
+    pub fn get_blueprint_definitions(
         &self,
         package_address: &PackageAddress,
     ) -> IndexMap<BlueprintVersionKey, BlueprintDefinition> {
@@ -728,6 +738,50 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 let map_key = key.into_map();
                 let key: BlueprintVersionKey = scrypto_decode(&map_key).unwrap();
                 let definition: PackageBlueprintVersionDefinitionEntryPayload =
+                    scrypto_decode(&value).unwrap();
+                (key, definition.into_latest())
+            })
+            .collect()
+    }
+
+    pub fn get_blueprint_auth_config(
+        &self,
+        package_address: &PackageAddress,
+    ) -> IndexMap<BlueprintVersionKey, PackageBlueprintVersionAuthConfig> {
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .collection_iter(
+                package_address.as_node_id(),
+                ModuleId::Main,
+                PackageCollection::BlueprintVersionAuthConfigKeyValue.collection_index(),
+            )
+            .unwrap()
+            .map(|(key, value)| {
+                let map_key = key.into_map();
+                let key: BlueprintVersionKey = scrypto_decode(&map_key).unwrap();
+                let definition: PackageBlueprintVersionAuthConfigEntryPayload =
+                    scrypto_decode(&value).unwrap();
+                (key, definition.into_latest())
+            })
+            .collect()
+    }
+
+    pub fn get_role_assignment(
+        &self,
+        address: &GlobalAddress,
+    ) -> IndexMap<ModuleRoleKey, RoleAssignmentAccessRule> {
+        let reader = SystemDatabaseReader::new(self.substate_db());
+        reader
+            .collection_iter(
+                address.as_node_id(),
+                ModuleId::RoleAssignment,
+                RoleAssignmentCollection::AccessRuleKeyValue.collection_index(),
+            )
+            .unwrap()
+            .map(|(key, value)| {
+                let map_key = key.into_map();
+                let key: ModuleRoleKey = scrypto_decode(&map_key).unwrap();
+                let definition: RoleAssignmentAccessRuleEntryPayload =
                     scrypto_decode(&value).unwrap();
                 (key, definition.into_latest())
             })
