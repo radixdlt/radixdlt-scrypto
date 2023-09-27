@@ -95,7 +95,7 @@ impl TransactionBuilder {
             header: self.header.clone().expect("Header not specified"),
             instructions,
             blobs,
-            message: self.message.clone().unwrap_or_default(),
+            message: self.message.clone().unwrap_or(MessageV1::None),
         }
     }
 
