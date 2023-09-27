@@ -34,12 +34,12 @@ process_corpus_files() {
     local target=$1
     if which parallel && parallel --version | grep -q 'GNU parallel' ; then
         # parallel is nicer because is serializes output from commands in parallel.
-        # "halt now,fail=1" - exit when any job has failed. Kill other running jobs
-        parallel --halt now,fail=1 -- \
-            './fuzz.sh simple run $target "{}" || true' # true to not exit upon error
+        # "halt never" - continue even if error occurs
+        parallel --halt never -- \
+            ./fuzz.sh simple run $target "{}" || true # true to consume error and not quit
     else
         xargs -P 8 -I {} \
-            sh -c './fuzz.sh simple run $target "{} || true' # true to not exit upon error
+            sh -c './fuzz.sh simple run $target "{}" || true' # true to consume error and not quit
     fi
 }
 
