@@ -1,6 +1,5 @@
 #![cfg_attr(feature = "libfuzzer-sys", no_main)]
 use arbitrary::Arbitrary;
-use serde::{Deserialize, Serialize};
 use fuzz_tests::fuzz_template;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
@@ -9,26 +8,28 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_common::manifest_args;
+use serde::{Deserialize, Serialize};
 
 use radix_engine::prelude::ManifestArgs;
 use radix_engine::types::ScryptoSbor;
-use radix_engine_common::prelude::{NodeId, Own, scrypto_encode, ScryptoCustomTypeKind};
-use radix_engine_interface::api::{ACTOR_STATE_SELF, FieldValue, KeyValueStoreDataSchema, LockFlags};
+use radix_engine_common::prelude::{scrypto_encode, NodeId, Own, ScryptoCustomTypeKind};
+use radix_engine_interface::api::{
+    FieldValue, KeyValueStoreDataSchema, LockFlags, ACTOR_STATE_SELF,
+};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::{AttachedModuleId, ClientApi, OwnerRole};
 use radix_engine_interface::types::IndexedScryptoValue;
-use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
 use sbor::basic_well_known_types::ANY_TYPE;
+use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
 use scrypto_unit::{InjectSystemCostingError, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use utils::indexmap;
-use utils::prelude::{IndexSet, index_set_new};
+use utils::prelude::{index_set_new, IndexSet};
 
 fuzz_template!(|actions: SystemActions| { fuzz_system(actions) });
 
 // Fuzzer entry points
 fn fuzz_system(actions: SystemActions) {
-
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_extension(OverridePackageCode::new(
             CUSTOM_PACKAGE_CODE_ID,
@@ -67,6 +68,8 @@ fn fuzz_system(actions: SystemActions) {
             vec![],
             actions.inject_err_after_count,
         );
+
+    test_runner.check_database()
 }
 
 #[derive(Debug, Clone, Arbitrary, Serialize, Deserialize)]
@@ -159,9 +162,13 @@ impl SystemAction {
     ) -> Result<(), RuntimeError> {
         match self {
             SystemAction::FieldOpen(index, flags) => unsafe {
-                let handle = api.actor_open_field(ACTOR_STATE_SELF, *index, LockFlags::from_bits_unchecked(*flags))?;
+                let handle = api.actor_open_field(
+                    ACTOR_STATE_SELF,
+                    *index,
+                    LockFlags::from_bits_unchecked(*flags),
+                )?;
                 state.handles.insert(handle);
-            }
+            },
             SystemAction::FieldRead(index) => {
                 if let Some(handle) = state.get_handle(*index) {
                     let value = api.field_read(handle)?;
@@ -196,10 +203,14 @@ impl SystemAction {
             }
             SystemAction::KeyValueStoreOpenEntry(index, key, flags) => unsafe {
                 if let Some(node_id) = state.get_node(*index) {
-                    let handle = api.key_value_store_open_entry(&node_id, key, LockFlags::from_bits_unchecked(*flags))?;
+                    let handle = api.key_value_store_open_entry(
+                        &node_id,
+                        key,
+                        LockFlags::from_bits_unchecked(*flags),
+                    )?;
                     state.handles.insert(handle);
                 }
-            }
+            },
             SystemAction::KeyValueStoreRemoveEntry(index, key) => {
                 if let Some(node_id) = state.get_node(*index) {
                     let value = api.key_value_store_remove_entry(&node_id, key)?;
@@ -250,8 +261,8 @@ impl VmInvoke for FuzzSystem {
         _input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
         match export_name {
             "test" => {
@@ -298,7 +309,6 @@ impl VmInvoke for FuzzSystem {
     }
 }
 
-
 #[test]
 fn test_system_generate_fuzz_input_data() {
     use bincode::serialize;
@@ -312,17 +322,16 @@ fn test_system_generate_fuzz_input_data() {
                 SystemAction::FieldOpen(0u8, 0u32),
                 SystemAction::FieldRead(0),
                 SystemAction::FieldLock(0),
-                SystemAction::FieldWrite(0, vec![
-                    (NodeValue::Own, 0usize),
-                    (NodeValue::Ref, 0usize),
-                ]),
+                SystemAction::FieldWrite(
+                    0,
+                    vec![(NodeValue::Own, 0usize), (NodeValue::Ref, 0usize)],
+                ),
                 SystemAction::FieldClose(0),
-            ]
+            ],
         };
 
         let serialized = serialize(&actions).unwrap();
-        fs::write(format!("system_{:03?}.raw", idx), serialized)
-            .expect("Unable to write file");
+        fs::write(format!("system_{:03?}.raw", idx), serialized).expect("Unable to write file");
     }
 
     {
@@ -337,15 +346,14 @@ fn test_system_generate_fuzz_input_data() {
                 SystemAction::KeyValueEntryClose(0),
                 SystemAction::KeyValueEntryGet(0),
                 SystemAction::KeyValueEntryRemove(0),
-                SystemAction::KeyValueEntrySet(0, vec![
-                    (NodeValue::Own, 0usize),
-                    (NodeValue::Ref, 0usize),
-                ]),
-            ]
+                SystemAction::KeyValueEntrySet(
+                    0,
+                    vec![(NodeValue::Own, 0usize), (NodeValue::Ref, 0usize)],
+                ),
+            ],
         };
 
         let serialized = serialize(&actions).unwrap();
-        fs::write(format!("system_{:03?}.raw", idx), serialized)
-            .expect("Unable to write file");
+        fs::write(format!("system_{:03?}.raw", idx), serialized).expect("Unable to write file");
     }
 }
