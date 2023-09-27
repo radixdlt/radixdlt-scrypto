@@ -368,6 +368,30 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         }
     }
 
+    pub fn build_from_snapshot(
+        self,
+        snapshot: TestRunnerSnapshot,
+    ) -> TestRunner<E, InMemorySubstateDatabase> {
+        //---------- Override configs for resource tracker ---------------
+        #[cfg(not(feature = "resource_tracker"))]
+        let trace = self.trace;
+        #[cfg(feature = "resource_tracker")]
+        let trace = false;
+        //----------------------------------------------------------------
+
+        TestRunner {
+            scrypto_vm: ScryptoVm::default(),
+            native_vm: NativeVm::new_with_extension(self.custom_extension),
+            database: snapshot.database,
+            next_private_key: snapshot.next_private_key,
+            next_transaction_nonce: snapshot.next_transaction_nonce,
+            trace,
+            collected_events: snapshot.collected_events,
+            xrd_free_credits_used: snapshot.xrd_free_credits_used,
+            skip_receipt_check: snapshot.skip_receipt_check,
+        }
+    }
+
     pub fn build_and_get_epoch(self) -> (TestRunner<E, D>, ActiveValidatorSet) {
         //---------- Override configs for resource tracker ---------------
         let bootstrap_trace = false;
@@ -510,6 +534,9 @@ pub struct TestRunnerSnapshot {
     database: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
+    collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    xrd_free_credits_used: bool,
+    skip_receipt_check: bool,
 }
 
 impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
@@ -518,6 +545,9 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
             database: self.database.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
+            collected_events: self.collected_events.clone(),
+            xrd_free_credits_used: self.xrd_free_credits_used,
+            skip_receipt_check: self.skip_receipt_check,
         }
     }
 
@@ -525,6 +555,9 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
         self.database = snapshot.database;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
+        self.collected_events = snapshot.collected_events;
+        self.xrd_free_credits_used = snapshot.xrd_free_credits_used;
+        self.skip_receipt_check = snapshot.skip_receipt_check;
     }
 }
 

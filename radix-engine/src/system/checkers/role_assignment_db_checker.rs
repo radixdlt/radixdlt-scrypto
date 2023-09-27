@@ -13,6 +13,10 @@ pub struct RoleAssignmentDatabaseChecker {
     /// of roles outside of the initial role-keys. If [`None`] then this check does not happen.
     initial_roles_keys: Option<Vec<ModuleRoleKey>>,
 
+    /// The id of the node to check the role-assignment module of. If provided then all fields and
+    /// collection entires belonging to other nodes are ignored.
+    node_id: Option<NodeId>,
+
     /// A vector of all of the errors encountered when going through the RoleAssignment substates.
     errors: Vec<LocatedRoleAssignmentDatabaseCheckerError>,
 }
@@ -46,6 +50,10 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
         // Ignore all fields that do not belong to the role-assignment module.
         if module_id != ModuleId::RoleAssignment {
             return;
+        }
+        match self.node_id {
+            Some(state_node_id) if state_node_id != node_id => return,
+            _ => {}
         }
 
         let Some(typed_field_index) = RoleAssignmentField::from_repr(field_index) else {
@@ -102,6 +110,10 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
         if module_id != ModuleId::RoleAssignment {
             return;
         }
+        match self.node_id {
+            Some(state_node_id) if state_node_id != node_id => return,
+            _ => {}
+        }
 
         let Some(typed_collection_index) = RoleAssignmentCollection::from_repr(collection_index) else {
             add_error(RoleAssignmentDatabaseCheckerError::InvalidCollectionIndex(
@@ -156,9 +168,10 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
 }
 
 impl RoleAssignmentDatabaseChecker {
-    pub fn new(initial_roles_keys: Option<Vec<ModuleRoleKey>>) -> Self {
+    pub fn new(initial_roles_keys: Vec<ModuleRoleKey>, node_id: NodeId) -> Self {
         Self {
-            initial_roles_keys,
+            initial_roles_keys: Some(initial_roles_keys),
+            node_id: Some(node_id),
             errors: Default::default(),
         }
     }
@@ -232,7 +245,7 @@ impl RoleAssignmentDatabaseChecker {
         F: FnMut(RoleAssignmentDatabaseCheckerError),
     {
         if let Some(ref initial_role_keys) = initial_role_keys {
-            if initial_role_keys.contains(&role_key) {
+            if !initial_role_keys.contains(&role_key) {
                 add_error(
                     RoleAssignmentDatabaseCheckerError::RoleKeyWasCreatedAfterInitialization {
                         initial_role_keys: initial_role_keys.clone(),
