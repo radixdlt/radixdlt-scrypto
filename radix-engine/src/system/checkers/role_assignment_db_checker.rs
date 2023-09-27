@@ -56,27 +56,14 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
             _ => {}
         }
 
-        let Some(typed_field_index) = RoleAssignmentField::from_repr(field_index) else {
-            add_error(RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::InvalidFieldIndex(
-                field_index,
-            )));
-            return;
-        };
+        let typed_field_index = RoleAssignmentField::from_repr(field_index)
+            .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
 
         match typed_field_index {
             RoleAssignmentField::Owner => {
-                let Ok(owner_role) = scrypto_decode::<RoleAssignmentOwnerFieldPayload>(&value)
-                    .map(|value| value.into_latest())
-                else {
-                    add_error(
-                        RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::FailedToDecodeFieldValue(
-                            typed_field_index,
-                            value.clone(),
-                        )),
-                    );
-                    return;
-                };
-                Self::check_access_rule(owner_role.owner_role_entry.rule, &mut add_error)
+                let owner_role = scrypto_decode::<RoleAssignmentOwnerFieldPayload>(&value)
+                    .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
+                Self::check_owner_role_entry(owner_role, &mut add_error)
             }
         };
     }
@@ -115,46 +102,19 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
             _ => {}
         }
 
-        let Some(typed_collection_index) = RoleAssignmentCollection::from_repr(collection_index) else {
-            add_error(RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::InvalidCollectionIndex(
-                collection_index,
-            )));
-            return;
-        };
+        let typed_collection_index = RoleAssignmentCollection::from_repr(collection_index)
+            .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
 
         match typed_collection_index {
             RoleAssignmentCollection::AccessRuleKeyValue => {
-                let Ok(module_role_key) =
-                    scrypto_decode::<RoleAssignmentAccessRuleKeyContent>(&key)
-                else {
-                    add_error(
-                        RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::FailedToDecodeCollectionKeyOrValue(
-                            typed_collection_index,
-                            key.clone(),
-                        )),
-                    );
-                    return;
-                };
-                let Ok(access_rule) =
-                    scrypto_decode::<RoleAssignmentAccessRuleEntryPayload>(&value)
-                        .map(|value| value.into_latest())
-                else {
-                    add_error(
-                        RoleAssignmentDatabaseCheckerError::UnexpectedError(UnexpectedError::FailedToDecodeCollectionKeyOrValue(
-                            typed_collection_index,
-                            value.clone(),
-                        )),
-                    );
-                    return;
-                };
+                let module_role_key = scrypto_decode::<RoleAssignmentAccessRuleKeyPayload>(&key)
+                    .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
+                let access_rule = scrypto_decode::<RoleAssignmentAccessRuleEntryPayload>(&value)
+                    .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
 
-                Self::check_access_rule(access_rule, &mut add_error);
-                Self::check_is_role_key_reserved(&module_role_key, &mut add_error);
-                Self::check_is_reserved_space(&module_role_key, &mut add_error);
-                Self::check_role_key_length(&module_role_key, &mut add_error);
-                Self::check_role_key_name(&module_role_key, &mut add_error);
-                Self::check_against_initial_role_keys(
-                    &module_role_key,
+                Self::check_role_assignment(
+                    module_role_key,
+                    access_rule,
                     &self.initial_roles_keys,
                     &mut add_error,
                 );
@@ -176,7 +136,45 @@ impl RoleAssignmentDatabaseChecker {
         }
     }
 
-    fn check_access_rule<F>(access_rule: AccessRule, add_error: &mut F)
+    pub fn check_owner_role_entry<F>(
+        owner_role_entry: RoleAssignmentOwnerFieldPayload,
+        add_error: &mut F,
+    ) where
+        F: FnMut(RoleAssignmentDatabaseCheckerError),
+    {
+        let owner_rule = owner_role_entry.into_latest().owner_role_entry.rule;
+        Self::check_access_rule_limits(owner_rule, add_error)
+    }
+
+    pub fn check_role_assignment<F>(
+        key: RoleAssignmentAccessRuleKeyPayload,
+        value: RoleAssignmentAccessRuleEntryPayload,
+        initial_role_keys: &Option<Vec<ModuleRoleKey>>,
+        add_error: &mut F,
+    ) where
+        F: FnMut(RoleAssignmentDatabaseCheckerError),
+    {
+        let key = key.content;
+        let value = value.content.into_latest();
+
+        Self::check_access_rule_limits(value, add_error);
+        Self::check_is_role_key_reserved(&key, add_error);
+        Self::check_is_reserved_space(&key, add_error);
+        Self::check_role_key_length(&key, add_error);
+        Self::check_role_key_name(&key, add_error);
+        Self::check_against_initial_role_keys(&key, initial_role_keys, add_error);
+    }
+
+    pub fn add_error(
+        &mut self,
+        location: ErrorLocation,
+        error: RoleAssignmentDatabaseCheckerError,
+    ) {
+        self.errors
+            .push(LocatedRoleAssignmentDatabaseCheckerError { location, error })
+    }
+
+    fn check_access_rule_limits<F>(access_rule: AccessRule, add_error: &mut F)
     where
         F: FnMut(RoleAssignmentDatabaseCheckerError),
     {
@@ -270,9 +268,6 @@ pub struct LocatedRoleAssignmentDatabaseCheckerError {
 /// collected and then returned at the end of database check.
 #[derive(Debug, Clone)]
 pub enum RoleAssignmentDatabaseCheckerError {
-    /// Invariants that should be upheld by other parts of the system were broken.
-    UnexpectedError(UnexpectedError),
-
     /// An [`AccessRule`] was encountered which does not respect the width and depth limits.
     InvalidAccessRule(AccessRule, RoleAssignmentError),
 
@@ -297,28 +292,6 @@ pub enum RoleAssignmentDatabaseCheckerError {
         initial_role_keys: Vec<ModuleRoleKey>,
         role_key: ModuleRoleKey,
     },
-}
-
-/// An enum of errors that may occur and are not expected to take place. Most of the items here are
-/// checked by the system database checker but we have them as errors as we would like not to have
-/// any code paths in this checker that lead to a panic.
-#[derive(Debug, Clone)]
-pub enum UnexpectedError {
-    /// A [`FieldIndex`] was encountered on a role-assignment module where the field index is not a
-    /// valid [`RoleAssignmentField`].
-    InvalidFieldIndex(FieldIndex),
-
-    /// A [`CollectionIndex`] was encountered on a role-assignment module where the field index is
-    /// not a valid [`RoleAssignmentCollection`].
-    InvalidCollectionIndex(CollectionIndex),
-
-    /// Attempted to decode the data as the FieldEntry associated with that field but failed to do
-    /// so.
-    FailedToDecodeFieldValue(RoleAssignmentField, Vec<u8>),
-
-    /// Attempted to decode the data as the KeyPayload or EntryPayload associated with a collection
-    /// entry but failed.
-    FailedToDecodeCollectionKeyOrValue(RoleAssignmentCollection, Vec<u8>),
 }
 
 #[derive(Debug, Clone)]
