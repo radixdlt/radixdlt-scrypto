@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#set -x
+set -x
 set -e
 
 REPORT_PATH=./target/coverage/html
-BINARY_PATH=./target/debug
+BINARY_PATH=./target/release
 
 if [ -d $REPORT_PATH ] ; then
     echo "Some coverage report already exists"
