@@ -1,15 +1,16 @@
 //! This module contains the fuzz test for joint fuzzing of the state and behavior of component and
 //! package royalties. The following are the invariants tested for:
 //!
-//! 1. None of the transactions involving royalties end a native-vm panic, this is not the intended
-//! behavior.
-//! 2. The royalty amount of packages and components can not be negative and can not exceed the max
-//! for the given currency.
+//! 1. No package royalties exist for function that are not defined the package schema.
+//! 2. Royalty amounts can not be negative or greater than the maximum.
+//! 3. No transaction involving the royalty module should end in a native-vm panic.
 
-use fuzz_tests::fuzz_template;
+use fuzz_tests::utils::*;
+use fuzz_tests::{
+    continue_if_manifest_is_unpreparable, fuzz_template, return_if_manifest_is_unpreparable,
+};
 
 use radix_engine::blueprints::package::*;
-use radix_engine::errors::*;
 use radix_engine::system::attached_modules::royalty::*;
 use radix_engine::system::checkers::*;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
@@ -37,39 +38,34 @@ fn fuzz_func(input: RoyaltyFuzzerInput) {
             .royalty_config = package_royalties;
 
         let receipt = test_runner.execute_system_transaction(
-            assert_can_be_prepared!(
-                return,
-                ManifestBuilder::new()
-                    .call_function(
-                        PACKAGE_PACKAGE,
-                        PACKAGE_BLUEPRINT,
-                        PACKAGE_PUBLISH_NATIVE_IDENT,
-                        &PackagePublishNativeManifestInput {
-                            definition: package_definition,
-                            native_package_code_id: package::PACKAGE_CODE_ID,
-                            metadata: Default::default(),
-                            package_address: None
-                        }
-                    )
-                    .build()
-            )
+            return_if_manifest_is_unpreparable!(ManifestBuilder::new()
+                .call_function(
+                    PACKAGE_PACKAGE,
+                    PACKAGE_BLUEPRINT,
+                    PACKAGE_PUBLISH_NATIVE_IDENT,
+                    &PackagePublishNativeManifestInput {
+                        definition: package_definition,
+                        native_package_code_id: package::PACKAGE_CODE_ID,
+                        metadata: Default::default(),
+                        package_address: None
+                    }
+                )
+                .build())
             .instructions,
             Default::default(),
         );
-        let receipt = assert_no_native_vm_panic_in_receipt(receipt);
+        panic_if_native_vm_trap(&receipt);
 
-        match receipt.result {
-            TransactionResult::Commit(CommitResult {
-                outcome: TransactionOutcome::Success(..),
-                ref state_update_summary,
-                ..
-            }) => *state_update_summary.new_packages.first().unwrap(),
-            TransactionResult::Commit(CommitResult {
-                outcome: TransactionOutcome::Failure(..),
-                ..
-            })
-            | TransactionResult::Abort(..)
-            | TransactionResult::Reject(..) => return,
+        if let Some(address) = map_if_commit_success(&receipt, |_, commit_result, _| {
+            *commit_result
+                .state_update_summary
+                .new_packages
+                .first()
+                .unwrap()
+        }) {
+            address
+        } else {
+            return;
         }
     };
 
@@ -90,20 +86,12 @@ fn fuzz_func(input: RoyaltyFuzzerInput) {
                             blueprint_name: package::BLUEPRINT_IDENT.to_owned(),
                             function_name: package::ROYALTY_FUZZ_BLUEPRINT_INSTANTIATE_IDENT
                                 .to_owned(),
-                            args: manifest_decode_with_depth_limit(
-                                &manifest_encode_with_depth_limit(
-                                    &package::RoyaltyFuzzBlueprintInstantiateInput {
-                                        creation_invocation: input.1.creation_invocation,
-                                        pre_attachment_invocations: input
-                                            .1
-                                            .pre_attachment_invocations,
-                                    },
-                                    usize::MAX,
-                                )
-                                .unwrap(),
-                                usize::MAX,
-                            )
-                            .unwrap(),
+                            args: to_manifest_value_ignoring_depth(
+                                &package::RoyaltyFuzzBlueprintInstantiateInput {
+                                    creation_invocation: input.1.creation_invocation,
+                                    pre_attachment_invocations: input.1.pre_attachment_invocations,
+                                }
+                            ),
                         },
                     ],
                     blobs: Default::default(),
@@ -111,19 +99,17 @@ fn fuzz_func(input: RoyaltyFuzzerInput) {
             ),
             vec![],
         );
-        let receipt = assert_no_native_vm_panic_in_receipt(receipt);
-        match receipt.result {
-            TransactionResult::Commit(CommitResult {
-                outcome: TransactionOutcome::Success(..),
-                ref state_update_summary,
-                ..
-            }) => *state_update_summary.new_components.first().unwrap(),
-            TransactionResult::Commit(CommitResult {
-                outcome: TransactionOutcome::Failure(..),
-                ..
-            })
-            | TransactionResult::Abort(..)
-            | TransactionResult::Reject(..) => return,
+        panic_if_native_vm_trap(&receipt);
+        if let Some(address) = map_if_commit_success(&receipt, |_, commit_result, _| {
+            *commit_result
+                .state_update_summary
+                .new_components
+                .first()
+                .unwrap()
+        }) {
+            address
+        } else {
+            return;
         }
     };
 
@@ -131,24 +117,21 @@ fn fuzz_func(input: RoyaltyFuzzerInput) {
     // This is because we would like for a failed invocation not to stop other ones from happening.
     let mut receipts = Vec::new();
     for invocation in input.1.post_attachment_invocations.into_iter() {
-        let manifest = assert_can_be_prepared!(
-            continue,
-            TransactionManifestV1 {
-                instructions: vec![
-                    InstructionV1::CallMethod {
-                        address: DynamicGlobalAddress::Static(FAUCET.into()),
-                        method_name: "lock_fee".to_owned(),
-                        args: manifest_args!(dec!("100")).into(),
-                    },
-                    InstructionV1::CallMethod {
-                        address: DynamicGlobalAddress::Static(component_address.into()),
-                        method_name: invocation.method_ident().to_owned(),
-                        args: invocation.manifest_value(),
-                    },
-                ],
-                blobs: Default::default(),
-            }
-        );
+        let manifest = continue_if_manifest_is_unpreparable!(TransactionManifestV1 {
+            instructions: vec![
+                InstructionV1::CallMethod {
+                    address: DynamicGlobalAddress::Static(FAUCET.into()),
+                    method_name: "lock_fee".to_owned(),
+                    args: manifest_args!(dec!("100")).into(),
+                },
+                InstructionV1::CallMethod {
+                    address: DynamicGlobalAddress::Static(component_address.into()),
+                    method_name: invocation.method_ident().to_owned(),
+                    args: invocation.manifest_value(),
+                },
+            ],
+            blobs: Default::default(),
+        });
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipts.push(receipt);
     }
@@ -236,53 +219,8 @@ fn check_invariants(
         panic!("Encountered invalid state in the component or package royalties: {component_royalties_results:#?}, {package_royalties_results:#?}");
     }
 
-    // Verify that none of the transactions panicked.
-    {
-        for (i, receipt) in receipts.iter().enumerate() {
-            if let Some(error) = get_error_from_receipt(receipt) {
-                if matches!(
-                    error,
-                    RuntimeError::VmError(VmError::Native(
-                        radix_engine::errors::NativeRuntimeError::Trap { .. }
-                    ))
-                ) {
-                    panic!("An panic was encountered in the transaction. Receipt index: {i}. Error: {error:?}")
-                }
-            }
-        }
-    }
-}
-
-fn assert_no_native_vm_panic_in_receipt(receipt: TransactionReceipt) -> TransactionReceipt {
-    if let Some(error) = get_error_from_receipt(&receipt) {
-        if matches!(
-            error,
-            RuntimeError::VmError(VmError::Native(
-                radix_engine::errors::NativeRuntimeError::Trap { .. }
-            ))
-        ) {
-            panic!("An panic was encountered in the transaction. Error: {error:?}")
-        }
-    }
-    receipt
-}
-
-fn get_error_from_receipt(receipt: &TransactionReceipt) -> Option<&RuntimeError> {
-    match receipt.result {
-        TransactionResult::Commit(CommitResult {
-            outcome: TransactionOutcome::Failure(ref error),
-            ..
-        })
-        | TransactionResult::Reject(RejectResult {
-            reason: RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(ref error),
-        }) => Some(error),
-        TransactionResult::Commit(CommitResult {
-            outcome: TransactionOutcome::Success(..),
-            ..
-        })
-        | TransactionResult::Abort(..)
-        | TransactionResult::Reject(RejectResult { .. }) => None,
-    }
+    // Verify that none of the transactions panicked the native vm.
+    panic_if_native_vm_trap(receipts);
 }
 
 #[derive(Arbitrary, Clone, Debug, ScryptoSbor, serde::Serialize, serde::Deserialize)]
@@ -350,12 +288,11 @@ impl ComponentRoyaltyMethodInvocation {
     /// Convert the arguments to a [`ManifestValue`]. This method does not adhere to the SBOR depth
     /// limits.
     pub fn manifest_value(&self) -> ManifestValue {
-        let encoded = match self {
-            Self::Set(value) => manifest_encode_with_depth_limit(&value, usize::MAX).unwrap(),
-            Self::Lock(value) => manifest_encode_with_depth_limit(&value, usize::MAX).unwrap(),
-            Self::Claim(value) => manifest_encode_with_depth_limit(&value, usize::MAX).unwrap(),
-        };
-        manifest_decode_with_depth_limit(&encoded, usize::MAX).unwrap()
+        match self {
+            Self::Set(value) => to_manifest_value_ignoring_depth(&value),
+            Self::Lock(value) => to_manifest_value_ignoring_depth(&value),
+            Self::Claim(value) => to_manifest_value_ignoring_depth(&value),
+        }
     }
 }
 
@@ -374,10 +311,9 @@ impl PackageRoyaltyMethodInvocation {
     /// Convert the arguments to a [`ManifestValue`]. This method does not adhere to the SBOR depth
     /// limits.
     pub fn manifest_value(&self) -> ManifestValue {
-        let encoded = match self {
-            Self::Claim(value) => manifest_encode_with_depth_limit(&value, usize::MAX).unwrap(),
-        };
-        manifest_decode_with_depth_limit(&encoded, usize::MAX).unwrap()
+        match self {
+            Self::Claim(value) => to_manifest_value_ignoring_depth(&value),
+        }
     }
 }
 
@@ -552,7 +488,7 @@ mod tests {
             }
         }
 
-        dbg!(vec)
+        vec
     }
 }
 
