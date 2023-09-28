@@ -132,7 +132,7 @@ pub enum SystemDatabaseCheckError {
     PartitionError(NodeInfo, SystemPartitionCheckError),
 }
 
-pub trait ApplicationChecker: Default {
+pub trait ApplicationChecker {
     type ApplicationCheckerResults: Debug + Default;
     fn on_field(
         &mut self,
@@ -176,7 +176,10 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     }
 }
 
-impl<A: ApplicationChecker> Default for SystemDatabaseChecker<A> {
+impl<A: ApplicationChecker> Default for SystemDatabaseChecker<A>
+where
+    A: Default,
+{
     fn default() -> Self {
         Self {
             application_checker: A::default(),

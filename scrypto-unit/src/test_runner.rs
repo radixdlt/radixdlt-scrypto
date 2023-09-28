@@ -2454,7 +2454,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .collect::<Vec<_>>()
     }
 
-    pub fn check_db<A: ApplicationChecker>(
+    pub fn check_db<A: ApplicationChecker + Default>(
         &self,
     ) -> Result<
         (SystemDatabaseCheckerResults, A::ApplicationCheckerResults),
