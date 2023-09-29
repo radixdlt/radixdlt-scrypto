@@ -1,4 +1,5 @@
 #![cfg_attr(feature = "libfuzzer-sys", no_main)]
+
 use arbitrary::Arbitrary;
 use fuzz_tests::fuzz_template;
 use native_sdk::modules::metadata::Metadata;
@@ -7,12 +8,13 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmInvoke};
-use radix_engine_common::manifest_args;
+use radix_engine_common::{manifest_args, ManifestSbor};
 use serde::{Deserialize, Serialize};
 
 use radix_engine::prelude::ManifestArgs;
 use radix_engine::types::ScryptoSbor;
 use radix_engine_common::prelude::{scrypto_encode, NodeId, Own, ScryptoCustomTypeKind};
+use radix_engine_common::types::{ComponentAddress, PackageAddress};
 use radix_engine_interface::api::{
     FieldValue, KeyValueStoreDataSchema, LockFlags, ACTOR_STATE_SELF,
 };
@@ -21,26 +23,22 @@ use radix_engine_interface::prelude::{AttachedModuleId, ClientApi, OwnerRole};
 use radix_engine_interface::types::IndexedScryptoValue;
 use sbor::basic_well_known_types::ANY_TYPE;
 use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
-use scrypto_unit::{InjectSystemCostingError, TestRunnerBuilder};
+use scrypto_unit::{InjectSystemCostingError, TestRunnerBuilder, TestRunnerSnapshot};
 use transaction::builder::ManifestBuilder;
 use utils::indexmap;
 use utils::prelude::{index_set_new, IndexSet};
 
 fuzz_template!(|actions: SystemActions| { fuzz_system(actions) });
 
-// Fuzzer entry points
-fn fuzz_system(actions: SystemActions) {
-    let mut test_runner = TestRunnerBuilder::new()
-        .with_custom_extension(OverridePackageCode::new(
-            CUSTOM_PACKAGE_CODE_ID,
-            FuzzSystem(actions.clone()),
-        ))
-        .skip_receipt_check()
-        .build();
-
-    let component_address = {
-        let package_address = test_runner.publish_native_package(
-            CUSTOM_PACKAGE_CODE_ID,
+lazy_static::lazy_static! {
+    static ref TEST_RUNNER_SNAPSHOT: (TestRunnerSnapshot, ComponentAddress) = {
+        let mut test_runner = TestRunnerBuilder::new()
+            .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, FuzzSystem))
+            .without_trace()
+            .skip_receipt_check()
+            .build();
+        let package_address = test_runner
+            .publish_native_package(CUSTOM_PACKAGE_CODE_ID,
             PackageDefinition::new_with_fields_test_definition(
                 BLUEPRINT_NAME,
                 2,
@@ -54,12 +52,25 @@ fn fuzz_system(actions: SystemActions) {
                 .build(),
             vec![],
         );
-        receipt.expect_commit_success().new_component_addresses()[0]
+        let component_address = receipt.expect_commit_success().new_component_addresses()[0];
+        (test_runner.create_snapshot(), component_address)
     };
+}
+
+// Fuzzer entry points
+fn fuzz_system(actions: SystemActions) {
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, FuzzSystem))
+        .without_trace()
+        .skip_receipt_check()
+        .build_from_snapshot(TEST_RUNNER_SNAPSHOT.0.clone());
+
+    // Setup
+    let component_address = TEST_RUNNER_SNAPSHOT.1.clone();
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32)
-        .call_method(component_address, "test", manifest_args!())
+        .call_method(component_address, "test", manifest_args!(actions.actions))
         .build();
 
     test_runner
@@ -69,7 +80,7 @@ fn fuzz_system(actions: SystemActions) {
             actions.inject_err_after_count,
         );
 
-    test_runner.check_database()
+    test_runner.check_database();
 }
 
 #[derive(Debug, Clone, Arbitrary, Serialize, Deserialize)]
@@ -78,13 +89,13 @@ struct SystemActions {
     pub actions: Vec<SystemAction>,
 }
 
-#[derive(Debug, Clone, Arbitrary, Serialize, Deserialize)]
+#[derive(Debug, Clone, Arbitrary, Serialize, Deserialize, ScryptoSbor, ManifestSbor)]
 enum NodeValue {
     Own,
     Ref,
 }
 
-#[derive(Debug, Clone, Arbitrary, Serialize, Deserialize)]
+#[derive(Debug, Clone, Arbitrary, Serialize, Deserialize, ScryptoSbor, ManifestSbor)]
 enum SystemAction {
     FieldOpen(u8, u32),
     FieldRead(usize),
@@ -253,12 +264,12 @@ impl SystemAction {
 const BLUEPRINT_NAME: &str = "MyBlueprint";
 const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
 #[derive(Clone)]
-struct FuzzSystem(SystemActions);
+struct FuzzSystem;
 impl VmInvoke for FuzzSystem {
     fn invoke<Y>(
         &mut self,
         export_name: &str,
-        _input: &IndexedScryptoValue,
+        input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -270,7 +281,8 @@ impl VmInvoke for FuzzSystem {
                     handles: index_set_new(),
                     nodes: index_set_new(),
                 };
-                for action in &self.0.actions {
+                let actions: (Vec<SystemAction>,) = input.as_typed().unwrap();
+                for action in &actions.0 {
                     action.act(api, &mut state)?;
                 }
             }
