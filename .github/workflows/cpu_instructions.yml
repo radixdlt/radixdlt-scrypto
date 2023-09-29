@@ -134,7 +134,7 @@ jobs:
   qemu-costing-evaluation-run:
     name: QEMU costing - CPU instructions
     runs-on: ubuntu-22.04
-    needs: [build-radix-engine-tests, build-other-tests, qemu-build]
+    needs: [build-radix-engine-tests, build-monkey-tests, build-other-tests, qemu-build]
     strategy:
       matrix:
         bin-cache: [1, 2, 3, 4]
