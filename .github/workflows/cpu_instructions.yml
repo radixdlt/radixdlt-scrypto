@@ -64,7 +64,7 @@ jobs:
              rm -f ./target/release/deps/*.d
              rm -f ./target/release/deps/*.rlib
              rm -f ./target/release/deps/*.rmeta
-             mv ./target/release/deps ./target/release/deps_3
+             mv ../target/release/deps ../target/release/deps_3
       - name: Cache build results
         uses: actions/cache/save@v3
         with:
