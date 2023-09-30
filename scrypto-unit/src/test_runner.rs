@@ -2454,7 +2454,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .collect::<Vec<_>>()
     }
 
-    pub fn check_db<A: ApplicationChecker>(
+    pub fn check_db<A: ApplicationChecker + Default>(
         &self,
     ) -> Result<
         (SystemDatabaseCheckerResults, A::ApplicationCheckerResults),
@@ -2482,12 +2482,28 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             CompositeApplicationDatabaseChecker,
             [
                 ResourceDatabaseChecker,
-                RoleAssignmentDatabaseChecker
+                RoleAssignmentDatabaseChecker,
+                PackageRoyaltyDatabaseChecker<F: Fn(&BlueprintId, &str) -> bool>,
+                ComponentRoyaltyDatabaseChecker,
             ]
         }
-        let db_results = self
-            .check_db::<CompositeApplicationDatabaseChecker>()
-            .expect("Database should be consistent after running test");
+        let db_results = {
+            let reader = SystemDatabaseReader::new(&self.database);
+            let mut checker = SystemDatabaseChecker::new(CompositeApplicationDatabaseChecker::new(
+                Default::default(),
+                Default::default(),
+                PackageRoyaltyDatabaseChecker::new(|blueprint_id, func_name| {
+                    reader
+                        .get_blueprint_definition(blueprint_id)
+                        .map(|bp_def| bp_def.interface.functions.contains_key(func_name))
+                        .unwrap_or(false)
+                }),
+                Default::default(),
+            ));
+            checker
+                .check_db(&self.database)
+                .expect("Database should be consistent after running test")
+        };
         println!("{:#?}", db_results);
 
         if !db_results.1 .1.is_empty() {

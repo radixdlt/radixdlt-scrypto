@@ -132,7 +132,7 @@ pub enum SystemDatabaseCheckError {
     PartitionError(NodeInfo, SystemPartitionCheckError),
 }
 
-pub trait ApplicationChecker: Default {
+pub trait ApplicationChecker {
     type ApplicationCheckerResults: Debug + Default;
     fn on_field(
         &mut self,
@@ -176,7 +176,10 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     }
 }
 
-impl<A: ApplicationChecker> Default for SystemDatabaseChecker<A> {
+impl<A: ApplicationChecker> Default for SystemDatabaseChecker<A>
+where
+    A: Default,
+{
     fn default() -> Self {
         Self {
             application_checker: A::default(),
@@ -869,22 +872,34 @@ macro_rules! define_composite_checker {
     (
         $ident: ident,
         [
-            $($ty: ident),* $(,)?
+            $($ty: ident $(< $( $generic_ident: ident: $generic_type: ty ),* $(,)? >)?),* $(,)?
         ] $(,)?
     ) => {
         paste::paste! {
-            #[derive(Default, Debug)]
-            pub struct $ident {
+            #[derive(Debug)]
+            pub struct $ident<
+            $(
+                $($($generic_ident: $generic_type),*)?
+            )*
+            > {
                 $(
-                    pub [< $ty: snake >]: $ty,
+                    pub [< $ty: snake >]: $ty $(< $($generic_ident),* >)?,
                 )*
             }
 
             const _: () = {
-                impl $ident {
+                impl<
+                $(
+                    $($($generic_ident: $generic_type),*)?
+                )*
+                > $ident<
+                $(
+                    $($($generic_ident),*)?
+                )*
+                > {
                     pub fn new(
                         $(
-                            [< $ty: snake >]: $ty,
+                            [< $ty: snake >]: $ty $(< $($generic_ident),* >)?,
                         )*
                     ) -> Self {
                         Self {
@@ -895,10 +910,17 @@ macro_rules! define_composite_checker {
                     }
                 }
 
-                impl $crate::system::checkers::ApplicationChecker for $ident {
+                impl<
+                $(
+                    $($($generic_ident: $generic_type),*)?
+                )* > $crate::system::checkers::ApplicationChecker for $ident<
+                $(
+                    $($($generic_ident),*)?
+                )*
+                > {
                     type ApplicationCheckerResults = (
                         $(
-                            < $ty as $crate::system::checkers::ApplicationChecker >::ApplicationCheckerResults,
+                            < $ty $(::< $($generic_ident),* >)? as $crate::system::checkers::ApplicationChecker >::ApplicationCheckerResults,
                         )*
                     );
 
