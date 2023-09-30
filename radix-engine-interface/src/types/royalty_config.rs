@@ -6,14 +6,20 @@ use sbor::rust::prelude::*;
 use crate::*;
 
 /// Royalty rules
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(Debug, Clone, Default, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct ComponentRoyaltyConfig {
     pub royalty_amounts: IndexMap<String, (RoyaltyAmount, bool)>,
 }
 
 /// Royalty rules
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum PackageRoyalty {
     Disabled,
@@ -21,7 +27,10 @@ pub enum PackageRoyalty {
 }
 
 /// Royalty rules
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum PackageRoyaltyConfig {
     Disabled,

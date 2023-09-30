@@ -76,6 +76,10 @@ pub type PackagePublishNativeOutput = PackageAddress;
 
 pub const PACKAGE_CLAIM_ROYALTIES_IDENT: &str = "PackageRoyalty_claim_royalties";
 
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]

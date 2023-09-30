@@ -52,6 +52,7 @@
         "transactiontracker",
         "txid",
         "undeposited",
+        "unpreparable",
         "unregistration",
         "Unstake",
         "unstaked",
