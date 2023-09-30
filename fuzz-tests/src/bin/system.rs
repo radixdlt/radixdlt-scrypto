@@ -13,14 +13,15 @@ use serde::{Deserialize, Serialize};
 
 use radix_engine::prelude::ManifestArgs;
 use radix_engine::types::ScryptoSbor;
-use radix_engine_common::prelude::{scrypto_encode, NodeId, Own, ScryptoCustomTypeKind};
-use radix_engine_common::types::{ComponentAddress, PackageAddress};
+use radix_engine_common::constants::XRD;
+use radix_engine_common::prelude::{scrypto_encode, NodeId, Own, ScryptoCustomTypeKind, GlobalAddress};
+use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::{
     FieldValue, KeyValueStoreDataSchema, LockFlags, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::{AttachedModuleId, ClientApi, OwnerRole};
-use radix_engine_interface::types::IndexedScryptoValue;
+use radix_engine_interface::types::{IndexedScryptoValue, Level};
 use sbor::basic_well_known_types::ANY_TYPE;
 use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
 use scrypto_unit::{InjectSystemCostingError, TestRunnerBuilder, TestRunnerSnapshot};
@@ -110,6 +111,11 @@ enum SystemAction {
     KeyValueEntryRemove(usize),
     KeyValueEntryClose(usize),
     KeyValueEntryLock(usize),
+    SysLog(Level, String),
+    SysBech32EncodeAddress(GlobalAddress),
+    SysGetTransactionHash,
+    SysGenerateRuid,
+    SysPanic(String),
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -255,6 +261,21 @@ impl SystemAction {
                     api.key_value_entry_lock(handle)?;
                 }
             }
+            SystemAction::SysLog(level, message) => {
+                api.emit_log(level.clone(), message.clone())?;
+            }
+            SystemAction::SysBech32EncodeAddress(address) => {
+                api.bech32_encode_address(address.clone())?;
+            }
+            SystemAction::SysGetTransactionHash => {
+                api.get_transaction_hash()?;
+            }
+            SystemAction::SysPanic(message) => {
+                api.panic(message.clone())?;
+            }
+            SystemAction::SysGenerateRuid => {
+                api.generate_ruid()?;
+            }
         }
 
         Ok(())
@@ -362,6 +383,23 @@ fn test_system_generate_fuzz_input_data() {
                     0,
                     vec![(NodeValue::Own, 0usize), (NodeValue::Ref, 0usize)],
                 ),
+            ],
+        };
+
+        let serialized = serialize(&actions).unwrap();
+        fs::write(format!("system_{:03?}.raw", idx), serialized).expect("Unable to write file");
+    }
+
+    {
+        let idx = 2;
+        let actions = SystemActions {
+            inject_err_after_count: 32u64,
+            actions: vec![
+                SystemAction::SysPanic("panic".to_string()),
+                SystemAction::SysGetTransactionHash,
+                SystemAction::SysLog(Level::Error, "error".to_string()),
+                SystemAction::SysBech32EncodeAddress(XRD.into()),
+                SystemAction::SysGenerateRuid,
             ],
         };
 

@@ -1,8 +1,14 @@
 use crate::*;
 use core::str::FromStr;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::prelude::*;
 
 /// Represents the level of a log message.
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor, Ord, PartialOrd, Default)]
 pub enum Level {
     Error,
