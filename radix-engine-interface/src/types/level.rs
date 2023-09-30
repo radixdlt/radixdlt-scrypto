@@ -1,7 +1,7 @@
 use crate::*;
-use core::str::FromStr;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use core::str::FromStr;
 use sbor::rust::prelude::*;
 
 /// Represents the level of a log message.

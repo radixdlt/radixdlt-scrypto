@@ -13,8 +13,9 @@ use serde::{Deserialize, Serialize};
 
 use radix_engine::prelude::ManifestArgs;
 use radix_engine::types::ScryptoSbor;
-use radix_engine_common::constants::XRD;
-use radix_engine_common::prelude::{scrypto_encode, NodeId, Own, ScryptoCustomTypeKind, GlobalAddress};
+use radix_engine_common::prelude::{
+    scrypto_encode, GlobalAddress, NodeId, Own, ScryptoCustomTypeKind,
+};
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::{
     FieldValue, KeyValueStoreDataSchema, LockFlags, ACTOR_STATE_SELF,
