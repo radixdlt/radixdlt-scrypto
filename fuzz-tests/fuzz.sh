@@ -15,7 +15,7 @@ DFLT_TARGET=transaction
 DFLT_TIMEOUT=1000
 
 function usage() {
-    echo "$0 [FUZZER/COMMAND] [SUBCOMMAND] [FUZZ-TARGET] [COMMAND-ARGS]"
+    echo "$0 [FUZZER/COMMAND] [SUBCOMMAND] [OPTIONS] [FUZZ-TARGET] [COMMAND-ARGS]"
     echo "Available targets:"
     echo "    transaction"
     echo "    wasm_instrument"
@@ -43,8 +43,11 @@ function usage() {
     echo "                    - disable external utils handling coredumps"
     echo "                    - disable CPU frequency scaling"
     echo "                    Applcable only for 'afl'"
+    echo "  Available options:"
+    echo "     --release     - Build/run fuzzer in release mode."
+    echo "                    Applicable only for 'simple' fuzzer"
     echo "Available commands"
-    echo "    generate-input - generate fuzzing input data"
+    echo "    generate-input - generate fuzzing input data for given target"
     echo "  Subcommands:"
     echo "        empty       - Empty input"
     echo "        raw         - Do not process generated data"
@@ -52,8 +55,6 @@ function usage() {
     echo "        minimize    - Minimize the input data"
     echo "  Args:"
     echo "        timeout     - timeout in ms"
-    echo "Available fuzz targets"
-    echo "    transaction"
     echo "Examples:"
     echo "  - build AFL fuzz tests"
     echo "    $0 afl build transaction"
@@ -63,17 +64,20 @@ function usage() {
     echo "    $0 libfuzzer run transaction -max_total_time=3600"
     echo "  - run simple-fuzzer for 1h"
     echo "    $0 simple run transaction --duration 3600"
+    echo "  - run simple-fuzzer in 'release' mode for 1h"
+    echo "    $0 simple run --release transaction --duration 3600"
     echo "  - reproduce some crash discovered by 'libfuzzer'"
     echo "    $0 libfuzzer run transaction ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
     echo "  - reproduce some crash discovered by 'libfuzzer' using 'simple-fuzzer'"
     echo "    RUST_BACKTRACE=1 $0 simple run transaction ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
+
+    exit 1
 }
 
 function error() {
     local msg=$1
     echo "error - $msg"
     usage
-    exit 1
 }
 
 function fuzzer_libfuzzer() {
@@ -165,6 +169,13 @@ function fuzzer_simple() {
         cmd=$1
         shift
     fi
+    local mode=""
+    if [ $# -ge 1 ] ; then
+        if [ "$1" = "--release" ] ; then
+            mode="--release"
+            shift
+        fi
+    fi
     local target=$DFLT_TARGET
     if [ $# -ge 1 ] ; then
         target=$1
@@ -172,7 +183,7 @@ function fuzzer_simple() {
     fi
 
     set -x
-    cargo $cmd --release \
+    cargo $cmd $mode \
         --no-default-features --features std,simple-fuzzer \
         --bin $target \
         -- $@
