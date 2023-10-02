@@ -216,23 +216,8 @@ f.close()
 
 # Write results output table
 f = open("/tmp/_out_table.txt", "w")
-min_ins = sys.maxsize
-if len(output_tab) > 0 and len(output_tab[0]) > 2 and output_tab[0][2] > 0:
-    min_ins = output_tab[0][2]
-for row in output_tab:
-    if row[2] < min_ins and row[2] > 0:
-        min_ins = row[2]
-mul_div = 16
-for row in output_tab:
-    coeff = round(mul_div * row[2] / min_ins)
-    row.append(coeff)
-    row.append( row[2] - coeff * min_ins / mul_div )
-output_tab.insert(0,["No.", "API function with params", "instructions", "calculation", "function cost (F)", "error"])
+output_tab.insert(0,["No.", "API function with params", "instructions", "calculation"])
 f.write(tabulate(output_tab, headers="firstrow"))
-coef = "\nCost function coeff: " + str(min_ins) + "\n"
-f.write(coef)
-fcn = "Cost calculation = ( F *" + str(min_ins) + ") /" + str(mul_div) + "\n"
-f.write(fcn)
 f.close()
 
 # Write results output table as csv file
