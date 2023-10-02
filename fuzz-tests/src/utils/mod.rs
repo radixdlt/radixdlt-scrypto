@@ -5,3 +5,7 @@ pub mod simple_fuzzer;
 
 #[macro_use]
 pub mod fuzz_template;
+
+mod fuzz_utils;
+
+pub use fuzz_utils::*;

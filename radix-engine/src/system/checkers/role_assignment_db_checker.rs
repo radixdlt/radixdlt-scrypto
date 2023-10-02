@@ -18,11 +18,11 @@ pub struct RoleAssignmentDatabaseChecker {
     node_id: Option<NodeId>,
 
     /// A vector of all of the errors encountered when going through the RoleAssignment substates.
-    errors: Vec<LocatedRoleAssignmentDatabaseCheckerError>,
+    errors: Vec<LocatedError<RoleAssignmentDatabaseCheckerError>>,
 }
 
 impl ApplicationChecker for RoleAssignmentDatabaseChecker {
-    type ApplicationCheckerResults = Vec<LocatedRoleAssignmentDatabaseCheckerError>;
+    type ApplicationCheckerResults = Vec<LocatedError<RoleAssignmentDatabaseCheckerError>>;
 
     fn on_field(
         &mut self,
@@ -35,7 +35,7 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
         // The method responsible for the addition of errors to the checker state. This method will
         // add the location information.
         let mut add_error = |error| {
-            self.errors.push(LocatedRoleAssignmentDatabaseCheckerError {
+            self.errors.push(LocatedError {
                 location: ErrorLocation::Field {
                     info: info.clone(),
                     node_id,
@@ -80,7 +80,7 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
         // The method responsible for the addition of errors to the checker state. This method will
         // add the location information.
         let mut add_error = |error| {
-            self.errors.push(LocatedRoleAssignmentDatabaseCheckerError {
+            self.errors.push(LocatedError {
                 location: ErrorLocation::CollectionEntry {
                     info: info.clone(),
                     node_id,
@@ -170,8 +170,7 @@ impl RoleAssignmentDatabaseChecker {
         location: ErrorLocation,
         error: RoleAssignmentDatabaseCheckerError,
     ) {
-        self.errors
-            .push(LocatedRoleAssignmentDatabaseCheckerError { location, error })
+        self.errors.push(LocatedError { location, error })
     }
 
     fn check_access_rule_limits<F>(access_rule: AccessRule, add_error: &mut F)
@@ -255,15 +254,6 @@ impl RoleAssignmentDatabaseChecker {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct LocatedRoleAssignmentDatabaseCheckerError {
-    /// The location where the error was encountered. This is the full path a field or a collection
-    /// as well as the value.
-    pub location: ErrorLocation,
-    /// The encountered error.
-    pub error: RoleAssignmentDatabaseCheckerError,
-}
-
 /// An enum of all of the errors that we may encounter when doing a database check. These errors are
 /// collected and then returned at the end of database check.
 #[derive(Debug, Clone)]
@@ -291,24 +281,5 @@ pub enum RoleAssignmentDatabaseCheckerError {
     RoleKeyWasCreatedAfterInitialization {
         initial_role_keys: Vec<ModuleRoleKey>,
         role_key: ModuleRoleKey,
-    },
-}
-
-#[derive(Debug, Clone)]
-pub enum ErrorLocation {
-    Field {
-        info: BlueprintInfo,
-        node_id: NodeId,
-        module_id: ModuleId,
-        field_index: FieldIndex,
-        value: Vec<u8>,
-    },
-    CollectionEntry {
-        info: BlueprintInfo,
-        node_id: NodeId,
-        module_id: ModuleId,
-        collection_index: CollectionIndex,
-        key: Vec<u8>,
-        value: Vec<u8>,
     },
 }

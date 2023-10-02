@@ -63,6 +63,12 @@ path = "src/bin/attached_modules/role_assignment.rs"
 #test = false
 doc = false
 
+[[bin]]
+name = "royalty_state"
+path = "src/bin/attached_modules/royalty_state.rs"
+#test = false
+doc = false
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "fuzzer"]

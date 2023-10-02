@@ -17,7 +17,12 @@
 
 use arbitrary::Arbitrary;
 
+use fuzz_tests::continue_if_manifest_is_unpreparable;
 use fuzz_tests::fuzz_template;
+use fuzz_tests::return_if_manifest_is_unpreparable;
+use fuzz_tests::utils::map_if_commit_success;
+use fuzz_tests::utils::panic_if_native_vm_trap;
+use fuzz_tests::utils::to_manifest_value_ignoring_depth;
 use radix_engine::errors::*;
 use radix_engine::system::attached_modules::role_assignment::*;
 use radix_engine::system::checkers::*;
@@ -41,55 +46,39 @@ fn fuzz_func(input: RoleAssignmentFuzzerInput) {
 
     // Instantiate a new role-assignment test component and get the component address.
     let receipt = test_runner.execute_manifest(
-        assert_can_be_prepared!(
-            return,
-            TransactionManifestV1 {
-                instructions: vec![
-                    InstructionV1::CallMethod {
-                        address: DynamicGlobalAddress::Static(FAUCET.into()),
-                        method_name: "lock_fee".to_owned(),
-                        args: manifest_args!(dec!("100")).into(),
-                    },
-                    InstructionV1::CallFunction {
-                        package_address: DynamicPackageAddress::Static(package_address),
-                        blueprint_name: package::BLUEPRINT_IDENT.to_owned(),
-                        function_name: package::ROLE_ASSIGNMENT_FUZZ_BLUEPRINT_INSTANTIATE_IDENT
-                            .to_owned(),
-                        args: manifest_decode_with_depth_limit(
-                            &manifest_encode_with_depth_limit(
-                                &package::RoleAssignmentFuzzBlueprintInstantiateInput {
-                                    creation_invocation: input.creation_invocation,
-                                    pre_attachment_invocations: input.pre_attachment_invocations,
-                                },
-                                usize::MAX,
-                            )
-                            .unwrap(),
-                            usize::MAX,
-                        )
-                        .unwrap(),
-                    },
-                ],
-                blobs: Default::default(),
-            }
-        ),
+        return_if_manifest_is_unpreparable!(TransactionManifestV1 {
+            instructions: vec![
+                InstructionV1::CallMethod {
+                    address: DynamicGlobalAddress::Static(FAUCET.into()),
+                    method_name: "lock_fee".to_owned(),
+                    args: manifest_args!(dec!("100")).into(),
+                },
+                InstructionV1::CallFunction {
+                    package_address: DynamicPackageAddress::Static(package_address),
+                    blueprint_name: package::BLUEPRINT_IDENT.to_owned(),
+                    function_name: package::ROLE_ASSIGNMENT_FUZZ_BLUEPRINT_INSTANTIATE_IDENT
+                        .to_owned(),
+                    args: to_manifest_value_ignoring_depth(
+                        &package::RoleAssignmentFuzzBlueprintInstantiateInput {
+                            creation_invocation: input.creation_invocation,
+                            pre_attachment_invocations: input.pre_attachment_invocations,
+                        }
+                    ),
+                },
+            ],
+            blobs: Default::default(),
+        }),
         vec![],
     );
+    panic_if_native_vm_trap(&receipt);
 
     // Depending on the result of the above transaction we do different things. If it was successful
     // we get the component address, if it was a committed failure then we just return from this
     // function and stop fuzzing, there is not much to check here.
-    let component_address = match receipt.result {
-        TransactionResult::Commit(CommitResult {
-            outcome: TransactionOutcome::Success(..),
-            ref state_update_summary,
-            ..
-        }) => *state_update_summary.new_components.first().unwrap(),
-        TransactionResult::Commit(CommitResult {
-            outcome: TransactionOutcome::Failure(..),
-            ..
-        })
-        | TransactionResult::Abort(..)
-        | TransactionResult::Reject(..) => return,
+    let Some(component_address) = map_if_commit_success(&receipt, |_, commit_result, _| {
+        *commit_result.new_component_addresses().first().unwrap()
+    }) else {
+        return;
     };
 
     // Do the first check of the invariants
@@ -105,24 +94,21 @@ fn fuzz_func(input: RoleAssignmentFuzzerInput) {
     // from happening.
     let mut receipts = Vec::new();
     for invocation in input.post_attachment_invocations.into_iter() {
-        let manifest = assert_can_be_prepared!(
-            continue,
-            TransactionManifestV1 {
-                instructions: vec![
-                    InstructionV1::CallMethod {
-                        address: DynamicGlobalAddress::Static(FAUCET.into()),
-                        method_name: "lock_fee".to_owned(),
-                        args: manifest_args!(dec!("100")).into(),
-                    },
-                    InstructionV1::CallMethod {
-                        address: DynamicGlobalAddress::Static(component_address.into()),
-                        method_name: invocation.method_ident().to_owned(),
-                        args: invocation.manifest_value(),
-                    },
-                ],
-                blobs: Default::default(),
-            }
-        );
+        let manifest = continue_if_manifest_is_unpreparable!(TransactionManifestV1 {
+            instructions: vec![
+                InstructionV1::CallMethod {
+                    address: DynamicGlobalAddress::Static(FAUCET.into()),
+                    method_name: "lock_fee".to_owned(),
+                    args: manifest_args!(dec!("100")).into(),
+                },
+                InstructionV1::CallMethod {
+                    address: DynamicGlobalAddress::Static(component_address.into()),
+                    method_name: invocation.method_ident().to_owned(),
+                    args: invocation.manifest_value(),
+                },
+            ],
+            blobs: Default::default(),
+        });
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipts.push(receipt);
     }
@@ -205,38 +191,7 @@ fn check_invariants(
     }
 
     // Verify that none of the transactions panicked.
-    {
-        for (i, receipt) in receipts.iter().enumerate() {
-            if let Some(error) = get_error_from_receipt(receipt) {
-                if matches!(
-                    error,
-                    RuntimeError::VmError(VmError::Native(
-                        radix_engine::errors::NativeRuntimeError::Trap { .. }
-                    ))
-                ) {
-                    panic!("An panic was encountered in the transaction. Receipt index: {i}. Error: {error:?}")
-                }
-            }
-        }
-    }
-}
-
-fn get_error_from_receipt(receipt: &TransactionReceipt) -> Option<&RuntimeError> {
-    match receipt.result {
-        TransactionResult::Commit(CommitResult {
-            outcome: TransactionOutcome::Failure(ref error),
-            ..
-        })
-        | TransactionResult::Reject(RejectResult {
-            reason: RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(ref error),
-        }) => Some(error),
-        TransactionResult::Commit(CommitResult {
-            outcome: TransactionOutcome::Success(..),
-            ..
-        })
-        | TransactionResult::Abort(..)
-        | TransactionResult::Reject(RejectResult { .. }) => None,
-    }
+    panic_if_native_vm_trap(receipts);
 }
 
 #[derive(Arbitrary, Clone, Debug, ScryptoSbor, serde::Serialize, serde::Deserialize)]
@@ -287,13 +242,12 @@ impl RoleAssignmentMethodInvocation {
     /// Convert the arguments to a [`ManifestValue`]. This method does not adhere to the SBOR depth
     /// limits.
     pub fn manifest_value(&self) -> ManifestValue {
-        let encoded = match self {
-            Self::Get(value) => manifest_encode_with_depth_limit(&value, usize::MAX).unwrap(),
-            Self::Set(value) => manifest_encode_with_depth_limit(&value, usize::MAX).unwrap(),
-            Self::SetOwner(value) => manifest_encode_with_depth_limit(&value, usize::MAX).unwrap(),
-            Self::LockOwner(value) => manifest_encode_with_depth_limit(&value, usize::MAX).unwrap(),
-        };
-        manifest_decode_with_depth_limit(&encoded, usize::MAX).unwrap()
+        match self {
+            Self::Get(value) => to_manifest_value_ignoring_depth(&value),
+            Self::Set(value) => to_manifest_value_ignoring_depth(&value),
+            Self::SetOwner(value) => to_manifest_value_ignoring_depth(&value),
+            Self::LockOwner(value) => to_manifest_value_ignoring_depth(&value),
+        }
     }
 }
 
@@ -479,18 +433,3 @@ mod tests {
         vec
     }
 }
-
-macro_rules! assert_can_be_prepared {
-    ($else: expr, $manifest: expr) => {{
-        let manifest = $manifest;
-        if TestTransaction::new_from_nonce(manifest.clone(), 0)
-            .prepare()
-            .is_ok()
-        {
-            manifest
-        } else {
-            $else;
-        }
-    }};
-}
-use assert_can_be_prepared;
