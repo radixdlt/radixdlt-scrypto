@@ -24,6 +24,7 @@ jobs:
              cargo test --release --no-run --features resource_tracker
              rm -f ../target/release/deps/transaction_multi_threaded-*
              rm -f ../target/release/deps/*.d
+             rm -f ../target/release/deps/*.o
              rm -f ../target/release/deps/*.rlib
              rm -f ../target/release/deps/*.rmeta
       - name: Preapare files for cache
@@ -47,30 +48,6 @@ jobs:
           path: ./target/release/deps_2
           key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}
 
-  build-monkey-tests:          
-    name: Build monkey tests
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Setup dependencies
-        run: rustup target add wasm32-unknown-unknown 
-      - name: Build tests
-        run: |
-             cd monkey-tests
-             cargo test --release --no-run --features resource_tracker
-             rm -f ./target/release/deps/*.d
-             rm -f ./target/release/deps/*.rlib
-             rm -f ./target/release/deps/*.rmeta
-             mv ../target/release/deps ../target/release/deps_3
-      - name: Cache build results
-        uses: actions/cache/save@v3
-        with:
-          path: ./target/release/deps_3
-          key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}
-
   build-other-tests:          
     name: Build other tests
     runs-on: ubuntu-22.04
@@ -83,12 +60,27 @@ jobs:
         run: rustup target add wasm32-unknown-unknown 
       - name: Build tests
         run: |
-             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests --exclude monkey-tests
+             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests
              rm -f ./target/release/deps/*.d
+             rm -f ./target/release/deps/*.o
              rm -f ./target/release/deps/*.rlib
              rm -f ./target/release/deps/*.rmeta
-             mv ./target/release/deps ./target/release/deps_4
-      - name: Cache build results
+      - name: Preapare files for cache
+        run: |
+             cd target/release
+             mkdir deps_3
+             cd deps
+             count=`ls fuzz* | wc -l`
+             half=`echo $(($count / 2))`
+             ls fuzz* | head -n$half | xargs mv -t ../deps_3
+             cd ..
+             mv deps deps_4
+      - name: Cache build results 1
+        uses: actions/cache/save@v3
+        with:
+          path: ./target/release/deps_3
+          key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}
+      - name: Cache build results 2
         uses: actions/cache/save@v3
         with:
           path: ./target/release/deps_4
@@ -134,7 +126,7 @@ jobs:
   qemu-costing-evaluation-run:
     name: QEMU costing - CPU instructions
     runs-on: ubuntu-22.04
-    needs: [build-radix-engine-tests, build-monkey-tests, build-other-tests, qemu-build]
+    needs: [build-radix-engine-tests, build-other-tests, qemu-build]
     strategy:
       matrix:
         bin-cache: [1, 2, 3, 4]
