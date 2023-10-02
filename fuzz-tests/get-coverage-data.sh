@@ -36,7 +36,7 @@ process_corpus_files() {
         # parallel is nicer because is serializes output from commands in parallel.
         # "halt never" - continue even if error occurs
         parallel --halt never -- \
-            ./fuzz.sh simple run $target "{}" || true # true to consume error and not quit
+            ./fuzz.sh simple run --release $target "{}" || true # true to consume error and not quit
     else
         xargs -P 8 -I {} \
             sh -c './fuzz.sh simple run $target "{}" || true' # true to consume error and not quit
@@ -69,7 +69,7 @@ for t in $targets ; do
     # If corpus file list not empty then get coverage
     if [ -s $list ] ; then
         echo "Getting code coverage data for target $t"
-        ./fuzz.sh simple build $t
+        ./fuzz.sh simple build --release $t
         cat $list | process_corpus_files $t
     else
         echo "Skipping target $t - no corpus files"
