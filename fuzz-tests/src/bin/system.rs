@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use radix_engine::prelude::ManifestArgs;
 use radix_engine::types::ScryptoSbor;
+use radix_engine_common::constants::XRD;
 use radix_engine_common::prelude::{
     scrypto_encode, GlobalAddress, NodeId, Own, ScryptoCustomTypeKind,
 };
