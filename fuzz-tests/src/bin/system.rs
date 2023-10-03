@@ -117,6 +117,13 @@ enum SystemAction {
     SysGetTransactionHash,
     SysGenerateRuid,
     SysPanic(String),
+    CostingGetExecutionCostUnitLimit,
+    CostingGetExecutionCostUnitPrice,
+    CostingGetFinalizationCostUnitLimit,
+    CostingGetFinalizationCostUnitPrice,
+    CostingGetUsdPrice,
+    CostingGetTipPercentage,
+    CostingGetFeeBalance,
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -280,6 +287,27 @@ impl SystemAction {
             SystemAction::SysGenerateRuid => {
                 api.generate_ruid()?;
             }
+            SystemAction::CostingGetExecutionCostUnitLimit => {
+                api.execution_cost_unit_limit()?;
+            }
+            SystemAction::CostingGetExecutionCostUnitPrice => {
+                api.execution_cost_unit_price()?;
+            }
+            SystemAction::CostingGetFinalizationCostUnitLimit => {
+                api.finalization_cost_unit_limit()?;
+            }
+            SystemAction::CostingGetFinalizationCostUnitPrice => {
+                api.finalization_cost_unit_price()?;
+            }
+            SystemAction::CostingGetUsdPrice => {
+                api.usd_price()?;
+            }
+            SystemAction::CostingGetTipPercentage => {
+                api.tip_percentage()?;
+            }
+            SystemAction::CostingGetFeeBalance => {
+                api.fee_balance()?;
+            }
         }
 
         Ok(())
@@ -405,6 +433,25 @@ fn test_system_generate_fuzz_input_data() {
                 SystemAction::SysLog(Level::Error, "error".to_string()),
                 SystemAction::SysBech32EncodeAddress(XRD.into()),
                 SystemAction::SysGenerateRuid,
+            ],
+        };
+
+        let serialized = serialize(&actions).unwrap();
+        fs::write(format!("system_{:03?}.raw", idx), serialized).expect("Unable to write file");
+    }
+
+    {
+        let idx = 3;
+        let actions = SystemActions {
+            inject_err_after_count: 64u64,
+            actions: vec![
+                SystemAction::CostingGetExecutionCostUnitLimit,
+                SystemAction::CostingGetExecutionCostUnitPrice,
+                SystemAction::CostingGetFinalizationCostUnitLimit,
+                SystemAction::CostingGetFinalizationCostUnitPrice,
+                SystemAction::CostingGetUsdPrice,
+                SystemAction::CostingGetTipPercentage,
+                SystemAction::CostingGetFeeBalance,
             ],
         };
 
