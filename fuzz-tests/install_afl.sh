@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# This is to install a 'cargo afl' fuzzer with a flag, which prevents setting 'fuzzing' flag
-# when compiling fuzzed targets.
+# Installing cargo-afl 0.14.1 to align with the afl crate used by fuzzer.
+# TODO:
+# Investigate if lack of 'no_cfg_fuzzing' still affects non-determinism.
+# Some context:
+#  In 0.12.16 we added 'no_cfg_fuzzing' flag to cargo-afl (details: https://github.com/rust-fuzz/afl.rs/pull/306)
+#  to prevents setting 'fuzzing' flag when compiling fuzzed targets (to fight non-determinism)
+#
 # Installing it forcefully to make sure AFL is built wit the current rustc version
 
-# NOTE: forcing version 0.12.17, since current version: 0.13.0 suffers from below error:
-#   [-] PROGRAM ABORT : Timeout while initializing fork server (setting AFL_FORKSRV_INIT_TMOUT may help)
-#            Location : afl_fsrv_start(), src/afl-forkserver.c:1184
 echo "Installing cargo-afl"
-cargo install --force afl  --version 0.12.17 --features no_cfg_fuzzing
-
+cargo install --force cargo-afl  --version 0.14.1
