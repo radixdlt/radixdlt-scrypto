@@ -68,7 +68,10 @@ mod metadata_component {
             global.set_metadata(key, UncheckedOrigin::of("https:/abc"));
         }
 
-        pub fn get_metadata(global: Global<MetadataComponent>, key: String) -> Result<Option<String>, MetadataConversionError> {
+        pub fn get_metadata(
+            global: Global<MetadataComponent>,
+            key: String,
+        ) -> Result<Option<String>, MetadataConversionError> {
             global.get_metadata(key)
         }
     }
