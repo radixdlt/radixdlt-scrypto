@@ -58,6 +58,7 @@ pub struct NodeCounts {
     pub interior_node_count: usize,
     pub package_count: usize,
     pub blueprint_count: usize,
+    pub object_count: BTreeMap<BlueprintId, usize>,
 }
 
 #[derive(Debug)]
@@ -166,12 +167,14 @@ impl ApplicationChecker for () {
 
 pub struct SystemDatabaseChecker<A: ApplicationChecker> {
     application_checker: A,
+    object_count: BTreeMap<BlueprintId, usize>,
 }
 
 impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     pub fn new(checker: A) -> SystemDatabaseChecker<A> {
         SystemDatabaseChecker {
             application_checker: checker,
+            object_count: btreemap!(),
         }
     }
 }
@@ -183,6 +186,7 @@ where
     fn default() -> Self {
         Self {
             application_checker: A::default(),
+            object_count: btreemap!(),
         }
     }
 }
@@ -253,6 +257,8 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                 .map_err(SystemDatabaseCheckError::NodeError)?;
         }
 
+        node_counts.object_count.extend(self.object_count.clone());
+
         let system_checker_results = SystemDatabaseCheckerResults {
             node_counts,
             partition_count,
@@ -265,7 +271,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     }
 
     fn check_node<S: SubstateDatabase + ListableSubstateDatabase>(
-        &self,
+        &mut self,
         reader: &SystemDatabaseReader<S>,
         node_id: &NodeId,
         node_counts: &mut NodeCounts,
@@ -387,6 +393,9 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                     }
                     ObjectType::Owned => {}
                 }
+
+                let count = self.object_count.entry(object_info.blueprint_info.blueprint_id.clone()).or_insert(0usize);
+                count.add_assign(&1);
 
                 SystemNodeCheckerState {
                     node_id: *node_id,

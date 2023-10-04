@@ -96,7 +96,7 @@ pub struct KeyValueStoreInfo {
     pub generic_substitutions: KeyValueStoreGenericSubstitutions,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintId {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
