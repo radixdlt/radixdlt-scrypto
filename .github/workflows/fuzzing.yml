@@ -13,6 +13,9 @@ on:
           - wasm_instrument
           - decimal
           - parse_decimal
+          - role_assignment
+          - royalty_state
+          - system
 
       duration_hours:
         description: 'Fuzzing duration [h]'
