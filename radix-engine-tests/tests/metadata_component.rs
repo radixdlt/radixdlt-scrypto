@@ -388,3 +388,49 @@ fn can_set_public_key_hash_metadata_through_manifest() {
 fn can_set_list_metadata_through_manifest() {
     can_set_metadata_through_manifest(MetadataValue::BoolArray(vec![true, false]));
 }
+
+#[test]
+fn cannot_get_metadata_with_too_long_key() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address =
+        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "MetadataComponent",
+            "new2",
+            manifest_args!("key".to_string(), "value".to_string()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+    // Act
+    let long_key = std::iter::repeat('a')
+        .take(MAX_METADATA_KEY_STRING_LEN + 1)
+        .collect::<String>();
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "MetadataComponent",
+            "get_metadata",
+            manifest_args!(component_address, long_key),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataError::KeyStringExceedsMaxLength { .. }
+            ))
+        )
+    });
+}
