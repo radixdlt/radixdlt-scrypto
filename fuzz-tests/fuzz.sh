@@ -17,13 +17,10 @@ DFLT_TIMEOUT=1000
 function usage() {
     echo "$0 [FUZZER/COMMAND] [SUBCOMMAND] [FUZZ-TARGET] [COMMAND-ARGS]"
     echo "Available targets:"
-    echo "    transaction"
-    echo "    wasm_instrument"
-    echo "    decimal"
-    echo "    parse_decimal"
-    echo "    role_assignment"
-    echo "    system"
-    echo "    royalty_state"
+    targets=$(./list-fuzz-targets.sh)
+    for t in $targets ; do
+      echo "    $t"
+    done
     echo "Available fuzzers"
     echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"
@@ -75,6 +72,17 @@ function error() {
     echo "error - $msg"
     usage
     exit 1
+}
+
+function check_target_available() {
+    local target=$1
+    targets=$(./list-fuzz-targets.sh)
+    for t in $targets ; do
+        if [ "$t" = "$target" ] ; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 function fuzzer_libfuzzer() {
@@ -201,7 +209,7 @@ function generate_input() {
         return
     fi
 
-    if [ $target = "transaction" -o $target = "wasm_instrument" -o $target = "decimal" -o $target = "parse_decimal" -o $target = "role_assignment" -o $target = "system" -o $target = "royalty_state" ] ; then
+    if check_target_available $target ; then
         if [ ! -f target-afl/release/${target} ] ; then
             echo "target binary 'target-afl/release/${target}' not built. Call below command to build it"
             echo "$THIS_SCRIPT afl build"
@@ -218,9 +226,8 @@ function generate_input() {
         fi
 
 
-        if [ $target = "transaction" -o $target = "decimal" -o $target = "parse_decimal" -o $target = "role_assignment" -o $target = "system" -o $target = "royalty_state" ] ; then
+        if [ $target != "wasm_instrument" ] ; then
             # Collect input data
-
             cargo nextest run test_${target}_generate_fuzz_input_data  --release
 
             if [ $mode = "raw" ] ; then
@@ -232,7 +239,7 @@ function generate_input() {
             #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
             mv ${target}_*.raw ${curr_path}/${raw_dir}
 
-        elif [ $target = "wasm_instrument" ] ; then
+        else
             # TODO generate more wasm inputs. and maybe smaller
             if [ $mode = "raw" ] ; then
                 find .. -name   "*.wasm" | while read f ; do cp $f $final_dir ; done
