@@ -210,9 +210,10 @@ function generate_input() {
     fi
 
     if check_target_available $target ; then
-        if [ ! -f target-afl/release/${target} ] ; then
+        # in 'raw' mode we don't need afl binary
+        if [ ! -f target-afl/release/${target} -a $mode != "raw" ]  ; then
             echo "target binary 'target-afl/release/${target}' not built. Call below command to build it"
-            echo "$THIS_SCRIPT afl build"
+            echo "$THIS_SCRIPT afl build $target"
             exit 1
         fi
 
