@@ -278,7 +278,7 @@ impl MetadataNativePackage {
         ),
         MetadataError,
     > {
-        let mut init_kv_entries = index_map_new();
+        let mut init_kv_entries = index_map_with_capacity(data.data.len());
         for (key, entry) in data.data {
             if key.len() > MAX_METADATA_KEY_STRING_LEN {
                 return Err(MetadataError::KeyStringExceedsMaxLength {
@@ -401,6 +401,15 @@ impl MetadataNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
+        if key.len() > MAX_METADATA_KEY_STRING_LEN {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::MetadataError(MetadataError::KeyStringExceedsMaxLength {
+                    max: MAX_METADATA_KEY_STRING_LEN,
+                    actual: key.len(),
+                }),
+            ));
+        }
+
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
             MetadataCollection::EntryKeyValue.collection_index(),
@@ -417,6 +426,15 @@ impl MetadataNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
+        if key.len() > MAX_METADATA_KEY_STRING_LEN {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::MetadataError(MetadataError::KeyStringExceedsMaxLength {
+                    max: MAX_METADATA_KEY_STRING_LEN,
+                    actual: key.len(),
+                }),
+            ));
+        }
+
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
             MetadataCollection::EntryKeyValue.collection_index(),
@@ -434,6 +452,15 @@ impl MetadataNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
+        if key.len() > MAX_METADATA_KEY_STRING_LEN {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::MetadataError(MetadataError::KeyStringExceedsMaxLength {
+                    max: MAX_METADATA_KEY_STRING_LEN,
+                    actual: key.len(),
+                }),
+            ));
+        }
+
         let cur_value: Option<MetadataEntryEntryPayload> = api.actor_remove_key_value_entry_typed(
             ACTOR_STATE_SELF,
             0u8,
