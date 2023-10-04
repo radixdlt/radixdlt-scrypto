@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 
 use radix_engine::prelude::ManifestArgs;
 use radix_engine::types::ScryptoSbor;
-use radix_engine_common::constants::XRD;
 use radix_engine_common::prelude::{
     scrypto_encode, GlobalAddress, NodeId, Own, ScryptoCustomTypeKind,
 };
@@ -347,6 +346,7 @@ impl VmInvoke for FuzzSystem {
 #[test]
 fn test_system_generate_fuzz_input_data() {
     use bincode::serialize;
+    use radix_engine_common::constants::XRD;
     use std::fs;
 
     {
