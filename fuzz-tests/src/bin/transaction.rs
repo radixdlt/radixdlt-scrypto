@@ -1,10 +1,3 @@
-#![cfg_attr(feature = "libfuzzer-sys", no_main)]
-
-#[cfg(feature = "libfuzzer-sys")]
-use libfuzzer_sys::fuzz_target;
-#[cfg(feature = "libfuzzer-sys")]
-use once_cell::sync::Lazy;
-
 #[cfg(feature = "afl")]
 use afl::fuzz;
 #[cfg(feature = "afl")]
@@ -16,19 +9,6 @@ use fuzz_tests::fuzz;
 use fuzz_tests::transaction::fuzz_tx::*;
 
 // Fuzzer entry points
-#[cfg(feature = "libfuzzer-sys")]
-fuzz_target!(|data: &[u8]| {
-    unsafe {
-        static mut FUZZER: Lazy<TxFuzzer> = Lazy::new(|| {
-            fuzz_tx_init_statics();
-            TxFuzzer::new()
-        });
-
-        FUZZER.reset_runner();
-        FUZZER.fuzz_tx_manifest(data);
-    }
-});
-
 #[cfg(feature = "afl")]
 fn main() {
     fuzz_tx_init_statics();

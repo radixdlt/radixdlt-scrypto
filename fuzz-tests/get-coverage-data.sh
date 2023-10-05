@@ -48,15 +48,6 @@ if [ $# -ge 1 ] ; then
     shift
 fi
 
-get_libfuzzer_corpus_files() {
-    local target=$1
-    local corpus_dir="corpus/${target}"
-
-    if [ -d $corpus_dir ] ; then
-        find $corpus_dir -type f
-    fi
-}
-
 get_afl_corpus_files() {
     local target=$1
     local corpus_dir="afl/${target}"
@@ -122,7 +113,6 @@ for t in $targets ; do
     list=corpus_files_$t.lst
     rm -f $list
     get_afl_corpus_files $t > $list
-    get_libfuzzer_corpus_files $t >> $list
 
     if [ -s $list ] ; then
         if [ "$corpus_mode" = "cmin" ] ; then

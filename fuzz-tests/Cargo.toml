@@ -8,7 +8,6 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = { version = "0.4", optional = true }
 afl = { version = "0.14.1", optional = true }
 clap = { version = "4.1.7", optional = true }
 rand = { version = "0.8.5", optional = true }
@@ -90,7 +89,6 @@ dummy_fuzzing = []
 
 verbose = []
 
-#fuzzer = [ "libfuzzer-sys" ]
 #fuzzer = [ "afl" ]
 fuzzer = ["simple-fuzzer"]
 
