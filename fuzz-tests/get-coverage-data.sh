@@ -25,7 +25,6 @@ usage() {
 }
 
 TIMEOUT=5000
-MODE=release
 
 corpus_mode=cmin
 targets=all
@@ -82,7 +81,7 @@ minimize_corpus() {
     #   - add coreutils path to the PATH environmental variable
     #     eg.
     #       echo 'export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"' >> ~/.profile
-    cargo afl cmin -t $TIMEOUT -i $input_dir -o $cmin_dir -- target-afl/${MODE}/${target}
+    cargo afl cmin -t $TIMEOUT -i $input_dir -o $cmin_dir -- target-afl/release/${target}
 
     rm -rf $input_dir
 
