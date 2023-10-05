@@ -120,8 +120,6 @@ export CARGO_INCREMENTAL=0
 export RUSTFLAGS='-Cinstrument-coverage'
 
 for t in $targets ; do
-    export LLVM_PROFILE_FILE="fuzz-${t}-%p-%m.profraw"
-
     list=corpus_files_$t.lst
     rm -f $list
     get_afl_corpus_files $t > $list
@@ -136,7 +134,13 @@ for t in $targets ; do
         if [ -s $list ] ; then
             echo "Getting code coverage data for target $t"
             ./fuzz.sh simple build --release $t
+
+            # above command calls 'cargo build ...' which produces some *.profraw files, which don't want
+            rm -f default_*.*profraw
+
+            export LLVM_PROFILE_FILE="fuzz-${t}-%p-%m.profraw"
             cat $list | process_corpus_files $t
+            unset LLVM_PROFILE_FILE
         else
             echo "Skipping target $t - no corpus files"
         fi
