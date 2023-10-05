@@ -24,6 +24,7 @@ jobs:
              cargo test --release --no-run --features resource_tracker
              rm -f ../target/release/deps/transaction_multi_threaded-*
              rm -f ../target/release/deps/*.d
+             rm -f ../target/release/deps/*.o
              rm -f ../target/release/deps/*.rlib
              rm -f ../target/release/deps/*.rmeta
       - name: Preapare files for cache
@@ -46,7 +47,7 @@ jobs:
         with:
           path: ./target/release/deps_2
           key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}
-          
+
   build-other-tests:          
     name: Build other tests
     runs-on: ubuntu-22.04
@@ -61,14 +62,29 @@ jobs:
         run: |
              cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests
              rm -f ./target/release/deps/*.d
+             rm -f ./target/release/deps/*.o
              rm -f ./target/release/deps/*.rlib
              rm -f ./target/release/deps/*.rmeta
-             mv ./target/release/deps ./target/release/deps_3
-      - name: Cache build results
+      - name: Preapare files for cache
+        run: |
+             cd target/release
+             mkdir deps_3
+             cd deps
+             count=`ls fuzz* | wc -l`
+             half=`echo $(($count / 2))`
+             ls fuzz* | head -n$half | xargs mv -t ../deps_3
+             cd ..
+             mv deps deps_4
+      - name: Cache build results 1
         uses: actions/cache/save@v3
         with:
           path: ./target/release/deps_3
           key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}
+      - name: Cache build results 2
+        uses: actions/cache/save@v3
+        with:
+          path: ./target/release/deps_4
+          key: ${{ runner.os }}-build-cache-4-radix-engine-tests-${{ github.run_id }}
 
   qemu-build:
     name: QEMU build
@@ -113,7 +129,7 @@ jobs:
     needs: [build-radix-engine-tests, build-other-tests, qemu-build]
     strategy:
       matrix:
-        bin-cache: [1, 2, 3]
+        bin-cache: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -180,6 +196,12 @@ jobs:
         with:
           path: /tmp/scrypto-resources-usage
           key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}-qemu-results
+          fail-on-cache-miss: true
+      - name: Read cache QEMU run 4 results
+        uses: actions/cache/restore@v3
+        with:
+          path: /tmp/scrypto-resources-usage
+          key: ${{ runner.os }}-build-cache-4-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Upload xml files
         uses: actions/upload-artifact@v3
