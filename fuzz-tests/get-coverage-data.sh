@@ -78,7 +78,7 @@ minimize_corpus() {
 
     tmp_list=$(mktemp)
     find $cmin_dir -type f > $tmp_list
-    cp $tmp_list $list
+    mv $tmp_list $list
 }
 
 process_corpus_files() {
