@@ -47,10 +47,7 @@ if [ $# -ge 1 ] ; then
         exit 1
     fi
     shift
-else
-    targets=$(./list-fuzz-targets.sh)
 fi
-
 
 get_libfuzzer_corpus_files() {
     local target=$1
