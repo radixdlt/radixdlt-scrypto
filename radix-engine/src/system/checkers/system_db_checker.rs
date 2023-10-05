@@ -58,7 +58,7 @@ pub struct NodeCounts {
     pub interior_node_count: usize,
     pub package_count: usize,
     pub blueprint_count: usize,
-    pub object_count: BTreeMap<BlueprintId, usize>,
+    pub object_count: BTreeMap<PackageAddress, BTreeMap<String, usize>>,
 }
 
 #[derive(Debug)]
@@ -167,7 +167,7 @@ impl ApplicationChecker for () {
 
 pub struct SystemDatabaseChecker<A: ApplicationChecker> {
     application_checker: A,
-    object_count: BTreeMap<BlueprintId, usize>,
+    object_count: BTreeMap<PackageAddress, BTreeMap<String, usize>>,
 }
 
 impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
@@ -394,8 +394,9 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                     ObjectType::Owned => {}
                 }
 
-                let count = self.object_count.entry(object_info.blueprint_info.blueprint_id.clone()).or_insert(0usize);
-                count.add_assign(&1);
+                self.object_count.entry(object_info.blueprint_info.blueprint_id.package_address)
+                    .or_default().entry(object_info.blueprint_info.blueprint_id.blueprint_name.clone())
+                    .or_default().add_assign(&1);
 
                 SystemNodeCheckerState {
                     node_id: *node_id,
