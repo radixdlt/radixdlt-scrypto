@@ -103,7 +103,7 @@ process_corpus_files() {
             ./fuzz.sh simple run --release $target "{}" || true # true to consume error and not quit
     else
         xargs -P 8 -I {} \
-            sh -c './fuzz.sh simple run $target "{}" || true' # true to consume error and not quit
+            sh -c "./fuzz.sh simple run --release $target \"{}\" || true" # true to consume error and not quit
     fi
 }
 
