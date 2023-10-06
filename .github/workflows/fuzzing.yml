@@ -16,6 +16,7 @@ on:
           - role_assignment
           - royalty_state
           - system
+          - sbor
 
       duration_hours:
         description: 'Fuzzing duration [h]'
