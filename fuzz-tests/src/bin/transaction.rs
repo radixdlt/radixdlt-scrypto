@@ -13,6 +13,11 @@ use std::panic::AssertUnwindSafe;
 #[cfg(feature = "simple-fuzzer")]
 use fuzz_tests::fuzz;
 
+#[cfg(feature = "ziggy")]
+use ziggy::fuzz;
+#[cfg(feature = "ziggy")]
+use std::panic::AssertUnwindSafe;
+
 use fuzz_tests::transaction::fuzz_tx::*;
 
 // Fuzzer entry points
@@ -49,6 +54,18 @@ fn main() {
     fuzz_tx_init_statics();
 
     let mut fuzzer = TxFuzzer::new();
+
+    fuzz!(|data: &[u8]| {
+        fuzzer.reset_runner();
+        fuzzer.fuzz_tx_manifest(data);
+    });
+}
+
+#[cfg(feature = "ziggy")]
+fn main() {
+    fuzz_tx_init_statics();
+
+    let mut fuzzer = AssertUnwindSafe(TxFuzzer::new());
 
     fuzz!(|data: &[u8]| {
         fuzzer.reset_runner();

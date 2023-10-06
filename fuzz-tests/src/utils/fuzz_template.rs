@@ -19,6 +19,9 @@ macro_rules! fuzz_template {
         #[cfg(feature = "simple-fuzzer")]
         use fuzz_tests::fuzz;
 
+        #[cfg(feature = "ziggy")]
+        use ziggy::fuzz;
+
         // Fuzzer entry points
         #[cfg(feature = "libfuzzer-sys")]
         libfuzzer_sys::fuzz_target!(|$buf: $dty| { $body });
@@ -31,6 +34,11 @@ macro_rules! fuzz_template {
         #[cfg(feature = "simple-fuzzer")]
         fn main() {
             fuzz_tests::fuzz!(|$buf: $dty| { $body });
+        }
+
+        #[cfg(feature = "ziggy")]
+        fn main() {
+            ziggy::fuzz!(|$buf: $dty| { $body });
         }
     };
 }
