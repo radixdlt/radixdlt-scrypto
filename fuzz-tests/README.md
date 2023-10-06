@@ -1,9 +1,9 @@
 # Introduction
 
 This package implements fuzz tests for Radix Engine.
-Currently it uses 3 fuzzing engines:
+Currently it uses 2 fuzzing engines:
 * [AFLplusplus](https://aflplus.plus/)
-  It is wrapped by crate: [cargo-afl](https://docs.rs/afl/0.12.14/afl)
+  It is wrapped by crate: [cargo-afl](https://docs.rs/afl/0.14.1/afl)
 * simple-fuzzer
   This is a very simple fuzzer, which is especially useful when developing new fuzz tests.
   It allows to:
