@@ -38,6 +38,14 @@ on:
         description: 'Check fuzzing status interval [s]'
         required: true
         default: 300
+      code_coverage_corpus_mode:
+        type: choice
+        description: 'Corpus mode for code coverage'
+        required: true
+        options:
+          - cmin
+          - full
+          - none
 
 env:
   CARGO_TERM_COLOR: always
@@ -73,6 +81,11 @@ jobs:
       run: |
         ./install_afl.sh
         ./fuzz.sh afl machine-init
+
+    - name: Setup code coverage tools
+      run: |
+        rustup component add llvm-tools-preview
+        cargo install grcov
 
     - name: Build AFL
       working-directory: fuzz-tests
@@ -200,10 +213,30 @@ jobs:
         echo "archive results"
         tar -hczf fuzz_results.tgz -T list
 
-    - name: Upload artifacts
+    - name: Get code coverage
+      if: success()
+      working-directory: fuzz-tests
+      run: |
+        if [ "${{ github.event.inputs.code_coverage_corpus_mode}}" != "none" ] ; then
+          ./get-coverage-data.sh ${{ github.event.inputs.fuzz_target }} ${{ github.event.inputs.code_coverage_corpus_mode }}
+          ./get-coverage-report.sh
+          cd target/coverage
+          tar -czf ../../coverage.tgz html
+        fi
+
+    - name: Upload fuzz results
       if: success() || failure() || cancelled()
       uses: actions/upload-artifact@v3
       with:
         name: fuzz_results.tgz
         path: |
           fuzz-tests/fuzz_results.tgz
+
+    - name: Upload code coverage report
+      if: success()
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage.tgz
+        if-no-files-found: ignore
+        path: |
+          fuzz-tests/coverage.tgz

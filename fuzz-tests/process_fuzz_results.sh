@@ -107,7 +107,7 @@ function inspect_crashes() {
         fi
         pushd $repo_dir > /dev/null
         echo "Building simple fuzzer"
-        ./fuzz.sh simple build $target
+        ./fuzz.sh simple build --release $target
         popd > /dev/null
         echo "Checking crash/hangs files"
         for f in $files ; do
