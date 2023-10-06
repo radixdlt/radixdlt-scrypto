@@ -178,7 +178,7 @@ function generate_input() {
 
         if [ $target != "wasm_instrument" ] ; then
             # Collect input data
-            cargo nextest run test_${target}_generate_fuzz_input_data  --release
+            cargo nextest run --no-default-features --features std,simple-fuzzer test_${target}_generate_fuzz_input_data  --release
 
             if [ $mode = "raw" ] ; then
                 #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
