@@ -13,6 +13,9 @@ on:
           - wasm_instrument
           - decimal
           - parse_decimal
+          - role_assignment
+          - royalty_state
+          - system
 
       duration_hours:
         description: 'Fuzzing duration [h]'
@@ -195,12 +198,12 @@ jobs:
         # Archive panic summary files (useful when grouping crashes by panic type)
         find local_* -type f -name "*.panic" | tee -a list
         echo "archive results"
-        tar -hczf fuzz_transaction.tgz -T list
+        tar -hczf fuzz_results.tgz -T list
 
     - name: Upload artifacts
       if: success() || failure() || cancelled()
       uses: actions/upload-artifact@v3
       with:
-        name: fuzz_${{ github.event.inputs.fuzz_target }}.tgz
+        name: fuzz_results.tgz
         path: |
-          fuzz-tests/fuzz_${{ github.event.inputs.fuzz_target }}.tgz
+          fuzz-tests/fuzz_results.tgz
