@@ -98,19 +98,6 @@ enum NodeValue {
 }
 
 #[derive(Debug, Clone, Arbitrary, Serialize, Deserialize, ScryptoSbor, ManifestSbor)]
-enum KeyValueEntryKey {
-    Tuple,
-}
-
-impl KeyValueEntryKey {
-    fn to_vec(&self) -> Vec<u8> {
-        match self {
-            KeyValueEntryKey::Tuple => scrypto_encode(&()).unwrap()
-        }
-    }
-}
-
-#[derive(Debug, Clone, Arbitrary, Serialize, Deserialize, ScryptoSbor, ManifestSbor)]
 enum SystemAction {
     FieldOpen(u8, u32),
     FieldRead(usize),
@@ -118,8 +105,8 @@ enum SystemAction {
     FieldLock(usize),
     FieldClose(usize),
     KeyValueStoreNew,
-    KeyValueStoreOpenEntry(usize, KeyValueEntryKey, u32),
-    KeyValueStoreRemoveEntry(usize, KeyValueEntryKey),
+    KeyValueStoreOpenEntry(usize, u32),
+    KeyValueStoreRemoveEntry(usize),
     KeyValueEntryGet(usize),
     KeyValueEntrySet(usize, Vec<(NodeValue, usize)>),
     KeyValueEntryRemove(usize),
@@ -232,19 +219,22 @@ impl SystemAction {
                 })?;
                 state.nodes.insert(kv_store);
             }
-            SystemAction::KeyValueStoreOpenEntry(index, key, flags) => unsafe {
+            SystemAction::KeyValueStoreOpenEntry(index, /*key, */flags) => unsafe {
                 if let Some(node_id) = state.get_node(*index) {
                     let handle = api.key_value_store_open_entry(
                         &node_id,
-                        &key.to_vec(),
+                        &scrypto_encode(&()).unwrap(),
                         LockFlags::from_bits_unchecked(*flags),
                     )?;
                     state.handles.insert(handle);
                 }
             },
-            SystemAction::KeyValueStoreRemoveEntry(index, key) => {
+            SystemAction::KeyValueStoreRemoveEntry(index/*, key*/) => {
                 if let Some(node_id) = state.get_node(*index) {
-                    let value = api.key_value_store_remove_entry(&node_id, &key.to_vec())?;
+                    let value = api.key_value_store_remove_entry(
+                        &node_id,
+                        &scrypto_encode(&()).unwrap(),
+                    )?;
                     state.process_value(&value);
                 }
             }
@@ -388,8 +378,8 @@ fn test_system_generate_fuzz_input_data() {
             inject_err_after_count: 8u64,
             actions: vec![
                 SystemAction::KeyValueStoreNew,
-                SystemAction::KeyValueStoreRemoveEntry(0, KeyValueEntryKey::Tuple),
-                SystemAction::KeyValueStoreOpenEntry(0usize, KeyValueEntryKey::Tuple, 0u32),
+                SystemAction::KeyValueStoreRemoveEntry(0),
+                SystemAction::KeyValueStoreOpenEntry(0usize, 0u32),
                 SystemAction::KeyValueEntryLock(0),
                 SystemAction::KeyValueEntryClose(0),
                 SystemAction::KeyValueEntryGet(0),
