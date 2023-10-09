@@ -150,7 +150,7 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
     ///
     /// If the type is well known or already in the aggregator, this returns early with the existing index.
     ///
-    /// Typically you should use [`add_schema_and_descendents`], unless you're replacing/mutating
+    /// Typically you should use [`add_schema_descendents`], unless you're replacing/mutating
     /// the child types somehow. In which case, you'll likely wish to call [`add_child_type`] and
     /// [`add_schema_descendents`] separately.
     ///
