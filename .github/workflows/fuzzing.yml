@@ -222,8 +222,7 @@ jobs:
           ./get-coverage-data.sh ${{ github.event.inputs.fuzz_target }} ${{ github.event.inputs.code_coverage_corpus_mode }}
           ./get-coverage-report.sh
           mkdir -p artifacts
-          cd target/coverage
-          tar -czf ../../artifacts/coverage.tgz html
+          mv target/coverage artifacts/
         fi
 
     - name: Upload fuzz results
@@ -238,7 +237,7 @@ jobs:
       if: success()
       uses: actions/upload-artifact@v3
       with:
-        name: coverage.tgz
+        name: coverage
         if-no-files-found: ignore
         path: |
-          fuzz-tests/artifacts/coverage.tgz
+          fuzz-tests/artifacts/coverage
