@@ -134,7 +134,7 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        Self::on_fn_finish(api, auth_zone)
+        Self::teardown_auth_zone(api, auth_zone)
     }
 
     pub fn on_call_method<V, Y>(
@@ -189,10 +189,11 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        Self::on_fn_finish(api, auth_zone)
+        Self::teardown_auth_zone(api, auth_zone)
     }
 
-    pub fn create_mock<V, Y>(
+    /// On CALL_FUNCTION or CALL_METHOD, when auth module is disabled.
+    pub fn on_call_fn_mock<V, Y>(
         system: &mut SystemService<Y, V>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
@@ -260,17 +261,27 @@ impl AuthModule {
                         .unwrap();
                     let self_auth_zone = current_method_actor.auth_zone;
                     match (current_ref_origin, next_is_barrier) {
+                        // Actor is part of the global component state tree AND next actor is a barrier
                         (ReferenceOrigin::Global(address), true) => {
-                            let global_caller: GlobalCaller = address.into();
-                            (Some((global_caller, Reference(self_auth_zone))), None)
+                            (Some((address.into(), Reference(self_auth_zone))), None)
                         }
-                        (
-                            ReferenceOrigin::SubstateNonGlobalReference(..)
-                            | ReferenceOrigin::DirectlyAccessed,
-                            _,
-                        ) => (None, None),
-                        (ReferenceOrigin::Global(..), false) | (ReferenceOrigin::FrameOwned, _) => {
+                        // Actor is part of the global component state tree AND next actor is not a barrier
+                        (ReferenceOrigin::Global(..), false) => {
                             Self::copy_global_caller(system, &self_auth_zone)?
+                        }
+                        // Actor is a direct access reference
+                        (ReferenceOrigin::DirectlyAccessed, _) => (None, None),
+                        // Actor is a non-global reference
+                        (ReferenceOrigin::SubstateNonGlobalReference(..), _) => (None, None),
+                        // Actor ia a frame-owned object
+                        (ReferenceOrigin::FrameOwned, _) => {
+                            let caller = Self::copy_global_caller(system, &self_auth_zone)?;
+                            (
+                                caller.0.map(|_| {
+                                    (TRANSACTION_TRACKER.into(), Reference(self_auth_zone))
+                                }),
+                                caller.1,
+                            )
                         }
                     }
                 }
@@ -285,7 +296,7 @@ impl AuthModule {
                 }
             };
 
-            let self_auth_zone_parent = if next_is_barrier {
+            let auth_zone_parent = if next_is_barrier {
                 None
             } else {
                 system
@@ -300,19 +311,19 @@ impl AuthModule {
                 virtual_non_fungibles,
                 local_package_address,
                 global_caller,
-                self_auth_zone_parent,
+                auth_zone_parent,
             );
 
             (auth_zone, parent_lock_handle)
         };
 
         // Create node
-        let self_auth_zone = system
+        let new_auth_zone = system
             .api
             .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
 
         system.api.kernel_create_node(
-            self_auth_zone,
+            new_auth_zone,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(auth_zone))
@@ -329,16 +340,16 @@ impl AuthModule {
                 }))
             ),
         )?;
-        system.api.kernel_pin_node(self_auth_zone)?;
+        system.api.kernel_pin_node(new_auth_zone)?;
 
         if let Some(parent_lock_handle) = parent_lock_handle {
             system.kernel_close_substate(parent_lock_handle)?;
         }
 
-        Ok(self_auth_zone)
+        Ok(new_auth_zone)
     }
 
-    pub fn on_fn_finish<V, Y>(
+    pub fn teardown_auth_zone<V, Y>(
         api: &mut SystemService<Y, V>,
         self_auth_zone: NodeId,
     ) -> Result<(), RuntimeError>

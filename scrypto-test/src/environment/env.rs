@@ -214,7 +214,7 @@ impl TestEnvironment {
                     api: kernel,
                     phantom: PhantomData,
                 };
-                AuthModule::create_mock(
+                AuthModule::on_call_fn_mock(
                     &mut system_service,
                     Some((TRANSACTION_PROCESSOR_PACKAGE.as_node_id(), false)),
                     Default::default(),
@@ -852,7 +852,7 @@ impl TestEnvironment {
                 api: kernel,
                 phantom: PhantomData,
             };
-            AuthModule::create_mock(
+            AuthModule::on_call_fn_mock(
                 &mut system_service,
                 Some((&node_id.into(), false)),
                 Default::default(),
