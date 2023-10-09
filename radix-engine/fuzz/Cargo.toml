@@ -1,0 +1,53 @@
+[package]
+name = "radix-engine-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+cosmwasm-std = { git = "https://github.com/iamyulong/cosmwasm" }
+radix-engine-common = { path = "../../radix-engine-common" }
+radix-engine-interface = { path = "../../radix-engine-interface" }
+transaction = { path = "../../transaction" }
+scrypto = { path = "../../scrypto" }
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fuzz_target_1"
+path = "fuzz_targets/fuzz_target_1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_target_2"
+path = "fuzz_targets/fuzz_target_2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_target_3"
+path = "fuzz_targets/fuzz_target_3.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_target_4"
+path = "fuzz_targets/fuzz_target_4.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_target_5"
+path = "fuzz_targets/fuzz_target_5.rs"
+test = false
+doc = false
