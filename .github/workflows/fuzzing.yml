@@ -59,6 +59,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Test Upload artifacts to S3
+      if: success() || failure() || cancelled()
+      run: aws s3 cp artifacts/ s3://${{ secrets.S3_ARTIFACTS_BUCKET }}/scrypto/fuzzing/ --recursive
+
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -224,14 +228,3 @@ jobs:
           mkdir -p artifacts
           mv target/coverage artifacts/
         fi
-
-    - name: Configure AWS credentials
-      if: success() || failure() || cancelled()
-      uses: aws-actions/configure-aws-credentials@56320524c997f8122ea86203e479213427c0b863
-      with:
-        role-to-assume: ${{ secrets.S3_ARTIFACTS_UPLOADER_ROLE }}
-        aws-region: eu-west-1
-
-    - name: Upload artifacts to S3
-      if: success() || failure() || cancelled()
-      run: aws s3 cp artifacts/ s3://${{ secrets.S3_ARTIFACTS_BUCKET }}/scrypto/fuzzing/ --recursive
