@@ -211,7 +211,8 @@ jobs:
         # Archive panic summary files (useful when grouping crashes by panic type)
         find local_* -type f -name "*.panic" | tee -a list
         echo "archive results"
-        tar -hczf fuzz_results.tgz -T list
+        mkdir -p artifacts
+        tar -hczf artifacts/fuzz_results.tgz -T list
 
     - name: Get code coverage
       if: success()
@@ -220,8 +221,8 @@ jobs:
         if [ "${{ github.event.inputs.code_coverage_corpus_mode}}" != "none" ] ; then
           ./get-coverage-data.sh ${{ github.event.inputs.fuzz_target }} ${{ github.event.inputs.code_coverage_corpus_mode }}
           ./get-coverage-report.sh
-          cd target/coverage
-          tar -czf ../../coverage.tgz html
+          mkdir -p artifacts
+          mv target/coverage artifacts/
         fi
 
     - name: Upload fuzz results
@@ -230,13 +231,13 @@ jobs:
       with:
         name: fuzz_results.tgz
         path: |
-          fuzz-tests/fuzz_results.tgz
+          fuzz-tests/artifacts/fuzz_results.tgz
 
     - name: Upload code coverage report
       if: success()
       uses: actions/upload-artifact@v3
       with:
-        name: coverage.tgz
+        name: coverage
         if-no-files-found: ignore
         path: |
-          fuzz-tests/coverage.tgz
+          fuzz-tests/artifacts/coverage
