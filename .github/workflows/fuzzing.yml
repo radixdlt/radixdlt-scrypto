@@ -59,13 +59,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Test Upload artifacts to S3
-      if: success() || failure() || cancelled()
-      run: |
-        mkdir artifacts
-        echo 111 > artifacts/index.html
-        aws s3 cp artifacts/ s3://${{ secrets.S3_ARTIFACTS_BUCKET }}/scrypto/fuzzing/ --recursive
-
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -231,3 +224,7 @@ jobs:
           mkdir -p artifacts
           mv target/coverage artifacts/
         fi
+
+    - name: Upload artifacts to S3
+      if: success() || failure() || cancelled()
+      run: aws s3 cp artifacts/ s3://${{ secrets.S3_ARTIFACTS_BUCKET }}/scrypto/fuzzing/ --recursive
