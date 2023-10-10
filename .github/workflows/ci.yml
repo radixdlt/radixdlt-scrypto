@@ -410,27 +410,25 @@ jobs:
     container:
       image: rust:1.70.0-bullseye
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         path: radixdlt-scrypto
-
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         repository: radixdlt/radixdlt-fuzz
         ref: develop
         path: radixdlt-fuzz
+        token: ${{ secrets.GH_PAT }}
     - name: setup repos
       run: |
         cd radixdlt-fuzz
         rm -rf radixdlt-scrypto
         ln -s $GITHUB_WORKSPACE/radixdlt-scrypto radixdlt-scrypto
-
     - name: setup the container
       run: |
         apt update && apt install -y clang llvm cmake build-essential
         rustup component add llvm-tools
         curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
     - name: Setup AFL
       run: bash ./install_afl.sh
       working-directory: .
