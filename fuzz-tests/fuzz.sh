@@ -22,14 +22,9 @@ function usage() {
       echo "    $t"
     done
     echo "Available fuzzers"
-    echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"
     echo "    simple     - simple fuzzer (default)"
     echo "  Subcommands:"
-    echo "      init        - Take sample input ('./fuzz_input/<target>') for given test,"
-    echo "                    minimize the test corpus and put the result into 'corpus/<target>',"
-    echo "                    which is used by 'libfuzzer' as initial input."
-    echo "                    Applicable only for 'libfuzzer'."
     echo "      build       - Build fuzz test for given fuzzer."
     echo "                    Binaries are built in 'release' format."
     echo "      run         - Run fuzz test for given fuzzer (default command)"
@@ -58,16 +53,14 @@ function usage() {
     echo "    $0 afl build transaction"
     echo "  - run AFL tests for 1h"
     echo "    $0 afl run transaction -V 3600"
-    echo "  - run LibFuzzer for 1h"
-    echo "    $0 libfuzzer run transaction -max_total_time=3600"
     echo "  - run simple-fuzzer for 1h"
     echo "    $0 simple run transaction --duration 3600"
     echo "  - run simple-fuzzer in 'release' mode for 1h"
     echo "    $0 simple run --release transaction --duration 3600"
-    echo "  - reproduce some crash discovered by 'libfuzzer'"
-    echo "    $0 libfuzzer run transaction ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
-    echo "  - reproduce some crash discovered by 'libfuzzer' using 'simple-fuzzer'"
-    echo "    RUST_BACKTRACE=1 $0 simple run transaction ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
+    echo "  - reproduce some crash discovered by 'afl' using 'simple-fuzzer'"
+    echo "    RUST_BACKTRACE=1 $0 simple run transaction afl/transaction/0_fast/crashes/id:000168,sig:06,src:001128+000312,time:260091,execs:21509,op:splice,rep:8"
+    echo "  - reproduce some crash discovered by 'afl' using 'afl'"
+    echo "    cat afl/transaction/0_fast/queue/id:000001,time:0,execs:0,orig:system_001.raw | ./target-afl/release/transaction"
 
     exit 1
 }
@@ -87,48 +80,6 @@ function check_target_available() {
         fi
     done
     return 1
-}
-
-function fuzzer_libfuzzer() {
-    local cmd=$DFLT_SUBCOMMAND
-    if [ $# -ge 1 ] ; then
-        cmd=$1
-        shift
-    fi
-    local target=$DFLT_TARGET
-    if [ $# -ge 1 ] ; then
-        target=$1
-        shift
-    fi
-    local run_args=""
-    if [ "$cmd" = "run" ] ; then
-        run_args="$@"
-
-    elif [ "$cmd" = "init" ] ; then
-        # initial setup:
-        # - minimize the corpus:
-        #    https://llvm.org/docs/LibFuzzer.html#id25
-        #
-        #   cargo +nightly fuzz $target  --fuzz-dir radix-engine-fuzz \
-        #      --no-cfg-fuzzing --target-dir target-libfuzzer $target -- \
-        #      -merge=1 corpus/$target <INTERESTING_INPUTS_DIR/FULL_CORPUS_DIR>
-        #
-        cmd=run
-        run_args="-- -merge=1 corpus/${target} fuzz_input/${target} "
-    fi
-    # Unset cfg=fuzzing by --no-cfg-fuzzing.
-    # "secp256k1" uses some stubs instead of true cryptography if "fuzzing" is set.
-    # see: https://github.com/rust-bitcoin/rust-secp256k1/#fuzzing
-    set -x
-    cargo +nightly fuzz $cmd \
-        --release \
-        --no-default-features --features std,libfuzzer-sys\
-        --fuzz-dir . \
-        --no-cfg-fuzzing \
-        --target-dir target-libfuzzer \
-        $target \
-        $run_args
-
 }
 
 function fuzzer_afl() {
@@ -155,20 +106,7 @@ function fuzzer_afl() {
         set -x
         cargo afl fuzz -i fuzz_input/${target} -o afl/${target} $@ -- target-afl/release/${target}
     elif [ $cmd = "machine-init" ] ; then
-        uname="$(uname -s)"
-        if [ $uname = "Linux" ] ; then
-            set -x
-            # disable external utilities handling coredumps
-            sudo bash -c "echo core > /proc/sys/kernel/core_pattern"
-            # disable CPU frequency scaling
-            find /sys/devices/system/cpu -name scaling_governor | \
-                xargs -I {} sudo bash -c "echo performance > {}"
-        elif [ $uname = "Darwin" ] ; then
-            echo "If you see an error message like 'shmget() failed' above, try running the following command:"
-            echo "  sudo /Users/<username>/.local/share/afl.rs/rustc-<version>/afl.rs-<version>/afl/bin/afl-system-config"
-        else
-            error "OS '$uname' not supported"
-        fi
+        cargo afl system-config
     fi
 }
 
@@ -240,7 +178,7 @@ function generate_input() {
 
         if [ $target != "wasm_instrument" ] ; then
             # Collect input data
-            cargo nextest run test_${target}_generate_fuzz_input_data  --release
+            cargo nextest run --no-default-features --features std,simple-fuzzer test_${target}_generate_fuzz_input_data  --release
 
             if [ $mode = "raw" ] ; then
                 #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
@@ -297,7 +235,7 @@ function generate_input() {
 }
 
 if [ $# -ge 1 ] ; then
-    # available fuzzers/commands: libfuzzer, afl, simple, generate-input
+    # available fuzzers/commands: afl, simple, generate-input
     cmd=$1
     shift
 else
@@ -308,9 +246,7 @@ if [ $# -eq 0 ] ; then
     usage
 fi
 
-if [ $cmd = "libfuzzer" ] ; then
-    fuzzer_libfuzzer $@
-elif [ $cmd = "afl" ] ; then
+if [ $cmd = "afl" ] ; then
     fuzzer_afl $@
 elif [ $cmd = "simple" ] ; then
     fuzzer_simple $@
