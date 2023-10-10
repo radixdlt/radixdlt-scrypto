@@ -411,6 +411,20 @@ jobs:
       image: rust:1.70.0-bullseye
     steps:
     - uses: actions/checkout@v3
+      with:
+        path: radixdlt-scrypto
+
+    - uses: actions/checkout@v3
+      with:
+        repository: radixdlt/radixdlt-fuzz
+        ref: develop
+        path: radixdlt-fuzz
+    - name: setup repos
+      run: |
+        cd radixdlt-fuzz
+        rm -rf radixdlt-scrypto
+        ln -s $GITHUB_WORKSPACE/radixdlt-scrypto radixdlt-scrypto
+
     - name: setup the container
       run: |
         apt update && apt install -y clang llvm cmake build-essential
@@ -419,17 +433,17 @@ jobs:
 
     - name: Setup AFL
       run: bash ./install_afl.sh
-      working-directory: fuzz-tests
+      working-directory: .
     - name: Build simple fuzzer
       run: bash ./fuzz.sh simple build
-      working-directory: fuzz-tests
+      working-directory: .
     - name: Build AFL fuzzer
       run: bash ./fuzz.sh afl build
-      working-directory: fuzz-tests
+      working-directory: .
     - name: Check fuzzed instructions coverage
       run: cargo nextest run test_check_fuzzed_instruction_coverage
-      working-directory: fuzz-tests
-  
+      working-directory: .
+
   cargo-check:
     name: Run cargo check
     runs-on: ${{ matrix.os }}
@@ -443,7 +457,7 @@ jobs:
         toolchain: 1.70.0
     - name: Cargo Check
       run: cargo check --all
-  
+
   cargo-check-post-run-db-check:
     name: Run cargo check
     runs-on: ${{ matrix.os }}
