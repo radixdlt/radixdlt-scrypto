@@ -227,4 +227,6 @@ jobs:
 
     - name: Upload artifacts to S3
       if: success() || failure() || cancelled()
-      run: aws s3 cp artifacts/ s3://${{ secrets.S3_ARTIFACTS_BUCKET }}/scrypto/fuzzing/ --recursive
+      run: |
+        ls
+        aws s3 cp artifacts/ s3://${{ secrets.S3_ARTIFACTS_BUCKET }}/scrypto/fuzzing/ --recursive
