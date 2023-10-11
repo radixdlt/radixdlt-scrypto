@@ -3,6 +3,7 @@ use crate::hash_tree::tree_store::{
 };
 use itertools::Itertools;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_common::prelude::Hash;
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
@@ -64,6 +65,30 @@ impl RocksDBWithMerkleTreeSubstateStore {
     fn cf(&self, cf: &str) -> &ColumnFamily {
         self.db.cf_handle(cf).unwrap()
     }
+
+    pub fn get_current_version(&self) -> u64 {
+        self.db
+            .get_cf(self.cf(META_CF), &[])
+            .unwrap()
+            .map(|bytes| {
+                scrypto_decode::<Metadata>(&bytes)
+                    .unwrap()
+                    .current_state_version
+            })
+            .unwrap_or(0)
+    }
+
+    pub fn get_current_root_hash(&self) -> Hash {
+        self.db
+            .get_cf(self.cf(META_CF), &[])
+            .unwrap()
+            .map(|bytes| {
+                scrypto_decode::<Metadata>(&bytes)
+                    .unwrap()
+                    .current_state_root_hash
+            })
+            .unwrap_or(Hash([0u8; Hash::LENGTH]))
+    }
 }
 
 impl SubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
@@ -112,6 +137,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             .map(|bytes| scrypto_decode::<Metadata>(&bytes).unwrap())
             .unwrap_or_else(|| Metadata {
                 current_state_version: 0,
+                current_state_root_hash: Hash([0u8; Hash::LENGTH]),
             });
         let parent_state_version = metadata.current_state_version;
         let next_state_version = parent_state_version + 1;
@@ -166,7 +192,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         }
 
         // derive and put new JMT nodes (also record references to stale parts, for later amortized background GC [not implemented here!])
-        let state_hash_tree_update =
+        let (state_hash_tree_update, new_root_hash) =
             compute_state_tree_update(self, parent_state_version, database_updates);
         for (key, node) in state_hash_tree_update.new_nodes {
             batch.put_cf(
@@ -187,6 +213,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             [],
             scrypto_encode(&Metadata {
                 current_state_version: next_state_version,
+                current_state_root_hash: new_root_hash,
             })
             .unwrap(),
         );
@@ -226,4 +253,5 @@ impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
 #[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
 struct Metadata {
     current_state_version: u64,
+    current_state_root_hash: Hash,
 }

@@ -11,8 +11,7 @@ use radix_engine_interface::prelude::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::NetworkDefinition;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
-use radix_engine_stores::hash_tree_support::HashTreeUpdatingDatabase;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
@@ -40,8 +39,8 @@ impl Run {
             None => NetworkDefinition::mainnet(),
         };
 
-        let in_memory = InMemorySubstateDatabase::standard();
-        let mut database = HashTreeUpdatingDatabase::new(in_memory);
+        let temp_dir = tempfile::tempdir().map_err(Error::IOError)?;
+        let mut database = RocksDBWithMerkleTreeSubstateStore::standard(temp_dir.path().into());
 
         let tar_gz = File::open(&self.transaction_file).map_err(Error::IOError)?;
         let tar = GzDecoder::new(tar_gz);

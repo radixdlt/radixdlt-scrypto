@@ -1549,6 +1549,7 @@ dependencies = [
  "syn 1.0.93",
  "tar",
  "temp-env",
+ "tempfile",
  "transaction",
  "utils",
  "wasm-opt",

@@ -23,10 +23,11 @@ pub struct Prepare {
 
 impl Prepare {
     pub fn run(&self) -> Result<(), Error> {
+        let temp_dir = tempfile::tempdir().map_err(Error::IOError)?;
         let db = DB::open_cf_as_secondary(
             &Options::default(),
             self.database_dir.as_path(),
-            PathBuf::from("/tmp/rocksdb_secondary").as_path(),
+            temp_dir.path(),
             vec!["raw_ledger_transactions"],
         )
         .map_err(Error::DatabaseError)?;
