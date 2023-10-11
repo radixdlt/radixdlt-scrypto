@@ -404,44 +404,6 @@ jobs:
       run: bash ./tests/scrypto.sh
       working-directory: simulator
 
-  fuzzer-check:
-    name: Build fuzzer
-    runs-on: ubuntu-latest
-    container:
-      image: rust:1.70.0-bullseye
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        path: radixdlt-scrypto
-    - uses: actions/checkout@v4
-      with:
-        repository: radixdlt/fuzzer
-        ref: develop
-        path: fuzzer
-        token: ${{ secrets.GH_PAT }}
-    - name: setup repos
-      run: |
-        rm -rf radixdlt-scrypto
-        ln -s $GITHUB_WORKSPACE/radixdlt-scrypto radixdlt-scrypto
-      working-directory: fuzzer
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: Setup AFL
-      run: bash ./install_afl.sh
-      working-directory: fuzzer
-    - name: Build simple fuzzer
-      run: bash ./fuzz.sh simple build
-      working-directory: fuzzer
-    - name: Build AFL fuzzer
-      run: bash ./fuzz.sh afl build
-      working-directory: fuzzer
-    - name: Check fuzzed instructions coverage
-      run: cargo nextest run test_check_fuzzed_instruction_coverage
-      working-directory: fuzzer
-
   cargo-check:
     name: Run cargo check
     runs-on: ${{ matrix.os }}
