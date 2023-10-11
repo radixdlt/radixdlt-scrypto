@@ -66,6 +66,8 @@ impl Prepare {
             version += 1;
         }
 
+        std::fs::remove_dir_all(temp_dir.path()).map_err(Error::IOError)?;
+
         Ok(())
     }
 }

@@ -131,6 +131,8 @@ impl Run {
         println!("Time elapsed: {:?}", duration);
         println!("State root hash: {}", database.get_current_root_hash());
 
+        std::fs::remove_dir_all(temp_dir.path()).map_err(Error::IOError)?;
+
         Ok(())
     }
 }
