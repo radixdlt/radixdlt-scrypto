@@ -180,3 +180,59 @@ fn pass_bucket_to_component_and_check_amount() {
     assert_eq!(balance_2, dec!(2));
 }
 
+
+#[test]
+fn pass_proof_to_component_and_check() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+
+    // create two components
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ComponentTest2",
+                "create_component",
+                manifest_args!(),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+
+    let component_address_1 = result.new_component_addresses().first().cloned().unwrap();
+    let resource_address_1 = result.new_resource_addresses().first().cloned().unwrap();
+
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ComponentTest3",
+                "create_component",
+                manifest_args!(resource_address_1),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+    let component_address_2 = result.new_component_addresses().first().cloned().unwrap();
+
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(component_address_1, "generate_nft", manifest_args!())
+            .take_all_from_worktop(resource_address_1, "bucket_1")
+            .create_proof_from_bucket_of_all("bucket_1", "proof_1")
+            .call_method_with_name_lookup(component_address_2, "check", 
+                |lookup| (lookup.proof("proof_1"),))
+            .return_to_worktop("bucket_1")
+            .burn_all_from_worktop(resource_address_1)
+            .build(),
+        vec![],
+    );
+
+    receipt.expect_commit_success();
+}
+
