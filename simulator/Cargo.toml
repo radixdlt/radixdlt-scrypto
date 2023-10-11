@@ -56,6 +56,14 @@ name = "scrypto-bindgen"
 path = "src/bin/scrypto_bindgen.rs"
 bench = false
 
+[[bin]]
+name = "tx-replay"
+path = "src/bin/tx_replay.rs"
+bench = false
+
 [lib]
 doctest = false
 bench = false
+
+[profile.bench]
+debug = true

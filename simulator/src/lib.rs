@@ -10,5 +10,7 @@ pub mod rtmd;
 pub mod scrypto;
 /// Stubs Generator CLI.
 pub mod scrypto_bindgen;
+/// Transaction replay.
+pub mod tx_replay;
 /// Utility functions.
 pub mod utils;
