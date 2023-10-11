@@ -26,7 +26,7 @@ pub struct Run {
     /// The network to use when outputting manifest, [mainnet | stokenet]
     #[clap(short, long)]
     pub network: Option<String>,
-    /// The transaction file, in `.tar.gz` format
+    /// The transaction file, in `.tar.gz` format, with entries sorted
     pub transaction: String,
     /// The max number of transactions to run
     pub limit: Option<u32>,
@@ -45,6 +45,7 @@ impl Run {
         let tar_gz = File::open(&self.transaction).map_err(Error::IOError)?;
         let tar = GzDecoder::new(tar_gz);
         let mut archive = Archive::new(tar);
+        let mut count = 0;
 
         let start = std::time::Instant::now();
         for entry in archive.entries().map_err(Error::IOError)? {
@@ -120,9 +121,15 @@ impl Run {
             let new_version = database.get_current_version();
             let new_root = database.get_current_root_hash();
             println!("New version: {}, {}", new_version, new_root);
+
+            count += 1;
+            if count >= self.limit.unwrap_or(u32::MAX) {
+                break;
+            }
         }
         let duration = start.elapsed();
-        println!("Time elapsed is: {:?}", duration);
+        println!("Time elapsed: {:?}", duration);
+        println!("State root hash: {}", database.get_current_root_hash());
 
         Ok(())
     }
