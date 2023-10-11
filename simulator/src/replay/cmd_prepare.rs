@@ -10,7 +10,7 @@ use std::fs::File;
 use std::path::PathBuf;
 use tar::Header;
 
-/// Prepare transactions from a fully synced database
+/// Prepare transactions from a fully synced Node database
 #[derive(Parser, Debug)]
 pub struct Prepare {
     /// Path to the `state_manager` database
@@ -24,6 +24,8 @@ pub struct Prepare {
 impl Prepare {
     pub fn run(&self) -> Result<(), Error> {
         let temp_dir = tempfile::tempdir().map_err(Error::IOError)?;
+        println!("Temp directory: {:?}", temp_dir.path());
+
         let db = DB::open_cf_as_secondary(
             &Options::default(),
             self.database_dir.as_path(),

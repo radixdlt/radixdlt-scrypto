@@ -13,7 +13,7 @@ use clap::{Parser, Subcommand};
 /// Transaction replay toolkit
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None, name = "replay")]
-pub struct ScryptoCli {
+pub struct ReplayCli {
     #[clap(subcommand)]
     command: Command,
 }
@@ -25,7 +25,7 @@ pub enum Command {
 }
 
 pub fn run() -> Result<(), Error> {
-    let cli = ScryptoCli::parse();
+    let cli = ReplayCli::parse();
 
     match cli.command {
         Command::Prepare(cmd) => cmd.run(),

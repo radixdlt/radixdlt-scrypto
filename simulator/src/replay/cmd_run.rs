@@ -23,7 +23,7 @@ use transaction::validation::{
 /// Run transactions
 #[derive(Parser, Debug)]
 pub struct Run {
-    /// The network to use when outputting manifest, [mainnet | stokenet]
+    /// The network to use, [mainnet | stokenet]
     #[clap(short, long)]
     pub network: Option<String>,
     /// The transaction file, in `.tar.gz` format, with entries sorted
@@ -40,6 +40,8 @@ impl Run {
         };
 
         let temp_dir = tempfile::tempdir().map_err(Error::IOError)?;
+        println!("Temp directory: {:?}", temp_dir.path());
+
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(temp_dir.path().into());
 
         let tar_gz = File::open(&self.transaction_file).map_err(Error::IOError)?;
