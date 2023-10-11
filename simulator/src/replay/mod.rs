@@ -12,7 +12,7 @@ use clap::{Parser, Subcommand};
 
 /// Transaction replay toolkit
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None, name = "scrypto")]
+#[clap(author, version, about, long_about = None, name = "replay")]
 pub struct ScryptoCli {
     #[clap(subcommand)]
     command: Command,
