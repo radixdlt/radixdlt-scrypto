@@ -1542,6 +1542,7 @@ dependencies = [
  "radix-engine-stores",
  "rand 0.8.5",
  "regex",
+ "rocksdb",
  "sbor",
  "serde",
  "serde_json",

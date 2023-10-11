@@ -4,4 +4,5 @@ use radix_engine_interface::prelude::ParseNetworkError;
 pub enum Error {
     ParseNetworkError(ParseNetworkError),
     IOError(std::io::Error),
+    DatabaseError(rocksdb::Error),
 }

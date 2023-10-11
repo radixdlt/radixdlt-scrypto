@@ -15,6 +15,7 @@ use radix_engine_stores::hash_tree_support::HashTreeUpdatingDatabase;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use std::fs::File;
 use std::io::Read;
+use std::path::PathBuf;
 use tar::Archive;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
@@ -27,7 +28,7 @@ pub struct Run {
     #[clap(short, long)]
     pub network: Option<String>,
     /// The transaction file, in `.tar.gz` format, with entries sorted
-    pub transaction: String,
+    pub transaction_file: PathBuf,
     /// The max number of transactions to run
     pub limit: Option<u32>,
 }
@@ -42,7 +43,7 @@ impl Run {
         let in_memory = InMemorySubstateDatabase::standard();
         let mut database = HashTreeUpdatingDatabase::new(in_memory);
 
-        let tar_gz = File::open(&self.transaction).map_err(Error::IOError)?;
+        let tar_gz = File::open(&self.transaction_file).map_err(Error::IOError)?;
         let tar = GzDecoder::new(tar_gz);
         let mut archive = Archive::new(tar);
         let mut count = 0;
@@ -55,7 +56,7 @@ impl Run {
                 .read_to_end(&mut buffer)
                 .map_err(|e| Error::IOError(e))?;
             if buffer.is_empty() {
-                // folders
+                // skip folder or empty files
                 continue;
             }
 
