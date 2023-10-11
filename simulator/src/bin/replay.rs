@@ -1,9 +1,9 @@
 #[cfg(windows)]
 use colored::*;
-use simulator::tx_replay;
+use simulator::replay;
 
-pub fn main() -> Result<(), tx_replay::Error> {
+pub fn main() -> Result<(), replay::Error> {
     #[cfg(windows)]
     control::set_virtual_terminal(true).unwrap();
-    tx_replay::run()
+    replay::run()
 }

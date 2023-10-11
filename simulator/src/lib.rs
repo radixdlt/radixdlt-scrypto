@@ -1,5 +1,7 @@
 /// Provides a file-based ledger.
 pub mod ledger;
+/// Transaction replay.
+pub mod replay;
 /// Radix Engine Simulator CLI.
 pub mod resim;
 /// Radix transaction manifest compiler CLI.
@@ -10,7 +12,5 @@ pub mod rtmd;
 pub mod scrypto;
 /// Stubs Generator CLI.
 pub mod scrypto_bindgen;
-/// Transaction replay.
-pub mod tx_replay;
 /// Utility functions.
 pub mod utils;

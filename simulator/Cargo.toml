@@ -14,6 +14,8 @@ radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] 
 radix-engine-queries = { path = "../radix-engine-queries" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 transaction = { path = "../transaction" }
+flate2 = { version = "1.0.27" }
+tar = { version = "0.4.40" }
 utils = { path = "../utils" }
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = { version = "1.0.81" }
@@ -57,8 +59,8 @@ path = "src/bin/scrypto_bindgen.rs"
 bench = false
 
 [[bin]]
-name = "tx-replay"
-path = "src/bin/tx_replay.rs"
+name = "replay"
+path = "src/bin/replay.rs"
 bench = false
 
 [lib]
