@@ -7,3 +7,5 @@ fuzz_input
 fuzz-*.log
 #coverage
 *.raw
+corpus_*.lst
+corpus_*/

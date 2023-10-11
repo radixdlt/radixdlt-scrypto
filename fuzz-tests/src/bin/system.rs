@@ -1,5 +1,3 @@
-#![cfg_attr(feature = "libfuzzer-sys", no_main)]
-
 use arbitrary::Arbitrary;
 use fuzz_tests::fuzz_template;
 use native_sdk::modules::metadata::Metadata;
@@ -13,7 +11,6 @@ use serde::{Deserialize, Serialize};
 
 use radix_engine::prelude::ManifestArgs;
 use radix_engine::types::ScryptoSbor;
-use radix_engine_common::constants::XRD;
 use radix_engine_common::prelude::{
     scrypto_encode, GlobalAddress, NodeId, Own, ScryptoCustomTypeKind,
 };
@@ -106,8 +103,8 @@ enum SystemAction {
     FieldLock(usize),
     FieldClose(usize),
     KeyValueStoreNew,
-    KeyValueStoreOpenEntry(usize, Vec<u8>, u32),
-    KeyValueStoreRemoveEntry(usize, Vec<u8>),
+    KeyValueStoreOpenEntry(usize, u32),
+    KeyValueStoreRemoveEntry(usize),
     KeyValueEntryGet(usize),
     KeyValueEntrySet(usize, Vec<(NodeValue, usize)>),
     KeyValueEntryRemove(usize),
@@ -118,6 +115,13 @@ enum SystemAction {
     SysGetTransactionHash,
     SysGenerateRuid,
     SysPanic(String),
+    CostingGetExecutionCostUnitLimit,
+    CostingGetExecutionCostUnitPrice,
+    CostingGetFinalizationCostUnitLimit,
+    CostingGetFinalizationCostUnitPrice,
+    CostingGetUsdPrice,
+    CostingGetTipPercentage,
+    CostingGetFeeBalance,
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -220,19 +224,22 @@ impl SystemAction {
                 })?;
                 state.nodes.insert(kv_store);
             }
-            SystemAction::KeyValueStoreOpenEntry(index, key, flags) => unsafe {
+            SystemAction::KeyValueStoreOpenEntry(index, /*key, */flags) => unsafe {
                 if let Some(node_id) = state.get_node(*index) {
                     let handle = api.key_value_store_open_entry(
                         &node_id,
-                        key,
+                        &scrypto_encode(&()).unwrap(),
                         LockFlags::from_bits_unchecked(*flags),
                     )?;
                     state.handles.insert(handle);
                 }
             },
-            SystemAction::KeyValueStoreRemoveEntry(index, key) => {
+            SystemAction::KeyValueStoreRemoveEntry(index/*, key*/) => {
                 if let Some(node_id) = state.get_node(*index) {
-                    let value = api.key_value_store_remove_entry(&node_id, key)?;
+                    let value = api.key_value_store_remove_entry(
+                        &node_id,
+                        &scrypto_encode(&()).unwrap(),
+                    )?;
                     state.process_value(&value);
                 }
             }
@@ -277,6 +284,27 @@ impl SystemAction {
             }
             SystemAction::SysGenerateRuid => {
                 api.generate_ruid()?;
+            }
+            SystemAction::CostingGetExecutionCostUnitLimit => {
+                api.execution_cost_unit_limit()?;
+            }
+            SystemAction::CostingGetExecutionCostUnitPrice => {
+                api.execution_cost_unit_price()?;
+            }
+            SystemAction::CostingGetFinalizationCostUnitLimit => {
+                api.finalization_cost_unit_limit()?;
+            }
+            SystemAction::CostingGetFinalizationCostUnitPrice => {
+                api.finalization_cost_unit_price()?;
+            }
+            SystemAction::CostingGetUsdPrice => {
+                api.usd_price()?;
+            }
+            SystemAction::CostingGetTipPercentage => {
+                api.tip_percentage()?;
+            }
+            SystemAction::CostingGetFeeBalance => {
+                api.fee_balance()?;
             }
         }
 
@@ -347,6 +375,7 @@ impl VmInvoke for FuzzSystem {
 #[test]
 fn test_system_generate_fuzz_input_data() {
     use bincode::serialize;
+    use radix_engine_common::constants::XRD;
     use std::fs;
 
     {
@@ -375,8 +404,8 @@ fn test_system_generate_fuzz_input_data() {
             inject_err_after_count: 8u64,
             actions: vec![
                 SystemAction::KeyValueStoreNew,
-                SystemAction::KeyValueStoreRemoveEntry(0, scrypto_encode(&()).unwrap()),
-                SystemAction::KeyValueStoreOpenEntry(0usize, scrypto_encode(&()).unwrap(), 0u32),
+                SystemAction::KeyValueStoreRemoveEntry(0),
+                SystemAction::KeyValueStoreOpenEntry(0usize, 0u32),
                 SystemAction::KeyValueEntryLock(0),
                 SystemAction::KeyValueEntryClose(0),
                 SystemAction::KeyValueEntryGet(0),
@@ -402,6 +431,25 @@ fn test_system_generate_fuzz_input_data() {
                 SystemAction::SysLog(Level::Error, "error".to_string()),
                 SystemAction::SysBech32EncodeAddress(XRD.into()),
                 SystemAction::SysGenerateRuid,
+            ],
+        };
+
+        let serialized = serialize(&actions).unwrap();
+        fs::write(format!("system_{:03?}.raw", idx), serialized).expect("Unable to write file");
+    }
+
+    {
+        let idx = 3;
+        let actions = SystemActions {
+            inject_err_after_count: 64u64,
+            actions: vec![
+                SystemAction::CostingGetExecutionCostUnitLimit,
+                SystemAction::CostingGetExecutionCostUnitPrice,
+                SystemAction::CostingGetFinalizationCostUnitLimit,
+                SystemAction::CostingGetFinalizationCostUnitPrice,
+                SystemAction::CostingGetUsdPrice,
+                SystemAction::CostingGetTipPercentage,
+                SystemAction::CostingGetFeeBalance,
             ],
         };
 

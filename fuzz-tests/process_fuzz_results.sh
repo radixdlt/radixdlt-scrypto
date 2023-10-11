@@ -4,17 +4,14 @@
 set -e
 set -u
 
-#TARGET=transaction
-TARGET=wasm_instrument
 CRASH_INVENTORY_FILE=crash_inventory.txt
 CRASH_SUMMARY=crash_summary.txt
-ARTIFACT_NAME=fuzz_${TARGET}.tgz
+ARTIFACT_NAME=fuzz_results.tgz
 INSPECT_TIMEOUT=20000
 url_or_dir=$1
 inspect_timeout=${2:-$INSPECT_TIMEOUT}
 gh_run_id=
-local_dir=
-
+target=
 
 function usage() {
     echo "$0 <run-id>"
@@ -52,6 +49,9 @@ function validate_gh_run() {
         echo "run $gh_run_id is a '$name' not 'Fuzzing' run. Details: $url"
         exit 1
     fi
+
+    # this variable is expected outside this function
+    target=$(echo $title | grep 'target=' | sed -E 's/^.*target=([A-Za-z0-9_-]+) .*/\1/g')
 
     echo "Found run:"
     echo "  title : $title"
@@ -107,7 +107,7 @@ function inspect_crashes() {
         fi
         pushd $repo_dir > /dev/null
         echo "Building simple fuzzer"
-        ./fuzz.sh simple build $TARGET
+        ./fuzz.sh simple build --release $target
         popd > /dev/null
         echo "Checking crash/hangs files"
         for f in $files ; do
@@ -119,8 +119,8 @@ function inspect_crashes() {
             fi
 
             # calling target directly to get rid of unnecessary debugs
-            #./fuzz.sh simple run $TARGET ../../$f >/dev/null || true
-            cmd="${repo_dir}/target/release/${TARGET} $f"
+            #./fuzz.sh simple run $target ../../$f >/dev/null || true
+            cmd="${repo_dir}/target/release/${target} $f"
             echo
             echo "file    : $f"
             echo "command : $cmd"
@@ -136,7 +136,7 @@ function inspect_crashes() {
 
         cat <<EOF >> $CRASH_INVENTORY_FILE
 Crash/hang info
-command : radixdlt-scrypto/fuzz-tests/target/release/${TARGET} <file>
+command : radixdlt-scrypto/fuzz-tests/target/release/${target} <file>
 EOF
         for f in *.panic ; do
             echo
@@ -179,8 +179,6 @@ fi
 # check if argument is an existing AFL output directory
 if [ -d $url_or_dir ] ; then
     if ls -A ${url_or_dir}/*/fuzzer_stats > /dev/null ; then
-        local_dir=$url_or_dir
-        afl_dir=$local_dir
         work_dir=local_$(date -u  +%Y%m%d%H%M%S)
     else
         echo "This is not AFL output directory"
@@ -189,15 +187,18 @@ if [ -d $url_or_dir ] ; then
 else
     gh_run_id=${url_or_dir##*/}
     work_dir=run_${gh_run_id}
-    afl_dir="afl/${TARGET}"
 fi
 
 
 if [ "$gh_run_id" != "" ] ; then
     validate_gh_run
+    # we know target after validate_gh_run
+    afl_dir="afl/${target}"
     get_gh_artifacs
     show_gh_summary $work_dir
 else
+    target=${url_or_dir##*/}
+    afl_dir=$url_or_dir
     mkdir -p $work_dir
     afl_path=$(cd $(dirname $afl_dir) ; pwd)
     ln -s $afl_path $work_dir

@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "libfuzzer-sys", no_main)]
 use fuzz_tests::fuzz_template;
 use radix_engine::vm::wasm::{PrepareError, WasmModule, WasmValidatorConfigV1};
 

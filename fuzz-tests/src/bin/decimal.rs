@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "libfuzzer-sys", no_main)]
 use arbitrary::Arbitrary;
 use fuzz_tests::fuzz_template;
 use radix_engine_common::math::*;

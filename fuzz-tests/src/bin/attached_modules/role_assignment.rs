@@ -13,8 +13,6 @@
 //! ensure that if they've resulted in an error, it's not a native vm trap.
 //! 7. No roles may be set after the creation of the module.
 
-#![cfg_attr(feature = "libfuzzer-sys", no_main)]
-
 use arbitrary::Arbitrary;
 
 use fuzz_tests::continue_if_manifest_is_unpreparable;
