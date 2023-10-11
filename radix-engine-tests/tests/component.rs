@@ -113,3 +113,70 @@ fn blueprint_name_can_be_obtained_from_a_method() {
     // Assert
     assert_eq!(blueprint_name, "ComponentTest")
 }
+
+#[test]
+fn pass_bucket_to_component_and_check_amount() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (_, _, account) = test_runner.new_account(false);
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+
+    // create two components
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ComponentTest",
+                "create_component",
+                manifest_args!(),
+            )
+            .call_function(
+                package_address,
+                "ComponentTest",
+                "create_component",
+                manifest_args!(),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+
+    let component_address_1 = result.new_component_addresses()[0];
+    let component_address_2 = result.new_component_addresses()[1];
+    let resource_address_1 = result.new_resource_addresses()[0];
+    let resource_address_2 = result.new_resource_addresses()[1];
+
+    // take bucket with resources from component 1 and pass that bucket to component 2
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(component_address_1, "put_component_state", manifest_args!())
+            .take_all_from_worktop(resource_address_1, "bucket_name")
+            .call_method_with_name_lookup(
+                component_address_2,
+                "take_resource_amount_of_bucket",
+                |lookup| (lookup.bucket("bucket_name"),),
+            )
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![],
+    );
+
+    // verify if manifest executed with success and deposited account balances
+    receipt.expect_commit_success();
+
+    let balance_1 = test_runner
+        .get_component_resources(account)
+        .get(&resource_address_1)
+        .cloned()
+        .unwrap();
+    let balance_2 = test_runner
+        .get_component_resources(account)
+        .get(&resource_address_2)
+        .cloned()
+        .unwrap();
+
+    assert_eq!(balance_1, dec!(1));
+    assert_eq!(balance_2, dec!(2));
+}
+

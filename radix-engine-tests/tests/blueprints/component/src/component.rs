@@ -44,6 +44,11 @@ mod component_test {
             bucket
         }
 
+        pub fn take_resource_amount_of_bucket(&mut self, bucket: Bucket) -> (Bucket, Bucket) {
+            let bucket_ret = self.test_vault.take(1 + bucket.amount());
+            (bucket_ret, bucket)
+        }
+
         pub fn blueprint_name_function() -> String {
             Runtime::blueprint_name()
         }
