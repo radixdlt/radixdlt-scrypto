@@ -73,26 +73,25 @@ mod component_test2 {
 
     impl ComponentTest2 {
         pub fn create_component() -> Global<ComponentTest2> {
-            let resource_manager =
-                ResourceBuilder::new_integer_non_fungible::<ComponentTest2NonFungible>(OwnerRole::None)
-                    .mint_roles(mint_roles! {
-                        minter => rule!(allow_all);
-                        minter_updater => rule!(deny_all);
-                    })
-                    .burn_roles(burn_roles! {
-                        burner => rule!(allow_all);
-                        burner_updater => rule!(deny_all);
-                    })
-                    .create_with_no_initial_supply();
+            let resource_manager = ResourceBuilder::new_integer_non_fungible::<
+                ComponentTest2NonFungible,
+            >(OwnerRole::None)
+            .mint_roles(mint_roles! {
+                minter => rule!(allow_all);
+                minter_updater => rule!(deny_all);
+            })
+            .burn_roles(burn_roles! {
+                burner => rule!(allow_all);
+                burner_updater => rule!(deny_all);
+            })
+            .create_with_no_initial_supply();
 
             let vault = resource_manager.create_empty_vault();
 
-            Self {
-                vault
-            }
-            .instantiate()
-            .prepare_to_globalize(OwnerRole::None)
-            .globalize()
+            Self { vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn generate_nft(&mut self) -> Bucket {
@@ -113,19 +112,19 @@ mod component_test2 {
     }
 }
 
-
 #[blueprint]
 mod component_test3 {
 
     struct ComponentTest3 {
-        resource_id: ResourceAddress
+        resource_id: ResourceAddress,
     }
 
     impl ComponentTest3 {
         pub fn create_component(resource_id: ResourceAddress) -> Global<ComponentTest3> {
-            Self { resource_id } .instantiate()
-            .prepare_to_globalize(OwnerRole::None)
-            .globalize()
+            Self { resource_id }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
         }
 
         pub fn check(&self, proof: Proof) {
