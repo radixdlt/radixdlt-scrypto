@@ -15,10 +15,12 @@ use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstat
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
+use std::thread;
 use tar::Archive;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
+use flume;
 
 /// Run transactions
 #[derive(Parser, Debug)]
@@ -43,109 +45,135 @@ impl TxnSync {
             None => NetworkDefinition::mainnet(),
         };
 
+        let cur_version = {
+            let database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
+            let cur_version = database.get_current_version();
+            // check limit
+            if cur_version >= self.max_version.unwrap_or(u64::MAX) {
+                return Ok(());
+            }
+            cur_version
+        };
+
+        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+        let start = std::time::Instant::now();
+
+        let (tx, rx) = flume::bounded(10);
+
         let tar_gz = File::open(&self.transaction_file).map_err(Error::IOError)?;
         let tar = GzDecoder::new(tar_gz);
         let mut archive = Archive::new(tar);
 
+        let txn_read_thread_handle = thread::spawn(move || {
+            for entry in archive.entries().map_err(Error::IOError)? {
+                // read the entry
+                let mut entry = entry.map_err(|e| Error::IOError(e))?;
+                let tx_version = entry
+                    .header()
+                    .path()
+                    .ok()
+                    .and_then(|path| path.to_str().map(ToOwned::to_owned))
+                    .and_then(|s| u64::from_str(&s).ok())
+                    .ok_or(Error::InvalidTransactionFile)?;
+                let mut tx_payload = Vec::new();
+                entry
+                    .read_to_end(&mut tx_payload)
+                    .map_err(|e| Error::IOError(e))?;
+                if tx_version <= cur_version {
+                    continue;
+                }
+
+                tx.send(tx_payload).unwrap();
+
+            }
+
+            Ok(())
+        });
+
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
-        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-        let start = std::time::Instant::now();
-        for entry in archive.entries().map_err(Error::IOError)? {
-            // check limit
-            let version = database.get_current_version();
-            if version >= self.max_version.unwrap_or(u64::MAX) {
-                break;
-            }
-
-            // read the entry
-            let mut entry = entry.map_err(|e| Error::IOError(e))?;
-            let tx_version = entry
-                .header()
-                .path()
-                .ok()
-                .and_then(|path| path.to_str().map(ToOwned::to_owned))
-                .and_then(|s| u64::from_str(&s).ok())
-                .ok_or(Error::InvalidTransactionFile)?;
-            let mut tx_payload = Vec::new();
-            entry
-                .read_to_end(&mut tx_payload)
-                .map_err(|e| Error::IOError(e))?;
-            if tx_version <= version {
-                continue;
-            }
-
-            // execute transaction
-            let transaction = LedgerTransaction::from_payload_bytes(&tx_payload)
-                .expect("Failed to decode transaction");
-            let prepared = transaction
-                .prepare()
-                .expect("Failed to prepare transaction");
-            let state_updates = match &prepared.inner {
-                PreparedLedgerTransactionInner::Genesis(prepared_genesis_tx) => {
-                    match prepared_genesis_tx.as_ref() {
-                        PreparedGenesisTransaction::Flash(_) => {
-                            let receipt = create_substate_flash_for_genesis();
-                            receipt.state_updates
-                        }
-                        PreparedGenesisTransaction::Transaction(tx) => {
-                            let receipt = execute_transaction(
-                                &database,
-                                Vm {
-                                    scrypto_vm: &scrypto_vm,
-                                    native_vm: DefaultNativeVm::new(),
-                                },
-                                &CostingParameters::default(),
-                                &ExecutionConfig::for_genesis_transaction(network.clone()),
-                                &tx.get_executable(btreeset!(AuthAddresses::system_role())),
-                            );
-                            receipt.expect_commit_ignore_outcome().state_updates.clone()
+        let txn_write_thread_handle = thread::spawn(move || {
+            let iter = rx.iter();
+            for tx_payload in iter {
+                // execute transaction
+                let transaction = LedgerTransaction::from_payload_bytes(&tx_payload)
+                    .expect("Failed to decode transaction");
+                let prepared = transaction
+                    .prepare()
+                    .expect("Failed to prepare transaction");
+                let state_updates = match &prepared.inner {
+                    PreparedLedgerTransactionInner::Genesis(prepared_genesis_tx) => {
+                        match prepared_genesis_tx.as_ref() {
+                            PreparedGenesisTransaction::Flash(_) => {
+                                let receipt = create_substate_flash_for_genesis();
+                                receipt.state_updates
+                            }
+                            PreparedGenesisTransaction::Transaction(tx) => {
+                                let receipt = execute_transaction(
+                                    &database,
+                                    Vm {
+                                        scrypto_vm: &scrypto_vm,
+                                        native_vm: DefaultNativeVm::new(),
+                                    },
+                                    &CostingParameters::default(),
+                                    &ExecutionConfig::for_genesis_transaction(network.clone()),
+                                    &tx.get_executable(btreeset!(AuthAddresses::system_role())),
+                                );
+                                receipt.expect_commit_ignore_outcome().state_updates.clone()
+                            }
                         }
                     }
-                }
-                PreparedLedgerTransactionInner::UserV1(tx) => {
-                    let receipt = execute_transaction(
-                        &database,
-                        Vm {
-                            scrypto_vm: &scrypto_vm,
-                            native_vm: DefaultNativeVm::new(),
-                        },
-                        &CostingParameters::default(),
-                        &ExecutionConfig::for_notarized_transaction(network.clone()),
-                        &NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
-                            .validate(tx.as_ref().clone())
-                            .expect("Transaction validation failure")
-                            .get_executable(),
-                    );
-                    receipt.expect_commit_ignore_outcome().state_updates.clone()
-                }
-                PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
-                    let receipt = execute_transaction(
-                        &database,
-                        Vm {
-                            scrypto_vm: &scrypto_vm,
-                            native_vm: DefaultNativeVm::new(),
-                        },
-                        &CostingParameters::default(),
-                        &ExecutionConfig::for_system_transaction(network.clone()),
-                        &tx.get_executable(),
-                    );
-                    receipt.expect_commit_ignore_outcome().state_updates.clone()
-                }
-            };
-            let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            database.commit(&database_updates);
+                    PreparedLedgerTransactionInner::UserV1(tx) => {
+                        let receipt = execute_transaction(
+                            &database,
+                            Vm {
+                                scrypto_vm: &scrypto_vm,
+                                native_vm: DefaultNativeVm::new(),
+                            },
+                            &CostingParameters::default(),
+                            &ExecutionConfig::for_notarized_transaction(network.clone()),
+                            &NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+                                .validate(tx.as_ref().clone())
+                                .expect("Transaction validation failure")
+                                .get_executable(),
+                        );
+                        receipt.expect_commit_ignore_outcome().state_updates.clone()
+                    }
+                    PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
+                        let receipt = execute_transaction(
+                            &database,
+                            Vm {
+                                scrypto_vm: &scrypto_vm,
+                                native_vm: DefaultNativeVm::new(),
+                            },
+                            &CostingParameters::default(),
+                            &ExecutionConfig::for_system_transaction(network.clone()),
+                            &tx.get_executable(),
+                        );
+                        receipt.expect_commit_ignore_outcome().state_updates.clone()
+                    }
+                };
+                let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                database.commit(&database_updates);
 
-            // print progress
-            let new_version = database.get_current_version();
-            if new_version < 1000 || new_version % 1000 == 0 {
-                let new_root = database.get_current_root_hash();
-                println!("New version: {}, {}", new_version, new_root);
+                // print progress
+                let new_version = database.get_current_version();
+                if new_version < 1000 || new_version % 1000 == 0 {
+                    let new_root = database.get_current_root_hash();
+                    println!("New version: {}, {}", new_version, new_root);
+                }
             }
+        });
+
+        txn_read_thread_handle.join().unwrap()?;
+        txn_write_thread_handle.join().unwrap();
+
+        {
+            let duration = start.elapsed();
+            let database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
+            println!("Time elapsed: {:?}", duration);
+            println!("State version: {}", database.get_current_version());
+            println!("State root hash: {}", database.get_current_root_hash());
         }
-        let duration = start.elapsed();
-        println!("Time elapsed: {:?}", duration);
-        println!("State version: {}", database.get_current_version());
-        println!("State root hash: {}", database.get_current_root_hash());
 
         Ok(())
     }
