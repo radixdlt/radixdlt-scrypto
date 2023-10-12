@@ -1,5 +1,6 @@
 use crate::replay::decompress_entry;
 use crate::replay::execute_ledger_transaction;
+use crate::replay::print_progress;
 use crate::replay::Error;
 use clap::Parser;
 use flate2::read::GzDecoder;
@@ -69,7 +70,8 @@ impl RunInMemory {
             let new_version = database.get_current_version();
             if new_version < 1000 || new_version % 1000 == 0 {
                 let new_root = database.get_current_root_hash();
-                println!("New version: {}, {}", new_version, new_root);
+                let duration = start.elapsed();
+                print_progress(duration, new_version, new_root);
             }
         }
         let duration = start.elapsed();

@@ -17,6 +17,7 @@ use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstat
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
+use std::time::Duration;
 use tar::Archive;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
@@ -77,7 +78,8 @@ impl Run {
             let new_version = database.get_current_version();
             if new_version < 1000 || new_version % 1000 == 0 {
                 let new_root = database.get_current_root_hash();
-                println!("New version: {}, {}", new_version, new_root);
+                let duration = start.elapsed();
+                print_progress(duration, new_version, new_root);
             }
         }
         let duration = start.elapsed();
@@ -87,6 +89,16 @@ impl Run {
 
         Ok(())
     }
+}
+
+pub fn print_progress(duration: Duration, new_version: u64, new_root: Hash) {
+    let seconds = duration.as_secs() % 60;
+    let minutes = (duration.as_secs() / 60) % 60;
+    let hours = (duration.as_secs() / 60) / 60;
+    println!(
+        "New version: {}, {}, {:0>2}:{:0>2}:{:0>2}",
+        new_version, new_root, hours, minutes, seconds
+    );
 }
 
 pub fn decompress_entry(mut entry: tar::Entry<GzDecoder<File>>) -> Option<(u64, Vec<u8>)> {

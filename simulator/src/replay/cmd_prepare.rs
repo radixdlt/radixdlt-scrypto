@@ -65,7 +65,7 @@ impl Prepare {
             header.set_cksum();
             tar.append(&header, payload.as_slice()).unwrap();
 
-            // bump version and print progress
+            // print progress
             if version < 1000 || version % 1000 == 0 {
                 println!("New version: {}", version);
             }
