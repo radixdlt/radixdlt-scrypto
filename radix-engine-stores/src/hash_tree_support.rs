@@ -12,15 +12,17 @@ pub struct HashTreeUpdatingDatabase<D> {
     tree_store: TypedInMemoryTreeStore,
     current_version: Version,
     current_hash: Hash,
+    jmt_enabled: bool,
 }
 
 impl<D> HashTreeUpdatingDatabase<D> {
-    pub fn new(underlying: D) -> Self {
+    pub fn new(underlying: D, jmt_enabled: bool) -> Self {
         HashTreeUpdatingDatabase {
             underlying,
             tree_store: TypedInMemoryTreeStore::with_pruning(),
             current_version: 0,
             current_hash: Hash([0; Hash::LENGTH]),
+            jmt_enabled,
         }
     }
 
@@ -37,11 +39,13 @@ impl<D> HashTreeUpdatingDatabase<D> {
     }
 
     fn update_with(&mut self, db_updates: &DatabaseUpdates) {
-        self.current_hash = put_at_next_version(
-            &mut self.tree_store,
-            Some(self.current_version).filter(|version| *version > 0),
-            db_updates,
-        );
+        if self.jmt_enabled {
+            self.current_hash = put_at_next_version(
+                &mut self.tree_store,
+                Some(self.current_version).filter(|version| *version > 0),
+                db_updates,
+            );
+        }
         self.current_version += 1;
     }
 }

@@ -28,6 +28,8 @@ pub struct RunInMemory {
     /// The max version to execute
     #[clap(short, long)]
     pub max_version: Option<u64>,
+    #[clap(long)]
+    pub enable_jmt: bool,
 }
 
 impl RunInMemory {
@@ -42,7 +44,7 @@ impl RunInMemory {
         let mut archive = Archive::new(tar);
 
         let in_memory = InMemorySubstateDatabase::standard();
-        let mut database = HashTreeUpdatingDatabase::new(in_memory);
+        let mut database = HashTreeUpdatingDatabase::new(in_memory, self.enable_jmt);
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
         let start = std::time::Instant::now();
         for entry in archive.entries().map_err(Error::IOError)? {
