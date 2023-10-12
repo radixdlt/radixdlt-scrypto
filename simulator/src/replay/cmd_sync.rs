@@ -22,7 +22,7 @@ use transaction::validation::{
 
 /// Run transactions
 #[derive(Parser, Debug)]
-pub struct Run {
+pub struct TxnSync {
     /// The transaction file, in `.tar.gz` format, with entries sorted
     pub transaction_file: PathBuf,
     /// Path to a folder for storing state
@@ -36,8 +36,8 @@ pub struct Run {
     pub max_version: Option<u64>,
 }
 
-impl Run {
-    pub fn run(&self) -> Result<(), Error> {
+impl TxnSync {
+    pub fn sync(&self) -> Result<(), Error> {
         let network = match &self.network {
             Some(n) => NetworkDefinition::from_str(n).map_err(Error::ParseNetworkError)?,
             None => NetworkDefinition::mainnet(),
