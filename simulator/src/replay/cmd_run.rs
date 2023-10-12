@@ -124,9 +124,11 @@ impl Run {
             database.commit(&database_updates);
             let new_version = database.get_current_version();
             let new_root = database.get_current_root_hash();
-            println!("New version: {}, {}", new_version, new_root);
 
             count += 1;
+            if count % 100 == 0 {
+                println!("New version: {}, {}", new_version, new_root);
+            }
             if count >= self.limit.unwrap_or(u32::MAX) {
                 break;
             }
