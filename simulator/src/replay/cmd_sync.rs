@@ -21,6 +21,8 @@ use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
 use flume;
+use flume::Sender;
+
 
 /// Run transactions
 #[derive(Parser, Debug)]
@@ -55,43 +57,25 @@ impl TxnSync {
             cur_version
         };
 
-        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
         let start = std::time::Instant::now();
 
         let (tx, rx) = flume::bounded(10);
 
-        let tar_gz = File::open(&self.transaction_file).map_err(Error::IOError)?;
-        let tar = GzDecoder::new(tar_gz);
-        let mut archive = Archive::new(tar);
+        let mut txn_reader = if self.transaction_file.is_file() {
+            let tar_gz = File::open(&self.transaction_file).map_err(Error::IOError)?;
+            let tar = GzDecoder::new(tar_gz);
+            let archive = Archive::new(tar);
+            TxnReader::TransactionFile(archive)
+        } else {
+            panic!()
+        };
 
-        let txn_read_thread_handle = thread::spawn(move || {
-            for entry in archive.entries().map_err(Error::IOError)? {
-                // read the entry
-                let mut entry = entry.map_err(|e| Error::IOError(e))?;
-                let tx_version = entry
-                    .header()
-                    .path()
-                    .ok()
-                    .and_then(|path| path.to_str().map(ToOwned::to_owned))
-                    .and_then(|s| u64::from_str(&s).ok())
-                    .ok_or(Error::InvalidTransactionFile)?;
-                let mut tx_payload = Vec::new();
-                entry
-                    .read_to_end(&mut tx_payload)
-                    .map_err(|e| Error::IOError(e))?;
-                if tx_version <= cur_version {
-                    continue;
-                }
-
-                tx.send(tx_payload).unwrap();
-
-            }
-
-            Ok(())
-        });
+        let to_version = self.max_version.clone();
+        let txn_read_thread_handle = thread::spawn(move || txn_reader.read(cur_version, to_version, tx));
 
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
         let txn_write_thread_handle = thread::spawn(move || {
+            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
             for tx_payload in iter {
                 // execute transaction
@@ -173,6 +157,47 @@ impl TxnSync {
             println!("Time elapsed: {:?}", duration);
             println!("State version: {}", database.get_current_version());
             println!("State root hash: {}", database.get_current_root_hash());
+        }
+
+        Ok(())
+    }
+}
+
+enum TxnReader {
+    TransactionFile(Archive<GzDecoder<File>>)
+}
+
+impl TxnReader {
+    fn read(&mut self, from_version: u64, to_version: Option<u64>, tx: Sender<Vec<u8>>) -> Result<(), Error> {
+        match self {
+            TxnReader::TransactionFile(archive) => {
+                for entry in archive.entries().map_err(Error::IOError)? {
+                    // read the entry
+                    let mut entry = entry.map_err(|e| Error::IOError(e))?;
+                    let tx_version = entry
+                        .header()
+                        .path()
+                        .ok()
+                        .and_then(|path| path.to_str().map(ToOwned::to_owned))
+                        .and_then(|s| u64::from_str(&s).ok())
+                        .ok_or(Error::InvalidTransactionFile)?;
+                    let mut tx_payload = Vec::new();
+                    entry
+                        .read_to_end(&mut tx_payload)
+                        .map_err(|e| Error::IOError(e))?;
+
+                    if tx_version <= from_version {
+                        continue;
+                    }
+                    if let Some(to_version) = to_version {
+                        if tx_version > to_version {
+                            break;
+                        }
+                    }
+
+                    tx.send(tx_payload).unwrap();
+                }
+            }
         }
 
         Ok(())
