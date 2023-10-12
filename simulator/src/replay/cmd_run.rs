@@ -3,6 +3,7 @@ use crate::replay::Error;
 use clap::Parser;
 use flate2::read::GzDecoder;
 use radix_engine::system::bootstrap::*;
+use radix_engine::track::StateUpdates;
 use radix_engine::transaction::{execute_transaction, CostingParameters, ExecutionConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
@@ -11,6 +12,7 @@ use radix_engine_interface::prelude::node_modules::auth::AuthAddresses;
 use radix_engine_interface::prelude::NetworkDefinition;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
+use radix_engine_store_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use std::fs::File;
 use std::io::Read;
@@ -58,80 +60,16 @@ impl Run {
             }
 
             // read the entry
-            let mut entry = entry.map_err(|e| Error::IOError(e))?;
-            let tx_version = entry
-                .header()
-                .path()
-                .ok()
-                .and_then(|path| path.to_str().map(ToOwned::to_owned))
-                .and_then(|s| u64::from_str(&s).ok())
-                .ok_or(Error::InvalidTransactionFile)?;
-            let mut tx_payload = Vec::new();
-            entry
-                .read_to_end(&mut tx_payload)
-                .map_err(|e| Error::IOError(e))?;
+            let entry = entry.map_err(|e| Error::IOError(e))?;
+            let (tx_version, tx_payload) =
+                decompress_entry(entry).ok_or(Error::InvalidTransactionFile)?;
             if tx_version <= version {
                 continue;
             }
 
             // execute transaction
-            let transaction = LedgerTransaction::from_payload_bytes(&tx_payload)
-                .expect("Failed to decode transaction");
-            let prepared = transaction
-                .prepare()
-                .expect("Failed to prepare transaction");
-            let state_updates = match &prepared.inner {
-                PreparedLedgerTransactionInner::Genesis(prepared_genesis_tx) => {
-                    match prepared_genesis_tx.as_ref() {
-                        PreparedGenesisTransaction::Flash(_) => {
-                            let receipt = create_substate_flash_for_genesis();
-                            receipt.state_updates
-                        }
-                        PreparedGenesisTransaction::Transaction(tx) => {
-                            let receipt = execute_transaction(
-                                &database,
-                                Vm {
-                                    scrypto_vm: &scrypto_vm,
-                                    native_vm: DefaultNativeVm::new(),
-                                },
-                                &CostingParameters::default(),
-                                &ExecutionConfig::for_genesis_transaction(network.clone()),
-                                &tx.get_executable(btreeset!(AuthAddresses::system_role())),
-                            );
-                            receipt.expect_commit_ignore_outcome().state_updates.clone()
-                        }
-                    }
-                }
-                PreparedLedgerTransactionInner::UserV1(tx) => {
-                    let receipt = execute_transaction(
-                        &database,
-                        Vm {
-                            scrypto_vm: &scrypto_vm,
-                            native_vm: DefaultNativeVm::new(),
-                        },
-                        &CostingParameters::default(),
-                        &ExecutionConfig::for_notarized_transaction(network.clone()),
-                        &NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
-                            .validate(tx.as_ref().clone())
-                            .expect("Transaction validation failure")
-                            .get_executable(),
-                    );
-                    receipt.expect_commit_ignore_outcome().state_updates.clone()
-                }
-                PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
-                    let receipt = execute_transaction(
-                        &database,
-                        Vm {
-                            scrypto_vm: &scrypto_vm,
-                            native_vm: DefaultNativeVm::new(),
-                        },
-                        &CostingParameters::default(),
-                        &ExecutionConfig::for_system_transaction(network.clone()),
-                        &tx.get_executable(),
-                    );
-                    receipt.expect_commit_ignore_outcome().state_updates.clone()
-                }
-            };
+            let state_updates =
+                execute_ledger_transaction(&database, &scrypto_vm, network.clone(), &tx_payload);
             let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             database.commit(&database_updates);
 
@@ -148,5 +86,82 @@ impl Run {
         println!("State root hash: {}", database.get_current_root_hash());
 
         Ok(())
+    }
+}
+
+pub fn decompress_entry(mut entry: tar::Entry<GzDecoder<File>>) -> Option<(u64, Vec<u8>)> {
+    let tx_version = entry
+        .header()
+        .path()
+        .ok()
+        .and_then(|path| path.to_str().map(ToOwned::to_owned))
+        .and_then(|s| u64::from_str(&s).ok())?;
+    let mut tx_payload = Vec::new();
+    entry.read_to_end(&mut tx_payload).ok()?;
+    Some((tx_version, tx_payload))
+}
+
+pub fn execute_ledger_transaction<S: SubstateDatabase>(
+    database: &S,
+    scrypto_vm: &ScryptoVm<DefaultWasmEngine>,
+    network: NetworkDefinition,
+    tx_payload: &[u8],
+) -> StateUpdates {
+    let transaction =
+        LedgerTransaction::from_payload_bytes(&tx_payload).expect("Failed to decode transaction");
+    let prepared = transaction
+        .prepare()
+        .expect("Failed to prepare transaction");
+    match &prepared.inner {
+        PreparedLedgerTransactionInner::Genesis(prepared_genesis_tx) => {
+            match prepared_genesis_tx.as_ref() {
+                PreparedGenesisTransaction::Flash(_) => {
+                    let receipt = create_substate_flash_for_genesis();
+                    receipt.state_updates
+                }
+                PreparedGenesisTransaction::Transaction(tx) => {
+                    let receipt = execute_transaction(
+                        database,
+                        Vm {
+                            scrypto_vm: &scrypto_vm,
+                            native_vm: DefaultNativeVm::new(),
+                        },
+                        &CostingParameters::default(),
+                        &ExecutionConfig::for_genesis_transaction(network.clone()),
+                        &tx.get_executable(btreeset!(AuthAddresses::system_role())),
+                    );
+                    receipt.into_commit_ignore_outcome().state_updates
+                }
+            }
+        }
+        PreparedLedgerTransactionInner::UserV1(tx) => {
+            let receipt = execute_transaction(
+                database,
+                Vm {
+                    scrypto_vm: &scrypto_vm,
+                    native_vm: DefaultNativeVm::new(),
+                },
+                &CostingParameters::default(),
+                &ExecutionConfig::for_notarized_transaction(network.clone()),
+                &NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+                    .validate(tx.as_ref().clone())
+                    .expect("Transaction validation failure")
+                    .get_executable(),
+            );
+            receipt.into_commit_ignore_outcome().state_updates
+        }
+        PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
+            let receipt = execute_transaction(
+                database,
+                Vm {
+                    scrypto_vm: &scrypto_vm,
+                    native_vm: DefaultNativeVm::new(),
+                },
+                &CostingParameters::default(),
+                &ExecutionConfig::for_system_transaction(network.clone()),
+                &tx.get_executable(),
+            );
+            receipt.into_commit_ignore_outcome().state_updates
+        }
     }
 }
