@@ -17,8 +17,10 @@ pub struct Prepare {
     pub database_dir: PathBuf,
     /// Path to the output transaction file, in `.tar.gz` format, with entries sorted
     pub transaction_file: PathBuf,
-    /// The max number of transactions to export
-    pub limit: Option<u32>,
+
+    /// The max version to export
+    #[clap(short, long)]
+    pub max_version: Option<u64>,
 }
 
 impl Prepare {
@@ -34,38 +36,38 @@ impl Prepare {
         )
         .map_err(Error::DatabaseError)?;
         db.try_catch_up_with_primary()
-            .expect("DB catch up with primary failed");
+            .map_err(Error::DatabaseError)?;
 
         let tar_gz = File::create(&self.transaction_file).map_err(Error::IOError)?;
         let enc = GzEncoder::new(tar_gz, Compression::default());
         let mut tar = tar::Builder::new(enc);
 
-        let mut version = 1u64;
         let mut txn_iter = db.iterator_cf(
             &db.cf_handle("raw_ledger_transactions").unwrap(),
-            IteratorMode::From(&version.to_be_bytes(), Direction::Forward),
+            IteratorMode::From(&[], Direction::Forward),
         );
-        let mut count = 0;
-        while let Some(next_txn) = txn_iter.next() {
-            let data = next_txn.unwrap().1.to_vec();
-
-            // write to tar file
-            let mut header = Header::new_gnu();
-            header.set_path(format!("{:0>9}", version)).unwrap();
-            header.set_size(data.len().try_into().unwrap());
-            header.set_cksum();
-            tar.append(&header, data.as_slice()).unwrap();
+        while let Some(txn) = txn_iter.next() {
+            // read transaction
+            let txn = txn.map_err(Error::DatabaseError)?;
+            let version = u64::from_be_bytes(txn.0.to_vec().try_into().unwrap());
+            let payload = txn.1.to_vec();
 
             // check limit
-            count += 1;
-            if count < 1000 || count % 1000 == 0 {
-                println!("{}", count);
-            }
-            if count >= self.limit.unwrap_or(u32::MAX) {
+            if version > self.max_version.unwrap_or(u64::MAX) {
                 break;
             }
 
-            version += 1;
+            // write to the tar file
+            let mut header = Header::new_gnu();
+            header.set_path(format!("{:0>9}", version)).unwrap();
+            header.set_size(payload.len().try_into().unwrap());
+            header.set_cksum();
+            tar.append(&header, payload.as_slice()).unwrap();
+
+            // bump version and print progress
+            if version < 1000 || version % 1000 == 0 {
+                println!("{}", version);
+            }
         }
 
         std::fs::remove_dir_all(temp_dir.path()).map_err(Error::IOError)?;

@@ -23,13 +23,19 @@ use transaction::validation::{
 /// Run transactions
 #[derive(Parser, Debug)]
 pub struct Run {
+    /// The transaction file, in `.tar.gz` format, with entries sorted
+    pub transaction_file: PathBuf,
+
     /// The network to use, [mainnet | stokenet]
     #[clap(short, long)]
     pub network: Option<String>,
-    /// The transaction file, in `.tar.gz` format, with entries sorted
-    pub transaction_file: PathBuf,
-    /// The max number of transactions to run
-    pub limit: Option<u32>,
+    /// The max version to execute
+    #[clap(short, long)]
+    pub max_version: Option<u64>,
+    /// Path to a database for continuing execution
+    /// TODO: support this
+    #[clap(short, long)]
+    pub continue_from: Option<PathBuf>,
 }
 
 impl Run {
@@ -47,12 +53,18 @@ impl Run {
         let tar_gz = File::open(&self.transaction_file).map_err(Error::IOError)?;
         let tar = GzDecoder::new(tar_gz);
         let mut archive = Archive::new(tar);
-        let mut count = 0;
 
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
 
         let start = std::time::Instant::now();
         for entry in archive.entries().map_err(Error::IOError)? {
+            // check limit
+            let version = database.get_current_version();
+            if version > self.max_version.unwrap_or(u64::MAX) {
+                break;
+            }
+
+            // read from the entry
             let mut entry = entry.map_err(|e| Error::IOError(e))?;
             let mut buffer = Vec::new();
             entry
@@ -63,6 +75,7 @@ impl Run {
                 continue;
             }
 
+            // execute transaction
             let transaction = LedgerTransaction::from_payload_bytes(&buffer)
                 .expect("Failed to decode transaction");
             let prepared = transaction
@@ -123,14 +136,11 @@ impl Run {
             let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             database.commit(&database_updates);
 
-            count += 1;
-            if count < 1000 || count % 1000 == 0 {
-                let new_version = database.get_current_version();
+            // print progress
+            let new_version = database.get_current_version();
+            if new_version < 1000 || new_version % 1000 == 0 {
                 let new_root = database.get_current_root_hash();
                 println!("New version: {}, {}", new_version, new_root);
-            }
-            if count >= self.limit.unwrap_or(u32::MAX) {
-                break;
             }
         }
         let duration = start.elapsed();
