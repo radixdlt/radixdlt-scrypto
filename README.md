@@ -140,6 +140,28 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
 - `simulator`: A simulator that run Scrypto code on a filesystem based ledger.
 - `transaction`: Radix transaction manifest compiler, transaction models, signing and validationg logic.
 
+## LFS
+
+Assets under `assets-lfs` are stored in Git LFS.
+
+
+To fetch files from LFS, install `git-lfs` first:
+- MacOS
+    ```
+    brew install git-lfs
+    ```
+- Ubuntu
+    ```
+    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+    sudo apt-get install git-lfs
+    ```
+
+and then:
+```
+git lfs install
+git lfs pull
+```
+
 ## Contribute
 
 To learn more about how to contribute to this project, read the [Contributing Guide](./CONTRIBUTING.md).
