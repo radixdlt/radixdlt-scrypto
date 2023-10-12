@@ -11,3 +11,5 @@ pub mod memory_db;
 pub mod rocks_db;
 #[cfg(feature = "rocksdb")]
 pub mod rocks_db_with_merkle_tree;
+
+pub mod hash_tree_support;
