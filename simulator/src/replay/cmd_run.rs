@@ -49,6 +49,8 @@ impl Run {
         let mut archive = Archive::new(tar);
         let mut count = 0;
 
+        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+
         let start = std::time::Instant::now();
         for entry in archive.entries().map_err(Error::IOError)? {
             let mut entry = entry.map_err(|e| Error::IOError(e))?;
@@ -77,7 +79,7 @@ impl Run {
                             let receipt = execute_transaction(
                                 &database,
                                 Vm {
-                                    scrypto_vm: &ScryptoVm::<DefaultWasmEngine>::default(),
+                                    scrypto_vm: &scrypto_vm,
                                     native_vm: DefaultNativeVm::new(),
                                 },
                                 &CostingParameters::default(),
@@ -92,7 +94,7 @@ impl Run {
                     let receipt = execute_transaction(
                         &database,
                         Vm {
-                            scrypto_vm: &ScryptoVm::<DefaultWasmEngine>::default(),
+                            scrypto_vm: &scrypto_vm,
                             native_vm: DefaultNativeVm::new(),
                         },
                         &CostingParameters::default(),
@@ -108,7 +110,7 @@ impl Run {
                     let receipt = execute_transaction(
                         &database,
                         Vm {
-                            scrypto_vm: &ScryptoVm::<DefaultWasmEngine>::default(),
+                            scrypto_vm: &scrypto_vm,
                             native_vm: DefaultNativeVm::new(),
                         },
                         &CostingParameters::default(),
