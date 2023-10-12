@@ -98,7 +98,7 @@ impl Run {
                             native_vm: DefaultNativeVm::new(),
                         },
                         &CostingParameters::default(),
-                        &ExecutionConfig::for_genesis_transaction(network.clone()),
+                        &ExecutionConfig::for_notarized_transaction(network.clone()),
                         &NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
                             .validate(tx.as_ref().clone())
                             .expect("Transaction validation failure")
@@ -114,7 +114,7 @@ impl Run {
                             native_vm: DefaultNativeVm::new(),
                         },
                         &CostingParameters::default(),
-                        &ExecutionConfig::for_genesis_transaction(network.clone()),
+                        &ExecutionConfig::for_system_transaction(network.clone()),
                         &tx.get_executable(),
                     );
                     receipt.expect_commit_ignore_outcome().state_updates.clone()
@@ -122,11 +122,11 @@ impl Run {
             };
             let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             database.commit(&database_updates);
-            let new_version = database.get_current_version();
-            let new_root = database.get_current_root_hash();
 
             count += 1;
             if count % 100 == 0 {
+                let new_version = database.get_current_version();
+                let new_root = database.get_current_root_hash();
                 println!("New version: {}, {}", new_version, new_root);
             }
             if count >= self.limit.unwrap_or(u32::MAX) {
