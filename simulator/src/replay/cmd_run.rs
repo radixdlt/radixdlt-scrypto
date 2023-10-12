@@ -30,7 +30,7 @@ use transaction::validation::{
 
 /// Run transactions
 #[derive(Parser, Debug)]
-pub struct TxnSync {
+pub struct TxnExecute {
     /// The transaction file, in `.tar.gz` format, with entries sorted
     pub source: PathBuf,
     /// Path to a folder for storing state
@@ -44,8 +44,8 @@ pub struct TxnSync {
     pub max_version: Option<u64>,
 }
 
-impl TxnSync {
-    pub fn sync(&self) -> Result<(), Error> {
+impl TxnExecute {
+    pub fn run(&self) -> Result<(), Error> {
         let network = match &self.network {
             Some(n) => NetworkDefinition::from_str(n).map_err(Error::ParseNetworkError)?,
             None => NetworkDefinition::mainnet(),
@@ -65,7 +65,14 @@ impl TxnSync {
 
         let (tx, rx) = flume::bounded(10);
 
-        let mut txn_reader = CommittedTxnReader::StateManagerDatabaseDir(self.source.clone());
+        let mut txn_reader = if self.source.is_file() {
+            let tar_gz = File::open(&self.source).map_err(Error::IOError)?;
+            let tar = GzDecoder::new(tar_gz);
+            let archive = Archive::new(tar);
+            TxnReader::TransactionFile(archive)
+        } else {
+            TxnReader::StateManagerDatabaseDir(self.source.clone())
+        };
 
         let to_version = self.max_version.clone();
         let txn_read_thread_handle =
@@ -75,7 +82,7 @@ impl TxnSync {
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
-            for (tx_payload, expected_state_root_hash) in iter {
+            for tx_payload in iter {
                 // execute transaction
                 let transaction = LedgerTransaction::from_payload_bytes(&tx_payload)
                     .expect("Failed to decode transaction");
@@ -143,13 +150,6 @@ impl TxnSync {
                 let new_state_root_hash = database.get_current_root_hash();
                 let new_version = database.get_current_version();
 
-                if new_state_root_hash != expected_state_root_hash {
-                    panic!(
-                        "State hash mismatch at version {}. Expected {} Actual {}",
-                        new_version, expected_state_root_hash, new_state_root_hash
-                    );
-                }
-
                 // print progress
                 if new_version < 1000 || new_version % 1000 == 0 {
                     println!("New version: {}, {}", new_version, new_state_root_hash);
@@ -172,19 +172,48 @@ impl TxnSync {
     }
 }
 
-enum CommittedTxnReader {
+enum TxnReader {
+    TransactionFile(Archive<GzDecoder<File>>),
     StateManagerDatabaseDir(PathBuf),
 }
 
-impl CommittedTxnReader {
+impl TxnReader {
     fn read(
         &mut self,
         from_version: u64,
         to_version: Option<u64>,
-        tx: Sender<(Vec<u8>, Hash)>,
+        tx: Sender<Vec<u8>>,
     ) -> Result<(), Error> {
         match self {
-            CommittedTxnReader::StateManagerDatabaseDir(db_dir) => {
+            TxnReader::TransactionFile(archive) => {
+                for entry in archive.entries().map_err(Error::IOError)? {
+                    // read the entry
+                    let mut entry = entry.map_err(|e| Error::IOError(e))?;
+                    let tx_version = entry
+                        .header()
+                        .path()
+                        .ok()
+                        .and_then(|path| path.to_str().map(ToOwned::to_owned))
+                        .and_then(|s| u64::from_str(&s).ok())
+                        .ok_or(Error::InvalidTransactionFile)?;
+                    let mut tx_payload = Vec::new();
+                    entry
+                        .read_to_end(&mut tx_payload)
+                        .map_err(|e| Error::IOError(e))?;
+
+                    if tx_version <= from_version {
+                        continue;
+                    }
+                    if let Some(to_version) = to_version {
+                        if tx_version > to_version {
+                            break;
+                        }
+                    }
+
+                    tx.send(tx_payload).unwrap();
+                }
+            }
+            TxnReader::StateManagerDatabaseDir(db_dir) => {
                 let temp_dir = tempfile::tempdir().map_err(Error::IOError)?;
 
                 let db = DB::open_cf_as_secondary(
@@ -198,7 +227,7 @@ impl CommittedTxnReader {
                 )
                 .unwrap();
 
-                let mut iter_start_state_version = from_version + 1;
+                let iter_start_state_version = from_version + 1;
 
                 loop {
                     db.try_catch_up_with_primary()
@@ -210,95 +239,15 @@ impl CommittedTxnReader {
                             Direction::Forward,
                         ),
                     );
-                    let mut identifiers_iter = db.iterator_cf(
-                        &db.cf_handle("committed_transaction_identifiers").unwrap(),
-                        IteratorMode::From(
-                            &iter_start_state_version.to_be_bytes(),
-                            Direction::Forward,
-                        ),
-                    );
                     while let Some(next_txn) = txn_iter.next() {
                         let next_txn = next_txn.unwrap();
-                        let next_state_version =
-                            u64::from_be_bytes(next_txn.0.as_ref().try_into().unwrap());
-
-                        let next_identifiers_bytes = identifiers_iter
-                            .next()
-                            .expect("Missing txn identifiers")
-                            .unwrap();
-
-                        let next_identifiers: VersionedCommittedTransactionIdentifiers =
-                            scrypto_decode(next_identifiers_bytes.1.as_ref()).unwrap();
-                        let expected_state_root_hash = next_identifiers
-                            .into_latest()
-                            .resultant_ledger_hashes
-                            .state_root
-                            .0;
-
-                        tx.send((next_txn.1.to_vec(), expected_state_root_hash))
-                            .unwrap();
-                        if let Some(to_version) = to_version {
-                            if to_version == next_state_version {
-                                return Ok(());
-                            }
-                        }
-                        iter_start_state_version = next_state_version + 1;
+                        tx.send(next_txn.1.to_vec()).unwrap();
                     }
                     thread::sleep(Duration::from_secs(1));
                 }
             }
         }
+
+        Ok(())
     }
-}
-
-define_single_versioned! {
-    #[derive(Debug, Clone, Sbor)]
-    pub enum VersionedCommittedTransactionIdentifiers => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1
-}
-
-#[derive(Debug, Clone, Sbor)]
-pub struct CommittedTransactionIdentifiersV1 {
-    pub payload: PayloadIdentifiers,
-    pub resultant_ledger_hashes: LedgerHashes,
-    pub proposer_timestamp_ms: i64,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct PayloadIdentifiers {
-    pub ledger_transaction_hash: LedgerTransactionHash,
-    pub typed: TypedTransactionIdentifiers,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum TypedTransactionIdentifiers {
-    Genesis {
-        system_transaction_hash: SystemTransactionHash,
-    },
-    User {
-        intent_hash: IntentHash,
-        signed_intent_hash: SignedIntentHash,
-        notarized_transaction_hash: NotarizedTransactionHash,
-    },
-    RoundUpdateV1 {
-        round_update_hash: RoundUpdateTransactionHash,
-    },
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Debug, Sbor)]
-pub struct LedgerHashes {
-    pub state_root: StateHash,
-    pub transaction_root: TransactionTreeHash,
-    pub receipt_root: ReceiptTreeHash,
-}
-
-define_wrapped_hash! {
-    StateHash
-}
-
-define_wrapped_hash! {
-    TransactionTreeHash
-}
-
-define_wrapped_hash! {
-    ReceiptTreeHash
 }
