@@ -124,7 +124,7 @@ impl Run {
             database.commit(&database_updates);
 
             count += 1;
-            if count % 100 == 0 {
+            if count < 1000 || count % 1000 == 0 {
                 let new_version = database.get_current_version();
                 let new_root = database.get_current_root_hash();
                 println!("New version: {}, {}", new_version, new_root);

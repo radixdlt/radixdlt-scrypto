@@ -58,7 +58,7 @@ impl Prepare {
 
             // check limit
             count += 1;
-            if count % 100 == 0 {
+            if count < 1000 || count % 1000 == 0 {
                 println!("{}", count);
             }
             if count >= self.limit.unwrap_or(u32::MAX) {
