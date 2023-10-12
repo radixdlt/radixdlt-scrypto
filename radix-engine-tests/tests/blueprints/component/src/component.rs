@@ -16,6 +16,10 @@ mod component_test {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
+                .burn_roles(burn_roles! {
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
+                })
                 .mint_initial_supply(amount)
                 .into()
         }
@@ -44,9 +48,8 @@ mod component_test {
             bucket
         }
 
-        pub fn take_resource_amount_of_bucket(&mut self, bucket: Bucket) -> (Bucket, Bucket) {
-            let bucket_ret = self.test_vault.take(1 + bucket.amount());
-            (bucket_ret, bucket)
+        pub fn burn_bucket(&mut self, bucket: Bucket) {
+            bucket.burn();
         }
 
         pub fn blueprint_name_function() -> String {
@@ -109,6 +112,12 @@ mod component_test2 {
             let bucket = self.vault.as_non_fungible().take_non_fungible(&id);
             bucket.into()
         }
+
+        pub fn generate_nft_proof(&mut self) -> (Bucket, Proof) {
+            let bucket = self.generate_nft();
+            let proof = bucket.create_proof_of_all();
+            (bucket, proof)
+        }
     }
 }
 
@@ -127,8 +136,13 @@ mod component_test3 {
                 .globalize()
         }
 
-        pub fn check(&self, proof: Proof) {
+        pub fn check_proof(&self, proof: Proof) {
             proof.check(self.resource_id).drop();
+        }
+
+        pub fn check_proof_and_burn_bucket(&self, bucket: Bucket, proof: Proof) {
+            proof.check(self.resource_id).drop();
+            bucket.burn();
         }
     }
 }

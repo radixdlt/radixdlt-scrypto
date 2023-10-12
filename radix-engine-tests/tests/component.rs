@@ -115,9 +115,8 @@ fn blueprint_name_can_be_obtained_from_a_method() {
 }
 
 #[test]
-fn pass_bucket_to_component_and_check_amount() {
+fn pass_bucket_to_other_component() {
     let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(false);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
 
     // create two components
@@ -144,44 +143,27 @@ fn pass_bucket_to_component_and_check_amount() {
     let component_address_1 = result.new_component_addresses()[0];
     let component_address_2 = result.new_component_addresses()[1];
     let resource_address_1 = result.new_resource_addresses()[0];
-    let resource_address_2 = result.new_resource_addresses()[1];
 
     // take bucket with resources from component 1 and pass it to the component 2
+    // which burns it
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(component_address_1, "put_component_state", manifest_args!())
             .take_all_from_worktop(resource_address_1, "bucket_name")
-            .call_method_with_name_lookup(
-                component_address_2,
-                "take_resource_amount_of_bucket",
-                |lookup| (lookup.bucket("bucket_name"),),
-            )
-            .try_deposit_entire_worktop_or_abort(account, None)
+            .call_method_with_name_lookup(component_address_2, "burn_bucket", |lookup| {
+                (lookup.bucket("bucket_name"),)
+            })
             .build(),
         vec![],
     );
 
-    // verify if manifest executed with success and deposited account balances
+    // verify if manifest executed with success
     receipt.expect_commit_success();
-
-    let balance_1 = test_runner
-        .get_component_resources(account)
-        .get(&resource_address_1)
-        .cloned()
-        .unwrap();
-    let balance_2 = test_runner
-        .get_component_resources(account)
-        .get(&resource_address_2)
-        .cloned()
-        .unwrap();
-
-    assert_eq!(balance_1, dec!(1));
-    assert_eq!(balance_2, dec!(2));
 }
 
 #[test]
-fn pass_proof_to_component_and_check() {
+fn pass_proof_to_other_component() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
 
@@ -219,22 +201,81 @@ fn pass_proof_to_component_and_check() {
     let result = receipt.expect_commit_success();
     let component_address_2 = result.new_component_addresses().first().cloned().unwrap();
 
-    // take bucket with resources from the 1st component, convert it to proof and pass
+    // take buckate and proof from the 1st component and pass
     // to the 2nd component for resource address validation
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .call_method(component_address_1, "generate_nft", manifest_args!())
-            .take_all_from_worktop(resource_address_1, "bucket_1")
-            .create_proof_from_bucket_of_all("bucket_1", "proof_1")
-            .call_method_with_name_lookup(component_address_2, "check", |lookup| {
+            .call_method(component_address_1, "generate_nft_proof", manifest_args!())
+            .pop_from_auth_zone("proof_1")
+            .call_method_with_name_lookup(component_address_2, "check_proof", |lookup| {
                 (lookup.proof("proof_1"),)
             })
-            .return_to_worktop("bucket_1")
-            .burn_all_from_worktop(resource_address_1)
+            .burn_all_from_worktop(resource_address_1) // resources from bucket returned by generate_nft_proof()
             .build(),
         vec![],
     );
 
+    // verify if manifest executed with success
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn pass_bucket_and_proof_to_other_component() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+
+    // create 1st component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ComponentTest2",
+                "create_component",
+                manifest_args!(),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+
+    let component_address_1 = result.new_component_addresses().first().cloned().unwrap();
+    let resource_address_1 = result.new_resource_addresses().first().cloned().unwrap();
+
+    // create 2nd component passing resource address from 1st component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ComponentTest3",
+                "create_component",
+                manifest_args!(resource_address_1),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+    let component_address_2 = result.new_component_addresses().first().cloned().unwrap();
+
+    // take bucket and proof from the 1st component and pass
+    // to the 2nd component for proof check and bucket burn
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(component_address_1, "generate_nft_proof", manifest_args!())
+            .take_all_from_worktop(resource_address_1, "bucket_1")
+            .pop_from_auth_zone("proof_1")
+            .call_method_with_name_lookup(
+                component_address_2,
+                "check_proof_and_burn_bucket",
+                |lookup| (lookup.bucket("bucket_1"), lookup.proof("proof_1")),
+            )
+            .build(),
+        vec![],
+    );
+
+    // verify if manifest executed with success
     receipt.expect_commit_success();
 }
