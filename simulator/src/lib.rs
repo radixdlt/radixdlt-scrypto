@@ -1,5 +1,3 @@
-/// Provides a file-based ledger.
-pub mod ledger;
 /// Transaction replay.
 pub mod replay;
 /// Radix Engine Simulator CLI.

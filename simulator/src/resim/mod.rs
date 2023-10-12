@@ -21,6 +21,7 @@ mod cmd_show_configs;
 mod cmd_show_ledger;
 mod cmd_transfer;
 mod config;
+mod dumper;
 mod error;
 
 pub use addressing::*;
@@ -46,6 +47,7 @@ pub use cmd_show_configs::*;
 pub use cmd_show_ledger::*;
 pub use cmd_transfer::*;
 pub use config::*;
+pub use dumper::*;
 pub use error::*;
 
 pub const DEFAULT_SCRYPTO_DIR_UNDER_HOME: &'static str = ".scrypto";
