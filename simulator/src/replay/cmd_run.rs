@@ -25,6 +25,8 @@ use transaction::validation::{
 pub struct Run {
     /// The transaction file, in `.tar.gz` format, with entries sorted
     pub transaction_file: PathBuf,
+    /// Path to a folder for storing state
+    pub database_dir: PathBuf,
 
     /// The network to use, [mainnet | stokenet]
     #[clap(short, long)]
@@ -32,10 +34,6 @@ pub struct Run {
     /// The max version to execute
     #[clap(short, long)]
     pub max_version: Option<u64>,
-    /// Path to a database for continuing execution
-    /// TODO: support this
-    #[clap(short, long)]
-    pub continue_from: Option<PathBuf>,
 }
 
 impl Run {
@@ -45,38 +43,39 @@ impl Run {
             None => NetworkDefinition::mainnet(),
         };
 
-        let temp_dir = tempfile::tempdir().map_err(Error::IOError)?;
-        println!("Temp directory: {:?}", temp_dir.path());
-
-        let mut database = RocksDBWithMerkleTreeSubstateStore::standard(temp_dir.path().into());
-
         let tar_gz = File::open(&self.transaction_file).map_err(Error::IOError)?;
         let tar = GzDecoder::new(tar_gz);
         let mut archive = Archive::new(tar);
 
+        let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-
         let start = std::time::Instant::now();
         for entry in archive.entries().map_err(Error::IOError)? {
             // check limit
             let version = database.get_current_version();
-            if version > self.max_version.unwrap_or(u64::MAX) {
+            if version >= self.max_version.unwrap_or(u64::MAX) {
                 break;
             }
 
-            // read from the entry
+            // read the entry
             let mut entry = entry.map_err(|e| Error::IOError(e))?;
-            let mut buffer = Vec::new();
+            let tx_version = entry
+                .header()
+                .path()
+                .ok()
+                .and_then(|path| path.to_str().map(ToOwned::to_owned))
+                .and_then(|s| u64::from_str(&s).ok())
+                .ok_or(Error::InvalidTransactionFile)?;
+            let mut tx_payload = Vec::new();
             entry
-                .read_to_end(&mut buffer)
+                .read_to_end(&mut tx_payload)
                 .map_err(|e| Error::IOError(e))?;
-            if buffer.is_empty() {
-                // skip folder or empty files
+            if tx_version <= version {
                 continue;
             }
 
             // execute transaction
-            let transaction = LedgerTransaction::from_payload_bytes(&buffer)
+            let transaction = LedgerTransaction::from_payload_bytes(&tx_payload)
                 .expect("Failed to decode transaction");
             let prepared = transaction
                 .prepare()
@@ -145,9 +144,8 @@ impl Run {
         }
         let duration = start.elapsed();
         println!("Time elapsed: {:?}", duration);
+        println!("State version: {}", database.get_current_version());
         println!("State root hash: {}", database.get_current_root_hash());
-
-        std::fs::remove_dir_all(temp_dir.path()).map_err(Error::IOError)?;
 
         Ok(())
     }

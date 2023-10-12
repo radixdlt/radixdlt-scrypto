@@ -23,16 +23,16 @@ pub struct Prepare {
     pub max_version: Option<u64>,
 }
 
+const TRANSACTION_COLUMN: &str = "raw_ledger_transactions";
+
 impl Prepare {
     pub fn run(&self) -> Result<(), Error> {
         let temp_dir = tempfile::tempdir().map_err(Error::IOError)?;
-        println!("Temp directory: {:?}", temp_dir.path());
-
         let db = DB::open_cf_as_secondary(
             &Options::default(),
             self.database_dir.as_path(),
             temp_dir.path(),
-            vec!["raw_ledger_transactions"],
+            vec![TRANSACTION_COLUMN],
         )
         .map_err(Error::DatabaseError)?;
         db.try_catch_up_with_primary()
@@ -43,9 +43,10 @@ impl Prepare {
         let mut tar = tar::Builder::new(enc);
 
         let mut txn_iter = db.iterator_cf(
-            &db.cf_handle("raw_ledger_transactions").unwrap(),
+            &db.cf_handle(TRANSACTION_COLUMN).unwrap(),
             IteratorMode::From(&[], Direction::Forward),
         );
+        let mut last_version = 0u64;
         while let Some(txn) = txn_iter.next() {
             // read transaction
             let txn = txn.map_err(Error::DatabaseError)?;
@@ -66,12 +67,13 @@ impl Prepare {
 
             // bump version and print progress
             if version < 1000 || version % 1000 == 0 {
-                println!("{}", version);
+                println!("New version: {}", version);
             }
+            last_version = version;
         }
+        println!("Last version: {}", last_version);
 
         std::fs::remove_dir_all(temp_dir.path()).map_err(Error::IOError)?;
-
         Ok(())
     }
 }
