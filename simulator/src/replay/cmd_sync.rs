@@ -86,12 +86,12 @@ impl TxnSync {
                 if new_version < 1000 || new_version % 1000 == 0 {
                     print_progress(start.elapsed(), new_version, new_state_root_hash);
                 }
-
-                let duration = start.elapsed();
-                println!("Time elapsed: {:?}", duration);
-                println!("State version: {}", database.get_current_version());
-                println!("State root hash: {}", database.get_current_root_hash());
             }
+
+            let duration = start.elapsed();
+            println!("Time elapsed: {:?}", duration);
+            println!("State version: {}", database.get_current_version());
+            println!("State root hash: {}", database.get_current_root_hash());
         });
 
         txn_read_thread_handle.join().unwrap()?;
