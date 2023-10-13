@@ -45,23 +45,22 @@ impl TxnSync {
         let cur_version = {
             let database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
             let cur_version = database.get_current_version();
-            // check limit
             if cur_version >= self.max_version.unwrap_or(u64::MAX) {
                 return Ok(());
             }
             cur_version
         };
+        let to_version = self.max_version.clone();
 
         let start = std::time::Instant::now();
-
         let (tx, rx) = flume::bounded(10);
 
+        // txn reader
         let mut txn_reader = CommittedTxnReader::StateManagerDatabaseDir(self.source.clone());
-
-        let to_version = self.max_version.clone();
         let txn_read_thread_handle =
             thread::spawn(move || txn_reader.read(cur_version, to_version, tx));
 
+        // txn executor
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -85,24 +84,31 @@ impl TxnSync {
 
                 // print progress
                 if new_version < 1000 || new_version % 1000 == 0 {
-                    println!("New version: {}, {}", new_version, new_state_root_hash);
+                    print_progress(start.elapsed(), new_version, new_state_root_hash);
                 }
+
+                let duration = start.elapsed();
+                println!("Time elapsed: {:?}", duration);
+                println!("State version: {}", database.get_current_version());
+                println!("State root hash: {}", database.get_current_root_hash());
             }
         });
 
         txn_read_thread_handle.join().unwrap()?;
         txn_write_thread_handle.join().unwrap();
 
-        {
-            let duration = start.elapsed();
-            let database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
-            println!("Time elapsed: {:?}", duration);
-            println!("State version: {}", database.get_current_version());
-            println!("State root hash: {}", database.get_current_root_hash());
-        }
-
         Ok(())
     }
+}
+
+fn print_progress(duration: Duration, new_version: u64, new_root: Hash) {
+    let seconds = duration.as_secs() % 60;
+    let minutes = (duration.as_secs() / 60) % 60;
+    let hours = (duration.as_secs() / 60) / 60;
+    println!(
+        "New version: {}, {}, {:0>2}:{:0>2}:{:0>2}",
+        new_version, new_root, hours, minutes, seconds
+    );
 }
 
 enum CommittedTxnReader {
