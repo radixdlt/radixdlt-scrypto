@@ -1,10 +1,10 @@
-use radix_engine::types::*;
+use crate::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
+use crate::hash_tree::{list_substate_hashes_at_version, put_at_next_version};
+use radix_engine_common::prelude::*;
 use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
     ListableSubstateDatabase, PartitionEntry, SubstateDatabase,
 };
-use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use radix_engine_stores::hash_tree::{list_substate_hashes_at_version, put_at_next_version};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct HashTreeUpdatingDatabase<D> {
@@ -18,7 +18,7 @@ impl<D> HashTreeUpdatingDatabase<D> {
     pub fn new(underlying: D) -> Self {
         HashTreeUpdatingDatabase {
             underlying,
-            tree_store: TypedInMemoryTreeStore::new(),
+            tree_store: TypedInMemoryTreeStore::with_pruning(),
             current_version: 0,
             current_hash: Hash([0; Hash::LENGTH]),
         }
@@ -26,6 +26,10 @@ impl<D> HashTreeUpdatingDatabase<D> {
 
     pub fn get_current_root_hash(&self) -> Hash {
         self.current_hash
+    }
+
+    pub fn get_current_version(&self) -> Version {
+        self.current_version
     }
 
     pub fn list_substate_hashes(&mut self) -> IndexMap<DbPartitionKey, IndexMap<DbSortKey, Hash>> {

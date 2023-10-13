@@ -14,6 +14,9 @@ radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] 
 radix-engine-queries = { path = "../radix-engine-queries" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 transaction = { path = "../transaction" }
+flate2 = { version = "1.0.27" }
+tar = { version = "0.4.40" }
+rocksdb = { version = "0.21.0" }
 utils = { path = "../utils" }
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = { version = "1.0.81" }
@@ -30,6 +33,8 @@ syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = [
 quote = { version = "1.0.18" }
 proc-macro2 = { version = "1.0.38" }
 heck = "0.4.1"
+tempfile = "3.8.0"
+flume = { version = "0.11.0" }
 
 [[bin]]
 name = "resim"
@@ -56,6 +61,14 @@ name = "scrypto-bindgen"
 path = "src/bin/scrypto_bindgen.rs"
 bench = false
 
+[[bin]]
+name = "replay"
+path = "src/bin/replay.rs"
+bench = false
+
 [lib]
 doctest = false
 bench = false
+
+[profile.bench]
+debug = true

@@ -126,7 +126,7 @@ where
         payload_identifier: &BlueprintPayloadIdentifier,
     ) -> Result<
         (
-            VersionedScryptoSchema,
+            Rc<VersionedScryptoSchema>,
             LocalTypeId,
             bool,
             bool,
@@ -182,7 +182,7 @@ where
                             SchemaValidationMeta::ExistingObject { additional_schemas } => {
                                 self.get_schema(additional_schemas, &type_id.0)?
                             }
-                            SchemaValidationMeta::NewObject { additional_schemas } => {
+                            SchemaValidationMeta::NewObject { additional_schemas } => Rc::new(
                                 additional_schemas
                                     .get(&type_id.0)
                                     .ok_or_else(|| {
@@ -190,8 +190,8 @@ where
                                             TypeCheckError::InstanceSchemaNotFound,
                                         ))
                                     })?
-                                    .clone()
-                            }
+                                    .clone(),
+                            ),
                             SchemaValidationMeta::Blueprint => {
                                 return Err(RuntimeError::SystemError(
                                     SystemError::TypeCheckError(
@@ -378,7 +378,7 @@ where
         &mut self,
         node_id: &NodeId,
         schema_hash: &SchemaHash,
-    ) -> Result<VersionedScryptoSchema, RuntimeError> {
+    ) -> Result<Rc<VersionedScryptoSchema>, RuntimeError> {
         let def = self
             .api
             .kernel_get_system_state()
@@ -405,7 +405,7 @@ where
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
-        let schema = substate.into_value().unwrap();
+        let schema = Rc::new(substate.into_value().unwrap());
 
         self.api
             .kernel_get_system_state()
@@ -419,7 +419,7 @@ where
     pub fn get_blueprint_type_schema(
         &mut self,
         type_id: &BlueprintTypeIdentifier,
-    ) -> Result<(VersionedScryptoSchema, ScopedTypeId), RuntimeError> {
+    ) -> Result<(Rc<VersionedScryptoSchema>, ScopedTypeId), RuntimeError> {
         let BlueprintTypeIdentifier {
             package_address,
             blueprint_name,

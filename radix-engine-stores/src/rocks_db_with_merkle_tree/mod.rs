@@ -1,8 +1,9 @@
 use crate::hash_tree::tree_store::{
-    encode_key, NodeKey, ReadableTreeStore, TreeNode, VersionedTreeNode,
+    encode_key, NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, TreeNodeV1, VersionedTreeNode,
 };
 use itertools::Itertools;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_common::prelude::Hash;
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
@@ -24,6 +25,7 @@ const STALE_MERKLE_TREE_PARTS_CF: &str = "stale_merkle_tree_parts";
 
 pub struct RocksDBWithMerkleTreeSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,
+    pruning_enabled: bool,
 }
 
 impl RocksDBWithMerkleTreeSubstateStore {
@@ -40,10 +42,10 @@ impl RocksDBWithMerkleTreeSubstateStore {
         let mut options = Options::default();
         options.create_if_missing(true);
         options.create_missing_column_families(true);
-        Self::with_options(&options, root)
+        Self::with_options(&options, root, true)
     }
 
-    pub fn with_options(options: &Options, root: PathBuf) -> Self {
+    pub fn with_options(options: &Options, root: PathBuf, pruning_enabled: bool) -> Self {
         let db = DB::open_cf_descriptors(
             options,
             root.as_path(),
@@ -58,11 +60,38 @@ impl RocksDBWithMerkleTreeSubstateStore {
             .collect::<Vec<_>>(),
         )
         .unwrap();
-        Self { db }
+        Self {
+            db,
+            pruning_enabled,
+        }
     }
 
     fn cf(&self, cf: &str) -> &ColumnFamily {
         self.db.cf_handle(cf).unwrap()
+    }
+
+    pub fn get_current_version(&self) -> u64 {
+        self.db
+            .get_cf(self.cf(META_CF), &[])
+            .unwrap()
+            .map(|bytes| {
+                scrypto_decode::<Metadata>(&bytes)
+                    .unwrap()
+                    .current_state_version
+            })
+            .unwrap_or(0)
+    }
+
+    pub fn get_current_root_hash(&self) -> Hash {
+        self.db
+            .get_cf(self.cf(META_CF), &[])
+            .unwrap()
+            .map(|bytes| {
+                scrypto_decode::<Metadata>(&bytes)
+                    .unwrap()
+                    .current_state_root_hash
+            })
+            .unwrap_or(Hash([0u8; Hash::LENGTH]))
     }
 }
 
@@ -112,6 +141,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             .map(|bytes| scrypto_decode::<Metadata>(&bytes).unwrap())
             .unwrap_or_else(|| Metadata {
                 current_state_version: 0,
+                current_state_root_hash: Hash([0u8; Hash::LENGTH]),
             });
         let parent_state_version = metadata.current_state_version;
         let next_state_version = parent_state_version + 1;
@@ -166,7 +196,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         }
 
         // derive and put new JMT nodes (also record references to stale parts, for later amortized background GC [not implemented here!])
-        let state_hash_tree_update =
+        let (state_hash_tree_update, new_root_hash) =
             compute_state_tree_update(self, parent_state_version, database_updates);
         for (key, node) in state_hash_tree_update.new_nodes {
             batch.put_cf(
@@ -175,11 +205,14 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
                 scrypto_encode(&VersionedTreeNode::new_latest(node)).unwrap(),
             );
         }
-        batch.put_cf(
-            self.cf(STALE_MERKLE_TREE_PARTS_CF),
-            next_state_version.to_be_bytes(),
-            scrypto_encode(&state_hash_tree_update.stale_tree_parts).unwrap(),
-        );
+        if !self.pruning_enabled {
+            // If pruning is not enabled, we store the stale nodes in DB.
+            batch.put_cf(
+                self.cf(STALE_MERKLE_TREE_PARTS_CF),
+                next_state_version.to_be_bytes(),
+                scrypto_encode(&state_hash_tree_update.stale_tree_parts).unwrap(),
+            );
+        }
 
         // update the metadata
         batch.put_cf(
@@ -187,12 +220,56 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             [],
             scrypto_encode(&Metadata {
                 current_state_version: next_state_version,
+                current_state_root_hash: new_root_hash,
             })
             .unwrap(),
         );
 
         // flush the batch
         self.db.write(batch).unwrap();
+
+        if self.pruning_enabled {
+            for part in state_hash_tree_update.stale_tree_parts {
+                match part {
+                    StaleTreePart::Node(node_key) => {
+                        self.db
+                            .delete_cf(self.cf(MERKLE_NODES_CF), encode_key(&node_key))
+                            .unwrap();
+                    }
+                    StaleTreePart::Subtree(node_key) => {
+                        let mut queue = VecDeque::new();
+                        queue.push_back(node_key);
+
+                        while let Some(node_key) = queue.pop_front() {
+                            if let Some(bytes) = self
+                                .db
+                                .get_cf(self.cf(MERKLE_NODES_CF), encode_key(&node_key))
+                                .unwrap()
+                            {
+                                self.db
+                                    .delete_cf(self.cf(MERKLE_NODES_CF), encode_key(&node_key))
+                                    .unwrap();
+                                let value: VersionedTreeNode = scrypto_decode(&bytes).unwrap();
+                                match value.into_latest() {
+                                    TreeNodeV1::Internal(x) => {
+                                        for child in x.children {
+                                            queue.push_back(
+                                                node_key.gen_child_node_key(
+                                                    child.version,
+                                                    child.nibble,
+                                                ),
+                                            )
+                                        }
+                                    }
+                                    TreeNodeV1::Leaf(_) => {}
+                                    TreeNodeV1::Null => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -226,4 +303,5 @@ impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
 #[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
 struct Metadata {
     current_state_version: u64,
+    current_state_root_hash: Hash,
 }

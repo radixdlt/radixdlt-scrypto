@@ -2,6 +2,7 @@ use crate::hash_tree::put_at_next_version;
 use crate::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, WriteableTreeStore,
 };
+use radix_engine_common::prelude::Hash;
 use radix_engine_store_interface::interface::DatabaseUpdates;
 
 struct CollectingTreeStore<'s, S> {
@@ -57,12 +58,12 @@ pub fn compute_state_tree_update<S: ReadableTreeStore>(
     store: &S,
     parent_state_version: u64,
     database_updates: &DatabaseUpdates,
-) -> StateHashTreeDiff {
+) -> (StateHashTreeDiff, Hash) {
     let mut collector = CollectingTreeStore::new(store);
-    put_at_next_version(
+    let root_hash = put_at_next_version(
         &mut collector,
         Some(parent_state_version).filter(|v| *v > 0),
         database_updates,
     );
-    collector.into_diff()
+    (collector.into_diff(), root_hash)
 }

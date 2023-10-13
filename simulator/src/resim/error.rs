@@ -13,7 +13,7 @@ use sbor::*;
 use transaction::errors::*;
 use transaction::model::PrepareError as TransactionPrepareError;
 
-use crate::ledger::EntityDumpError;
+use crate::resim::EntityDumpError;
 use crate::utils::*;
 
 /// Represents a resim error.

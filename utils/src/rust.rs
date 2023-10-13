@@ -147,6 +147,11 @@ pub mod collections {
     #[cfg(not(feature = "alloc"))]
     pub use std::collections::LinkedList;
 
+    #[cfg(feature = "alloc")]
+    pub use alloc::collections::VecDeque;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::VecDeque;
+
     pub mod btree_map {
         #[cfg(feature = "alloc")]
         extern crate alloc;

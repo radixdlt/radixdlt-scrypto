@@ -4,6 +4,7 @@ pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::*;
+use utils::rust::collections::VecDeque;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
 
@@ -88,6 +89,7 @@ impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
 pub struct TypedInMemoryTreeStore {
     pub tree_nodes: HashMap<NodeKey, TreeNode>,
     pub stale_part_buffer: Vec<StaleTreePart>,
+    pub pruning_enabled: bool,
 }
 
 impl TypedInMemoryTreeStore {
@@ -96,6 +98,15 @@ impl TypedInMemoryTreeStore {
         TypedInMemoryTreeStore {
             tree_nodes: hash_map_new(),
             stale_part_buffer: Vec::new(),
+            pruning_enabled: false,
+        }
+    }
+
+    pub fn with_pruning() -> TypedInMemoryTreeStore {
+        TypedInMemoryTreeStore {
+            tree_nodes: hash_map_new(),
+            stale_part_buffer: Vec::new(),
+            pruning_enabled: true,
         }
     }
 }
@@ -112,7 +123,36 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
     }
 
     fn record_stale_tree_part(&mut self, part: StaleTreePart) {
-        self.stale_part_buffer.push(part);
+        if self.pruning_enabled {
+            match part {
+                StaleTreePart::Node(node_key) => {
+                    self.tree_nodes.remove(&node_key);
+                }
+                StaleTreePart::Subtree(node_key) => {
+                    let mut queue = VecDeque::new();
+                    queue.push_back(node_key);
+
+                    while let Some(node_key) = queue.pop_front() {
+                        if let Some(value) = self.tree_nodes.remove(&node_key) {
+                            match value {
+                                TreeNodeV1::Internal(x) => {
+                                    for child in x.children {
+                                        queue.push_back(
+                                            node_key
+                                                .gen_child_node_key(child.version, child.nibble),
+                                        )
+                                    }
+                                }
+                                TreeNodeV1::Leaf(_) => {}
+                                TreeNodeV1::Null => {}
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            self.stale_part_buffer.push(part);
+        }
     }
 }
 
