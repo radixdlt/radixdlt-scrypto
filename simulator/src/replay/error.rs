@@ -5,5 +5,6 @@ pub enum Error {
     ParseNetworkError(ParseNetworkError),
     IOError(std::io::Error),
     DatabaseError(rocksdb::Error),
-    InvalidTransactionFile,
+    InvalidTransactionArchive,
+    InvalidTransactionSource,
 }

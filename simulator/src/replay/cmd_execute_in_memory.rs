@@ -51,8 +51,10 @@ impl TxnExecuteInMemory {
             let tar = GzDecoder::new(tar_gz);
             let archive = Archive::new(tar);
             TxnReader::TransactionFile(archive)
-        } else {
+        } else if self.source.is_dir() {
             TxnReader::StateManagerDatabaseDir(self.source.clone())
+        } else {
+            return Err(Error::InvalidTransactionSource);
         };
         let txn_read_thread_handle =
             thread::spawn(move || txn_reader.read(cur_version, to_version, tx));

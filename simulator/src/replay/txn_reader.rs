@@ -34,7 +34,7 @@ impl TxnReader {
                         .ok()
                         .and_then(|path| path.to_str().map(ToOwned::to_owned))
                         .and_then(|s| u64::from_str(&s).ok())
-                        .ok_or(Error::InvalidTransactionFile)?;
+                        .ok_or(Error::InvalidTransactionArchive)?;
                     let mut tx_payload = Vec::new();
                     entry
                         .read_to_end(&mut tx_payload)
