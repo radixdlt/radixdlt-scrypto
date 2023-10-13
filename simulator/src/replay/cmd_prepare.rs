@@ -1,4 +1,4 @@
-use crate::replay::Error;
+use super::Error;
 use clap::Parser;
 use flate2::write::GzEncoder;
 use flate2::Compression;

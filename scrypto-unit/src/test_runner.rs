@@ -329,7 +329,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         TestRunnerBuilder {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
-            custom_database: HashTreeUpdatingDatabase::new(self.custom_database, true),
+            custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
             trace: self.trace,
             skip_receipt_check: false,
         }
