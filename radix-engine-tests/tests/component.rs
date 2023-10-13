@@ -347,3 +347,42 @@ fn pass_bucket_and_proof_to_other_component_fail() {
         )
     });
 }
+
+#[test]
+fn pass_vault_and_proof_to_other_component() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+
+    // create 1st component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ComponentTest2",
+                "create_component",
+                manifest_args!(),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+
+    let component_address_1 = result.new_component_addresses().first().cloned().unwrap();
+
+    // 1st component creates proof and vault and passes it to newly created 2nd component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(
+                component_address_1,
+                "pass_vault_to_new_component",
+                manifest_args!(),
+            )
+            .build(),
+        vec![],
+    );
+
+    // verify if manifest executed with success
+    receipt.expect_commit_success();
+}

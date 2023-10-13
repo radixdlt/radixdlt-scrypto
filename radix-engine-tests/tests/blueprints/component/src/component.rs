@@ -70,6 +70,8 @@ pub struct ComponentTest2NonFungible {
 #[blueprint]
 mod component_test2 {
 
+    use component_test3::ComponentTest3;
+
     struct ComponentTest2 {
         vault: Vault,
     }
@@ -118,6 +120,13 @@ mod component_test2 {
             let proof = bucket.create_proof_of_all();
             (bucket, proof)
         }
+
+        pub fn pass_vault_to_new_component(&mut self) -> Global<ComponentTest3> {
+            let (bucket, proof) = self.generate_nft_proof();
+            let vault = Vault::with_bucket(bucket);
+
+            ComponentTest3::create_component_with_vault_and_proof(vault, proof)
+        }
     }
 }
 
@@ -125,29 +134,42 @@ mod component_test2 {
 mod component_test3 {
 
     struct ComponentTest3 {
-        resource_id: ResourceAddress,
+        vault: Vault,
     }
 
     impl ComponentTest3 {
         pub fn create_component(resource_id: ResourceAddress) -> Global<ComponentTest3> {
-            Self { resource_id }
+            Self {
+                vault: Vault::new(resource_id),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize()
+        }
+
+        pub fn create_component_with_vault_and_proof(
+            vault: Vault,
+            proof: Proof,
+        ) -> Global<ComponentTest3> {
+            proof.check(vault.resource_address()).drop();
+            Self { vault }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize()
         }
 
         pub fn check_proof(&self, proof: Proof) {
-            proof.check(self.resource_id).drop();
+            proof.check(self.vault.resource_address()).drop();
         }
 
         pub fn check_proof_and_burn_bucket(&self, bucket: Bucket, proof: Proof) {
-            proof.check(self.resource_id).drop();
+            proof.check(self.vault.resource_address()).drop();
             bucket.burn();
         }
 
         pub fn burn_bucket_and_check_proof(&self, bucket: Bucket, proof: Proof) {
             bucket.burn();
-            proof.check(self.resource_id).drop();
+            proof.check(self.vault.resource_address()).drop();
         }
     }
 }
