@@ -12,7 +12,6 @@ use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
 use radix_engine_stores::hash_tree_support::HashTreeUpdatingDatabase;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use std::fs::File;
 use std::path::PathBuf;
 use std::thread;
@@ -24,8 +23,6 @@ use tar::Archive;
 pub struct TxnExecuteInMemory {
     /// The transaction file, in `.tar.gz` format, with entries sorted
     pub source: PathBuf,
-    /// Path to a folder for storing state
-    pub database_dir: PathBuf,
 
     /// The network to use, [mainnet | stokenet]
     #[clap(short, long)]
@@ -80,18 +77,15 @@ impl TxnExecuteInMemory {
                     print_progress(start.elapsed(), new_version, new_state_root_hash);
                 }
             }
+
+            let duration = start.elapsed();
+            println!("Time elapsed: {:?}", duration);
+            println!("State version: {}", database.get_current_version());
+            println!("State root hash: {}", database.get_current_root_hash());
         });
 
         txn_read_thread_handle.join().unwrap()?;
         txn_write_thread_handle.join().unwrap();
-
-        {
-            let duration = start.elapsed();
-            let database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
-            println!("Time elapsed: {:?}", duration);
-            println!("State version: {}", database.get_current_version());
-            println!("State root hash: {}", database.get_current_root_hash());
-        }
 
         Ok(())
     }

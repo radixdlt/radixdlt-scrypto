@@ -12,7 +12,7 @@ use tar::Header;
 
 /// Prepare transactions from a fully synced Node database
 #[derive(Parser, Debug)]
-pub struct Prepare {
+pub struct TxnPrepare {
     /// Path to the `state_manager` database
     pub database_dir: PathBuf,
     /// Path to the output transaction file, in `.tar.gz` format, with entries sorted
@@ -25,7 +25,7 @@ pub struct Prepare {
 
 const TRANSACTION_COLUMN: &str = "raw_ledger_transactions";
 
-impl Prepare {
+impl TxnPrepare {
     pub fn run(&self) -> Result<(), Error> {
         let temp_dir = tempfile::tempdir().map_err(Error::IOError)?;
         let db = DB::open_cf_as_secondary(

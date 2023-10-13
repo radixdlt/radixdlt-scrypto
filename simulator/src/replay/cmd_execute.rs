@@ -84,18 +84,15 @@ impl TxnExecute {
                     print_progress(start.elapsed(), new_version, new_state_root_hash);
                 }
             }
+
+            let duration = start.elapsed();
+            println!("Time elapsed: {:?}", duration);
+            println!("State version: {}", database.get_current_version());
+            println!("State root hash: {}", database.get_current_root_hash());
         });
 
         txn_read_thread_handle.join().unwrap()?;
         txn_write_thread_handle.join().unwrap();
-
-        {
-            let duration = start.elapsed();
-            let database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
-            println!("Time elapsed: {:?}", duration);
-            println!("State version: {}", database.get_current_version());
-            println!("State root hash: {}", database.get_current_root_hash());
-        }
 
         Ok(())
     }

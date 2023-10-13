@@ -26,9 +26,9 @@ pub struct ReplayCli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    Prepare(Prepare),
+    Prepare(TxnPrepare),
     Execute(TxnExecute),
-    TxnExecuteInMemory(TxnExecuteInMemory),
+    ExecuteInMemory(TxnExecuteInMemory),
     Sync(TxnSync),
 }
 
@@ -38,7 +38,7 @@ pub fn run() -> Result<(), Error> {
     match cli.command {
         Command::Prepare(cmd) => cmd.run(),
         Command::Execute(cmd) => cmd.run(),
-        Command::TxnExecuteInMemory(cmd) => cmd.run(),
+        Command::ExecuteInMemory(cmd) => cmd.run(),
         Command::Sync(cmd) => cmd.sync(),
     }
 }
