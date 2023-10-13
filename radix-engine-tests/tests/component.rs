@@ -1,7 +1,8 @@
 mod package_loader;
 
 use package_loader::PackageLoader;
-use radix_engine::errors::RuntimeError;
+use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
+use radix_engine::kernel::call_frame::DropNodeError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -278,4 +279,71 @@ fn pass_bucket_and_proof_to_other_component() {
 
     // verify if manifest executed with success
     receipt.expect_commit_success();
+}
+
+#[test]
+fn pass_bucket_and_proof_to_other_component_fail() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+
+    // create 1st component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ComponentTest2",
+                "create_component",
+                manifest_args!(),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+
+    let component_address_1 = result.new_component_addresses().first().cloned().unwrap();
+    let resource_address_1 = result.new_resource_addresses().first().cloned().unwrap();
+
+    // create 2nd component passing resource address from 1st component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ComponentTest3",
+                "create_component",
+                manifest_args!(resource_address_1),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+    let component_address_2 = result.new_component_addresses().first().cloned().unwrap();
+
+    // take bucket and proof from the 1st component and pass
+    // to the 2nd component for proof check and bucket burn
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(component_address_1, "generate_nft_proof", manifest_args!())
+            .take_all_from_worktop(resource_address_1, "bucket_1")
+            .pop_from_auth_zone("proof_1")
+            .call_method_with_name_lookup(
+                component_address_2,
+                "burn_bucket_and_check_proof",
+                |lookup| (lookup.bucket("bucket_1"), lookup.proof("proof_1")),
+            )
+            .build(),
+        vec![],
+    );
+
+    // verify if manifest executed with an error
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::DropNodeError(
+                DropNodeError::NodeBorrowed(..)
+            )))
+        )
+    });
 }

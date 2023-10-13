@@ -144,5 +144,10 @@ mod component_test3 {
             proof.check(self.resource_id).drop();
             bucket.burn();
         }
+
+        pub fn burn_bucket_and_check_proof(&self, bucket: Bucket, proof: Proof) {
+            bucket.burn();
+            proof.check(self.resource_id).drop();
+        }
     }
 }
