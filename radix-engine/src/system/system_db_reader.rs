@@ -103,6 +103,9 @@ pub enum SystemReaderError {
 pub struct SystemDatabaseReader<'a, S: SubstateDatabase> {
     substate_db: &'a S,
     tracked: Option<&'a IndexMap<NodeId, TrackedNode>>,
+
+    blueprint_cache: RefCell<NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>>,
+    schema_cache: RefCell<NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>>,
 }
 
 impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
@@ -113,6 +116,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Self {
             substate_db,
             tracked: Some(tracked),
+            blueprint_cache: RefCell::new(NonIterMap::new()),
+            schema_cache: RefCell::new(NonIterMap::new()),
         }
     }
 
@@ -120,6 +125,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Self {
             substate_db,
             tracked: None,
+            blueprint_cache: RefCell::new(NonIterMap::new()),
+            schema_cache: RefCell::new(NonIterMap::new()),
         }
     }
 
@@ -182,6 +189,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .interface
             .state
             .fields
+            .as_ref()
             .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
             .0;
         let partition_number = match partition_description {
@@ -239,6 +247,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .interface
             .state
             .fields
+            .as_ref()
             .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
             .0;
         let partition_number = match partition_description {
@@ -492,18 +501,33 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     pub fn get_blueprint_definition(
         &self,
         blueprint_id: &BlueprintId,
-    ) -> Result<BlueprintDefinition, SystemReaderError> {
+    ) -> Result<Rc<BlueprintDefinition>, SystemReaderError> {
+        let canonical_key = CanonicalBlueprintId {
+            address: blueprint_id.package_address,
+            blueprint: blueprint_id.blueprint_name.clone(),
+            version: BlueprintVersion::default(),
+        };
+        {
+            if let Some(cache) = self.blueprint_cache.borrow().get(&canonical_key) {
+                return Ok(cache.clone());
+            }
+        }
+
         let bp_version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name.clone());
-        let definition = self
+        let definition = Rc::new(self
             .fetch_substate::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate>(
                 blueprint_id.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
-            ).ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?;
+            ).ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?.into_value().unwrap().into_latest());
 
-        Ok(definition.into_value().unwrap().into_latest())
+        self.blueprint_cache
+            .borrow_mut()
+            .insert(canonical_key, definition.clone());
+
+        Ok(definition)
     }
 
     pub fn get_kv_store_type_target(
@@ -630,7 +654,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         target: &BlueprintTypeTarget,
         payload_identifier: &BlueprintPayloadIdentifier,
     ) -> Result<ObjectSubstateTypeReference, SystemReaderError> {
-        let blueprint_interface = self
+        let blueprint_interface = &self
             .get_blueprint_definition(&target.blueprint_info.blueprint_id)?
             .interface;
 
@@ -689,7 +713,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         target: &BlueprintTypeTarget,
         payload_identifier: &BlueprintPayloadIdentifier,
     ) -> Result<ResolvedPayloadSchema, SystemReaderError> {
-        let blueprint_interface = self
+        let blueprint_interface = &self
             .get_blueprint_definition(&target.blueprint_info.blueprint_id)?
             .interface;
 
@@ -957,8 +981,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
                 let definition = self.get_blueprint_definition(&blueprint_id).unwrap();
 
-                let state_schema = definition.interface.state;
-
+                let state_schema = &definition.interface.state;
                 match (&state_schema.fields, &partition_offset) {
                     (
                         Some((PartitionDescription::Logical(offset), _fields)),
@@ -1122,6 +1145,7 @@ impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter
             .interface
             .state
             .fields
+            .as_ref()
             .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
             .0;
         let partition_number = match partition_description {
