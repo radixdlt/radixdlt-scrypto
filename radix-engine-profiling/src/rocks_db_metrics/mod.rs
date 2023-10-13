@@ -56,7 +56,7 @@ impl SubstateStoreWithMetrics<RocksDBWithMerkleTreeSubstateStore> {
         opt.set_block_based_table_factory(&factory_opts);
 
         Self {
-            db: RocksDBWithMerkleTreeSubstateStore::with_options(&opt, path),
+            db: RocksDBWithMerkleTreeSubstateStore::with_options(&opt, path, true),
             commit_set_metrics: RefCell::new(BTreeMap::new()),
             commit_delete_metrics: RefCell::new(BTreeMap::new()),
             read_metrics: RefCell::new(BTreeMap::new()),
