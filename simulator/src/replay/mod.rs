@@ -2,10 +2,12 @@ pub mod ledger_transaction;
 
 mod cmd_prepare;
 mod cmd_run;
+mod cmd_sync;
 mod error;
 
 pub use cmd_prepare::*;
 pub use cmd_run::*;
+pub use cmd_sync::*;
 pub use error::*;
 
 use clap::{Parser, Subcommand};
@@ -21,7 +23,8 @@ pub struct ReplayCli {
 #[derive(Subcommand, Debug)]
 pub enum Command {
     Prepare(Prepare),
-    Run(Run),
+    Execute(TxnExecute),
+    Sync(TxnSync),
 }
 
 pub fn run() -> Result<(), Error> {
@@ -29,6 +32,7 @@ pub fn run() -> Result<(), Error> {
 
     match cli.command {
         Command::Prepare(cmd) => cmd.run(),
-        Command::Run(cmd) => cmd.run(),
+        Command::Execute(cmd) => cmd.run(),
+        Command::Sync(cmd) => cmd.sync(),
     }
 }
