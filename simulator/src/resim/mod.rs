@@ -384,7 +384,7 @@ pub fn export_schema(
         .get_schema(node_id, &schema_hash)
         .map_err(|_| Error::SchemaNotFound(*node_id, schema_hash))?;
 
-    Ok(schema)
+    Ok(schema.as_ref().clone())
 }
 
 pub fn export_blueprint_interface(

@@ -60,7 +60,7 @@ pub enum SystemPartitionDescriptor {
 }
 
 pub struct ResolvedPayloadSchema {
-    pub schema: VersionedScryptoSchema,
+    pub schema: Rc<VersionedScryptoSchema>,
     pub type_id: LocalTypeId,
     pub allow_ownership: bool,
     pub allow_non_global_refs: bool,
@@ -787,24 +787,33 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         &self,
         node_id: &NodeId,
         schema_hash: &SchemaHash,
-    ) -> Result<VersionedScryptoSchema, SystemReaderError> {
-        let schema = self
+    ) -> Result<Rc<VersionedScryptoSchema>, SystemReaderError> {
+        {
+            if let Some(cache) = self.schema_cache.borrow().get(schema_hash) {
+                return Ok(cache.clone());
+            }
+        }
+
+        let schema = Rc::new(self
             .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<VersionedScryptoSchema>>(
                 node_id,
                 SCHEMAS_PARTITION,
                 &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
             )
-            .ok_or_else(|| SystemReaderError::SchemaDoesNotExist)?;
+            .ok_or_else(|| SystemReaderError::SchemaDoesNotExist)?.into_value()
+            .expect("Schema should exist if substate exists"));
 
-        Ok(schema
-            .into_value()
-            .expect("Schema should exist if substate exists"))
+        self.schema_cache
+            .borrow_mut()
+            .insert(schema_hash.clone(), schema.clone());
+
+        Ok(schema)
     }
 
     pub fn get_blueprint_type_schema(
         &self,
         type_id: &BlueprintTypeIdentifier,
-    ) -> Result<(VersionedScryptoSchema, ScopedTypeId), SystemReaderError> {
+    ) -> Result<(Rc<VersionedScryptoSchema>, ScopedTypeId), SystemReaderError> {
         let BlueprintTypeIdentifier {
             package_address,
             blueprint_name,
