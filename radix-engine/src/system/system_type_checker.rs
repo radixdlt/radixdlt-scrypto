@@ -134,10 +134,11 @@ where
         ),
         RuntimeError,
     > {
-        let blueprint_interface =
-            self.get_blueprint_default_interface(target.blueprint_info.blueprint_id.clone())?;
+        let blueprint_definition =
+            self.get_blueprint_default_definition(target.blueprint_info.blueprint_id.clone())?;
 
-        let (payload_def, allow_ownership, allow_non_global_ref) = blueprint_interface
+        let (payload_def, allow_ownership, allow_non_global_ref) = blueprint_definition
+            .interface
             .get_payload_def(payload_identifier)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::TypeCheckError(
@@ -267,10 +268,11 @@ where
         collection_index: CollectionIndex,
         payloads: &[(&Vec<u8>, &Vec<u8>)],
     ) -> Result<PartitionDescription, RuntimeError> {
-        let blueprint_interface =
-            self.get_blueprint_default_interface(target.blueprint_info.blueprint_id.clone())?;
+        let blueprint_definition =
+            self.get_blueprint_default_definition(target.blueprint_info.blueprint_id.clone())?;
 
-        let partition_description = blueprint_interface
+        let partition_description = blueprint_definition
+            .interface
             .state
             .collections
             .get(collection_index as usize)
@@ -425,16 +427,13 @@ where
             blueprint_name,
             type_name,
         } = type_id.clone();
-        let interface = self.get_blueprint_default_interface(BlueprintId {
+        let blueprint_definition = self.get_blueprint_default_definition(BlueprintId {
             package_address,
             blueprint_name,
         })?;
-        let scoped_type_id = interface
-            .types
-            .get(&type_name)
-            .ok_or(RuntimeError::SystemError(
-                SystemError::BlueprintTypeNotFound(type_name.clone()),
-            ))?;
+        let scoped_type_id = blueprint_definition.interface.types.get(&type_name).ok_or(
+            RuntimeError::SystemError(SystemError::BlueprintTypeNotFound(type_name.clone())),
+        )?;
         Ok((
             self.get_schema(package_address.as_node_id(), &scoped_type_id.0)?,
             scoped_type_id.clone(),
