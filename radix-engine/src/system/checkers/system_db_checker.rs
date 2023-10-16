@@ -58,6 +58,9 @@ pub struct NodeCounts {
     pub interior_node_count: usize,
     pub package_count: usize,
     pub blueprint_count: usize,
+    pub scrypto_global_component_count: usize,
+    pub native_global_component_count: usize,
+    pub object_count: BTreeMap<PackageAddress, BTreeMap<String, usize>>,
 }
 
 #[derive(Debug)]
@@ -166,12 +169,18 @@ impl ApplicationChecker for () {
 
 pub struct SystemDatabaseChecker<A: ApplicationChecker> {
     application_checker: A,
+    scrypto_global_component_count: usize,
+    native_global_component_count: usize,
+    object_count: BTreeMap<PackageAddress, BTreeMap<String, usize>>,
 }
 
 impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     pub fn new(checker: A) -> SystemDatabaseChecker<A> {
         SystemDatabaseChecker {
             application_checker: checker,
+            scrypto_global_component_count: 0usize,
+            native_global_component_count: 0usize,
+            object_count: btreemap!(),
         }
     }
 }
@@ -183,6 +192,9 @@ where
     fn default() -> Self {
         Self {
             application_checker: A::default(),
+            scrypto_global_component_count: 0usize,
+            native_global_component_count: 0usize,
+            object_count: btreemap!(),
         }
     }
 }
@@ -253,6 +265,10 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                 .map_err(SystemDatabaseCheckError::NodeError)?;
         }
 
+        node_counts.scrypto_global_component_count = self.scrypto_global_component_count;
+        node_counts.native_global_component_count = self.native_global_component_count;
+        node_counts.object_count.extend(self.object_count.clone());
+
         let system_checker_results = SystemDatabaseCheckerResults {
             node_counts,
             partition_count,
@@ -265,7 +281,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
     }
 
     fn check_node<S: SubstateDatabase + ListableSubstateDatabase>(
-        &self,
+        &mut self,
         reader: &SystemDatabaseReader<S>,
         node_id: &NodeId,
         node_counts: &mut NodeCounts,
@@ -387,6 +403,25 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                     }
                     ObjectType::Owned => {}
                 }
+
+                if node_id.entity_type().unwrap() == EntityType::GlobalGenericComponent {
+                    self.scrypto_global_component_count += 1;
+                } else if node_id.is_global_component() {
+                    self.native_global_component_count += 1;
+                }
+
+                self.object_count
+                    .entry(object_info.blueprint_info.blueprint_id.package_address)
+                    .or_default()
+                    .entry(
+                        object_info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .clone(),
+                    )
+                    .or_default()
+                    .add_assign(&1);
 
                 SystemNodeCheckerState {
                     node_id: *node_id,

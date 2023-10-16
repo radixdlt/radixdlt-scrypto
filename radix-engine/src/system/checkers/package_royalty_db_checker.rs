@@ -39,7 +39,7 @@ where
         value: &Vec<u8>,
     ) {
         // Ignore if the module id is not the royalty module.
-        if module_id == ModuleId::Royalty {
+        if module_id != ModuleId::Royalty {
             return;
         }
 
