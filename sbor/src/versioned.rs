@@ -28,7 +28,7 @@ impl<T: HasLatestVersion<Latest = Latest> + Clone, Latest> CloneIntoLatest for T
 /// This is useful for creating an SBOR data model which can be updated in future.
 /// In future, enum variants can be added, and automatically mapped to.
 ///
-/// This macro is just a simpler wrapper around the [`define_versioned`] macro,
+/// This macro is just a simpler wrapper around the [`crate::define_versioned`] macro,
 /// for use when there's just a single version.
 #[macro_export]
 macro_rules! define_single_versioned {

@@ -71,7 +71,7 @@ pub fn manifest_categorize(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derive code that implements `ManifestCategorize`, `ManifestEncode` and `ManifestDecode` traits for this struct or enum.
+/// A shortcut for [`ManifestCategorize`], [`ManifestEncode`] and [`ManifestDecode`] derives.
 ///
 #[proc_macro_derive(ManifestSbor, attributes(sbor))]
 pub fn manifest_sbor(input: TokenStream) -> TokenStream {
@@ -160,7 +160,7 @@ pub fn scrypto_describe(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derive code that implements `ScryptoCategorize`, `ScryptoEncode`, `ScryptoDecode`, and `ScryptoDescribe` traits for this struct or enum.
+/// A shortcut for [`ScryptoCategorize`], [`ScryptoEncode`], [`ScryptoDecode`], and [`ScryptoDescribe`] derives.
 ///
 #[proc_macro_derive(ScryptoSbor, attributes(sbor))]
 pub fn scrypto_sbor(input: TokenStream) -> TokenStream {

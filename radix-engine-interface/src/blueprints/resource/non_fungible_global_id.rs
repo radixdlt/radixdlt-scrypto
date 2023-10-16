@@ -109,6 +109,15 @@ impl From<BlueprintId> for GlobalCaller {
     }
 }
 
+impl GlobalCaller {
+    pub fn is_none(&self) -> bool {
+        match self {
+            GlobalCaller::GlobalObject(x) => x.as_node_id().eq(TRANSACTION_TRACKER.as_node_id()),
+            GlobalCaller::PackageBlueprint(_) => false,
+        }
+    }
+}
+
 //======
 // error
 //======

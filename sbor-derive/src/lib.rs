@@ -24,7 +24,7 @@ pub fn decode(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derive code that describes the SBOR type.
+/// Derive code that describes this type.
 #[proc_macro_derive(Describe, attributes(sbor))]
 pub fn describe(input: TokenStream) -> TokenStream {
     sbor_derive_common::describe::handle_describe(proc_macro2::TokenStream::from(input), None)
@@ -32,7 +32,7 @@ pub fn describe(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derive code that implements `Categorize`, `Encode`, `Decode`, and `Describe` traits for this struct or enum.
+/// A shortcut for [`Categorize`], [`Encode`], [`Decode`], and [`Describe`] derives.
 ///
 #[proc_macro_derive(Sbor, attributes(sbor))]
 pub fn sbor(input: TokenStream) -> TokenStream {
@@ -77,7 +77,7 @@ pub fn basic_decode(input: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Derive code that describes the SBOR type - specifically for Basic SBOR.
+/// Derive code that describes the type - specifically for Basic SBOR.
 #[proc_macro_derive(BasicDescribe, attributes(sbor))]
 pub fn basic_describe(input: TokenStream) -> TokenStream {
     sbor_derive_common::describe::handle_describe(
@@ -88,7 +88,7 @@ pub fn basic_describe(input: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Derive code that implements `BasicCategorize`, `BasicEncode`, `BasicDecode`, and `BasicDescribe` traits for this struct or enum.
+/// A shortcut for [`BasicCategorize`], [`BasicEncode`], [`BasicDecode`], and [`BasicDescribe`] derives.
 ///
 #[proc_macro_derive(BasicSbor, attributes(sbor))]
 pub fn basic_sbor(input: TokenStream) -> TokenStream {
