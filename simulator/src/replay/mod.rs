@@ -4,12 +4,14 @@ pub mod txn_reader;
 
 mod cmd_execute;
 mod cmd_execute_in_memory;
+mod cmd_measure;
 mod cmd_prepare;
 mod cmd_sync;
 mod error;
 
 pub use cmd_execute::*;
 pub use cmd_execute_in_memory::*;
+pub use cmd_measure::*;
 pub use cmd_prepare::*;
 pub use cmd_sync::*;
 pub use error::*;
@@ -30,6 +32,7 @@ pub enum Command {
     Execute(TxnExecute),
     ExecuteInMemory(TxnExecuteInMemory),
     Sync(TxnSync),
+    Measure(TxnMeasure),
 }
 
 pub fn run() -> Result<(), Error> {
@@ -40,5 +43,6 @@ pub fn run() -> Result<(), Error> {
         Command::Execute(cmd) => cmd.run(),
         Command::ExecuteInMemory(cmd) => cmd.run(),
         Command::Sync(cmd) => cmd.sync(),
+        Command::Measure(cmd) => cmd.run(),
     }
 }
