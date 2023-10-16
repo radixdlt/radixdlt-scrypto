@@ -122,10 +122,15 @@ mod component_test2 {
         }
 
         pub fn pass_vault_to_new_component(&mut self) -> Global<ComponentTest3> {
-            let (bucket, proof) = self.generate_nft_proof();
-            let vault = Vault::with_bucket(bucket);
+            let mut vault = Vault::with_bucket(self.generate_nft());
+            let bucket = vault.take(dec!(1));
+            let proof = bucket.create_proof_of_all();
 
-            ComponentTest3::create_component_with_vault_and_proof(vault, proof)
+            let return_value = ComponentTest3::create_component_with_vault_and_proof(vault, proof);
+
+            bucket.burn();
+
+            return_value
         }
     }
 }
