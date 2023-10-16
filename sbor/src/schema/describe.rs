@@ -16,7 +16,7 @@ pub trait Describe<C: CustomTypeKind<RustTypeId>> {
     /// * Any additional data associated with the type which may be added in future (eg i18n or further validation)
     ///
     /// For example:
-    /// * An Array<u32> and Array<u64> are different types because they have different structures
+    /// * An `Array<u32>` and `Array<u64>` are different types because they have different structures
     /// * Two types named "Content" may be in different namepaces, and wrap different kinds of content, so be different types
     /// * The tuple `(T1, T2)` is a different type for each `T1` and `T2` because they have different structures
     /// * Types which are intended to be "transparent" to SBOR such as pointers/smart pointers/etc are equivalent

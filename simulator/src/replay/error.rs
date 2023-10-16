@@ -7,4 +7,5 @@ pub enum Error {
     DatabaseError(rocksdb::Error),
     InvalidTransactionArchive,
     InvalidTransactionSource,
+    InvalidBreakpoints(String),
 }

@@ -46,6 +46,7 @@ lazy_static! {
             TRANSACTION_TRACKER_PACKAGE.into(),
             // components
             CONSENSUS_MANAGER.into(),
+            TRANSACTION_TRACKER.into(),
         )
     };
 }

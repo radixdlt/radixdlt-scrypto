@@ -416,7 +416,7 @@ impl SystemModuleMixer {
         {
             AuthModule::on_call_method(api, receiver, module_id, direct_access, ident, args)?
         } else {
-            AuthModule::create_mock(
+            AuthModule::on_call_fn_mock(
                 api,
                 Some((receiver, direct_access)),
                 btreeset!(),
@@ -435,7 +435,7 @@ impl SystemModuleMixer {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        AuthModule::on_fn_finish(api, auth_zone)
+        AuthModule::on_call_method_finish(api, auth_zone)
     }
 
     pub fn on_call_function<V, Y>(
@@ -456,7 +456,7 @@ impl SystemModuleMixer {
         {
             AuthModule::on_call_function(api, blueprint_id, ident)?
         } else {
-            AuthModule::create_mock(api, None, btreeset!(), btreeset!())?
+            AuthModule::on_call_fn_mock(api, None, btreeset!(), btreeset!())?
         };
 
         Ok(auth_zone)
@@ -470,7 +470,7 @@ impl SystemModuleMixer {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        AuthModule::on_fn_finish(api, auth_zone)
+        AuthModule::on_call_function_finish(api, auth_zone)
     }
 
     pub fn add_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {

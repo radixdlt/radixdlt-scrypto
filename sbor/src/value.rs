@@ -11,6 +11,7 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
+/// Represents any value conforming to the SBOR value model.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(
     feature = "serde",
@@ -76,11 +77,13 @@ pub enum Value<X: CustomValueKind, Y: CustomValue<X>> {
     },
 }
 
+/// Represents a custom SBOR value.
 pub trait CustomValue<X: CustomValueKind> {
     fn get_custom_value_kind(&self) -> X;
 }
 
 impl<X: CustomValueKind, Y: CustomValue<X>> Value<X, Y> {
+    /// Returns the value kind of this value.
     fn get_value_kind(&self) -> ValueKind<X> {
         match self {
             Value::Bool { .. } => ValueKind::Bool,
@@ -88,7 +91,7 @@ impl<X: CustomValueKind, Y: CustomValue<X>> Value<X, Y> {
             Value::I16 { .. } => ValueKind::I16,
             Value::I32 { .. } => ValueKind::I32,
             Value::I64 { .. } => ValueKind::I64,
-            Value::I128 { .. } => ValueKind::U128,
+            Value::I128 { .. } => ValueKind::I128,
             Value::U8 { .. } => ValueKind::U8,
             Value::U16 { .. } => ValueKind::U16,
             Value::U32 { .. } => ValueKind::U32,
