@@ -309,21 +309,19 @@ where
         Ok((validation_target.blueprint_info, node_substates))
     }
 
-    pub fn get_blueprint_default_interface(
+    pub fn get_blueprint_default_definition(
         &mut self,
         blueprint_id: BlueprintId,
-    ) -> Result<BlueprintInterface, RuntimeError> {
+    ) -> Result<Rc<BlueprintDefinition>, RuntimeError> {
         let bp_version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name);
-        Ok(self
-            .load_blueprint_definition(blueprint_id.package_address, &bp_version_key)?
-            .interface)
+        Ok(self.load_blueprint_definition(blueprint_id.package_address, &bp_version_key)?)
     }
 
     pub fn load_blueprint_definition(
         &mut self,
         package_address: PackageAddress,
         bp_version_key: &BlueprintVersionKey,
-    ) -> Result<BlueprintDefinition, RuntimeError> {
+    ) -> Result<Rc<BlueprintDefinition>, RuntimeError> {
         let canonical_bp_id = CanonicalBlueprintId {
             address: package_address,
             blueprint: bp_version_key.blueprint.to_string(),
@@ -359,14 +357,14 @@ where
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
-        let definition = match substate.into_value() {
+        let definition = Rc::new(match substate.into_value() {
             Some(definition) => definition.into_latest(),
             None => {
                 return Err(RuntimeError::SystemError(
                     SystemError::BlueprintDoesNotExist(canonical_bp_id),
                 ))
             }
-        };
+        });
 
         self.api
             .kernel_get_system_state()
@@ -439,14 +437,14 @@ where
         fields: IndexMap<u8, FieldValue>,
         kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
-        let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
-        let blueprint_type = blueprint_interface.blueprint_type.clone();
+        let blueprint_definition = self.get_blueprint_default_definition(blueprint_id.clone())?;
+        let blueprint_type = blueprint_definition.interface.blueprint_type.clone();
 
         let object_features: IndexSet<String> =
             features.into_iter().map(|s| s.to_string()).collect();
         // Validate features
         for feature in &object_features {
-            if !blueprint_interface.feature_set.contains(feature) {
+            if !blueprint_definition.interface.feature_set.contains(feature) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
                     feature.to_string(),
                 )));
@@ -489,7 +487,7 @@ where
 
         let (blueprint_info, mut node_substates) = self.validate_new_object(
             blueprint_id,
-            &blueprint_interface,
+            &blueprint_definition.interface,
             outer_obj_info,
             object_features,
             &outer_object_features,
@@ -516,17 +514,17 @@ where
 
         self.api.kernel_create_node(node_id, node_substates)?;
 
-        if blueprint_interface.is_transient {
+        if blueprint_definition.interface.is_transient {
             self.api.kernel_pin_node(node_id)?;
         }
 
-        if let Some((partition_offset, fields)) = blueprint_interface.state.fields {
+        if let Some((partition_offset, fields)) = &blueprint_definition.interface.state.fields {
             for (index, field) in fields.iter().enumerate() {
                 if let FieldTransience::TransientStatic { .. } = field.transience {
                     let partition_number = match partition_offset {
-                        PartitionDescription::Physical(partition_number) => partition_number,
+                        PartitionDescription::Physical(partition_number) => *partition_number,
                         PartitionDescription::Logical(offset) => {
-                            MAIN_BASE_PARTITION.at_offset(offset).unwrap()
+                            MAIN_BASE_PARTITION.at_offset(*offset).unwrap()
                         }
                     };
                     self.api.kernel_mark_substate_as_transient(
@@ -736,11 +734,12 @@ where
     ) -> Result<(NodeId, BlueprintInfo, PartitionNumber), RuntimeError> {
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
         let blueprint_info = self.get_blueprint_info(&node_id, module_id)?;
-        let blueprint_interface =
-            self.get_blueprint_default_interface(blueprint_info.blueprint_id.clone())?;
+        let blueprint_definition =
+            self.get_blueprint_default_definition(blueprint_info.blueprint_id.clone())?;
 
         let partition_num = {
-            let (partition_description, partition_type) = blueprint_interface
+            let (partition_description, partition_type) = blueprint_definition
+                .interface
                 .state
                 .get_partition(collection_index)
                 .ok_or_else(|| {
@@ -786,17 +785,17 @@ where
         (
             NodeId,
             Option<AttachedModuleId>,
-            BlueprintInterface,
+            Rc<BlueprintDefinition>,
             BlueprintInfo,
         ),
         RuntimeError,
     > {
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
         let blueprint_info = self.get_blueprint_info(&node_id, module_id)?;
-        let blueprint_interface =
-            self.get_blueprint_default_interface(blueprint_info.blueprint_id.clone())?;
+        let blueprint_definition =
+            self.get_blueprint_default_definition(blueprint_info.blueprint_id.clone())?;
 
-        Ok((node_id, module_id, blueprint_interface, blueprint_info))
+        Ok((node_id, module_id, blueprint_definition, blueprint_info))
     }
 
     fn get_actor_field_info(
@@ -804,10 +803,14 @@ where
         actor_object_type: ActorStateRef,
         field_index: u8,
     ) -> Result<(NodeId, BlueprintInfo, PartitionNumber, FieldTransience), RuntimeError> {
-        let (node_id, module_id, interface, info) = self.get_actor_info(actor_object_type)?;
+        let (node_id, module_id, blueprint_definition, info) =
+            self.get_actor_info(actor_object_type)?;
 
-        let (partition_description, field_schema) =
-            interface.state.field(field_index).ok_or_else(|| {
+        let (partition_description, field_schema) = blueprint_definition
+            .interface
+            .state
+            .field(field_index)
+            .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                     info.blueprint_id.clone(),
                     field_index,
@@ -960,16 +963,20 @@ where
                     CannotGlobalizeError::InvalidBlueprintId,
                 )));
             }
-            let interface = self
-                .get_blueprint_default_interface(object_info.blueprint_info.blueprint_id.clone())?;
+            let blueprint_definition = self.get_blueprint_default_definition(
+                object_info.blueprint_info.blueprint_id.clone(),
+            )?;
 
-            if interface.is_transient {
+            if blueprint_definition.interface.is_transient {
                 return Err(RuntimeError::SystemError(
                     SystemError::GlobalizingTransientBlueprint,
                 ));
             }
 
-            interface.state.num_logical_partitions()
+            blueprint_definition
+                .interface
+                .state
+                .num_logical_partitions()
         };
 
         let mut partitions = btreemap!(
@@ -1012,8 +1019,12 @@ where
                         );
 
                     // Move and drop
-                    let interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
-                    let num_logical_partitions = interface.state.num_logical_partitions();
+                    let blueprint_definition =
+                        self.get_blueprint_default_definition(blueprint_id.clone())?;
+                    let num_logical_partitions = blueprint_definition
+                        .interface
+                        .state
+                        .num_logical_partitions();
 
                     let module_id: ModuleId = module_id.clone().into();
                     let module_base_partition = module_id.base_partition_num();

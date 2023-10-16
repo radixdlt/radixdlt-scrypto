@@ -2409,7 +2409,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                         &type_identifier.0,
                     )
                     .unwrap();
-                (type_identifier.1, schema)
+                (type_identifier.1, schema.as_ref().clone())
             }
             BlueprintPayloadDef::Generic(_instance_index) => {
                 todo!()

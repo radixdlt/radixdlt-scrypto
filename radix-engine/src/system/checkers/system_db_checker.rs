@@ -392,7 +392,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                     node_id: *node_id,
                     node_type: SystemNodeType::Object {
                         object_info,
-                        bp_definition,
+                        bp_definition: bp_definition.as_ref().clone(),
                         expected_fields,
                         excluded_fields,
                     },

@@ -431,3 +431,21 @@ jobs:
         toolchain: 1.70.0
     - name: Cargo Check
       run: cargo check --all --features post_run_db_check
+
+  determinism-test:
+    name: Run determinism test
+    runs-on: ubuntu-latest-16-cores
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: Pull LFS assets
+      run: git lfs pull
+    - name: Replay transactions
+      run: |
+          cargo run --release --bin replay -- \
+          execute-in-memory ../assets-lfs/babylon-mainnet-transactions-2023-10-11.tar.gz \
+          --max-version 50000 \
+          --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
+      working-directory: simulator

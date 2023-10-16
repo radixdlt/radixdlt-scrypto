@@ -220,7 +220,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                         .get_blueprint_definition(&info.blueprint_info.blueprint_id)
                         .expect("Broken database");
 
-                    if let Some((_, fields)) = blueprint_def.interface.state.fields {
+                    if let Some((_, fields)) = &blueprint_def.interface.state.fields {
                         for (index, _field) in fields.iter().enumerate() {
                             // TODO: what if the field is conditional?
                             let (field_value, partition_number) = system_db_reader
