@@ -30,6 +30,10 @@ pub struct TxnExecuteInMemory {
     /// The max version to execute
     #[clap(short, long)]
     pub max_version: Option<u64>,
+
+    /// State hash breakpoints, in format of comma separated `<version>:<hash>`
+    #[clap(short, long)]
+    pub breakpoints: Option<String>,
 }
 
 impl TxnExecuteInMemory {
@@ -38,6 +42,18 @@ impl TxnExecuteInMemory {
             Some(n) => NetworkDefinition::from_str(n).map_err(Error::ParseNetworkError)?,
             None => NetworkDefinition::mainnet(),
         };
+        let mut breakpoints = BTreeMap::<u64, Hash>::new();
+        if let Some(bps) = &self.breakpoints {
+            for bp in bps.split(",") {
+                let mut tokens = bp.trim().split(":");
+                if let Some(version) = tokens.next().and_then(|x| u64::from_str(x).ok()) {
+                    if let Some(hash) = tokens.next().and_then(|x| Hash::from_str(x).ok()) {
+                        breakpoints.insert(version, hash);
+                    }
+                }
+            }
+        }
+        println!("Breakpoints: {:?}", breakpoints);
 
         let cur_version = 0;
         let to_version = self.max_version.clone();
@@ -74,6 +90,15 @@ impl TxnExecuteInMemory {
 
                 let new_state_root_hash = database.get_current_root_hash();
                 let new_version = database.get_current_version();
+
+                if let Some(expected) = breakpoints.get(&new_version) {
+                    if new_state_root_hash != *expected {
+                        panic!(
+                            "Unexpected state hash at version {}: expected = {}, actual = {}",
+                            new_version, expected, new_state_root_hash
+                        )
+                    }
+                }
 
                 if new_version < 1000 || new_version % 1000 == 0 {
                     print_progress(start.elapsed(), new_version, new_state_root_hash);
