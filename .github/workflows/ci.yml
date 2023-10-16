@@ -440,6 +440,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: 1.70.0
+    - name: Pull LFS assets
+      run: git lfs pull
     - name: Replay transactions
       run: |
           cargo run --release --bin replay -- \
