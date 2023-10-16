@@ -48,12 +48,15 @@ impl TxnExecuteInMemory {
                 let mut tokens = bp.trim().split(":");
                 if let Some(version) = tokens.next().and_then(|x| u64::from_str(x).ok()) {
                     if let Some(hash) = tokens.next().and_then(|x| Hash::from_str(x).ok()) {
-                        breakpoints.insert(version, hash);
+                        if tokens.next().is_none() {
+                            breakpoints.insert(version, hash);
+                            continue;
+                        }
                     }
                 }
+                return Err(Error::InvalidBreakpoints(bps.clone()));
             }
         }
-        println!("Breakpoints: {:?}", breakpoints);
 
         let cur_version = 0;
         let to_version = self.max_version.clone();
