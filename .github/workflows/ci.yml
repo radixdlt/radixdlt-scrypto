@@ -22,27 +22,22 @@ jobs:
   check-code-format:
     name: Check code format
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
-    - uses: actions/checkout@v3
-    - name: Check format
-      run: |
-        rustup component add rustfmt
-        bash ./check.sh
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Check format
+        run: bash ./check.sh
 
   sbor-unit-tests:
     name: Run SBOR unit tests
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
       - uses: actions/checkout@v3
-      - name: setup the container
-        run: |
-          apt update && apt install -y clang llvm cmake build-essential
-          rustup component add llvm-tools
-          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
       - name: Run tests
         run: cargo test
         working-directory: sbor
@@ -56,15 +51,11 @@ jobs:
   sbor-integration-tests:
     name: Run SBOR integration tests
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
       - uses: actions/checkout@v3
-      - name: setup the container
-        run: |
-          apt update && apt install -y clang llvm cmake build-essential
-          rustup component add llvm-tools
-          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
       - name: Run tests
         run: cargo test
         working-directory: sbor-tests
@@ -78,87 +69,74 @@ jobs:
   scrypto-unit-tests:
     name: Run Scrypto unit tests
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
-    - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: Run tests
-      run: cargo test
-      working-directory: scrypto
-    - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
-      working-directory: scrypto
-    - name: Run abi tests
-      run: cargo test
-      working-directory: scrypto-schema
-    - name: Run derive tests
-      run: cargo test
-      working-directory: scrypto-derive
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Run tests
+        run: cargo test
+        working-directory: scrypto
+      - name: Run tests (no_std)
+        run: cargo test --no-default-features --features alloc
+        working-directory: scrypto
+      - name: Run abi tests
+        run: cargo test
+        working-directory: scrypto-schema
+      - name: Run derive tests
+        run: cargo test
+        working-directory: scrypto-derive
 
   scrypto-integration-tests:
     name: Run Scrypto integration tests
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
-    - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: Run tests
-      run: cargo test
-      working-directory: scrypto-derive-tests
-    - name: Run tests with no_std
-      run: cargo test --no-default-features --features alloc
-      working-directory: scrypto-derive-tests
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Run tests
+        run: cargo test
+        working-directory: scrypto-derive-tests
+      - name: Run tests with no_std
+        run: cargo test --no-default-features --features alloc
+        working-directory: scrypto-derive-tests
 
   scrypto-examples:
     name: Run Scrypto examples
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
-    - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        rustup target add wasm32-unknown-unknown
-    - name: Build faucet
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/blueprints/faucet
-    - name: Build radiswap
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/blueprints/radiswap
-    - name: Build no-std
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/no-std
-    - name: Build and test hello-world
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/hello-world
-    - name: Build and test everything
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/everything
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - name: Build faucet
+        run: cargo build --target wasm32-unknown-unknown --release
+        working-directory: assets/blueprints/faucet
+      - name: Build radiswap
+        run: cargo build --target wasm32-unknown-unknown --release
+        working-directory: assets/blueprints/radiswap
+      - name: Build no-std
+        run: cargo build --target wasm32-unknown-unknown --release
+        working-directory: examples/no-std
+      - name: Build and test hello-world
+        run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+        working-directory: examples/hello-world
+      - name: Build and test everything
+        run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+        working-directory: examples/everything
 
   scrypto-stubs:
     name: Check Scrypto Stubs
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
-    - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools rustfmt
-    - run: ./check_stubs.sh
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - run: ./check_stubs.sh
 
   radix-engine-build:
     name: Run Radix Engine build (RocksDB)
@@ -188,10 +166,9 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: wasm32-unknown-unknown
       - name: Install nextest
         uses: taiki-e/install-action@nextest
-      - name: Add wasm target
-        run: rustup target add wasm32-unknown-unknown
       - name: Run tests
         run: |
           cargo nextest run \
@@ -211,131 +188,114 @@ jobs:
     name: Run Radix Engine tests (release)
     runs-on: ubuntu-latest-16-cores
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Install nextest
-      uses: taiki-e/install-action@nextest
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run tests
-      run: |
-        cargo nextest run \
-          --release \
-          -p radix-engine-common \
-          -p radix-engine-derive \
-          -p radix-engine-interface \
-          -p radix-engine \
-          -p radix-engine-tests
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+      - name: Run tests
+        run: |
+          cargo nextest run \
+            --release \
+            -p radix-engine-common \
+            -p radix-engine-derive \
+            -p radix-engine-interface \
+            -p radix-engine \
+            -p radix-engine-tests
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ubuntu-latest-16-cores
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Install nextest
-      uses: taiki-e/install-action@nextest
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run tests
-      run: |
-        cargo nextest run \
-          --no-default-features --features alloc \
-          -p radix-engine-common \
-          -p radix-engine-derive \
-          -p radix-engine-interface \
-          -p radix-engine \
-          -p radix-engine-tests
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+      - name: Run tests
+        run: |
+          cargo nextest run \
+            --no-default-features --features alloc \
+            -p radix-engine-common \
+            -p radix-engine-derive \
+            -p radix-engine-interface \
+            -p radix-engine \
+            -p radix-engine-tests
 
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
     runs-on: ubuntu-latest-16-cores
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Install nextest
-      uses: taiki-e/install-action@nextest
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run tests
-      run: |
-        cargo nextest run \
-          --features wasmer \
-          -p radix-engine-common \
-          -p radix-engine-derive \
-          -p radix-engine-interface \
-          -p radix-engine \
-          -p radix-engine-tests
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+      - name: Run tests
+        run: |
+          cargo nextest run \
+            --features wasmer \
+            -p radix-engine-common \
+            -p radix-engine-derive \
+            -p radix-engine-interface \
+            -p radix-engine \
+            -p radix-engine-tests
 
   radix-engine-bench:
     name: Run Radix Engine benchmarks
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
-    - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        rustup target add wasm32-unknown-unknown
-    - name: Run bench
-      run: cargo bench
-      working-directory: radix-engine-tests
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - name: Run bench
+        run: cargo bench
+        working-directory: radix-engine-tests
 
   radix-engine-common-bench:
     name: Run Radix Engine common benchmarks
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
-    - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        rustup target add wasm32-unknown-unknown
-    - name: Run bench
-      run: cargo bench
-      working-directory: radix-engine-common
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - name: Run bench
+        run: cargo bench
+        working-directory: radix-engine-common
 
   transaction:
     name: Run transaction tests
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
-    - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: Run tests
-      run: cargo test
-      working-directory: transaction
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Run tests
+        run: cargo test
+        working-directory: transaction
 
   transaction-scenarios:
     name: Run transaction scenarios
     runs-on: ubuntu-latest
-    container:
-      image: rust:bullseye
     steps:
-    - uses: actions/checkout@v3
-    - name: setup the container
-      run: |
-        apt update && apt install -y clang llvm cmake build-essential
-        rustup component add llvm-tools
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-    - name: Run tests
-      run: cargo test
-      working-directory: transaction-scenarios
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Run tests
+        run: cargo test
+        working-directory: transaction-scenarios
 
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
@@ -344,33 +304,32 @@ jobs:
       matrix:
         os: [ubuntu-latest-16-cores, windows-latest-16-cores]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: radixdlt/rust-cache@allow_registry_src_caching
-      with:
-        prefix-key: ""
-        shared-key: simulator-debug-${{ runner.os }}
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
-      if: runner.os == 'Windows'
-      run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
-    - name: Install dependencies
-      if: runner.os == 'Windows'
-      run: choco install llvm -y
-    - name: Run Unit tests
-      run: cargo test
-      working-directory: simulator
-    - name: Run tests
-      run: bash ./tests/resim.sh
-      working-directory: simulator
-    - name: Run tests
-      run: bash ./tests/manifest.sh
-      working-directory: simulator
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - uses: radixdlt/rust-cache@allow_registry_src_caching
+        with:
+          prefix-key: ""
+          shared-key: simulator-debug-${{ runner.os }}
+          cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+          workspaces: simulator
+      - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
+        if: runner.os == 'Windows'
+        run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+      - name: Install dependencies
+        if: runner.os == 'Windows'
+        run: choco install llvm -y
+      - name: Run Unit tests
+        run: cargo test
+        working-directory: simulator
+      - name: Run tests
+        run: bash ./tests/resim.sh
+        working-directory: simulator
+      - name: Run tests
+        run: bash ./tests/manifest.sh
+        working-directory: simulator
 
   cli-scrypto:
     name: Run CLI tests (scrypto)
@@ -379,27 +338,26 @@ jobs:
       matrix:
         os: [ubuntu-latest-16-cores, windows-latest-16-cores, macos-latest]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: radixdlt/rust-cache@allow_registry_src_caching
-      with:
-        prefix-key: ""
-        shared-key: simulator-debug-${{ runner.os }}
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
-      if: runner.os == 'Windows'
-      run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
-    - name: Install dependencies
-      if: runner.os == 'Windows'
-      run: choco install llvm -y
-    - name: Run tests
-      run: bash ./tests/scrypto.sh
-      working-directory: simulator
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - uses: radixdlt/rust-cache@allow_registry_src_caching
+        with:
+          prefix-key: ""
+          shared-key: simulator-debug-${{ runner.os }}
+          cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+          workspaces: simulator
+      - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
+        if: runner.os == 'Windows'
+        run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+      - name: Install dependencies
+        if: runner.os == 'Windows'
+        run: choco install llvm -y
+      - name: Run tests
+        run: bash ./tests/scrypto.sh
+        working-directory: simulator
 
   cargo-check:
     name: Run cargo check
@@ -408,12 +366,12 @@ jobs:
       matrix:
         os: [ubuntu-latest-16-cores]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Cargo Check
-      run: cargo check --all
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Cargo Check
+        run: cargo check --all
 
   cargo-check-post-run-db-check:
     name: Run cargo check
@@ -422,27 +380,27 @@ jobs:
       matrix:
         os: [ubuntu-latest-16-cores]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Cargo Check
-      run: cargo check --all --features post_run_db_check
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Cargo Check
+        run: cargo check --all --features post_run_db_check
 
   determinism-test:
     name: Run determinism test
     runs-on: ubuntu-latest-16-cores
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Pull LFS assets
-      run: git lfs pull
-    - name: Replay transactions
-      run: |
-          cargo run --release --bin replay -- \
-          execute-in-memory ../assets-lfs/babylon-mainnet-transactions-2023-10-11.tar.gz \
-          --max-version 50000 \
-          --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
-      working-directory: simulator
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Pull LFS assets
+        run: git lfs pull
+      - name: Replay transactions
+        run: |
+            cargo run --release --bin replay -- \
+            execute-in-memory ../assets-lfs/babylon-mainnet-transactions-2023-10-11.tar.gz \
+            --max-version 50000 \
+            --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
+        working-directory: simulator
