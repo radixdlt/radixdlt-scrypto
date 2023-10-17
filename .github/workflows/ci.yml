@@ -24,7 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Check format
         run: bash ./check.sh
 
@@ -33,7 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p sbor
       - name: Run tests (no_std)
@@ -46,7 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p sbor-tests
       - name: Run tests (no_std)
@@ -59,7 +62,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p scrypto
       - name: Run tests (no_std)
@@ -74,7 +78,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p scrypto-derive-tests
       - name: Run tests with no_std
@@ -85,7 +90,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Build faucet
         run: cargo build --target wasm32-unknown-unknown --release
         working-directory: assets/blueprints/faucet
@@ -111,7 +117,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Check stubs
         run: ./check_stubs.sh
 
@@ -123,7 +130,8 @@ jobs:
         os: [ubuntu-latest-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Install dependency
         run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
       - name: Build with resource tracking
@@ -138,7 +146,8 @@ jobs:
     runs-on: ubuntu-latest-16-cores
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: |
           cargo nextest run \
@@ -159,7 +168,8 @@ jobs:
     runs-on: ubuntu-latest-16-cores
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: |
           cargo nextest run \
@@ -175,7 +185,8 @@ jobs:
     runs-on: ubuntu-latest-16-cores
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: |
           cargo nextest run \
@@ -191,7 +202,8 @@ jobs:
     runs-on: ubuntu-latest-16-cores
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: |
           cargo nextest run \
@@ -207,7 +219,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run bench
         run: cargo bench
         working-directory: radix-engine-tests
@@ -217,7 +230,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run bench
         run: cargo bench
         working-directory: radix-engine-common
@@ -227,7 +241,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p transaction
 
@@ -236,7 +251,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p transaction-scenarios
 
@@ -248,7 +264,8 @@ jobs:
         os: [ubuntu-latest-16-cores, windows-latest-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - uses: radixdlt/rust-cache@allow_registry_src_caching
         with:
           prefix-key: ""
@@ -273,7 +290,8 @@ jobs:
         os: [ubuntu-latest-16-cores, windows-latest-16-cores, macos-latest]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - uses: radixdlt/rust-cache@allow_registry_src_caching
         with:
           prefix-key: ""
@@ -292,7 +310,8 @@ jobs:
         os: [ubuntu-latest-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cargo Check
         run: cargo check --all
 
@@ -304,7 +323,8 @@ jobs:
         os: [ubuntu-latest-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cargo Check
         run: cargo check --all --features post_run_db_check
 
@@ -313,7 +333,8 @@ jobs:
     runs-on: ubuntu-latest-16-cores
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-job
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Pull LFS assets
         run: git lfs pull
       - name: Replay transactions

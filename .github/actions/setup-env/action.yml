@@ -1,12 +1,14 @@
-name: 'Setup workflow job'
-description: 'Configures the job to perform radixdlt-scrypto CI'
+name: 'Setup environment'
+description: 'Common GH action to setup job environment'
 
 runs:
   using: "composite"
   steps:
-    - uses: actions-rs/toolchain@v1
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+        default: true
         target: wasm32-unknown-unknown
 
     - name: Install nextest
