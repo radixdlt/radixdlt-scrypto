@@ -140,15 +140,15 @@ impl ApplicationEventChecker for ResourceEventChecker {
             NON_FUNGIBLE_VAULT_BLUEPRINT => match event_id {
                 EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), event_name) => {
                     match event_name.as_str() {
-                        non_fungible_vault::DepositEvent::EVENT_NAME => {
-                            let event: non_fungible_vault::DepositEvent =
+                        non_fungible_vault::NonFungibleVaultDepositEvent::EVENT_NAME => {
+                            let event: non_fungible_vault::NonFungibleVaultDepositEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             let amount: Decimal = event.ids.len().into();
                             *tracked = tracked.checked_add(amount).unwrap();
                         }
-                        non_fungible_vault::WithdrawEvent::EVENT_NAME => {
-                            let event: non_fungible_vault::WithdrawEvent =
+                        non_fungible_vault::NonFungibleVaultWithdrawEvent::EVENT_NAME => {
+                            let event: non_fungible_vault::NonFungibleVaultWithdrawEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             let amount: Decimal = event.ids.len().into();
@@ -158,7 +158,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                             }
                         }
                         fungible_vault::RecallEvent::EVENT_NAME => {
-                            let event: non_fungible_vault::RecallEvent =
+                            let event: non_fungible_vault::NonFungibleVaultRecallEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             let amount: Decimal = event.ids.len().into();

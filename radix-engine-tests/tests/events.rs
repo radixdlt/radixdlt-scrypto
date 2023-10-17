@@ -514,11 +514,13 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
-                .is_event_name_equal::<non_fungible_vault::RecallEvent>(event_identifier)
+                .is_event_name_equal::<non_fungible_vault::NonFungibleVaultRecallEvent>(
+                    event_identifier
+                )
                 && is_decoded_equal(
-                    &non_fungible_vault::RecallEvent::new(indexset!(NonFungibleLocalId::integer(
-                        1
-                    ))),
+                    &non_fungible_vault::NonFungibleVaultRecallEvent::new(indexset!(
+                        NonFungibleLocalId::integer(1)
+                    )),
                     event_data
                 ) =>
                 true,
@@ -529,11 +531,13 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
-                .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
+                .is_event_name_equal::<non_fungible_vault::NonFungibleVaultDepositEvent>(
+                    event_identifier
+                )
                 && is_decoded_equal(
-                    &non_fungible_vault::DepositEvent::new(
-                        indexset!(non_fungible_local_id.clone())
-                    ),
+                    &non_fungible_vault::NonFungibleVaultDepositEvent::new(indexset!(
+                        non_fungible_local_id.clone()
+                    )),
                     event_data
                 ) =>
                 true,
@@ -909,9 +913,14 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
-                .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
+                .is_event_name_equal::<non_fungible_vault::NonFungibleVaultDepositEvent>(
+                    event_identifier
+                )
                 && is_decoded_equal(
-                    &non_fungible_vault::DepositEvent::new(indexset!(id.clone(), id2.clone())),
+                    &non_fungible_vault::NonFungibleVaultDepositEvent::new(indexset!(
+                        id.clone(),
+                        id2.clone()
+                    )),
                     event_data
                 ) =>
                 true,
@@ -937,9 +946,14 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
-                .is_event_name_equal::<non_fungible_vault::WithdrawEvent>(event_identifier)
+                .is_event_name_equal::<non_fungible_vault::NonFungibleVaultWithdrawEvent>(
+                    event_identifier
+                )
                 && is_decoded_equal(
-                    &non_fungible_vault::WithdrawEvent::new(indexset!(id.clone(), id2.clone())),
+                    &non_fungible_vault::NonFungibleVaultWithdrawEvent::new(indexset!(
+                        id.clone(),
+                        id2.clone()
+                    )),
                     event_data
                 ) =>
                 true,
@@ -950,9 +964,14 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
-                .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
+                .is_event_name_equal::<non_fungible_vault::NonFungibleVaultDepositEvent>(
+                    event_identifier
+                )
                 && is_decoded_equal(
-                    &non_fungible_vault::DepositEvent::new(indexset!(id.clone(), id2.clone())),
+                    &non_fungible_vault::NonFungibleVaultDepositEvent::new(indexset!(
+                        id.clone(),
+                        id2.clone()
+                    )),
                     event_data
                 ) =>
                 true,
@@ -1548,7 +1567,9 @@ fn validator_unstake_emits_correct_events() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
-                .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier) =>
+                .is_event_name_equal::<non_fungible_vault::NonFungibleVaultDepositEvent>(
+                    event_identifier
+                ) =>
                 true,
             _ => false,
         });
@@ -1629,7 +1650,9 @@ fn validator_claim_xrd_emits_correct_events() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
-                .is_event_name_equal::<non_fungible_vault::WithdrawEvent>(event_identifier) =>
+                .is_event_name_equal::<non_fungible_vault::NonFungibleVaultWithdrawEvent>(
+                    event_identifier
+                ) =>
                 true,
             _ => false,
         });
@@ -2213,11 +2236,14 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&vault_withdraw_event.0),
-            non_fungible_vault::WithdrawEvent::EVENT_NAME
+            non_fungible_vault::NonFungibleVaultWithdrawEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<non_fungible_vault::WithdrawEvent>(&vault_withdraw_event.1).unwrap(),
-            non_fungible_vault::WithdrawEvent::new(expected_non_fungibles.clone())
+            scrypto_decode::<non_fungible_vault::NonFungibleVaultWithdrawEvent>(
+                &vault_withdraw_event.1
+            )
+            .unwrap(),
+            non_fungible_vault::NonFungibleVaultWithdrawEvent::new(expected_non_fungibles.clone())
         )
     }
     {
@@ -2233,11 +2259,14 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&vault_deposit_event.0),
-            non_fungible_vault::DepositEvent::EVENT_NAME
+            non_fungible_vault::NonFungibleVaultDepositEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<non_fungible_vault::DepositEvent>(&vault_deposit_event.1).unwrap(),
-            non_fungible_vault::DepositEvent::new(expected_non_fungibles.clone())
+            scrypto_decode::<non_fungible_vault::NonFungibleVaultDepositEvent>(
+                &vault_deposit_event.1
+            )
+            .unwrap(),
+            non_fungible_vault::NonFungibleVaultDepositEvent::new(expected_non_fungibles.clone())
         )
     }
     {

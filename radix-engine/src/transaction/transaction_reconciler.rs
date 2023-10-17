@@ -179,24 +179,24 @@ fn compute_resource_changes_from_vault_events<'a, S: SubstateDatabase>(
                     .unwrap();
 
                 let change = match event_id.1.as_str() {
-                    non_fungible_vault::DepositEvent::EVENT_NAME => {
-                        let deposit: non_fungible_vault::DepositEvent =
+                    non_fungible_vault::NonFungibleVaultDepositEvent::EVENT_NAME => {
+                        let deposit: non_fungible_vault::NonFungibleVaultDepositEvent =
                             scrypto_decode(event).unwrap();
                         BalanceChange::NonFungible {
                             added: deposit.ids.into_iter().collect(),
                             removed: btreeset!(),
                         }
                     }
-                    non_fungible_vault::WithdrawEvent::EVENT_NAME => {
-                        let withdraw: non_fungible_vault::WithdrawEvent =
+                    non_fungible_vault::NonFungibleVaultWithdrawEvent::EVENT_NAME => {
+                        let withdraw: non_fungible_vault::NonFungibleVaultWithdrawEvent =
                             scrypto_decode(event).unwrap();
                         BalanceChange::NonFungible {
                             added: btreeset!(),
                             removed: withdraw.ids.into_iter().collect(),
                         }
                     }
-                    non_fungible_vault::RecallEvent::EVENT_NAME => {
-                        let recall: non_fungible_vault::RecallEvent =
+                    non_fungible_vault::NonFungibleVaultRecallEvent::EVENT_NAME => {
+                        let recall: non_fungible_vault::NonFungibleVaultRecallEvent =
                             scrypto_decode(event).unwrap();
                         BalanceChange::NonFungible {
                             added: btreeset!(),
