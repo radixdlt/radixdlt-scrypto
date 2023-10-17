@@ -1586,7 +1586,7 @@ CALL_METHOD
         std::env::var("PRINT_TEST_VECTORS").ok().map(|_| {
             print!(
                 "pub const TX_{}: [u8; {}] = [",
-                name.clone().to_uppercase(),
+                name.to_uppercase(),
                 blob.len()
             );
 
