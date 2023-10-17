@@ -84,8 +84,11 @@ impl TxnMeasure {
             .open(&self.output_file)
             .map_err(Error::IOError)?;
         if !exists {
-            writeln!(output, "TXID,Processing Time,Cost Units,Cost XRD",)
-                .map_err(Error::IOError)?;
+            writeln!(
+                output,
+                "TXID,Processing Time,Execution Cost Units,Finalization Cost Units",
+            )
+            .map_err(Error::IOError)?;
         }
 
         let txn_write_thread_handle = thread::spawn(move || {
@@ -100,12 +103,12 @@ impl TxnMeasure {
                     &network,
                     &prepared,
                 );
-                let execution_finalization_cost_units = receipt.fee_summary().map(|x| {
-                    x.total_execution_cost_units_consumed + x.total_finalization_cost_units_consumed
-                });
-                let execution_finalization_cost_xrd = receipt
+                let execution_cost_units = receipt
                     .fee_summary()
-                    .map(|x| x.total_execution_cost_in_xrd + x.total_finalization_cost_in_xrd);
+                    .map(|x| x.total_execution_cost_units_consumed.clone());
+                let finalization_cost_units = receipt
+                    .fee_summary()
+                    .map(|x| x.total_finalization_cost_units_consumed.clone());
                 let database_updates = receipt
                     .into_state_updates()
                     .create_database_updates::<SpreadPrefixKeyMapper>();
@@ -119,8 +122,8 @@ impl TxnMeasure {
                             .encode(&IntentHash(tx.signed_intent.intent.summary.hash))
                             .unwrap(),
                         tx_processing_time.as_micros(),
-                        execution_finalization_cost_units.unwrap(),
-                        execution_finalization_cost_xrd.unwrap(),
+                        execution_cost_units.unwrap(),
+                        finalization_cost_units.unwrap(),
                     )
                     .map_err(Error::IOError)?;
                 }
