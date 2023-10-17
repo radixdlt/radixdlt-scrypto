@@ -322,9 +322,9 @@ type FungibleVaultWithdrawEvent = fungible_vault::WithdrawEvent;
 type FungibleVaultDepositEvent = fungible_vault::DepositEvent;
 type FungibleVaultRecallEvent = fungible_vault::RecallEvent;
 
-type NonFungibleVaultWithdrawEvent = non_fungible_vault::NonFungibleVaultWithdrawEvent;
-type NonFungibleVaultDepositEvent = non_fungible_vault::NonFungibleVaultDepositEvent;
-type NonFungibleVaultRecallEvent = non_fungible_vault::NonFungibleVaultRecallEvent;
+type NonFungibleVaultWithdrawEvent = non_fungible_vault::WithdrawEvent;
+type NonFungibleVaultDepositEvent = non_fungible_vault::DepositEvent;
+type NonFungibleVaultRecallEvent = non_fungible_vault::RecallEvent;
 
 type AccountWithdrawEvent = account::WithdrawEvent;
 type AccountDepositEvent = account::DepositEvent;

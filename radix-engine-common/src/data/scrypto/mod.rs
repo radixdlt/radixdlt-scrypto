@@ -24,7 +24,7 @@ mod custom_well_known_types;
 /// Defines the core traits and methods for scrypto SBOR encoding
 mod definitions;
 
-//pub use custom_extension::*;
+pub use custom_extension::*;
 pub use custom_formatting::*;
 pub use custom_payload_wrappers::*;
 pub use custom_schema::*;
@@ -45,7 +45,7 @@ pub mod prelude {
     pub use super::model::*;
 
     // Private modules to include in prelude
-    //pub use super::custom_extension::*;
+    pub use super::custom_extension::*;
     pub use super::custom_formatting::*;
     pub use super::custom_payload_wrappers::*;
     pub use super::custom_schema::*;

@@ -17,7 +17,7 @@ macro_rules! define_events {
     };
 }
 define_events! {
-    NonFungibleVaultWithdrawEvent,
-    NonFungibleVaultDepositEvent,
-    NonFungibleVaultRecallEvent
+    WithdrawEvent,
+    DepositEvent,
+    RecallEvent
 }

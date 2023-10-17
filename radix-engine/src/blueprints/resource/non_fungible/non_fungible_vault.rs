@@ -306,9 +306,9 @@ impl NonFungibleVaultBlueprint {
         let event_schema = event_schema! {
             aggregator,
             [
-                non_fungible_vault::NonFungibleVaultWithdrawEvent,
-                non_fungible_vault::NonFungibleVaultDepositEvent,
-                non_fungible_vault::NonFungibleVaultRecallEvent
+                non_fungible_vault::WithdrawEvent,
+                non_fungible_vault::DepositEvent,
+                non_fungible_vault::RecallEvent
             ]
         };
 
@@ -399,10 +399,7 @@ impl NonFungibleVaultBlueprint {
         let ids = taken.into_ids();
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(
-            api,
-            events::non_fungible_vault::NonFungibleVaultWithdrawEvent { ids },
-        )?;
+        Runtime::emit_event(api, events::non_fungible_vault::WithdrawEvent { ids })?;
 
         Ok(bucket)
     }
@@ -423,10 +420,7 @@ impl NonFungibleVaultBlueprint {
         let ids = taken.into_ids();
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(
-            api,
-            events::non_fungible_vault::NonFungibleVaultWithdrawEvent { ids },
-        )?;
+        Runtime::emit_event(api, events::non_fungible_vault::WithdrawEvent { ids })?;
 
         Ok(bucket)
     }
@@ -445,10 +439,7 @@ impl NonFungibleVaultBlueprint {
         // Put
         Self::internal_put(other_bucket.liquid, api)?;
 
-        Runtime::emit_event(
-            api,
-            events::non_fungible_vault::NonFungibleVaultDepositEvent { ids },
-        )?;
+        Runtime::emit_event(api, events::non_fungible_vault::DepositEvent { ids })?;
 
         Ok(())
     }
@@ -531,10 +522,7 @@ impl NonFungibleVaultBlueprint {
         let ids = taken.into_ids();
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(
-            api,
-            events::non_fungible_vault::NonFungibleVaultRecallEvent { ids },
-        )?;
+        Runtime::emit_event(api, events::non_fungible_vault::RecallEvent { ids })?;
 
         Ok(bucket)
     }
@@ -600,10 +588,7 @@ impl NonFungibleVaultBlueprint {
         let ids = taken.into_ids();
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(ids.clone(), api)?;
 
-        Runtime::emit_event(
-            api,
-            events::non_fungible_vault::NonFungibleVaultRecallEvent { ids },
-        )?;
+        Runtime::emit_event(api, events::non_fungible_vault::RecallEvent { ids })?;
 
         Ok(bucket)
     }
