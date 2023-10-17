@@ -1,6 +1,6 @@
-mod ast;
-mod schema;
-mod translation;
+pub mod ast;
+pub mod schema;
+pub mod translation;
 
 use clap::Parser;
 use radix_engine::system::{bootstrap::*, system_db_reader::SystemDatabaseReader};
