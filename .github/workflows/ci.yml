@@ -38,15 +38,14 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
       - name: Run tests
-        run: cargo test
-        working-directory: sbor
+        run: cargo nextest run -p sbor
       - name: Run tests (no_std)
-        run: cargo test --no-default-features --features alloc
-        working-directory: sbor
+        run: cargo nextest run -p sbor --no-default-features --features alloc
       - name: Run derive tests
-        run: cargo test
-        working-directory: sbor-derive-common
+        run: cargo nextest run -p sbor-derive-common
 
   sbor-integration-tests:
     name: Run SBOR integration tests
@@ -56,15 +55,14 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
       - name: Run tests
-        run: cargo test
-        working-directory: sbor-tests
+        run: cargo nextest run -p sbor-tests
       - name: Run tests (no_std)
-        run: cargo test --no-default-features --features alloc
-        working-directory: sbor-tests
+        run: cargo nextest run -p sbor-tests --no-default-features --features alloc
       - name: Run bench
-        run: cargo bench
-        working-directory: sbor-tests
+        run: cargo bench -p sbor-tests
 
   scrypto-unit-tests:
     name: Run Scrypto unit tests
@@ -74,18 +72,16 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
       - name: Run tests
-        run: cargo test
-        working-directory: scrypto
+        run: cargo nextest run -p scrypto
       - name: Run tests (no_std)
-        run: cargo test --no-default-features --features alloc
-        working-directory: scrypto
+        run: cargo nextest run -p scrypto --no-default-features --features alloc
       - name: Run abi tests
-        run: cargo test
-        working-directory: scrypto-schema
+        run: cargo nextest run -p scrypto-schema
       - name: Run derive tests
-        run: cargo test
-        working-directory: scrypto-derive
+        run: cargo nextest run -p scrypto-derive
 
   scrypto-integration-tests:
     name: Run Scrypto integration tests
@@ -95,12 +91,12 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
       - name: Run tests
-        run: cargo test
-        working-directory: scrypto-derive-tests
+        run: cargo nextest run -p scrypto-derive-tests
       - name: Run tests with no_std
-        run: cargo test --no-default-features --features alloc
-        working-directory: scrypto-derive-tests
+        run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc
 
   scrypto-examples:
     name: Run Scrypto examples
@@ -111,6 +107,8 @@ jobs:
         with:
           toolchain: stable
           target: wasm32-unknown-unknown
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
       - name: Build faucet
         run: cargo build --target wasm32-unknown-unknown --release
         working-directory: assets/blueprints/faucet
@@ -121,10 +119,14 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown --release
         working-directory: examples/no-std
       - name: Build and test hello-world
-        run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+        run: |
+          cargo build --target wasm32-unknown-unknown --release
+          cargo nextest run --release
         working-directory: examples/hello-world
       - name: Build and test everything
-        run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+        run: |
+          cargo build --target wasm32-unknown-unknown --release
+          cargo nextest run --release
         working-directory: examples/everything
 
   scrypto-stubs:
@@ -281,9 +283,10 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
       - name: Run tests
-        run: cargo test
-        working-directory: transaction
+        run: cargo nextest run -p transaction
 
   transaction-scenarios:
     name: Run transaction scenarios
@@ -293,9 +296,10 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
       - name: Run tests
-        run: cargo test
-        working-directory: transaction-scenarios
+        run: cargo nextest run -p transaction-scenarios
 
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)
@@ -309,6 +313,8 @@ jobs:
         with:
           toolchain: stable
           target: wasm32-unknown-unknown
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
       - uses: radixdlt/rust-cache@allow_registry_src_caching
         with:
           prefix-key: ""
@@ -322,7 +328,7 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install llvm -y
       - name: Run Unit tests
-        run: cargo test
+        run: cargo nextest run
         working-directory: simulator
       - name: Run tests
         run: bash ./tests/resim.sh
