@@ -145,21 +145,24 @@ fn compute_resource_changes_from_vault_events<'a, S: SubstateDatabase>(
                     .unwrap();
 
                 let change = match event_id.1.as_str() {
-                    fungible_vault::DepositEvent::EVENT_NAME => {
-                        let deposit: fungible_vault::DepositEvent = scrypto_decode(event).unwrap();
+                    fungible_vault::FungibleVaultDepositEvent::EVENT_NAME => {
+                        let deposit: fungible_vault::FungibleVaultDepositEvent =
+                            scrypto_decode(event).unwrap();
                         BalanceChange::Fungible(deposit.amount)
                     }
-                    fungible_vault::WithdrawEvent::EVENT_NAME => {
-                        let withdraw: fungible_vault::WithdrawEvent =
+                    fungible_vault::FungibleVaultWithdrawEvent::EVENT_NAME => {
+                        let withdraw: fungible_vault::FungibleVaultWithdrawEvent =
                             scrypto_decode(event).unwrap();
                         BalanceChange::Fungible(withdraw.amount.neg())
                     }
-                    fungible_vault::RecallEvent::EVENT_NAME => {
-                        let recall: fungible_vault::RecallEvent = scrypto_decode(event).unwrap();
+                    fungible_vault::FungibleVaultRecallEvent::EVENT_NAME => {
+                        let recall: fungible_vault::FungibleVaultRecallEvent =
+                            scrypto_decode(event).unwrap();
                         BalanceChange::Fungible(recall.amount.neg())
                     }
-                    fungible_vault::PayFeeEvent::EVENT_NAME => {
-                        let recall: fungible_vault::PayFeeEvent = scrypto_decode(event).unwrap();
+                    fungible_vault::FungibleVaultPayFeeEvent::EVENT_NAME => {
+                        let recall: fungible_vault::FungibleVaultPayFeeEvent =
+                            scrypto_decode(event).unwrap();
                         BalanceChange::Fungible(recall.amount.neg())
                     }
                     _ => continue,

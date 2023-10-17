@@ -4,8 +4,8 @@ use crate::blueprints::consensus_manager::{
 };
 use crate::blueprints::models::FieldPayload;
 use crate::blueprints::resource::{
-    BurnFungibleResourceEvent, DepositEvent, FungibleVaultBalanceFieldPayload,
-    FungibleVaultBalanceFieldSubstate, FungibleVaultField, PayFeeEvent,
+    BurnFungibleResourceEvent, FungibleVaultBalanceFieldPayload, FungibleVaultBalanceFieldSubstate,
+    FungibleVaultDepositEvent, FungibleVaultField, FungibleVaultPayFeeEvent,
 };
 use crate::blueprints::transaction_tracker::{
     TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate,
@@ -780,9 +780,9 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(node_id, ModuleId::Main),
-                    DepositEvent::EVENT_NAME.to_string(),
+                    FungibleVaultDepositEvent::EVENT_NAME.to_string(),
                 ),
-                scrypto_encode(&DepositEvent { amount }).unwrap(),
+                scrypto_encode(&FungibleVaultDepositEvent { amount }).unwrap(),
             ));
         }
 
@@ -844,9 +844,9 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(vault_id, ModuleId::Main),
-                    PayFeeEvent::EVENT_NAME.to_string(),
+                    FungibleVaultPayFeeEvent::EVENT_NAME.to_string(),
                 ),
-                scrypto_encode(&PayFeeEvent { amount }).unwrap(),
+                scrypto_encode(&FungibleVaultPayFeeEvent { amount }).unwrap(),
             ));
         }
         // Free credit is locked first and thus used last
@@ -961,9 +961,9 @@ where
             events.push((
                 EventTypeIdentifier(
                     Emitter::Method(vault_node_id, ModuleId::Main),
-                    DepositEvent::EVENT_NAME.to_string(),
+                    FungibleVaultDepositEvent::EVENT_NAME.to_string(),
                 ),
-                scrypto_encode(&DepositEvent {
+                scrypto_encode(&FungibleVaultDepositEvent {
                     amount: total_amount,
                 })
                 .unwrap(),

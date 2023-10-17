@@ -99,14 +99,14 @@ impl ApplicationEventChecker for ResourceEventChecker {
             FUNGIBLE_VAULT_BLUEPRINT => match event_id {
                 EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), event_name) => {
                     match event_name.as_str() {
-                        fungible_vault::DepositEvent::EVENT_NAME => {
-                            let event: fungible_vault::DepositEvent =
+                        fungible_vault::FungibleVaultDepositEvent::EVENT_NAME => {
+                            let event: fungible_vault::FungibleVaultDepositEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             *tracked = tracked.checked_add(event.amount).unwrap();
                         }
-                        fungible_vault::WithdrawEvent::EVENT_NAME => {
-                            let event: fungible_vault::WithdrawEvent =
+                        fungible_vault::FungibleVaultWithdrawEvent::EVENT_NAME => {
+                            let event: fungible_vault::FungibleVaultWithdrawEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             *tracked = tracked.checked_sub(event.amount).unwrap();
@@ -114,8 +114,8 @@ impl ApplicationEventChecker for ResourceEventChecker {
                                 panic!("Removed more resources than exists.");
                             }
                         }
-                        fungible_vault::RecallEvent::EVENT_NAME => {
-                            let event: fungible_vault::RecallEvent =
+                        fungible_vault::FungibleVaultRecallEvent::EVENT_NAME => {
+                            let event: fungible_vault::FungibleVaultRecallEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             *tracked = tracked.checked_sub(event.amount).unwrap();
@@ -123,8 +123,8 @@ impl ApplicationEventChecker for ResourceEventChecker {
                                 panic!("Removed more resources than exists.");
                             }
                         }
-                        fungible_vault::PayFeeEvent::EVENT_NAME => {
-                            let event: fungible_vault::PayFeeEvent =
+                        fungible_vault::FungibleVaultPayFeeEvent::EVENT_NAME => {
+                            let event: fungible_vault::FungibleVaultPayFeeEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             *tracked = tracked.checked_sub(event.amount).unwrap();
@@ -157,7 +157,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                                 panic!("Removed more resources than exists.");
                             }
                         }
-                        fungible_vault::RecallEvent::EVENT_NAME => {
+                        fungible_vault::FungibleVaultRecallEvent::EVENT_NAME => {
                             let event: non_fungible_vault::NonFungibleVaultRecallEvent =
                                 scrypto_decode(event_payload).unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();

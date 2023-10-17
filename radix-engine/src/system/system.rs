@@ -1,7 +1,7 @@
 use super::id_allocation::IDAllocation;
 use super::system_modules::costing::ExecutionCostingEntry;
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
-use crate::blueprints::resource::LockFeeEvent;
+use crate::blueprints::resource::FungibleVaultLockFeeEvent;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,
@@ -2248,7 +2248,7 @@ where
             .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
 
         let event_data = {
-            let lock_fee_event = LockFeeEvent { amount };
+            let lock_fee_event = FungibleVaultLockFeeEvent { amount };
             scrypto_encode(&lock_fee_event).unwrap()
         };
 
@@ -2267,7 +2267,7 @@ where
         } else {
             self.emit_event_internal(
                 EmitterActor::CurrentActor,
-                LockFeeEvent::EVENT_NAME.to_string(),
+                FungibleVaultLockFeeEvent::EVENT_NAME.to_string(),
                 event_data,
                 EventFlags::FORCE_WRITE,
             )?;
@@ -2293,10 +2293,10 @@ where
         {
             let type_identifier = EventTypeIdentifier(
                 Emitter::Method(vault_id, ObjectModuleId::Main),
-                LockFeeEvent::EVENT_NAME.to_string(),
+                FungibleVaultLockFeeEvent::EVENT_NAME.to_string(),
             );
 
-            let lock_fee_event = LockFeeEvent {
+            let lock_fee_event = FungibleVaultLockFeeEvent {
                 amount: locked_fee.amount(),
             };
             let payload = scrypto_encode(&lock_fee_event).unwrap();
