@@ -17,9 +17,9 @@ macro_rules! define_events {
     };
 }
 define_events! {
-    FungibleVaultLockFeeEvent,
-    FungibleVaultPayFeeEvent,
-    FungibleVaultWithdrawEvent,
-    FungibleVaultDepositEvent,
-    FungibleVaultRecallEvent
+    LockFeeEvent,
+    PayFeeEvent,
+    WithdrawEvent,
+    DepositEvent,
+    RecallEvent
 }

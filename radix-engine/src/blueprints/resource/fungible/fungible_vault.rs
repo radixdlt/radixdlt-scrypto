@@ -230,11 +230,11 @@ impl FungibleVaultBlueprint {
         let event_schema = event_schema! {
             aggregator,
             [
-                fungible_vault::FungibleVaultLockFeeEvent,
-                fungible_vault::FungibleVaultPayFeeEvent,
-                fungible_vault::FungibleVaultWithdrawEvent,
-                fungible_vault::FungibleVaultDepositEvent,
-                fungible_vault::FungibleVaultRecallEvent
+                fungible_vault::LockFeeEvent,
+                fungible_vault::PayFeeEvent,
+                fungible_vault::WithdrawEvent,
+                fungible_vault::DepositEvent,
+                fungible_vault::RecallEvent
             ]
         };
 
@@ -336,7 +336,7 @@ impl FungibleVaultBlueprint {
 
         Runtime::emit_event(
             api,
-            fungible_vault::FungibleVaultWithdrawEvent {
+            fungible_vault::WithdrawEvent {
                 amount: taken.amount(),
             },
         )?;
@@ -357,10 +357,7 @@ impl FungibleVaultBlueprint {
         // Put
         Self::internal_put(other_bucket.liquid, api)?;
 
-        Runtime::emit_event(
-            api,
-            events::fungible_vault::FungibleVaultDepositEvent { amount },
-        )?;
+        Runtime::emit_event(api, events::fungible_vault::DepositEvent { amount })?;
 
         Ok(())
     }
@@ -460,10 +457,7 @@ impl FungibleVaultBlueprint {
 
         let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
 
-        Runtime::emit_event(
-            api,
-            events::fungible_vault::FungibleVaultRecallEvent { amount },
-        )?;
+        Runtime::emit_event(api, events::fungible_vault::RecallEvent { amount })?;
 
         Ok(bucket)
     }

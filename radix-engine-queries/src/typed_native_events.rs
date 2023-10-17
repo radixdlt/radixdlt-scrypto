@@ -316,11 +316,11 @@ type MultiResourcePoolRedemptionEvent = multi_resource_pool::RedemptionEvent;
 type MultiResourcePoolWithdrawEvent = multi_resource_pool::WithdrawEvent;
 type MultiResourcePoolDepositEvent = multi_resource_pool::DepositEvent;
 
-type FungibleVaultLockFeeEvent = fungible_vault::FungibleVaultLockFeeEvent;
-type FungibleVaultPayFeeEvent = fungible_vault::FungibleVaultPayFeeEvent;
-type FungibleVaultWithdrawEvent = fungible_vault::FungibleVaultWithdrawEvent;
-type FungibleVaultDepositEvent = fungible_vault::FungibleVaultDepositEvent;
-type FungibleVaultRecallEvent = fungible_vault::FungibleVaultRecallEvent;
+type FungibleVaultLockFeeEvent = fungible_vault::LockFeeEvent;
+type FungibleVaultPayFeeEvent = fungible_vault::PayFeeEvent;
+type FungibleVaultWithdrawEvent = fungible_vault::WithdrawEvent;
+type FungibleVaultDepositEvent = fungible_vault::DepositEvent;
+type FungibleVaultRecallEvent = fungible_vault::RecallEvent;
 
 type NonFungibleVaultWithdrawEvent = non_fungible_vault::NonFungibleVaultWithdrawEvent;
 type NonFungibleVaultDepositEvent = non_fungible_vault::NonFungibleVaultDepositEvent;

@@ -57,10 +57,9 @@ fn test_events_of_commit_failure() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner
-            .is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(event_identifier)
+        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
             && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 100.into() },
+                &fungible_vault::LockFeeEvent { amount: 100.into() },
                 event_data
             ) =>
             true,
@@ -70,10 +69,9 @@ fn test_events_of_commit_failure() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner
-            .is_event_name_equal::<fungible_vault::FungibleVaultPayFeeEvent>(event_identifier)
+        )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
             && is_decoded_equal(
-                &fungible_vault::FungibleVaultPayFeeEvent {
+                &fungible_vault::PayFeeEvent {
                     amount: receipt.fee_summary.total_cost()
                 },
                 event_data
@@ -85,10 +83,9 @@ fn test_events_of_commit_failure() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner
-            .is_event_name_equal::<fungible_vault::FungibleVaultDepositEvent>(event_identifier)
+        )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
             && is_decoded_equal(
-                &fungible_vault::FungibleVaultDepositEvent {
+                &fungible_vault::DepositEvent {
                     amount: receipt
                         .expect_commit_failure()
                         .fee_destination
@@ -147,10 +144,9 @@ fn create_proof_emits_correct_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner
-            .is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(event_identifier)
+        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
             && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
+                &fungible_vault::LockFeeEvent { amount: 500.into() },
                 event_data
             ) =>
             true,
@@ -160,10 +156,9 @@ fn create_proof_emits_correct_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner
-            .is_event_name_equal::<fungible_vault::FungibleVaultPayFeeEvent>(event_identifier)
+        )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
             && is_decoded_equal(
-                &fungible_vault::FungibleVaultPayFeeEvent {
+                &fungible_vault::PayFeeEvent {
                     amount: receipt.fee_summary.total_cost()
                 },
                 event_data
@@ -175,10 +170,9 @@ fn create_proof_emits_correct_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner
-            .is_event_name_equal::<fungible_vault::FungibleVaultDepositEvent>(event_identifier)
+        )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
             && is_decoded_equal(
-                &fungible_vault::FungibleVaultDepositEvent {
+                &fungible_vault::DepositEvent {
                     amount: receipt
                         .expect_commit_success()
                         .fee_destination
@@ -275,10 +269,9 @@ fn scrypto_can_emit_registered_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner
-            .is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(event_identifier)
+        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
             && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
+                &fungible_vault::LockFeeEvent { amount: 500.into() },
                 event_data
             ) =>
             true,
@@ -384,12 +377,12 @@ fn locking_fee_against_a_vault_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -424,12 +417,12 @@ fn vault_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -437,12 +430,9 @@ fn vault_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultRecallEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultRecallEvent::new(1.into()),
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::RecallEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::RecallEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
         });
@@ -450,12 +440,9 @@ fn vault_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultDepositEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultDepositEvent::new(1.into()),
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::DepositEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
         });
@@ -513,12 +500,12 @@ fn vault_non_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -596,12 +583,12 @@ fn resource_manager_new_vault_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -631,12 +618,9 @@ fn resource_manager_new_vault_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultDepositEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultDepositEvent::new(1.into()),
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::DepositEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
         });
@@ -695,12 +679,12 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -786,12 +770,12 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -893,12 +877,12 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 10.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 10.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1192,12 +1176,12 @@ fn validator_registration_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1268,12 +1252,12 @@ fn validator_unregistration_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1347,12 +1331,12 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1361,11 +1345,9 @@ fn validator_staking_emits_correct_event() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
-                .is_event_name_equal::<fungible_vault::FungibleVaultWithdrawEvent>(
-                    event_identifier
-                )
+                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
-                    &fungible_vault::FungibleVaultWithdrawEvent::new(100.into()),
+                    &fungible_vault::WithdrawEvent::new(100.into()),
                     event_data
                 ) =>
                 true,
@@ -1396,12 +1378,9 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultDepositEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultDepositEvent::new(100.into()),
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::DepositEvent::new(100.into()), event_data) =>
                 true,
             _ => false,
         });
@@ -1433,9 +1412,8 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultDepositEvent>(
-                event_identifier
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1491,12 +1469,12 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1505,13 +1483,8 @@ fn validator_unstake_emits_correct_events() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
-                .is_event_name_equal::<fungible_vault::FungibleVaultWithdrawEvent>(
-                    event_identifier
-                )
-                && is_decoded_equal(
-                    &fungible_vault::FungibleVaultWithdrawEvent::new(1.into()),
-                    event_data
-                ) =>
+                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
+                && is_decoded_equal(&fungible_vault::WithdrawEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
         });
@@ -1548,9 +1521,7 @@ fn validator_unstake_emits_correct_events() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
-                .is_event_name_equal::<fungible_vault::FungibleVaultWithdrawEvent>(
-                    event_identifier
-                ) =>
+                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1558,9 +1529,8 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultDepositEvent>(
-                event_identifier
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1666,12 +1636,12 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1708,9 +1678,7 @@ fn validator_claim_xrd_emits_correct_events() {
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
             )) if test_runner
-                .is_event_name_equal::<fungible_vault::FungibleVaultWithdrawEvent>(
-                    event_identifier
-                ) =>
+                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1725,9 +1693,8 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultDepositEvent>(
-                event_identifier
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1795,12 +1762,12 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -1851,12 +1818,12 @@ fn setting_metadata_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<fungible_vault::FungibleVaultLockFeeEvent>(
-                event_identifier
-            ) && is_decoded_equal(
-                &fungible_vault::FungibleVaultLockFeeEvent { amount: 500.into() },
-                event_data
-            ) =>
+            )) if test_runner
+                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+                && is_decoded_equal(
+                    &fungible_vault::LockFeeEvent { amount: 500.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -2182,12 +2149,11 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&vault_withdraw_event.0),
-            fungible_vault::FungibleVaultWithdrawEvent::EVENT_NAME
+            fungible_vault::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<fungible_vault::FungibleVaultWithdrawEvent>(&vault_withdraw_event.1)
-                .unwrap(),
-            fungible_vault::FungibleVaultWithdrawEvent::new(dec!("1"))
+            scrypto_decode::<fungible_vault::WithdrawEvent>(&vault_withdraw_event.1).unwrap(),
+            fungible_vault::WithdrawEvent::new(dec!("1"))
         )
     }
     {
@@ -2203,12 +2169,11 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     {
         assert_eq!(
             test_runner.event_name(&vault_deposit_event.0),
-            fungible_vault::FungibleVaultDepositEvent::EVENT_NAME
+            fungible_vault::DepositEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<fungible_vault::FungibleVaultDepositEvent>(&vault_deposit_event.1)
-                .unwrap(),
-            fungible_vault::FungibleVaultDepositEvent::new(dec!("1"))
+            scrypto_decode::<fungible_vault::DepositEvent>(&vault_deposit_event.1).unwrap(),
+            fungible_vault::DepositEvent::new(dec!("1"))
         )
     }
     {
