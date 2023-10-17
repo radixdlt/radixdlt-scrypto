@@ -23,8 +23,8 @@ jobs:
     name: Check code format
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Check format
         run: bash ./check.sh
 
@@ -32,8 +32,8 @@ jobs:
     name: Run SBOR unit tests
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: cargo nextest run -p sbor
       - name: Run tests (no_std)
@@ -45,8 +45,8 @@ jobs:
     name: Run SBOR integration tests
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: cargo nextest run -p sbor-tests
       - name: Run tests (no_std)
@@ -58,8 +58,8 @@ jobs:
     name: Run Scrypto unit tests
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: cargo nextest run -p scrypto
       - name: Run tests (no_std)
@@ -73,8 +73,8 @@ jobs:
     name: Run Scrypto integration tests
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: cargo nextest run -p scrypto-derive-tests
       - name: Run tests with no_std
@@ -84,8 +84,8 @@ jobs:
     name: Run Scrypto examples
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Build faucet
         run: cargo build --target wasm32-unknown-unknown --release
         working-directory: assets/blueprints/faucet
@@ -110,8 +110,8 @@ jobs:
     name: Check Scrypto Stubs
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Check stubs
         run: ./check_stubs.sh
 
@@ -122,8 +122,8 @@ jobs:
       matrix:
         os: [ubuntu-latest-16-cores]
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Install dependency
         run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
       - name: Build with resource tracking
@@ -137,8 +137,8 @@ jobs:
     name: Run Radix Engine tests
     runs-on: ubuntu-latest-16-cores
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: |
           cargo nextest run \
@@ -158,8 +158,8 @@ jobs:
     name: Run Radix Engine tests (release)
     runs-on: ubuntu-latest-16-cores
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: |
           cargo nextest run \
@@ -174,8 +174,8 @@ jobs:
     name: Run Radix Engine tests (no_std)
     runs-on: ubuntu-latest-16-cores
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: |
           cargo nextest run \
@@ -190,8 +190,8 @@ jobs:
     name: Run Radix Engine tests (wasmer)
     runs-on: ubuntu-latest-16-cores
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: |
           cargo nextest run \
@@ -206,8 +206,8 @@ jobs:
     name: Run Radix Engine benchmarks
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run bench
         run: cargo bench
         working-directory: radix-engine-tests
@@ -216,8 +216,8 @@ jobs:
     name: Run Radix Engine common benchmarks
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run bench
         run: cargo bench
         working-directory: radix-engine-common
@@ -226,8 +226,8 @@ jobs:
     name: Run transaction tests
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: cargo nextest run -p transaction
 
@@ -235,8 +235,8 @@ jobs:
     name: Run transaction scenarios
     runs-on: ubuntu-latest
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Run tests
         run: cargo nextest run -p transaction-scenarios
 
@@ -247,8 +247,8 @@ jobs:
       matrix:
         os: [ubuntu-latest-16-cores, windows-latest-16-cores]
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - uses: radixdlt/rust-cache@allow_registry_src_caching
         with:
           prefix-key: ""
@@ -272,8 +272,8 @@ jobs:
       matrix:
         os: [ubuntu-latest-16-cores, windows-latest-16-cores, macos-latest]
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - uses: radixdlt/rust-cache@allow_registry_src_caching
         with:
           prefix-key: ""
@@ -291,8 +291,8 @@ jobs:
       matrix:
         os: [ubuntu-latest-16-cores]
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Cargo Check
         run: cargo check --all
 
@@ -303,8 +303,8 @@ jobs:
       matrix:
         os: [ubuntu-latest-16-cores]
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Cargo Check
         run: cargo check --all --features post_run_db_check
 
@@ -312,8 +312,8 @@ jobs:
     name: Run determinism test
     runs-on: ubuntu-latest-16-cores
     steps:
-      - name: Setup job
-        uses: ./.github/actions/setup-job
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-job
       - name: Pull LFS assets
         run: git lfs pull
       - name: Replay transactions

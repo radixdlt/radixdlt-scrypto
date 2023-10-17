@@ -1,35 +1,23 @@
 name: 'Setup workflow job'
 description: 'Configures the job to perform radixdlt-scrypto CI'
-inputs:
-  varFilePath:
-    description: 'File path to variable file or directory. Defaults to ./.github/variables/* if none specified and runs against each file in that directory.'
-    required: false
-    default: ./.github/variables/*
+
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v3
-
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
         target: wasm32-unknown-unknown
-        components: llvm-tools, rustfmt
 
     - name: Install nextest
       uses: taiki-e/install-action@nextest
 
-    - uses: radixdlt/rust-cache@allow_registry_src_caching
-      with:
-        prefix-key: ""
-        shared-key: simulator-debug-${{ runner.os }}
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
-
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
       if: runner.os == 'Windows'
       run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+      shell: bash
     - name: Install dependencies
       if: runner.os == 'Windows'
       run: choco install llvm -y
+      shell: bash
 
