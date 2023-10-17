@@ -13,11 +13,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Setup dependencies
-        run: rustup target add wasm32-unknown-unknown
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Build radix-engine-tests
         run: |
              cd radix-engine-tests
@@ -53,11 +50,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Setup dependencies
-        run: rustup target add wasm32-unknown-unknown
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Build tests
         run: |
              cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests
@@ -91,9 +85,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Setup dependencies
         run: |
              sudo apt-get update
@@ -132,11 +125,8 @@ jobs:
         bin-cache: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Setup dependencies
-        run: rustup target add wasm32-unknown-unknown
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Read cache QEMU binary
         uses: actions/cache/restore@v3
         with:
