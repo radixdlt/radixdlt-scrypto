@@ -66,6 +66,14 @@ impl NetworkDefinition {
         }
     }
 
+    pub fn stokenet() -> NetworkDefinition {
+        NetworkDefinition {
+            id: 2,
+            logical_name: String::from("stokenet"),
+            hrp_suffix: String::from("tdx_2_"),
+        }
+    }
+
     pub fn mainnet() -> NetworkDefinition {
         NetworkDefinition {
             id: 1,
@@ -86,6 +94,7 @@ impl FromStr for NetworkDefinition {
             "kisharnet" => Ok(NetworkDefinition::kisharnet()),
             "ansharnet" => Ok(NetworkDefinition::ansharnet()),
             "zabanet" => Ok(NetworkDefinition::zabanet()),
+            "stokenet" => Ok(NetworkDefinition::stokenet()),
             "mainnet" => Ok(NetworkDefinition::mainnet()),
             _ => Err(ParseNetworkError::InvalidNetworkString),
         }
