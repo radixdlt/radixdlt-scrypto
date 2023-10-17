@@ -1,7 +1,7 @@
 use super::id_allocation::IDAllocation;
 use super::system_modules::costing::ExecutionCostingEntry;
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
-use crate::blueprints::resource::LockFeeEvent;
+use crate::blueprints::resource::fungible_vault::LockFeeEvent;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, RuntimeError, SystemError, SystemModuleError,

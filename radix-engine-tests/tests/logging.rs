@@ -104,9 +104,10 @@ fn test_assert_length_5() {
     {
         let logs = receipt.expect_commit(false).application_logs.clone();
         assert!(logs.is_empty());
-
         receipt.expect_specific_failure(|e| match e {
-            RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) => e.eq("assertion failed: `(left == right)`\n  left: `2`,\n right: `5` @ logger/src/lib.rs:23:13"),
+            RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) => e.eq(
+                "assertion `left == right` failed\n  left: 2\n right: 5 @ logger/src/lib.rs:23:13",
+            ),
             _ => false,
         })
     }

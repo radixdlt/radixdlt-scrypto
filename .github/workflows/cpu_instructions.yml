@@ -17,7 +17,7 @@ jobs:
         with:
           toolchain: stable
       - name: Setup dependencies
-        run: rustup target add wasm32-unknown-unknown 
+        run: rustup target add wasm32-unknown-unknown
       - name: Build radix-engine-tests
         run: |
              cd radix-engine-tests
@@ -48,7 +48,7 @@ jobs:
           path: ./target/release/deps_2
           key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}
 
-  build-other-tests:          
+  build-other-tests:
     name: Build other tests
     runs-on: ubuntu-22.04
     steps:
@@ -57,7 +57,7 @@ jobs:
         with:
           toolchain: stable
       - name: Setup dependencies
-        run: rustup target add wasm32-unknown-unknown 
+        run: rustup target add wasm32-unknown-unknown
       - name: Build tests
         run: |
              cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests
@@ -122,7 +122,7 @@ jobs:
         with:
           path: ./radix-engine-profiling/qemu-plugin/build
           key: ${{ runner.os }}-cache-qemu-plugin-${{ github.run_id }}
-          
+
   qemu-costing-evaluation-run:
     name: QEMU costing - CPU instructions
     runs-on: ubuntu-22.04
@@ -136,7 +136,7 @@ jobs:
         with:
           toolchain: stable
       - name: Setup dependencies
-        run: rustup target add wasm32-unknown-unknown 
+        run: rustup target add wasm32-unknown-unknown
       - name: Read cache QEMU binary
         uses: actions/cache/restore@v3
         with:
@@ -157,20 +157,20 @@ jobs:
       - name: Read cache build results
         uses: actions/cache/restore@v3
         with:
-          path: ${{ format('./target/release/deps_{0}', matrix.bin-cache) }} 
+          path: ${{ format('./target/release/deps_{0}', matrix.bin-cache) }}
           key: ${{ format('{0}-build-cache-{1}-radix-engine-tests-{2}', runner.os, matrix.bin-cache, github.run_id) }}
           fail-on-cache-miss: true
       - name: Run radix-engine-tests using QEMU
         run: |
              mkdir /tmp/scrypto-resources-usage
              cd radix-engine-tests
-             bash ../radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ${{ format('../target/release/deps_{0}', matrix.bin-cache) }} 
+             bash ../radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ${{ format('../target/release/deps_{0}', matrix.bin-cache) }}
       - name: Cache QEMU run results
         uses: actions/cache/save@v3
         with:
           path: /tmp/scrypto-resources-usage
           key: ${{ format('{0}-build-cache-{1}-radix-engine-tests-{2}-qemu-results', runner.os, matrix.bin-cache, github.run_id) }}
-          
+
   generate-results:
     name: Generate results
     runs-on: ubuntu-22.04

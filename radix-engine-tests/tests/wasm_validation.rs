@@ -60,7 +60,7 @@ fn invalid_export_name_should_fail() {
                         (export "MEMORY_NAME" (memory $0))
                     )
                     "##
-            .replace(token, name.clone());
+            .replace(token, name);
             let code = wat2wasm(code_str.as_str());
 
             // Act
