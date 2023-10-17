@@ -76,12 +76,18 @@ impl TxnMeasure {
 
         // txn executor
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
+        let exists = self.output_file.exists();
         let mut output = OpenOptions::new()
             .write(true)
             .append(true)
             .create(true)
             .open(&self.output_file)
             .map_err(Error::IOError)?;
+        if !exists {
+            writeln!(output, "TXID,Processing Time,Cost Units,Cost XRD",)
+                .map_err(Error::IOError)?;
+        }
+
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
@@ -110,13 +116,13 @@ impl TxnMeasure {
                         output,
                         "{},{},{},{}",
                         TransactionHashBech32Encoder::new(&network)
-                            .encode(&IntentHash(tx.summary.hash))
+                            .encode(&IntentHash(tx.signed_intent.intent.summary.hash))
                             .unwrap(),
                         tx_processing_time.as_micros(),
                         execution_finalization_cost_units.unwrap(),
                         execution_finalization_cost_xrd.unwrap(),
                     )
-                    .unwrap();
+                    .map_err(Error::IOError)?;
                 }
 
                 let new_state_root_hash = database.get_current_root_hash();
@@ -131,10 +137,11 @@ impl TxnMeasure {
             println!("Time elapsed: {:?}", duration);
             println!("State version: {}", database.get_current_version());
             println!("State root hash: {}", database.get_current_root_hash());
+            Ok::<(), Error>(())
         });
 
         txn_read_thread_handle.join().unwrap()?;
-        txn_write_thread_handle.join().unwrap();
+        txn_write_thread_handle.join().unwrap()?;
 
         Ok(())
     }
