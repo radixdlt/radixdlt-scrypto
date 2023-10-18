@@ -7,3 +7,8 @@ pub use qemu_plugin_interface::*;
 pub mod rocks_db_metrics;
 #[cfg(feature = "rocksdb")]
 pub use rocks_db_metrics::*;
+
+#[cfg(feature = "cpu_ram_metrics")]
+pub mod info_alloc;
+#[cfg(feature = "cpu_ram_metrics")]
+pub use info_alloc::*;
