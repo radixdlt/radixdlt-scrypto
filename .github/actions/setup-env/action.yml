@@ -1,0 +1,25 @@
+name: 'Setup environment'
+description: 'Common GH action to setup job environment'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        default: true
+        target: wasm32-unknown-unknown
+
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
+
+    - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
+      if: runner.os == 'Windows'
+      run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+      shell: bash
+    - name: Install dependencies
+      if: runner.os == 'Windows'
+      run: choco install llvm -y
+      shell: bash
+
