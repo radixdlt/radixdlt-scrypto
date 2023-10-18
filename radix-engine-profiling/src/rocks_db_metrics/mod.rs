@@ -128,7 +128,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
         let mut delete_value_len: usize = 0;
         for (node_key, node_updates) in &database_updates.node_updates {
             for (partition_num, partition_updates) in &node_updates.partition_updates {
-                let PartitionDatabaseUpdates::Delta {substate_updates} = partition_updates else {
+                let PartitionDatabaseUpdates::Delta { substate_updates } = partition_updates else {
                     panic!("Deletes not supported while profiling")
                 };
                 for db_update in substate_updates {
@@ -183,7 +183,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
         // - per size - test invokes only database_update per commit (that is why we can use 1st item only here)
         // - per partition - test invokes commits for particular partition size, so value length is not important here (still it is safe to use 1st item only)
         let partition_updates = &database_updates.node_updates[0].partition_updates[0];
-        let PartitionDatabaseUpdates::Delta {substate_updates} = partition_updates else {
+        let PartitionDatabaseUpdates::Delta { substate_updates } = partition_updates else {
             panic!("Deletes not supported while profiling")
         };
         let db_update = &substate_updates[0];

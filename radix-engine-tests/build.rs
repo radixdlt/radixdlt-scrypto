@@ -16,8 +16,8 @@ fn main() {
     let mut packages = HashMap::new();
     for entry in walkdir::WalkDir::new(blueprints_dir) {
         let Ok(entry) = entry else {
-                continue;
-            };
+            continue;
+        };
         let path = entry.path();
         if !path
             .file_name()
@@ -36,8 +36,8 @@ fn main() {
         }
 
         let Some(Package { name, .. }) = manifest.package else {
-                continue;
-            };
+            continue;
+        };
 
         let (code, definition) = scrypto_unit::Compile::compile_with_env_vars(
             path.parent().unwrap(),

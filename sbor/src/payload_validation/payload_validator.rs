@@ -571,7 +571,7 @@ mod tests {
             schema.v1(),
             type_id,
             &mut (),
-            64
+            64,
         ) else {
             panic!("Validation did not error with too short a payload");
         };
@@ -606,7 +606,7 @@ mod tests {
             schema.v1(),
             type_id,
             &mut (),
-            64
+            64,
         ) else {
             panic!("Validation did not error with too short a payload");
         };

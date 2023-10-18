@@ -1,4 +1,6 @@
 [workspace]
+resolver = "1"
+
 # NOTES:
 # This workspace is intended to be used for the primary scrypto/radix engine library crates.
 #

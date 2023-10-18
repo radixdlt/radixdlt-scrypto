@@ -1,4 +1,4 @@
-FROM rust:1.70.0-slim-bullseye as builder
+FROM rust:slim-bullseye as builder
 
 RUN apt update && apt install -y \
     cmake=3.18.4-2+deb11u1 \
@@ -29,7 +29,7 @@ WORKDIR /app
 
 RUN cargo install --path ./simulator
 
-FROM rust:1.70.0-slim-bullseye
+FROM rust:slim-bullseye
 COPY --from=builder /app/simulator/target/release/scrypto /usr/local/bin/scrypto
 RUN rustup target add wasm32-unknown-unknown
 WORKDIR /src

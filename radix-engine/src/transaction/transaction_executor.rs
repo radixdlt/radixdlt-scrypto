@@ -4,8 +4,8 @@ use crate::blueprints::consensus_manager::{
 };
 use crate::blueprints::models::FieldPayload;
 use crate::blueprints::resource::{
-    BurnFungibleResourceEvent, DepositEvent, FungibleVaultBalanceFieldPayload,
-    FungibleVaultBalanceFieldSubstate, FungibleVaultField, PayFeeEvent,
+    fungible_vault::DepositEvent, fungible_vault::PayFeeEvent, BurnFungibleResourceEvent,
+    FungibleVaultBalanceFieldPayload, FungibleVaultBalanceFieldSubstate, FungibleVaultField,
 };
 use crate::blueprints::transaction_tracker::{
     TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate,
