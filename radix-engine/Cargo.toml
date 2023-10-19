@@ -64,7 +64,7 @@ alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-in
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
-cpu_ram_metrics = ["std", "dep:perfcnt",  "dep:radix-engine-profiling", "radix-engine-profiling?/cpu_ram_metrics"]
+cpu_ram_metrics = ["std", "dep:perfcnt",  "dep:radix-engine-profiling", "radix-engine-profiling?/ram_metrics"]
 
 # Use `wasmer` as WASM engine, otherwise `wasmi`
 wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
