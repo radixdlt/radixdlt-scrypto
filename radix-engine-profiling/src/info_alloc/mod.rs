@@ -1,6 +1,6 @@
 use std::{
     alloc::{GlobalAlloc, Layout, System},
-    sync::atomic::{AtomicIsize, Ordering},
+    sync::atomic::{AtomicBool, AtomicIsize, Ordering},
 };
 
 #[global_allocator]
@@ -17,6 +17,8 @@ thread_local! {
 pub struct InfoAlloc<T: GlobalAlloc> {
     /// Heap allocator to use, default usage: System
     allocator: T,
+    /// Determine if allocation data gathering is enabled
+    enabled: AtomicBool,
 }
 
 /// Allocation data stored in Thread Local Store (separate data for each thread)
@@ -41,7 +43,18 @@ impl InfoAllocData {
 
 impl<T: GlobalAlloc> InfoAlloc<T> {
     pub const fn new(allocator: T) -> Self {
-        InfoAlloc { allocator }
+        InfoAlloc {
+            allocator,
+            enabled: AtomicBool::new(false),
+        }
+    }
+
+    pub fn set_enable(&self, enable: bool) {
+        self.enabled.store(enable, Ordering::Release);
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled.load(Ordering::Acquire)
     }
 
     /// Resets internal counters. Usually used to start measurement.
@@ -111,23 +124,30 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
 
 unsafe impl<T: GlobalAlloc> GlobalAlloc for InfoAlloc<T> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.increase_counters(layout.size());
+        if self.is_enabled() {
+            self.increase_counters(layout.size());
+        }
         self.allocator.alloc(layout)
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.decrease_counters(layout.size());
+        if self.is_enabled() {
+            self.decrease_counters(layout.size());
+        }
         self.allocator.dealloc(ptr, layout);
     }
 
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        self.realloc_decrease_counter(layout.size(), new_size);
+        if self.is_enabled() {
+            self.realloc_decrease_counter(layout.size(), new_size);
+        }
         self.allocator.realloc(ptr, layout, new_size)
     }
 }
 
 #[test]
 fn info_mem_check() {
+    INFO_ALLOC.set_enable(true);
     INFO_ALLOC.reset_counters();
 
     // allocate 10 bytes
@@ -186,6 +206,8 @@ fn info_mem_multithread_check() {
     use std::thread;
     use std::time::Duration;
 
+    INFO_ALLOC.set_enable(true);
+
     let mut handles = vec![];
 
     for i in 1..4 {
@@ -211,6 +233,8 @@ fn info_mem_multithread_check() {
 
 #[test]
 fn info_mem_negative_value() {
+    INFO_ALLOC.set_enable(true);
+
     // allocate 10 bytes
     let mut v = Vec::<u8>::with_capacity(10);
 

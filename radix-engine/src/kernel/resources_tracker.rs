@@ -52,6 +52,7 @@ impl ResourcesTracker {
         };
 
         ret.cpu.start_measurement();
+        INFO_ALLOC.set_enable(true);
         INFO_ALLOC.reset_counters();
         ret
     }
@@ -60,6 +61,7 @@ impl ResourcesTracker {
         let cpu_cycles = self.cpu.end_measurement();
         let (heap_allocations_sum, _heap_current_level, heap_peak_memory) =
             INFO_ALLOC.get_counters_value();
+        INFO_ALLOC.set_enable(false);
         ResourcesUsage {
             heap_allocations_sum,
             heap_peak_memory,
