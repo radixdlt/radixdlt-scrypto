@@ -1,6 +1,6 @@
 [package]
 name = "tx_processor_access"
-version = "1.0.1"
+version = "1.0.2-dev"
 edition = "2021"
 
 [dependencies]
