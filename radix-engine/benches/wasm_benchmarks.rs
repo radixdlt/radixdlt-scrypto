@@ -27,7 +27,7 @@ fn get_wasm_file() -> Vec<u8> {
     }
 
     std::fs::read(WASM_BENCHMARKS_WASM_FILE)
-        .expect(&format!("Cannot read file {:?}", WASM_BENCHMARKS_WASM_FILE))
+        .unwrap_or_else(|_| panic!("Cannot read file {:?}", WASM_BENCHMARKS_WASM_FILE))
 }
 
 fn wasmi_read_memory(
@@ -260,7 +260,7 @@ fn wasmer_get_instance(code: &[u8]) -> wasmer::Instance {
     let instance =
         wasmer::Instance::new(&module, &import_object).expect("Failed to instantiate module");
 
-    env.init_with_instance(&instance.clone()).unwrap();
+    env.init_with_instance(&instance).unwrap();
 
     instance
 }

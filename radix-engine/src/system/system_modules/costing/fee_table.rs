@@ -139,10 +139,12 @@ impl FeeTable {
                     .get(package_address)
                     .and_then(|x| x.get(export_name))
                     .and_then(|value| Some(add(value.1, mul(value.0, cast(*input_size)))))
-                    .expect(&format!(
-                        "Native function not found: {:?}::{}. ",
-                        package_address, export_name
-                    ))
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "Native function not found: {:?}::{}. ",
+                            package_address, export_name
+                        )
+                    })
             });
 
         native_execution_units / CPU_INSTRUCTIONS_TO_COST_UNIT

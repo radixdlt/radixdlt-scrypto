@@ -123,11 +123,11 @@ fn execute_with_time_logging(
 pub fn load_cost_breakdown(content: &str) -> (BTreeMap<String, u32>, BTreeMap<String, u32>) {
     let mut execution_breakdown = BTreeMap::<String, u32>::new();
     let mut finalization_breakdown = BTreeMap::<String, u32>::new();
-    let lines: Vec<String> = content.split("\n").map(String::from).collect();
+    let lines: Vec<String> = content.split('\n').map(String::from).collect();
     let mut is_execution = true;
     for i in 8..lines.len() {
-        if lines[i].starts_with("-") {
-            let mut tokens = lines[i].split(",");
+        if lines[i].starts_with('-') {
+            let mut tokens = lines[i].split(',');
             let entry = tokens.next().unwrap().trim()[2..].to_string();
             let cost = tokens.next().unwrap().trim();
             if is_execution {

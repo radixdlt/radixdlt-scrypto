@@ -258,19 +258,13 @@ fn typed_native_event_type_contains_all_native_events() {
     for (package_name, package_blueprints) in registered_events.into_iter() {
         let package_definition = package_name_definition_mapping
             .get(package_name.as_str())
-            .expect(
-                format!(
+            .unwrap_or_else(|| {
+                panic!(
                     "No package definition found for a package with the name: \"{package_name}\""
                 )
-                .as_str(),
-            );
+            });
         for (blueprint_name, blueprint_events) in package_blueprints.into_iter() {
-            let blueprint_definition = package_definition.blueprints.get(&blueprint_name).expect(
-                format!(
-                    "Package named \"{package_name}\" has no blueprint named \"{blueprint_name}\""
-                )
-                .as_str(),
-            );
+            let blueprint_definition = package_definition.blueprints.get(&blueprint_name).unwrap_or_else(|| panic!("Package named \"{package_name}\" has no blueprint named \"{blueprint_name}\""));
             let actual_blueprint_events = blueprint_definition
                 .schema
                 .events

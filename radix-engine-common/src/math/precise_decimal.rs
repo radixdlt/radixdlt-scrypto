@@ -878,7 +878,7 @@ impl fmt::Display for PreciseDecimal {
 
 impl fmt::Debug for PreciseDecimal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self)
     }
 }
 

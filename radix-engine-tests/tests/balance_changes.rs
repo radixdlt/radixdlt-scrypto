@@ -34,7 +34,7 @@ fn test_balance_changes_when_success() {
             .build(),
         vec![
             NonFungibleGlobalId::from_public_key(&public_key),
-            owner_badge_addr.clone(),
+            owner_badge_addr,
         ],
     );
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
@@ -119,7 +119,7 @@ fn test_balance_changes_when_failure() {
             .build(),
         vec![
             NonFungibleGlobalId::from_public_key(&public_key),
-            owner_badge_addr.clone(),
+            owner_badge_addr,
         ],
     );
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];

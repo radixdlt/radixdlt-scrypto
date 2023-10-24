@@ -532,10 +532,10 @@ impl FromStr for NonFungibleLocalId {
     type Err = ParseNonFungibleLocalIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let local_id = if s.starts_with("<") && s.ends_with(">") {
-            Self::string(s[1..s.len() - 1].to_string())
+        let local_id = if s.starts_with('<') && s.ends_with('>') {
+            Self::string(&s[1..s.len() - 1])
                 .map_err(ParseNonFungibleLocalIdError::ContentValidationError)?
-        } else if s.starts_with("#") && s.ends_with("#") {
+        } else if s.starts_with('#') && s.ends_with('#') {
             let digits = &s[1..s.len() - 1];
             if !is_canonically_formatted_integer(digits) {
                 return Err(ParseNonFungibleLocalIdError::InvalidInteger);
@@ -544,13 +544,13 @@ impl FromStr for NonFungibleLocalId {
                 u64::from_str_radix(&s[1..s.len() - 1], 10)
                     .map_err(|_| ParseNonFungibleLocalIdError::InvalidInteger)?,
             )
-        } else if s.starts_with("[") && s.ends_with("]") {
+        } else if s.starts_with('[') && s.ends_with(']') {
             NonFungibleLocalId::bytes(
                 hex::decode(&s[1..s.len() - 1])
                     .map_err(|_| ParseNonFungibleLocalIdError::InvalidBytes)?,
             )
             .map_err(ParseNonFungibleLocalIdError::ContentValidationError)?
-        } else if s.starts_with("{") && s.ends_with("}") {
+        } else if s.starts_with('{') && s.ends_with('}') {
             let chars: Vec<char> = s[1..s.len() - 1].chars().collect();
             if chars.len() == 32 * 2 + 3 && chars[16] == '-' && chars[33] == '-' && chars[50] == '-'
             {
@@ -627,7 +627,7 @@ mod tests {
         let validation_result =
             NonFungibleLocalId::string(string_of_length(1 + NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH));
         assert_eq!(validation_result, Err(ContentValidationError::TooLong));
-        let validation_result = NonFungibleLocalId::string("".to_string());
+        let validation_result = NonFungibleLocalId::string("");
         assert_eq!(validation_result, Err(ContentValidationError::Empty));
 
         let validation_result =
@@ -649,7 +649,7 @@ mod tests {
     #[test]
     fn test_non_fungible_string_validation() {
         let valid_id_string = "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWZYZ_0123456789";
-        let validation_result = NonFungibleLocalId::string(valid_id_string.to_owned());
+        let validation_result = NonFungibleLocalId::string(valid_id_string);
         assert!(matches!(validation_result, Ok(_)));
 
         test_invalid_char('.');

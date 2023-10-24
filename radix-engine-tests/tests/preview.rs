@@ -113,7 +113,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 
     let public_key = Secp256k1PrivateKey::from_u64(99).unwrap().public_key();
     let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
-    let account = test_runner.new_account_advanced(OwnerRole::Fixed(withdraw_auth.clone()));
+    let account = test_runner.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     let preview_flags = PreviewFlags {

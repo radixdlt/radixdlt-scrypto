@@ -462,7 +462,7 @@ fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
         .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
-            code.clone(),
+            code,
             definition.clone(),
             MetadataInit::default(),
             OwnerRole::None,

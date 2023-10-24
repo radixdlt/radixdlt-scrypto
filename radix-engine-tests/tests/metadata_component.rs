@@ -333,7 +333,7 @@ fn cannot_set_address_metadata_after_freezing() {
     let entry = MetadataValue::GlobalAddress(address.into());
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .set_metadata(component_address, "other_key", entry.clone())
+        .set_metadata(component_address, "other_key", entry)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -366,14 +366,14 @@ fn can_set_instant_metadata_through_manifest() {
 #[test]
 fn can_set_url_metadata_through_manifest() {
     can_set_metadata_through_manifest(MetadataValue::Url(UncheckedUrl::of(
-        "https://radixdlt.com/index.html".to_string(),
+        "https://radixdlt.com/index.html",
     )));
 }
 
 #[test]
 fn can_set_origin_metadata_through_manifest() {
     can_set_metadata_through_manifest(MetadataValue::Origin(UncheckedOrigin::of(
-        "https://radixdlt.com".to_string(),
+        "https://radixdlt.com",
     )));
 }
 

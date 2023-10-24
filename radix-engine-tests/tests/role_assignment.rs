@@ -111,7 +111,7 @@ fn role_assignment_method_auth_cant_be_mutated_when_required_proofs_are_not_pres
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
     let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
-        virtual_badge_non_fungible_global_id.clone()
+        virtual_badge_non_fungible_global_id
     )));
 
     // Act
@@ -152,7 +152,7 @@ fn component_role_assignment_can_be_mutated_through_manifest(to_rule: AccessRule
     let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
-    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
     let receipt = test_runner.execute_manifest(

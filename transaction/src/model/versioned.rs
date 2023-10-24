@@ -153,10 +153,10 @@ mod tests {
         assert_eq!(
             intent_as_versioned,
             VersionedTransactionPayload::IntentV1 {
-                header: header_v1.clone(),
-                instructions: instructions_v1.clone(),
-                blobs: blobs_v1.clone(),
-                message: message_v1.clone(),
+                header: header_v1,
+                instructions: instructions_v1,
+                blobs: blobs_v1,
+                message: message_v1,
             }
         );
 
@@ -272,8 +272,8 @@ mod tests {
         assert_eq!(
             notarized_transaction_as_versioned,
             VersionedTransactionPayload::NotarizedTransactionV1 {
-                signed_intent: signed_intent_v1.clone(),
-                notary_signature: notary_signature_v1.clone(),
+                signed_intent: signed_intent_v1,
+                notary_signature: notary_signature_v1,
             }
         );
 

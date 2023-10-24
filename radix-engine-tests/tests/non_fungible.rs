@@ -1135,7 +1135,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 1)
-        .burn_non_fungible_from_worktop(non_fungible_global_id.clone())
+        .burn_non_fungible_from_worktop(non_fungible_global_id)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

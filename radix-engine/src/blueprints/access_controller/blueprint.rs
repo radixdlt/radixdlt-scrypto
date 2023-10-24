@@ -57,17 +57,6 @@ pub struct AccessControllerSubstate {
     ),
 }
 
-impl Clone for AccessControllerSubstate {
-    fn clone(&self) -> Self {
-        Self {
-            controlled_asset: Vault(self.controlled_asset.0),
-            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes.clone(),
-            recovery_badge: self.recovery_badge,
-            state: self.state.clone(),
-        }
-    }
-}
-
 impl AccessControllerSubstate {
     pub fn new(
         controlled_asset: Vault,

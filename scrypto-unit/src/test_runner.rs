@@ -110,7 +110,7 @@ impl Compile {
             let content = fs::read_to_string(&cargo).expect("Failed to read the Cargo.toml file");
             Self::extract_crate_name(&content)
                 .expect("Failed to extract crate name from the Cargo.toml file")
-                .replace("-", "_")
+                .replace('-', "_")
         } else {
             // file name
             package_dir
@@ -120,7 +120,7 @@ impl Compile {
                 .to_str()
                 .unwrap()
                 .to_owned()
-                .replace("-", "_")
+                .replace('-', "_")
         };
         let mut path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap(); // Infallible;
         path.push("wasm32-unknown-unknown");

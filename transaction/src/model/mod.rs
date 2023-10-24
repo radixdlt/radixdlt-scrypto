@@ -45,14 +45,14 @@ mod tests {
             .to_string(display_context);
         let actual_clean: String = actual
             .trim()
-            .split("\n")
+            .split('\n')
             .map(|line| line.trim())
             .collect::<Vec<&str>>()
             .join("\n");
 
         let expected_clean: String = expected
             .trim()
-            .split("\n")
+            .split('\n')
             .map(|line| line.split("//").next().unwrap().trim())
             .collect::<Vec<&str>>()
             .join("\n");

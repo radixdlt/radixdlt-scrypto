@@ -48,7 +48,7 @@ macro_rules! types {
                 #[doc = "`" $t "` will have the same methods and traits as"]
                 /// the built-in counterpart.
                 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary, Serialize, Deserialize))]
-                #[derive(Clone , Copy , Eq , Hash)]
+                #[derive(Clone , Copy)]
                 #[repr(transparent)]
                 pub struct $t(pub $wrap);
 
@@ -113,9 +113,20 @@ macro_rules! types {
                     }
                 }
 
+                // The following three trait implementations must be aligned.
+
                 impl PartialEq for $t {
                     fn eq(&self, other: &Self) -> bool {
-                        self.0 == other.0
+                        self.0.eq(&other.0)
+                    }
+                }
+
+                impl Eq for $t {
+                }
+
+                impl sbor::rust::hash::Hash for $t {
+                    fn hash<H>(&self, state: &mut H) where H: sbor::rust::hash::Hasher {
+                        self.0.hash(state)
                     }
                 }
             )*

@@ -1298,7 +1298,7 @@ impl ManifestBuilder {
                 code: code_blob_ref,
                 definition,
                 metadata: metadata_init!(),
-                owner_role: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
+                owner_role: OwnerRole::Fixed(rule!(require(owner_badge))),
             }),
         })
     }
