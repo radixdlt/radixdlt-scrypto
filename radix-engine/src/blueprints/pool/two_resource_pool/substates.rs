@@ -22,18 +22,3 @@ impl TwoResourcePoolSubstate {
             .map(|(_, vault)| Vault(vault.0.clone()))
     }
 }
-
-impl Clone for TwoResourcePoolSubstate {
-    fn clone(&self) -> Self {
-        let (resource_address1, vault1) = self.vaults.get(0).unwrap();
-        let (resource_address2, vault2) = self.vaults.get(1).unwrap();
-
-        Self {
-            vaults: [
-                (*resource_address1, Vault(vault1.0.clone())),
-                (*resource_address2, Vault(vault2.0.clone())),
-            ],
-            pool_unit_resource_manager: self.pool_unit_resource_manager.clone(),
-        }
-    }
-}

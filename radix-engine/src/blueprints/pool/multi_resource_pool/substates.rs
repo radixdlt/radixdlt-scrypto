@@ -31,17 +31,3 @@ pub struct MultiResourcePoolSubstate {
     /// The resource manager of the pool unit resource that the pool works with.
     pub pool_unit_resource_manager: ResourceManager,
 }
-
-impl Clone for MultiResourcePoolSubstate {
-    fn clone(&self) -> Self {
-        let vaults = self
-            .vaults
-            .iter()
-            .map(|(resource_address, vault)| (resource_address.clone(), Vault(vault.0.clone())))
-            .collect();
-        Self {
-            vaults,
-            pool_unit_resource_manager: self.pool_unit_resource_manager.clone(),
-        }
-    }
-}
