@@ -66,7 +66,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             api.kernel_close_substate(handle)?;
             vm_type
                 .into_value()
-                .expect(&format!("Vm type not found: {:?}", export))
+                .unwrap_or_else(|| panic!("Vm type not found: {:?}", export))
         };
 
         let output = match vm_type.into_latest().vm_type {
@@ -91,7 +91,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     api.kernel_close_substate(handle)?;
                     original_code
                         .into_value()
-                        .expect(&format!("Original code not found: {:?}", export))
+                        .unwrap_or_else(|| panic!("Original code not found: {:?}", export))
                 };
 
                 let mut vm_instance = api
@@ -124,7 +124,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     api.kernel_close_substate(handle)?;
                     instrumented_code
                         .into_value()
-                        .expect(&format!("Instrumented code not found: {:?}", export))
+                        .unwrap_or_else(|| panic!("Instrumented code not found: {:?}", export))
                         .into_latest()
                 };
 

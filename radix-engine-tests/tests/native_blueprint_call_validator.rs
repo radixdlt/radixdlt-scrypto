@@ -27,7 +27,7 @@ fn validator_sees_valid_transfer_manifest_as_valid() {
     // Assert
     validation_result
         .clone()
-        .expect(format!("Validation failed: {:?}", validation_result).as_str())
+        .unwrap_or_else(|_| panic!("Validation failed: {:?}", validation_result))
 }
 
 #[test]
@@ -87,13 +87,12 @@ fn common_manifests_are_all_valid() {
             validate_call_arguments_to_native_components(&manifest.instructions);
 
         // Assert
-        validation_result.clone().expect(
-            format!(
+        validation_result.clone().unwrap_or_else(|_| {
+            panic!(
                 "Validation failed for manifest \"{:?}\" with error: \"{:?}\"",
                 path, validation_result
             )
-            .as_str(),
-        )
+        })
     }
 }
 

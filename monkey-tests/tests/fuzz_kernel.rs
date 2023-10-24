@@ -542,10 +542,12 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
         let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         substate_db.commit(&database_updates);
         let mut checker = KernelDatabaseChecker::new();
-        checker.check_db(&substate_db).expect(&format!(
-            "Database is not consistent at seed: {:?} actions: {:?}",
-            seed, actions
-        ));
+        checker.check_db(&substate_db).unwrap_or_else(|_| {
+            panic!(
+                "Database is not consistent at seed: {:?} actions: {:?}",
+                seed, actions
+            )
+        });
     }
 
     Ok(())

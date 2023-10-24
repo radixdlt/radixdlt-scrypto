@@ -239,7 +239,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 let info = self
                     .system_reader
                     .get_kv_store_type_target(node_id)
-                    .expect(&format!("Could not get type info for node {node_id:?}"));
+                    .unwrap_or_else(|_| panic!("Could not get type info for node {node_id:?}"));
 
                 let key_full_type_id = match info.kv_store_type.key_generic_substitution {
                     GenericSubstitution::Local(type_id) => type_id.under_node(*node_id),
@@ -247,7 +247,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         .system_reader
                         .get_blueprint_type_schema(&type_id)
                         .map(|x| x.1.under_node(type_id.package_address.into_node_id()))
-                        .expect(&format!("Could not get type info {type_id:?}")),
+                        .unwrap_or_else(|_| panic!("Could not get type info {type_id:?}")),
                 };
                 let value_full_type_id = match info.kv_store_type.value_generic_substitution {
                     GenericSubstitution::Local(type_id) => type_id.under_node(*node_id),
@@ -255,7 +255,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         .system_reader
                         .get_blueprint_type_schema(&type_id)
                         .map(|x| x.1.under_node(type_id.package_address.into_node_id()))
-                        .expect(&format!("Could not get type info {type_id:?}")),
+                        .unwrap_or_else(|_| panic!("Could not get type info {type_id:?}")),
                 };
                 SubstateSystemStructure::KeyValueStoreEntry(KeyValueStoreEntryStructure {
                     key_full_type_id,
@@ -266,7 +266,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 let bp_type_target = self
                     .system_reader
                     .get_blueprint_type_target(node_id, *module_id)
-                    .expect(&format!("Could not get type info for node {node_id:?}"));
+                    .unwrap_or_else(|_| panic!("Could not get type info for node {node_id:?}"));
 
                 self.resolve_object_substate_structure(
                     &bp_type_target,
