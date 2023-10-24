@@ -130,7 +130,7 @@ impl UtcDateTime {
         minute: u8,
         second: u8,
     ) -> Result<Self, DateTimeError> {
-        if year <= 0 {
+        if year == 0 {
             return Err(DateTimeError::InvalidYear);
         }
 
