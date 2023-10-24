@@ -238,7 +238,7 @@ fn verify_metadata_set_and_get_success() {
     let metadata = test_runner.get_metadata(account.into(), "key").unwrap();
 
     // Assert
-    assert!(String::from_metadata_value(metadata.clone()).is_ok());
+    assert!(String::from_metadata_value(metadata).is_ok());
 }
 
 #[test]
@@ -254,7 +254,7 @@ fn verify_metadata_get_fail() {
     // Act
     let metadata = test_runner.get_metadata(account.into(), "key").unwrap();
 
-    let result = u8::from_metadata_value(metadata.clone());
+    let result = u8::from_metadata_value(metadata);
 
     // Assert
     assert_eq!(
@@ -279,7 +279,7 @@ fn verify_metadata_vec_get_fail() {
     // Act
     let metadata = test_runner.get_metadata(account.into(), "key").unwrap();
 
-    let result = Vec::<u8>::from_metadata_value(metadata.clone());
+    let result = Vec::<u8>::from_metadata_value(metadata);
 
     // Assert
     assert_eq!(
@@ -311,7 +311,7 @@ fn verify_metadata_array_set_and_get_success() {
     let metadata = test_runner.get_metadata(account.into(), "key").unwrap();
 
     // Assert
-    assert!(Vec::<u8>::from_metadata_value(metadata.clone()).is_ok());
+    assert!(Vec::<u8>::from_metadata_value(metadata).is_ok());
 }
 
 #[test]
@@ -333,7 +333,7 @@ fn verify_metadata_array_get_fail() {
     // Act
     let metadata = test_runner.get_metadata(account.into(), "key").unwrap();
 
-    let result = u8::from_metadata_value(metadata.clone());
+    let result = u8::from_metadata_value(metadata);
 
     // Assert
     assert_eq!(
@@ -364,7 +364,7 @@ fn verify_metadata_array_get_other_type_fail() {
     // Act
     let metadata = test_runner.get_metadata(account.into(), "key").unwrap();
 
-    let result = u32::from_array_metadata_value(metadata.clone());
+    let result = u32::from_array_metadata_value(metadata);
 
     // Assert
     assert_eq!(
@@ -395,7 +395,7 @@ fn verify_metadata_array_get_vec_fail() {
     // Act
     let metadata = test_runner.get_metadata(account.into(), "key").unwrap();
 
-    let result = Vec::<u32>::from_metadata_value(metadata.clone());
+    let result = Vec::<u32>::from_metadata_value(metadata);
 
     // Assert
     assert_eq!(

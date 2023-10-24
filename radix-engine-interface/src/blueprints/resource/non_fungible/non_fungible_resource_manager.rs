@@ -61,7 +61,7 @@ impl NonFungibleResourceRoles {
                 withdrawer_updater => rule!(deny_all);
             },
             deposit_roles: deposit_roles! {
-                depositor => access_rule.clone();
+                depositor => access_rule;
                 depositor_updater => rule!(deny_all);
             },
         }

@@ -75,9 +75,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
-                    },
+                    AccountAddAuthorizedDepositorInput { badge: badge },
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk1)],
@@ -324,9 +322,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
-                    },
+                    AccountAddAuthorizedDepositorInput { badge: badge },
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk1)],
@@ -485,9 +481,7 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
-                    },
+                    AccountAddAuthorizedDepositorInput { badge: badge },
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk1)],
@@ -646,9 +640,7 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
-                    },
+                    AccountAddAuthorizedDepositorInput { badge: badge },
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk1)],

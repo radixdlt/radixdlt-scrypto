@@ -61,7 +61,7 @@ mod multi_threaded_test {
                     vm.clone(),
                     &CostingParameters::default(),
                     &ExecutionConfig::for_test_transaction(),
-                    &TestTransaction::new(manifest.clone(), hash(format!("Account creation: {i}")))
+                    &TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
                         .prepare()
                         .unwrap()
                         .get_executable(btreeset![NonFungibleGlobalId::from_public_key(

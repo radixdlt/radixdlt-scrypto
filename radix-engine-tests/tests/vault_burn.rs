@@ -347,7 +347,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
         .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
     let receipt =
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
@@ -415,7 +415,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
         )
         .build();
     let receipt =
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
@@ -464,7 +464,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
             })
             .build();
         test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
+            .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
@@ -529,7 +529,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
             })
             .build();
         test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
+            .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
@@ -592,7 +592,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
             })
             .build();
         test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
+            .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
@@ -832,7 +832,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
         )
         .build();
     let receipt =
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
@@ -875,7 +875,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
         .call_method(account, "burn", manifest_args!(resource_address, dec!(1)))
         .build();
     let receipt =
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
@@ -922,7 +922,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
         )
         .build();
     let receipt =
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();

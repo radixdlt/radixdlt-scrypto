@@ -279,7 +279,7 @@ mod tests {
         let v3 = ExampleV3(5);
         validate_latest(v3, expected_latest.clone());
         let v4 = ExampleV4::of(5);
-        validate_latest(v4, expected_latest.clone());
+        validate_latest(v4, expected_latest);
     }
 
     fn validate_latest(
@@ -311,7 +311,7 @@ mod tests {
         let v1_model: GenericModel<_> = GenericModelV1(51u64);
         let versioned = VersionedGenericModel::from(v1_model.clone());
         let versioned_2 = v1_model.clone().into_versioned();
-        assert_eq!(versioned.clone().into_latest(), v1_model.clone());
+        assert_eq!(versioned.clone().into_latest(), v1_model);
         assert_eq!(versioned, versioned_2);
     }
 }

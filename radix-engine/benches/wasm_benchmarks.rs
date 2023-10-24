@@ -260,7 +260,7 @@ fn wasmer_get_instance(code: &[u8]) -> wasmer::Instance {
     let instance =
         wasmer::Instance::new(&module, &import_object).expect("Failed to instantiate module");
 
-    env.init_with_instance(&instance.clone()).unwrap();
+    env.init_with_instance(&instance).unwrap();
 
     instance
 }

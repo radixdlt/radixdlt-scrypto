@@ -48,7 +48,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         schema_cache: NonIterMap::new(),
         callback_obj: Vm {
             scrypto_vm: &scrypto_vm,
-            native_vm: native_vm.clone(),
+            native_vm: native_vm,
         },
         modules: SystemModuleMixer::new(
             execution_config.enabled_modules,

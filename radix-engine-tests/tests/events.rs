@@ -531,9 +531,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
-                    &non_fungible_vault::DepositEvent::new(
-                        indexset!(non_fungible_local_id.clone())
-                    ),
+                    &non_fungible_vault::DepositEvent::new(indexset!(non_fungible_local_id)),
                     event_data
                 ) =>
                 true,
@@ -797,9 +795,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             )) if test_runner
                 .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
-                    &BurnNonFungibleResourceEvent {
-                        ids: indexset!(id.clone())
-                    },
+                    &BurnNonFungibleResourceEvent { ids: indexset!(id) },
                     event_data
                 ) =>
                 true,
@@ -952,7 +948,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             )) if test_runner
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
-                    &non_fungible_vault::DepositEvent::new(indexset!(id.clone(), id2.clone())),
+                    &non_fungible_vault::DepositEvent::new(indexset!(id, id2)),
                     event_data
                 ) =>
                 true,
@@ -2509,7 +2505,7 @@ fn account_configuration_emits_expected_events() {
             )
             .unwrap(),
             account::RemoveAuthorizedDepositorEvent {
-                authorized_depositor_badge: authorized_depositor_badge.clone()
+                authorized_depositor_badge: authorized_depositor_badge
             }
         )
     }
