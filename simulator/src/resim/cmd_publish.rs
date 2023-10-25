@@ -70,7 +70,7 @@ impl Publish {
             .map_err(Error::BuildError)?
         } else {
             let code_path = self.path.clone();
-            let schema_path = code_path.with_extension("schema");
+            let schema_path = code_path.with_extension("rpd");
             (code_path, schema_path)
         };
 
