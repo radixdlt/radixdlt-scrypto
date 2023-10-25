@@ -6,6 +6,7 @@ members = [
     "arguments",
     "auth_scenarios",
     "balance_changes",
+    "bls",
     "bucket",
     "cast",
     "component",

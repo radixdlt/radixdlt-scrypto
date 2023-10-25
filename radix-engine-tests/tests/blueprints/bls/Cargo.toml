@@ -1,0 +1,16 @@
+[package]
+name = "bls"
+version = "1.0.2-dev"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../../../../sbor" }
+scrypto = { path = "../../../../scrypto" }
+bls-signatures = { version = "0.15.0" }
+
+[dev-dependencies]
+radix-engine = { path = "../../../../radix-engine" }
+
+[lib]
+doctest = false
+crate-type = ["cdylib", "lib"]
