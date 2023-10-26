@@ -415,7 +415,7 @@ impl NonFungibleLocalId {
                 let size = decoder.read_size()?;
                 let slice = decoder.read_slice(size)?;
                 let str =
-                    std::str::from_utf8(slice).map_err(|_| DecodeError::InvalidCustomValue)?;
+                    core::str::from_utf8(slice).map_err(|_| DecodeError::InvalidCustomValue)?;
                 Self::string(str).map_err(|_| DecodeError::InvalidCustomValue)
             }
             1 => Ok(Self::integer(u64::from_be_bytes(copy_u8_array(
