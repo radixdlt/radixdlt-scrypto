@@ -97,7 +97,7 @@ pub enum NonFungibleLocalId {
 }
 
 impl NonFungibleLocalId {
-    pub fn string<T: AsRef<[u8]>>(value: T) -> Result<Self, ContentValidationError> {
+    pub fn string<T: AsRef<str>>(value: T) -> Result<Self, ContentValidationError> {
         StringNonFungibleLocalId::new(value).map(Self::String)
     }
 
@@ -127,6 +127,13 @@ impl NonFungibleLocalId {
 /// 2. We wish to maintain backward compatibility of the existing interface and make very little
 ///    changes there.
 impl NonFungibleLocalId {
+    pub const fn const_string(value: &'static str) -> Result<Self, ContentValidationError> {
+        match StringNonFungibleLocalId::validate_slice(value.as_bytes()) {
+            Ok(()) => Ok(Self::String(StringNonFungibleLocalId(Cow::Borrowed(value)))),
+            Err(error) => Err(error),
+        }
+    }
+
     pub const fn const_integer(value: u64) -> Self {
         Self::integer(value)
     }
@@ -166,43 +173,51 @@ impl From<RUIDNonFungibleLocalId> for NonFungibleLocalId {
     derive(serde::Serialize, serde::Deserialize)
 )]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct StringNonFungibleLocalId(Vec<u8>);
+pub struct StringNonFungibleLocalId(Cow<'static, str>);
 
 impl StringNonFungibleLocalId {
-    pub fn new<S: AsRef<[u8]>>(id: S) -> Result<Self, ContentValidationError> {
-        Self::validate_slice(id.as_ref())?;
-        Ok(Self(id.as_ref().to_vec()))
+    pub fn new<S: AsRef<str>>(id: S) -> Result<Self, ContentValidationError> {
+        Self::validate_slice(id.as_ref().as_bytes())
+            .map(|_| Self(Cow::Owned(id.as_ref().to_owned())))
     }
 
-    pub fn validate_slice(slice: &[u8]) -> Result<(), ContentValidationError> {
-        if slice.len() == 0 {
+    pub const fn validate_slice(slice: &[u8]) -> Result<(), ContentValidationError> {
+        if slice.is_empty() {
             return Err(ContentValidationError::Empty);
         }
         if slice.len() > NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
             return Err(ContentValidationError::TooLong);
         }
-        for byte in slice {
-            let byte = *byte;
-            if byte >= b'a' && byte <= b'z'
+
+        // For loops are not permitted in const contexts. Thus, the only thing that can be used here
+        // is a `while` to check all of the characters. Alternatively, a recursive check is also an
+        // option.
+        // Tracking issue: https://github.com/rust-lang/rust/issues/87575
+        let mut index = 0usize;
+        let slice_len = slice.len();
+        while index < slice_len {
+            let byte = slice[index];
+
+            if !(byte >= b'a' && byte <= b'z'
                 || byte >= b'A' && byte <= b'Z'
                 || byte >= b'0' && byte <= b'9'
-                || byte == b'_'
+                || byte == b'_')
             {
-                continue;
-            } else {
                 return Err(ContentValidationError::ContainsBadCharacter);
             }
+
+            index += 1;
         }
 
         Ok(())
     }
 
     pub fn value(&self) -> &str {
-        unsafe { core::str::from_utf8_unchecked(self.0.as_slice()) }
+        self.0.as_ref()
     }
 
     pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_slice()
+        self.value().as_bytes()
     }
 }
 
@@ -394,7 +409,9 @@ impl NonFungibleLocalId {
             0 => {
                 let size = decoder.read_size()?;
                 let slice = decoder.read_slice(size)?;
-                Self::string(slice).map_err(|_| DecodeError::InvalidCustomValue)
+                let str =
+                    std::str::from_utf8(slice).map_err(|_| DecodeError::InvalidCustomValue)?;
+                Self::string(str).map_err(|_| DecodeError::InvalidCustomValue)
             }
             1 => Ok(Self::integer(u64::from_be_bytes(copy_u8_array(
                 decoder.read_slice(8)?,
@@ -668,7 +685,7 @@ mod tests {
     fn test_non_fungible_string_validation() {
         let valid_id_string = "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWZYZ_0123456789";
         let validation_result = NonFungibleLocalId::string(valid_id_string);
-        assert!(matches!(validation_result, Ok(_)));
+        assert!(validation_result.is_ok());
 
         test_invalid_char('.');
         test_invalid_char('`');
@@ -685,10 +702,22 @@ mod tests {
         test_invalid_char('\u{202D}'); // LTR override
         test_invalid_char('\u{202E}'); // RTL override
         test_invalid_char('\u{1F600}'); // :-) emoji
+
+        test_invalid_string("`HelloWorld"); // Invalid char at the start
+        test_invalid_string("Hello`World"); // Invalid char in the middle
+        test_invalid_string("HelloWorld`"); // Invalid char at the end
     }
 
     fn test_invalid_char(char: char) {
         let validation_result = NonFungibleLocalId::string(format!("valid_{}", char));
+        assert_eq!(
+            validation_result,
+            Err(ContentValidationError::ContainsBadCharacter)
+        );
+    }
+
+    fn test_invalid_string(string: &str) {
+        let validation_result = NonFungibleLocalId::string(string);
         assert_eq!(
             validation_result,
             Err(ContentValidationError::ContainsBadCharacter)
@@ -774,5 +803,19 @@ mod tests {
             NonFungibleLocalId::bytes(vec![1, 10]).unwrap().to_string(),
             "[010a]"
         );
+    }
+
+    #[test]
+    fn const_non_fungible_local_ids_can_be_created() {
+        const _INTEGER: NonFungibleLocalId = NonFungibleLocalId::const_integer(1);
+        const _RUID: NonFungibleLocalId = NonFungibleLocalId::const_ruid([
+            0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+            0x22, 0x22, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x44, 0x44, 0x44, 0x44,
+            0x44, 0x44, 0x44, 0x44,
+        ]);
+        const STRING: Result<NonFungibleLocalId, ContentValidationError> =
+            NonFungibleLocalId::const_string("HelloWorld");
+
+        assert!(STRING.is_ok())
     }
 }
