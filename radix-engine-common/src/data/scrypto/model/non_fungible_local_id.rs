@@ -138,6 +138,13 @@ impl NonFungibleLocalId {
         Self::integer(value)
     }
 
+    pub const fn const_bytes(value: &'static [u8]) -> Result<Self, ContentValidationError> {
+        match BytesNonFungibleLocalId::validate(value) {
+            Ok(()) => Ok(Self::Bytes(BytesNonFungibleLocalId(Cow::Borrowed(value)))),
+            Err(error) => Err(error),
+        }
+    }
+
     pub const fn const_ruid(value: [u8; 32]) -> Self {
         Self::ruid(value)
     }
@@ -283,27 +290,25 @@ impl From<u64> for IntegerNonFungibleLocalId {
     derive(serde::Serialize, serde::Deserialize)
 )]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct BytesNonFungibleLocalId(Vec<u8>);
+pub struct BytesNonFungibleLocalId(Cow<'static, [u8]>);
 
 impl BytesNonFungibleLocalId {
     pub fn new(id: Vec<u8>) -> Result<Self, ContentValidationError> {
-        let new = Self(id);
-        new.validate()?;
-        Ok(new)
+        Self::validate(&id).map(|_| Self(Cow::Owned(id)))
     }
 
-    pub fn validate(&self) -> Result<(), ContentValidationError> {
-        if self.0.len() == 0 {
+    pub const fn validate(slice: &[u8]) -> Result<(), ContentValidationError> {
+        if slice.is_empty() {
             return Err(ContentValidationError::Empty);
         }
-        if self.0.len() > NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
+        if slice.len() > NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
             return Err(ContentValidationError::TooLong);
         }
         Ok(())
     }
 
     pub fn value(&self) -> &[u8] {
-        &self.0
+        self.0.as_ref()
     }
 }
 
@@ -385,7 +390,7 @@ impl NonFungibleLocalId {
             NonFungibleLocalId::Bytes(v) => {
                 encoder.write_discriminator(2)?;
                 encoder.write_size(v.0.len())?;
-                encoder.write_slice(v.0.as_slice())?;
+                encoder.write_slice(v.0.as_ref())?;
             }
             NonFungibleLocalId::RUID(v) => {
                 encoder.write_discriminator(3)?;
@@ -815,7 +820,13 @@ mod tests {
         ]);
         const STRING: Result<NonFungibleLocalId, ContentValidationError> =
             NonFungibleLocalId::const_string("HelloWorld");
+        const BYTES: Result<NonFungibleLocalId, ContentValidationError> =
+            NonFungibleLocalId::const_bytes(&[
+                110, 101, 118, 101, 114, 32, 103, 111, 110, 110, 97, 32, 103, 105, 118, 101, 32,
+                121, 111, 117, 32, 117, 112,
+            ]);
 
-        assert!(STRING.is_ok())
+        assert!(STRING.is_ok());
+        assert!(BYTES.is_ok());
     }
 }
