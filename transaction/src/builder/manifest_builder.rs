@@ -2052,17 +2052,83 @@ impl Default for ManifestBuilder {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_clone_proof_with_add_instruction_advanced() {
-        let _builder = ManifestBuilder::new()
+    fn get_builder_and_bucket_and_proof() -> (ManifestBuilder, ManifestBucket, ManifestProof) {
+        let builder = ManifestBuilder::new()
             .take_from_worktop(XRD, dec!(100), "bucket")
-            .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof")
-            .then(|builder| {
-                let lookup = builder.name_lookup();
-                let proof_id = lookup.proof("proof");
-                builder
-                    .add_instruction_advanced(InstructionV1::CloneProof { proof_id })
-                    .0
-            });
+            .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof");
+        let lookup = builder.name_lookup();
+        let proof_id = lookup.proof("proof");
+        let bucket_id = lookup.bucket("bucket");
+        (builder, bucket_id, proof_id)
+    }
+
+    #[test]
+    fn test_manifest_builder_add_instruction_advanced_proof() {
+        let (builder, _, proof_id) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CloneProof { proof_id });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::PopFromAuthZone);
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromAuthZoneOfAmount {
+            resource_address: XRD,
+            amount: dec!(1),
+        });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
+            resource_address: XRD,
+            ids: vec![],
+        });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromAuthZoneOfAll {
+            resource_address: XRD,
+        });
+
+        let (builder, bucket_id, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromBucketOfAmount {
+            bucket_id,
+            amount: dec!(1),
+        });
+
+        let (builder, bucket_id, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromBucketOfNonFungibles {
+            bucket_id,
+            ids: vec![],
+        });
+
+        let (builder, bucket_id, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromBucketOfAll { bucket_id });
+    }
+
+    #[test]
+    fn test_manifest_builder_add_instruction_advanced_worktop() {
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::TakeFromWorktop {
+            resource_address: XRD,
+            amount: dec!(1),
+        });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::TakeAllFromWorktop {
+            resource_address: XRD,
+        });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::TakeNonFungiblesFromWorktop {
+            resource_address: XRD,
+            ids: vec![],
+        });
+    }
+
+    #[test]
+    fn test_manifest_builder_add_instruction_advanced_global_address() {
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::AllocateGlobalAddress {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+        });
     }
 }
