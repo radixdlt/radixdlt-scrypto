@@ -2047,3 +2047,22 @@ impl Default for ManifestBuilder {
         ManifestBuilder::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_clone_proof_with_add_instruction_advanced() {
+        let _builder = ManifestBuilder::new()
+            .take_from_worktop(XRD, dec!(100), "bucket")
+            .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof")
+            .then(|builder| {
+                let lookup = builder.name_lookup();
+                let proof_id = lookup.proof("proof");
+                builder
+                    .add_instruction_advanced(InstructionV1::CloneProof { proof_id })
+                    .0
+            });
+    }
+}
