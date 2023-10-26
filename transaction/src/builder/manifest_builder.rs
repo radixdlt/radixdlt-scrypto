@@ -240,7 +240,7 @@ impl ManifestBuilder {
             | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
             | InstructionV1::CreateProofFromBucketOfAll { .. }
             | InstructionV1::CloneProof { .. } => {
-                let proof_name = registrar.new_collision_free_bucket_name("proof");
+                let proof_name = registrar.new_collision_free_proof_name("proof");
                 registrar.register_proof(registrar.new_proof(&proof_name));
                 new_proof = Some(lookup.proof(proof_name));
             }
