@@ -101,20 +101,38 @@ impl NonFungibleLocalId {
         StringNonFungibleLocalId::new(value).map(Self::String)
     }
 
-    pub fn integer(value: u64) -> Self {
-        value.into()
+    pub const fn integer(value: u64) -> Self {
+        Self::Integer(IntegerNonFungibleLocalId(value))
     }
 
     pub fn bytes<T: Into<Vec<u8>>>(value: T) -> Result<Self, ContentValidationError> {
         value.into().try_into()
     }
 
-    pub fn ruid(value: [u8; 32]) -> Self {
+    pub const fn ruid(value: [u8; 32]) -> Self {
         Self::RUID(RUIDNonFungibleLocalId(value))
     }
 
     pub fn to_key(&self) -> Vec<u8> {
         scrypto_encode(self).expect("Failed to encode non-fungible local id")
+    }
+}
+
+/// The implementation of const constructors for the non-fungible local id.
+///
+/// The const constructors are different from the non-const constructors for two main reasons:
+/// 1. They have a more restricted interface that works with the nature of what is and is not
+///    allowed in const contexts. As an example, [`&'static str`] for the string non-fungible local
+///    id instead of an [`AsRef<[u8]>`].
+/// 2. We wish to maintain backward compatibility of the existing interface and make very little
+///    changes there.
+impl NonFungibleLocalId {
+    pub const fn const_integer(value: u64) -> Self {
+        Self::integer(value)
+    }
+
+    pub const fn const_ruid(value: [u8; 32]) -> Self {
+        Self::ruid(value)
     }
 }
 
