@@ -20,6 +20,7 @@ use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 use tar::Archive;
+use transaction::prelude::HasSystemTransactionHash;
 use transaction::prelude::IntentHash;
 use transaction::prelude::TransactionHashBech32Encoder;
 
@@ -39,6 +40,16 @@ pub struct TxnAllocDump {
     /// The max version to execute
     #[clap(short, long)]
     pub max_version: Option<u64>,
+
+    /// Dump user type of transactions (enabled by default)
+    #[clap(short, action)]
+    pub dump_user_tx: bool,
+    /// Dump genesis type of transactions
+    #[clap(short)]
+    pub dump_genesis_tx: bool,
+    /// Dump round update type of transactions
+    #[clap(short)]
+    pub dump_round_update_tx: bool,
 }
 
 impl TxnAllocDump {
@@ -57,6 +68,11 @@ impl TxnAllocDump {
             cur_version
         };
         let to_version = self.max_version.clone();
+
+        if !self.dump_user_tx && !self.dump_genesis_tx && !self.dump_round_update_tx {
+            println!("Nothing selected to dump.");
+            return Ok(());
+        }
 
         let start = std::time::Instant::now();
         let (tx, rx) = flume::bounded(10);
@@ -87,11 +103,16 @@ impl TxnAllocDump {
         if !exists {
             writeln!(
                 output,
-                "TXID,Execution Cost Units,Heap allocations sum,Heap current level,Heap peak memory",
+                "TXType,TXID,Execution Cost Units,Heap allocations sum,Heap current level,Heap peak memory",
             )
             .map_err(Error::IOError)?;
         }
 
+        let (dump_user, dump_genesis, dump_round) = (
+            self.dump_user_tx,
+            self.dump_genesis_tx,
+            self.dump_round_update_tx,
+        );
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
@@ -119,25 +140,57 @@ impl TxnAllocDump {
                     .into_state_updates()
                     .create_database_updates::<SpreadPrefixKeyMapper>();
                 database.commit(&database_updates);
-                if let PreparedLedgerTransactionInner::UserV1(tx) = prepared.inner {
-                    writeln!(
-                        output,
-                        "{},{},{},{},{}",
-                        TransactionHashBech32Encoder::new(&network)
-                            .encode(&IntentHash(tx.signed_intent.intent.summary.hash))
-                            .unwrap(),
-                        execution_cost_units.unwrap(),
-                        heap_allocations_sum,
-                        heap_current_level,
-                        heap_peak_memory
-                    )
-                    .map_err(Error::IOError)?;
+                match prepared.inner {
+                    PreparedLedgerTransactionInner::UserV1(tx) => {
+                        if dump_user {
+                            writeln!(
+                                output,
+                                "user,{},{},{},{},{}",
+                                TransactionHashBech32Encoder::new(&network)
+                                    .encode(&IntentHash(tx.signed_intent.intent.summary.hash))
+                                    .unwrap(),
+                                execution_cost_units.unwrap(),
+                                heap_allocations_sum,
+                                heap_current_level,
+                                heap_peak_memory
+                            )
+                            .map_err(Error::IOError)?
+                        }
+                    }
+                    PreparedLedgerTransactionInner::Genesis(tx) => {
+                        if dump_genesis {
+                            writeln!(
+                                output,
+                                "genesis,{},{},{},{},{}",
+                                tx.system_transaction_hash().0,
+                                execution_cost_units.unwrap_or_default(),
+                                heap_allocations_sum,
+                                heap_current_level,
+                                heap_peak_memory
+                            )
+                            .map_err(Error::IOError)?
+                        }
+                    }
+                    PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
+                        if dump_round {
+                            writeln!(
+                                output,
+                                "round_update,{},{},{},{},{}",
+                                tx.summary.hash,
+                                execution_cost_units.unwrap_or_default(),
+                                heap_allocations_sum,
+                                heap_current_level,
+                                heap_peak_memory
+                            )
+                            .map_err(Error::IOError)?
+                        }
+                    }
                 }
 
-                let new_state_root_hash = database.get_current_root_hash();
                 let new_version = database.get_current_version();
 
                 if new_version < 1000 || new_version % 1000 == 0 {
+                    let new_state_root_hash = database.get_current_root_hash();
                     print_progress(start.elapsed(), new_version, new_state_root_hash);
                 }
             }
