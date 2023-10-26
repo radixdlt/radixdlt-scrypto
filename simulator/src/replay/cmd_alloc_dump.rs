@@ -41,14 +41,14 @@ pub struct TxnAllocDump {
     #[clap(short, long)]
     pub max_version: Option<u64>,
 
-    /// Dump user type of transactions (enabled by default)
-    #[clap(short, action)]
-    pub dump_user_tx: bool,
+    /// Ignore dump of user type of transactions
+    #[clap(long)]
+    pub ignore_dump_user_tx: bool,
     /// Dump genesis type of transactions
-    #[clap(short)]
+    #[clap(short = 'g', long)]
     pub dump_genesis_tx: bool,
     /// Dump round update type of transactions
-    #[clap(short)]
+    #[clap(short = 'r', long)]
     pub dump_round_update_tx: bool,
 }
 
@@ -69,7 +69,7 @@ impl TxnAllocDump {
         };
         let to_version = self.max_version.clone();
 
-        if !self.dump_user_tx && !self.dump_genesis_tx && !self.dump_round_update_tx {
+        if self.ignore_dump_user_tx && !self.dump_genesis_tx && !self.dump_round_update_tx {
             println!("Nothing selected to dump.");
             return Ok(());
         }
@@ -109,7 +109,7 @@ impl TxnAllocDump {
         }
 
         let (dump_user, dump_genesis, dump_round) = (
-            self.dump_user_tx,
+            !self.ignore_dump_user_tx,
             self.dump_genesis_tx,
             self.dump_round_update_tx,
         );
