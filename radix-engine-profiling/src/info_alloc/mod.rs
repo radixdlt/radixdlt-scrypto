@@ -130,107 +130,112 @@ unsafe impl<T: GlobalAlloc> GlobalAlloc for InfoAlloc<T> {
     }
 }
 
-#[test]
-fn info_mem_check() {
-    INFO_ALLOC.set_enable(true);
-    INFO_ALLOC.reset_counters();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    // allocate 10 bytes
-    let mut v = Vec::<u8>::with_capacity(10);
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    assert_eq!((sum, current, peak), (10, 10, 10));
+    #[test]
+    fn info_mem_check() {
+        INFO_ALLOC.set_enable(true);
+        INFO_ALLOC.reset_counters();
 
-    // no allocation/deallocation occurs
-    v.push(10);
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    assert_eq!((sum, current, peak), (10, 10, 10));
+        // allocate 10 bytes
+        let mut v = Vec::<u8>::with_capacity(10);
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        assert_eq!((sum, current, peak), (10, 10, 10));
 
-    // deallocate 9 bytes
-    v.shrink_to_fit();
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    assert_eq!((sum, current, peak), (10, 1, 10));
+        // no allocation/deallocation occurs
+        v.push(10);
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        assert_eq!((sum, current, peak), (10, 10, 10));
 
-    // allocate 3 bytes
-    let _a = Box::new(1u8);
-    let _b = Box::new(1u8);
-    let _c = Box::new(1u8);
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    assert_eq!((sum, current, peak), (13, 4, 10));
+        // deallocate 9 bytes
+        v.shrink_to_fit();
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        assert_eq!((sum, current, peak), (10, 1, 10));
 
-    // allocate 10 bytes
-    let mut v = Vec::<u8>::with_capacity(10);
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    assert_eq!((sum, current, peak), (23, 14, 14));
+        // allocate 3 bytes
+        let _a = Box::new(1u8);
+        let _b = Box::new(1u8);
+        let _c = Box::new(1u8);
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        assert_eq!((sum, current, peak), (13, 4, 10));
 
-    // no allocation/deallocation occurs
-    v.push(10);
+        // allocate 10 bytes
+        let mut v = Vec::<u8>::with_capacity(10);
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        assert_eq!((sum, current, peak), (23, 14, 14));
 
-    // deallocate 9 bytes
-    v.shrink_to_fit();
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    assert_eq!((sum, current, peak), (23, 5, 14));
+        // no allocation/deallocation occurs
+        v.push(10);
 
-    // allocate 10 bytes
-    let mut v = Vec::<u8>::with_capacity(10);
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    assert_eq!((sum, current, peak), (33, 15, 15));
+        // deallocate 9 bytes
+        v.shrink_to_fit();
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        assert_eq!((sum, current, peak), (23, 5, 14));
 
-    // allocate 10 bytes (by default capacity of vector is extended by 2)
-    v.extend([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    assert_eq!((sum, current, peak), (43, 25, 25));
+        // allocate 10 bytes
+        let mut v = Vec::<u8>::with_capacity(10);
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        assert_eq!((sum, current, peak), (33, 15, 15));
 
-    // deallocate 9 bytes
-    v.shrink_to_fit();
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    assert_eq!((sum, current, peak), (43, 16, 25));
-}
+        // allocate 10 bytes (by default capacity of vector is extended by 2)
+        v.extend([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        assert_eq!((sum, current, peak), (43, 25, 25));
 
-#[test]
-fn info_mem_multithread_check() {
-    use std::thread;
-    use std::time::Duration;
-
-    INFO_ALLOC.set_enable(true);
-
-    let mut handles = vec![];
-
-    for i in 1..4 {
-        let handle = thread::spawn(move || {
-            INFO_ALLOC.reset_counters();
-
-            let _v = Vec::<u8>::with_capacity(i);
-            // causes context to switch to the next thread
-            // so we can ensure that counters are properly managed
-            // using local thread store
-            thread::sleep(Duration::from_millis(1));
-
-            let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-            assert_eq!((sum, current, peak), (i, i, i));
-        });
-        handles.push(handle);
+        // deallocate 9 bytes
+        v.shrink_to_fit();
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        assert_eq!((sum, current, peak), (43, 16, 25));
     }
 
-    for handle in handles {
-        handle.join().unwrap();
+    #[test]
+    fn info_mem_multithread_check() {
+        use std::thread;
+        use std::time::Duration;
+
+        INFO_ALLOC.set_enable(true);
+
+        let mut handles = vec![];
+
+        for i in 1..4 {
+            let handle = thread::spawn(move || {
+                INFO_ALLOC.reset_counters();
+
+                let _v = Vec::<u8>::with_capacity(i);
+                // causes context to switch to the next thread
+                // so we can ensure that counters are properly managed
+                // using local thread store
+                thread::sleep(Duration::from_millis(1));
+
+                let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+                assert_eq!((sum, current, peak), (i, i, i));
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
     }
-}
 
-#[test]
-fn info_mem_negative_value() {
-    INFO_ALLOC.set_enable(true);
+    #[test]
+    fn info_mem_negative_value() {
+        INFO_ALLOC.set_enable(true);
 
-    // allocate 10 bytes
-    let mut v = Vec::<u8>::with_capacity(10);
+        // allocate 10 bytes
+        let mut v = Vec::<u8>::with_capacity(10);
 
-    INFO_ALLOC.reset_counters();
+        INFO_ALLOC.reset_counters();
 
-    // realloc to 1 byte, this causes alloc counter to get negative value
-    // because reset counters was called after 10 bytes allocation: 0 - 9 = -9
-    v.push(10);
-    v.shrink_to_fit();
+        // realloc to 1 byte, this causes alloc counter to get negative value
+        // because reset counters was called after 10 bytes allocation: 0 - 9 = -9
+        v.push(10);
+        v.shrink_to_fit();
 
-    let (sum, current, peak) = INFO_ALLOC.get_counters_value();
-    // negative values are not returned
-    assert_eq!((sum, current, peak), (0, 0, 0));
+        let (sum, current, peak) = INFO_ALLOC.get_counters_value();
+        // negative values are not returned
+        assert_eq!((sum, current, peak), (0, 0, 0));
+    }
 }
