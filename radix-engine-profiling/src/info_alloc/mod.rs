@@ -89,25 +89,6 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
         });
     }
 
-    #[inline]
-    fn realloc_decrease_counter(&self, old_size: usize, new_size: usize) {
-        let old_size: isize = old_size.try_into().expect("Value out of range");
-        let new_size: isize = new_size.try_into().expect("Value out of range");
-
-        INFO_ALLOC_DATA_TLS.with(|val| {
-            val.current_level
-                .fetch_sub(old_size - new_size, Ordering::AcqRel);
-
-            if new_size > old_size {
-                val.sum_counter
-                    .fetch_add(new_size - old_size, Ordering::AcqRel);
-
-                let current_level = val.current_level.load(Ordering::Acquire);
-                val.max_level.fetch_max(current_level, Ordering::AcqRel);
-            }
-        });
-    }
-
     /// Returns current counters values: sum fo all allocations, current allocation level, peak allocation level
     /// Counters can have negative values because of memory allocations before calling to reset_counters() function
     /// and deallocating them during measurements. In that case counter value is set to 0.
@@ -139,7 +120,11 @@ unsafe impl<T: GlobalAlloc> GlobalAlloc for InfoAlloc<T> {
 
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         if self.is_enabled() {
-            self.realloc_decrease_counter(layout.size(), new_size);
+            if new_size > layout.size() {
+                self.increase_counters(new_size - layout.size());
+            } else {
+                self.decrease_counters(layout.size() - new_size);
+            }
         }
         self.allocator.realloc(ptr, layout, new_size)
     }
