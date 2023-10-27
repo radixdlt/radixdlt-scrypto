@@ -41,15 +41,15 @@ pub struct TxnAllocDump {
     #[clap(short, long)]
     pub max_version: Option<u64>,
 
-    /// Ignore dump of user type of transactions
+    /// Exclude user type of transactions from output data
     #[clap(long)]
-    pub ignore_dump_user_tx: bool,
-    /// Dump genesis type of transactions
+    pub exclude_user_transaction: bool,
+    /// Include genesis type of transactions in output data
     #[clap(short = 'g', long)]
-    pub dump_genesis_tx: bool,
-    /// Dump round update type of transactions
+    pub include_generic_transaction: bool,
+    /// Include round update type of transactions in output data
     #[clap(short = 'r', long)]
-    pub dump_round_update_tx: bool,
+    pub include_round_update_transaction: bool,
 }
 
 impl TxnAllocDump {
@@ -69,7 +69,10 @@ impl TxnAllocDump {
         };
         let to_version = self.max_version.clone();
 
-        if self.ignore_dump_user_tx && !self.dump_genesis_tx && !self.dump_round_update_tx {
+        if self.exclude_user_transaction
+            && !self.include_generic_transaction
+            && !self.include_round_update_transaction
+        {
             println!("Nothing selected to dump.");
             return Ok(());
         }
@@ -109,9 +112,9 @@ impl TxnAllocDump {
         }
 
         let (dump_user, dump_genesis, dump_round) = (
-            !self.ignore_dump_user_tx,
-            self.dump_genesis_tx,
-            self.dump_round_update_tx,
+            !self.exclude_user_transaction,
+            self.include_generic_transaction,
+            self.include_round_update_transaction,
         );
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
