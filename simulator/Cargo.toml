@@ -13,6 +13,7 @@ radix-engine-store-interface = { path = "../radix-engine-store-interface" }
 radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] }
 radix-engine-queries = { path = "../radix-engine-queries" }
 radix-engine-interface = { path = "../radix-engine-interface" }
+radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
 transaction = { path = "../transaction" }
 flate2 = { version = "1.0.27" }
 tar = { version = "0.4.40" }

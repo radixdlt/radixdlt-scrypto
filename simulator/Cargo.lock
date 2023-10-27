@@ -1594,6 +1594,7 @@ dependencies = [
  "quote",
  "radix-engine",
  "radix-engine-interface",
+ "radix-engine-profiling",
  "radix-engine-queries",
  "radix-engine-store-interface",
  "radix-engine-stores",
