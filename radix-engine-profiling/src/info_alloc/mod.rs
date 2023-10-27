@@ -1,13 +1,14 @@
 use std::{
     alloc::{GlobalAlloc, Layout, System},
-    sync::atomic::{AtomicBool, AtomicIsize, Ordering},
+    cell::RefCell,
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 #[global_allocator]
 pub static INFO_ALLOC: InfoAlloc<System> = InfoAlloc::new(System);
 
 thread_local! {
-    static INFO_ALLOC_DATA_TLS: InfoAllocData = InfoAllocData::new();
+    static INFO_ALLOC_DATA_TLS: RefCell<InfoAllocData> = RefCell::new(InfoAllocData::new());
 }
 
 /// Heap allocations tracker
@@ -24,19 +25,19 @@ pub struct InfoAlloc<T: GlobalAlloc> {
 /// Allocation data stored in Thread Local Store (separate data for each thread)
 pub struct InfoAllocData {
     /// Sum of bytes allocated during measurements (for reallocations only additional memory is counted, no dealocation is counted)
-    sum_counter: AtomicIsize,
+    sum_counter: isize,
     /// Current level of allocated bytes (allocation and deallocation are counted, incl. reallocation)
-    current_level: AtomicIsize,
+    current_level: isize,
     /// Maximum level (peak) of allocated bytes (the max of this field and current_level)
-    max_level: AtomicIsize,
+    max_level: isize,
 }
 
 impl InfoAllocData {
     fn new() -> Self {
         Self {
-            sum_counter: AtomicIsize::new(0),
-            current_level: AtomicIsize::new(0),
-            max_level: AtomicIsize::new(0),
+            sum_counter: 0,
+            current_level: 0,
+            max_level: 0,
         }
     }
 }
@@ -60,9 +61,10 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
     /// Resets internal counters. Usually used to start measurement.
     pub fn reset_counters(&self) {
         INFO_ALLOC_DATA_TLS.with(|val| {
-            val.sum_counter.store(0, Ordering::Release);
-            val.current_level.store(0, Ordering::Release);
-            val.max_level.store(0, Ordering::Release);
+            let mut val = val.borrow_mut();
+            val.sum_counter = 0;
+            val.current_level = 0;
+            val.max_level = 0;
         });
     }
 
@@ -71,21 +73,21 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
         let ivalue: isize = value.try_into().expect("Value out of range");
 
         INFO_ALLOC_DATA_TLS.with(|val| {
-            val.sum_counter.fetch_add(ivalue, Ordering::AcqRel);
+            let mut val = val.borrow_mut();
 
-            let old_value = val.current_level.fetch_add(ivalue, Ordering::AcqRel);
-            val.max_level
-                .fetch_max(old_value + ivalue, Ordering::AcqRel);
+            val.sum_counter += ivalue;
+
+            let old_value = val.current_level;
+            val.current_level += ivalue;
+            val.max_level = val.max_level.max(old_value + ivalue);
         });
     }
 
     #[inline]
     fn decrease_counters(&self, value: usize) {
         INFO_ALLOC_DATA_TLS.with(|val| {
-            val.current_level.fetch_sub(
-                value.try_into().expect("Value out of range"),
-                Ordering::AcqRel,
-            )
+            val.borrow_mut().current_level -=
+                TryInto::<isize>::try_into(value).expect("Value out of range")
         });
     }
 
@@ -94,10 +96,11 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
     /// and deallocating them during measurements. In that case counter value is set to 0.
     pub fn get_counters_value(&self) -> (usize, usize, usize) {
         INFO_ALLOC_DATA_TLS.with(|val| {
+            let val = val.borrow_mut();
             (
-                val.sum_counter.load(Ordering::Acquire).max(0) as usize,
-                val.current_level.load(Ordering::Acquire).max(0) as usize,
-                val.max_level.load(Ordering::Acquire).max(0) as usize,
+                val.sum_counter.max(0) as usize,
+                val.current_level.max(0) as usize,
+                val.max_level.max(0) as usize,
             )
         })
     }
