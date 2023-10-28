@@ -358,6 +358,11 @@ pub struct ValidatorStakeAsOwnerInput {
     pub stake: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorStakeAsOwnerManifestInput {
+    pub stake: ManifestBucket,
+}
+
 pub type ValidatorStakeAsOwnerOutput = Bucket;
 
 pub const VALIDATOR_STAKE_IDENT: &str = "stake";
@@ -365,6 +370,11 @@ pub const VALIDATOR_STAKE_IDENT: &str = "stake";
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorStakeInput {
     pub stake: Bucket,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorStakeManifestInput {
+    pub stake: ManifestBucket,
 }
 
 pub type ValidatorStakeOutput = Bucket;
@@ -376,6 +386,11 @@ pub struct ValidatorUnstakeInput {
     pub stake_unit_bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorUnstakeManifestInput {
+    pub stake_unit_bucket: ManifestBucket,
+}
+
 pub type ValidatorUnstakeOutput = Bucket;
 
 pub const VALIDATOR_CLAIM_XRD_IDENT: &str = "claim_xrd";
@@ -383,6 +398,11 @@ pub const VALIDATOR_CLAIM_XRD_IDENT: &str = "claim_xrd";
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorClaimXrdInput {
     pub bucket: Bucket,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorClaimXrdManifestInput {
+    pub bucket: ManifestBucket,
 }
 
 pub type ValidatorClaimXrdOutput = Bucket;
