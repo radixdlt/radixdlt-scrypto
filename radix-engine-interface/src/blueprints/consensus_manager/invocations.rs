@@ -527,7 +527,7 @@ pub type ValidatorLockOwnerStakeUnitsOutput = ();
 
 pub const VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT: &str = "start_unlock_owner_stake_units";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ValidatorStartUnlockOwnerStakeUnitsInput {
     pub requested_stake_unit_amount: Decimal,
 }
@@ -536,7 +536,7 @@ pub type ValidatorStartUnlockOwnerStakeUnitsOutput = ();
 
 pub const VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT: &str = "finish_unlock_owner_stake_units";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ValidatorFinishUnlockOwnerStakeUnitsInput {}
 
 pub type ValidatorFinishUnlockOwnerStakeUnitsOutput = Bucket;
