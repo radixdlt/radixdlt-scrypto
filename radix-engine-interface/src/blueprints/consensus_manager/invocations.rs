@@ -409,7 +409,7 @@ pub type ValidatorClaimXrdOutput = Bucket;
 
 pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ValidatorUpdateKeyInput {
     pub key: Secp256k1PublicKey,
 }
@@ -418,7 +418,7 @@ pub type ValidatorUpdateKeyOutput = ();
 
 pub const VALIDATOR_UPDATE_FEE_IDENT: &str = "update_fee";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ValidatorUpdateFeeInput {
     /// A fraction of the effective emission amount which gets transferred to the validator's owner.
     /// Must be within `[0.0, 1.0]`.
@@ -516,6 +516,11 @@ pub const VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT: &str = "lock_owner_stake_units
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorLockOwnerStakeUnitsInput {
     pub stake_unit_bucket: Bucket,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorLockOwnerStakeUnitsManifestInput {
+    pub stake_unit_bucket: ManifestBucket,
 }
 
 pub type ValidatorLockOwnerStakeUnitsOutput = ();
