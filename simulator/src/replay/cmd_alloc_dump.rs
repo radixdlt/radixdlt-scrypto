@@ -50,6 +50,10 @@ pub struct TxnAllocDump {
     /// Include round update type of transactions in output data
     #[clap(short = 'r', long)]
     pub include_round_update_transaction: bool,
+
+    /// Trace transaction execution
+    #[clap(long)]
+    pub trace: bool,
 }
 
 impl TxnAllocDump {
@@ -116,6 +120,7 @@ impl TxnAllocDump {
             self.include_generic_transaction,
             self.include_round_update_transaction,
         );
+        let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
@@ -130,6 +135,7 @@ impl TxnAllocDump {
                     &scrypto_vm,
                     &network,
                     &prepared,
+                    trace,
                 );
 
                 let (heap_allocations_sum, heap_current_level, heap_peak_memory) =

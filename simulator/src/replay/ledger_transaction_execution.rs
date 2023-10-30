@@ -43,9 +43,10 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
     scrypto_vm: &ScryptoVm<DefaultWasmEngine>,
     network: &NetworkDefinition,
     tx_payload: &[u8],
+    trace: bool,
 ) -> StateUpdates {
     let prepared = prepare_ledger_transaction(tx_payload);
-    execute_prepared_ledger_transaction(database, scrypto_vm, network, &prepared)
+    execute_prepared_ledger_transaction(database, scrypto_vm, network, &prepared, trace)
         .into_state_updates()
 }
 
@@ -63,6 +64,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
     scrypto_vm: &ScryptoVm<DefaultWasmEngine>,
     network: &NetworkDefinition,
     prepared: &PreparedLedgerTransaction,
+    trace: bool,
 ) -> LedgerTransactionReceipt {
     match &prepared.inner {
         PreparedLedgerTransactionInner::Genesis(prepared_genesis_tx) => {
@@ -94,12 +96,17 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                     native_vm: DefaultNativeVm::new(),
                 },
                 &CostingParameters::default(),
-                &ExecutionConfig::for_notarized_transaction(network.clone()),
+                &ExecutionConfig::for_notarized_transaction(network.clone())
+                    .with_kernel_trace(trace)
+                    .with_cost_breakdown(trace),
                 &NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
                     .validate(tx.as_ref().clone())
                     .expect("Transaction validation failure")
                     .get_executable(),
             );
+            if trace {
+                println!("{:?}", receipt);
+            }
             LedgerTransactionReceipt::Standard(receipt)
         }
         PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
@@ -110,9 +117,14 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                     native_vm: DefaultNativeVm::new(),
                 },
                 &CostingParameters::default(),
-                &ExecutionConfig::for_system_transaction(network.clone()),
+                &ExecutionConfig::for_system_transaction(network.clone())
+                    .with_kernel_trace(trace)
+                    .with_cost_breakdown(trace),
                 &tx.get_executable(),
             );
+            if trace {
+                println!("{:?}", receipt);
+            }
             LedgerTransactionReceipt::Standard(receipt)
         }
     }

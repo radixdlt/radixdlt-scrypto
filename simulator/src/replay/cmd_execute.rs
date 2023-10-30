@@ -31,6 +31,10 @@ pub struct TxnExecute {
     /// The max version to execute
     #[clap(short, long)]
     pub max_version: Option<u64>,
+
+    /// Trace transaction execution
+    #[clap(long)]
+    pub trace: bool,
 }
 
 impl TxnExecute {
@@ -69,12 +73,18 @@ impl TxnExecute {
 
         // txn executor
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
+        let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
             for tx_payload in iter {
-                let state_updates =
-                    execute_ledger_transaction(&database, &scrypto_vm, &network, &tx_payload);
+                let state_updates = execute_ledger_transaction(
+                    &database,
+                    &scrypto_vm,
+                    &network,
+                    &tx_payload,
+                    trace,
+                );
                 let database_updates =
                     state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 database.commit(&database_updates);
