@@ -271,7 +271,8 @@ impl Lexer {
                             if self.advance()? == '\\' && self.advance()? == 'u' {
                                 unicode = 0x10000
                                     + ((unicode - 0xD800) << 10)
-                                    + (self.read_utf16_unit()? - 0xDC00);
+                                    + self.read_utf16_unit()?
+                                    - 0xDC00;
                             } else {
                                 return Err(self.unexpected_char());
                             }
