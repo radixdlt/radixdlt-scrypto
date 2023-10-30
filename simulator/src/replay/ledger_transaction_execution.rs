@@ -81,7 +81,9 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                             native_vm: DefaultNativeVm::new(),
                         },
                         &CostingParameters::default(),
-                        &ExecutionConfig::for_genesis_transaction(network.clone()),
+                        &ExecutionConfig::for_genesis_transaction(network.clone())
+                            .with_kernel_trace(trace)
+                            .with_cost_breakdown(trace),
                         &tx.get_executable(btreeset!(AuthAddresses::system_role())),
                     );
                     LedgerTransactionReceipt::Standard(receipt)
@@ -104,9 +106,6 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                     .expect("Transaction validation failure")
                     .get_executable(),
             );
-            if trace {
-                println!("{:?}", receipt);
-            }
             LedgerTransactionReceipt::Standard(receipt)
         }
         PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
@@ -122,9 +121,6 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                     .with_cost_breakdown(trace),
                 &tx.get_executable(),
             );
-            if trace {
-                println!("{:?}", receipt);
-            }
             LedgerTransactionReceipt::Standard(receipt)
         }
     }
