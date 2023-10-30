@@ -2131,4 +2131,35 @@ mod tests {
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
         });
     }
+
+    #[test]
+    #[should_panic(
+        expected = "You cannot create a new bucket with the same name \"bucket\" multiple times"
+    )]
+    fn test_manifest_builder_bucket_the_same_name() {
+        let _builder = ManifestBuilder::new()
+            .take_from_worktop(XRD, dec!(100), "bucket")
+            .take_from_worktop(XRD, dec!(100), "bucket");
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "You cannot create a new address reservation with the same name \"reservation\" multiple times"
+    )]
+    fn test_manifest_builder_global_address_reservation_the_same_name() {
+        let _builder = ManifestBuilder::new()
+            .allocate_global_address(PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, "reservation", "address")
+            .allocate_global_address(PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, "reservation", "address");
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "You cannot create a new proof with the same name \"proof\" multiple times"
+    )]
+    fn test_manifest_builder_proof_the_same_name() {
+        let _builder = ManifestBuilder::new()
+            .take_from_worktop(XRD, dec!(100), "bucket")
+            .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof")
+            .pop_from_auth_zone("proof");
+    }
 }
