@@ -361,7 +361,7 @@ impl Lexer {
     }
 
     fn unexpected_char(&self) -> LexerError {
-        LexerError::UnexpectedChar(self.text[self.current.full_index], self.current)
+        LexerError::UnexpectedChar(self.text[self.current.full_index - 1], self.current)
     }
 }
 
