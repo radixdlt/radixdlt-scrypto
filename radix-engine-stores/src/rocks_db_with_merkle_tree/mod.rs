@@ -16,7 +16,7 @@ use std::path::PathBuf;
 
 mod state_tree;
 use crate::rocks_db::{decode_from_rocksdb_bytes, encode_to_rocksdb_bytes};
-use state_tree::*;
+pub use state_tree::*;
 
 const META_CF: &str = "meta";
 const SUBSTATES_CF: &str = "substates";
