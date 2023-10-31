@@ -1,3 +1,4 @@
+use crate::{internal_prelude::*, scenarios::get_builder_for_every_scenario};
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, Vm};
 use radix_engine::{
@@ -8,10 +9,9 @@ use radix_engine::{
     },
 };
 use radix_engine_store_interface::interface::*;
+use radix_engine_stores::hash_tree_support::HashTreeUpdatingDatabase;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
-
-use crate::{internal_prelude::*, scenarios::get_builder_for_every_scenario};
 
 pub struct RunnerContext {
     #[cfg(feature = "std")]
@@ -24,7 +24,7 @@ pub fn run_all_in_memory_and_dump_examples(
     network: NetworkDefinition,
     root_path: std::path::PathBuf,
 ) -> Result<(), FullScenarioError> {
-    let mut substate_db = InMemorySubstateDatabase::standard();
+    let mut substate_db = HashTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
     let vm = Vm {
@@ -63,6 +63,12 @@ pub fn run_all_in_memory_and_dump_examples(
         // scenario, to minimize separate scenarios causing non-determinism in others
         next_nonce += 1000;
     }
+
+    assert_eq!(
+        substate_db.get_current_root_hash().to_string(),
+        "901829c9d41dfbd0d82e08d3b81499f0e591f4b231e90036736c49f47a37ab4e"
+    );
+
     Ok(())
 }
 
