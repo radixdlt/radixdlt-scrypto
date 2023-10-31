@@ -117,7 +117,10 @@ where
     S: SubstateDatabase,
 {
     fn lookup_schema(&self, schema_hash: &SchemaHash) -> Option<VersionedScryptoSchema> {
-        self.1.get_schema(self.0.as_node_id(), schema_hash).ok().map(|x| x.as_ref().clone())
+        self.1
+            .get_schema(self.0.as_node_id(), schema_hash)
+            .ok()
+            .map(|x| x.as_ref().clone())
     }
 
     fn resolve_type_kind(

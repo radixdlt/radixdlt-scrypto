@@ -35,6 +35,7 @@ pub use macros::*;
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
+
 pub use scrypto_derive::{blueprint, NonFungibleData};
 
 // Re-export Radix Engine Interface modules.
@@ -77,4 +78,12 @@ pub fn set_up_panic_hook() {
 
         crate::runtime::Runtime::panic(message);
     }));
+}
+
+#[cfg(all(feature = "coverage"))]
+#[no_mangle]
+pub unsafe extern "C" fn dump_coverage() -> types::Slice {
+    let mut coverage = vec![];
+    minicov::capture_coverage(&mut coverage).unwrap();
+    engine::wasm_api::forget_vec(coverage)
 }

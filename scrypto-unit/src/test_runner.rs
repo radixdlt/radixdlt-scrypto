@@ -79,31 +79,7 @@ impl Compile {
         package_dir: P,
         env_vars: sbor::rust::collections::BTreeMap<String, String>,
     ) -> (Vec<u8>, PackageDefinition) {
-        // Build
-        let status = Command::new("cargo")
-            .envs(env_vars)
-            .current_dir(package_dir.as_ref())
-            .args([
-                "build", 
-                "--target",
-                "wasm32-unknown-unknown",
-                "--release",
-                "--features", 
-                "scrypto/log-error,scrypto/log-warn,scrypto/log-info,scrypto/log-debug,scrypto/log-trace"
-            ])
-            .status()
-            .unwrap_or_else(|error| {
-                panic!(
-                    "Compiling \"{:?}\" failed with \"{:?}\"",
-                    package_dir.as_ref(),
-                    error
-                )
-            });
-        if !status.success() {
-            panic!("Failed to compile package: {:?}", package_dir.as_ref());
-        }
-
-        // Find wasm path
+        // Find wasm name
         let mut cargo = package_dir.as_ref().to_owned();
         cargo.push("Cargo.toml");
         let wasm_name = if cargo.exists() {
@@ -122,11 +98,78 @@ impl Compile {
                 .to_owned()
                 .replace("-", "_")
         };
-        let mut path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap(); // Infallible;
+
+        let mut path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap();
         path.push("wasm32-unknown-unknown");
         path.push("release");
-        path.push(wasm_name);
+        path.push(&wasm_name);
         path.set_extension("wasm");
+
+        #[cfg(feature = "coverage")]
+        // Check if binary exists in coverage directory, if it doesn't only then build it
+        {
+            let mut coverage_path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap();
+            coverage_path.pop();
+            coverage_path.push("coverage");
+            coverage_path.push("wasm32-unknown-unknown");
+            coverage_path.push("release");
+            coverage_path.push(wasm_name);
+            coverage_path.set_extension("wasm");
+            if coverage_path.is_file() {
+                let code = fs::read(&coverage_path).unwrap_or_else(|err| {
+                    panic!(
+                        "Failed to read built WASM from path {:?} - {:?}",
+                        &path, err
+                    )
+                });
+                coverage_path.set_extension("rpd");
+                let definition = fs::read(&coverage_path).unwrap_or_else(|err| {
+                    panic!(
+                        "Failed to read manifest definition from path {:?} - {:?}",
+                        &coverage_path, err
+                    )
+                });
+                let definition = manifest_decode(&definition).unwrap_or_else(|err| {
+                    panic!(
+                        "Failed to parse manifest definition from path {:?} - {:?}",
+                        &coverage_path, err
+                    )
+                });
+                return (code, definition);
+            }
+        };
+
+        // Build
+        let features = vec![
+            "scrypto/log-error",
+            "scrypto/log-warn",
+            "scrypto/log-info",
+            "scrypto/log-debug",
+            "scrypto/log-trace",
+        ];
+
+        let status = Command::new("cargo")
+            .envs(env_vars)
+            .current_dir(package_dir.as_ref())
+            .args([
+                "build",
+                "--target",
+                "wasm32-unknown-unknown",
+                "--release",
+                "--features",
+                &features.join(","),
+            ])
+            .status()
+            .unwrap_or_else(|error| {
+                panic!(
+                    "Compiling \"{:?}\" failed with \"{:?}\"",
+                    package_dir.as_ref(),
+                    error
+                )
+            });
+        if !status.success() {
+            panic!("Failed to compile package: {:?}", package_dir.as_ref());
+        }
 
         // Extract schema
         let code = fs::read(&path).unwrap_or_else(|err| {

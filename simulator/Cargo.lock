@@ -1609,6 +1609,7 @@ dependencies = [
  "tempfile",
  "transaction",
  "utils",
+ "walkdir",
  "wasm-opt",
 ]
 
