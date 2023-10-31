@@ -575,7 +575,7 @@ impl FromStr for NonFungibleLocalId {
         let local_id = if s.starts_with('<') && s.ends_with('>') {
             Self::string(&s[1..s.len() - 1])
                 .map_err(ParseNonFungibleLocalIdError::ContentValidationError)?
-        } else if s.starts_with('#') && s.ends_with('#') {
+        } else if s.len() > 1 && s.starts_with('#') && s.ends_with('#') {
             let digits = &s[1..s.len() - 1];
             if !is_canonically_formatted_integer(digits) {
                 return Err(ParseNonFungibleLocalIdError::InvalidInteger);
