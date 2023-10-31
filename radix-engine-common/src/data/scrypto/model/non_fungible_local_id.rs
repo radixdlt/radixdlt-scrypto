@@ -240,7 +240,7 @@ impl<'a> Arbitrary<'a> for StringNonFungibleLocalId {
             .unwrap();
         let s: String = (0..len).map(|_| *u.choose(&charset[..]).unwrap()).collect();
 
-        Ok(Self(s.into_bytes()))
+        Ok(Self(Cow::Owned(s)))
     }
 }
 
