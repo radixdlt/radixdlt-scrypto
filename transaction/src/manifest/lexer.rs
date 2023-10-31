@@ -395,7 +395,7 @@ mod tests {
                     }
                     Err(e) => {
                         assert_eq!(e, $expected);
-                        return;
+                        break;
                     }
                 }
             }
@@ -524,6 +524,44 @@ mod tests {
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
             ]
+        );
+    }
+
+    #[test]
+    fn test_unexpected_char() {
+        lex_error!(
+            "1u8 +2u32",
+            LexerError::UnexpectedChar(
+                '+',
+                Position {
+                    full_index: 4,
+                    line_number: 1,
+                    line_char_index: 4
+                }
+            )
+        );
+
+        lex_error!(
+            "x=7",
+            LexerError::UnexpectedChar(
+                '7',
+                Position {
+                    full_index: 3,
+                    line_number: 1,
+                    line_char_index: 3
+                }
+            )
+        );
+        lex_error!(
+            "1i128\n 1u64 \n 1i37",
+            LexerError::UnexpectedChar(
+                '7',
+                Position {
+                    full_index: 18,
+                    line_number: 3,
+                    line_char_index: 5
+                }
+            )
         );
     }
 }
