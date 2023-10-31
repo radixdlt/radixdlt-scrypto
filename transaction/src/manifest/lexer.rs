@@ -267,7 +267,9 @@ impl Lexer {
                     't' => s.push('\t'),
                     'u' => {
                         let mut unicode = self.read_utf16_unit()?;
-                        if unicode >= 0xD800 && unicode <= 0xDFFF {
+                        // Check unicode surrogate pair
+                        // (see https://unicodebook.readthedocs.io/unicode_encodings.html#surrogates)
+                        if (0xD800..=0xDFFF).contains(&unicode) {
                             if self.advance()? == '\\' && self.advance()? == 'u' {
                                 unicode = 0x10000
                                     + ((unicode - 0xD800) << 10)
