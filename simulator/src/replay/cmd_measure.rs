@@ -38,6 +38,10 @@ pub struct TxnMeasure {
     /// The max version to execute
     #[clap(short, long)]
     pub max_version: Option<u64>,
+
+    /// Trace transaction execution
+    #[clap(long)]
+    pub trace: bool,
 }
 
 impl TxnMeasure {
@@ -91,6 +95,7 @@ impl TxnMeasure {
             .map_err(Error::IOError)?;
         }
 
+        let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
@@ -102,6 +107,7 @@ impl TxnMeasure {
                     &scrypto_vm,
                     &network,
                     &prepared,
+                    trace,
                 );
                 let execution_cost_units = receipt
                     .fee_summary()
