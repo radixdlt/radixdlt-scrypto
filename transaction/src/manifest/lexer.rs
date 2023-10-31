@@ -564,4 +564,31 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_unicode() {
+        lex_ok!(
+            r#""\u2764""#,
+            vec![TokenKind::StringLiteral("❤".to_string())]
+        );
+        lex_ok!(
+            r#""\uFA84""#,
+            vec![TokenKind::StringLiteral("彩".to_string())]
+        );
+        lex_ok!(
+            r#""\uD83D\uDC69""#,
+            vec![TokenKind::StringLiteral("👩".to_string())]
+        );
+        lex_error!(
+            r#""\uDCAC\u1234""#,
+            LexerError::InvalidUnicode(
+                1238580,
+                Position {
+                    full_index: 13,
+                    line_number: 1,
+                    line_char_index: 13
+                }
+            )
+        );
+    }
 }
