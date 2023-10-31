@@ -731,6 +731,23 @@ mod tests {
 
     #[test]
     fn test_from_str() {
+        // Unknown type
+        assert_eq!(
+            NonFungibleLocalId::from_str("#"),
+            Err(ParseNonFungibleLocalIdError::UnknownType)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("{"),
+            Err(ParseNonFungibleLocalIdError::UnknownType)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("<"),
+            Err(ParseNonFungibleLocalIdError::UnknownType)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("["),
+            Err(ParseNonFungibleLocalIdError::UnknownType)
+        );
         // Integers and invalid integers:
         assert_eq!(
             NonFungibleLocalId::from_str("#1#").unwrap(),
