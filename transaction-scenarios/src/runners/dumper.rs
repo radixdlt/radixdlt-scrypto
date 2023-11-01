@@ -24,6 +24,7 @@ pub fn run_all_in_memory_and_dump_examples(
     network: NetworkDefinition,
     root_path: std::path::PathBuf,
 ) -> Result<(), FullScenarioError> {
+    let mut event_hasher = HashAccumulator::new();
     let mut substate_db = HashTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
@@ -57,8 +58,19 @@ pub fn run_all_in_memory_and_dump_examples(
                 network: network.clone(),
             }
         };
-        let end_state =
-            run_scenario_with_default_config(&context, &mut substate_db, &mut scenario, &network)?;
+        let end_state = run_scenario_with_default_config(
+            &context,
+            &mut substate_db,
+            &mut scenario,
+            &network,
+            |hash, receipt| match &receipt.result {
+                TransactionResult::Commit(c) => {
+                    event_hasher.update_no_chain(hash.as_hash().as_bytes());
+                    event_hasher.update_no_chain(scrypto_encode(&c.application_events).unwrap());
+                }
+                TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
+            },
+        )?;
         // TODO(RCnet-V3): Change it so that each scenario starts at a different fixed nonce value, hard-coded for that
         // scenario, to minimize separate scenarios causing non-determinism in others
         next_nonce += 1000;
@@ -68,18 +80,24 @@ pub fn run_all_in_memory_and_dump_examples(
         substate_db.get_current_root_hash().to_string(),
         "901829c9d41dfbd0d82e08d3b81499f0e591f4b231e90036736c49f47a37ab4e"
     );
+    assert_eq!(
+        event_hasher.finalize().to_string(),
+        "1ae6782ae430f295d509a04882a3d5f1f9bafaedbc46a31144f5699863363fac"
+    );
 
     Ok(())
 }
 
-pub fn run_scenario_with_default_config<S>(
+pub fn run_scenario_with_default_config<S, F>(
     context: &RunnerContext,
     substate_db: &mut S,
     scenario: &mut Box<dyn ScenarioInstance>,
     network: &NetworkDefinition,
+    mut receipt_handler: F,
 ) -> Result<EndState, FullScenarioError>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
+    F: FnMut(&TransactionIntentHash, &TransactionReceipt),
 {
     let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction();
@@ -96,10 +114,11 @@ where
         &costing_parameters,
         &execution_config,
         scenario,
+        receipt_handler,
     )
 }
 
-pub fn run_scenario<S, V>(
+pub fn run_scenario<S, V, F>(
     context: &RunnerContext,
     validator: &NotarizedTransactionValidator,
     substate_db: &mut S,
@@ -107,10 +126,12 @@ pub fn run_scenario<S, V>(
     costing_parameters: &CostingParameters,
     execution_config: &ExecutionConfig,
     scenario: &mut Box<dyn ScenarioInstance>,
+    mut receipt_handler: F,
 ) -> Result<EndState, FullScenarioError>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
     V: SystemCallbackObject + Clone,
+    F: FnMut(&TransactionIntentHash, &TransactionReceipt),
 {
     let mut previous = None;
     loop {
@@ -124,13 +145,15 @@ where
                     .map_err(|err| err.into_full(&scenario))?;
                 #[cfg(feature = "std")]
                 next.dump_manifest(&context.dump_manifest_root, &context.network);
-                previous = Some(execute_and_commit_transaction(
+                let receipt = execute_and_commit_transaction(
                     substate_db,
                     vm.clone(),
                     costing_parameters,
                     execution_config,
                     &transaction.get_executable(),
-                ));
+                );
+                receipt_handler(transaction.get_executable().intent_hash(), &receipt);
+                previous = Some(receipt);
             }
             NextAction::Completed(end_state) => break Ok(end_state),
         }
