@@ -29,6 +29,15 @@ impl HashAccumulator {
         }
     }
 
+    pub fn update_no_chain(&mut self, data: impl AsRef<[u8]>) {
+        let bytes = data.as_ref();
+        self.inner.update(bytes);
+        self.input_size = self
+            .input_size
+            .checked_add(bytes.len())
+            .expect("Input to digest somehow larger than usize");
+    }
+
     pub fn input_length(&self) -> usize {
         self.input_size
     }
