@@ -240,7 +240,7 @@ impl<'a> Arbitrary<'a> for StringNonFungibleLocalId {
             .unwrap();
         let s: String = (0..len).map(|_| *u.choose(&charset[..]).unwrap()).collect();
 
-        Ok(Self(s.into_bytes()))
+        Ok(Self(Cow::Owned(s)))
     }
 }
 
@@ -575,7 +575,7 @@ impl FromStr for NonFungibleLocalId {
         let local_id = if s.starts_with('<') && s.ends_with('>') {
             Self::string(&s[1..s.len() - 1])
                 .map_err(ParseNonFungibleLocalIdError::ContentValidationError)?
-        } else if s.starts_with('#') && s.ends_with('#') {
+        } else if s.len() > 1 && s.starts_with('#') && s.ends_with('#') {
             let digits = &s[1..s.len() - 1];
             if !is_canonically_formatted_integer(digits) {
                 return Err(ParseNonFungibleLocalIdError::InvalidInteger);
@@ -731,6 +731,23 @@ mod tests {
 
     #[test]
     fn test_from_str() {
+        // Unknown type
+        assert_eq!(
+            NonFungibleLocalId::from_str("#"),
+            Err(ParseNonFungibleLocalIdError::UnknownType)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("{"),
+            Err(ParseNonFungibleLocalIdError::UnknownType)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("<"),
+            Err(ParseNonFungibleLocalIdError::UnknownType)
+        );
+        assert_eq!(
+            NonFungibleLocalId::from_str("["),
+            Err(ParseNonFungibleLocalIdError::UnknownType)
+        );
         // Integers and invalid integers:
         assert_eq!(
             NonFungibleLocalId::from_str("#1#").unwrap(),
