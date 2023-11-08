@@ -47,76 +47,69 @@ pub fn run() -> Result<(), Error> {
         None => NetworkDefinition::simulator(),
     };
 
-    match manifest_decode::<TransactionManifestV1>(&content).map_err(Error::DecodeError) {
-        Ok(manifest) => {
-            validate_call_arguments_to_native_components(&manifest.instructions)
-                .map_err(Error::InstructionSchemaValidationError)?;
-
-            let result =
-                decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
-            std::fs::write(&args.output, &result).map_err(Error::IoError)?;
-
-            if args.export_blobs {
-                let directory = args.output.parent().unwrap();
-                for blob in manifest.blobs.values() {
-                    let blob_hash = hash(&blob);
-                    std::fs::write(directory.join(format!("{}.blob", blob_hash)), &blob)
-                        .map_err(Error::IoError)?;
-                }
+    let (manifest_instructions, blobs) =
+        match manifest_decode::<TransactionManifestV1>(&content).map_err(Error::DecodeError) {
+            Ok(manifest) => {
+                let blobs: Vec<Vec<u8>> = manifest
+                    .blobs
+                    .values()
+                    .into_iter()
+                    .map(|item| item.to_owned())
+                    .collect();
+                (manifest.instructions, blobs)
             }
+            Err(e) => {
+                // try to decode versioned transaction
+                match manifest_decode::<VersionedTransactionPayload>(&content) {
+                    Ok(manifest) => {
+                        let (manifest_instructions, blobs) = match manifest {
+                            VersionedTransactionPayload::IntentV1 {
+                                instructions,
+                                blobs,
+                                ..
+                            } => (instructions.0, blobs.blobs),
+                            VersionedTransactionPayload::SignedIntentV1 { intent, .. } => {
+                                (intent.instructions.0, intent.blobs.blobs)
+                            }
+                            VersionedTransactionPayload::NotarizedTransactionV1 {
+                                signed_intent,
+                                ..
+                            } => (
+                                signed_intent.intent.instructions.0,
+                                signed_intent.intent.blobs.blobs,
+                            ),
+                            VersionedTransactionPayload::SystemTransactionV1 {
+                                instructions,
+                                blobs,
+                                ..
+                            } => (instructions.0, blobs.blobs),
+                        };
 
-            Ok(())
-        }
-        Err(e) => {
-            // try to decode versioned transaction
-            match manifest_decode::<VersionedTransactionPayload>(&content) {
-                Ok(manifest) => {
-                    let (manifest_instructions, blobs) = match manifest {
-                        VersionedTransactionPayload::IntentV1 {
-                            instructions,
-                            blobs,
-                            ..
-                        } => (instructions.0, blobs.blobs),
-                        VersionedTransactionPayload::SignedIntentV1 { intent, .. } => {
-                            (intent.instructions.0, intent.blobs.blobs)
-                        }
-                        VersionedTransactionPayload::NotarizedTransactionV1 {
-                            signed_intent,
-                            ..
-                        } => (
-                            signed_intent.intent.instructions.0,
-                            signed_intent.intent.blobs.blobs,
-                        ),
-                        VersionedTransactionPayload::SystemTransactionV1 {
-                            instructions,
-                            blobs,
-                            ..
-                        } => (instructions.0, blobs.blobs),
-                    };
-
-                    validate_call_arguments_to_native_components(&manifest_instructions)
-                        .map_err(Error::InstructionSchemaValidationError)?;
-
-                    let result = decompile(&manifest_instructions, &network)
-                        .map_err(Error::DecompileError)?;
-                    std::fs::write(&args.output, &result).map_err(Error::IoError)?;
-
-                    if args.export_blobs {
-                        let directory = args.output.parent().unwrap();
-                        for blob in blobs {
-                            let blob_hash = hash(&blob.0);
-                            std::fs::write(directory.join(format!("{}.blob", blob_hash)), &blob.0)
-                                .map_err(Error::IoError)?;
-                        }
+                        let blobs: Vec<Vec<u8>> = blobs.into_iter().map(|item| item.0).collect();
+                        (manifest_instructions, blobs)
                     }
-
-                    Ok(())
-                }
-                Err(_) => {
-                    // return original error
-                    Err(e)
+                    Err(_) => {
+                        // return original error
+                        return Err(e);
+                    }
                 }
             }
+        };
+
+    validate_call_arguments_to_native_components(&manifest_instructions)
+        .map_err(Error::InstructionSchemaValidationError)?;
+
+    let result = decompile(&manifest_instructions, &network).map_err(Error::DecompileError)?;
+    std::fs::write(&args.output, &result).map_err(Error::IoError)?;
+
+    if args.export_blobs {
+        let directory = args.output.parent().unwrap();
+        for blob in blobs {
+            let blob_hash = hash(&blob);
+            std::fs::write(directory.join(format!("{}.blob", blob_hash)), &blob)
+                .map_err(Error::IoError)?;
         }
     }
+
+    Ok(())
 }
