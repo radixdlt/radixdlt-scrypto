@@ -314,29 +314,6 @@ pub struct ConsensusManagerCreateValidatorManifestInput {
 
 pub type ConsensusManagerCreateValidatorOutput = (Global<ValidatorObjectTypeInfo>, Bucket, Bucket);
 
-pub const CONSENSUS_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub enum UpdateSecondaryIndex {
-    Create {
-        index_key: SortedKey,
-        key: Secp256k1PublicKey,
-        stake: Decimal,
-    },
-    UpdateStake {
-        index_key: SortedKey,
-        new_index_key: SortedKey,
-        new_stake_amount: Decimal,
-    },
-    UpdatePublicKey {
-        index_key: SortedKey,
-        key: Secp256k1PublicKey,
-    },
-    Remove {
-        index_key: SortedKey,
-    },
-}
-
 pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
