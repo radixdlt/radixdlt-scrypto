@@ -280,10 +280,10 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     fn resolve_object_substate_structure(
         &self,
         bp_type_target: &BlueprintTypeTarget,
-        object_partition_desciptor: &ObjectPartitionDescriptor,
+        object_partition_descriptor: &ObjectPartitionDescriptor,
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
-        match object_partition_desciptor {
+        match object_partition_descriptor {
             ObjectPartitionDescriptor::Fields => {
                 let field_index = match key {
                     SubstateKey::Field(field_index) => field_index,
