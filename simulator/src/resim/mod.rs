@@ -318,19 +318,22 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt
     }
 }
 
+pub fn parse_private_key_from_bytes(slice: &[u8]) -> Result<Secp256k1PrivateKey, Error> {
+    Secp256k1PrivateKey::from_bytes(slice).map_err(|_| Error::InvalidPrivateKey)
+}
+
+pub fn parse_private_key_from_str(key: &str) -> Result<Secp256k1PrivateKey, Error> {
+    hex::decode(key)
+        .map_err(|_| Error::InvalidPrivateKey)
+        .and_then(|bytes| parse_private_key_from_bytes(&bytes))
+}
+
 pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<Secp256k1PrivateKey>, Error> {
     let private_keys = if let Some(keys) = signing_keys {
         keys.split(",")
             .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .map(|key| {
-                hex::decode(key)
-                    .map_err(|_| Error::InvalidPrivateKey)
-                    .and_then(|bytes| {
-                        Secp256k1PrivateKey::from_bytes(&bytes)
-                            .map_err(|_| Error::InvalidPrivateKey)
-                    })
-            })
+            .filter(|s: &&str| !s.is_empty())
+            .map(parse_private_key_from_str)
             .collect::<Result<Vec<Secp256k1PrivateKey>, Error>>()?
     } else {
         vec![get_default_private_key()?]

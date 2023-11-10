@@ -27,6 +27,16 @@ impl Secp256k1PrivateKey {
         self.0.secret_bytes().to_vec()
     }
 
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.to_bytes())
+    }
+
+    pub fn from_hex(s: &str) -> Result<Self, ()> {
+        hex::decode(s)
+            .map_err(|_| ())
+            .and_then(|v| Self::from_bytes(&v))
+    }
+
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
         if slice.len() != Secp256k1PrivateKey::LENGTH {
             return Err(());

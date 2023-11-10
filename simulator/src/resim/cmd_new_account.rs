@@ -124,7 +124,7 @@ impl NewAccount {
                 || configs.default_owner_badge.is_none()
             {
                 configs.default_account = Some(account);
-                configs.default_private_key = Some(hex::encode(private_key.to_bytes()));
+                configs.default_private_key = Some(private_key.to_hex());
                 configs.default_owner_badge = Some(owner_badge);
                 set_configs(&configs)?;
 
