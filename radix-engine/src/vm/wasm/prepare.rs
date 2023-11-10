@@ -983,15 +983,18 @@ impl WasmModule {
         mut self,
         rules: &R,
     ) -> Result<Self, PrepareError> {
-        let backend = gas_metering::host_function::Injector::new(
-            MODULE_ENV_NAME,
-            COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
-        );
-        gas_metering::inject(&mut self.module, backend, rules).map_err(|err| {
-            PrepareError::RejectedByInstructionMetering {
-                reason: err.to_string(),
-            }
-        })?;
+        #[cfg(not(feature = "coverage"))]
+        {
+            let backend = gas_metering::host_function::Injector::new(
+                MODULE_ENV_NAME,
+                COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
+            );
+            gas_metering::inject(&mut self.module, backend, rules).map_err(|err| {
+                PrepareError::RejectedByInstructionMetering {
+                    reason: err.to_string(),
+                }
+            })?;
+        }
 
         Ok(self)
     }

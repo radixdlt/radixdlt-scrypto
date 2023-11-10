@@ -11,6 +11,8 @@ use wasmi::*;
 
 use crate::errors::InvokeError;
 use crate::types::*;
+#[cfg(feature = "coverage")]
+use crate::utils::save_coverage_data;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
@@ -1537,21 +1539,47 @@ impl WasmInstance for WasmiInstance {
             .collect();
         let mut ret = [Value::I64(0)];
 
-        let _result = func
+        let call_result = func
             .call(self.store.as_context_mut(), &input, &mut ret)
             .map_err(|e| {
                 let err: InvokeError<WasmRuntimeError> = e.into();
                 err
-            })?;
+            });
 
-        match i64::try_from(ret[0]) {
-            Ok(ret) => read_slice(
-                self.store.as_context_mut(),
-                self.memory,
-                Slice::transmute_i64(ret),
-            ),
-            _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer)),
+        let result = match call_result {
+            Ok(_) => match i64::try_from(ret[0]) {
+                Ok(ret) => read_slice(
+                    self.store.as_context_mut(),
+                    self.memory,
+                    Slice::transmute_i64(ret),
+                ),
+                _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer)),
+            },
+            Err(err) => Err(err),
+        };
+
+        #[cfg(feature = "coverage")]
+        if let Ok(dump_coverage) = self.get_export_func("dump_coverage") {
+            if let Ok(blueprint_buffer) = runtime.actor_get_blueprint_name() {
+                let blueprint_name =
+                    String::from_utf8(runtime.buffer_consume(blueprint_buffer.id()).unwrap())
+                        .unwrap();
+
+                let mut ret = [Value::I64(0)];
+                dump_coverage
+                    .call(self.store.as_context_mut(), &[], &mut ret)
+                    .unwrap();
+                let coverage_data = read_slice(
+                    self.store.as_context_mut(),
+                    self.memory,
+                    Slice::transmute_i64(i64::try_from(ret[0]).unwrap()),
+                )
+                .unwrap();
+                save_coverage_data(&blueprint_name, &coverage_data);
+            }
         }
+
+        result
     }
 }
 

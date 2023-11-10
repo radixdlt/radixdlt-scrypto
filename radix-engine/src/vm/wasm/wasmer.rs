@@ -1,5 +1,7 @@
 use crate::errors::InvokeError;
 use crate::types::*;
+#[cfg(feature = "coverage")]
+use crate::utils::save_coverage_data;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
@@ -835,13 +837,40 @@ impl WasmInstance for WasmerInstance {
             .map_err(|e| {
                 let err: InvokeError<WasmRuntimeError> = e.into();
                 err
-            })?;
+            });
 
-        if let Some(v) = return_data.as_ref().get(0).and_then(|x| x.i64()) {
-            read_slice(&self.instance, Slice::transmute_i64(v)).map_err(InvokeError::SelfError)
-        } else {
-            Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer))
+        let result = match return_data {
+            Ok(data) => {
+                if let Some(v) = data.as_ref().get(0).and_then(|x| x.i64()) {
+                    read_slice(&self.instance, Slice::transmute_i64(v))
+                        .map_err(InvokeError::SelfError)
+                } else {
+                    Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer))
+                }
+            }
+            Err(err) => Err(err),
+        };
+
+        #[cfg(feature = "coverage")]
+        if let Ok(dump_coverage) = self.instance.exports.get_function("dump_coverage") {
+            if let Ok(blueprint_buffer) = runtime.actor_get_blueprint_name() {
+                let blueprint_name =
+                    String::from_utf8(runtime.buffer_consume(blueprint_buffer.id()).unwrap())
+                        .unwrap();
+
+                let mut ret = dump_coverage
+                    .call(&[])
+                    .unwrap()
+                    .as_ref()
+                    .get(0)
+                    .and_then(|x| x.i64())
+                    .unwrap();
+                let coverage_data = read_slice(&self.instance, Slice::transmute_i64(ret)).unwrap();
+                save_coverage_data(&blueprint_name, &coverage_data);
+            }
         }
+
+        result
     }
 }
 

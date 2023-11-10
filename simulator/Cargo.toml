@@ -36,6 +36,7 @@ proc-macro2 = { version = "1.0.38" }
 heck = "0.4.1"
 tempfile = "3.8.0"
 flume = { version = "0.11.0" }
+walkdir = "2.3.3"
 
 [[bin]]
 name = "resim"
