@@ -35,3 +35,31 @@ impl SetDefaultAccount {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[test]
+fn test_validation() {
+    let mut out = std::io::stdout();
+    let private_key = Secp256k1PrivateKey::from_hex(
+        "6847c11e2d602548dbf38789e0a1f4543c1e7719e4f591d4aa6e5684f5c13d9c",
+    )
+    .unwrap();
+    let public_key = private_key.public_key().to_string();
+
+    let make_cmd = |key_string: String| {
+        return SetDefaultAccount {
+            component_address: SimulatorComponentAddress::from_str(
+                "account_sim1c9yeaya6pehau0fn7vgavuggeev64gahsh05dauae2uu25njk224xz",
+            )
+            .unwrap(),
+            private_key: key_string,
+            owner_badge: SimulatorNonFungibleGlobalId::from_str(
+                "resource_sim1ngvrads4uj3rgq2v9s78fzhvry05dw95wzf3p9r8skhqusf44dlvmr:#1#",
+            )
+            .unwrap(),
+        };
+    };
+
+    assert!(make_cmd(private_key.to_hex()).run(&mut out).is_ok());
+    assert!(make_cmd(public_key.to_string()).run(&mut out).is_err());
+}
