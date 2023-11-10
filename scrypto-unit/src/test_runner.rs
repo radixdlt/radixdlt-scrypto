@@ -125,13 +125,13 @@ impl Compile {
                 coverage_path.set_extension("rpd");
                 let definition = fs::read(&coverage_path).unwrap_or_else(|err| {
                     panic!(
-                        "Failed to read manifest definition from path {:?} - {:?}",
+                        "Failed to read package definition from path {:?} - {:?}",
                         &coverage_path, err
                     )
                 });
                 let definition = manifest_decode(&definition).unwrap_or_else(|err| {
                     panic!(
-                        "Failed to parse manifest definition from path {:?} - {:?}",
+                        "Failed to parse package definition from path {:?} - {:?}",
                         &coverage_path, err
                     )
                 });

@@ -842,12 +842,13 @@ impl WasmInstance for WasmerInstance {
         let result = match return_data {
             Ok(data) => {
                 if let Some(v) = data.as_ref().get(0).and_then(|x| x.i64()) {
-                    read_slice(&self.instance, Slice::transmute_i64(v)).map_err(InvokeError::SelfError)
+                    read_slice(&self.instance, Slice::transmute_i64(v))
+                        .map_err(InvokeError::SelfError)
                 } else {
                     Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer))
-                }        
+                }
             }
-            Err(err) => Err(err)
+            Err(err) => Err(err),
         };
 
         #[cfg(feature = "coverage")]
@@ -857,12 +858,14 @@ impl WasmInstance for WasmerInstance {
                     String::from_utf8(runtime.buffer_consume(blueprint_buffer.id()).unwrap())
                         .unwrap();
 
-                let mut ret = dump_coverage.call(&[]).unwrap().as_ref().get(0).and_then(|x| x.i64()).unwrap();
-                let coverage_data = read_slice(
-                    &self.instance,
-                    Slice::transmute_i64(ret),
-                )
-                .unwrap();
+                let mut ret = dump_coverage
+                    .call(&[])
+                    .unwrap()
+                    .as_ref()
+                    .get(0)
+                    .and_then(|x| x.i64())
+                    .unwrap();
+                let coverage_data = read_slice(&self.instance, Slice::transmute_i64(ret)).unwrap();
                 save_coverage_data(&blueprint_name, &coverage_data);
             }
         }

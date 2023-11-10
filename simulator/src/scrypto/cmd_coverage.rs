@@ -25,20 +25,34 @@ pub struct Coverage {
 }
 
 impl Coverage {
-    fn check_command_availability(command: String) -> Result<(), Error> {
-        if Command::new(&command).arg("--version").output().is_err() {
-            println!("Missing command: {}. Please install LLVM version matching rustc LLVM version, which is {}.", 
-                command, command.split('-').last().unwrap_or("Unknown"));
-            println!("For more information, check https://apt.llvm.org/");
-            return Err(Error::CoverageError(CoverageError::MissingLLVM));
+    fn check_wasm_target(nightly: bool) -> Result<(), Error> {
+        let output = Command::new("rustup")
+            .args(&["target", "list", "--installed"])
+            .output()
+            .expect("Failed to execute rustup target list command");
+
+        let output_str = String::from_utf8(output.stdout).unwrap();
+        let is_wasm_target_installed = output_str.contains("wasm32-unknown-unknown");
+
+        if !is_wasm_target_installed {
+            eprintln!(
+                "The {}wasm32-unknown-unknown target is not installed.",
+                if nightly { "nightly" } else { "" }
+            );
+            eprintln!("You can install it by using the following command:");
+            eprintln!(
+                "rustup target add wasm32-unknown-unknown{}",
+                if nightly { " --toolchain=nightly" } else { "" }
+            );
+            Err(Error::CoverageError(CoverageError::MissingWasm32Target))
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
-    pub fn run(&self) -> Result<(), Error> {
+    fn check_rustc_version() -> (bool, String) {
         let output = Command::new("rustc")
-            .arg("--version")
-            .arg("--verbose")
+            .args(&["--version", "--verbose"])
             .output()
             .expect("Failed to execute rustc command");
 
@@ -48,14 +62,41 @@ impl Coverage {
             .unwrap()
             .captures(&output_str)
             .and_then(|cap| cap.get(1).map(|m| m.as_str()))
-            .expect("Failed to read LLVM version of rustc");
+            .map(String::from)
+            .unwrap();
 
+        (is_nightly, llvm_major_version)
+    }
+
+    fn check_command_availability(command: String) -> Result<(), Error> {
+        if Command::new(&command).arg("--version").output().is_err() {
+            eprintln!("Missing command: {}. Please install LLVM version matching rustc LLVM version, which is {}.", 
+                command, command.split('-').last().unwrap_or("Unknown"));
+            eprintln!("For more information, check https://apt.llvm.org/");
+            Err(Error::CoverageError(CoverageError::MissingLLVM))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn run(&self) -> Result<(), Error> {
+        // Verify rust version and wasm target
+        Self::check_wasm_target(false)?;
+
+        let (mut is_nightly, mut llvm_major_version) = Self::check_rustc_version();
+        let mut unset_rustup_toolchain = false;
         if !is_nightly {
-            println!("Coverage tool requries nightly version of rust toolchain");
-            println!("You can install it by using the following commands:");
-            println!("rustup default nightly");
-            println!("rustup target add wasm32-unknown-unknown --toolchain=nightly");
-            return Err(Error::CoverageError(CoverageError::IncorrectRustVersion));
+            // Try to use nightly toolchain automatically
+            env::set_var("RUSTUP_TOOLCHAIN", "nightly");
+            (is_nightly, llvm_major_version) = Self::check_rustc_version();
+            if !is_nightly {
+                eprintln!("Coverage tool requries nightly version of rust toolchain");
+                eprintln!("You can install it by using the following commands:");
+                eprintln!("rustup target add wasm32-unknown-unknown --toolchain=nightly");
+                return Err(Error::CoverageError(CoverageError::IncorrectRustVersion));
+            }
+            Self::check_wasm_target(true)?;
+            unset_rustup_toolchain = true;
         }
 
         // Verify that all llvm tools required to generate coverage report are installed
@@ -68,6 +109,10 @@ impl Coverage {
         let (wasm_path, _) = build_package(&path, false, false, true, Level::Trace, true)
             .map_err(Error::BuildError)?;
         assert!(wasm_path.is_file());
+
+        if unset_rustup_toolchain {
+            env::remove_var("RUSTUP_TOOLCHAIN");
+        }
 
         // Remove wasm32-unknown-unknown/release/file.wasm from wasm_path
         let mut coverage_path = wasm_path.clone();
@@ -107,7 +152,7 @@ impl Coverage {
             .collect();
 
         if profraw_files.is_empty() {
-            println!("No .profraw files found in the coverage/data directory");
+            eprintln!("No .profraw files found in the coverage/data directory");
             return Err(Error::CoverageError(CoverageError::NoProfrawFiles));
         }
 
@@ -115,8 +160,7 @@ impl Coverage {
         let output = Command::new(format!("llvm-profdata-{}", llvm_major_version))
             .args(&["merge", "-sparse"])
             .args(profraw_files)
-            .arg("-o")
-            .arg(profdata_path.to_str().unwrap())
+            .args(&["-o", profdata_path.to_str().unwrap()])
             .output()
             .expect("Failed to execute llvm-profdata command");
         if !output.status.success() {
@@ -141,6 +185,7 @@ impl Coverage {
             .read_to_string(&mut ir_contents)
             .expect("Failed to read IR file");
 
+        // Modify IR file according to https://github.com/hknio/code-coverage-for-webassembly
         let modified_ir_contents = Regex::new(r"(?ms)^(define[^\n]*\n).*?^}\s*$")
             .unwrap()
             .replace_all(&ir_contents, "${1}start:\n  unreachable\n}\n")
@@ -161,8 +206,8 @@ impl Coverage {
                 "-Wno-override-module",
                 "-c",
                 "-o",
+                object_file_path.to_str().unwrap(),
             ])
-            .arg(object_file_path.to_str().unwrap())
             .output()
             .expect("Failed to execute clang command");
 
@@ -178,14 +223,16 @@ impl Coverage {
         }
 
         let output = Command::new(format!("llvm-cov-{}", llvm_major_version))
-            .args(&["show", "--instr-profile=coverage/data/coverage.profdata"])
-            .arg(object_file_path.to_str().unwrap())
             .args(&[
+                "show",
+                "--instr-profile",
+                profdata_path.to_str().unwrap(),
+                object_file_path.to_str().unwrap(),
                 "--show-instantiations=false",
                 "--format=html",
                 "--output-dir",
+                coverage_report_path.to_str().unwrap(),
             ])
-            .arg(coverage_report_path.to_str().unwrap())
             .output()
             .expect("Failed to execute llvm-cov command");
 
