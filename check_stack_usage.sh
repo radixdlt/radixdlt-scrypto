@@ -26,7 +26,7 @@ function get_stack_usage() {
         if RUST_MIN_STACK=$stack cargo test -p $PACKAGE --test $EXEC -- $TEST >$output 2>&1 ; then
             if grep 'stack overflow' $output ; then
                 cat $output
-                echo "unexpected error occured"
+                echo "unexpected error occurred"
                 exit 1
             else
                 high=$(( $stack - 1 ))

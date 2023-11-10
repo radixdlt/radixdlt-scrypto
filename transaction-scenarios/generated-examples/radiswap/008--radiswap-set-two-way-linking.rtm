@@ -115,7 +115,7 @@ SET_METADATA
     Address("pool_sim1c408ydnhkew4kjyn6c9jelgrd88vywkteylk8kgklp3e0af8rsdt8t")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\""
+        "[EXAMPLE] The underlying pool between test tokens \"XRD\" and \"BTC\""
     )
 ;
 SET_METADATA
@@ -214,7 +214,7 @@ SET_METADATA
     Address("pool_sim1c5q8c20tyhkzgdjt3mtydw968krhg3u58tr87j0t9ea76n7z2r4rej")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\""
+        "[EXAMPLE] The underlying pool between test tokens \"ETH\" and \"ETC\""
     )
 ;
 SET_METADATA

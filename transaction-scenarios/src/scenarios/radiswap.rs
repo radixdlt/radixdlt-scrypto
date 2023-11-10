@@ -485,7 +485,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     builder,
                                     pool_1,
                                     "Radiswap 1 - XRD/BTC: Pool",
-                                    "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\"",
+                                    "[EXAMPLE] The underlying pool between test tokens \"XRD\" and \"BTC\"",
                                 ))
                                 .then(|builder| add_metadata(
                                     builder,
@@ -503,7 +503,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     builder,
                                     pool_2,
                                     "Radiswap 2 - ETH/ETC: Pool",
-                                    "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\"",
+                                    "[EXAMPLE] The underlying pool between test tokens \"ETH\" and \"ETC\"",
                                 ))
                                 .then(|builder| add_metadata(
                                     builder,

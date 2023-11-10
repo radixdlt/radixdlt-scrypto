@@ -105,7 +105,7 @@ const OTHER_MODULE_TYPES_START: u8 = 0xf0;
 // There are a number of reasons for doing this:
 // 1. It is an optimization: Shared types mean smaller schemas.
 // 2. Having well known types for these so that these types are all the "same type" across all scrypto schemas.
-//    This means that semantic information can be intepreted for these values outside of the ledger - for example,
+//    This means that semantic information can be interpreted for these values outside of the ledger - for example,
 //    it can be used to (eg display URL / Instants in certain ways in the dashboard or wallet).
 // 3. In future, if/when we allow attaching extra data such as translations or docs against global types,
 //    these types will be defined in a place where we can attach this data across everyones' schemas, instead of

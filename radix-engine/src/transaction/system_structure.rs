@@ -176,7 +176,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                             //     enable this for TrackedSubstateValue::ReadOnly(ReadOnly::Existent(_))
                             //     but it is not possible for NonExistent reads.
                             //   If a transaction fails, it's possible to get reads of non-existent substates
-                            //     where the type info can't be resolved below. For example, if boostrap fails,
+                            //     where the type info can't be resolved below. For example, if bootstrap fails,
                             //     consensus manager substates are read but the type info is not written.
                             continue;
                         }

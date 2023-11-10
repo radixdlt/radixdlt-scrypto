@@ -202,7 +202,7 @@ pub trait WasmRuntime {
     fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 }
 
-/// Represents an instantiated, invokable Scrypto module.
+/// Represents an instantiated, invocable Scrypto module.
 pub trait WasmInstance {
     /// Invokes an export defined in this module.
     ///
