@@ -130,7 +130,7 @@ impl NewAccount {
 
                 writeln!(
                     out,
-                    "Account configuration in complete. Will use the above account as default."
+                    "Set up as default account since you had none, you can change it using `set-default-account`."
                 )
                 .map_err(Error::IOError)?;
             }
