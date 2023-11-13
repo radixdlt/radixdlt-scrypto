@@ -26,15 +26,18 @@ impl SubstateDatabase for InMemorySubstateDatabase {
             .cloned()
     }
 
-    fn list_entries(
+    fn list_entries_from(
         &self,
         partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        let from_sort_key = from_sort_key.cloned();
         let iter = self
             .partitions
             .get(partition_key)
             .into_iter()
             .flat_map(|partition| partition.iter())
+            .skip_while(move |(key, _substate)| Some(*key) < from_sort_key.as_ref())
             .map(|(key, substate)| (key.clone(), substate.clone()));
 
         Box::new(iter)
