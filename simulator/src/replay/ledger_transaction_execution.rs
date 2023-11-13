@@ -15,6 +15,7 @@ use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
 
+#[derive(Debug, Clone, ScryptoSbor)]
 pub enum LedgerTransactionReceipt {
     Flash(FlashReceipt),
     Standard(TransactionReceipt),
@@ -44,10 +45,9 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
     network: &NetworkDefinition,
     tx_payload: &[u8],
     trace: bool,
-) -> StateUpdates {
+) -> LedgerTransactionReceipt {
     let prepared = prepare_ledger_transaction(tx_payload);
     execute_prepared_ledger_transaction(database, scrypto_vm, network, &prepared, trace)
-        .into_state_updates()
 }
 
 pub fn prepare_ledger_transaction(tx_payload: &[u8]) -> PreparedLedgerTransaction {

@@ -84,7 +84,8 @@ impl TxnExecute {
                     &network,
                     &tx_payload,
                     trace,
-                );
+                )
+                .into_state_updates();
                 let database_updates =
                     state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 database.commit(&database_updates);

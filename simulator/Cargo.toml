@@ -14,13 +14,12 @@ radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] 
 radix-engine-queries = { path = "../radix-engine-queries" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
-transaction = { path = "../transaction" }
+transaction = { path = "../transaction", features = ["serde"]}
+utils = { path = "../utils", features = ["serde"] }
+
 flate2 = { version = "1.0.27" }
 tar = { version = "0.4.40" }
 rocksdb = { version = "0.21.0" }
-utils = { path = "../utils" }
-serde = { version = "1.0.137", features = ["derive"] }
-serde_json = { version = "1.0.81" }
 clap = { version = "3.1.17", features = ["derive", "cargo"] }
 dirs = { version = "4.0.0" }
 colored = { version = "2.0.0" }
@@ -36,6 +35,18 @@ proc-macro2 = { version = "1.0.38" }
 heck = "0.4.1"
 tempfile = "3.8.0"
 flume = { version = "0.11.0" }
+
+# AWS DynamoDB
+aws-config = "0.57.1"
+aws-sdk-dynamodb = "0.35.0"
+aws-sdk-s3 = "0.35.0"
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0.137", features = ["derive"] }
+serde_json = { version = "1.0.87" }
+serde_dynamo = { version = "4", features = ["aws-sdk-dynamodb+0_35"] }
 
 [[bin]]
 name = "resim"

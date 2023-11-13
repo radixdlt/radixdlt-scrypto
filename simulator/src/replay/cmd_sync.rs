@@ -77,7 +77,8 @@ impl TxnSync {
                     &network,
                     &tx_payload,
                     trace,
-                );
+                )
+                .into_state_updates();
                 let database_updates =
                     state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
 

@@ -4,6 +4,7 @@ pub mod txn_reader;
 
 mod cmd_alloc_dump;
 mod cmd_execute;
+mod cmd_execute_and_upload;
 mod cmd_execute_in_memory;
 mod cmd_measure;
 mod cmd_prepare;
@@ -12,6 +13,7 @@ mod error;
 
 pub use cmd_alloc_dump::*;
 pub use cmd_execute::*;
+pub use cmd_execute_and_upload::*;
 pub use cmd_execute_in_memory::*;
 pub use cmd_measure::*;
 pub use cmd_prepare::*;
@@ -33,6 +35,7 @@ pub enum Command {
     Prepare(TxnPrepare),
     Execute(TxnExecute),
     ExecuteInMemory(TxnExecuteInMemory),
+    ExecuteAndUpload(TxnExecuteAndUpload),
     Sync(TxnSync),
     Measure(TxnMeasure),
     AllocDump(TxnAllocDump),
@@ -45,6 +48,7 @@ pub fn run() -> Result<(), Error> {
         Command::Prepare(cmd) => cmd.run(),
         Command::Execute(cmd) => cmd.run(),
         Command::ExecuteInMemory(cmd) => cmd.run(),
+        Command::ExecuteAndUpload(cmd) => cmd.run(),
         Command::Sync(cmd) => cmd.sync(),
         Command::Measure(cmd) => cmd.run(),
         Command::AllocDump(cmd) => cmd.run(),

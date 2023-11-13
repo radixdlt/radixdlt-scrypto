@@ -2,10 +2,13 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::prelude::*;
 use sbor::FixedEnumVariant;
+use serde::*;
 use transaction::define_raw_transaction_payload;
 use transaction::prelude::*;
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+#[derive(
+    serde::Serialize, serde::Deserialize, Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq,
+)]
 pub struct RoundUpdateTransactionV1 {
     pub proposer_timestamp_ms: i64,
     pub epoch: Epoch,
@@ -180,7 +183,7 @@ impl TypedTransactionIdentifiers {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, Serialize, Deserialize)]
 pub enum LedgerTransaction {
     #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
     Genesis(Box<GenesisTransaction>),
@@ -231,7 +234,7 @@ impl LedgerTransaction {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, Serialize, Deserialize)]
 pub enum GenesisTransaction {
     #[sbor(discriminator(GENESIS_TRANSACTION_FLASH_DISCRIMINATOR))]
     Flash,
