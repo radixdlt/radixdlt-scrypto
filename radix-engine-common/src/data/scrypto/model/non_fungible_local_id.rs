@@ -72,10 +72,8 @@ impl From<[u8; 32]> for NonFungibleLocalId {
 }
 
 /// Represents the local id of a non-fungible.
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NonFungibleLocalId {
     /// String matching `[_0-9a-zA-Z]{1,64}`.
@@ -175,10 +173,7 @@ impl From<RUIDNonFungibleLocalId> for NonFungibleLocalId {
 }
 
 /// A string matching `[_0-9a-zA-Z]{1,64}`.
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StringNonFungibleLocalId(Cow<'static, str>);
 
@@ -261,10 +256,8 @@ impl TryFrom<&str> for StringNonFungibleLocalId {
 }
 
 /// Unsigned integers, up to u64.
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IntegerNonFungibleLocalId(u64);
 
@@ -285,10 +278,7 @@ impl From<u64> for IntegerNonFungibleLocalId {
 }
 
 /// Bytes, of length between 1 and 64.
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BytesNonFungibleLocalId(Cow<'static, [u8]>);
 
@@ -332,10 +322,8 @@ impl TryFrom<Vec<u8>> for BytesNonFungibleLocalId {
     }
 }
 
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 /// RUID, v4, variant 1, big endian. See https://www.rfc-editor.org/rfc/rfc4122
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RUIDNonFungibleLocalId([u8; 32]);

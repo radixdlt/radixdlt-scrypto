@@ -96,6 +96,7 @@ pub struct KeyValueStoreInfo {
     pub generic_substitutions: KeyValueStoreGenericSubstitutions,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintId {
     pub package_address: PackageAddress,

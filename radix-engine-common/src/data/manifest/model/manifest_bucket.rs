@@ -9,6 +9,7 @@ use sbor::*;
 use crate::data::manifest::*;
 use crate::*;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[must_use]

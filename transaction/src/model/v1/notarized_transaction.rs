@@ -7,6 +7,7 @@ use crate::internal_prelude::*;
 //=================================================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NotarizedTransactionV1 {
     pub signed_intent: SignedIntentV1,
     pub notary_signature: NotarySignatureV1,

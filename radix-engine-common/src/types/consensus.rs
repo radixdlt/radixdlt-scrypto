@@ -11,6 +11,7 @@ pub type ValidatorIndex = u8;
 
 /// A type-safe consensus epoch number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Sbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[sbor(transparent)]
 pub struct Epoch(u64);
 
@@ -55,6 +56,7 @@ impl Epoch {
 }
 
 /// A type-safe consensus round number *within a single epoch*.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 #[sbor(transparent)]
 pub struct Round(u64);

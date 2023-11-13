@@ -2,6 +2,7 @@ use super::{ExecutionContext, TransactionCostingParameters};
 use crate::internal_prelude::*;
 use crate::model::{AuthZoneParams, Executable};
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct SystemTransactionV1 {
     pub instructions: InstructionsV1,

@@ -10,6 +10,7 @@ use sbor::*;
 /// Any address supported by manifest, both global and local.
 ///
 /// Must start with a supported entity type byte.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[must_use]

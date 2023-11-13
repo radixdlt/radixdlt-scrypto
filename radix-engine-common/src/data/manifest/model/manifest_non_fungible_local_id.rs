@@ -11,6 +11,7 @@ use crate::*;
 
 pub const MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManifestNonFungibleLocalId {
     String(String),

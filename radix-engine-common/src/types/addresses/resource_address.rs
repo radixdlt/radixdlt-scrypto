@@ -15,10 +15,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 /// Address to a global resource
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ResourceAddress(NodeId); // private to ensure entity type check
 
 impl ResourceAddress {

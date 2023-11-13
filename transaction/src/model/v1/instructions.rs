@@ -1,6 +1,7 @@
 use super::*;
 use crate::prelude::*;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
 pub struct InstructionsV1(pub Vec<InstructionV1>);

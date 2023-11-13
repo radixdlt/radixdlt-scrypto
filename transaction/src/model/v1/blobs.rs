@@ -3,10 +3,13 @@ use radix_engine_common::constants::MAX_NUMBER_OF_BLOBS;
 use super::*;
 use crate::internal_prelude::*;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
 pub struct BlobV1(pub Vec<u8>);
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
 pub struct BlobsV1 {

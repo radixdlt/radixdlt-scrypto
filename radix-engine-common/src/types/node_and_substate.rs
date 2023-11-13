@@ -12,10 +12,8 @@ use utils::ContextualDisplay;
 //=========================================================================
 
 /// The unique identifier of a (stored) node.
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary,))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct NodeId(pub [u8; Self::LENGTH]);

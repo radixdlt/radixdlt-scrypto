@@ -33,9 +33,18 @@ use crate::*;
 /// Min            : -57896044618658097711785492504343953926634.992332820282019728792003956564819968
 ///
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
+#[cfg_attr(feature = "serde", serde(into = "String"))]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PreciseDecimal(pub I256);
+
+impl Into<String> for PreciseDecimal {
+    fn into(self) -> String {
+        self.to_string()
+    }
+}
 
 impl Default for PreciseDecimal {
     fn default() -> Self {

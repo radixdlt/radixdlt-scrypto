@@ -43,10 +43,12 @@ impl From<(Ed25519PublicKey, Ed25519Signature)> for SignatureWithPublicKeyV1 {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[sbor(transparent)]
 pub struct IntentSignatureV1(pub SignatureWithPublicKeyV1);
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[sbor(transparent)]
 pub struct IntentSignaturesV1 {
     pub signatures: Vec<IntentSignatureV1>,

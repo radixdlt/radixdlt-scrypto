@@ -34,12 +34,18 @@ use super::CheckedTruncate;
 /// Min            : -3138550867693340381917894711603833208051.177722232017256448
 ///
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(Arbitrary, Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
+#[cfg_attr(feature = "serde", serde(into = "String"))]
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal(pub I192);
+
+impl Into<String> for Decimal {
+    fn into(self) -> String {
+        self.to_string()
+    }
+}
 
 impl Default for Decimal {
     fn default() -> Self {

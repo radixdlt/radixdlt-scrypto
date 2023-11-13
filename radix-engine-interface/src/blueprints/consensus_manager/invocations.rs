@@ -271,6 +271,7 @@ impl ConsensusManagerNextRoundInput {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct LeaderProposalHistory {
     /// The validators which were leaders of the "gap" rounds (i.e. those that were not reported to

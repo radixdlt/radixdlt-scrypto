@@ -13,6 +13,7 @@ use crate::*;
 
 pub const DECIMAL_SIZE: usize = Decimal::BITS / 8;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // TODO: improve
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestDecimal(pub [u8; DECIMAL_SIZE]);

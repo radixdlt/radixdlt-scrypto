@@ -7,6 +7,7 @@ use crate::internal_prelude::*;
 //=================================================================================
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SignedIntentV1 {
     pub intent: IntentV1,
     pub intent_signatures: IntentSignaturesV1,

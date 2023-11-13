@@ -42,7 +42,7 @@ TAKE_FROM_WORKTOP
 ;
 ```
 */
-
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicGlobalAddress {
     Static(GlobalAddress),
@@ -212,6 +212,7 @@ impl TryFrom<ManifestAddress> for DynamicGlobalAddress {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicPackageAddress {
     Static(PackageAddress),
@@ -523,6 +524,7 @@ impl TryFrom<ManifestAddress> for DynamicResourceAddress {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum InstructionV1 {
     //==============

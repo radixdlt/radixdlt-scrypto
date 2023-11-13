@@ -3,6 +3,7 @@ use crate::prelude::*;
 
 /// Transaction messages as per REP-70
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MessageV1 {
     None,
     Plaintext(PlaintextMessageV1),
@@ -20,6 +21,7 @@ impl Default for MessageV1 {
 //============================================================================
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PlaintextMessageV1 {
     pub mime_type: String,
     pub message: MessageContentsV1,
@@ -29,6 +31,7 @@ pub struct PlaintextMessageV1 {
 /// whether the message is intended to be displayable as text, or not.
 ///
 /// This data model ensures that messages intended to be displayable as text are valid unicode strings.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum MessageContentsV1 {
     String(String),
@@ -69,6 +72,7 @@ impl MessageContentsV1 {
 ///   * 128-bit AES is considered secure enough for most use cases (EG bitcoin hash rate is only 2^93 / year)
 ///   * It's being used with a transient key - so a hypothetical successful attack would only decrypt one message
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct EncryptedMessageV1 {
     pub encrypted: AesGcmPayload,
     // Note we use a collection here rather than a struct to be forward-compatible to adding more curve types.
@@ -76,6 +80,7 @@ pub struct EncryptedMessageV1 {
     pub decryptors_by_curve: IndexMap<CurveType, DecryptorsByCurve>,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ManifestSbor)]
 pub enum CurveType {
     Ed25519,
@@ -83,6 +88,7 @@ pub enum CurveType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum DecryptorsByCurve {
     Ed25519 {
         dh_ephemeral_public_key: Ed25519PublicKey,
@@ -112,6 +118,7 @@ impl DecryptorsByCurve {
 
 /// The last 8 bytes of the Blake2b-256 hash of the public key bytes,
 /// in their standard Radix byte-serialization.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ManifestSbor)]
 #[sbor(transparent)]
 pub struct PublicKeyFingerprint(pub [u8; Self::LENGTH]);
@@ -141,6 +148,7 @@ impl From<PublicKeyHash> for PublicKeyFingerprint {
 /// * Cipher(text): Variable length
 /// * Tag/MAC: 16 bytes
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[sbor(transparent)]
 pub struct AesGcmPayload(pub Vec<u8>);
 
@@ -152,6 +160,7 @@ pub struct AesGcmPayload(pub Vec<u8>);
 /// This must be serialized as per https://www.ietf.org/rfc/rfc3394.txt as `IV || Cipher` where:
 /// * IV: First 8 bytes
 /// * Cipher: The wrapped 128 bit key, encoded as two 64 bit blocks
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
 pub struct AesWrapped128BitKey(pub [u8; Self::LENGTH]);

@@ -26,7 +26,7 @@ scrypto-derive = { path = "../scrypto-derive" }
 default = ["std"]
 std = ["sbor/std", "utils/std", "radix-engine-interface/std", "radix-engine-common/std", "hex/std", "ed25519-dalek/std", "secp256k1/std"]
 alloc = ["sbor/alloc", "utils/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "lazy_static/spin_no_std"]
-serde = ["serde/derive"]
+serde = ["serde/derive", "hex/serde", "radix-engine-interface/serde", "radix-engine-common/serde", "sbor/serde" ]
 
 dump_manifest_to_file = []
 

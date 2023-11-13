@@ -26,6 +26,7 @@ impl From<Ed25519Signature> for SignatureV1 {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[sbor(transparent)]
 pub struct NotarySignatureV1(pub SignatureV1);
 

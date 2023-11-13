@@ -46,6 +46,7 @@ impl TransactionIntentHash {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct PreAllocatedAddress {
     pub blueprint_id: BlueprintId,

@@ -14,10 +14,7 @@ use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
 /// Address to a global entity
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct GlobalAddress(NodeId); // private to ensure entity type check
 
