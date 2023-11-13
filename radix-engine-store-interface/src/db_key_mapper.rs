@@ -100,7 +100,9 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
     }
 
     fn from_db_node_key(db_node_key: &DbNodeKey) -> NodeId {
-        NodeId(copy_u8_array(SpreadPrefixKeyMapper::from_hash_prefixed(db_node_key)))
+        NodeId(copy_u8_array(SpreadPrefixKeyMapper::from_hash_prefixed(
+            db_node_key,
+        )))
     }
 
     fn to_db_partition_num(partition_num: PartitionNumber) -> DbPartitionNum {
