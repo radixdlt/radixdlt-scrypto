@@ -197,6 +197,7 @@ impl TxnExecuteAndUpload {
                         .bucket("yulongtest")
                         .key(format!("transaction-json/{hash}.json"))
                         .body(tx_json.into_bytes().into())
+                        .content_type("application/json")
                         .send(),
                     client
                         .put_object()
@@ -209,6 +210,7 @@ impl TxnExecuteAndUpload {
                         .bucket("yulongtest")
                         .key(format!("receipt-json/{hash}.json"))
                         .body(receipt_json.into_bytes().into())
+                        .content_type("application/json")
                         .send(),
                 ])
                 .await;
