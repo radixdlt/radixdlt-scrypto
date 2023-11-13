@@ -10,9 +10,25 @@ use utils::copy_u8_array;
 
 /// Represents a 32-byte hash digest.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
+#[cfg_attr(feature = "serde", serde(into = "String"))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct Hash(pub [u8; Self::LENGTH]);
+
+impl TryFrom<String> for Hash {
+    type Error = ParseHashError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::from_str(&value)
+    }
+}
+
+impl Into<String> for Hash {
+    fn into(self) -> String {
+        self.to_string()
+    }
+}
 
 impl Hash {
     pub const LENGTH: usize = 32;

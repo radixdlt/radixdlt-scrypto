@@ -13,10 +13,26 @@ use utils::ContextualDisplay;
 
 /// The unique identifier of a (stored) node.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
+#[cfg_attr(feature = "serde", serde(into = "String"))]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary,))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct NodeId(pub [u8; Self::LENGTH]);
+
+impl Into<String> for NodeId {
+    fn into(self) -> String {
+        self.to_hex()
+    }
+}
+
+impl TryFrom<String> for NodeId {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from_hex(&value).ok_or("Invalid node id".to_string())
+    }
+}
 
 impl NodeId {
     pub const ENTITY_ID_LENGTH: usize = 1;

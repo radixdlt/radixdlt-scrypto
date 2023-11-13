@@ -1,22 +1,35 @@
-#[cfg(feature = "radix_engine_fuzzing")]
-use arbitrary::Arbitrary;
-use sbor::rust::convert::TryFrom;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use utils::copy_u8_array;
-
+use crate::data::manifest::converter::{from_precise_decimal, to_precise_decimal};
 use crate::data::manifest::*;
 use crate::math::PreciseDecimal;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
+use sbor::rust::prelude::*;
+use sbor::*;
+use utils::copy_u8_array;
 
 pub const PRECISE_DECIMAL_SIZE: usize = PreciseDecimal::BITS / 8;
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // TODO: improve
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
+#[cfg_attr(feature = "serde", serde(into = "String"))]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestPreciseDecimal(pub [u8; PRECISE_DECIMAL_SIZE]);
+
+impl TryFrom<String> for ManifestPreciseDecimal {
+    type Error = crate::internal_prelude::ParsePreciseDecimalError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        PreciseDecimal::from_str(&value).map(|x| from_precise_decimal(&x))
+    }
+}
+
+impl Into<String> for ManifestPreciseDecimal {
+    fn into(self) -> String {
+        to_precise_decimal(&self).to_string()
+    }
+}
 
 //========
 // error

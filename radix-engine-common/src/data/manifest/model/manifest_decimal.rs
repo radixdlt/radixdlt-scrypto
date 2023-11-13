@@ -1,22 +1,35 @@
-#[cfg(feature = "radix_engine_fuzzing")]
-use arbitrary::Arbitrary;
-use sbor::rust::convert::TryFrom;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use utils::copy_u8_array;
-
+use crate::data::manifest::converter::{from_decimal, to_decimal};
 use crate::data::manifest::*;
 use crate::math::Decimal;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
+use sbor::rust::prelude::*;
+use sbor::*;
+use utils::copy_u8_array;
 
 pub const DECIMAL_SIZE: usize = Decimal::BITS / 8;
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // TODO: improve
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
+#[cfg_attr(feature = "serde", serde(into = "String"))]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestDecimal(pub [u8; DECIMAL_SIZE]);
+
+impl TryFrom<String> for ManifestDecimal {
+    type Error = crate::internal_prelude::ParseDecimalError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Decimal::from_str(&value).map(|x| from_decimal(&x))
+    }
+}
+
+impl Into<String> for ManifestDecimal {
+    fn into(self) -> String {
+        to_decimal(&self).to_string()
+    }
+}
 
 //========
 // error

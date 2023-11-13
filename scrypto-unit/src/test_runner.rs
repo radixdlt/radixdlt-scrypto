@@ -374,9 +374,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
     ) -> TestRunner<E, InMemorySubstateDatabase> {
         //---------- Override configs for resource tracker ---------------
         #[cfg(not(feature = "resource_tracker"))]
-        let kernel_trace = self.kernel_trace;
-        let execution_trace = self.execution_trace;
-        let cost_breakdown = self.cost_breakdown;
+        let trace = self.trace;
         #[cfg(feature = "resource_tracker")]
         let trace = false;
         //----------------------------------------------------------------
@@ -399,9 +397,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let bootstrap_trace = false;
 
         #[cfg(not(feature = "resource_tracker"))]
-        let kernel_trace = self.kernel_trace;
-        let execution_trace = self.execution_trace;
-        let cost_breakdown = self.cost_breakdown;
+        let trace = self.trace;
         #[cfg(feature = "resource_tracker")]
         let trace = false;
         //----------------------------------------------------------------
