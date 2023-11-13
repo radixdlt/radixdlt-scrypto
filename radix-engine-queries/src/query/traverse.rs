@@ -248,7 +248,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                         blueprint_def.interface.state.collections.iter().enumerate()
                     {
                         let (iter, partition_number) = system_db_reader
-                            .collection_iter_advanced(&node_id, ModuleId::Main, index as u8)
+                            .collection_iter_advanced(&node_id, ModuleId::Main, index as u8, None)
                             .unwrap();
 
                         for (substate_key, value) in iter {
