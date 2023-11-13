@@ -21,14 +21,25 @@ pub trait DatabaseKeyMapper {
         }
     }
 
+    /// Converts database partition's key back to ReNode ID and Partition number.
+    fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
+        (
+            Self::from_db_node_key(&partition_key.node_key),
+            Self::from_db_partition_num(partition_key.partition_num),
+        )
+    }
+
     /// Converts the given Node ID to the database Node key.
     fn to_db_node_key(node_id: &NodeId) -> DbNodeKey;
+
+    /// Converts the database Node key back to ReNode ID.
+    fn from_db_node_key(db_node_key: &DbNodeKey) -> NodeId;
 
     /// Converts the given Partition number to the database Partition number.
     fn to_db_partition_num(partition_num: PartitionNumber) -> DbPartitionNum;
 
-    /// Converts database partition's key back to ReNode ID and Partition number.
-    fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber);
+    /// Converts the database Partition number back to a Partition number.
+    fn from_db_partition_num(db_partition_num: DbPartitionNum) -> PartitionNumber;
 
     /// Converts the given [`SubstateKey`] to the database's sort key.
     /// This is a convenience method, which simply unwraps the [`SubstateKey`] and maps any specific
@@ -88,16 +99,16 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         SpreadPrefixKeyMapper::to_hash_prefixed(node_id.as_bytes())
     }
 
+    fn from_db_node_key(db_node_key: &DbNodeKey) -> NodeId {
+        NodeId(copy_u8_array(SpreadPrefixKeyMapper::from_hash_prefixed(db_node_key)))
+    }
+
     fn to_db_partition_num(partition_num: PartitionNumber) -> DbPartitionNum {
         partition_num.0
     }
 
-    fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
-        let node_id_bytes = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.node_key);
-        (
-            NodeId(copy_u8_array(node_id_bytes)),
-            PartitionNumber(partition_key.partition_num),
-        )
+    fn from_db_partition_num(db_partition_num: DbPartitionNum) -> PartitionNumber {
+        PartitionNumber(db_partition_num)
     }
 
     fn field_to_db_sort_key(fields_key: &FieldKey) -> DbSortKey {
