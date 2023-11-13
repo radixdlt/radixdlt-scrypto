@@ -189,25 +189,25 @@ impl TxnExecuteAndUpload {
                     client
                         .put_object()
                         .bucket("yulongtest")
-                        .key(format!("transaction-sbor/{hash}"))
+                        .key(format!("transaction-sbor/{hash}.bin"))
                         .body(tx_sbor.into())
                         .send(),
                     client
                         .put_object()
                         .bucket("yulongtest")
-                        .key(format!("transaction-json/{hash}"))
+                        .key(format!("transaction-json/{hash}.json"))
                         .body(tx_json.into_bytes().into())
                         .send(),
                     client
                         .put_object()
                         .bucket("yulongtest")
-                        .key(format!("receipt-sbor/{hash}"))
+                        .key(format!("receipt-sbor/{hash}.bin"))
                         .body(receipt_sbor.into())
                         .send(),
                     client
                         .put_object()
                         .bucket("yulongtest")
-                        .key(format!("receipt-json/{hash}"))
+                        .key(format!("receipt-json/{hash}.json"))
                         .body(receipt_json.into_bytes().into())
                         .send(),
                 ])
