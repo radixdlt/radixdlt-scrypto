@@ -1,7 +1,7 @@
 use crate::replay::ledger_transaction::LedgerTransaction;
 
 use super::ledger_transaction::PreparedLedgerTransaction;
-use super::ledger_transaction_execution::execute_prepared_ledger_transaction;
+use super::ledger_transaction_execution::execute_ledger_transaction;
 use super::ledger_transaction_execution::prepare_ledger_transaction;
 use super::ledger_transaction_execution::LedgerTransactionReceipt;
 use super::txn_reader::TxnReader;
@@ -40,9 +40,15 @@ pub struct TxnExecuteAndUpload {
     #[clap(short, long)]
     pub max_version: Option<u64>,
 
-    /// Trace transaction execution
+    /// Enables kernel trace
     #[clap(long)]
-    pub trace: bool,
+    pub kernel_trace: bool,
+    /// Enables execution trace
+    #[clap(long)]
+    pub execution_trace: bool,
+    /// Enables cost breakdown
+    #[clap(long)]
+    pub cost_breakdown: bool,
 }
 
 impl TxnExecuteAndUpload {
@@ -84,19 +90,23 @@ impl TxnExecuteAndUpload {
 
         // txn executor
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
-        let trace = self.trace;
+        let kernel_trace = self.kernel_trace;
+        let execution_trace = self.execution_trace;
+        let cost_breakdown = self.cost_breakdown;
         let txn_write_thread_handle = thread::spawn(move || {
             println!("Executor thread start!");
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = tx_receiver.iter();
             for tx_payload in iter {
                 let tx_prepared = prepare_ledger_transaction(&tx_payload);
-                let receipt = execute_prepared_ledger_transaction(
+                let receipt = execute_ledger_transaction(
                     &database,
                     &scrypto_vm,
                     &network,
                     &tx_prepared,
-                    trace,
+                    kernel_trace,
+                    execution_trace,
+                    cost_breakdown,
                 );
                 // TODO: better handling of error to support breakpoint
                 receipt_sender

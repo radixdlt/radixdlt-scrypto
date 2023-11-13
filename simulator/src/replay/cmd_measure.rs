@@ -39,9 +39,15 @@ pub struct TxnMeasure {
     #[clap(short, long)]
     pub max_version: Option<u64>,
 
-    /// Trace transaction execution
+    /// Enables kernel trace
     #[clap(long)]
-    pub trace: bool,
+    pub kernel_trace: bool,
+    /// Enables execution trace
+    #[clap(long)]
+    pub execution_trace: bool,
+    /// Enables cost breakdown
+    #[clap(long)]
+    pub cost_breakdown: bool,
 }
 
 impl TxnMeasure {
@@ -95,19 +101,23 @@ impl TxnMeasure {
             .map_err(Error::IOError)?;
         }
 
-        let trace = self.trace;
+        let kernel_trace = self.kernel_trace;
+        let execution_trace = self.execution_trace;
+        let cost_breakdown = self.cost_breakdown;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
             for tx_payload in iter {
                 let tx_start_time = std::time::Instant::now();
                 let prepared = prepare_ledger_transaction(&tx_payload);
-                let receipt = execute_prepared_ledger_transaction(
+                let receipt = execute_ledger_transaction(
                     &database,
                     &scrypto_vm,
                     &network,
                     &prepared,
-                    trace,
+                    kernel_trace,
+                    execution_trace,
+                    cost_breakdown,
                 );
                 let execution_cost_units = receipt
                     .fee_summary()

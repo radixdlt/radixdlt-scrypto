@@ -1,4 +1,7 @@
-use super::ledger_transaction_execution::execute_ledger_transaction;
+
+use crate::replay::ledger_transaction_execution::execute_ledger_transaction;
+use crate::replay::ledger_transaction_execution::prepare_ledger_transaction;
+
 use super::txn_reader::TxnReader;
 use super::Error;
 use clap::Parser;
@@ -35,9 +38,15 @@ pub struct TxnExecuteInMemory {
     #[clap(short, long)]
     pub breakpoints: Option<String>,
 
-    /// Trace transaction execution
+    /// Enables kernel trace
     #[clap(long)]
-    pub trace: bool,
+    pub kernel_trace: bool,
+    /// Enables execution trace
+    #[clap(long)]
+    pub execution_trace: bool,
+    /// Enables cost breakdown
+    #[clap(long)]
+    pub cost_breakdown: bool,
 }
 
 impl TxnExecuteInMemory {
@@ -85,17 +94,22 @@ impl TxnExecuteInMemory {
         // txn executor
         let substate_database = InMemorySubstateDatabase::standard();
         let mut database = HashTreeUpdatingDatabase::new(substate_database);
-        let trace = self.trace;
+        let kernel_trace = self.kernel_trace;
+        let execution_trace = self.execution_trace;
+        let cost_breakdown = self.cost_breakdown;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
             for tx_payload in iter {
+                let prepared = prepare_ledger_transaction(&tx_payload);
                 let state_updates = execute_ledger_transaction(
                     &database,
                     &scrypto_vm,
                     &network,
-                    &tx_payload,
-                    trace,
+                    &prepared,
+                    kernel_trace,
+                    execution_trace,
+                    cost_breakdown,
                 )
                 .into_state_updates();
                 let database_updates =

@@ -39,17 +39,6 @@ impl LedgerTransactionReceipt {
     }
 }
 
-pub fn execute_ledger_transaction<S: SubstateDatabase>(
-    database: &S,
-    scrypto_vm: &ScryptoVm<DefaultWasmEngine>,
-    network: &NetworkDefinition,
-    tx_payload: &[u8],
-    trace: bool,
-) -> LedgerTransactionReceipt {
-    let prepared = prepare_ledger_transaction(tx_payload);
-    execute_prepared_ledger_transaction(database, scrypto_vm, network, &prepared, trace)
-}
-
 pub fn prepare_ledger_transaction(tx_payload: &[u8]) -> PreparedLedgerTransaction {
     let transaction =
         LedgerTransaction::from_payload_bytes(&tx_payload).expect("Failed to decode transaction");
@@ -59,12 +48,14 @@ pub fn prepare_ledger_transaction(tx_payload: &[u8]) -> PreparedLedgerTransactio
     prepared
 }
 
-pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
+pub fn execute_ledger_transaction<S: SubstateDatabase>(
     database: &S,
     scrypto_vm: &ScryptoVm<DefaultWasmEngine>,
     network: &NetworkDefinition,
     prepared: &PreparedLedgerTransaction,
-    trace: bool,
+    kernel_trace: bool,
+    execution_trace: bool,
+    cost_breakdown: bool,
 ) -> LedgerTransactionReceipt {
     match &prepared.inner {
         PreparedLedgerTransactionInner::Genesis(prepared_genesis_tx) => {
@@ -82,8 +73,9 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                         },
                         &CostingParameters::default(),
                         &ExecutionConfig::for_genesis_transaction(network.clone())
-                            .with_kernel_trace(trace)
-                            .with_cost_breakdown(trace),
+                            .with_kernel_trace(kernel_trace)
+                            .with_execution_trace(execution_trace)
+                            .with_cost_breakdown(cost_breakdown),
                         &tx.get_executable(btreeset!(AuthAddresses::system_role())),
                     );
                     LedgerTransactionReceipt::Standard(receipt)
@@ -99,8 +91,9 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 },
                 &CostingParameters::default(),
                 &ExecutionConfig::for_notarized_transaction(network.clone())
-                    .with_kernel_trace(trace)
-                    .with_cost_breakdown(trace),
+                    .with_kernel_trace(kernel_trace)
+                    .with_execution_trace(execution_trace)
+                    .with_cost_breakdown(cost_breakdown),
                 &NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
                     .validate(tx.as_ref().clone())
                     .expect("Transaction validation failure")
@@ -117,8 +110,9 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 },
                 &CostingParameters::default(),
                 &ExecutionConfig::for_system_transaction(network.clone())
-                    .with_kernel_trace(trace)
-                    .with_cost_breakdown(trace),
+                    .with_kernel_trace(kernel_trace)
+                    .with_execution_trace(execution_trace)
+                    .with_cost_breakdown(cost_breakdown),
                 &tx.get_executable(),
             );
             LedgerTransactionReceipt::Standard(receipt)

@@ -51,9 +51,15 @@ pub struct TxnAllocDump {
     #[clap(short = 'r', long)]
     pub include_round_update_transaction: bool,
 
-    /// Trace transaction execution
+    /// Enables kernel trace
     #[clap(long)]
-    pub trace: bool,
+    pub kernel_trace: bool,
+    /// Enables execution trace
+    #[clap(long)]
+    pub execution_trace: bool,
+    /// Enables cost breakdown
+    #[clap(long)]
+    pub cost_breakdown: bool,
 }
 
 impl TxnAllocDump {
@@ -120,7 +126,9 @@ impl TxnAllocDump {
             self.include_generic_transaction,
             self.include_round_update_transaction,
         );
-        let trace = self.trace;
+        let kernel_trace = self.kernel_trace;
+        let execution_trace = self.execution_trace;
+        let cost_breakdown = self.cost_breakdown;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
@@ -130,12 +138,14 @@ impl TxnAllocDump {
                 INFO_ALLOC.set_enable(true);
                 INFO_ALLOC.reset_counters();
 
-                let receipt = execute_prepared_ledger_transaction(
+                let receipt = execute_ledger_transaction(
                     &database,
                     &scrypto_vm,
                     &network,
                     &prepared,
-                    trace,
+                    kernel_trace,
+                    execution_trace,
+                    cost_breakdown,
                 );
 
                 let (heap_allocations_sum, heap_current_level, heap_peak_memory) =
