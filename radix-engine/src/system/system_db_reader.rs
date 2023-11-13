@@ -336,7 +336,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     pub fn key_value_store_iter(
         &self,
         node_id: &NodeId,
-    ) -> Result<Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>, SystemReaderError> {
+        from_key: Option<&MapKey>,
+    ) -> Result<Box<dyn Iterator<Item = (MapKey, Vec<u8>)> + '_>, SystemReaderError> {
         if self.tracked.is_some() {
             panic!("substates_iter with overlay not supported.");
         }
@@ -348,9 +349,11 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
         let partition_key =
             SpreadPrefixKeyMapper::to_db_partition_key(node_id, MAIN_BASE_PARTITION);
+
+        let from_key = from_key.map(|from_key| SpreadPrefixKeyMapper::map_to_db_sort_key(from_key));
         let iter = self
             .substate_db
-            .list_entries(&partition_key)
+            .list_entries_from(&partition_key, from_key.as_ref())
             .filter_map(move |entry| {
                 let substate_key = SpreadPrefixKeyMapper::from_db_sort_key::<MapKey>(&entry.0);
                 let key = match substate_key {

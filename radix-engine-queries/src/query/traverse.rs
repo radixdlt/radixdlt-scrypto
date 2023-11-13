@@ -103,7 +103,10 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
 
         match type_info {
             TypeInfoSubstate::KeyValueStore(_) => {
-                for (key, value) in system_db_reader.key_value_store_iter(&node_id).unwrap() {
+                for (key, value) in system_db_reader
+                    .key_value_store_iter(&node_id, None)
+                    .unwrap()
+                {
                     let (_, owned_nodes, _) =
                         IndexedScryptoValue::from_slice(&value).unwrap().unpack();
                     for child_node_id in owned_nodes {
