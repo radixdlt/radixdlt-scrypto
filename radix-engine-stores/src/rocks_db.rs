@@ -57,7 +57,8 @@ impl SubstateDatabase for RocksdbSubstateStore {
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         let partition_key = partition_key.clone();
-        let from_sort_key = from_sort_key.unwrap_or(&DbSortKey(vec![]));
+        let empty_sort_key = DbSortKey(vec![]);
+        let from_sort_key = from_sort_key.unwrap_or(&empty_sort_key);
         let start_key_bytes = encode_to_rocksdb_bytes(&partition_key, from_sort_key);
         let iter = self
             .db
