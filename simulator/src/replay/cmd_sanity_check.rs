@@ -27,7 +27,7 @@ impl SanityCheck {
 
             let objects = client
                 .list_objects_v2()
-                .bucket("yulongtest")
+                .bucket("yulongtest2")
                 .prefix("transaction-json")
                 .send()
                 .await
@@ -38,7 +38,7 @@ impl SanityCheck {
 
                 let object = client
                     .get_object()
-                    .bucket("yulongtest")
+                    .bucket("yulongtest2")
                     .key(obj.key().unwrap())
                     .send()
                     .await

@@ -191,26 +191,26 @@ impl TxnExecuteAndUpload {
                     join_all(vec![
                         client
                             .put_object()
-                            .bucket("yulongtest")
+                            .bucket("yulongtest2")
                             .key(format!("transaction-sbor/{hash}.bin"))
                             .body(tx_sbor.into())
                             .send(),
                         client
                             .put_object()
-                            .bucket("yulongtest")
+                            .bucket("yulongtest2")
                             .key(format!("transaction-json/{hash}.json"))
                             .body(tx_json.into_bytes().into())
                             .content_type("application/json")
                             .send(),
                         client
                             .put_object()
-                            .bucket("yulongtest")
+                            .bucket("yulongtest2")
                             .key(format!("receipt-sbor/{hash}.bin"))
                             .body(receipt_sbor.into())
                             .send(),
                         client
                             .put_object()
-                            .bucket("yulongtest")
+                            .bucket("yulongtest2")
                             .key(format!("receipt-json/{hash}.json"))
                             .body(receipt_json.into_bytes().into())
                             .content_type("application/json")
