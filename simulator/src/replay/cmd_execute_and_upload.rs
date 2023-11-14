@@ -70,7 +70,7 @@ impl TxnExecuteAndUpload {
 
         let start = std::time::Instant::now();
         let (tx_sender, tx_receiver) = flume::bounded(10);
-        let (receipt_sender, receipt_receiver) = flume::bounded(10);
+        let (receipt_sender, receipt_receiver) = flume::bounded(200);
 
         // txn reader
         let mut txn_reader = if self.source.is_file() {
@@ -133,7 +133,7 @@ impl TxnExecuteAndUpload {
 
         // receipt uploader
         let mut txn_upload_thread_handles = vec![];
-        for _ in 0..10 {
+        for _ in 0..100 {
             let receipt_receiver = receipt_receiver.clone();
             txn_upload_thread_handles.push(thread::spawn(move || {
                 println!("Uploader thread start!");
