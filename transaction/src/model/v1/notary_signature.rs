@@ -2,11 +2,7 @@ use super::*;
 use crate::internal_prelude::*;
 
 /// Represents any natively supported signature.
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type", content = "signature")
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum SignatureV1 {
     Secp256k1(Secp256k1Signature),

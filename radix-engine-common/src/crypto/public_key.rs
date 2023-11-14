@@ -4,11 +4,7 @@ use arbitrary::Arbitrary;
 
 /// Represents any natively supported public key.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type", content = "public_key")
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Categorize, Encode, Decode, BasicDescribe)]
 pub enum PublicKey {
     Secp256k1(Secp256k1PublicKey),
