@@ -132,115 +132,121 @@ impl TxnExecuteAndUpload {
         });
 
         // receipt uploader
-        let txn_upload_thread_handle = thread::spawn(move || {
-            println!("Uploader thread start!");
+        let mut txn_upload_thread_handles = vec![];
+        for _ in 0..10 {
+            let receipt_receiver = receipt_receiver.clone();
+            txn_upload_thread_handles.push(thread::spawn(move || {
+                println!("Uploader thread start!");
 
-            async fn set_up_s3_client() -> aws_sdk_s3::Client {
-                let config = aws_config::from_env()
-                    .region(
-                        ProfileFileRegionProvider::builder()
-                            .profile_name("sandbox-cli")
-                            .build(),
-                    )
-                    .credentials_provider(
-                        ProfileFileCredentialsProvider::builder()
-                            .profile_name("sandbox-cli")
-                            .build(),
-                    )
-                    .load()
+                async fn set_up_s3_client() -> aws_sdk_s3::Client {
+                    let config = aws_config::from_env()
+                        .region(
+                            ProfileFileRegionProvider::builder()
+                                .profile_name("sandbox-cli")
+                                .build(),
+                        )
+                        .credentials_provider(
+                            ProfileFileCredentialsProvider::builder()
+                                .profile_name("sandbox-cli")
+                                .build(),
+                        )
+                        .load()
+                        .await;
+                    aws_sdk_s3::Client::new(&config)
+                }
+
+                async fn upload_transaction(
+                    client: &aws_sdk_s3::Client,
+                    payload: Vec<u8>,
+                    prepared: PreparedLedgerTransaction,
+                    receipt: LedgerTransactionReceipt,
+                ) {
+                    use sbor::representations::*;
+
+                    let hash = prepared.summary.hash.to_string();
+
+                    // transaction
+                    let tx = LedgerTransaction::from_payload_bytes(&payload).unwrap();
+                    let tx_sbor = payload;
+                    let tx_json = serde_json::to_string(&tx).unwrap();
+
+                    // receipt
+                    let (type_id, schema) = generate_full_schema_from_single_type::<
+                        LedgerTransactionReceipt,
+                        ScryptoCustomSchema,
+                    >();
+                    let receipt_sbor = scrypto_encode(&receipt).unwrap();
+                    let receipt_slice =
+                        ScryptoRawPayload::new_from_valid_slice_with_checks(&receipt_sbor).unwrap();
+                    let receipt_serializable =
+                        receipt_slice.serializable(SerializationParameters::WithSchema {
+                            mode: SerializationMode::Programmatic,
+                            schema: schema.v1(),
+                            custom_context: ScryptoValueDisplayContext::no_context(),
+                            type_id,
+                            depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
+                        });
+                    let receipt_json = serde_json::to_string(&receipt_serializable).unwrap();
+
+                    join_all(vec![
+                        client
+                            .put_object()
+                            .bucket("yulongtest")
+                            .key(format!("transaction-sbor/{hash}.bin"))
+                            .body(tx_sbor.into())
+                            .send(),
+                        client
+                            .put_object()
+                            .bucket("yulongtest")
+                            .key(format!("transaction-json/{hash}.json"))
+                            .body(tx_json.into_bytes().into())
+                            .content_type("application/json")
+                            .send(),
+                        client
+                            .put_object()
+                            .bucket("yulongtest")
+                            .key(format!("receipt-sbor/{hash}.bin"))
+                            .body(receipt_sbor.into())
+                            .send(),
+                        client
+                            .put_object()
+                            .bucket("yulongtest")
+                            .key(format!("receipt-json/{hash}.json"))
+                            .body(receipt_json.into_bytes().into())
+                            .content_type("application/json")
+                            .send(),
+                    ])
                     .await;
-                aws_sdk_s3::Client::new(&config)
-            }
+                }
 
-            async fn upload_transaction(
-                client: &aws_sdk_s3::Client,
-                payload: Vec<u8>,
-                prepared: PreparedLedgerTransaction,
-                receipt: LedgerTransactionReceipt,
-            ) {
-                use sbor::representations::*;
-
-                let hash = prepared.summary.hash.to_string();
-
-                // transaction
-                let tx = LedgerTransaction::from_payload_bytes(&payload).unwrap();
-                let tx_sbor = payload;
-                let tx_json = serde_json::to_string(&tx).unwrap();
-
-                // receipt
-                let (type_id, schema) = generate_full_schema_from_single_type::<
-                    LedgerTransactionReceipt,
-                    ScryptoCustomSchema,
-                >();
-                let receipt_sbor = scrypto_encode(&receipt).unwrap();
-                let receipt_slice =
-                    ScryptoRawPayload::new_from_valid_slice_with_checks(&receipt_sbor).unwrap();
-                let receipt_serializable =
-                    receipt_slice.serializable(SerializationParameters::WithSchema {
-                        mode: SerializationMode::Programmatic,
-                        schema: schema.v1(),
-                        custom_context: ScryptoValueDisplayContext::no_context(),
-                        type_id,
-                        depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
-                    });
-                let receipt_json = serde_json::to_string(&receipt_serializable).unwrap();
-
-                join_all(vec![
-                    client
-                        .put_object()
-                        .bucket("yulongtest")
-                        .key(format!("transaction-sbor/{hash}.bin"))
-                        .body(tx_sbor.into())
-                        .send(),
-                    client
-                        .put_object()
-                        .bucket("yulongtest")
-                        .key(format!("transaction-json/{hash}.json"))
-                        .body(tx_json.into_bytes().into())
-                        .content_type("application/json")
-                        .send(),
-                    client
-                        .put_object()
-                        .bucket("yulongtest")
-                        .key(format!("receipt-sbor/{hash}.bin"))
-                        .body(receipt_sbor.into())
-                        .send(),
-                    client
-                        .put_object()
-                        .bucket("yulongtest")
-                        .key(format!("receipt-json/{hash}.json"))
-                        .body(receipt_json.into_bytes().into())
-                        .content_type("application/json")
-                        .send(),
-                ])
-                .await;
-            }
-
-            let client = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-                .block_on(set_up_s3_client());
-
-            // TODO: multi-threading
-            let iter = receipt_receiver.iter();
-            for (tx_payload, tx_prepared, receipt) in iter {
-                tokio::runtime::Builder::new_current_thread()
+                let client = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                     .unwrap()
-                    .block_on(upload_transaction(
-                        &client,
-                        tx_payload,
-                        tx_prepared,
-                        receipt,
-                    ));
-            }
-        });
+                    .block_on(set_up_s3_client());
+
+                // TODO: multi-threading
+                let iter = receipt_receiver.iter();
+                for (tx_payload, tx_prepared, receipt) in iter {
+                    tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .unwrap()
+                        .block_on(upload_transaction(
+                            &client,
+                            tx_payload,
+                            tx_prepared,
+                            receipt,
+                        ));
+                }
+            }));
+        }
 
         txn_read_thread_handle.join().unwrap();
         txn_write_thread_handle.join().unwrap();
-        txn_upload_thread_handle.join().unwrap();
+        for txn_upload_thread_handle in txn_upload_thread_handles {
+            txn_upload_thread_handle.join().unwrap();
+        }
 
         Ok(())
     }
