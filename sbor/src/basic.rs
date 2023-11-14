@@ -3,19 +3,11 @@ use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
 
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type") // See https://serde.rs/enum-representations.html
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomValueKind {}
 
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type") // See https://serde.rs/enum-representations.html
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomValue {}
 

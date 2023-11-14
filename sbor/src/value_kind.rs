@@ -4,11 +4,7 @@ use crate::*;
 use arbitrary::Arbitrary;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type") // See https://serde.rs/enum-representations.html
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValueKind<X: CustomValueKind> {
     Bool,

@@ -13,11 +13,7 @@ use arbitrary::Arbitrary;
 
 /// Represents any value conforming to the SBOR value model.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type") // See https://serde.rs/enum-representations.html
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value<X: CustomValueKind, Y: CustomValue<X>> {
     Bool {

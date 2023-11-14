@@ -13,11 +13,7 @@ pub const MANIFEST_VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
 pub const MANIFEST_VALUE_KIND_ADDRESS_RESERVATION: u8 = 0x88;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum ManifestCustomValueKind {
     Address,

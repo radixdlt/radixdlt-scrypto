@@ -2,11 +2,7 @@ use super::*;
 use crate::internal_prelude::*;
 
 /// Represents any natively supported signature, including public key.
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
 pub enum SignatureWithPublicKeyV1 {
     Secp256k1 {
