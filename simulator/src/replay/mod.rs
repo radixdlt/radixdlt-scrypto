@@ -8,6 +8,7 @@ mod cmd_execute_and_upload;
 mod cmd_execute_in_memory;
 mod cmd_measure;
 mod cmd_prepare;
+mod cmd_sanity_check;
 mod cmd_sync;
 mod error;
 
@@ -17,6 +18,7 @@ pub use cmd_execute_and_upload::*;
 pub use cmd_execute_in_memory::*;
 pub use cmd_measure::*;
 pub use cmd_prepare::*;
+pub use cmd_sanity_check::*;
 pub use cmd_sync::*;
 pub use error::*;
 
@@ -39,6 +41,7 @@ pub enum Command {
     Sync(TxnSync),
     Measure(TxnMeasure),
     AllocDump(TxnAllocDump),
+    SanityCheck(SanityCheck),
 }
 
 pub fn run() -> Result<(), Error> {
@@ -52,5 +55,6 @@ pub fn run() -> Result<(), Error> {
         Command::Sync(cmd) => cmd.sync(),
         Command::Measure(cmd) => cmd.run(),
         Command::AllocDump(cmd) => cmd.run(),
+        Command::SanityCheck(cmd) => cmd.run(),
     }
 }
