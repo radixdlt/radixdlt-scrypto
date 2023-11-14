@@ -13,10 +13,12 @@ use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::ops::Neg;
 use sbor::rust::vec::Vec;
+use transaction::model::TransactionIntentHash;
 use utils::prelude::IndexMap;
 use utils::{btreeset, indexmap};
 
 pub fn reconcile_resource_state_and_events<'a, S: SubstateDatabase>(
+    hash: &TransactionIntentHash,
     summary: &StateUpdateSummary,
     events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
     system_db: SystemDatabaseReader<'a, S>,
@@ -35,6 +37,7 @@ pub fn reconcile_resource_state_and_events<'a, S: SubstateDatabase>(
     if resource_changes_from_state.ne(&resource_changes_from_vault_events)
         || resource_changes_from_vault_events.ne(&resource_changes_from_resman_events)
     {
+        println!("{:?}", hash);
         panic!("Txn Resource Reconciliation failed:\nState Changes: {:#?}\nResource Event Changes: {:#?}\nVault Event Changes: {:#?}",
                resource_changes_from_state,
                resource_changes_from_resman_events,

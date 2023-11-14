@@ -418,6 +418,7 @@ where
                         // Resource reconciliation does not currently work in preview mode
                         if executable.costing_parameters().free_credit_in_xrd.is_zero() {
                             reconcile_resource_state_and_events(
+                                executable.intent_hash(),
                                 &state_update_summary,
                                 &application_events,
                                 system_reader,
