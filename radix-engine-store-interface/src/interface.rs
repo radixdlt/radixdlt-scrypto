@@ -140,12 +140,26 @@ pub trait SubstateDatabase {
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue>;
 
+    /// Iterates over all entries of the given partition (starting either from the beginning, or
+    /// from the given [`DbSortKey`]), in a lexicographical order (ascending) of the [`DbSortKey`]s.
+    /// Note: If the exact given starting key does not exist, the iteration starts with its
+    /// immediate successor.
+    fn list_entries_from(
+        &self,
+        partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_>;
+
     /// Iterates over all entries of the given partition, in a lexicographical order (ascending)
     /// of the [`DbSortKey`]s.
+    /// This is a convenience method, equivalent to [`Self::list_entries_from()`] with the starting
+    /// key set to [`None`].
     fn list_entries(
         &self,
         partition_key: &DbPartitionKey,
-    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_>;
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        self.list_entries_from(partition_key, None)
+    }
 }
 
 /// A write interface between Track and a database vendor.
