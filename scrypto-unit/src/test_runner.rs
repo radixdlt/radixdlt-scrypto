@@ -553,6 +553,12 @@ pub struct TestRunnerSnapshot {
     skip_receipt_check: bool,
 }
 
+impl TestRunnerSnapshot {
+    pub fn get_database(self) -> InMemorySubstateDatabase {
+        self.database
+    }
+}
+
 impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
     pub fn create_snapshot(&self) -> TestRunnerSnapshot {
         TestRunnerSnapshot {
