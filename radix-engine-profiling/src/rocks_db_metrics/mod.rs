@@ -102,11 +102,12 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase
         }
     }
 
-    fn list_entries(
+    fn list_entries_from(
         &self,
         partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        self.db.list_entries(partition_key)
+        self.db.list_entries_from(partition_key, from_sort_key)
     }
 }
 

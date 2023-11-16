@@ -687,37 +687,43 @@ impl SubstateDatabase for FlashedSubstateDatabase {
             })
     }
 
-    fn list_entries(
+    fn list_entries_from(
         &self,
         partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         let DbPartitionKey {
             node_key,
             partition_num,
         } = partition_key;
-        Box::new(
-            self.flash_updates
-                .node_updates
-                .get(node_key)
-                .and_then(|node_updates| node_updates.partition_updates.get(partition_num))
-                .into_iter()
-                .flat_map(|partition_updates| {
-                    let effective_entries = match partition_updates {
-                        PartitionDatabaseUpdates::Delta { substate_updates } => {
-                            Box::new(substate_updates.iter().filter_map(|(sort_key, update)| {
-                                match update {
-                                    DatabaseUpdate::Set(value) => Some((sort_key, value)),
-                                    DatabaseUpdate::Delete => None,
-                                }
-                            })) as Box<dyn Iterator<Item = _>>
-                        }
-                        PartitionDatabaseUpdates::Reset {
-                            new_substate_values,
-                        } => Box::new(new_substate_values.iter()),
-                    };
-                    effective_entries.map(|(sort_key, value)| (sort_key.clone(), value.clone()))
-                }),
-        )
+        let mut entries = self
+            .flash_updates
+            .node_updates
+            .get(node_key)
+            .and_then(|node_updates| node_updates.partition_updates.get(partition_num))
+            .into_iter()
+            .flat_map(|partition_updates| {
+                let effective_entries = match partition_updates {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => {
+                        Box::new(substate_updates.iter().filter_map(|(sort_key, update)| {
+                            match update {
+                                DatabaseUpdate::Set(value) => Some((sort_key, value)),
+                                DatabaseUpdate::Delete => None,
+                            }
+                        })) as Box<dyn Iterator<Item = _>>
+                    }
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => Box::new(new_substate_values.iter()),
+                };
+                effective_entries.map(|(sort_key, value)| (sort_key.clone(), value.clone()))
+            })
+            // It is more performant to filter before sorting (than sort + skip-while)
+            .filter(|(sort_key, _value)| Some(sort_key) >= from_sort_key)
+            .collect::<Vec<_>>();
+        // The method's contract requires the results to be in the key's order (ascending):
+        entries.sort_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key));
+        Box::new(entries.into_iter())
     }
 }
 
