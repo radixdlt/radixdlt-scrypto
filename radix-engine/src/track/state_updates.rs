@@ -18,7 +18,7 @@ use sbor::rust::{cmp::*, iter::*, mem};
 /// fields for details), since the end users care about it. Please note that this means multiple
 /// instances of [`StateUpdates`] can represent the same transform of state store (i.e. differing
 /// only by order of some operations), and hence it is not 100% "canonical form".
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, Default)]
 pub struct StateUpdates {
     /// Indexed Node-level updates, captured in the order of first update operation to a Node.
     pub by_node: IndexMap<NodeId, NodeStateUpdates>,
@@ -42,7 +42,7 @@ impl StateUpdates {
 /// A description of all updates that happened to a state of a single Node.
 /// Note: currently, we do not support any Node-wide changes (e.g. deleting entire Node); however,
 /// we use an enum for potential future development.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum NodeStateUpdates {
     /// A "delta" update to a Node, touching only selected Partitions.
     /// Contains indexed Partition-level updates, captured in the order of first update operation to
@@ -72,7 +72,7 @@ impl NodeStateUpdates {
 }
 
 /// A description of all updates that happened to a state of a single Partition.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum PartitionStateUpdates {
     /// A "delta" update to a Partition, touching only selected Substates.
     /// Contains indexed Substate-level updates, captured in the order of first update operation to
@@ -129,7 +129,7 @@ impl PartitionStateUpdates {
 }
 
 /// A description of a batch update affecting an entire Partition.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum BatchPartitionStateUpdate {
     /// A reset, dropping all Substates of a partition and replacing them with a new set.
     /// Contains indexed new Substate values, captured in the order of creation of a Substate.
