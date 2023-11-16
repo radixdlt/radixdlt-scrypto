@@ -40,4 +40,3 @@ define_wrapped_hash!(FlashTransactionHash);
 pub trait HasFlashTransactionHash {
     fn flash_transaction_hash(&self) -> FlashTransactionHash;
 }
-
