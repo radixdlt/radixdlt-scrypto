@@ -90,19 +90,90 @@ fn test_stake_reconcilation() {
     let mut changed_substates_count = 0;
     let mut same_substates_count = 0;
 
+    let expected_changed_substates: HashMap<(usize, usize), Hash> = HashMap::from([
+        (
+            (1, 0),
+            Hash::from_str("dde1676c6ba8cb78fb6b6be0727c355df7c0076d3a22e0a3da5b03d520c57e66")
+                .unwrap(),
+        ),
+        (
+            (44, 2),
+            Hash::from_str("e74d0fc250851cb2b81810507b529e2153fca074b7825994fe94cdc81f80dd3d")
+                .unwrap(),
+        ),
+        (
+            (58, 0),
+            Hash::from_str("f9be16af54ca0b0ffa27cc4491c2b13819bc990d8f282e48817af73bf9d9aa13")
+                .unwrap(),
+        ),
+        (
+            (117, 1),
+            Hash::from_str("f9be16af54ca0b0ffa27cc4491c2b13819bc990d8f282e48817af73bf9d9aa13")
+                .unwrap(),
+        ),
+        (
+            (233, 0),
+            Hash::from_str("147feb57af0299f21d85b496c99c8292676c51307f2a45713355f4bc14ef7c8b")
+                .unwrap(),
+        ),
+        (
+            (263, 0),
+            Hash::from_str("f96ad299fcfb0c919c9faa48d342318e6ddf7da6db1d6a489b51442affdff33d")
+                .unwrap(),
+        ),
+        (
+            (265, 0),
+            Hash::from_str("f26dfee9e3f5c299bcb2a8acbd5a12421cb2dd2b2bc1b62fc6fed6a7ce82487e")
+                .unwrap(),
+        ),
+    ]);
+
+    let expected_new_substates: HashMap<(usize, usize), Hash> = HashMap::from([
+        (
+            (45, 0),
+            Hash::from_str("997ed5b983cc38b9984e6ab1d58ea7cbd291f6c033f73fc7aae69b01647228f3")
+                .unwrap(),
+        ),
+        (
+            (151, 0),
+            Hash::from_str("b086f3e0039193e36f6d9bdd1ad6ee4e0f8f487521167fda853fab7f553ebfb4")
+                .unwrap(),
+        ),
+        (
+            (152, 0),
+            Hash::from_str("f9be16af54ca0b0ffa27cc4491c2b13819bc990d8f282e48817af73bf9d9aa13")
+                .unwrap(),
+        ),
+        (
+            (214, 1),
+            Hash::from_str("02e97ec6d458301ed5dce097bb650c97a6a22b653600183c828ec58ddd476072")
+                .unwrap(),
+        ),
+    ]);
+
     for (idx, key) in keys.enumerate() {
         let partition_entries = test_runner.substate_db().list_entries(&key);
         for (sidx, (sort_key, value)) in partition_entries.enumerate() {
-            if let Some(value_hash) = old_values_map.get(&(key.clone(), sort_key)) {
-                if value_hash == &hash(value) {
+            let value_hash = hash(value);
+
+            if let Some(old_value_hash) = old_values_map.get(&(key.clone(), sort_key)) {
+                if old_value_hash == &value_hash {
                     same_substates_count += 1;
                 } else {
                     changed_substates_count += 1;
                     println!("Partition({}) Substate({}) changed", idx, sidx);
+                    assert_eq!(
+                        &value_hash,
+                        expected_changed_substates.get(&(idx, sidx)).unwrap()
+                    );
                 }
             } else {
                 new_substates_count += 1;
                 println!("Partition({}) Substate({}) new", idx, sidx);
+                assert_eq!(
+                    &value_hash,
+                    expected_new_substates.get(&(idx, sidx)).unwrap()
+                );
             }
         }
     }
