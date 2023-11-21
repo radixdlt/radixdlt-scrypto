@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use utils::copy_u8_array;
 
 pub struct RocksdbSubstateStore {
-    db: DBWithThreadMode<SingleThreaded>,
+    pub db: DBWithThreadMode<SingleThreaded>,
 }
 
 impl RocksdbSubstateStore {
