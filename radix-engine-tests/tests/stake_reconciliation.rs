@@ -4,7 +4,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn test_stake_reconcilation() {
+fn test_stake_reconciliation() {
     // Arrange
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let mut test_runner = TestRunnerBuilder::new().build();
