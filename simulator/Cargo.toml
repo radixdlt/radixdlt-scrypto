@@ -48,6 +48,10 @@ serde = { version = "1.0.137", features = ["derive"] }
 serde_json = { version = "1.0.87" }
 serde_dynamo = { version = "4", features = ["aws-sdk-dynamodb+0_35"] }
 
+# RDS
+diesel = { version = "1.4", features = ["postgres"] }
+
+
 [[bin]]
 name = "resim"
 path = "src/bin/resim.rs"
