@@ -149,6 +149,27 @@ macro_rules! parse_basic_type {
     };
 }
 
+macro_rules! matches_bucket {
+    ($type_validation:expr) => {
+        matches!(
+            $type_validation,
+            TypeValidation::Custom(
+                ScryptoCustomTypeValidation::Own(OwnValidation::IsBucket)
+            )
+        )
+    };
+    ($type_validation:expr, $bucket_blueprint:expr) => {
+        matches!(
+            $type_validation,
+            TypeValidation::Custom(
+                ScryptoCustomTypeValidation::Own(
+                    OwnValidation::IsTypedObject(Some(RESOURCE_PACKAGE), blueprint)
+                )
+            ) if blueprint == $bucket_blueprint
+        )
+    };
+}
+
 fn build_call_argument<'a>(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
@@ -286,10 +307,9 @@ fn build_call_argument<'a>(
             ))
         }
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own)
-            if matches!(
-                type_validation,
-                TypeValidation::Custom(ScryptoCustomTypeValidation::Own(OwnValidation::IsBucket))
-            ) =>
+            if matches_bucket!(type_validation)
+                || matches_bucket!(type_validation, FUNGIBLE_BUCKET_BLUEPRINT)
+                || matches_bucket!(type_validation, NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
         {
             let resource_specifier = parse_resource_specifier(&argument, address_bech32_decoder)
                 .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
