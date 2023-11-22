@@ -22,9 +22,9 @@ macro_rules! replace_variables {
 #[test]
 fn test_allocate_address_and_call_it() {
     run_manifest(|account_address, address_bech32_encoder| {
-        let code_blob = include_bytes!("../../assets/radiswap.wasm").to_vec();
+        let code_blob = include_bytes!("../../../assets/radiswap.wasm").to_vec();
         let manifest = replace_variables!(
-            include_str!("../../transaction/examples/address_allocation/allocate_address.rtm"),
+            include_str!("../../../transaction/examples/address_allocation/allocate_address.rtm"),
             account_address = account_address.display(address_bech32_encoder),
             package_package_address = PACKAGE_PACKAGE.display(address_bech32_encoder),
             code_blob_hash = hash(&code_blob)
@@ -63,7 +63,7 @@ fn multi_account_fund_transfer_succeeds() {
         |this_account_address, other_accounts, address_bech32_encoder| {
             let manifest = replace_variables!(
                 include_str!(
-                    "../../transaction/examples/account/multi_account_resource_transfer.rtm"
+                    "../../../transaction/examples/account/multi_account_resource_transfer.rtm"
                 ),
                 xrd_resource_address = XRD.display(address_bech32_encoder),
                 this_account_address = address_bech32_encoder
@@ -84,7 +84,7 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
     run_manifest(|account_address, address_bech32_encoder| {
         let manifest = replace_variables!(
             include_str!(
-                "../../transaction/examples/resources/creation/fungible/no_initial_supply.rtm"
+                "../../../transaction/examples/resources/creation/fungible/no_initial_supply.rtm"
             ),
             account_address = account_address.display(address_bech32_encoder)
         );
@@ -101,7 +101,7 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
 
         let manifest = replace_variables!(
             include_str!(
-                "../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
+                "../../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
             ),
             initial_supply = initial_supply,
             account_address = account_address.display(address_bech32_encoder)
@@ -119,7 +119,7 @@ fn creating_a_fungible_resource_with_max_initial_supply_succeeds() {
 
         let manifest = replace_variables!(
             include_str!(
-                "../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
+                "../../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
             ),
             initial_supply = initial_supply,
             account_address = account_address.display(address_bech32_encoder)
@@ -137,7 +137,7 @@ fn creating_a_fungible_resource_with_exceeded_initial_supply_fails() {
 
         let manifest = replace_variables!(
             include_str!(
-                "../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
+                "../../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
             ),
             initial_supply = initial_supply,
             account_address = account_address.display(address_bech32_encoder)
@@ -153,7 +153,7 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
     run_manifest(|account_address, address_bech32_encoder| {
         let manifest = replace_variables!(
             include_str!(
-                "../../transaction/examples/resources/creation/non_fungible/no_initial_supply.rtm"
+                "../../../transaction/examples/resources/creation/non_fungible/no_initial_supply.rtm"
             ),
             account_address = account_address.display(address_bech32_encoder)
         );
@@ -167,7 +167,7 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
 fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
     run_manifest(|account_address, address_bech32_encoder| {
         let manifest = replace_variables!(
-            include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
+            include_str!("../../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
             account_address =
                 account_address.display(address_bech32_encoder),
                 non_fungible_local_id = "#1#"
@@ -181,10 +181,10 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 #[test]
 fn publish_package_succeeds() {
     run_manifest(|account_address, address_bech32_encoder| {
-        let code_blob = include_bytes!("../../assets/faucet.wasm").to_vec();
+        let code_blob = include_bytes!("../../../assets/faucet.wasm").to_vec();
 
         let manifest = replace_variables!(
-            include_str!("../../transaction/examples/package/publish.rtm"),
+            include_str!("../../../transaction/examples/package/publish.rtm"),
             code_blob_hash = hash(&code_blob),
             account_address = account_address.display(address_bech32_encoder),
             auth_badge_resource_address = XRD.display(address_bech32_encoder),
@@ -207,7 +207,7 @@ fn minting_of_fungible_resource_succeeds() {
             let mint_amount = dec!("800");
 
             let manifest = replace_variables!(
-                include_str!("../../transaction/examples/resources/mint/fungible/mint.rtm"),
+                include_str!("../../../transaction/examples/resources/mint/fungible/mint.rtm"),
                 account_address = account_address.display(address_bech32_encoder),
                 mintable_fungible_resource_address =
                     mintable_fungible_resource_address.display(address_bech32_encoder),
@@ -233,7 +233,7 @@ fn minting_of_fungible_resource_max_mint_amount_succeeds() {
             let mint_amount = Decimal(I192::from(2).pow(152));
 
             let manifest = replace_variables!(
-                include_str!("../../transaction/examples/resources/mint/fungible/mint.rtm"),
+                include_str!("../../../transaction/examples/resources/mint/fungible/mint.rtm"),
                 account_address = account_address.display(address_bech32_encoder),
                 mintable_fungible_resource_address =
                     mintable_fungible_resource_address.display(address_bech32_encoder),
@@ -259,7 +259,7 @@ fn minting_of_fungible_resource_exceed_max_mint_amount_fails() {
             let mint_amount = Decimal(I192::from(2).pow(152) + I192::ONE);
 
             let manifest = replace_variables!(
-                include_str!("../../transaction/examples/resources/mint/fungible/mint.rtm"),
+                include_str!("../../../transaction/examples/resources/mint/fungible/mint.rtm"),
                 account_address = account_address.display(address_bech32_encoder),
                 mintable_fungible_resource_address =
                     mintable_fungible_resource_address.display(address_bech32_encoder),
@@ -285,7 +285,7 @@ fn minting_of_non_fungible_resource_succeeds() {
          mintable_non_fungible_resource_address,
          address_bech32_encoder| {
             let manifest = replace_variables!(
-                include_str!("../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
+                include_str!("../../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
                 account_address = account_address.display(address_bech32_encoder),
                 mintable_non_fungible_resource_address =
                     mintable_non_fungible_resource_address.display(address_bech32_encoder),
@@ -308,7 +308,7 @@ fn changing_default_deposit_rule_succeeds() {
          mintable_resource_address,
          address_bech32_encoder| {
             let manifest = replace_variables!(
-                include_str!("../../transaction/examples/account/deposit_modes.rtm"),
+                include_str!("../../../transaction/examples/account/deposit_modes.rtm"),
                 account_address = account_address.display(address_bech32_encoder),
                 first_resource_address = mintable_resource_address.display(address_bech32_encoder),
                 second_resource_address =
