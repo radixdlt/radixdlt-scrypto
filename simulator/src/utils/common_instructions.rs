@@ -390,6 +390,7 @@ fn build_call_argument<'a>(
 mod test {
     use super::*;
     use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
+    use transaction::model::InstructionV1;
 
     #[test]
     pub fn parsing_of_u8_succeeds() {
@@ -747,13 +748,103 @@ mod test {
         )
     }
 
-    pub fn build_and_decode_arg<S: AsRef<str>, T: ManifestDecode>(
+    #[test]
+    pub fn parsing_of_fungible_bucket_succeeds() {
+        let amount = 2000;
+        let arg = format!(
+            "{}:{}",
+            AddressBech32Encoder::for_simulator()
+                .encode(XRD.as_ref())
+                .unwrap(),
+            amount
+        );
+
+        let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own);
+        let type_validations = vec![
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(OwnValidation::IsBucket)),
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(
+                    Some(RESOURCE_PACKAGE),
+                    FUNGIBLE_BUCKET_BLUEPRINT.to_string(),
+                ),
+            )),
+        ];
+
+        for type_validation in type_validations {
+            // Act
+            let (builder, parsed_arg): (ManifestBuilder, ManifestBucket) =
+                build_and_decode(&arg, type_kind.clone(), type_validation)
+                    .expect("Failed to parse arg");
+            let instructions = builder.build().instructions;
+
+            // Assert
+            assert_eq!(
+                instructions.get(0).unwrap(),
+                &InstructionV1::TakeFromWorktop {
+                    resource_address: XRD,
+                    amount: amount.into()
+                }
+            );
+            assert_eq!(parsed_arg, ManifestBucket(0u32));
+        }
+    }
+
+    #[test]
+    pub fn parsing_of_non_fungible_bucket_succeeds() {
+        // Arrange
+        let local_ids: [u64; 3] = [12, 600, 123];
+        let resource_address = resource_address(EntityType::GlobalNonFungibleResourceManager, 5);
+
+        let arg = format!(
+            "{}:#{}#,#{}#,#{}#",
+            AddressBech32Encoder::for_simulator()
+                .encode(resource_address.as_ref())
+                .unwrap(),
+            local_ids[0],
+            local_ids[1],
+            local_ids[2]
+        );
+
+        let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own);
+        let type_validations = vec![
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(OwnValidation::IsBucket)),
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(
+                    Some(RESOURCE_PACKAGE),
+                    NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string(),
+                ),
+            )),
+        ];
+
+        for type_validation in type_validations {
+            // Act
+            let (builder, parsed_arg): (ManifestBuilder, ManifestBucket) =
+                build_and_decode(&arg, type_kind.clone(), type_validation)
+                    .expect("Failed to parse arg");
+            let instructions = builder.build().instructions;
+            let ids = local_ids
+                .map(|id| NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(id)))
+                .to_vec();
+
+            // Assert
+            assert_eq!(
+                instructions.get(0).unwrap(),
+                &InstructionV1::TakeNonFungiblesFromWorktop {
+                    resource_address,
+                    ids
+                }
+            );
+            assert_eq!(parsed_arg, ManifestBucket(0u32));
+        }
+    }
+
+    pub fn build_and_decode<S: AsRef<str>, T: ManifestDecode>(
         arg: S,
         type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
-    ) -> Result<T, BuildAndDecodeArgError> {
+    ) -> Result<(ManifestBuilder, T), BuildAndDecodeArgError> {
         let builder = ManifestBuilder::new();
-        let (_, built_arg) = build_call_argument(
+        let (builder, built_arg) = build_call_argument(
             builder,
             &AddressBech32Decoder::for_simulator(),
             &type_kind,
@@ -765,7 +856,18 @@ mod test {
 
         let bytes = manifest_encode(&built_arg).map_err(BuildAndDecodeArgError::EncodeError)?;
 
-        manifest_decode(&bytes).map_err(BuildAndDecodeArgError::DecodeError)
+        Ok((
+            builder,
+            manifest_decode(&bytes).map_err(BuildAndDecodeArgError::DecodeError)?,
+        ))
+    }
+
+    pub fn build_and_decode_arg<S: AsRef<str>, T: ManifestDecode>(
+        arg: S,
+        type_kind: ScryptoTypeKind<LocalTypeId>,
+        type_validation: TypeValidation<ScryptoCustomTypeValidation>,
+    ) -> Result<T, BuildAndDecodeArgError> {
+        build_and_decode(arg, type_kind, type_validation).map(|(_, arg)| arg)
     }
 
     #[derive(Debug, Clone)]
