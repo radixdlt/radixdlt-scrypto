@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -105,7 +103,7 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> Transact
     let mut test_runner = TestRunnerBuilder::new().build();
 
     let code = wat2wasm(
-        &include_str!("wasm/deep_sbor_response.wat").replace("${depth}", &depth.to_string()),
+        &include_str!("../../assets/wasm/deep_sbor_response.wat").replace("${depth}", &depth.to_string()),
     );
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),

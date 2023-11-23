@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
     OpenSubstateError, ProcessSubstateError, TakeNodeError, WriteSubstateError,

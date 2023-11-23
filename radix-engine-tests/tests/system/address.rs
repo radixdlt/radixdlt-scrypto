@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::errors::{KernelError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -328,7 +326,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
 
 /// Package actor badge will be different depending on whether the callee is global or internal
 mod package_actor_badge {
-    use crate::{test_assert, AssertAgainst};
+    use super::{test_assert, AssertAgainst};
 
     #[test]
     fn assert_self_package_in_global_callee_should_fail() {
@@ -353,7 +351,7 @@ mod package_actor_badge {
 
 /// Global caller results should be the same whether the callee is global or internal
 mod global_caller_actor_badge {
-    use crate::{test_assert, AssertAgainst};
+    use super::{test_assert, AssertAgainst};
 
     #[test]
     fn assert_self_blueprint_global_caller_in_global_callee_should_fail() {

@@ -1,7 +1,5 @@
-mod package_loader;
-
 use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::attached_modules::role_assignment::RoleAssignmentError;

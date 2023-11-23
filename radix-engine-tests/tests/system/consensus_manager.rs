@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::blueprints::consensus_manager::UnstakeData;
 use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,

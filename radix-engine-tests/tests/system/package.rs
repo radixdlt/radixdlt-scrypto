@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::blueprints::package::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
@@ -123,7 +121,7 @@ fn test_basic_package() {
     let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
-    let code = wat2wasm(include_str!("wasm/basic_package.wat"));
+    let code = wat2wasm(include_str!("../../assets/wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
@@ -184,7 +182,7 @@ fn test_basic_package_missing_export() {
         },
     );
     // Act
-    let code = wat2wasm(include_str!("wasm/basic_package.wat"));
+    let code = wat2wasm(include_str!("../../assets/wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(

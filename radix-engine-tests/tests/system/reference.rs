@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::errors::SystemError;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::{errors::RuntimeError, types::*};

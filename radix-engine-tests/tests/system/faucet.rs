@@ -1,5 +1,3 @@
-mod package_loader;
-
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;

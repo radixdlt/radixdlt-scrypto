@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use scrypto_unit::*;

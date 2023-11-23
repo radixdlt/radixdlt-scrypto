@@ -7,3 +7,7 @@ mod application {
 mod blueprints {
     automod::dir!("tests/blueprints");
 }
+
+mod system {
+    automod::dir!("tests/system");
+}

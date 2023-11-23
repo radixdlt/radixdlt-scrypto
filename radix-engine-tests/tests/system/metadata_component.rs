@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::{MetadataError, MetadataValidationError};

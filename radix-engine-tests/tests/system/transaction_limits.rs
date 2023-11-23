@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::{
     errors::{RuntimeError, SystemModuleError, VmError},
     system::system_modules::limits::TransactionLimitsError,
