@@ -11,3 +11,7 @@ mod blueprints {
 mod system {
     automod::dir!("tests/system");
 }
+
+mod vm {
+    automod::dir!("tests/vm");
+}

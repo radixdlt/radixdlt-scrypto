@@ -22,7 +22,7 @@ macro_rules! assert_sign_extensions {
                 let input = $input as $type;
 
                 // Act
-                let code = wat2wasm(&include_str!("wasm/sign_extensions.wat")
+                let code = wat2wasm(&include_str!("../../assets/wasm/sign_extensions.wat")
                         .replace("${base}", stringify!($type))
                         .replace("${instruction}", $instruction)
                         .replace("${initial}", &input.to_string())
@@ -60,7 +60,7 @@ assert_sign_extensions!(i64, "extend32_s", 0x665544332211, 0x44332211);
 #[test]
 fn test_wasm_non_mvp_mutable_globals_import() {
     // Arrange
-    let code = wat2wasm(&include_str!("wasm/mutable_globals_import.wat"));
+    let code = wat2wasm(&include_str!("../../assets/wasm/mutable_globals_import.wat"));
 
     // Act
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -88,7 +88,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
 #[test]
 fn test_wasm_non_mvp_mutable_globals_export() {
     // Arrange
-    let code = wat2wasm(&include_str!("wasm/mutable_globals_export.wat"));
+    let code = wat2wasm(&include_str!("../../assets/wasm/mutable_globals_export.wat"));
 
     // Act
     let mut test_runner = TestRunnerBuilder::new().build();

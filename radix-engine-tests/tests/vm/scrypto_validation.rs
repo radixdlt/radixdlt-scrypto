@@ -9,7 +9,7 @@ use transaction::prelude::*;
 fn cannot_create_more_than_1_substate_field_in_scrypto() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let code = wat2wasm(include_str!("wasm/basic_package.wat"));
+    let code = wat2wasm(include_str!("../../assets/wasm/basic_package.wat"));
 
     // Act
     let manifest = ManifestBuilder::new()

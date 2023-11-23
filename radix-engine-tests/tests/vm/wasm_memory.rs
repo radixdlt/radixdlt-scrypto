@@ -64,7 +64,7 @@ macro_rules! write_memory_err {
 #[test]
 fn test_wasm_memory_grow_read_write() {
     // Arrange
-    let code = wat2wasm(&include_str!("wasm/memory_boundaries.wat")).unwrap();
+    let code = wat2wasm(&include_str!("../../assets/wasm/memory_boundaries.wat")).unwrap();
     let wasm_engine = DefaultWasmEngine::default();
     let mut instance = wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &code);
 
@@ -157,7 +157,7 @@ fn test_wasm_memory_grow_read_write() {
 #[test]
 fn test_wasm_memory_is_clean() {
     // Arrange
-    let code = wat2wasm(&include_str!("wasm/memory_boundaries.wat")).unwrap();
+    let code = wat2wasm(&include_str!("../../assets/wasm/memory_boundaries.wat")).unwrap();
     let wasm_engine = DefaultWasmEngine::default();
     let mut instance = wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &code);
 

@@ -14,7 +14,7 @@ fn get_test_runner() -> (
     TestRunner<NoExtension, InMemorySubstateDatabase>,
     ComponentAddress,
 ) {
-    let (code, definition) = Compile::compile("tests/assets/blueprints/system_wasm_buffers");
+    let (code, definition) = Compile::compile("assets/blueprints/system_wasm_buffers");
 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

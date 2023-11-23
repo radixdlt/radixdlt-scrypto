@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::blueprints::resource::ProofError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
