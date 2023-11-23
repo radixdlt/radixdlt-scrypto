@@ -13,9 +13,6 @@ pub struct Ed25519Signature(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
 
-/// Ed25519 signature verifier.
-pub struct Ed25519Verifier;
-
 impl Ed25519Signature {
     pub const LENGTH: usize = 64;
 

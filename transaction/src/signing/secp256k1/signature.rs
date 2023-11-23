@@ -13,9 +13,6 @@ pub struct Secp256k1Signature(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
 
-/// Secp256k1 signature verifier.
-pub struct Secp256k1Verifier;
-
 impl Secp256k1Signature {
     pub const LENGTH: usize = 65; // recovery id + signature
 
