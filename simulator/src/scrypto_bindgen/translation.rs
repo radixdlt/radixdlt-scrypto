@@ -190,6 +190,7 @@ where
         {
             "Bucket".to_owned()
         }
+
         TypeKind::Custom(ScryptoCustomTypeKind::Own)
             if type_validation
                 == TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
@@ -223,6 +224,20 @@ where
             "GlobalAddressReservation".to_owned()
         }
         TypeKind::Custom(ScryptoCustomTypeKind::Own) => match type_validation {
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(package_address, bp_name),
+            )) if package_address == Some(RESOURCE_PACKAGE)
+                && bp_name == FUNGIBLE_BUCKET_BLUEPRINT =>
+            {
+                "FungibleBucket".to_owned()
+            }
+            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(package_address, bp_name),
+            )) if package_address == Some(RESOURCE_PACKAGE)
+                && bp_name == NON_FUNGIBLE_BUCKET_BLUEPRINT =>
+            {
+                "NonFungibleBucket".to_owned()
+            }
             TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
                 OwnValidation::IsTypedObject(package_address, bp_name),
             )) if package_address.is_none()
