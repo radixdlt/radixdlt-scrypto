@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::types::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;

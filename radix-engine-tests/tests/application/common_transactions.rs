@@ -46,7 +46,7 @@ fn transfer_of_funds_to_another_account_succeeds() {
         let other_account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
 
         let manifest = replace_variables!(
-            include_str!("../../transaction/examples/account/resource_transfer.rtm"),
+            include_str!("../../../transaction/examples/account/resource_transfer.rtm"),
             xrd_resource_address = XRD.display(address_bech32_encoder),
             this_account_address = this_account_address.display(address_bech32_encoder),
             other_account_address = other_account_address.display(address_bech32_encoder)

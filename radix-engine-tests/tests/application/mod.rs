@@ -1,0 +1,4 @@
+// mod application {
+
+//     automod::dir!(".");
+// }

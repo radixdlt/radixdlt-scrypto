@@ -1,6 +1,4 @@
-mod package_loader;
-
-use package_loader::PackageLoader;
+use crate::package_loader::PackageLoader;
 use radix_engine::blueprints::transaction_processor::*;
 use radix_engine::errors::*;
 use radix_engine::transaction::*;

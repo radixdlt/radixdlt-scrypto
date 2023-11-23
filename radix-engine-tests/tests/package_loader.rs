@@ -36,7 +36,7 @@ mod package_loader {
     impl PackageLoader {
         pub fn get(name: &str) -> (Vec<u8>, PackageDefinition) {
             let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
-            let package_dir = manifest_dir.join("tests").join("assetes").join("blueprints").join(name);
+            let package_dir = manifest_dir.join("assets").join("blueprints").join(name);
             scrypto_unit::Compile::compile(package_dir)
         }
     }
