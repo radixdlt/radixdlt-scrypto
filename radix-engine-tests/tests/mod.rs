@@ -15,3 +15,11 @@ mod system {
 mod vm {
     automod::dir!("tests/vm");
 }
+
+mod kernel {
+    automod::dir!("tests/kernel");
+}
+
+mod db {
+    automod::dir!("tests/db");
+}
