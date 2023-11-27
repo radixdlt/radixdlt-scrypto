@@ -10,6 +10,8 @@ use radix_engine_interface::*;
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
+use crate::common::path_macros::*;
+
 
 #[test]
 fn missing_memory_should_cause_error() {
@@ -121,7 +123,7 @@ fn test_basic_package() {
     let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
-    let code = wat2wasm(include_str!("../../assets/wasm/basic_package.wat"));
+    let code = wat2wasm(include_local_wasm_str!("basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
@@ -182,7 +184,7 @@ fn test_basic_package_missing_export() {
         },
     );
     // Act
-    let code = wat2wasm(include_str!("../../assets/wasm/basic_package.wat"));
+    let code = wat2wasm(include_local_wasm_str!("basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(

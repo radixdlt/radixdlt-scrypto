@@ -1,4 +1,5 @@
 mod package_loader;
+mod common;
 
 mod application {
     automod::dir!("tests/application");

@@ -3,6 +3,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
+use crate::common::path_macros::*;
 
 #[test]
 #[ignore = "TODO: investigate how the compiled wasm is producing unreachable"]
@@ -103,7 +104,7 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> Transact
     let mut test_runner = TestRunnerBuilder::new().build();
 
     let code = wat2wasm(
-        &include_str!("../../assets/wasm/deep_sbor_response.wat").replace("${depth}", &depth.to_string()),
+        &include_local_wasm_str!("deep_sbor_response.wat").replace("${depth}", &depth.to_string()),
     );
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),

@@ -4,12 +4,13 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use scrypto_unit::*;
 use transaction::prelude::*;
+use crate::common::path_macros::*;
 
 #[test]
 fn cannot_set_package_metadata_with_no_owner() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let code = wat2wasm(include_str!("../../assets/wasm/basic_package.wat"));
+    let code = wat2wasm(include_local_wasm_str!("basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
@@ -51,7 +52,7 @@ fn cannot_set_package_metadata_with_no_owner() {
 fn can_set_package_metadata_with_owner() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let code = wat2wasm(include_str!("../../assets/wasm/basic_package.wat"));
+    let code = wat2wasm(include_local_wasm_str!("basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()

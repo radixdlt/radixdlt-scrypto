@@ -8,6 +8,7 @@ use radix_engine_common::crypto::Hash;
 use radix_engine_interface::blueprints::package::CodeHash;
 use transaction::model::TransactionCostingParameters;
 use wabt::wat2wasm;
+use crate::common::path_macros::*;
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;
@@ -64,7 +65,7 @@ macro_rules! write_memory_err {
 #[test]
 fn test_wasm_memory_grow_read_write() {
     // Arrange
-    let code = wat2wasm(&include_str!("../../assets/wasm/memory_boundaries.wat")).unwrap();
+    let code = wat2wasm(&include_local_wasm_str!("memory_boundaries.wat")).unwrap();
     let wasm_engine = DefaultWasmEngine::default();
     let mut instance = wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &code);
 
@@ -157,7 +158,7 @@ fn test_wasm_memory_grow_read_write() {
 #[test]
 fn test_wasm_memory_is_clean() {
     // Arrange
-    let code = wat2wasm(&include_str!("../../assets/wasm/memory_boundaries.wat")).unwrap();
+    let code = wat2wasm(&include_local_wasm_str!("memory_boundaries.wat")).unwrap();
     let wasm_engine = DefaultWasmEngine::default();
     let mut instance = wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &code);
 

@@ -1,10 +1,11 @@
 use radix_engine::vm::wasm::{InvalidMemory, PrepareError, WasmValidator};
 use radix_engine_queries::typed_substate_layout::PackageDefinition;
 use scrypto_unit::*;
+use crate::common::path_macros::*;
 
 #[test]
 fn test_large_data() {
-    let code = wat2wasm(&include_str!("../../assets/wasm/large_data.wat"));
+    let code = wat2wasm(&include_local_wasm_str!("large_data.wat"));
     let definition = single_function_package_definition("Test", "f");
     let result = WasmValidator::default().validate(&code, definition.blueprints.values());
 
@@ -16,7 +17,7 @@ fn test_large_data() {
 
 #[test]
 fn test_large_memory() {
-    let code = wat2wasm(&include_str!("../../assets/wasm/large_memory.wat"));
+    let code = wat2wasm(&include_local_wasm_str!("large_memory.wat"));
     let definition = single_function_package_definition("Test", "f");
     let result = WasmValidator::default().validate(&code, definition.blueprints.values());
 

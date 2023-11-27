@@ -4,12 +4,14 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::prelude::*;
+use crate::common::path_macros::*;
+
 
 #[test]
 fn cannot_create_more_than_1_substate_field_in_scrypto() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
-    let code = wat2wasm(include_str!("../../assets/wasm/basic_package.wat"));
+    let code = wat2wasm(include_local_wasm_str!("basic_package.wat"));
 
     // Act
     let manifest = ManifestBuilder::new()

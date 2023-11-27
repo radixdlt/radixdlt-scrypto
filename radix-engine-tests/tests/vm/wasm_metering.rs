@@ -5,6 +5,7 @@ use radix_engine::{
 };
 use scrypto_unit::*;
 use transaction::prelude::*;
+use crate::common::path_macros::*;
 
 #[test]
 fn test_loop() {
@@ -12,7 +13,7 @@ fn test_loop() {
     let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
-    let code = wat2wasm(&include_str!("../../assets/wasm/loop.wat").replace("${n}", "1000"));
+    let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "1000"));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -35,7 +36,7 @@ fn test_finish_before_system_loan_limit() {
     let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
-    let code = wat2wasm(&include_str!("../../assets/wasm/loop.wat").replace("${n}", "1"));
+    let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "1"));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -57,7 +58,7 @@ fn test_loop_out_of_cost_unit() {
     let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
-    let code = wat2wasm(&include_str!("../../assets/wasm/loop.wat").replace("${n}", "2000000"));
+    let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "2000000"));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -81,7 +82,7 @@ fn test_recursion() {
 
     // Act
     // In this test case, each call frame costs 4 stack units
-    let code = wat2wasm(&include_str!("../../assets/wasm/recursion.wat").replace("${n}", "256"));
+    let code = wat2wasm(&include_local_wasm_str!("recursion.wat").replace("${n}", "256"));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -103,7 +104,7 @@ fn test_recursion_stack_overflow() {
     let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
-    let code = wat2wasm(&include_str!("../../assets/wasm/recursion.wat").replace("${n}", "257"));
+    let code = wat2wasm(&include_local_wasm_str!("recursion.wat").replace("${n}", "257"));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -129,7 +130,7 @@ fn test_grow_memory_within_limit() {
     let grow_value = MAX_MEMORY_SIZE_IN_PAGES - 1;
 
     // Act
-    let code = wat2wasm(&include_str!("../../assets/wasm/memory.wat").replace("${n}", &grow_value.to_string()));
+    let code = wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -155,7 +156,7 @@ fn test_grow_memory_beyond_limit() {
     let grow_value = MAX_MEMORY_SIZE_IN_PAGES;
 
     // Act
-    let code = wat2wasm(&include_str!("../../assets/wasm/memory.wat").replace("${n}", &grow_value.to_string()));
+    let code = wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -187,7 +188,7 @@ fn test_grow_memory_by_more_than_65536() {
     let grow_value = 0x10000;
 
     // Act
-    let code = wat2wasm(&include_str!("../../assets/wasm/memory.wat").replace("${n}", &grow_value.to_string()));
+    let code = wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),

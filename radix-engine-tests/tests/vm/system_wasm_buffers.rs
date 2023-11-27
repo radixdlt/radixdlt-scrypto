@@ -6,6 +6,7 @@ use radix_engine::vm::*;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
 use transaction::prelude::*;
+use crate::common::path_macros::*;
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;
@@ -14,7 +15,7 @@ fn get_test_runner() -> (
     TestRunner<NoExtension, InMemorySubstateDatabase>,
     ComponentAddress,
 ) {
-    let (code, definition) = Compile::compile("assets/blueprints/system_wasm_buffers");
+    let (code, definition) = Compile::compile(path_local_blueprint!("system_wasm_buffers"));
 
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

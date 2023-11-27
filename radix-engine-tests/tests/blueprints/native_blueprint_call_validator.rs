@@ -10,8 +10,9 @@ use transaction::{
     signing::secp256k1::Secp256k1PrivateKey,
 };
 use walkdir::WalkDir;
-
 use transaction::manifest::e2e::apply_address_replacements;
+use crate::common::path_macros::*;
+
 
 #[test]
 fn validator_sees_valid_transfer_manifest_as_valid() {
@@ -63,9 +64,7 @@ fn validator_invalidates_calls_to_unknown_methods_on_a_known_blueprint() {
 #[test]
 fn common_manifests_are_all_valid() {
     // Arrange
-    // let path = "../transaction";
-    let path = "../transaction/examples/access_rule";
-    for entry in WalkDir::new(path) {
+    for entry in WalkDir::new(path_workspace_transaction_examples!("access_rule")) {
         let path = entry.unwrap().path().canonicalize().unwrap();
 
         if path.extension().and_then(|str| str.to_str()) != Some("rtm") {
