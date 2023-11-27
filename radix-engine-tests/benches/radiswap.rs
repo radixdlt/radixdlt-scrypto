@@ -9,6 +9,7 @@ use scrypto_unit::{TestRunner, TestRunnerBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
 use transaction::prelude::*;
+use radix_engine_tests_common::*;
 
 /// Number of prefilled accounts in the substate store
 #[cfg(feature = "rocksdb")]
@@ -45,8 +46,8 @@ fn bench_radiswap(c: &mut Criterion) {
     let (pk, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.publish_package(
         (
-            include_bytes!("../../assets/radiswap.wasm").to_vec(),
-            manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap(),
+            include_workspace_asset_bytes!("radiswap.wasm").to_vec(),
+            manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap(),
         ),
         btreemap!(),
         OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk)))),
