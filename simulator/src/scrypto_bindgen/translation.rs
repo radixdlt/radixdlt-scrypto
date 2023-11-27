@@ -1,20 +1,43 @@
 //! This module converts the models from `schema.rs` to the `ast.rs` models which are eventually
 //! converted to a TokenStream.
 
-use heck::ToPascalCase;
 use radix_engine_interface::prelude::*;
 
-use crate::scrypto_bindgen::ast;
-use crate::scrypto_bindgen::schema;
+use super::{ast, schema};
+use crate::{ident, token_stream_from_str};
 
-macro_rules! ident {
-    ($ident: expr) => {
-        syn::Ident::new($ident, proc_macro2::Span::call_site())
-    };
+pub fn package_schema_interface_to_ast_interface<S>(
+    schema_interface: schema::PackageInterface,
+    package_address: PackageAddress,
+    schema_resolver: &S,
+) -> Result<ast::PackageStub, schema::SchemaError>
+where
+    S: schema::PackageSchemaResolver,
+{
+    Ok(ast::PackageStub {
+        blueprints: schema_interface
+            .blueprints
+            .into_iter()
+            .map(|(blueprint_name, blueprint_interface)| {
+                blueprint_schema_interface_to_ast_interface(
+                    blueprint_interface,
+                    package_address,
+                    blueprint_name,
+                    schema_resolver,
+                )
+            })
+            .collect::<Result<_, _>>()?,
+        auxiliary_types: schema_auxiliary_types_to_ast_types(
+            schema_interface.auxiliary_types,
+            schema_resolver,
+        )?,
+    })
 }
 
 pub fn blueprint_schema_interface_to_ast_interface<S>(
     schema_interface: schema::BlueprintInterface,
+    package_address: PackageAddress,
+    blueprint_name: String,
     schema_resolver: &S,
 ) -> Result<ast::BlueprintStub, schema::SchemaError>
 where
@@ -26,7 +49,8 @@ where
             .into_iter()
             .map(|func| function_schema_interface_to_ast_interface(func, schema_resolver))
             .collect::<Result<_, _>>()?,
-        blueprint_name: schema_interface.blueprint_name,
+        blueprint_name,
+        package_address,
     })
 }
 
@@ -53,31 +77,22 @@ where
         None => ast::FnType::Function,
         _ => panic!("Invalid BitFlags for RefTypes"),
     };
-    let ident = ident!(&schema_interface.ident);
+    let function_ident = ident!(&schema_interface.ident);
 
     let inputs = schema_interface
         .arguments
         .into_iter()
         .map(|(arg_name, arg_type_index)| {
-            type_name(&arg_type_index, schema_resolver).map(|type_name| {
-                (
-                    ident!(&arg_name),
-                    syn::parse2(type_name.parse().unwrap()).unwrap(),
-                )
-            })
+            type_name(&arg_type_index, schema_resolver)
+                .map(|type_name| (ident!(&arg_name), token_stream_from_str!(&type_name)))
         })
         .collect::<Result<_, _>>()?;
-    let output = syn::parse2(
-        type_name(&schema_interface.returns, schema_resolver)?
-            .parse()
-            .unwrap(),
-    )
-    .unwrap();
+    let output = token_stream_from_str!(&type_name(&schema_interface.returns, schema_resolver)?);
 
     Ok(ast::FnSignature {
         inputs,
         fn_type,
-        ident,
+        ident: function_ident,
         output,
     })
 }
@@ -92,44 +107,45 @@ where
     let type_kind = schema_resolver.resolve_type_kind(type_identifier)?;
     let type_metadata = schema_resolver.resolve_type_metadata(type_identifier)?;
     let type_validation = schema_resolver.resolve_type_validation(type_identifier)?;
-    let type_ident = type_metadata.get_name_string();
+    let metadata_type_name = type_metadata.get_name_string();
 
     let name = match type_kind {
-        TypeKind::Any => type_ident.unwrap_or("ScryptoValue".to_owned()),
-        TypeKind::Bool => type_ident.unwrap_or("bool".to_owned()),
-        TypeKind::I8 => type_ident.unwrap_or("i8".to_owned()),
-        TypeKind::I16 => type_ident.unwrap_or("i16".to_owned()),
-        TypeKind::I32 => type_ident.unwrap_or("i32".to_owned()),
-        TypeKind::I64 => type_ident.unwrap_or("i64".to_owned()),
-        TypeKind::I128 => type_ident.unwrap_or("i128".to_owned()),
-        TypeKind::U8 => type_ident.unwrap_or("u8".to_owned()),
-        TypeKind::U16 => type_ident.unwrap_or("u16".to_owned()),
-        TypeKind::U32 => type_ident.unwrap_or("u32".to_owned()),
-        TypeKind::U64 => type_ident.unwrap_or("u64".to_owned()),
-        TypeKind::U128 => type_ident.unwrap_or("u128".to_owned()),
-        TypeKind::String => type_ident.unwrap_or("String".to_owned()),
-        TypeKind::Array { element_type } => type_ident.unwrap_or(format!(
+        TypeKind::Any => metadata_type_name.unwrap_or("ScryptoValue".to_owned()),
+        TypeKind::Bool => metadata_type_name.unwrap_or("bool".to_owned()),
+        TypeKind::I8 => metadata_type_name.unwrap_or("i8".to_owned()),
+        TypeKind::I16 => metadata_type_name.unwrap_or("i16".to_owned()),
+        TypeKind::I32 => metadata_type_name.unwrap_or("i32".to_owned()),
+        TypeKind::I64 => metadata_type_name.unwrap_or("i64".to_owned()),
+        TypeKind::I128 => metadata_type_name.unwrap_or("i128".to_owned()),
+        TypeKind::U8 => metadata_type_name.unwrap_or("u8".to_owned()),
+        TypeKind::U16 => metadata_type_name.unwrap_or("u16".to_owned()),
+        TypeKind::U32 => metadata_type_name.unwrap_or("u32".to_owned()),
+        TypeKind::U64 => metadata_type_name.unwrap_or("u64".to_owned()),
+        TypeKind::U128 => metadata_type_name.unwrap_or("u128".to_owned()),
+        TypeKind::String => metadata_type_name.unwrap_or("String".to_owned()),
+        TypeKind::Array { element_type } => metadata_type_name.unwrap_or(format!(
             "Vec<{}>",
             type_name(
                 &ScopedTypeId(type_identifier.0, element_type),
-                schema_resolver
+                schema_resolver,
             )?
         )),
-        TypeKind::Tuple { field_types } => type_ident.unwrap_or(if field_types.is_empty() {
-            "()".to_owned()
-        } else {
-            format!(
-                "({},)",
-                field_types
-                    .iter()
-                    .map(|local_type_index| type_name(
-                        &ScopedTypeId(type_identifier.0, *local_type_index),
-                        schema_resolver
-                    ))
-                    .collect::<Result<Vec<String>, _>>()?
-                    .join(", ")
-            )
-        }),
+        TypeKind::Tuple { field_types } => {
+            metadata_type_name.unwrap_or(match field_types.as_slice() {
+                [] => "()".to_owned(),
+                types => format!(
+                    "({},)",
+                    types
+                        .iter()
+                        .map(|local_type_index| type_name(
+                            &ScopedTypeId(type_identifier.0, *local_type_index),
+                            schema_resolver,
+                        ))
+                        .collect::<Result<Vec<String>, _>>()?
+                        .join(", ")
+                ),
+            })
+        }
         TypeKind::Enum { variants } => {
             // There is currently no way to know if this type has generics or not. Thus, we need to
             // deal with generic enums from the standard library in a special way. We determine if
@@ -145,7 +161,7 @@ where
                     "Option<{}>",
                     type_name(
                         &ScopedTypeId(type_identifier.0, *some_type_index),
-                        schema_resolver
+                        schema_resolver,
                     )?
                 )),
                 (Some("Result"), 2usize, Some([ok_type_index]), Some([err_type_index])) => {
@@ -153,11 +169,11 @@ where
                         "Result<{}, {}>",
                         type_name(
                             &ScopedTypeId(type_identifier.0, *ok_type_index),
-                            schema_resolver
+                            schema_resolver,
                         )?,
                         type_name(
                             &ScopedTypeId(type_identifier.0, *err_type_index),
-                            schema_resolver
+                            schema_resolver,
                         )?
                     ))
                 }
@@ -168,133 +184,280 @@ where
         TypeKind::Map {
             key_type,
             value_type,
-        } => type_ident.unwrap_or(format!(
+        } => metadata_type_name.unwrap_or(format!(
             "IndexMap<{}, {}>",
-            type_name(&ScopedTypeId(type_identifier.0, key_type), schema_resolver)?,
+            type_name(&ScopedTypeId(type_identifier.0, key_type), schema_resolver,)?,
             type_name(
                 &ScopedTypeId(type_identifier.0, value_type),
-                schema_resolver
+                schema_resolver,
             )?
         )),
-        TypeKind::Custom(ScryptoCustomTypeKind::Decimal) => "Decimal".to_owned(),
-        TypeKind::Custom(ScryptoCustomTypeKind::PreciseDecimal) => "PreciseDecimal".to_owned(),
-        TypeKind::Custom(ScryptoCustomTypeKind::NonFungibleLocalId) => {
-            "NonFungibleLocalId".to_owned()
-        }
-
-        TypeKind::Custom(ScryptoCustomTypeKind::Own)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                    OwnValidation::IsBucket,
-                )) =>
-        {
-            "Bucket".to_owned()
-        }
-
-        TypeKind::Custom(ScryptoCustomTypeKind::Own)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                    OwnValidation::IsProof,
-                )) =>
-        {
-            "Proof".to_owned()
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Own)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                    OwnValidation::IsVault,
-                )) =>
-        {
-            "Vault".to_owned()
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Own)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                    OwnValidation::IsKeyValueStore,
-                )) =>
-        {
-            "Own".to_owned()
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Own)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                    OwnValidation::IsGlobalAddressReservation,
-                )) =>
-        {
-            "GlobalAddressReservation".to_owned()
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Own) => match type_validation {
-            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                OwnValidation::IsTypedObject(package_address, bp_name),
-            )) if package_address == Some(RESOURCE_PACKAGE) => match bp_name.as_str() {
-                FUNGIBLE_BUCKET_BLUEPRINT => "FungibleBucket".to_owned(),
-                NON_FUNGIBLE_BUCKET_BLUEPRINT => "NonFungibleBucket".to_owned(),
-                FUNGIBLE_PROOF_BLUEPRINT => "FungibleProof".to_owned(),
-                NON_FUNGIBLE_PROOF_BLUEPRINT => "NonFungibleProof".to_owned(),
-                FUNGIBLE_VAULT_BLUEPRINT => "FungibleVault".to_owned(),
-                NON_FUNGIBLE_VAULT_BLUEPRINT => "NonFungibleVault".to_owned(),
-                _ => "Own".to_owned(),
+        TypeKind::Custom(custom_type_kind) => match custom_type_kind {
+            ScryptoCustomTypeKind::Reference => match type_validation {
+                TypeValidation::None => metadata_type_name.unwrap_or("Reference".to_owned()),
+                TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
+                    reference_type_validation,
+                )) => match reference_type_validation {
+                    ReferenceValidation::IsGlobal => "GlobalAddress".to_owned(),
+                    ReferenceValidation::IsGlobalPackage => "PackageAddress".to_owned(),
+                    ReferenceValidation::IsGlobalComponent => "ComponentAddress".to_owned(),
+                    ReferenceValidation::IsGlobalResourceManager => "ResourceAddress".to_owned(),
+                    ReferenceValidation::IsGlobalTyped(package_address, blueprint_name) => {
+                        if package_address.is_none()
+                            || package_address.is_some_and(|package_address| {
+                                package_address == schema_resolver.package_address()
+                            })
+                        {
+                            format!("Global<{}>", blueprint_name)
+                        } else {
+                            metadata_type_name.unwrap_or("Reference".to_owned())
+                        }
+                    }
+                    ReferenceValidation::IsInternal
+                    | ReferenceValidation::IsInternalTyped(_, _) => "InternalAddress".to_owned(),
+                },
+                TypeValidation::I8(_)
+                | TypeValidation::I16(_)
+                | TypeValidation::I32(_)
+                | TypeValidation::I64(_)
+                | TypeValidation::I128(_)
+                | TypeValidation::U8(_)
+                | TypeValidation::U16(_)
+                | TypeValidation::U32(_)
+                | TypeValidation::U64(_)
+                | TypeValidation::U128(_)
+                | TypeValidation::String(_)
+                | TypeValidation::Array(_)
+                | TypeValidation::Map(_)
+                | TypeValidation::Custom(ScryptoCustomTypeValidation::Own(..)) => {
+                    panic!("Unexpected state: a reference type with non-reference validation.")
+                }
             },
-            TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                OwnValidation::IsTypedObject(package_address, bp_name),
-            )) if package_address.is_none()
-                || package_address == Some(schema_resolver.package_address()) =>
-            {
-                format!("Owned<{}>", bp_name.to_pascal_case())
+            ScryptoCustomTypeKind::Own => match type_validation {
+                TypeValidation::None => metadata_type_name.unwrap_or("Own".to_owned()),
+                TypeValidation::Custom(ScryptoCustomTypeValidation::Own(own_type_validation)) => {
+                    match own_type_validation {
+                        OwnValidation::IsBucket => {
+                            metadata_type_name.unwrap_or("Bucket".to_owned())
+                        }
+                        OwnValidation::IsProof => metadata_type_name.unwrap_or("Proof".to_owned()),
+                        OwnValidation::IsVault => metadata_type_name.unwrap_or("Vault".to_owned()),
+                        OwnValidation::IsKeyValueStore => "Own".to_owned(),
+                        OwnValidation::IsGlobalAddressReservation => {
+                            metadata_type_name.unwrap_or("GlobalAddressReservation".to_owned())
+                        }
+                        OwnValidation::IsTypedObject(package_address, blueprint_name) => {
+                            if package_address.is_none()
+                                || package_address.is_some_and(|package_address| {
+                                    package_address == schema_resolver.package_address()
+                                })
+                            {
+                                format!("Own<{}>", blueprint_name)
+                            } else {
+                                metadata_type_name.unwrap_or("Own".to_owned())
+                            }
+                        }
+                    }
+                }
+                TypeValidation::I8(_)
+                | TypeValidation::I16(_)
+                | TypeValidation::I32(_)
+                | TypeValidation::I64(_)
+                | TypeValidation::I128(_)
+                | TypeValidation::U8(_)
+                | TypeValidation::U16(_)
+                | TypeValidation::U32(_)
+                | TypeValidation::U64(_)
+                | TypeValidation::U128(_)
+                | TypeValidation::String(_)
+                | TypeValidation::Array(_)
+                | TypeValidation::Map(_)
+                | TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(..)) => {
+                    panic!("Unexpected state: an own type with non-own validation.")
+                }
+            },
+            ScryptoCustomTypeKind::Decimal => metadata_type_name.unwrap_or("Decimal".to_owned()),
+            ScryptoCustomTypeKind::PreciseDecimal => {
+                metadata_type_name.unwrap_or("PreciseDecimal".to_owned())
             }
-            _ => "Own".to_owned(),
-        },
-
-        TypeKind::Custom(ScryptoCustomTypeKind::Reference)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsGlobal,
-                )) =>
-        {
-            "GlobalAddress".to_string()
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Reference)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsGlobalPackage,
-                )) =>
-        {
-            "PackageAddress".to_string()
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Reference)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsGlobalComponent,
-                )) =>
-        {
-            "ComponentAddress".to_string()
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Reference)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsGlobalResourceManager,
-                )) =>
-        {
-            "ResourceAddress".to_string()
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Reference)
-            if type_validation
-                == TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsInternal,
-                )) =>
-        {
-            "InternalAddress".to_string()
-        }
-        TypeKind::Custom(ScryptoCustomTypeKind::Reference) => match type_validation {
-            TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                ReferenceValidation::IsGlobalTyped(package_address, bp_name),
-            )) if package_address.is_none()
-                || package_address == Some(schema_resolver.package_address()) =>
-            {
-                format!("Global<{}>", bp_name.to_pascal_case())
+            ScryptoCustomTypeKind::NonFungibleLocalId => {
+                metadata_type_name.unwrap_or("NonFungibleLocalId".to_owned())
             }
-            _ => "Reference".to_owned(),
         },
     };
+
     Ok(name)
+}
+
+pub fn schema_auxiliary_types_to_ast_types<S>(
+    auxiliary_types: HashSet<ScopedTypeId>,
+    schema_resolver: &S,
+) -> Result<Vec<ast::AuxiliaryType>, schema::SchemaError>
+where
+    S: schema::PackageSchemaResolver,
+{
+    let mut ast_auxiliary_types = Vec::default();
+
+    // No auxiliary types need to be generated if they're already well-known (i.e., they can just be
+    // imported through scrypto::prelude::*). Thus, well known types are ignored.
+    for scoped_type_id in auxiliary_types
+        .into_iter()
+        .filter_map(|item| match item.1 {
+            LocalTypeId::SchemaLocalIndex(local_index) => Some((item.0, local_index)),
+            LocalTypeId::WellKnown(..) => None,
+        })
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .map(|(schema_hash, local_type_index)| {
+            ScopedTypeId(schema_hash, LocalTypeId::SchemaLocalIndex(local_type_index))
+        })
+    {
+        let type_kind = schema_resolver.resolve_type_kind(&scoped_type_id)?;
+        let type_metadata = schema_resolver.resolve_type_metadata(&scoped_type_id)?;
+
+        let ast_auxiliary_type = match type_kind {
+            TypeKind::Tuple { field_types } => {
+                let Some(ref struct_name) = type_metadata.type_name else {
+                    /* No type name = just a tuple. No generation needed. */
+                    continue;
+                };
+
+                match type_metadata.get_field_names() {
+                    /* Named fields struct */
+                    Some(field_names) => ast::AuxiliaryType::NamedFieldsStruct {
+                        struct_name: struct_name.as_ref().into(),
+                        fields: field_names
+                            .iter()
+                            .zip(field_types)
+                            .map(|(field_name, field_type)| {
+                                let field_type_name = type_name(
+                                    &ScopedTypeId(scoped_type_id.0, field_type),
+                                    schema_resolver,
+                                )?;
+
+                                Ok((field_name.as_ref().into(), field_type_name))
+                            })
+                            .collect::<Result<_, _>>()?,
+                    },
+                    /* Tuple struct */
+                    None => ast::AuxiliaryType::TupleStruct {
+                        struct_name: struct_name.as_ref().into(),
+                        field_types: field_types
+                            .iter()
+                            .map(|field_type| {
+                                type_name(
+                                    &ScopedTypeId(scoped_type_id.0, *field_type),
+                                    schema_resolver,
+                                )
+                            })
+                            .collect::<Result<_, _>>()?,
+                    },
+                }
+            }
+            TypeKind::Enum { variants } => {
+                let enum_name = type_metadata
+                    .type_name
+                    .expect("Unexpected state: encountered an enum that has no type name!");
+
+                // TODO: Determine a better way to not generate "Option" and "Result" as auxiliary
+                // types that is not just based on the name.
+                if enum_name == "Option" || enum_name == "Result" {
+                    continue;
+                }
+
+                let Some(ChildNames::EnumVariants(variant_metadata)) = type_metadata.child_names
+                else {
+                    panic!("Unexpected state: the child names of an enum must be enum-variants")
+                };
+
+                let mut enum_variants = Vec::default();
+
+                for variant_id in variants.keys() {
+                    let field_types = variants
+                        .get(variant_id)
+                        .expect("Unexpected state: variant id can not be found!");
+                    let metadata = variant_metadata
+                        .get(variant_id)
+                        .expect("Unexpected state: variant id can not be found!");
+
+                    let variant_name = metadata
+                        .type_name
+                        .as_ref()
+                        .expect("Unexpected state: an enum variant with no name!");
+
+                    let enum_variant = if field_types.is_empty() {
+                        ast::EnumVariant::Unit {
+                            variant_name: variant_name.as_ref().into(),
+                            variant_index: *variant_id,
+                        }
+                    } else {
+                        match metadata.get_field_names() {
+                            /* Named fields struct */
+                            Some(field_names) => ast::EnumVariant::NamedFields {
+                                variant_name: variant_name.as_ref().into(),
+                                variant_index: *variant_id,
+                                fields: field_names
+                                    .iter()
+                                    .zip(field_types)
+                                    .map(|(field_name, field_type)| {
+                                        let field_type_name = type_name(
+                                            &ScopedTypeId(scoped_type_id.0, *field_type),
+                                            schema_resolver,
+                                        )?;
+
+                                        Ok((field_name.as_ref().into(), field_type_name))
+                                    })
+                                    .collect::<Result<_, _>>()?,
+                            },
+                            /* Tuple struct */
+                            None => ast::EnumVariant::Tuple {
+                                variant_name: variant_name.as_ref().into(),
+                                variant_index: *variant_id,
+                                field_types: field_types
+                                    .iter()
+                                    .map(|field_type| {
+                                        type_name(
+                                            &ScopedTypeId(scoped_type_id.0, *field_type),
+                                            schema_resolver,
+                                        )
+                                    })
+                                    .collect::<Result<_, _>>()?,
+                            },
+                        }
+                    };
+                    enum_variants.push(enum_variant)
+                }
+
+                ast::AuxiliaryType::Enum {
+                    enum_name: enum_name.into(),
+                    variants: enum_variants,
+                }
+            }
+            TypeKind::Any
+            | TypeKind::Bool
+            | TypeKind::I8
+            | TypeKind::I16
+            | TypeKind::I32
+            | TypeKind::I64
+            | TypeKind::I128
+            | TypeKind::U8
+            | TypeKind::U16
+            | TypeKind::U32
+            | TypeKind::U64
+            | TypeKind::U128
+            | TypeKind::String
+            | TypeKind::Array { .. }
+            | TypeKind::Map { .. }
+            | TypeKind::Custom(..) => {
+                /* Not considered an auxiliary type - no generation needed */
+                continue;
+            }
+        };
+
+        ast_auxiliary_types.push(ast_auxiliary_type)
+    }
+
+    ast_auxiliary_types.dedup();
+
+    Ok(ast_auxiliary_types)
 }
