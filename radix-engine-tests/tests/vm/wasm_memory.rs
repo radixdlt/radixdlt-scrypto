@@ -1,3 +1,4 @@
+use crate::common::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
 use radix_engine::transaction::CostingParameters;
@@ -8,7 +9,6 @@ use radix_engine_common::crypto::Hash;
 use radix_engine_interface::blueprints::package::CodeHash;
 use transaction::model::TransactionCostingParameters;
 use wabt::wat2wasm;
-use crate::common::path_macros::*;
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;

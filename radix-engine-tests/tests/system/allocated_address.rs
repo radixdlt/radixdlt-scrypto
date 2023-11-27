@@ -1,4 +1,4 @@
-use crate::package_loader::PackageLoader;
+use crate::common::*;
 use radix_engine::{
     errors::{CannotGlobalizeError, KernelError, RuntimeError, SystemError},
     types::*,

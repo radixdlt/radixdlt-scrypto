@@ -1,4 +1,4 @@
-use crate::package_loader::PackageLoader;
+use crate::common::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;

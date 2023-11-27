@@ -1,3 +1,4 @@
+use crate::common::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::attached_modules::metadata::MetadataError;
 use radix_engine::types::*;
@@ -6,7 +7,6 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use scrypto_unit::*;
 use transaction::prelude::*;
-use crate::common::path_macros::*;
 
 #[test]
 fn can_get_from_scrypto() {

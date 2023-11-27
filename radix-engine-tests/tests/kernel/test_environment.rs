@@ -1,8 +1,8 @@
+use crate::common::*;
 use native_sdk::resource::*;
 use radix_engine_queries::typed_substate_layout::two_resource_pool::*;
 use scrypto_test::prelude::*;
 use tuple_return::test_bindings::*;
-use crate::common::path_macros::*;
 
 #[test]
 fn kernel_modules_are_reset_after_calling_a_with_method() {

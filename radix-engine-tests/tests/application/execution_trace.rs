@@ -1,4 +1,4 @@
-use crate::package_loader::PackageLoader;
+use crate::common::*;
 use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, ResourceSpecifier, TraceOrigin, WorktopChange,
 };

@@ -1,4 +1,4 @@
-use crate::package_loader::PackageLoader;
+use crate::common::*;
 use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
@@ -13,7 +13,6 @@ use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
 use scrypto_unit::*;
 use transaction::prelude::*;
-use crate::common::path_macros::*;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 

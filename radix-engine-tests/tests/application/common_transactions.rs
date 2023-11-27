@@ -1,3 +1,4 @@
+use crate::common::*;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -11,7 +12,6 @@ use transaction::manifest::{compile, BlobProvider};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
-use crate::common::path_macros::*;
 
 macro_rules! replace_variables {
     ($content:expr $(, $a:ident = $b:expr)* ) => {

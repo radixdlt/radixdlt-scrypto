@@ -1,3 +1,4 @@
+use crate::common::*;
 use radix_engine::{
     errors::{RuntimeError, VmError},
     types::*,
@@ -5,7 +6,6 @@ use radix_engine::{
 };
 use scrypto_unit::*;
 use transaction::prelude::*;
-use crate::common::path_macros::*;
 
 #[test]
 fn test_loop() {

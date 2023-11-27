@@ -1,4 +1,4 @@
-use crate::package_loader::PackageLoader;
+use crate::common::*;
 use radix_engine::blueprints::package::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
@@ -10,7 +10,6 @@ use radix_engine_interface::*;
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
-use crate::common::path_macros::*;
 
 
 #[test]

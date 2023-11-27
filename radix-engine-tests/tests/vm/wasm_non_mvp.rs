@@ -1,9 +1,9 @@
+use crate::common::*;
 use paste::paste;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::WasmModule;
 use scrypto_unit::*;
 use transaction::prelude::*;
-use crate::common::path_macros::*;
 
 // Verify WASM sign-extensions, which were enabled by default to the wasm32 target
 // since rust 1.70.0

@@ -1,4 +1,4 @@
-use crate::package_loader::PackageLoader;
+use crate::common::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::rule;

@@ -1,10 +1,10 @@
+use crate::common::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::prelude::*;
-use crate::common::path_macros::*;
 
 
 #[test]

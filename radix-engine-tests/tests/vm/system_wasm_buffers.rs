@@ -1,3 +1,4 @@
+use crate::common::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
@@ -6,7 +7,6 @@ use radix_engine::vm::*;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
 use transaction::prelude::*;
-use crate::common::path_macros::*;
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;

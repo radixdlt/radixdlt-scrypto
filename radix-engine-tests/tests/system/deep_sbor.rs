@@ -1,9 +1,8 @@
-use crate::package_loader::PackageLoader;
+use crate::common::*;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
-use crate::common::path_macros::*;
 
 #[test]
 #[ignore = "TODO: investigate how the compiled wasm is producing unreachable"]
