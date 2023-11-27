@@ -15,6 +15,11 @@ pub mod path_macros {
     }
 
     #[macro_export]
+    macro_rules! path_workspace_blueprint{
+        ($name: expr)=>{ concat!(env!("CARGO_MANIFEST_DIR"), "/../assets/blueprints/", $name) }
+    }
+
+    #[macro_export]
     macro_rules! path_workspace_transaction_examples{
         ($name: expr)=>{ concat!(env!("CARGO_MANIFEST_DIR"), "/../transaction/examples/", $name) }
     }
@@ -46,4 +51,5 @@ pub mod path_macros {
     pub use crate::path_local_blueprint;
     pub use crate::path_local_meterng_csv;
     pub use crate::path_workspace_transaction_examples;
+    pub use crate::path_workspace_blueprint;
 }
