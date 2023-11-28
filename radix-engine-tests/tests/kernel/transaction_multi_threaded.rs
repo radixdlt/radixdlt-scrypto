@@ -1,4 +1,5 @@
 #[cfg(not(feature = "alloc"))]
+#[cfg(not(feature = "resource_tracker"))]
 mod multi_threaded_test {
     use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
