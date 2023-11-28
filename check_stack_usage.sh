@@ -3,7 +3,8 @@
 set -e
 
 PACKAGE=radix-engine-tests
-EXEC=arguments
+TARGET=system
+FILE=arguments
 TEST=vector_of_buckets_argument_should_succeed
 
 # Return error if stack usage greater than
@@ -23,7 +24,7 @@ function get_stack_usage() {
         stack=$(( $low + ($high - $low) / 2))
         echo checking stack $stack
 
-        if RUST_MIN_STACK=$stack cargo test -p $PACKAGE --test $EXEC -- $TEST >$output 2>&1 ; then
+        if RUST_MIN_STACK=$stack cargo test -p $PACKAGE --test $TARGET $FILE::$TEST -- >$output 2>&1 ; then
             if grep 'stack overflow' $output ; then
                 cat $output
                 echo "unexpected error occured"
