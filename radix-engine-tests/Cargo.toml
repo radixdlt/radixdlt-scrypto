@@ -72,11 +72,6 @@ harness = false
 name = "transaction_validation"
 harness = false
 
-[lib]
-name = "radix_engine_tests_common"
-path = "tests/lib.rs"
-bench = false
-
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
