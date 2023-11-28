@@ -1,6 +1,6 @@
 # Tests organization
 
-Tests are stored in `test` subdirecotry and are separated according to execution layers using subfolders:
+`test` subdirecotry containg integration tests is divided according to execution layers using following subfolders:
 
 - Application
 - Blueprints
@@ -19,12 +19,9 @@ Additional assets required by some of the tests are stored in `assets` subdirect
 
 To execute all tests run command: `cargo nextest run` or `cargo test` from `radix-engine-tests` directory or subdirectory.
 
-To execute tests for a specific layer run command: `cargo nextest run LAYER_NAME::` or `cargo test LAYER_NAME::`, example: `cargo nextest run kernel::`.
+To execute tests for a specific layer run command: `cargo nextest run --test LAYER_NAME` or `cargo test --test LAYER_NAME`, example: `cargo nextest run --test kernel`, `cargo nextest run --test kernel --test system`.
 
-Running more layers at the same time is possible using command: `cargo nextest run LAYER_NAME_1:: LAYER_NAME_2::`, example `cargo nextest run kernel:: system::`.
-
-To execute tests from specific file run command: `cargo nextest run LAYER_NAME::FILE_NAME::` or `cargo test LAYER_NAME::FILE_NAME::`, example: `cargo nextest run kernel::frame::`.
-Specifying only file name could be enough, but if two layers have the same file name with tests then both will be run.
+To execute tests from specific file run command: `cargo nextest run --test LAYER_NAME FILE_NAME`, example: `cargo nextest run --test kernel frame` (this will also run tests which include `frame` word). Alternatively name filtering can be used: `cargo test LAYER_NAME::FILE_NAME::`, example: `cargo nextest run kernel::frame::`.
 
 # Benches
 
