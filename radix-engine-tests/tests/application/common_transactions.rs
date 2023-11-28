@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;

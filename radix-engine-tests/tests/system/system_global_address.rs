@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use radix_engine::blueprints::resource::ResourceNativePackage;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};

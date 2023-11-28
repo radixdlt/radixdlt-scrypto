@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::{MetadataError, MetadataValidationError};

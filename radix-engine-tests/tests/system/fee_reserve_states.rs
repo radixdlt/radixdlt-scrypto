@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;

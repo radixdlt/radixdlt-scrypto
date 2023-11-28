@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;

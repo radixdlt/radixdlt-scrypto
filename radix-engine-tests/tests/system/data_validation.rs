@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError, SystemError},

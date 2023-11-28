@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use native_sdk::resource::*;
 use radix_engine_queries::typed_substate_layout::two_resource_pool::*;
 use scrypto_test::prelude::*;

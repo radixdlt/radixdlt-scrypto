@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use paste::paste;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::WasmModule;

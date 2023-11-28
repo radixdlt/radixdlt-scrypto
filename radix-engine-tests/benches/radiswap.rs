@@ -5,11 +5,11 @@ use radix_engine::vm::NoExtension;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 #[cfg(feature = "rocksdb")]
 use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
+use radix_engine_tests::common::*;
 use scrypto_unit::{TestRunner, TestRunnerBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
 use transaction::prelude::*;
-use radix_engine_tests_common::*;
 
 /// Number of prefilled accounts in the substate store
 #[cfg(feature = "rocksdb")]

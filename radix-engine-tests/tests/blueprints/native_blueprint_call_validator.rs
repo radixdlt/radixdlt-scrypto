@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use radix_engine::utils::{
     validate_call_arguments_to_native_components, InstructionSchemaValidationError,
     LocatedInstructionSchemaValidationError,

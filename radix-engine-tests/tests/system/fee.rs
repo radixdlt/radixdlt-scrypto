@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};

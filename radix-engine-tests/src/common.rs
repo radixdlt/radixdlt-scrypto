@@ -44,7 +44,6 @@ pub mod package_loader {
 
 pub use package_loader::PackageLoader;
 
-
 /// Defines globally for all tests paths for various assets used during the tests and benches.
 /// To use it in a test definition file include following statement:
 /// use radix_engine_tests::common::*;

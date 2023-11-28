@@ -1,4 +1,4 @@
-use crate::common::*;
+use radix_engine_tests::common::*;
 use radix_engine::errors::{KernelError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;

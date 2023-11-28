@@ -13,6 +13,7 @@ use radix_engine::{
     },
 };
 use radix_engine_queries::typed_substate_layout::{CodeHash, PackageDefinition};
+use radix_engine_tests::common::*;
 use sbor::rust::iter;
 use scrypto_unit::TestRunnerBuilder;
 use transaction::{
@@ -20,8 +21,6 @@ use transaction::{
     validation::{recover_secp256k1, verify_secp256k1},
 };
 use wabt::wat2wasm;
-use radix_engine_tests_common::*;
-
 
 fn bench_decode_sbor(c: &mut Criterion) {
     let payload = include_workspace_asset_bytes!("radiswap.rpd");
@@ -41,7 +40,8 @@ fn bench_decode_sbor_bytes(c: &mut Criterion) {
 
 fn bench_validate_sbor_payload(c: &mut Criterion) {
     let package_definition =
-        manifest_decode::<PackageDefinition>(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
+        manifest_decode::<PackageDefinition>(include_workspace_asset_bytes!("radiswap.rpd"))
+            .unwrap();
     let payload = scrypto_encode(&package_definition).unwrap();
     println!("Payload size: {}", payload.len());
     let (index, schema) =
@@ -94,8 +94,7 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 
 fn bench_spin_loop(c: &mut Criterion) {
     // Prepare code
-    let code =
-        wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "100000")).unwrap();
+    let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "100000")).unwrap();
 
     // Instrument
     let validator = WasmValidator::default();
