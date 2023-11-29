@@ -396,7 +396,7 @@ jobs:
         run: |
           sudo apt-get install libclang-dev -y 
           curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-          sudo apt-get install git-lfs
+          sudo apt-get install git-lfs -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Pull LFS assets
