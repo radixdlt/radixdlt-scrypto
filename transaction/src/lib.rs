@@ -19,6 +19,7 @@ pub mod prelude {
     // Exports from this crate
     pub use crate::builder::*;
     pub use crate::model::*;
+    pub use crate::signing::bls::*;
     pub use crate::signing::ed25519::*;
     pub use crate::signing::secp256k1::*;
     pub use crate::signing::{PrivateKey, Signer};

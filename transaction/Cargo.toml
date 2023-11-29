@@ -12,6 +12,7 @@ radix-engine-common = { path = "../radix-engine-common", default-features = fals
 hex = { version = "0.4.3", default-features = false }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"]}
 secp256k1 = { version = "0.24.0", default-features = false, features = ["global-context", "recovery"]}
+blst = { version = "0.3.11", default-features = false }
 serde = { version = "1.0.144", default-features = false, optional = true }
 lazy_static = "1.4.0"
 strum = { version = "0.24", default-features = false, features = ["derive"] }
