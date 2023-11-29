@@ -631,6 +631,10 @@ mod tests {
             PublicKey::Secp256k1(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
         );
         test_equivalence(
+            PUBLIC_KEY_TYPE,
+            PublicKey::Bls(BlsPublicKey([0; BlsPublicKey::LENGTH])),
+        );
+        test_equivalence(
             ED25519_PUBLIC_KEY_TYPE,
             Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
         );
@@ -638,6 +642,7 @@ mod tests {
             SECP256K1_PUBLIC_KEY_TYPE,
             Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
         );
+        test_equivalence(BLS_PUBLIC_KEY_TYPE, BlsPublicKey([0; BlsPublicKey::LENGTH]));
         test_equivalence(
             PUBLIC_KEY_HASH_TYPE,
             PublicKeyHash::Ed25519(Ed25519PublicKeyHash([0; Ed25519PublicKeyHash::LENGTH])),
@@ -647,12 +652,20 @@ mod tests {
             PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash([0; Secp256k1PublicKeyHash::LENGTH])),
         );
         test_equivalence(
+            PUBLIC_KEY_HASH_TYPE,
+            PublicKeyHash::Bls(BlsPublicKeyHash([0; BlsPublicKeyHash::LENGTH])),
+        );
+        test_equivalence(
             ED25519_PUBLIC_KEY_HASH_TYPE,
             Ed25519PublicKeyHash([0; Ed25519PublicKeyHash::LENGTH]),
         );
         test_equivalence(
             SECP256K1_PUBLIC_KEY_HASH_TYPE,
             Secp256k1PublicKeyHash([0; Secp256k1PublicKeyHash::LENGTH]),
+        );
+        test_equivalence(
+            BLS_PUBLIC_KEY_HASH_TYPE,
+            BlsPublicKeyHash([0; BlsPublicKeyHash::LENGTH]),
         );
     }
 
