@@ -16,15 +16,15 @@ use crate::resim::*;
 pub struct NewAccount {
     /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
-    network: Option<String>,
+    pub network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
-    manifest: Option<PathBuf>,
+    pub manifest: Option<PathBuf>,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 #[derive(ScryptoSbor, ManifestSbor)]
