@@ -14,6 +14,7 @@ pub const ROLE_ASSIGNMENT_CODE_ID: u64 = 12u64;
 pub const POOL_CODE_ID: u64 = 13u64;
 pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
 pub const TEST_UTILS_CODE_ID: u64 = 15u64;
+pub const CRYPTO_UTILS_CODE_ID: u64 = 16u64;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);

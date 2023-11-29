@@ -1,6 +1,7 @@
 use crate::blueprints::access_controller::AccessControllerNativePackage;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
+use crate::blueprints::crypto_utils::CryptoUtilsNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
@@ -140,6 +141,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     }
                     TEST_UTILS_CODE_ID => {
                         TestUtilsNativePackage::invoke_export(export_name, input, api)
+                    }
+                    CRYPTO_UTILS_CODE_ID => {
+                        CryptoUtilsNativePackage::invoke_export(export_name, input, api)
                     }
                     _ => {
                         return Err(RuntimeError::VmError(VmError::Native(
