@@ -408,6 +408,14 @@ create_well_known_lookup!(
             )
         ),
         (
+            BLS_PUBLIC_KEY,
+            KEY_TYPES_START + 3,
+            named_transparent(
+                "BlsPublicKey",
+                bytes_fixed_length_type_data(BlsPublicKey::LENGTH),
+            )
+        ),
+        (
             PUBLIC_KEY_HASH,
             KEY_TYPES_START + 8,
             named_enum(
