@@ -45,7 +45,7 @@ pub enum ParseBlsSignatureError {
     InvalidLength(usize),
 }
 
-/// Represents an error when parsing ED25519 signature from hex.
+/// Represents an error when parsing BLS signature from hex.
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for ParseBlsSignatureError {}
 
