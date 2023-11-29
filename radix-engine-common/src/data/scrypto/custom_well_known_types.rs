@@ -388,6 +388,7 @@ create_well_known_lookup!(
                 [
                     (0u8, named_tuple("Secp256k1", [SECP256K1_PUBLIC_KEY_TYPE])),
                     (1u8, named_tuple("Ed25519", [ED25519_PUBLIC_KEY_TYPE])),
+                    (2u8, named_tuple("Bls", [BLS_PUBLIC_KEY_TYPE])),
                 ]
             )
         ),
@@ -408,6 +409,14 @@ create_well_known_lookup!(
             )
         ),
         (
+            BLS_PUBLIC_KEY,
+            KEY_TYPES_START + 3,
+            named_transparent(
+                "BlsPublicKey",
+                bytes_fixed_length_type_data(BlsPublicKey::LENGTH),
+            )
+        ),
+        (
             PUBLIC_KEY_HASH,
             KEY_TYPES_START + 8,
             named_enum(
@@ -418,6 +427,7 @@ create_well_known_lookup!(
                         named_tuple("Secp256k1", [SECP256K1_PUBLIC_KEY_HASH_TYPE])
                     ),
                     (1u8, named_tuple("Ed25519", [ED25519_PUBLIC_KEY_HASH_TYPE])),
+                    (2u8, named_tuple("Bls", [BLS_PUBLIC_KEY_HASH_TYPE])),
                 ]
             )
         ),
@@ -435,6 +445,14 @@ create_well_known_lookup!(
             named_transparent(
                 "Ed25519PublicKeyHash",
                 bytes_fixed_length_type_data(Ed25519PublicKeyHash::LENGTH),
+            )
+        ),
+        (
+            BLS_PUBLIC_KEY_HASH,
+            KEY_TYPES_START + 11,
+            named_transparent(
+                "BlsPublicKeyHash",
+                bytes_fixed_length_type_data(BlsPublicKeyHash::LENGTH),
             )
         ),
         // ROLE ASSIGNMENT TYPES
