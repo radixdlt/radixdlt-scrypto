@@ -194,6 +194,27 @@ declare_native_blueprint_state! {
 pub type ValidatorStateV1 = ValidatorSubstate;
 pub type ValidatorProtocolUpdateReadinessSignalV1 = ValidatorProtocolUpdateReadinessSignalSubstate;
 
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+enum UpdateSecondaryIndex {
+    Create {
+        index_key: SortedKey,
+        key: Secp256k1PublicKey,
+        stake: Decimal,
+    },
+    UpdateStake {
+        index_key: SortedKey,
+        new_index_key: SortedKey,
+        new_stake_amount: Decimal,
+    },
+    UpdatePublicKey {
+        index_key: SortedKey,
+        key: Secp256k1PublicKey,
+    },
+    Remove {
+        index_key: SortedKey,
+    },
+}
+
 pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
@@ -1536,10 +1557,7 @@ impl ValidatorBlueprint {
         }
     }
 
-    pub(crate) fn update_validator<Y>(
-        update: UpdateSecondaryIndex,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn update_validator<Y>(update: UpdateSecondaryIndex, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
