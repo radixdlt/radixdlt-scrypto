@@ -48,7 +48,7 @@ pub extern crate self as radix_engine_common;
 /// The idea is that we can just include the current crate's prelude and avoid messing around with tons of includes.
 /// This makes refactors easier, and makes integration into the node less painful.
 pub mod prelude {
-    // Exports from upstream libaries
+    // Exports from upstream libraries
     pub use radix_engine_derive::{
         ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
         ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,

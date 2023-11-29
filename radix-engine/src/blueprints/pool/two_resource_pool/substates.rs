@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct TwoResourcePoolSubstate {
-    /// The vaults of the resources of the pool - the maximum number of entires that this map can
+    /// The vaults of the resources of the pool - the maximum number of entries that this map can
     /// have is two, a single vault for each resource. This is a map as it makes the interactions
     /// simpler.
     pub vaults: [(ResourceAddress, Vault); 2],

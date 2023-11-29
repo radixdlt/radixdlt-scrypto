@@ -28,7 +28,7 @@ const FILTER_SPIKES: f32 = 500f32;
 #[test]
 /// Measuring read of node substates of size in range [MIN_SIZE-MAX_SIZE] and measuring substates not found in database.
 /// Database is created in /tmp/radix-scrypto-db folder.
-/// Outputs are genered in png files: /tmp/scrypto_read_rocksdb.png, /tmp/scrypto_read_inmem.png, /tmp/scrypto_read_diff.png
+/// Outputs are generated in png files: /tmp/scrypto_read_rocksdb.png, /tmp/scrypto_read_inmem.png, /tmp/scrypto_read_diff.png
 /// point list is printed to stdout.
 /// To run the test case use command:
 ///  cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_read --release -- --nocapture

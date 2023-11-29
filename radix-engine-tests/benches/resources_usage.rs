@@ -117,7 +117,7 @@ impl ResourceInfoFramework {
         println!("Average allocation per iteration: {}", x);
         let x = Bytes(sum_peak.0 / self.peak_allocations.len());
         println!("Average peak allocation per iteration: {}", x);
-        println!("Alocated memory chunks (size: count): {:#?}", map);
+        println!("Allocated memory chunks (size: count): {:#?}", map);
         println!("Peak allocations (size: count): {:#?}", map_peak);
     }
 }

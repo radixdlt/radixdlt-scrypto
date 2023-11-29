@@ -220,7 +220,7 @@ pub fn export_one_graph(
 
     root.present().expect("Unable to write result to file");
 
-    // print some informations
+    // print some information
     println!("Points count: {}", data.len());
     println!(
         "Distinct size point count: {}",
@@ -457,7 +457,7 @@ pub fn export_graph_and_print_summary(
 
     root_area.present().expect("Unable to write result to file");
 
-    // print some informations
+    // print some information
     println!("Points count: {}", data.len());
     println!("Distinct size point count: {}", original_data.len());
     println!(
@@ -650,7 +650,7 @@ pub fn export_graph_and_print_summary_for_two_series(
 
     root.present().expect("Unable to write result to file");
 
-    // print some informations
+    // print some information
     println!("Points list (size, time[µs]): {:?}", v1);
     println!(
         "Linear approx.:  f(size) = {} * size + {}\n",
@@ -837,7 +837,7 @@ pub fn export_graph_and_print_summary_read_not_found_results<
 
     root.present().expect("Unable to write result to file");
 
-    // print some informations
+    // print some information
     let (avg, unit) = if use_micro {
         (
             data.iter().sum::<Duration>().as_micros() as usize / data.len(),

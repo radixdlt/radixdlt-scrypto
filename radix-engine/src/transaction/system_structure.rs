@@ -176,7 +176,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                             //     enable this for TrackedSubstateValue::ReadOnly(ReadOnly::Existent(_))
                             //     but it is not possible for NonExistent reads.
                             //   If a transaction fails, it's possible to get reads of non-existent substates
-                            //     where the type info can't be resolved below. For example, if boostrap fails,
+                            //     where the type info can't be resolved below. For example, if bootstrap fails,
                             //     consensus manager substates are read but the type info is not written.
                             continue;
                         }
@@ -280,10 +280,10 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
     fn resolve_object_substate_structure(
         &self,
         bp_type_target: &BlueprintTypeTarget,
-        object_partition_desciptor: &ObjectPartitionDescriptor,
+        object_partition_descriptor: &ObjectPartitionDescriptor,
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
-        match object_partition_desciptor {
+        match object_partition_descriptor {
             ObjectPartitionDescriptor::Fields => {
                 let field_index = match key {
                     SubstateKey::Field(field_index) => field_index,

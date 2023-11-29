@@ -644,13 +644,13 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             .into_par_iter()
             .map(|seed| {
                 let mut fuzz_test = Self::new(seed);
-                let err_after_acount = if inject_costing_error {
+                let err_after_account = if inject_costing_error {
                     let err_after_count = fuzz_test.fuzzer.rng.gen_range(200u64..500u64);
                     Some(err_after_count)
                 } else {
                     None
                 };
-                fuzz_test.run_single_fuzz(num_txns, err_after_acount)
+                fuzz_test.run_single_fuzz(num_txns, err_after_account)
             })
             .collect();
 

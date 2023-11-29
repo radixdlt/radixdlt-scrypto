@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     fn manifest_expression_parse_fail() {
-        // wrong lenght
+        // wrong length
         let vec_err_1 = vec![1u8, 2];
         // wrong variant id
         let vec_err_2 = vec![10u8];
