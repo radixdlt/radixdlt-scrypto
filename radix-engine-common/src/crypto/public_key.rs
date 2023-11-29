@@ -13,6 +13,7 @@ use arbitrary::Arbitrary;
 pub enum PublicKey {
     Secp256k1(Secp256k1PublicKey),
     Ed25519(Ed25519PublicKey),
+    Bls(BlsPublicKey),
 }
 
 impl Describe<ScryptoCustomTypeKind> for PublicKey {
@@ -33,6 +34,12 @@ impl From<Secp256k1PublicKey> for PublicKey {
 impl From<Ed25519PublicKey> for PublicKey {
     fn from(public_key: Ed25519PublicKey) -> Self {
         Self::Ed25519(public_key)
+    }
+}
+
+impl From<BlsPublicKey> for PublicKey {
+    fn from(public_key: BlsPublicKey) -> Self {
+        Self::Bls(public_key)
     }
 }
 

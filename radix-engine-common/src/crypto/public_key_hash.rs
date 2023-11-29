@@ -33,6 +33,7 @@ pub fn hash_public_key_bytes<T: AsRef<[u8]>>(key_bytes: T) -> [u8; NodeId::RID_L
 pub enum PublicKeyHash {
     Secp256k1(Secp256k1PublicKeyHash),
     Ed25519(Ed25519PublicKeyHash),
+    Bls(BlsPublicKeyHash),
 }
 
 impl Describe<ScryptoCustomTypeKind> for PublicKeyHash {
@@ -56,6 +57,12 @@ impl From<Ed25519PublicKeyHash> for PublicKeyHash {
     }
 }
 
+impl From<BlsPublicKeyHash> for PublicKeyHash {
+    fn from(public_key: BlsPublicKeyHash) -> Self {
+        Self::Bls(public_key)
+    }
+}
+
 impl PublicKeyHash {
     pub fn new_from_public_key(public_key: &PublicKey) -> Self {
         match public_key {
@@ -64,6 +71,9 @@ impl PublicKeyHash {
             }
             PublicKey::Ed25519(public_key) => {
                 PublicKeyHash::Ed25519(Ed25519PublicKeyHash::new_from_public_key(public_key))
+            }
+            PublicKey::Bls(public_key) => {
+                PublicKeyHash::Bls(BlsPublicKeyHash::new_from_public_key(public_key))
             }
         }
     }
@@ -74,6 +84,7 @@ impl IsPublicKeyHash for PublicKeyHash {
         match self {
             PublicKeyHash::Secp256k1(value) => value.get_hash_bytes(),
             PublicKeyHash::Ed25519(value) => value.get_hash_bytes(),
+            PublicKeyHash::Bls(value) => value.get_hash_bytes(),
         }
     }
 
