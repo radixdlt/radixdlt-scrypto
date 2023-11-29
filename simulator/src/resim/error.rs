@@ -67,6 +67,9 @@ pub enum Error {
 
     InvalidPrivateKey,
 
+    /// e.g. if you accidentally pass in a public key in `set_default_account` command.
+    GotPublicKeyExpectedPrivateKey,
+
     NonFungibleGlobalIdError(ParseNonFungibleGlobalIdError),
 
     FailedToBuildArguments(BuildCallArgumentError),
