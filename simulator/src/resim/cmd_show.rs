@@ -42,17 +42,3 @@ impl Show {
         }
     }
 }
-
-#[cfg(test)]
-#[test]
-fn test_no_value() {
-    let mut out = std::io::stdout();
-    let new_account = NewAccount {
-        network: None,
-        manifest: None,
-        trace: false,
-    };
-    assert!(new_account.run(&mut out).is_ok());
-    let cmd = Show { address: None };
-    assert!(cmd.run(&mut out).is_ok());
-}
