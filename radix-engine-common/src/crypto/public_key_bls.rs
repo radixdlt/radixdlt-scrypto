@@ -13,16 +13,16 @@ use arbitrary::Arbitrary;
 pub struct BlsPublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
-/*
+
 impl Describe<ScryptoCustomTypeKind> for BlsPublicKey {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::BLS_PUBLIC_KEY_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::secp256k1_public_key_type_data()
+        well_known_scrypto_custom_types::bls_public_key_type_data()
     }
 }
-*/
+
 impl BlsPublicKey {
     pub const LENGTH: usize = 48;
 
