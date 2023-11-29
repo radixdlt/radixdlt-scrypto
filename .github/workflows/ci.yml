@@ -134,6 +134,8 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
           cmake-version: '3.27.9'
+      - name: Cargo Check
+        run: sudo apt-get install libclang-dev
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Install dependency
@@ -154,6 +156,8 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
           cmake-version: '3.27.9'
+      - name: Cargo Check
+        run: sudo apt-get install libclang-dev
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -201,6 +205,8 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
           cmake-version: '3.27.9'
+      - name: Cargo Check
+        run: sudo apt-get install libclang-dev
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -222,6 +228,8 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
           cmake-version: '3.27.9'
+      - name: Cargo Check
+        run: sudo apt-get install libclang-dev
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -289,6 +297,9 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
           cmake-version: '3.27.9'
+      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
+        name: Cargo Check
+        run: sudo apt-get install libclang-dev
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - uses: radixdlt/rust-cache@allow_registry_src_caching
@@ -320,6 +331,9 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
           cmake-version: '3.27.9'
+      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
+        name: Cargo Check
+        run: sudo apt-get install libclang-dev
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - uses: radixdlt/rust-cache@allow_registry_src_caching
@@ -345,6 +359,8 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
           cmake-version: '3.27.9'
+      - name: Cargo Check
+        run: sudo apt-get install libclang-dev
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Cargo Check
@@ -376,6 +392,8 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
           cmake-version: '3.27.9'
+      - name: Cargo Check
+        run: sudo apt-get install libclang-dev
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Pull LFS assets
