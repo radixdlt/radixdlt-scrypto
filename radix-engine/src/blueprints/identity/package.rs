@@ -276,6 +276,7 @@ impl IdentityBlueprint {
             let entity_type = match public_key_hash {
                 PublicKeyHash::Ed25519(..) => EntityType::GlobalVirtualEd25519Identity,
                 PublicKeyHash::Secp256k1(..) => EntityType::GlobalVirtualSecp256k1Identity,
+                PublicKeyHash::Bls(..) => unimplemented!(),
             };
 
             let mut id_bytes = vec![entity_type as u8];

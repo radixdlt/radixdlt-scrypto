@@ -45,6 +45,7 @@ impl ComponentAddress {
                 node_id[0] = EntityType::GlobalVirtualEd25519Account as u8;
                 Self(NodeId(node_id))
             }
+            PublicKey::Bls(_) => unimplemented!(),
         }
     }
 
@@ -62,6 +63,7 @@ impl ComponentAddress {
                 node_id[0] = EntityType::GlobalVirtualEd25519Identity as u8;
                 Self(NodeId(node_id))
             }
+            PublicKey::Bls(_) => unimplemented!(),
         }
     }
 

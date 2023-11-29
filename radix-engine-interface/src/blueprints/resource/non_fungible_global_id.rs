@@ -193,6 +193,7 @@ impl FromPublicKey for NonFungibleGlobalId {
                 ED25519_SIGNATURE_VIRTUAL_BADGE,
                 NonFungibleLocalId::bytes(public_key_hash.get_hash_bytes().to_vec()).unwrap(),
             ),
+            PublicKeyHash::Bls(_) => unimplemented!(),
         }
     }
 }

@@ -420,6 +420,7 @@ fn create_metadata() -> BTreeMap<String, MetadataValue> {
             PublicKeyHash::Secp256k1(
                 Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]).get_hash(),
             ),
+            PublicKeyHash::Bls(BlsPublicKey([0; BlsPublicKey::LENGTH]).get_hash()),
         ],
     );
     metadata

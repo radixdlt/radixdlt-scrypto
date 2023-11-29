@@ -611,6 +611,7 @@ impl AccountBlueprint {
             let entity_type = match public_key_hash {
                 PublicKeyHash::Ed25519(..) => EntityType::GlobalVirtualEd25519Account,
                 PublicKeyHash::Secp256k1(..) => EntityType::GlobalVirtualSecp256k1Account,
+                PublicKeyHash::Bls(..) => unimplemented!(),
             };
 
             let mut id_bytes = vec![entity_type as u8];
