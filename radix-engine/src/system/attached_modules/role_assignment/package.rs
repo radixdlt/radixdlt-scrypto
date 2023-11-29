@@ -266,7 +266,7 @@ impl RoleAssignmentNativePackage {
         impl AccessRuleVisitor for AccessRuleVerifier {
             type Error = RoleAssignmentError;
             fn visit(&mut self, _node: &AccessRuleNode, depth: usize) -> Result<(), Self::Error> {
-                // This is to protect unbounded native stack useage during authorization
+                // This is to protect unbounded native stack usage during authorization
                 if depth > MAX_ACCESS_RULE_DEPTH {
                     return Err(RoleAssignmentError::ExceededMaxAccessRuleDepth);
                 }

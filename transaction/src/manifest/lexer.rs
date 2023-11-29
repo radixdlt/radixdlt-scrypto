@@ -502,7 +502,7 @@ mod tests {
     }
 
     #[test]
-    fn test_precise_decimal_colletion() {
+    fn test_precise_decimal_collection() {
         lex_ok!(
             "Array<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
             vec![

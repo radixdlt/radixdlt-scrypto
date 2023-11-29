@@ -144,21 +144,21 @@ impl ManifestBuilder {
     }
 
     /// Generates an unused bucket name with the given prefix.
-    /// This should be used when you are programatically generating buckets,
+    /// This should be used when you are programmatically generating buckets,
     /// and need to generate bucket names which do not clash.
     pub fn generate_bucket_name(&self, prefix: impl Into<String>) -> String {
         self.registrar.new_collision_free_bucket_name(prefix)
     }
 
     /// Generates an unused proof name with the given prefix.
-    /// This should be used when you are programatically generating proofs,
+    /// This should be used when you are programmatically generating proofs,
     /// and need to generate names which do not clash.
     pub fn generate_proof_name(&self, prefix: impl Into<String>) -> String {
         self.registrar.new_collision_free_proof_name(prefix)
     }
 
     /// Generates an unused address reservation name with the given prefix.
-    /// This should be used when you are programatically generating address reservations,
+    /// This should be used when you are programmatically generating address reservations,
     /// and need to generate names which do not clash.
     pub fn generate_address_reservation_name(&self, prefix: impl Into<String>) -> String {
         self.registrar
@@ -166,7 +166,7 @@ impl ManifestBuilder {
     }
 
     /// Generates an unused address name with the given prefix.
-    /// This should be used when you are programatically generating named addresses,
+    /// This should be used when you are programmatically generating named addresses,
     /// and need to generate names which do not clash.
     pub fn generate_address_name(&self, prefix: impl Into<String>) -> String {
         self.registrar

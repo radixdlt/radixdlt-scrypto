@@ -21,7 +21,7 @@ const WRITE_NODES_COUNT: usize = 4000;
 #[test]
 /// Measuring deletion of substates of size from range [MIN_SIZE-MAX_SIZE].
 /// Database is created in /tmp/radix-scrypto-db folder.
-/// Outputs are genered in png files: /tmp/scrypto_delete_per_size_rocksdb.png, /tmp/scrypto_delete_per_size_rocksdb_JMT.png, /tmp/scrypto_delete_per_size_rocksdb_diff.png
+/// Outputs are generated in png files: /tmp/scrypto_delete_per_size_rocksdb.png, /tmp/scrypto_delete_per_size_rocksdb_JMT.png, /tmp/scrypto_delete_per_size_rocksdb_diff.png
 /// point list is printed to stdout.
 /// To run the test case use command:
 ///  cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_delete_per_size --release -- --nocapture
@@ -118,7 +118,7 @@ fn test_delete_per_size() {
 #[test]
 /// Measuring partition removal of variable sizes [0-100].
 /// Database is created in /tmp/radix-scrypto-db folder.
-/// Outputs are genered in png files: /tmp/scrypto_delete_per_partition_rocksdb.png, /tmp/scrypto_delete_per_partition_rocksdb_JMT.png, /tmp/scrypto_delete_per_partition_rocksdb_diff.png
+/// Outputs are generated in png files: /tmp/scrypto_delete_per_partition_rocksdb.png, /tmp/scrypto_delete_per_partition_rocksdb_JMT.png, /tmp/scrypto_delete_per_partition_rocksdb_diff.png
 /// point list is printed to stdout.
 /// To run the test case use command:
 ///  cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_delete_per_partition --release -- --nocapture

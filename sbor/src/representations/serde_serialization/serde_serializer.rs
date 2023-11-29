@@ -20,7 +20,7 @@ pub enum SerializationMode {
     /// If value/type data is included in the parent (Vecs and Map entries), it is still duplicated
     /// on the child object for simplicity.
     Programmatic,
-    /// ==THIS FORMAT IS DEPRECATED - BUT KEPT FOR THE TIME BEING FOR NODE COMPATABILITY==
+    /// ==THIS FORMAT IS DEPRECATED - BUT KEPT FOR THE TIME BEING FOR NODE COMPATIBILITY==
     ///
     /// This "Model" encoding is intended to exactly capture the content of the scrypto value,
     /// in a way which can be inverted back into a scrypto value.

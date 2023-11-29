@@ -21,6 +21,8 @@ pub enum EntityDumpError {
     ComponentNotFound,
     ResourceManagerNotFound,
     InvalidStore(String),
+    /// If you run `resim show`, without any address but no default account address has been set.
+    NoAddressProvidedAndNotDefaultAccountSet,
 }
 
 /// Dump a package into console.

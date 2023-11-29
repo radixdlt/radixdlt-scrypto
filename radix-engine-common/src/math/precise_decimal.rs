@@ -156,7 +156,7 @@ impl PreciseDecimal {
         let n = Self::SCALE - decimal_places as u32;
         let divisor: I256 = I256::TEN.pow(n);
         let positive_remainder = {
-            // % is the "C" style remainder operator, rather than the mathematical modulo operater,
+            // % is the "C" style remainder operator, rather than the mathematical modulo operator,
             // So we fix that here https://internals.rust-lang.org/t/mathematical-modulo-operator/5952
             let remainder = self.0 % divisor;
             match remainder.cmp(&I256::ZERO) {

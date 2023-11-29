@@ -7,7 +7,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn stored_component_addresses_in_non_globalized_component_are_invokable() {
+fn stored_component_addresses_in_non_globalized_component_are_invocable() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package =
@@ -29,7 +29,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
 }
 
 #[test]
-fn stored_component_addresses_are_invokable() {
+fn stored_component_addresses_are_invocable() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();

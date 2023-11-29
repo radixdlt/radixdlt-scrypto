@@ -889,7 +889,7 @@ macro_rules! test_math {
                 if <$i>::MIN < Zero::zero() {
                     expect = BigInt::from_signed_bytes_le(&[0x81u8; LEN]);
                 } else {
-                    // we do not thest negative numbers on unsigned types
+                    // we do not test negative numbers on unsigned types
                     expect = BigInt::from_bytes_le(Sign::Plus, &[0x81u8; LEN]);
                 }
                 let bits: u32 = <$i>::BITS as u32;

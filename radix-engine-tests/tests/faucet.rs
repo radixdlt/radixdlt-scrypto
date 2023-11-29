@@ -5,7 +5,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn lock_fee_on_empty_faucet_should_give_nice_erro() {
+fn lock_fee_on_empty_faucet_should_give_nice_error() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_genesis(CustomGenesis::with_faucet_supply(Decimal::ZERO))

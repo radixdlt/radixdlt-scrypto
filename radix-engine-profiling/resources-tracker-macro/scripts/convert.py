@@ -15,7 +15,7 @@ import numpy as np
 
 
 if len(sys.argv) < 2:
-    print("Usage: convert.py <INPUT_FOLDER_WITH_XML_FILES>\n\nResults are generaged in files:", file=sys.stderr)
+    print("Usage: convert.py <INPUT_FOLDER_WITH_XML_FILES>\n\nResults are generated in files:", file=sys.stderr)
     print(" /tmp/_out_table.txt\n /tmp/_out_table_detailed.txt\n /tmp/_out_linear_regression_coeff.txt\n /tmp/native_function_base_costs.csv", file=sys.stderr)
     sys.exit(-1)
 
@@ -46,7 +46,7 @@ for path in file_list:
     if not os.path.isfile(input_file):
         continue
     if str(os.path.splitext(input_file)[1]).lower() != ".xml":
-        print("Skipping file: ", input_file, " (extenstion not xml)", file=sys.stderr)
+        print("Skipping file: ", input_file, " (extension not xml)", file=sys.stderr)
         continue
 
     # parse xml file
@@ -119,7 +119,7 @@ for path in file_list:
         key += ')'*(c1-c2)
 
 #======================================================================================#
-#    Subtract child nested calls, looking up to 5 childs, for example:                 #
+#    Subtract child nested calls, looking up to 5 children, for example:                 #
 #     kernel_invoke/kernel_invoke                                                      #
 #     kernel_invoke/invoke_export/kernel_invoke                                        #
 #     kernel_invoke/other_tag1/other_tag2/kernel_invoke                                #

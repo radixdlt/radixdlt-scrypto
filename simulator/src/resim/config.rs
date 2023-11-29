@@ -59,7 +59,7 @@ pub fn get_default_account() -> Result<ComponentAddress, Error> {
 pub fn get_default_private_key() -> Result<Secp256k1PrivateKey, Error> {
     get_configs()?
         .default_private_key
-        .map(|v| Secp256k1PrivateKey::from_bytes(&hex::decode(&v).unwrap()).unwrap())
+        .map(|v| Secp256k1PrivateKey::from_hex(&v).unwrap())
         .ok_or(Error::NoDefaultPrivateKey)
 }
 

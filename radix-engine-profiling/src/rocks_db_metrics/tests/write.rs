@@ -23,7 +23,7 @@ const WRITE_NODES_COUNT: usize = 4000;
 #[test]
 /// Measuring the writing nodes with SIZE_COUNT substates from range [MIN_SIZE-MAX_SIZE] each.
 /// Database is created in /tmp/radix-scrypto-db folder.
-/// Outputs are genered in png files: /tmp/scrypto_commit_per_size_rocksdb.png, /tmp/scrypto_commit_per_size_rocksdb_JMT.png, /tmp/scrypto_commit_per_size_rocksdb_diff.png
+/// Outputs are generated in png files: /tmp/scrypto_commit_per_size_rocksdb.png, /tmp/scrypto_commit_per_size_rocksdb_JMT.png, /tmp/scrypto_commit_per_size_rocksdb_diff.png
 /// point list is printed to stdout.
 /// To run the test case use command:
 ///  cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_commit_per_size --release -- --nocapture
@@ -137,7 +137,7 @@ fn test_commit_per_size() {
 #[test]
 /// Measuring the writing partition of variable sizes [0-100].
 /// Database is created in /tmp/radix-scrypto-db folder.
-/// Outputs are genered in png files: /tmp/scrypto_commit_per_partition_rocksdb.png, /tmp/scrypto_commit_per_partition_rocksdb_JMT.png, /tmp/scrypto_commit_per_partition_rocksdb_diff.png
+/// Outputs are generated in png files: /tmp/scrypto_commit_per_partition_rocksdb.png, /tmp/scrypto_commit_per_partition_rocksdb_JMT.png, /tmp/scrypto_commit_per_partition_rocksdb_diff.png
 /// point list is printed to stdout.
 /// To run the test case use command:
 ///  cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_commit_per_partition --release -- --nocapture
@@ -335,7 +335,7 @@ where
     // clean database
     std::fs::remove_dir_all(path.clone()).ok();
 
-    // prepare database with maxium size
+    // prepare database with maximum size
     {
         let mut substate_db = create_store(path.clone());
         prepare_db(
