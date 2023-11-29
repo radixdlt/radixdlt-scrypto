@@ -284,7 +284,7 @@ jobs:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores, windows-latest-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - if:  ${{ matrix.npm == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
+      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
         name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
@@ -315,7 +315,7 @@ jobs:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores, windows-latest-16-cores, macos-latest]
     steps:
       - uses: actions/checkout@v3
-      - if:  ${{ matrix.npm == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
+      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
         name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
@@ -340,7 +340,7 @@ jobs:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - if:  ${{ matrix.npm == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
+      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
         name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
