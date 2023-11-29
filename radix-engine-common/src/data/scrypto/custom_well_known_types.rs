@@ -628,6 +628,7 @@ mod tests {
             SECP256K1_PUBLIC_KEY_TYPE,
             Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
         );
+        test_equivalence(BLS_PUBLIC_KEY_TYPE, BlsPublicKey([0; BlsPublicKey::LENGTH]));
         test_equivalence(
             PUBLIC_KEY_HASH_TYPE,
             PublicKeyHash::Ed25519(Ed25519PublicKeyHash([0; Ed25519PublicKeyHash::LENGTH])),
