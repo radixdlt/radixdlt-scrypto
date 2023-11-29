@@ -13,16 +13,16 @@ use arbitrary::Arbitrary;
 pub struct BlsPublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
-/*
+
 impl Describe<ScryptoCustomTypeKind> for BlsPublicKey {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::BLS_PUBLIC_KEY_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::secp256k1_public_key_type_data()
+        well_known_scrypto_custom_types::bls_public_key_type_data()
     }
 }
-*/
+
 impl BlsPublicKey {
     pub const LENGTH: usize = 48;
 
@@ -55,16 +55,15 @@ impl TryFrom<&[u8]> for BlsPublicKey {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Categorize, Encode, Decode, BasicDescribe)]
 #[sbor(transparent)]
 pub struct BlsPublicKeyHash(pub [u8; Self::LENGTH]);
-/*
+
 impl Describe<ScryptoCustomTypeKind> for BlsPublicKeyHash {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::BLS_PUBLIC_KEY_HASH_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::secp256k1_public_key_hash_type_data()
+        well_known_scrypto_custom_types::bls_public_key_hash_type_data()
     }
 }
-*/
 
 impl BlsPublicKeyHash {
     pub const LENGTH: usize = NodeId::RID_LENGTH;
@@ -73,7 +72,7 @@ impl BlsPublicKeyHash {
         Self(hash_public_key_bytes(public_key.0))
     }
 }
-/*
+
 impl HasPublicKeyHash for BlsPublicKey {
     type TypedPublicKeyHash = BlsPublicKeyHash;
 
@@ -91,7 +90,7 @@ impl IsPublicKeyHash for BlsPublicKeyHash {
         PublicKeyHash::Bls(self)
     }
 }
-*/
+
 //======
 // error
 //======
