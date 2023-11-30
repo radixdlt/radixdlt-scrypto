@@ -1,6 +1,4 @@
-use radix_engine::blueprints::crypto_utils::{
-    CryptoUtilsBlsVerifyInput, CryptoUtilsNativePackage, CRYPTO_UTILS_BLUEPRINT,
-};
+use radix_engine::blueprints::crypto_utils::*;
 use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::package::CRYPTO_UTILS_CODE_ID;
@@ -40,6 +38,29 @@ fn crypto_utils_bls_verify(
     result.output(1)
 }
 
+#[cfg(test)]
+fn crypto_utils_keccak_hash(
+    runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    data: &str,
+) -> Hash {
+    let data = data.as_bytes().to_vec();
+
+    let receipt = runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(runner.faucet_component(), 500u32)
+            .call_function(
+                CRYPTO_UTILS_PACKAGE,
+                CRYPTO_UTILS_BLUEPRINT,
+                "keccak_hash",
+                CryptoUtilsKeccakHashInput { data },
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+    result.output(1)
+}
+
 #[test]
 fn test_crypto_package_bls_verify() {
     // Arrange
@@ -63,4 +84,30 @@ fn test_crypto_package_bls_verify() {
     // Assert
     assert!(msg1_verify);
     assert!(!msg2_verify);
+}
+
+#[test]
+fn test_crypto_package_keccak_hash() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    test_runner.publish_native_package_at_address(
+        CRYPTO_UTILS_CODE_ID,
+        CryptoUtilsNativePackage::definition(),
+        CRYPTO_UTILS_PACKAGE,
+    );
+    let data1 = "Hello Radix";
+    let data2 = "xidaR olleH";
+    let data1_hash = crypto_utils_keccak_hash(&mut test_runner, data1);
+    let data2_hash = crypto_utils_keccak_hash(&mut test_runner, data2);
+
+    assert_eq!(
+        data1_hash,
+        Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
+    );
+
+    assert_ne!(
+        data2_hash,
+        Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
+    );
 }

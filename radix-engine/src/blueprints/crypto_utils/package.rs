@@ -22,6 +22,13 @@ pub struct CryptoUtilsBlsVerifyInput {
 }
 pub type CryptoUtilsBlsVerifyOutput = bool;
 
+pub const CRYPTO_UTILS_KECCAK_HASH_IDENT: &str = "keccak_hash";
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct CryptoUtilsKeccakHashInput {
+    pub data: Vec<u8>,
+}
+pub type CryptoUtilsKeccakHashOutput = Hash;
+
 pub struct CryptoUtilsNativePackage;
 
 impl CryptoUtilsNativePackage {
@@ -55,6 +62,15 @@ impl CryptoUtilsNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            CRYPTO_UTILS_KECCAK_HASH_IDENT => {
+                let input: CryptoUtilsKeccakHashInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = CryptoUtilsBlueprint::keccak_hash(input.data.as_ref(), api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
@@ -77,6 +93,16 @@ impl CryptoUtilsBlueprint {
                     aggregator.add_child_type_and_descendents::<CryptoUtilsBlsVerifyOutput>(),
                 ),
                 export: CRYPTO_UTILS_BLS_VERIFY_IDENT.to_string(),
+            },
+            CRYPTO_UTILS_KECCAK_HASH_IDENT.to_string() => FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<CryptoUtilsKeccakHashInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<CryptoUtilsKeccakHashOutput>(),
+                ),
+                export: CRYPTO_UTILS_KECCAK_HASH_IDENT.to_string(),
             }
         };
         let schema = generate_full_schema(aggregator);
@@ -116,5 +142,13 @@ impl CryptoUtilsBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         Ok(verify_bls(&msg_hash, &pub_key, &signature))
+    }
+
+    pub fn keccak_hash<Y>(data: &[u8], _api: &mut Y) -> Result<Hash, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // TODO: Switch to real Keccak
+        Ok(blake2b_256_hash(data))
     }
 }
