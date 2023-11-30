@@ -712,7 +712,7 @@ fn updating_a_role_not_in_the_package_definition_fails() {
 }
 
 #[test]
-fn updating_a_role_on_package_with_allow_all_method_accessability_fails() {
+fn updating_a_role_on_package_with_allow_all_method_accessibility_fails() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("role-assignment-edge-cases");

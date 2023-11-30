@@ -2955,7 +2955,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
     pre_allocated_addresses.push(
         (
             BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
-            // Use a new address here so that we don't overwite current consensus manager and break invariants
+            // Use a new address here so that we don't overwrite current consensus manager and break invariants
             GlobalAddress::from(ComponentAddress::new_or_panic([
                 134, 12, 99, 24, 198, 49, 140, 108, 78, 27, 64, 204, 99, 24, 198, 49, 140, 247,
                 188, 165, 46, 181, 74, 106, 134, 49, 140, 99, 24, 0,

@@ -588,7 +588,7 @@ impl<T: Clone> State<T> {
     }
 
     // TODO - remove this when we create a better manifest builder which doesn't use callbacks,
-    // and so have easier error propogation
+    // and so have easier error propagation
     pub fn unwrap(&self) -> T {
         self.0.as_ref().map(Clone::clone).unwrap()
     }

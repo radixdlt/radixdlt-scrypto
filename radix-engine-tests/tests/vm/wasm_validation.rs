@@ -45,7 +45,7 @@ fn invalid_export_name_should_fail() {
         "super",
         "Self",
     ];
-    // Veryfing various export names like function, global and memory section.
+    // Verifying various export names like function, global and memory section.
     let replace_tokens = ["FUNCTION_NAME", "GLOBAL_NAME", "MEMORY_NAME"];
 
     for token in replace_tokens {

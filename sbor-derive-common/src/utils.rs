@@ -389,7 +389,7 @@ fn get_types_requiring_categorize_bound_for_encode_and_decode(
         //   In future, I'd suggest:
         //   - Change this to assume none, and add categorize_child_types_for_encode if needed.
         //   - Add separate categorize_child_types_for_categorize - and also default to not needed.
-        // These can be removed / overriden with the "categorize_types" field
+        // These can be removed / overridden with the "categorize_types" field
         return Ok(child_types.to_owned());
     };
 

@@ -2,7 +2,7 @@ use crate::rust::prelude::*;
 use crate::value_kind::*;
 use crate::*;
 
-/// Represents an error ocurred during decoding.
+/// Represents an error occurred during decoding.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum DecodeError {
     ExtraTrailingBytes(usize),
