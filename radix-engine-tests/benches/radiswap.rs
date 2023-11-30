@@ -5,6 +5,7 @@ use radix_engine::vm::NoExtension;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 #[cfg(feature = "rocksdb")]
 use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
+use radix_engine_tests::common::*;
 use scrypto_unit::{TestRunner, TestRunnerBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
@@ -45,8 +46,8 @@ fn bench_radiswap(c: &mut Criterion) {
     let (pk, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.publish_package(
         (
-            include_bytes!("../../assets/radiswap.wasm").to_vec(),
-            manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap(),
+            include_workspace_asset_bytes!("radiswap.wasm").to_vec(),
+            manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap(),
         ),
         btreemap!(),
         OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk)))),
