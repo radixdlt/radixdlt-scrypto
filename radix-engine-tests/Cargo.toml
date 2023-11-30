@@ -37,7 +37,6 @@ walkdir = { version = "2.3.3" }
 paste = { version = "1.0.13" }
 lazy_static = { version = "1.4.0" }
 hex = { version = "0.4.3", default-features = false }
-tuple-return = { path = "./assets/blueprints/tuple-return", features = ["test"], default-features = false }
 trybuild = { version = "1.0.85" }
 automod = "1.0.13"
 
@@ -79,8 +78,8 @@ test = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "transaction/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-interface/std", "radix-engine-stores/std", "radix-engine-store-interface/std", "radix-engine-queries/std", "utils/std", "scrypto/std", "scrypto-unit/std", "scrypto-test/std", "scrypto-test/moka", "tuple-return/std"]
-alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-store-interface/alloc", "radix-engine-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-unit/alloc", "scrypto-test/alloc", "scrypto-test/lru", "tuple-return/alloc"]
+std = ["sbor/std", "transaction/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-interface/std", "radix-engine-stores/std", "radix-engine-store-interface/std", "radix-engine-queries/std", "utils/std", "scrypto/std", "scrypto-unit/std", "scrypto-test/std", "scrypto-test/moka"]
+alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-store-interface/alloc", "radix-engine-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-unit/alloc", "scrypto-test/alloc", "scrypto-test/lru"]
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []

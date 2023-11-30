@@ -18,3 +18,4 @@ alloc = ["sbor/alloc", "scrypto/alloc"]
 bench = false
 doctest = false
 crate-type = ["cdylib", "lib"]
+
