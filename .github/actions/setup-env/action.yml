@@ -23,12 +23,12 @@ runs:
       run: choco install llvm -y
       shell: bash
     - name: Setup cmake
-      if: runner.os != 'Windows'
+      if: runner.os == 'Linux'
       uses: jwlawson/actions-setup-cmake@v1.13
       with:
         cmake-version: '3.27.9'
     - name: Cargo Check
-      if: runner.os != 'Windows'
+      if: runner.os == 'Windows'
       run: sudo apt-get install libclang-dev -y
       shell: bash
 
