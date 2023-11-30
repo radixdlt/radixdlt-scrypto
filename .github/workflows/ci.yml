@@ -130,12 +130,6 @@ jobs:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
-      - name: Cargo Check
-        run: sudo apt-get install libclang-dev -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Install dependency
@@ -152,12 +146,6 @@ jobs:
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
-      - name: Cargo Check
-        run: sudo apt-get install libclang-dev -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -180,10 +168,6 @@ jobs:
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -201,12 +185,6 @@ jobs:
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
-      - name: Cargo Check
-        run: sudo apt-get install libclang-dev -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -224,12 +202,6 @@ jobs:
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
-      - name: Cargo Check
-        run: sudo apt-get install libclang-dev -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -292,14 +264,6 @@ jobs:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores, windows-latest-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
-        name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
-      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
-        name: Cargo Check
-        run: sudo apt-get install libclang-dev -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - uses: radixdlt/rust-cache@allow_registry_src_caching
@@ -326,14 +290,6 @@ jobs:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores, windows-latest-16-cores, macos-latest]
     steps:
       - uses: actions/checkout@v3
-      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
-        name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
-      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
-        name: Cargo Check
-        run: sudo apt-get install libclang-dev -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - uses: radixdlt/rust-cache@allow_registry_src_caching
@@ -354,13 +310,6 @@ jobs:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - if:  ${{ matrix.os == 'gh-runner-scrypto-ubuntu-jammy-16-cores' }}
-        name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
-      - name: Cargo Check
-        run: sudo apt-get install libclang-dev -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Cargo Check
@@ -374,10 +323,6 @@ jobs:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores]
     steps:
       - uses: actions/checkout@v3
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Cargo Check
@@ -388,10 +333,6 @@ jobs:
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.27.9'
       - name: Cargo Check
         run: |
           sudo apt-get install libclang-dev -y 
