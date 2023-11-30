@@ -173,6 +173,12 @@ pub const TEST_UTILS_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
     11, 130, 158, 239, 6, 118, 153, 103, 15,
 ]);
 
+/// The native package for crypto utils.
+pub const CRYPTO_UTILS_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
+    13, 55, 231, 74, 72, 236, 68, 77, 89, 61, 172, 186, 178, 167, 90, 81, 204, 62, 137, 136, 225,
+    53, 10, 198, 65, 95, 254, 40, 22, 106,
+]);
+
 /// The scrypto package for the genesis helper.
 pub const GENESIS_HELPER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
     13, 144, 99, 24, 198, 49, 140, 100, 102, 112, 129, 140, 99, 24, 198, 49, 140, 247, 214, 62, 86,
