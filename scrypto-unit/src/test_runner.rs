@@ -1229,6 +1229,35 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         package_address
     }
 
+    pub fn publish_native_package_at_address(
+        &mut self,
+        native_package_code_id: u64,
+        definition: PackageDefinition,
+        address: PackageAddress,
+    ) {
+        let receipt = self.execute_system_transaction_with_preallocated_addresses(
+            vec![InstructionV1::CallFunction {
+                package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+                    definition,
+                    native_package_code_id,
+                    metadata: MetadataInit::default(),
+                    package_address: Some(ManifestAddressReservation(0)),
+                }),
+            }],
+            vec![PreAllocatedAddress {
+                blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                address: address.into(),
+            }],
+            btreeset!(AuthAddresses::system_role()),
+        );
+        let package_address: PackageAddress = receipt.expect_commit(true).output(0);
+        println!("package_address = {:?}", package_address);
+        //        receipt.expect_commit_success();
+    }
+
     pub fn publish_package_at_address<P: Into<PackagePublishingSource>>(
         &mut self,
         source: P,
