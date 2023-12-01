@@ -11,7 +11,6 @@ use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 struct Bytes(usize);

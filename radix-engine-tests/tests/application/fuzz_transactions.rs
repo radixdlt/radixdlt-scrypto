@@ -13,7 +13,6 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use transaction::model::{NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload};
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
