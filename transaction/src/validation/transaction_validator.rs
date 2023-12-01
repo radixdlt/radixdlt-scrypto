@@ -1,5 +1,4 @@
 use crate::internal_prelude::*;
-use crate::validation::*;
 
 pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
     type Validated;
@@ -440,10 +439,7 @@ mod tests {
     use radix_engine_interface::network::NetworkDefinition;
 
     use super::*;
-    use crate::{
-        builder::ManifestBuilder, builder::TransactionBuilder,
-        signing::secp256k1::Secp256k1PrivateKey,
-    };
+    use crate::{builder::ManifestBuilder, builder::TransactionBuilder};
 
     macro_rules! assert_invalid_tx {
         ($result: expr, ($start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{

@@ -46,8 +46,6 @@ impl Secp256k1PrivateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::validation::verify_secp256k1;
-    use radix_engine_interface::crypto::hash;
     use sbor::rust::str::FromStr;
 
     #[test]

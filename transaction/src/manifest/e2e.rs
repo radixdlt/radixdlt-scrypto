@@ -6,7 +6,6 @@ pub mod tests {
     use super::*;
     use crate::internal_prelude::*;
     use crate::manifest::*;
-    use crate::signing::ed25519::Ed25519PrivateKey;
     use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
     use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};

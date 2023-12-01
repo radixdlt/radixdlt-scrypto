@@ -39,8 +39,6 @@ impl BlsPrivateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::validation::verify_bls;
-    use radix_engine_interface::crypto::hash;
     use sbor::rust::str::FromStr;
 
     #[test]

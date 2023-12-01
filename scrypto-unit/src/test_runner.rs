@@ -57,7 +57,6 @@ use radix_engine_store_interface::interface::{
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto::prelude::*;
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
