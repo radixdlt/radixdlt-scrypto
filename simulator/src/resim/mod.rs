@@ -90,7 +90,6 @@ use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
 use transaction::model::{SystemTransactionV1, TransactionPayload};
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
