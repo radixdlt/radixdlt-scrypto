@@ -1,3 +1,6 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::blueprints::crypto_utils::*;
 use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
@@ -96,16 +99,76 @@ fn test_crypto_package_keccak_hash() {
         CryptoUtilsNativePackage::definition(),
         CRYPTO_UTILS_PACKAGE,
     );
+
     let data1 = "Hello Radix";
     let data2 = "xidaR olleH";
+
+    // Act
     let data1_hash = crypto_utils_keccak_hash(&mut test_runner, data1);
     let data2_hash = crypto_utils_keccak_hash(&mut test_runner, data2);
 
+    // Assert
     assert_eq!(
         data1_hash,
         Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
     );
 
+    assert_ne!(
+        data2_hash,
+        Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
+    );
+}
+
+#[cfg(test)]
+fn crypto_scrypto_keccak_hash(
+    runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    package_address: PackageAddress,
+    data: &str,
+) -> Hash {
+    let data = data.as_bytes().to_vec();
+
+    let receipt = runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(runner.faucet_component(), 500u32)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "keccak_hash",
+                manifest_args!(data),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+    result.output(1)
+}
+
+#[test]
+fn test_crypto_scrypto_keccak_hash() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    // Publish CryptoUtils package, it will be called by below CryptoScrypto package
+    test_runner.publish_native_package_at_address(
+        CRYPTO_UTILS_CODE_ID,
+        CryptoUtilsNativePackage::definition(),
+        CRYPTO_UTILS_PACKAGE,
+    );
+
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+
+    let data1 = "Hello Radix";
+    let data2 = "xidaR olleH";
+
+    // Act
+    let data1_hash = crypto_scrypto_keccak_hash(&mut test_runner, package_address, data1);
+    let data2_hash = crypto_scrypto_keccak_hash(&mut test_runner, package_address, data2);
+
+    // Assert
+    assert_eq!(
+        data1_hash,
+        Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
+    );
     assert_ne!(
         data2_hash,
         Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
