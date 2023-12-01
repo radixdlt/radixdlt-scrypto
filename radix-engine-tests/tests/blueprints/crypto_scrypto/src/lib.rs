@@ -2,20 +2,26 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod component_module {
-    // TODO: remove below
-    const CRYPTO_UTILS_BLUEPRINT: &str = "CryptoUtils";
-    //const CRYPTO_UTILS_BLS_VERIFY_IDENT: &str = "bls_verify";
-    const CRYPTO_UTILS_KECCAK_HASH_IDENT: &str = "keccak_hash";
-
     struct CryptoScrypto {}
 
     impl CryptoScrypto {
-        pub fn keccak_hash(data: Vec<u8>) -> Hash {
-            #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-            struct CryptoUtilsKeccakHashInput {
-                pub data: Vec<u8>,
-            }
+        pub fn bls_verify(msg_hash: Hash, pub_key: BlsPublicKey, signature: BlsSignature) -> bool {
+            let rtn = ScryptoVmV1Api::blueprint_call(
+                CRYPTO_UTILS_PACKAGE,
+                CRYPTO_UTILS_BLUEPRINT,
+                CRYPTO_UTILS_BLS_VERIFY_IDENT,
+                scrypto_encode(&CryptoUtilsBlsVerifyInput {
+                    msg_hash,
+                    pub_key,
+                    signature,
+                })
+                .unwrap(),
+            );
+            let result: bool = scrypto_decode(&rtn).unwrap();
+            result
+        }
 
+        pub fn keccak_hash(data: Vec<u8>) -> Hash {
             let rtn = ScryptoVmV1Api::blueprint_call(
                 CRYPTO_UTILS_PACKAGE,
                 CRYPTO_UTILS_BLUEPRINT,
