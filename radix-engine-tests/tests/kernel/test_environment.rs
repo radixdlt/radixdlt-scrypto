@@ -1,9 +1,10 @@
-use radix_engine_tests::common::*;
 use native_sdk::resource::*;
 use radix_engine_queries::typed_substate_layout::two_resource_pool::*;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
 #[test]
+#[allow(clippy::type_complexity)]
 fn kernel_modules_are_reset_after_calling_a_with_method() {
     // Arrange
     let mut env = TestEnvironment::new();

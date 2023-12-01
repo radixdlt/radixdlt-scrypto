@@ -172,7 +172,11 @@ impl TestEnvironment {
     //================
 
     pub fn new() -> Self {
-        let mut env = Self(EncapsulatedRadixEngine::standard());
+        Self::new_custom(|_| {})
+    }
+
+    pub fn new_custom(after_bootstrap: impl FnMut(&mut InMemorySubstateDatabase)) -> Self {
+        let mut env = Self(EncapsulatedRadixEngine::standard(after_bootstrap));
 
         // Adding references to all of the well-known global nodes.
         env.0.with_kernel_mut(|kernel| {
@@ -931,6 +935,12 @@ impl TestEnvironment {
             })?;
 
         Ok(rtn)
+    }
+}
+
+impl Default for TestEnvironment {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

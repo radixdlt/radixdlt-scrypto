@@ -33,7 +33,7 @@ pub(super) struct EncapsulatedRadixEngine {
 impl EncapsulatedRadixEngine {
     const DEFAULT_INTENT_HASH: Hash = Hash([0; 32]);
 
-    pub(super) fn standard() -> Self {
+    pub(super) fn standard(mut after_bootstrap: impl FnMut(&mut InMemorySubstateDatabase)) -> Self {
         let mut substate_db = InMemorySubstateDatabase::standard();
 
         // Create the various VMs we will use
@@ -45,6 +45,7 @@ impl EncapsulatedRadixEngine {
         let mut bootstrapper =
             Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
         bootstrapper.bootstrap_test_default().unwrap();
+        after_bootstrap(&mut substate_db);
 
         // Create the Id allocator we will be using throughout this test
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
