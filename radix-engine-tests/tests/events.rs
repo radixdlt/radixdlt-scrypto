@@ -29,7 +29,6 @@ use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::model::InstructionV1;
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
 fn test_events_of_commit_failure() {

@@ -11,7 +11,6 @@ use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::model::TestTransaction;
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.

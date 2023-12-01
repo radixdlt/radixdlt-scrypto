@@ -9,7 +9,6 @@ use scrypto::NonFungibleData;
 use scrypto_unit::TestRunnerBuilder;
 use transaction::manifest::{compile, BlobProvider};
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 macro_rules! replace_variables {

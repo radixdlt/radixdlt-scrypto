@@ -17,7 +17,6 @@ use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_test::prelude::KeyValueEntrySubstate;
 use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
