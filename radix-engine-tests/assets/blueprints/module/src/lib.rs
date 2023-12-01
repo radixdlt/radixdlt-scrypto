@@ -8,7 +8,6 @@ mod component_module {
     impl ComponentModule {
         pub fn globalize_with_mixed_up_modules() -> ComponentAddress {
             let component = ComponentModule {}.instantiate();
-
             let rtn = ScryptoVmV1Api::blueprint_call(
                 METADATA_MODULE_PACKAGE,
                 METADATA_BLUEPRINT,
@@ -17,17 +16,17 @@ mod component_module {
             );
             let metadata: Own = scrypto_decode(&rtn).unwrap();
 
-            let rtn = ScryptoVmV1Api::blueprint_call(
-                ROYALTY_MODULE_PACKAGE,
-                COMPONENT_ROYALTY_BLUEPRINT,
-                COMPONENT_ROYALTY_CREATE_IDENT,
-                scrypto_encode(&ComponentRoyaltyCreateInput {
-                    royalty_config: ComponentRoyaltyConfig::default(),
-                })
-                .unwrap(),
-            );
-            let royalty: Own = scrypto_decode(&rtn).unwrap();
-
+            /*
+                        let rtn = ScryptoVmV1Api::blueprint_call(
+                            ROYALTY_MODULE_PACKAGE,
+                            COMPONENT_ROYALTY_BLUEPRINT,
+                            COMPONENT_ROYALTY_CREATE_IDENT,
+                            scrypto_encode(&ComponentRoyaltyCreateInput {
+                                royalty_config: ComponentRoyaltyConfig::default(),
+                            })
+                            .unwrap(),
+                        );
+                        let royalty: Own = scrypto_decode(&rtn).unwrap();
             let rtn = ScryptoVmV1Api::blueprint_call(
                 ROLE_ASSIGNMENT_MODULE_PACKAGE,
                 ROLE_ASSIGNMENT_BLUEPRINT,
@@ -38,14 +37,15 @@ mod component_module {
                 })
                 .unwrap(),
             );
+            */
             let role_assignment: Own = scrypto_decode(&rtn).unwrap();
 
             let address = ScryptoVmV1Api::object_globalize(
                 *component.0.handle().as_node_id(),
                 indexmap!(
-                    AttachedModuleId::RoleAssignment => metadata.0,
-                    AttachedModuleId::Metadata => royalty.0,
-                    AttachedModuleId::Royalty => role_assignment.0,
+                    //AttachedModuleId::RoleAssignment => role_assignment.0,
+                    AttachedModuleId::Metadata => metadata.0,
+                    //AttachedModuleId::Royalty => royalty.0,
                 ),
                 None,
             );

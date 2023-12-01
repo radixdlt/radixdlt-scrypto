@@ -8,7 +8,6 @@ use radix_engine_interface::blueprints::package::CRYPTO_UTILS_CODE_ID;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::prelude::*;
 
 #[cfg(test)]
 fn crypto_utils_bls_verify(

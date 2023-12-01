@@ -5,11 +5,8 @@ use radix_engine::utils::{
 };
 use radix_engine_common::prelude::NetworkDefinition;
 use scrypto::prelude::*;
+use transaction::manifest::{compile, MockBlobProvider};
 use transaction::prelude::*;
-use transaction::{
-    manifest::{compile, MockBlobProvider},
-    signing::secp256k1::Secp256k1PrivateKey,
-};
 use walkdir::WalkDir;
 use transaction::manifest::e2e::apply_address_replacements;
 
