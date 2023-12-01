@@ -44,6 +44,7 @@ lazy_static! {
             FAUCET_PACKAGE.into(),
             POOL_PACKAGE.into(),
             TRANSACTION_TRACKER_PACKAGE.into(),
+            CRYPTO_UTILS_PACKAGE.into(),
             // components
             CONSENSUS_MANAGER.into(),
             TRANSACTION_TRACKER.into(),
