@@ -1486,7 +1486,6 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
-    use crate::signing::secp256k1::Secp256k1PrivateKey;
     use radix_engine_common::constants::CONSENSUS_MANAGER;
     use radix_engine_common::manifest_args;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
@@ -1498,6 +1497,7 @@ mod tests {
         NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintRuidManifestInput,
     };
+    use radix_engine_interface::crypto::Secp256k1PrivateKey;
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};

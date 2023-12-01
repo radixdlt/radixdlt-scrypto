@@ -24,6 +24,9 @@ arbitrary = { version = "1.3.0", features = ["derive"], optional = true }
 # Fast alternative to bigint but unfortunately not cross-compiled to WASM
 rug = { version = "1.18", optional = true }
 ethnum = {version = "1.3.2", default-features = false, optional = true }
+ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"]}
+secp256k1 = { version = "0.24.0", default-features = false, features = ["global-context", "recovery"]}
+blst = { version = "0.3.11", default-features = false }
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
@@ -42,7 +45,7 @@ harness = false
 default = ["std"]
 serde = ["dep:serde", "utils/serde", "sbor/serde", "hex/serde"]
 std = ["hex/std", "sbor/std", "utils/std", "radix-engine-derive/std", "serde_json/std", "blake2/std"]
-alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "lazy_static/spin_no_std"]
+alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "lazy_static/spin_no_std"]
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
