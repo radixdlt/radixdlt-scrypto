@@ -127,7 +127,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores]
+        os: [gh-runner-scrypto-ubuntu-jammy-16-cores]
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -143,7 +143,7 @@ jobs:
 
   radix-engine:
     name: Run Radix Engine tests
-    runs-on: ubuntu-latest-16-cores
+    runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -165,7 +165,7 @@ jobs:
     # - overflow-checks
     # which are false for release variant
     name: Run Radix Engine tests (release)
-    runs-on: ubuntu-latest-16-cores
+    runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -182,7 +182,7 @@ jobs:
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
-    runs-on: ubuntu-latest-16-cores
+    runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -199,7 +199,7 @@ jobs:
 
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
-    runs-on: ubuntu-latest-16-cores
+    runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -261,7 +261,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores, windows-latest-16-cores]
+        os: [gh-runner-scrypto-ubuntu-jammy-16-cores, windows-latest-16-cores]
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -287,7 +287,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores, windows-latest-16-cores, macos-latest]
+        os: [gh-runner-scrypto-ubuntu-jammy-16-cores, windows-latest-16-cores, macos-latest]
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -307,7 +307,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores]
+        os: [gh-runner-scrypto-ubuntu-jammy-16-cores]
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -320,7 +320,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores]
+        os: [gh-runner-scrypto-ubuntu-jammy-16-cores]
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -330,9 +330,14 @@ jobs:
 
   determinism-test:
     name: Run determinism test
-    runs-on: ubuntu-latest-16-cores
+    runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: actions/checkout@v3
+      - name: Cargo Check
+        run: |
+          sudo apt-get install libclang-dev -y 
+          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+          sudo apt-get install git-lfs -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Pull LFS assets
