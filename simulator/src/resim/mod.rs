@@ -75,7 +75,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_interface::crypto::hash;
+use radix_engine_interface::crypto::{hash, Secp256k1PrivateKey};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
@@ -88,7 +88,6 @@ use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
 use transaction::model::{SystemTransactionV1, TransactionPayload};
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
