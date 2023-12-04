@@ -1,4 +1,5 @@
 use crate::crypto::*;
+use crate::internal_prelude::Vec;
 
 pub trait ClientCryptoUtilsApi<E> {
     fn bls_verify(
