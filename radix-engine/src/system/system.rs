@@ -2854,11 +2854,13 @@ where
         public_key: BlsPublicKey,
         signature: BlsSignature,
     ) -> Result<u32, RuntimeError> {
+        // TODO: apply execution costs
         Ok(verify_bls(&msg_hash, &public_key, &signature) as u32)
     }
 
     #[trace_resources]
     fn keccak_hash(&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError> {
+        // TODO: apply execution costs
         Ok(blake2b_256_hash(&data))
     }
 }
