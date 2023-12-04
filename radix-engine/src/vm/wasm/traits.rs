@@ -200,6 +200,18 @@ pub trait WasmRuntime {
     fn sys_generate_ruid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn crypto_utils_bls_verify(
+        &mut self,
+        msg_hash: Vec<u8>,
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>>;
+
+    fn crypto_utils_keccak_hash(
+        &mut self,
+        data: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.

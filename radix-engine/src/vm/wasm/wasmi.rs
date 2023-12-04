@@ -661,6 +661,48 @@ fn panic(
     runtime.sys_panic(message)
 }
 
+fn bls_verify(
+    mut caller: Caller<'_, HostState>,
+    msg_hash_ptr: u32,
+    msg_hash_len: u32,
+    public_key_ptr: u32,
+    public_key_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let msg_hash = read_memory(caller.as_context_mut(), memory, msg_hash_ptr, msg_hash_len)?;
+    let public_key = read_memory(
+        caller.as_context_mut(),
+        memory,
+        public_key_ptr,
+        public_key_len,
+    )?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime.crypto_utils_bls_verify(msg_hash, public_key, signature)
+}
+
+fn keccak_hash(
+    mut caller: Caller<'_, HostState>,
+    data_ptr: u32,
+    data_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
+
+    runtime
+        .crypto_utils_keccak_hash(data)
+        .map(|buffer| buffer.0)
+}
+
 #[cfg(feature = "radix_engine_tests")]
 fn test_host_read_memory(
     mut caller: Caller<'_, HostState>,
@@ -1224,6 +1266,36 @@ impl WasmiModule {
             },
         );
 
+        let host_bls_verify = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             msg_hash_ptr: u32,
+             msg_hash_len: u32,
+             public_key_ptr: u32,
+             public_key_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u32, Trap> {
+                bls_verify(
+                    caller,
+                    msg_hash_ptr,
+                    msg_hash_len,
+                    public_key_ptr,
+                    public_key_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_keccak_hash = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, data_ptr: u32, data_len: u32| -> Result<u64, Trap> {
+                keccak_hash(caller, data_ptr, data_len).map_err(|e| e.into())
+            },
+        );
+
         let mut linker = <Linker<HostState>>::new();
 
         linker_define!(linker, BUFFER_CONSUME_FUNCTION_NAME, host_consume_buffer);
@@ -1380,8 +1452,17 @@ impl WasmiModule {
             SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME,
             host_bech32_encode_address
         );
-
         linker_define!(linker, SYS_GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_BLS_VERIFY_FUNCTION_NAME,
+            host_bls_verify
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_KECCAK_HASH_FUNCTION_NAME,
+            host_keccak_hash
+        );
 
         #[cfg(feature = "radix_engine_tests")]
         {

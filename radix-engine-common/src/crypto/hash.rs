@@ -1,4 +1,5 @@
 use crate::crypto::blake2b_256_hash;
+use crate::ScryptoSbor;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
@@ -75,7 +76,7 @@ pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
 //========
 
 /// Represents an error when parsing hash.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseHashError {
     InvalidHex(String),
     InvalidLength(usize),

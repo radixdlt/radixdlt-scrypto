@@ -1,5 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::{BlsPublicKey, BlsSignature, IsHash};
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
@@ -319,5 +320,30 @@ impl ScryptoVmV1Api {
         unsafe {
             system::sys_panic(message.as_ptr(), message.len());
         };
+    }
+
+    pub fn crypto_utils_bls_verify(
+        msg_hash: Hash,
+        public_key: BlsPublicKey,
+        signature: BlsSignature,
+    ) -> u32 {
+        unsafe {
+            crypto_utils::crypto_utils_bls_verify(
+                msg_hash.0.as_ptr(),
+                msg_hash.0.len(),
+                public_key.0.as_ptr(),
+                public_key.0.len(),
+                signature.0.as_ptr(),
+                signature.0.len(),
+            )
+        }
+    }
+
+    pub fn crypto_utils_keccak_hash(data: Vec<u8>) -> Hash {
+        let hash = copy_buffer(unsafe {
+            crypto_utils::crypto_utils_keccak_hash(data.as_ptr(), data.len())
+        });
+
+        Hash(hash.try_into().unwrap())
     }
 }

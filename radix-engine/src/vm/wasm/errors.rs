@@ -153,6 +153,10 @@ pub enum WasmRuntimeError {
     InvalidPackageAddress,
 
     TooManyBuffers,
+
+    InvalidBlsPublicKey(ParseBlsPublicKeyError),
+    InvalidBlsSignature(ParseBlsSignatureError),
+    InvalidHash(ParseHashError),
 }
 
 impl SelfError for WasmRuntimeError {
