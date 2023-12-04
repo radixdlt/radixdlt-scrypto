@@ -1,6 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_common::math::Decimal;
-use radix_engine_common::prelude::{BlsPublicKey, BlsSignature, IsHash};
+use radix_engine_common::prelude::{BlsPublicKey, BlsSignature};
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
