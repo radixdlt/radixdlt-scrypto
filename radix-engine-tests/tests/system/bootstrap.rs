@@ -707,3 +707,68 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
         total_mint_amount.checked_sub(total_burn_amount).unwrap()
     );
 }
+
+#[test]
+fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() {
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    let staker_address = ComponentAddress::virtual_account_from_public_key(
+        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+    );
+    let validator_key = Secp256k1PublicKey([7; 33]);
+    let stake_xrd = dec!("1337");
+    let stake_allocation = GenesisStakeAllocation {
+        account_index: 0,
+        xrd_amount: stake_xrd,
+    };
+    let validator_chunks = vec![
+        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Stakes {
+            accounts: vec![staker_address],
+            allocations: vec![(validator_key, vec![stake_allocation])],
+        },
+    ];
+
+    let mut bootstrapper =
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
+
+    bootstrapper
+        .bootstrap_with_genesis_data(
+            validator_chunks,
+            Epoch::of(1),
+            CustomGenesis::default_consensus_manager_config(),
+            1,
+            Some(0),
+            Decimal::zero(),
+        )
+        .unwrap();
+
+    let reader = SystemDatabaseReader::new(&substate_db);
+
+    let validator_sort_key = reader.collection_iter(
+        CONSENSUS_MANAGER.as_node_id(),
+        ModuleId::Main,
+        0
+    ).expect("collection not found").map(|(key, _value)| key).next().expect("collection empty");
+
+    let SubstateKey::Sorted((sort_prefix, address)) = validator_sort_key else {
+        panic!("collection not a sorted index");
+    };
+    let address: ComponentAddress = scrypto_decode(address.as_slice()).expect("not an address");
+    let validator = reader
+        .read_object_collection_entry::<_, VersionedConsensusManagerRegisteredValidatorByStake>(
+        CONSENSUS_MANAGER.as_node_id(),
+        ModuleId::Main,
+        ObjectCollectionKey::SortedIndex(0, u16::from_be_bytes(sort_prefix), &address)
+        )
+        .expect("validator cannot be read")
+        .map(|versioned| versioned.into_latest())
+        .expect("validator not found");
+
+    assert_eq!(validator, Validator {
+        key: validator_key,
+        stake: stake_xrd,
+    });
+}
