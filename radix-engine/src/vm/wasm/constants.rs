@@ -78,6 +78,12 @@ pub const SYS_GENERATE_RUID_FUNCTION_NAME: &str = "sys_generate_ruid";
 pub const SYS_PANIC_FUNCTION_NAME: &str = "sys_panic";
 
 //=================
+// Crypto Utils
+//=================
+pub const CRYPTO_UTILS_BLS_VERIFY_FUNCTION_NAME: &str = "crypto_utils_bls_verify";
+pub const CRYPTO_UTILS_KECCAK_HASH_FUNCTION_NAME: &str = "crypto_utils_keccak_hash";
+
+//=================
 // WASM Shim
 //=================
 pub const BUFFER_CONSUME_FUNCTION_NAME: &str = "buffer_consume";

@@ -46,8 +46,8 @@ impl TryFrom<&[u8]> for BlsPublicKey {
 // error
 //======
 
-/// Represents an error when parsing ED25519 public key from hex.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// Represents an error when parsing BLS public key from hex.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseBlsPublicKeyError {
     InvalidHex(String),
     InvalidLength(usize),

@@ -1,3 +1,4 @@
+use crate::ScryptoSbor;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -39,7 +40,7 @@ impl TryFrom<&[u8]> for BlsSignature {
 // error
 //======
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseBlsSignatureError {
     InvalidHex(String),
     InvalidLength(usize),

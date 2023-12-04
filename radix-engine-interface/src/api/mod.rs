@@ -21,6 +21,7 @@ pub use key_value_entry_api::*;
 pub use key_value_store_api::*;
 pub use object_api::*;
 pub use system_modules::costing_api::ClientCostingApi;
+pub use system_modules::crypto_utils_api::ClientCryptoUtilsApi;
 pub use system_modules::execution_trace_api::ClientExecutionTraceApi;
 pub use system_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
 
@@ -55,6 +56,7 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientCostingApi<E>
     + ClientTransactionRuntimeApi<E>
     + ClientExecutionTraceApi<E>
+    + ClientCryptoUtilsApi<E>
 {
 }
 

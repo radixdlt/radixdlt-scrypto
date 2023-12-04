@@ -274,5 +274,9 @@ implement_client_api! {
         max_per_function_royalty_in_xrd: (&mut self) -> Result<Decimal, RuntimeError>,
         tip_percentage: (&mut self) -> Result<u32, RuntimeError>,
         fee_balance: (&mut self) -> Result<Decimal, RuntimeError>,
-    }
+    },
+    ClientCryptoUtilsApi: {
+        bls_verify: (&mut self, msg_hash: Hash, public_key: BlsPublicKey, signature: BlsSignature) -> Result<u32, RuntimeError>,
+        keccak_hash: (&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError>,
+    },
 }

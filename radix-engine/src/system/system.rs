@@ -2853,6 +2853,31 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
+impl<'a, Y, V> ClientCryptoUtilsApi<RuntimeError> for SystemService<'a, Y, V>
+where
+    Y: KernelApi<SystemConfig<V>>,
+    V: SystemCallbackObject,
+{
+    #[trace_resources]
+    fn bls_verify(
+        &mut self,
+        msg_hash: Hash,
+        public_key: BlsPublicKey,
+        signature: BlsSignature,
+    ) -> Result<u32, RuntimeError> {
+        Ok(verify_bls(&msg_hash, &public_key, &signature) as u32)
+    }
+
+    #[trace_resources]
+    fn keccak_hash(&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError> {
+        Ok(blake2b_256_hash(&data))
+    }
+}
+
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
 impl<'a, Y, V> ClientApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,

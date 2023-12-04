@@ -560,4 +560,29 @@ where
 
         self.allocate_buffer(scrypto_encode(&fee_balance).expect("Failed to encode fee_balance"))
     }
+
+    fn crypto_utils_bls_verify(
+        &mut self,
+        msg_hash: Vec<u8>,
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let msg_hash =
+            Hash::try_from(msg_hash.as_slice()).map_err(WasmRuntimeError::InvalidHash)?;
+        let public_key = BlsPublicKey::try_from(public_key.as_slice())
+            .map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
+        let signature = BlsSignature::try_from(signature.as_slice())
+            .map_err(WasmRuntimeError::InvalidBlsSignature)?;
+        let result = self.api.bls_verify(msg_hash, public_key, signature)?;
+        Ok(result)
+    }
+
+    fn crypto_utils_keccak_hash(
+        &mut self,
+        data: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let hash = self.api.keccak_hash(data)?;
+
+        self.allocate_buffer(hash.to_vec())
+    }
 }
