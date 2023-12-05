@@ -36,7 +36,9 @@ runs:
       run: |
         brew install llvm
         echo $PATH
-        /opt/homebrew/opt/llvm/bin/clang -v
-        /opt/homebrew/opt/llvm/bin/clang --print-targets
+        /usr/local/opt/llvm/bin/clang -v
+        /usr/local/opt/llvm/bin/clang --print-targets
+        echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> /Users/runner/.bash_profile
+
       shell: bash
 
