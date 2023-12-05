@@ -31,4 +31,12 @@ runs:
       if: runner.os == 'Linux'
       run: sudo apt-get install clang libclang-dev -y -f
       shell: bash
+    - name: Install clang
+      if: runner.os == 'macOS'
+      run: |
+        brew install llvm
+        echo $PATH
+        /opt/homebrew/opt/llvm/bin/clang -v
+        /opt/homebrew/opt/llvm/bin/clang --print-targets
+      shell: bash
 
