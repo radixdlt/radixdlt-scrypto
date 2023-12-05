@@ -20,6 +20,7 @@ radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, 
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 scrypto-test = { path = "../scrypto-test", default-features = false }
 scrypto-unit = { path = "../scrypto-unit", default-features = false }
+lazy_static = { version = "1.4.0" }
 
 [dev-dependencies]
 transaction = { path = "../transaction", default-features = false }
@@ -35,7 +36,6 @@ serde_json = { version = "1.0.81", default-features = false }
 crossbeam = { version = "0.8.2" }
 walkdir = { version = "2.3.3" }
 paste = { version = "1.0.13" }
-lazy_static = { version = "1.4.0" }
 hex = { version = "0.4.3", default-features = false }
 trybuild = { version = "1.0.85" }
 automod = "1.0.13"
