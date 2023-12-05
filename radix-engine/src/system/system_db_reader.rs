@@ -22,6 +22,7 @@ use sbor::LocalTypeId;
 use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
+use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
 use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
@@ -312,22 +313,23 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     partition_number,
                     &SubstateKey::Map(scrypto_encode(key).unwrap()),
                 )
-                .map(|value| value.into_value())
-                .unwrap_or(None),
-            ObjectCollectionKey::Index(_, key) => {
-                self.substate_db.get_mapped::<SpreadPrefixKeyMapper, V>(
+                .and_then(|value| value.into_value()),
+            ObjectCollectionKey::Index(_, key) => self
+                .substate_db
+                .get_mapped::<SpreadPrefixKeyMapper, IndexEntrySubstate<V>>(
                     node_id,
                     partition_number,
                     &SubstateKey::Map(scrypto_encode(key).unwrap()),
                 )
-            }
-            ObjectCollectionKey::SortedIndex(_, sort, key) => {
-                self.substate_db.get_mapped::<SpreadPrefixKeyMapper, V>(
+                .map(|value| value.into_value()),
+            ObjectCollectionKey::SortedIndex(_, sort, key) => self
+                .substate_db
+                .get_mapped::<SpreadPrefixKeyMapper, SortedIndexEntrySubstate<V>>(
                     node_id,
                     partition_number,
                     &SubstateKey::Sorted((sort.to_be_bytes(), scrypto_encode(key).unwrap())),
                 )
-            }
+                .map(|value| value.into_value()),
         };
 
         Ok(entry)
