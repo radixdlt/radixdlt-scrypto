@@ -326,7 +326,7 @@ impl ScryptoVmV1Api {
         msg_hash: Hash,
         public_key: BlsPublicKey,
         signature: BlsSignature,
-    ) -> u32 {
+    ) -> bool {
         unsafe {
             crypto_utils::crypto_utils_bls_verify(
                 msg_hash.0.as_ptr(),
@@ -335,7 +335,7 @@ impl ScryptoVmV1Api {
                 public_key.0.len(),
                 signature.0.as_ptr(),
                 signature.0.len(),
-            )
+            ) != 0
         }
     }
 
