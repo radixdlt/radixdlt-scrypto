@@ -2861,7 +2861,7 @@ where
     #[trace_resources]
     fn keccak_hash(&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError> {
         // TODO: apply execution costs
-        Ok(blake2b_256_hash(&data))
+        Ok(keccak_256_hash(&data))
     }
 }
 
