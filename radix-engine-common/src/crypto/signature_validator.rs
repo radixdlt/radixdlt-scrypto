@@ -20,7 +20,8 @@ pub fn recover_secp256k1(
         {
             let msg = ::secp256k1::Message::from_slice(&signed_hash.0)
                 .expect("Hash is always a valid message");
-            if let Ok(pk) = sig.recover(&msg) {
+
+            if let Ok(pk) = SECP256K1_CTX.recover_ecdsa(&msg, &sig) {
                 return Some(Secp256k1PublicKey(pk.serialize()));
             }
         }
@@ -52,7 +53,7 @@ pub fn verify_secp256k1(
             if let Ok(pk) = ::secp256k1::PublicKey::from_slice(&public_key.0) {
                 let msg = ::secp256k1::Message::from_slice(&signed_hash.0)
                     .expect("Hash is always a valid message");
-                return sig.verify(&msg, &pk).is_ok();
+                return SECP256K1_CTX.verify_ecdsa(&msg, &sig, &pk).is_ok();
             }
         }
     }
