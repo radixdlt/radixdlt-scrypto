@@ -97,11 +97,11 @@ fn test_crypto_scrypto_keccak_hash() {
     // Assert
     assert_eq!(
         data1_hash,
-        Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
+        Hash::from_str("415942230ddb029416a4612818536de230d827cbac9646a0b26d9855a4c45587").unwrap()
     );
     assert_ne!(
         data2_hash,
-        Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
+        Hash::from_str("415942230ddb029416a4612818536de230d827cbac9646a0b26d9855a4c45587").unwrap()
     );
 }
 
