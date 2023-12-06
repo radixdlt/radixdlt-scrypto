@@ -92,7 +92,7 @@ fn bytes_fixed_length_type_data<L: SchemaTypeLink>(length: usize) -> ScryptoType
 const REFERENCES_START: u8 = 0x80;
 const OWNED_ENTITIES_START: u8 = 0xa0;
 const MISC_TYPES_START: u8 = 0xc0;
-const KEY_TYPES_START: u8 = 0xd0;
+const CRYPTO_TYPES_START: u8 = 0xd0;
 const ROLE_ASSIGNMENT_TYPES_START: u8 = 0xe0;
 const OTHER_MODULE_TYPES_START: u8 = 0xf0;
 
@@ -379,10 +379,15 @@ create_well_known_lookup!(
             MISC_TYPES_START + 7,
             named_transparent("Origin", string_type_data(),)
         ),
-        // Public key-related types from KEY_TYPES_START
+        (
+            HASH,
+            MISC_TYPES_START + 8,
+            named_transparent("Hash", bytes_fixed_length_type_data(Hash::LENGTH),)
+        ),
+        // Crypto-related types from CRYPTO_TYPES_START
         (
             PUBLIC_KEY,
-            KEY_TYPES_START + 0,
+            CRYPTO_TYPES_START + 0,
             named_enum(
                 "PublicKey",
                 [
@@ -393,7 +398,7 @@ create_well_known_lookup!(
         ),
         (
             SECP256K1_PUBLIC_KEY,
-            KEY_TYPES_START + 1,
+            CRYPTO_TYPES_START + 1,
             named_transparent(
                 "Secp256k1PublicKey",
                 bytes_fixed_length_type_data(Secp256k1PublicKey::LENGTH),
@@ -401,7 +406,7 @@ create_well_known_lookup!(
         ),
         (
             ED25519_PUBLIC_KEY,
-            KEY_TYPES_START + 2,
+            CRYPTO_TYPES_START + 2,
             named_transparent(
                 "Ed25519PublicKey",
                 bytes_fixed_length_type_data(Ed25519PublicKey::LENGTH),
@@ -409,7 +414,7 @@ create_well_known_lookup!(
         ),
         (
             BLS_PUBLIC_KEY,
-            KEY_TYPES_START + 3,
+            CRYPTO_TYPES_START + 3,
             named_transparent(
                 "BlsPublicKey",
                 bytes_fixed_length_type_data(BlsPublicKey::LENGTH),
@@ -417,7 +422,7 @@ create_well_known_lookup!(
         ),
         (
             PUBLIC_KEY_HASH,
-            KEY_TYPES_START + 8,
+            CRYPTO_TYPES_START + 8,
             named_enum(
                 "PublicKeyHash",
                 [
@@ -431,7 +436,7 @@ create_well_known_lookup!(
         ),
         (
             SECP256K1_PUBLIC_KEY_HASH,
-            KEY_TYPES_START + 9,
+            CRYPTO_TYPES_START + 9,
             named_transparent(
                 "Secp256k1PublicKeyHash",
                 bytes_fixed_length_type_data(Secp256k1PublicKeyHash::LENGTH),
@@ -439,10 +444,18 @@ create_well_known_lookup!(
         ),
         (
             ED25519_PUBLIC_KEY_HASH,
-            KEY_TYPES_START + 10,
+            CRYPTO_TYPES_START + 10,
             named_transparent(
                 "Ed25519PublicKeyHash",
                 bytes_fixed_length_type_data(Ed25519PublicKeyHash::LENGTH),
+            )
+        ),
+        (
+            BLS_SIGNATURE,
+            CRYPTO_TYPES_START + 12,
+            named_transparent(
+                "BlsSignature",
+                bytes_fixed_length_type_data(BlsSignature::LENGTH),
             )
         ),
         // ROLE ASSIGNMENT TYPES
@@ -611,7 +624,7 @@ mod tests {
         // URL - tested in interface crate
         // Origin - tested in interface crate
 
-        // KEY-RELATED
+        // CRYPTO-RELATED
         test_equivalence(
             PUBLIC_KEY_TYPE,
             PublicKey::Ed25519(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
@@ -645,6 +658,7 @@ mod tests {
             SECP256K1_PUBLIC_KEY_HASH_TYPE,
             Secp256k1PublicKeyHash([0; Secp256k1PublicKeyHash::LENGTH]),
         );
+        test_equivalence(BLS_SIGNATURE_TYPE, BlsSignature([0; BlsSignature::LENGTH]));
     }
 
     fn test_equivalence<T: ScryptoEncode + ScryptoDescribe>(id: WellKnownTypeId, value: T) {
