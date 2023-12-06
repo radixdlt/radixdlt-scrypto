@@ -1,5 +1,5 @@
-use crate::internal_prelude::*;
 use crate::model::*;
+use crate::signing::Signer;
 
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifestV1>,
@@ -122,6 +122,7 @@ mod tests {
 
     use super::*;
     use crate::builder::*;
+    use crate::internal_prelude::Secp256k1PrivateKey;
 
     #[test]
     fn notary_as_signatory() {

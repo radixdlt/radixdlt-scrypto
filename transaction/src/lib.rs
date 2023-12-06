@@ -3,6 +3,7 @@ pub mod data;
 pub mod errors;
 pub mod manifest;
 pub mod model;
+pub mod signing;
 pub mod validation;
 
 /// Each module should have its own prelude, which:
@@ -18,6 +19,7 @@ pub mod prelude {
     // Exports from this crate
     pub use crate::builder::*;
     pub use crate::model::*;
+    pub use crate::signing::{PrivateKey, Signer};
 }
 
 // Extra things which this crate wants which upstream crates likely don't
