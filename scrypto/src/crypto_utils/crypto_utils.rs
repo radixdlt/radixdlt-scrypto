@@ -6,11 +6,11 @@ use radix_engine_common::prelude::{BlsPublicKey, BlsSignature, Hash};
 pub struct CryptoUtils {}
 
 impl CryptoUtils {
-    pub fn bls_verify(msg_hash: Hash, public_key: BlsPublicKey, signature: BlsSignature) -> bool {
+    pub fn bls_verify(message: Vec<u8>, public_key: BlsPublicKey, signature: BlsSignature) -> bool {
         unsafe {
             crypto_utils::crypto_utils_bls_verify(
-                msg_hash.0.as_ptr(),
-                msg_hash.0.len(),
+                message.as_ptr(),
+                message.len(),
                 public_key.0.as_ptr(),
                 public_key.0.len(),
                 signature.0.as_ptr(),

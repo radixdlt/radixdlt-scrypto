@@ -290,8 +290,8 @@ pub mod crypto_utils {
 
     super::wasm_extern_c! {
         pub fn crypto_utils_bls_verify(
-            hash_ptr: *const u8,
-            hash_len: usize,
+            message_ptr: *const u8,
+            message_len: usize,
             public_key_ptr: *const u8,
             public_key_len: usize,
             signature_ptr: *const u8,

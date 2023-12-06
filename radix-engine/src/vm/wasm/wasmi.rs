@@ -663,8 +663,8 @@ fn panic(
 
 fn bls_verify(
     mut caller: Caller<'_, HostState>,
-    msg_hash_ptr: u32,
-    msg_hash_len: u32,
+    message_ptr: u32,
+    message_len: u32,
     public_key_ptr: u32,
     public_key_len: u32,
     signature_ptr: u32,
@@ -672,7 +672,7 @@ fn bls_verify(
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let msg_hash = read_memory(caller.as_context_mut(), memory, msg_hash_ptr, msg_hash_len)?;
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
     let public_key = read_memory(
         caller.as_context_mut(),
         memory,
@@ -686,7 +686,7 @@ fn bls_verify(
         signature_len,
     )?;
 
-    runtime.crypto_utils_bls_verify(msg_hash, public_key, signature)
+    runtime.crypto_utils_bls_verify(message, public_key, signature)
 }
 
 fn keccak_hash(
@@ -1269,8 +1269,8 @@ impl WasmiModule {
         let host_bls_verify = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             msg_hash_ptr: u32,
-             msg_hash_len: u32,
+             message_ptr: u32,
+             message_len: u32,
              public_key_ptr: u32,
              public_key_len: u32,
              signature_ptr: u32,
@@ -1278,8 +1278,8 @@ impl WasmiModule {
              -> Result<u32, Trap> {
                 bls_verify(
                     caller,
-                    msg_hash_ptr,
-                    msg_hash_len,
+                    message_ptr,
+                    message_len,
                     public_key_ptr,
                     public_key_len,
                     signature_ptr,

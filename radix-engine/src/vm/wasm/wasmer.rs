@@ -676,8 +676,8 @@ impl WasmerModule {
 
         pub fn bls_verify(
             env: &WasmerInstanceEnv,
-            msg_hash_ptr: u32,
-            msg_hash_len: u32,
+            message_ptr: u32,
+            message_len: u32,
             public_key_ptr: u32,
             public_key_len: u32,
             signature_ptr: u32,
@@ -685,12 +685,12 @@ impl WasmerModule {
         ) -> Result<u32, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let msg_hash = read_memory(&instance, msg_hash_ptr, msg_hash_len)?;
+            let message = read_memory(&instance, message_ptr, message_len)?;
 
             let public_key = read_memory(&instance, public_key_ptr, public_key_len)?;
             let signature = read_memory(instance, signature_ptr, signature_len)?;
 
-            runtime.crypto_utils_bls_verify(msg_hash, public_key, signature)
+            runtime.crypto_utils_bls_verify(message, public_key, signature)
         }
 
         pub fn keccak_hash(

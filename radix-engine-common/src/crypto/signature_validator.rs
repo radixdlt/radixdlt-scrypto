@@ -54,10 +54,10 @@ pub fn verify_ed25519(
     false
 }
 
-pub fn verify_bls(signed_hash: &Hash, public_key: &BlsPublicKey, signature: &BlsSignature) -> bool {
+pub fn verify_bls(message: &[u8], public_key: &BlsPublicKey, signature: &BlsSignature) -> bool {
     if let Ok(sig) = blst::min_pk::Signature::from_bytes(&signature.0) {
         if let Ok(pk) = blst::min_pk::PublicKey::from_bytes(&public_key.0) {
-            let result = sig.verify(true, &signed_hash.0, BLS_SCHEME, &[], &pk, true);
+            let result = sig.verify(true, message, BLS_SCHEME, &[], &pk, true);
 
             match result {
                 blst::BLST_ERROR::BLST_SUCCESS => return true,
