@@ -1,4 +1,4 @@
-use crate::ScryptoSbor;
+use crate::internal_prelude::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -11,10 +11,20 @@ pub const BLS_SCHEME: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
 
 /// Represents a BLS signature (variant with 96-byte signature and 48-byte public key)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode, BasicDescribe)]
+#[sbor(transparent)]
 pub struct BlsSignature(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
+
+impl Describe<ScryptoCustomTypeKind> for BlsSignature {
+    const TYPE_ID: RustTypeId =
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::BLS_SIGNATURE_TYPE);
+
+    fn type_data() -> ScryptoTypeData<RustTypeId> {
+        well_known_scrypto_custom_types::bls_signature_type_data()
+    }
+}
 
 impl BlsSignature {
     pub const LENGTH: usize = 96;
