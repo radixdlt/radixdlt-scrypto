@@ -203,7 +203,7 @@ pub trait WasmRuntime {
 
     fn crypto_utils_bls_verify(
         &mut self,
-        msg_hash: Vec<u8>,
+        message: Vec<u8>,
         public_key: Vec<u8>,
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>>;

@@ -9,11 +9,11 @@ use transaction::builder::ManifestBuilder;
 fn crypto_scrypto_bls_verify(
     runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
-    msg_hash: &str,
+    msg: &str,
     pk: &str,
     sig: &str,
 ) -> bool {
-    let msg_hash = Hash::from_str(msg_hash).unwrap();
+    let msg = hex::decode(msg).unwrap();
     let pub_key = BlsPublicKey::from_str(pk).unwrap();
     let signature = BlsSignature::from_str(sig).unwrap();
 
@@ -24,7 +24,7 @@ fn crypto_scrypto_bls_verify(
                 package_address,
                 "CryptoScrypto",
                 "bls_verify",
-                manifest_args!(msg_hash, pub_key, signature),
+                manifest_args!(msg, pub_key, signature),
             )
             .build(),
         vec![],
@@ -122,7 +122,7 @@ fn test_crypto_scrypto_flow() {
     let public_key = secret_key.public_key();
 
     // Sign the message hash using BLS
-    let msg_signature = secret_key.sign(&msg_hash);
+    let msg_signature = secret_key.sign(msg_hash.as_slice());
 
     // Verify the BLS signature using CryptoScrypto package
     let result = crypto_scrypto_bls_verify(

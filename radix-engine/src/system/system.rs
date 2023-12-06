@@ -2861,12 +2861,12 @@ where
     #[trace_resources]
     fn bls_verify(
         &mut self,
-        msg_hash: Hash,
+        message: Vec<u8>,
         public_key: BlsPublicKey,
         signature: BlsSignature,
     ) -> Result<u32, RuntimeError> {
         // TODO: apply execution costs
-        Ok(verify_bls(&msg_hash, &public_key, &signature) as u32)
+        Ok(verify_bls(&message, &public_key, &signature) as u32)
     }
 
     #[trace_resources]
