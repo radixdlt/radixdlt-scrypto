@@ -12,7 +12,7 @@ runs:
         target: wasm32-unknown-unknown
 
     - name: Install nextest
-      uses: RDXWorks-actions/install-action@main
+      uses: RDXWorks-actions/install-action@nextest
 
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
       if: runner.os == 'Windows'
