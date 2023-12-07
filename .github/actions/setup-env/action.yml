@@ -5,14 +5,14 @@ runs:
   using: "composite"
   steps:
     - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
+      uses: RDXWorks-actions/toolchain@master
       with:
         toolchain: stable
         default: true
         target: wasm32-unknown-unknown
 
     - name: Install nextest
-      uses: taiki-e/install-action@nextest
+      uses: RDXWorks-actions/install-action@nextest
 
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
       if: runner.os == 'Windows'
@@ -24,7 +24,7 @@ runs:
       shell: bash
     - name: Setup cmake
       if: runner.os == 'Linux'
-      uses: jwlawson/actions-setup-cmake@v1.13
+      uses: RDXWorks-actions/actions-setup-cmake@master
       with:
         cmake-version: '3.27.9'
     - name: Install libclang-dev
