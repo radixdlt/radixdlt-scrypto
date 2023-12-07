@@ -67,7 +67,7 @@ fn test_crypto_scrypto_bls_verify() {
     let msg1 = hash("Test").to_string();
     let msg2 = hash("ExpectFailureTest").to_string();
     let pk = "93b1aa7542a5423e21d8e84b4472c31664412cc604a666e9fdf03baf3c758e728c7a11576ebb01110ac39a0df95636e2";
-    let msg1_signature = "a2ba96a1fc1e698b7688e077f171fbd7fe99c6bbf240b1421a08e3faa5d6b55523a18b8c77fba5830181dfec716edc3d18a8657bcadd0a83e3cafdad33998d10417f767c536b26b98df41d67ab416c761ad55438f23132a136fc82eb7b290571";
+    let msg1_signature = "8b84ff5a1d4f8095ab8a80518ac99230ed24a7d1ec90c4105f9c719aa7137ed5d7ce1454d4a953f5f55f3959ab416f3014f4cd2c361e4d32c6b4704a70b0e2e652a908f501acb54ec4e79540be010e3fdc1fbf8e7af61625705e185a71c884f1";
 
     // Act
     let msg1_verify =
