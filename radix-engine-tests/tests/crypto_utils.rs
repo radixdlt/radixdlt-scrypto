@@ -1,7 +1,9 @@
+mod package_loader;
+
+use package_loader::PackageLoader;
 use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use radix_engine_tests::common::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
