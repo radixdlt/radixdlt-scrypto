@@ -7,7 +7,15 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
-pub const BLS_SCHEME: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
+// Ciphersuite for BLS12-381
+//  - hash-to-curve: BLS12381G2_XMD:SHA-256_SSWU_RO
+//    - pairing-friendly elliptic curve: BLS12-381
+//    - hash function: SHA-256
+//    - signature variant: G2 minimal pubkey size
+//  - scheme:
+//    - proof-of-possession
+pub const BLS_SCHEME: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+// More details: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bls-signature-04
 
 /// Represents a BLS signature (variant with 96-byte signature and 48-byte public key)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
