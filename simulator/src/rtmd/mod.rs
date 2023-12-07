@@ -60,6 +60,10 @@ pub fn run() -> Result<(), Error> {
             }
             Err(e) => {
                 // try to decode versioned transaction
+                println!(
+                    "{:#?}",
+                    manifest_decode::<VersionedTransactionPayload>(&content)
+                );
                 match manifest_decode::<VersionedTransactionPayload>(&content) {
                     Ok(manifest) => {
                         let (manifest_instructions, blobs) = match manifest {

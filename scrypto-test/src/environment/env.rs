@@ -175,7 +175,7 @@ impl TestEnvironment {
         Self::new_custom(|_| {})
     }
 
-    pub fn new_custom(after_bootstrap: impl FnMut(&mut InMemorySubstateDatabase)) -> Self {
+    pub fn new_custom(after_bootstrap: impl FnOnce(&mut InMemorySubstateDatabase)) -> Self {
         let mut env = Self(EncapsulatedRadixEngine::standard(after_bootstrap));
 
         // Adding references to all of the well-known global nodes.

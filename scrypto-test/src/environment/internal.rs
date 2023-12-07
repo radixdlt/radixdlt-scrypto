@@ -33,7 +33,7 @@ pub(super) struct EncapsulatedRadixEngine {
 impl EncapsulatedRadixEngine {
     const DEFAULT_INTENT_HASH: Hash = Hash([0; 32]);
 
-    pub(super) fn standard(mut after_bootstrap: impl FnMut(&mut InMemorySubstateDatabase)) -> Self {
+    pub(super) fn standard(after_bootstrap: impl FnOnce(&mut InMemorySubstateDatabase)) -> Self {
         let mut substate_db = InMemorySubstateDatabase::standard();
 
         // Create the various VMs we will use
