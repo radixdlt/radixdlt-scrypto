@@ -6,7 +6,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[cfg(test)]
-fn crypto_scrypto_bls_verify(
+fn crypto_scrypto_bls12381_v1_verify(
     runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     msg: &str,
@@ -14,8 +14,8 @@ fn crypto_scrypto_bls_verify(
     sig: &str,
 ) -> bool {
     let msg = hex::decode(msg).unwrap();
-    let pub_key = BlsPublicKey::from_str(pk).unwrap();
-    let signature = BlsSignature::from_str(sig).unwrap();
+    let pub_key = Bls12381G1PublicKey::from_str(pk).unwrap();
+    let signature = Bls12381G2Signature::from_str(sig).unwrap();
 
     let receipt = runner.execute_manifest(
         ManifestBuilder::new()
@@ -23,7 +23,7 @@ fn crypto_scrypto_bls_verify(
             .call_function(
                 package_address,
                 "CryptoScrypto",
-                "bls_verify",
+                "bls12381_v1_verify",
                 manifest_args!(msg, pub_key, signature),
             )
             .build(),
@@ -58,7 +58,7 @@ fn crypto_scrypto_keccak_hash(
 }
 
 #[test]
-fn test_crypto_scrypto_bls_verify() {
+fn test_crypto_scrypto_verify_bls12381_v1() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
 
@@ -70,10 +70,20 @@ fn test_crypto_scrypto_bls_verify() {
     let msg1_signature = "8b84ff5a1d4f8095ab8a80518ac99230ed24a7d1ec90c4105f9c719aa7137ed5d7ce1454d4a953f5f55f3959ab416f3014f4cd2c361e4d32c6b4704a70b0e2e652a908f501acb54ec4e79540be010e3fdc1fbf8e7af61625705e185a71c884f1";
 
     // Act
-    let msg1_verify =
-        crypto_scrypto_bls_verify(&mut test_runner, package_address, &msg1, pk, msg1_signature);
-    let msg2_verify =
-        crypto_scrypto_bls_verify(&mut test_runner, package_address, &msg2, pk, msg1_signature);
+    let msg1_verify = crypto_scrypto_bls12381_v1_verify(
+        &mut test_runner,
+        package_address,
+        &msg1,
+        pk,
+        msg1_signature,
+    );
+    let msg2_verify = crypto_scrypto_bls12381_v1_verify(
+        &mut test_runner,
+        package_address,
+        &msg2,
+        pk,
+        msg1_signature,
+    );
 
     // Assert
     assert!(msg1_verify);
@@ -118,14 +128,14 @@ fn test_crypto_scrypto_flow() {
     // Get the hash of the message using CryptoScrypto package
     let msg_hash = crypto_scrypto_keccak_hash(&mut test_runner, package_address, msg);
 
-    let secret_key = BlsPrivateKey::from_u64(1).unwrap();
+    let secret_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
     let public_key = secret_key.public_key();
 
     // Sign the message hash using BLS
-    let msg_signature = secret_key.sign(msg_hash.as_slice());
+    let msg_signature = secret_key.sign_v1(msg_hash.as_slice());
 
     // Verify the BLS signature using CryptoScrypto package
-    let result = crypto_scrypto_bls_verify(
+    let result = crypto_scrypto_bls12381_v1_verify(
         &mut test_runner,
         package_address,
         &msg_hash.to_string(),

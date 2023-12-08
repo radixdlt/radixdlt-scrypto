@@ -733,7 +733,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    CRYPTO_UTILS_BLS_VERIFY_FUNCTION_NAME => {
+                    CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,

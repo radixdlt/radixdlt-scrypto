@@ -2859,14 +2859,14 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn bls_verify(
+    fn bls12381_v1_verify(
         &mut self,
         message: Vec<u8>,
-        public_key: BlsPublicKey,
-        signature: BlsSignature,
+        public_key: Bls12381G1PublicKey,
+        signature: Bls12381G2Signature,
     ) -> Result<u32, RuntimeError> {
         // TODO: apply execution costs
-        Ok(verify_bls(&message, &public_key, &signature) as u32)
+        Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
     }
 
     #[trace_resources]

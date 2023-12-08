@@ -201,7 +201,7 @@ pub trait WasmRuntime {
 
     fn sys_panic(&mut self, message: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn crypto_utils_bls_verify(
+    fn crypto_utils_bls12381_v1_verify(
         &mut self,
         message: Vec<u8>,
         public_key: Vec<u8>,

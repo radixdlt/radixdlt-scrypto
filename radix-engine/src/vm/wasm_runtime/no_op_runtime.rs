@@ -306,7 +306,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn crypto_utils_bls_verify(
+    fn crypto_utils_bls12381_v1_verify(
         &mut self,
         message: Vec<u8>,
         public_key: Vec<u8>,

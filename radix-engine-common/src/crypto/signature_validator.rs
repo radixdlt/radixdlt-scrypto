@@ -54,10 +54,16 @@ pub fn verify_ed25519(
     false
 }
 
-pub fn verify_bls(message: &[u8], public_key: &BlsPublicKey, signature: &BlsSignature) -> bool {
+/// Performs BLS12-381 G2 signature verification using following
+/// domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+pub fn verify_bls12381_v1(
+    message: &[u8],
+    public_key: &Bls12381G1PublicKey,
+    signature: &Bls12381G2Signature,
+) -> bool {
     if let Ok(sig) = blst::min_pk::Signature::from_bytes(&signature.0) {
         if let Ok(pk) = blst::min_pk::PublicKey::from_bytes(&public_key.0) {
-            let result = sig.verify(true, message, BLS_SCHEME, &[], &pk, true);
+            let result = sig.verify(true, message, BLS12381_CIPHERSITE_V1, &[], &pk, true);
 
             match result {
                 blst::BLST_ERROR::BLST_SUCCESS => return true,

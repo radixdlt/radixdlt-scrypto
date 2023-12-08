@@ -663,7 +663,7 @@ fn panic(
     runtime.sys_panic(message)
 }
 
-fn bls_verify(
+fn bls12381_v1_verify(
     mut caller: Caller<'_, HostState>,
     message_ptr: u32,
     message_len: u32,
@@ -688,7 +688,7 @@ fn bls_verify(
         signature_len,
     )?;
 
-    runtime.crypto_utils_bls_verify(message, public_key, signature)
+    runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
 }
 
 fn keccak_hash(
@@ -1268,7 +1268,7 @@ impl WasmiModule {
             },
         );
 
-        let host_bls_verify = Func::wrap(
+        let host_bls12381_v1_verify = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              message_ptr: u32,
@@ -1278,7 +1278,7 @@ impl WasmiModule {
              signature_ptr: u32,
              signature_len: u32|
              -> Result<u32, Trap> {
-                bls_verify(
+                bls12381_v1_verify(
                     caller,
                     message_ptr,
                     message_len,
@@ -1457,8 +1457,8 @@ impl WasmiModule {
         linker_define!(linker, SYS_GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
         linker_define!(
             linker,
-            CRYPTO_UTILS_BLS_VERIFY_FUNCTION_NAME,
-            host_bls_verify
+            CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME,
+            host_bls12381_v1_verify
         );
         linker_define!(
             linker,
