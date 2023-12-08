@@ -335,11 +335,72 @@ macro_rules! external_methods {
 #[macro_export]
 macro_rules! extern_blueprint_internal {
     (
-        $package_address:expr, $blueprint:ident, $blueprint_name:expr, $owned_type_name:expr, $global_type_name: expr, $functions:ident {
+        $blueprint:ident,
+        $blueprint_name:expr,
+        $owned_type_name:expr,
+        $global_type_name: expr,
+        $functions:ident {
             $($function_contents:tt)*
-        }, {
+        },
+        {
             $($method_contents:tt)*
+        } $(,)?
+    ) => {
+        #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+        pub struct $blueprint {
+            pub handle: ::scrypto::component::ObjectStubHandle,
         }
+
+        impl HasTypeInfo for $blueprint {
+            const PACKAGE_ADDRESS: Option<PackageAddress> = None;
+            const BLUEPRINT_NAME: &'static str = $blueprint_name;
+            const OWNED_TYPE_NAME: &'static str = $owned_type_name;
+            const GLOBAL_TYPE_NAME: &'static str = $global_type_name;
+        }
+
+        pub trait $functions {
+            $($function_contents)*
+        }
+
+        impl $functions for ::scrypto::component::Blueprint<$blueprint> {
+            $crate::external_functions!($($function_contents)*);
+        }
+
+        impl ::scrypto::component::ObjectStub for $blueprint {
+            type AddressType = ComponentAddress;
+
+            fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
+                Self {
+                    handle
+                }
+            }
+            fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
+                &self.handle
+            }
+        }
+
+        impl HasStub for $blueprint {
+            type Stub = $blueprint;
+        }
+
+        // We allow dead code because it's used for importing interfaces, and not all the interface might be used
+        #[allow(dead_code, unused_imports)]
+        impl $blueprint {
+            $crate::external_methods!($($method_contents)*);
+        }
+    };
+    (
+        $package_address: expr,
+        $blueprint:ident,
+        $blueprint_name:expr,
+        $owned_type_name:expr,
+        $global_type_name: expr,
+        $functions:ident {
+            $($function_contents:tt)*
+        },
+        {
+            $($method_contents:tt)*
+        } $(,)?
     ) => {
         #[derive(Copy, Clone, Debug, Eq, PartialEq)]
         pub struct $blueprint {
