@@ -7,6 +7,8 @@ use sbor::prelude::Vec;
 pub struct CryptoUtils {}
 
 impl CryptoUtils {
+    /// Performs BLS12-381 G2 signature verification using following
+    /// domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
     pub fn bls12381_v1_verify(
         message: Vec<u8>,
         public_key: Bls12381G1PublicKey,
@@ -24,6 +26,7 @@ impl CryptoUtils {
         }
     }
 
+    /// Calculates Keccak-256 digest over given vector of bytes
     pub fn keccak256_hash(data: Vec<u8>) -> Hash {
         let hash = copy_buffer(unsafe {
             crypto_utils::crypto_utils_keccak256_hash(data.as_ptr(), data.len())
