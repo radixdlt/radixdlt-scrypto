@@ -755,7 +755,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    CRYPTO_UTILS_KECCAK_HASH_FUNCTION_NAME => {
+                    CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,

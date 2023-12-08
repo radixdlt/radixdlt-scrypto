@@ -208,7 +208,7 @@ pub trait WasmRuntime {
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
-    fn crypto_utils_keccak_hash(
+    fn crypto_utils_keccak256_hash(
         &mut self,
         data: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

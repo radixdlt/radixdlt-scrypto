@@ -36,7 +36,7 @@ fn crypto_scrypto_bls12381_v1_verify(
 }
 
 #[cfg(test)]
-fn crypto_scrypto_keccak_hash(
+fn crypto_scrypto_keccak256_hash(
     runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     data: &str,
@@ -49,7 +49,7 @@ fn crypto_scrypto_keccak_hash(
             .call_function(
                 package_address,
                 "CryptoScrypto",
-                "keccak_hash",
+                "keccak256_hash",
                 manifest_args!(data),
             )
             .build(),
@@ -93,7 +93,7 @@ fn test_crypto_scrypto_verify_bls12381_v1() {
 }
 
 #[test]
-fn test_crypto_scrypto_keccak_hash() {
+fn test_crypto_scrypto_keccak256_hash() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
 
@@ -103,8 +103,8 @@ fn test_crypto_scrypto_keccak_hash() {
     let data2 = "xidaR olleH";
 
     // Act
-    let data1_hash = crypto_scrypto_keccak_hash(&mut test_runner, package_address, data1);
-    let data2_hash = crypto_scrypto_keccak_hash(&mut test_runner, package_address, data2);
+    let data1_hash = crypto_scrypto_keccak256_hash(&mut test_runner, package_address, data1);
+    let data2_hash = crypto_scrypto_keccak256_hash(&mut test_runner, package_address, data2);
 
     // Assert
     assert_eq!(
@@ -128,7 +128,7 @@ fn test_crypto_scrypto_flow() {
 
     // Act
     // Get the hash of the message using CryptoScrypto package
-    let msg_hash = crypto_scrypto_keccak_hash(&mut test_runner, package_address, msg);
+    let msg_hash = crypto_scrypto_keccak256_hash(&mut test_runner, package_address, msg);
 
     let secret_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
     let public_key = secret_key.public_key();
