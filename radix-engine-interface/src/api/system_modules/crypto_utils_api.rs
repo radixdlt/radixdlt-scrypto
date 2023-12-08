@@ -9,5 +9,5 @@ pub trait ClientCryptoUtilsApi<E> {
         signature: Bls12381G2Signature,
     ) -> Result<u32, E>;
 
-    fn keccak_hash(&mut self, data: Vec<u8>) -> Result<Hash, E>;
+    fn keccak256_hash(&mut self, data: Vec<u8>) -> Result<Hash, E>;
 }

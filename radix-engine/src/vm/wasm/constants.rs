@@ -81,7 +81,7 @@ pub const SYS_PANIC_FUNCTION_NAME: &str = "sys_panic";
 // Crypto Utils
 //=================
 pub const CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME: &str = "crypto_utils_bls12381_v1_verify";
-pub const CRYPTO_UTILS_KECCAK_HASH_FUNCTION_NAME: &str = "crypto_utils_keccak_hash";
+pub const CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME: &str = "crypto_utils_keccak256_hash";
 
 //=================
 // WASM Shim

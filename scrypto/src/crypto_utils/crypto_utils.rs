@@ -24,9 +24,9 @@ impl CryptoUtils {
         }
     }
 
-    pub fn keccak_hash(data: Vec<u8>) -> Hash {
+    pub fn keccak256_hash(data: Vec<u8>) -> Hash {
         let hash = copy_buffer(unsafe {
-            crypto_utils::crypto_utils_keccak_hash(data.as_ptr(), data.len())
+            crypto_utils::crypto_utils_keccak256_hash(data.as_ptr(), data.len())
         });
 
         Hash(hash.try_into().unwrap())

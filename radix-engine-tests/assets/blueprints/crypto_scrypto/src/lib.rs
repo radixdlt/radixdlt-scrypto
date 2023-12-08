@@ -13,8 +13,8 @@ mod component_module {
             CryptoUtils::bls12381_v1_verify(message, pub_key, signature)
         }
 
-        pub fn keccak_hash(data: Vec<u8>) -> Hash {
-            let hash = CryptoUtils::keccak_hash(data);
+        pub fn keccak256_hash(data: Vec<u8>) -> Hash {
+            let hash = CryptoUtils::keccak256_hash(data);
             hash
         }
     }

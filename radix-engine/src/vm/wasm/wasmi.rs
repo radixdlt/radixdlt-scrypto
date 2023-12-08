@@ -691,7 +691,7 @@ fn bls12381_v1_verify(
     runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
 }
 
-fn keccak_hash(
+fn keccak256_hash(
     mut caller: Caller<'_, HostState>,
     data_ptr: u32,
     data_len: u32,
@@ -701,7 +701,7 @@ fn keccak_hash(
     let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
 
     runtime
-        .crypto_utils_keccak_hash(data)
+        .crypto_utils_keccak256_hash(data)
         .map(|buffer| buffer.0)
 }
 
@@ -1291,10 +1291,10 @@ impl WasmiModule {
             },
         );
 
-        let host_keccak_hash = Func::wrap(
+        let host_keccak256_hash = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, data_ptr: u32, data_len: u32| -> Result<u64, Trap> {
-                keccak_hash(caller, data_ptr, data_len).map_err(|e| e.into())
+                keccak256_hash(caller, data_ptr, data_len).map_err(|e| e.into())
             },
         );
 
@@ -1462,8 +1462,8 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            CRYPTO_UTILS_KECCAK_HASH_FUNCTION_NAME,
-            host_keccak_hash
+            CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME,
+            host_keccak256_hash
         );
 
         #[cfg(feature = "radix_engine_tests")]

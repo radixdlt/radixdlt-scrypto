@@ -61,7 +61,7 @@ mod tests {
         // Supra example
         let test_pk = "8a38419cb83c15a92d11243384bea0acd15cbacc24b385b9c577b17272d6ad68bb53c52dbbf79324005528d2d73c2643";
         let test_sk = "5B00CC8C7153F39EF2E6E2FADB1BB95A1F4BF21F43CC5B28EFA9E526FB788C08";
-        let test_message_hash = keccak_256_hash("Hello World!");
+        let test_message_hash = keccak256_hash("Hello World!");
 
         assert_eq!(
             test_message_hash,

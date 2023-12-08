@@ -695,7 +695,7 @@ impl WasmerModule {
             runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
         }
 
-        pub fn keccak_hash(
+        pub fn keccak256_hash(
             env: &WasmerInstanceEnv,
             data_ptr: u32,
             data_len: u32,
@@ -705,7 +705,7 @@ impl WasmerModule {
             let data = read_memory(instance, data_ptr, data_len)?;
 
             runtime
-                .crypto_utils_keccak_hash(data)
+                .crypto_utils_keccak256_hash(data)
                 .map(|buffer| buffer.0)
         }
 
@@ -813,7 +813,7 @@ impl WasmerModule {
                 SYS_GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_generate_ruid),
                 BUFFER_CONSUME_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), buffer_consume),
                 CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_verify),
-                CRYPTO_UTILS_KECCAK_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), keccak_hash),
+                CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), keccak256_hash),
 
                 #[cfg(feature = "radix_engine_tests")]
                 "test_host_read_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_read_memory),

@@ -577,11 +577,11 @@ where
         Ok(result)
     }
 
-    fn crypto_utils_keccak_hash(
+    fn crypto_utils_keccak256_hash(
         &mut self,
         data: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let hash = self.api.keccak_hash(data)?;
+        let hash = self.api.keccak256_hash(data)?;
 
         self.allocate_buffer(hash.to_vec())
     }
