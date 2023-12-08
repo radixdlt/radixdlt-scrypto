@@ -674,7 +674,7 @@ impl WasmerModule {
             runtime.sys_generate_ruid().map(|buffer| buffer.0)
         }
 
-        pub fn bls_verify(
+        pub fn bls12381_v1_verify(
             env: &WasmerInstanceEnv,
             message_ptr: u32,
             message_len: u32,
@@ -690,7 +690,7 @@ impl WasmerModule {
             let public_key = read_memory(&instance, public_key_ptr, public_key_len)?;
             let signature = read_memory(instance, signature_ptr, signature_len)?;
 
-            runtime.crypto_utils_bls_verify(message, public_key, signature)
+            runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
         }
 
         pub fn keccak_hash(
@@ -810,7 +810,7 @@ impl WasmerModule {
                 SYS_GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_get_transaction_hash),
                 SYS_GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_generate_ruid),
                 BUFFER_CONSUME_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), buffer_consume),
-                CRYPTO_UTILS_BLS_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls_verify),
+                CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_verify),
                 CRYPTO_UTILS_KECCAK_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), keccak_hash),
 
                 #[cfg(feature = "radix_engine_tests")]

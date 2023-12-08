@@ -413,11 +413,11 @@ create_well_known_lookup!(
             )
         ),
         (
-            BLS_PUBLIC_KEY,
+            BLS12381G1_PUBLIC_KEY,
             CRYPTO_TYPES_START + 3,
             named_transparent(
-                "BlsPublicKey",
-                bytes_fixed_length_type_data(BlsPublicKey::LENGTH),
+                "Bls12381G1PublicKey",
+                bytes_fixed_length_type_data(Bls12381G1PublicKey::LENGTH),
             )
         ),
         (
@@ -451,11 +451,11 @@ create_well_known_lookup!(
             )
         ),
         (
-            BLS_SIGNATURE,
+            BLS12381G2_SIGNATURE,
             CRYPTO_TYPES_START + 12,
             named_transparent(
-                "BlsSignature",
-                bytes_fixed_length_type_data(BlsSignature::LENGTH),
+                "Bls12381G2Signature",
+                bytes_fixed_length_type_data(Bls12381G2Signature::LENGTH),
             )
         ),
         // ROLE ASSIGNMENT TYPES
@@ -641,7 +641,10 @@ mod tests {
             SECP256K1_PUBLIC_KEY_TYPE,
             Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
         );
-        test_equivalence(BLS_PUBLIC_KEY_TYPE, BlsPublicKey([0; BlsPublicKey::LENGTH]));
+        test_equivalence(
+            BLS12381G1_PUBLIC_KEY_TYPE,
+            Bls12381G1PublicKey([0; Bls12381G1PublicKey::LENGTH]),
+        );
         test_equivalence(
             PUBLIC_KEY_HASH_TYPE,
             PublicKeyHash::Ed25519(Ed25519PublicKeyHash([0; Ed25519PublicKeyHash::LENGTH])),
@@ -658,7 +661,10 @@ mod tests {
             SECP256K1_PUBLIC_KEY_HASH_TYPE,
             Secp256k1PublicKeyHash([0; Secp256k1PublicKeyHash::LENGTH]),
         );
-        test_equivalence(BLS_SIGNATURE_TYPE, BlsSignature([0; BlsSignature::LENGTH]));
+        test_equivalence(
+            BLS12381G2_SIGNATURE_TYPE,
+            Bls12381G2Signature([0; Bls12381G2Signature::LENGTH]),
+        );
     }
 
     fn test_equivalence<T: ScryptoEncode + ScryptoDescribe>(id: WellKnownTypeId, value: T) {

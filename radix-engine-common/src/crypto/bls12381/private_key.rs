@@ -1,19 +1,19 @@
-use super::BlsSignature;
+use super::Bls12381G2Signature;
 use crate::internal_prelude::*;
 use blst::min_pk::SecretKey;
 
-pub struct BlsPrivateKey(SecretKey);
+pub struct Bls12381G1PrivateKey(SecretKey);
 
-impl BlsPrivateKey {
+impl Bls12381G1PrivateKey {
     pub const LENGTH: usize = 32;
 
-    pub fn public_key(&self) -> BlsPublicKey {
-        BlsPublicKey(self.0.sk_to_pk().to_bytes())
+    pub fn public_key(&self) -> Bls12381G1PublicKey {
+        Bls12381G1PublicKey(self.0.sk_to_pk().to_bytes())
     }
 
-    pub fn sign(&self, message: &[u8]) -> BlsSignature {
-        let signature = self.0.sign(message, BLS_SCHEME, &[]).to_bytes();
-        BlsSignature(signature)
+    pub fn sign_v1(&self, message: &[u8]) -> Bls12381G2Signature {
+        let signature = self.0.sign(message, BLS12381_CIPHERSITE_V1, &[]).to_bytes();
+        Bls12381G2Signature(signature)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -21,15 +21,15 @@ impl BlsPrivateKey {
     }
 
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
-        if slice.len() != BlsPrivateKey::LENGTH {
+        if slice.len() != Bls12381G1PrivateKey::LENGTH {
             return Err(());
         }
         Ok(Self(SecretKey::from_bytes(slice).map_err(|_| ())?))
     }
 
     pub fn from_u64(n: u64) -> Result<Self, ()> {
-        let mut bytes = [0u8; BlsPrivateKey::LENGTH];
-        (&mut bytes[BlsPrivateKey::LENGTH - 8..BlsPrivateKey::LENGTH])
+        let mut bytes = [0u8; Bls12381G1PrivateKey::LENGTH];
+        (&mut bytes[Bls12381G1PrivateKey::LENGTH - 8..Bls12381G1PrivateKey::LENGTH])
             .copy_from_slice(&n.to_be_bytes());
 
         Ok(Self(SecretKey::from_bytes(&bytes).map_err(|_| ())?))
@@ -47,13 +47,13 @@ mod tests {
         let test_pk = "93b1aa7542a5423e21d8e84b4472c31664412cc604a666e9fdf03baf3c758e728c7a11576ebb01110ac39a0df95636e2";
         let test_message_hash = hash("Test").as_bytes().to_vec();
         let test_signature = "8b84ff5a1d4f8095ab8a80518ac99230ed24a7d1ec90c4105f9c719aa7137ed5d7ce1454d4a953f5f55f3959ab416f3014f4cd2c361e4d32c6b4704a70b0e2e652a908f501acb54ec4e79540be010e3fdc1fbf8e7af61625705e185a71c884f1";
-        let sk = BlsPrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
-        let pk = BlsPublicKey::from_str(test_pk).unwrap();
-        let sig = BlsSignature::from_str(test_signature).unwrap();
+        let sk = Bls12381G1PrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
+        let pk = Bls12381G1PublicKey::from_str(test_pk).unwrap();
+        let sig = Bls12381G2Signature::from_str(test_signature).unwrap();
 
         assert_eq!(sk.public_key(), pk);
-        assert_eq!(sk.sign(&test_message_hash), sig);
-        assert!(verify_bls(&test_message_hash, &pk, &sig));
+        assert_eq!(sk.sign_v1(&test_message_hash), sig);
+        assert!(verify_bls12381_v1(&test_message_hash, &pk, &sig));
     }
 
     #[test]
@@ -72,12 +72,12 @@ mod tests {
 
         let test_signature = "82131f69b6699755f830e29d6ed41cbf759591a2ab598aa4e9686113341118d1db900d190436048601791121b5757c341045d4d0c94a95ec31a9ba6205f9b7504de85dadff52874375c58eec6cec28397279de87d5595101e398d31646d345bb";
 
-        let sk = BlsPrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
-        let pk = BlsPublicKey::from_str(test_pk).unwrap();
-        let sig = BlsSignature::from_str(test_signature).unwrap();
+        let sk = Bls12381G1PrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
+        let pk = Bls12381G1PublicKey::from_str(test_pk).unwrap();
+        let sig = Bls12381G2Signature::from_str(test_signature).unwrap();
 
         assert_eq!(sk.public_key(), pk);
-        assert_eq!(sk.sign(&test_message_hash), sig);
-        assert!(verify_bls(&test_message_hash, &pk, &sig));
+        assert_eq!(sk.sign_v1(&test_message_hash), sig);
+        assert!(verify_bls12381_v1(&test_message_hash, &pk, &sig));
     }
 }

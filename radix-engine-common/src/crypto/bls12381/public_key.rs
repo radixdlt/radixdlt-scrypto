@@ -2,27 +2,27 @@ use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
-/// Represents a BLS public key.
+/// Represents a BLS12-381 G1 public key.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode, BasicDescribe,
 )]
 #[sbor(transparent)]
-pub struct BlsPublicKey(
+pub struct Bls12381G1PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
 
-impl Describe<ScryptoCustomTypeKind> for BlsPublicKey {
+impl Describe<ScryptoCustomTypeKind> for Bls12381G1PublicKey {
     const TYPE_ID: RustTypeId =
-        RustTypeId::WellKnown(well_known_scrypto_custom_types::BLS_PUBLIC_KEY_TYPE);
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::BLS12381G1_PUBLIC_KEY_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::bls_public_key_type_data()
+        well_known_scrypto_custom_types::bls12381g1_public_key_type_data()
     }
 }
 
-impl BlsPublicKey {
+impl Bls12381G1PublicKey {
     pub const LENGTH: usize = 48;
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -30,15 +30,15 @@ impl BlsPublicKey {
     }
 }
 
-impl TryFrom<&[u8]> for BlsPublicKey {
+impl TryFrom<&[u8]> for Bls12381G1PublicKey {
     type Error = ParseBlsPublicKeyError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != BlsPublicKey::LENGTH {
+        if slice.len() != Bls12381G1PublicKey::LENGTH {
             return Err(ParseBlsPublicKeyError::InvalidLength(slice.len()));
         }
 
-        Ok(BlsPublicKey(copy_u8_array(slice)))
+        Ok(Bls12381G1PublicKey(copy_u8_array(slice)))
     }
 }
 
@@ -67,7 +67,7 @@ impl fmt::Display for ParseBlsPublicKeyError {
 // text
 //======
 
-impl FromStr for BlsPublicKey {
+impl FromStr for Bls12381G1PublicKey {
     type Err = ParseBlsPublicKeyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -76,13 +76,13 @@ impl FromStr for BlsPublicKey {
     }
 }
 
-impl fmt::Display for BlsPublicKey {
+impl fmt::Display for Bls12381G1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Debug for BlsPublicKey {
+impl fmt::Debug for Bls12381G1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

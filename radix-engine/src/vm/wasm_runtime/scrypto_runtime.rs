@@ -561,17 +561,19 @@ where
         self.allocate_buffer(scrypto_encode(&fee_balance).expect("Failed to encode fee_balance"))
     }
 
-    fn crypto_utils_bls_verify(
+    fn crypto_utils_bls12381_v1_verify(
         &mut self,
         message: Vec<u8>,
         public_key: Vec<u8>,
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-        let public_key = BlsPublicKey::try_from(public_key.as_slice())
+        let public_key = Bls12381G1PublicKey::try_from(public_key.as_slice())
             .map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
-        let signature = BlsSignature::try_from(signature.as_slice())
+        let signature = Bls12381G2Signature::try_from(signature.as_slice())
             .map_err(WasmRuntimeError::InvalidBlsSignature)?;
-        let result = self.api.bls_verify(message, public_key, signature)?;
+        let result = self
+            .api
+            .bls12381_v1_verify(message, public_key, signature)?;
         Ok(result)
     }
 
