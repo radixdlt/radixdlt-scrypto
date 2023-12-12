@@ -1,0 +1,23 @@
+[workspace]
+
+[package]
+name = "crypto_scrypto"
+version = "1.0.2-dev"
+edition = "2021"
+
+[dependencies]
+# Radix Engine deps
+# Normally one would set the deps as follows
+#scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "206d65b05a98e4d2f8476dc73bb3fae9348c2fc7", features = ["serde"] }
+#sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "206d65b05a98e4d2f8476dc73bb3fae9348c2fc7" }
+
+# But since this package is within the same repo we can do this
+sbor = { path = "../../sbor" }
+scrypto = { path = "../../scrypto" }
+
+[dev-dependencies]
+radix-engine = { path = "../../radix-engine" }
+
+[lib]
+doctest = false
+crate-type = ["cdylib", "lib"]
