@@ -4,6 +4,7 @@ pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::*;
+use sbor::rust::cell::RefCell;
 use utils::rust::collections::VecDeque;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
@@ -73,11 +74,11 @@ pub trait ReadableTreeStore {
 /// The "write" part of a physical tree node storage SPI.
 pub trait WriteableTreeStore {
     /// Inserts the node under a new, unique key (i.e. never an update).
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode);
+    fn insert_node(&self, key: NodeKey, node: TreeNode);
 
     /// Marks the given tree part for a (potential) future removal by an arbitrary external pruning
     /// process.
-    fn record_stale_tree_part(&mut self, part: StaleTreePart);
+    fn record_stale_tree_part(&self, part: StaleTreePart);
 }
 
 /// A complete tree node storage SPI.
@@ -87,8 +88,8 @@ impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TypedInMemoryTreeStore {
-    pub tree_nodes: HashMap<NodeKey, TreeNode>,
-    pub stale_part_buffer: Vec<StaleTreePart>,
+    pub tree_nodes: RefCell<HashMap<NodeKey, TreeNode>>,
+    pub stale_part_buffer: RefCell<Vec<StaleTreePart>>,
     pub pruning_enabled: bool,
 }
 
@@ -96,16 +97,16 @@ impl TypedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
     pub fn new() -> TypedInMemoryTreeStore {
         TypedInMemoryTreeStore {
-            tree_nodes: hash_map_new(),
-            stale_part_buffer: Vec::new(),
+            tree_nodes: RefCell::new(hash_map_new()),
+            stale_part_buffer: RefCell::new(Vec::new()),
             pruning_enabled: false,
         }
     }
 
     pub fn with_pruning() -> TypedInMemoryTreeStore {
         TypedInMemoryTreeStore {
-            tree_nodes: hash_map_new(),
-            stale_part_buffer: Vec::new(),
+            tree_nodes: RefCell::new(hash_map_new()),
+            stale_part_buffer: RefCell::new(Vec::new()),
             pruning_enabled: true,
         }
     }
@@ -113,27 +114,27 @@ impl TypedInMemoryTreeStore {
 
 impl ReadableTreeStore for TypedInMemoryTreeStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
-        self.tree_nodes.get(key).cloned()
+        self.tree_nodes.borrow().get(key).cloned()
     }
 }
 
 impl WriteableTreeStore for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
-        self.tree_nodes.insert(key, node);
+    fn insert_node(&self, key: NodeKey, node: TreeNode) {
+        self.tree_nodes.borrow_mut().insert(key, node);
     }
 
-    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+    fn record_stale_tree_part(&self, part: StaleTreePart) {
         if self.pruning_enabled {
             match part {
                 StaleTreePart::Node(node_key) => {
-                    self.tree_nodes.remove(&node_key);
+                    self.tree_nodes.borrow_mut().remove(&node_key);
                 }
                 StaleTreePart::Subtree(node_key) => {
                     let mut queue = VecDeque::new();
                     queue.push_back(node_key);
 
                     while let Some(node_key) = queue.pop_front() {
-                        if let Some(value) = self.tree_nodes.remove(&node_key) {
+                        if let Some(value) = self.tree_nodes.borrow_mut().remove(&node_key) {
                             match value {
                                 TreeNodeV1::Internal(x) => {
                                     for child in x.children {
@@ -151,7 +152,7 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
                 }
             }
         } else {
-            self.stale_part_buffer.push(part);
+            self.stale_part_buffer.borrow_mut().push(part);
         }
     }
 }
@@ -159,16 +160,16 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
 /// A `TreeStore` based on serialized payloads stored in memory.
 #[derive(Debug, PartialEq, Eq)]
 pub struct SerializedInMemoryTreeStore {
-    pub memory: HashMap<Vec<u8>, Vec<u8>>,
-    pub stale_part_buffer: Vec<Vec<u8>>,
+    pub memory: RefCell<HashMap<Vec<u8>, Vec<u8>>>,
+    pub stale_part_buffer: RefCell<Vec<Vec<u8>>>,
 }
 
 impl SerializedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
     pub fn new() -> Self {
         Self {
-            memory: hash_map_new(),
-            stale_part_buffer: Vec::new(),
+            memory: RefCell::new(hash_map_new()),
+            stale_part_buffer: RefCell::new(Vec::new()),
         }
     }
 }
@@ -176,19 +177,23 @@ impl SerializedInMemoryTreeStore {
 impl ReadableTreeStore for SerializedInMemoryTreeStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.memory
+            .borrow()
             .get(&encode_key(key))
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 }
 
 impl WriteableTreeStore for SerializedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+    fn insert_node(&self, key: NodeKey, node: TreeNode) {
         self.memory
+            .borrow_mut()
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
     }
 
-    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
-        self.stale_part_buffer.push(scrypto_encode(&part).unwrap());
+    fn record_stale_tree_part(&self, part: StaleTreePart) {
+        self.stale_part_buffer
+            .borrow_mut()
+            .push(scrypto_encode(&part).unwrap());
     }
 }
 

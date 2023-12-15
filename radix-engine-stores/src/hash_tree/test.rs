@@ -260,6 +260,7 @@ fn records_stale_tree_node_keys() {
     let stale_versions = tester
         .tree_store
         .stale_part_buffer
+        .borrow()
         .iter()
         .map(|stale_part| {
             let StaleTreePart::Node(key) = stale_part else {
@@ -331,7 +332,7 @@ fn records_stale_subtree_root_key_when_partition_removed() {
     ]);
     tester.reset_partition(from_seed(4), 7, vec![]);
     assert_eq!(
-        tester.tree_store.stale_part_buffer,
+        tester.tree_store.stale_part_buffer.borrow().to_vec(),
         vec![
             // The entire subtree starting at the root of substate-tier JMT of partition `4:7`:
             StaleTreePart::Subtree(NodeKey::new(
@@ -403,13 +404,13 @@ fn serialized_keys_are_strictly_increasing() {
     let previous_keys = tester
         .tree_store
         .memory
+        .borrow()
         .keys()
         .cloned()
         .collect::<HashSet<_>>();
     tester.put_substate_changes(vec![change(1, 7, 2, Some(80))]);
-    let min_next_key = tester
-        .tree_store
-        .memory
+    let binding = tester.tree_store.memory.borrow();
+    let min_next_key = binding
         .keys()
         .filter(|key| !previous_keys.contains(*key))
         .max()
@@ -542,10 +543,8 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
     }
 
     pub fn get_leafs_of_tier(&mut self, tier: Tier) -> HashMap<LeafKey, Hash> {
-        let stale_node_keys = self
-            .tree_store
-            .stale_part_buffer
-            .clone()
+        let binding = self.tree_store.stale_part_buffer.borrow().clone();
+        let stale_node_keys = binding
             .into_iter()
             .flat_map(|stale_part| match stale_part {
                 StaleTreePart::Node(key) => vec![key],
@@ -557,6 +556,7 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
         let expected_separator_count = tier as usize;
         self.tree_store
             .tree_nodes
+            .borrow()
             .iter()
             .filter(|(key, _)| {
                 let separator_count = key
