@@ -79,15 +79,15 @@ pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
         let db_node_key = node_tier_leaf.leaf_key().bytes.clone();
         let mut partition_tier_store = NestedTreeStore::new(node_tier_store, db_node_key.clone());
         for partition_tier_leaf in
-            list_leaves(&mut partition_tier_store, node_tier_leaf.payload().clone())
+            list_leaves(&partition_tier_store, node_tier_leaf.payload().clone())
         {
             let db_partition_num =
                 DbPartitionNum::from_be_bytes(copy_u8_array(&partition_tier_leaf.leaf_key().bytes));
-            let mut substate_tier_store =
+            let substate_tier_store =
                 NestedTreeStore::new(&mut partition_tier_store, vec![db_partition_num]);
             let mut by_db_sort_key = index_map_new();
             for substate_tier_leaf in list_leaves(
-                &mut substate_tier_store,
+                &substate_tier_store,
                 partition_tier_leaf.payload().clone(),
             ) {
                 by_db_sort_key.insert(
@@ -110,7 +110,7 @@ pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
 // only internals below
 
 fn list_leaves<S: ReadableTreeStore>(
-    tree_store: &mut S,
+    tree_store: &S,
     version: Version,
 ) -> Vec<LeafNode<Version>> {
     let mut leaves = Vec::new();
@@ -119,7 +119,7 @@ fn list_leaves<S: ReadableTreeStore>(
 }
 
 fn list_leaves_recursively<S: ReadableTreeStore>(
-    tree_store: &mut S,
+    tree_store: &S,
     key: NodeKey,
     results: &mut Vec<LeafNode<Version>>,
 ) {
