@@ -23,4 +23,25 @@ mod tests {
                 .unwrap()
         );
     }
+
+    #[test]
+    fn test_keccak256_100b() {
+        let data = "m".repeat(100);
+        let _ = keccak256_hash(data);
+    }
+    #[test]
+    fn test_keccak256_1kb() {
+        let data = "m".repeat(1024);
+        let _ = keccak256_hash(data);
+    }
+    #[test]
+    fn test_keccak256_100kb() {
+        let data = "m".repeat(100 * 1024);
+        let _ = keccak256_hash(data);
+    }
+    #[test]
+    fn test_keccak256_1mb() {
+        let data = "m".repeat(1024 * 1024);
+        let _ = keccak256_hash(data);
+    }
 }

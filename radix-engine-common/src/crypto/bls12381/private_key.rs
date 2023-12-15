@@ -80,4 +80,45 @@ mod tests {
         assert_eq!(sk.sign_v1(&test_message_hash), sig);
         assert!(verify_bls12381_v1(&test_message_hash, &pk, &sig));
     }
+
+    #[test]
+    fn sign_and_verify_100b() {
+        let test_sk = "408157791befddd702672dcfcfc99da3512f9c0ea818890fcb6ab749580ef2cf";
+        let test_message = vec![0; 100];
+        let sk = Bls12381G1PrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
+        let pk = sk.public_key();
+
+        let sig = sk.sign_v1(&test_message);
+        let _ = verify_bls12381_v1(&test_message, &pk, &sig);
+    }
+    #[test]
+    fn sign_and_verify_1kb() {
+        let test_sk = "408157791befddd702672dcfcfc99da3512f9c0ea818890fcb6ab749580ef2cf";
+        let test_message = vec![0; 1024];
+        let sk = Bls12381G1PrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
+        let pk = sk.public_key();
+
+        let sig = sk.sign_v1(&test_message);
+        let _ = verify_bls12381_v1(&test_message, &pk, &sig);
+    }
+    #[test]
+    fn sign_and_verify_100kb() {
+        let test_sk = "408157791befddd702672dcfcfc99da3512f9c0ea818890fcb6ab749580ef2cf";
+        let test_message = vec![0; 100 * 1024];
+        let sk = Bls12381G1PrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
+        let pk = sk.public_key();
+
+        let sig = sk.sign_v1(&test_message);
+        let _ = verify_bls12381_v1(&test_message, &pk, &sig);
+    }
+    #[test]
+    fn sign_and_verify_1mb() {
+        let test_sk = "408157791befddd702672dcfcfc99da3512f9c0ea818890fcb6ab749580ef2cf";
+        let test_message = vec![0; 1024 * 1024];
+        let sk = Bls12381G1PrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
+        let pk = sk.public_key();
+
+        let sig = sk.sign_v1(&test_message);
+        let _ = verify_bls12381_v1(&test_message, &pk, &sig);
+    }
 }
