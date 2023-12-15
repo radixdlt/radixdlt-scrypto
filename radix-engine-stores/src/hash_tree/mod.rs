@@ -86,10 +86,9 @@ pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
             let substate_tier_store =
                 NestedTreeStore::new(&mut partition_tier_store, vec![db_partition_num]);
             let mut by_db_sort_key = index_map_new();
-            for substate_tier_leaf in list_leaves(
-                &substate_tier_store,
-                partition_tier_leaf.payload().clone(),
-            ) {
+            for substate_tier_leaf in
+                list_leaves(&substate_tier_store, partition_tier_leaf.payload().clone())
+            {
                 by_db_sort_key.insert(
                     DbSortKey(substate_tier_leaf.leaf_key().bytes.clone()),
                     substate_tier_leaf.value_hash(),
@@ -109,10 +108,7 @@ pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
 
 // only internals below
 
-fn list_leaves<S: ReadableTreeStore>(
-    tree_store: &S,
-    version: Version,
-) -> Vec<LeafNode<Version>> {
+fn list_leaves<S: ReadableTreeStore>(tree_store: &S, version: Version) -> Vec<LeafNode<Version>> {
     let mut leaves = Vec::new();
     list_leaves_recursively(tree_store, NodeKey::new_empty_path(version), &mut leaves);
     leaves
@@ -356,11 +352,11 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for NestedTreeStore<'s, S> {
 }
 
 impl<'s, S: WriteableTreeStore> WriteableTreeStore for NestedTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+    fn insert_node(&self, key: NodeKey, node: TreeNode) {
         self.underlying.insert_node(self.prefixed(&key), node);
     }
 
-    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+    fn record_stale_tree_part(&self, part: StaleTreePart) {
         self.underlying.record_stale_tree_part(match part {
             StaleTreePart::Node(key) => StaleTreePart::Node(self.prefixed(&key)),
             StaleTreePart::Subtree(key) => StaleTreePart::Subtree(self.prefixed(&key)),
