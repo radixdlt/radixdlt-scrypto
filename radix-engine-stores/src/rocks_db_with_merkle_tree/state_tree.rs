@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use crate::hash_tree::put_at_next_version;
 use crate::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, WriteableTreeStore,
@@ -41,15 +42,15 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
 
 #[derive(Clone)]
 pub struct StateHashTreeDiff {
-    pub new_nodes: Vec<(NodeKey, TreeNode)>,
-    pub stale_tree_parts: Vec<StaleTreePart>,
+    pub new_nodes: RefCell<Vec<(NodeKey, TreeNode)>>,
+    pub stale_tree_parts: RefCell<Vec<StaleTreePart>>,
 }
 
 impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
-            new_nodes: Vec::new(),
-            stale_tree_parts: Vec::new(),
+            new_nodes: RefCell::new(Vec::new()),
+            stale_tree_parts: RefCell::new(Vec::new()),
         }
     }
 }
