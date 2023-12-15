@@ -30,11 +30,11 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> 
 }
 
 impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+    fn insert_node(&self, key: NodeKey, node: TreeNode) {
         self.diff.new_nodes.push((key, node));
     }
 
-    fn record_stale_tree_part(&mut self, part: StaleTreePart) {
+    fn record_stale_tree_part(&self, part: StaleTreePart) {
         self.diff.stale_tree_parts.push(part);
     }
 }
