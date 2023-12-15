@@ -1,10 +1,10 @@
-use std::cell::RefCell;
 use crate::hash_tree::put_at_next_version;
 use crate::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, WriteableTreeStore,
 };
 use radix_engine_common::prelude::Hash;
 use radix_engine_store_interface::interface::DatabaseUpdates;
+use std::cell::RefCell;
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
@@ -32,11 +32,11 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> 
 
 impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
     fn insert_node(&self, key: NodeKey, node: TreeNode) {
-        self.diff.new_nodes.push((key, node));
+        self.diff.new_nodes.borrow_mut().push((key, node));
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {
-        self.diff.stale_tree_parts.push(part);
+        self.diff.stale_tree_parts.borrow_mut().push(part);
     }
 }
 

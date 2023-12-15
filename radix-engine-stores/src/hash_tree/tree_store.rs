@@ -3,8 +3,8 @@ pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
-use sbor::*;
 use sbor::rust::cell::RefCell;
+use sbor::*;
 use utils::rust::collections::VecDeque;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
