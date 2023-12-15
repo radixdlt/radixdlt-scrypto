@@ -201,7 +201,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         // derive and put new JMT nodes (also record references to stale parts, for later amortized background GC [not implemented here!])
         let (state_hash_tree_update, new_root_hash) =
             compute_state_tree_update(self, parent_state_version, database_updates);
-        for (key, node) in state_hash_tree_update.new_nodes.borrow() {
+        for (key, node) in state_hash_tree_update.new_nodes.take() {
             batch.put_cf(
                 self.cf(MERKLE_NODES_CF),
                 encode_key(&key),
@@ -232,7 +232,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         self.db.write(batch).unwrap();
 
         if self.pruning_enabled {
-            for part in state_hash_tree_update.stale_tree_parts.borrow() {
+            for part in state_hash_tree_update.stale_tree_parts.take() {
                 match part {
                     StaleTreePart::Node(node_key) => {
                         self.db
