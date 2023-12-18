@@ -381,6 +381,40 @@ impl FeeTable {
         500 + Self::data_processing_cost(size)
     }
 
+    #[inline]
+    pub fn bls12381_v1_verify_cost(&self, size: usize) -> u32 {
+        // Based on benchmark `bench_bls_verify`
+        // The cost of validating is:
+        // - calculate sha256 over a message and map it to the curve (depends on the data size)
+        //     42 µs for 100kB
+        //     430 µs for 1MB
+        //    which gives:
+        //      0.04 µs for 100B => 0.04 µs * 100 units/µs = 0.04 cost units for one byte
+        //     Assume cost 4 cost units for sizes < 100B
+        // - validate the signature (does not depend on the data size)
+        //     770 µs * 100 units/µs = 77,000 cost units
+        let size = if size < 100 { 100 } else { cast(size) };
+
+        div(mul(size, 4), 100) + 77_000
+    }
+
+    #[inline]
+    pub fn keccak256_hash_cost(&self, size: usize) -> u32 {
+        // Based on benchmark `bench_keccak256_hash`
+        // The cost of validating is:
+        // - calculate sha256 over a message and map it to the curve (depends on the data size)
+        //     176 µs for 100kB
+        //     1800 µs for 1MB
+        //     248 ns for 32B
+        //   which gives:
+        //     0.19 µs for 100B => 0.19 µs * 100 units/µs = 0.19 cost units for one byte
+        //     For sizes lower than 500B timings are non-linear, so assume 19 * 5 = 95 cost units
+        //     for sizes < 500B
+        let size = if size < 500 { 500 } else { cast(size) };
+
+        div(mul(size, 19), 100)
+    }
+
     //======================
     // Finalization costs
     // This is primarily to account for the additional work on the Node side
@@ -430,4 +464,9 @@ fn add(a: u32, b: u32) -> u32 {
 #[inline]
 fn mul(a: u32, b: u32) -> u32 {
     a.checked_mul(b).unwrap_or(u32::MAX)
+}
+
+#[inline]
+fn div(a: u32, b: u32) -> u32 {
+    a.checked_div(b).unwrap_or(u32::MAX)
 }

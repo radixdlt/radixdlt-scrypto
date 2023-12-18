@@ -110,6 +110,14 @@ pub enum ExecutionCostingEntry<'a> {
     Panic {
         size: usize,
     },
+
+    /* crypto utils */
+    Bls12381V1Verify {
+        size: usize,
+    },
+    Keccak256Hash {
+        size: usize,
+    },
 }
 
 #[derive(Debug, IntoStaticStr)]
@@ -172,6 +180,8 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::EmitEvent { size } => ft.emit_event_cost(*size),
             ExecutionCostingEntry::EmitLog { size } => ft.emit_log_cost(*size),
             ExecutionCostingEntry::Panic { size } => ft.panic_cost(*size),
+            ExecutionCostingEntry::Bls12381V1Verify { size } => ft.bls12381_v1_verify_cost(*size),
+            ExecutionCostingEntry::Keccak256Hash { size } => ft.keccak256_hash_cost(*size),
         }
     }
 }

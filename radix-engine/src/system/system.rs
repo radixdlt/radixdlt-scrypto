@@ -2865,13 +2865,20 @@ where
         public_key: Bls12381G1PublicKey,
         signature: Bls12381G2Signature,
     ) -> Result<u32, RuntimeError> {
-        // TODO: apply execution costs
+        self.api.kernel_get_system().modules.apply_execution_cost(
+            ExecutionCostingEntry::Bls12381V1Verify {
+                size: message.len(),
+            },
+        )?;
         Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
     }
 
     #[trace_resources]
     fn keccak256_hash(&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError> {
-        // TODO: apply execution costs
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::Keccak256Hash { size: data.len() })?;
         Ok(keccak256_hash(&data))
     }
 }
