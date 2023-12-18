@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use paste::paste;
 use radix_engine::{
     system::system_modules::costing::SystemLoanFeeReserve,
@@ -19,6 +19,42 @@ use sbor::rust::iter;
 use scrypto_unit::TestRunnerBuilder;
 use transaction::prelude::TransactionCostingParameters;
 use wabt::wat2wasm;
+
+fn bench_keccak256_hash(c: &mut Criterion) {
+    let mut group = c.benchmark_group("costing::keccak256_hash");
+    for size in [32usize, 100, 200, 500, 1024, 2048, 100 * 1024, 1024 * 1024] {
+        let message = vec![0u8; size];
+
+        group.throughput(Throughput::Bytes(size as u64));
+        let bench_id = BenchmarkId::from_parameter(size);
+
+        group.bench_with_input(bench_id, &size, |b, &_size| {
+            b.iter(|| {
+                let _ = keccak256_hash(&message);
+            })
+        });
+    }
+}
+
+fn bench_bls_verify(c: &mut Criterion) {
+    let signer = Bls12381G1PrivateKey::from_u64(123123123123).unwrap();
+    let public_key = signer.public_key();
+
+    let mut group = c.benchmark_group("costing::verify_bls");
+    for size in [32usize, 2048, 100 * 1024, 1024 * 1024] {
+        let message = vec![0u8; size];
+        let signature = signer.sign_v1(&message);
+
+        group.throughput(Throughput::Bytes(size as u64));
+        let bench_id = BenchmarkId::from_parameter(size);
+
+        group.bench_with_input(bench_id, &size, |b, &_size| {
+            b.iter(|| {
+                verify_bls12381_v1(&message, &public_key, &signature);
+            })
+        });
+    }
+}
 
 fn bench_decode_sbor(c: &mut Criterion) {
     let payload = include_workspace_asset_bytes!("radiswap.rpd");
@@ -221,5 +257,7 @@ criterion_group!(
     bench_deserialize_wasm,
     bench_validate_wasm,
     bench_prepare_wasm,
+    bench_bls_verify,
+    bench_keccak256_hash
 );
 criterion_main!(costing);

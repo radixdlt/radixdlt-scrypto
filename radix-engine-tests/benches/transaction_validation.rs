@@ -32,33 +32,6 @@ fn bench_ed25519_validation(c: &mut Criterion) {
     });
 }
 
-fn bench_bls_validation_long(c: &mut Criterion) {
-    let message = vec![0u8; 2048];
-    println!("message len = {}", message.len());
-    let signer = Bls12381G1PrivateKey::from_u64(123123123123).unwrap();
-    let public_key = signer.public_key();
-    let signature = signer.sign_v1(&message);
-
-    c.bench_function("transaction_validation::verify_bls_2KB", |b| {
-        b.iter(|| {
-            verify_bls12381_v1(&message, &public_key, &signature);
-        })
-    });
-}
-
-fn bench_bls_validation_short(c: &mut Criterion) {
-    let message = vec![0u8; 32];
-    let signer = Bls12381G1PrivateKey::from_u64(123123123123).unwrap();
-    let public_key = signer.public_key();
-    let signature = signer.sign_v1(&message);
-
-    c.bench_function("transaction_validation::verify_bls_32B", |b| {
-        b.iter(|| {
-            verify_bls12381_v1(&message, &public_key, &signature);
-        })
-    });
-}
-
 fn bench_transaction_validation(c: &mut Criterion) {
     let address_bech32_decoder: AddressBech32Decoder =
         AddressBech32Decoder::new(&NetworkDefinition::simulator());
@@ -113,8 +86,6 @@ criterion_group!(
     validation,
     bench_secp256k1_validation,
     bench_ed25519_validation,
-    bench_bls_validation_short,
-    bench_bls_validation_long,
     bench_transaction_validation,
 );
 criterion_main!(validation);
