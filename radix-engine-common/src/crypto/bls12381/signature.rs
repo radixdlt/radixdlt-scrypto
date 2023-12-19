@@ -1,4 +1,6 @@
 use crate::internal_prelude::*;
+use blst::min_pk::{AggregateSignature, Signature};
+use blst::BLST_ERROR;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -43,6 +45,27 @@ impl Bls12381G2Signature {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
+
+    fn to_native_signature(self) -> Result<Signature, ParseBlsSignatureError> {
+        Signature::from_bytes(&self.0).map_err(|err| err.into())
+    }
+
+    pub fn from_aggregate(
+        signatures: &[Bls12381G2Signature],
+    ) -> Result<Self, ParseBlsSignatureError> {
+        if !signatures.is_empty() {
+            let sig_first = signatures[0].to_native_signature()?;
+
+            let mut agg_sig = AggregateSignature::from_signature(&sig_first);
+
+            for sig in signatures.iter().skip(1) {
+                agg_sig.add_signature(&sig.to_native_signature()?, true)?;
+            }
+            Ok(Bls12381G2Signature(agg_sig.to_signature().to_bytes()))
+        } else {
+            Err(ParseBlsSignatureError::NoSignatureGiven)
+        }
+    }
 }
 
 impl TryFrom<&[u8]> for Bls12381G2Signature {
@@ -61,10 +84,19 @@ impl TryFrom<&[u8]> for Bls12381G2Signature {
 // error
 //======
 
+impl From<BLST_ERROR> for ParseBlsSignatureError {
+    fn from(error: BLST_ERROR) -> Self {
+        let err_msg = format!("{:?}", error);
+        Self::BlsError(err_msg)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseBlsSignatureError {
     InvalidHex(String),
     InvalidLength(usize),
+    NoSignatureGiven,
+    BlsError(String),
 }
 
 /// Represents an error when parsing BLS signature from hex.
