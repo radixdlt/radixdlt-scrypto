@@ -2858,7 +2858,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    #[trace_resources]
+    #[trace_resources(log=message.len())]
     fn bls12381_v1_verify(
         &mut self,
         message: Vec<u8>,
@@ -2873,7 +2873,7 @@ where
         Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=data.len())]
     fn keccak256_hash(&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError> {
         self.api
             .kernel_get_system()
