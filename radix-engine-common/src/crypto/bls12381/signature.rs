@@ -1,6 +1,9 @@
 use crate::internal_prelude::*;
-use blst::min_pk::{AggregateSignature, Signature};
-use blst::BLST_ERROR;
+#[cfg(not(target_arch = "wasm32"))]
+use blst::{
+    min_pk::{AggregateSignature, Signature},
+    BLST_ERROR,
+};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -35,13 +38,14 @@ impl Bls12381G2Signature {
         self.0.to_vec()
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn to_native_signature(self) -> Result<Signature, ParseBlsSignatureError> {
         Signature::from_bytes(&self.0).map_err(|err| err.into())
     }
 
-    pub fn from_aggregate(
-        signatures: &[Bls12381G2Signature],
-    ) -> Result<Self, ParseBlsSignatureError> {
+    #[cfg(not(target_arch = "wasm32"))]
+    /// Aggregate multiple signatures into a single one
+    pub fn aggregate(signatures: &[Bls12381G2Signature]) -> Result<Self, ParseBlsSignatureError> {
         if !signatures.is_empty() {
             let sig_first = signatures[0].to_native_signature()?;
 
@@ -73,6 +77,7 @@ impl TryFrom<&[u8]> for Bls12381G2Signature {
 // error
 //======
 
+#[cfg(not(target_arch = "wasm32"))]
 impl From<BLST_ERROR> for ParseBlsSignatureError {
     fn from(error: BLST_ERROR) -> Self {
         let err_msg = format!("{:?}", error);
@@ -80,15 +85,16 @@ impl From<BLST_ERROR> for ParseBlsSignatureError {
     }
 }
 
+/// Represents an error when retrieving BLS signature from hex or when aggregating.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseBlsSignatureError {
     InvalidHex(String),
     InvalidLength(usize),
     NoSignatureGiven,
+    // Error returned by underlying BLS library
     BlsError(String),
 }
 
-/// Represents an error when parsing BLS signature from hex.
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for ParseBlsSignatureError {}
 

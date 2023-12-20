@@ -54,8 +54,8 @@ pub fn verify_ed25519(
     false
 }
 
-/// Performs BLS12-381 G2 signature verification using following
-/// domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+/// Performs BLS12-381 G2 signature verification.
+/// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
 pub fn verify_bls12381_v1(
     message: &[u8],
     public_key: &Bls12381G1PublicKey,
@@ -75,8 +75,9 @@ pub fn verify_bls12381_v1(
     false
 }
 
-/// Performs BLS12-381 G2 aggregated signature verification using following
-/// domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+/// Performs BLS12-381 G2 aggregated signature verification of
+/// multiple messages each signed with different key.
+/// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
 pub fn aggregate_verify_bls12381_v1(
     messages: &[&[u8]],
     public_keys: &[Bls12381G1PublicKey],
@@ -104,14 +105,15 @@ pub fn aggregate_verify_bls12381_v1(
     false
 }
 
-/// Performs BLS12-381 G2 aggregated signature verification using following
-/// domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+/// Performs BLS12-381 G2 aggregated signature verification
+/// one message signed with multiple keys.
+/// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
 pub fn fast_aggregate_verify_bls12381_v1(
     message: &[u8],
     public_keys: &[Bls12381G1PublicKey],
     signature: &Bls12381G2Signature,
 ) -> bool {
-    if let Ok(agg_pk) = Bls12381G1PublicKey::from_aggregate(public_keys) {
+    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate(public_keys) {
         return verify_bls12381_v1(message, &agg_pk, signature);
     }
 

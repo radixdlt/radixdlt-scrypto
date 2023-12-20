@@ -98,7 +98,7 @@ mod tests {
             .collect();
 
         // Aggregate the signature
-        let agg_sig = Bls12381G2Signature::from_aggregate(&sigs).unwrap();
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
 
         let msgs_ref: Vec<&[u8]> = msgs.iter().map(|m| m.as_slice()).collect();
 
@@ -119,7 +119,7 @@ mod tests {
         let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(msg)).collect();
 
         // Aggregate the signature
-        let agg_sig = Bls12381G2Signature::from_aggregate(&sigs).unwrap();
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
 
         // Verify the message against public keys and aggregated signature
         assert!(fast_aggregate_verify_bls12381_v1(msg, &pks, &agg_sig))

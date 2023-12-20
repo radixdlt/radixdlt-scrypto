@@ -1,8 +1,11 @@
 use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use blst::min_pk::{AggregatePublicKey, PublicKey};
-use blst::BLST_ERROR;
+#[cfg(not(target_arch = "wasm32"))]
+use blst::{
+    min_pk::{AggregatePublicKey, PublicKey},
+    BLST_ERROR,
+};
 
 /// Represents a BLS12-381 G1 public key.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -20,13 +23,14 @@ impl Bls12381G1PublicKey {
         self.0.to_vec()
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn to_native_public_key(self) -> Result<PublicKey, ParseBlsPublicKeyError> {
         PublicKey::from_bytes(&self.0).map_err(|err| err.into())
     }
 
-    pub fn from_aggregate(
-        public_keys: &[Bls12381G1PublicKey],
-    ) -> Result<Self, ParseBlsPublicKeyError> {
+    #[cfg(not(target_arch = "wasm32"))]
+    /// Aggregate multiple public keys into a single one
+    pub fn aggregate(public_keys: &[Bls12381G1PublicKey]) -> Result<Self, ParseBlsPublicKeyError> {
         if !public_keys.is_empty() {
             let pk_first = public_keys[0].to_native_public_key()?;
 
@@ -58,6 +62,7 @@ impl TryFrom<&[u8]> for Bls12381G1PublicKey {
 // error
 //======
 
+#[cfg(not(target_arch = "wasm32"))]
 impl From<BLST_ERROR> for ParseBlsPublicKeyError {
     fn from(error: BLST_ERROR) -> Self {
         let err_msg = format!("{:?}", error);
@@ -65,12 +70,13 @@ impl From<BLST_ERROR> for ParseBlsPublicKeyError {
     }
 }
 
-/// Represents an error when parsing BLS public key from hex.
+/// Represents an error when retrieving BLS public key from hex or when aggregating.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseBlsPublicKeyError {
     InvalidHex(String),
     InvalidLength(usize),
     NoPublicKeysGiven,
+    // Error returned by underlying BLS library
     BlsError(String),
 }
 
