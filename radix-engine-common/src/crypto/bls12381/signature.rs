@@ -109,7 +109,6 @@ pub enum ParseBlsSignatureError {
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for ParseBlsSignatureError {}
 
-#[cfg(not(feature = "alloc"))]
 impl fmt::Display for ParseBlsSignatureError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
