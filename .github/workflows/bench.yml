@@ -13,7 +13,7 @@ jobs:
     name: Run bench
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup cmake
         uses: RDXWorks-actions/actions-setup-cmake@master
         with:
