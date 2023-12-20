@@ -577,6 +577,26 @@ where
         Ok(result)
     }
 
+    fn crypto_utils_bls12381_g2_signature_aggregate(
+        &mut self,
+        signatures: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let sigs_cnt = signatures.len() / Bls12381G2Signature::LENGTH;
+        let mut sigs_vec = vec![];
+
+        for i in 0..sigs_cnt {
+            let idx = i * Bls12381G2Signature::LENGTH;
+            let sig =
+                Bls12381G2Signature::try_from(&signatures[idx..idx + Bls12381G2Signature::LENGTH])
+                    .map_err(WasmRuntimeError::InvalidBlsSignature)?;
+            sigs_vec.push(sig);
+        }
+
+        let agg_sig = self.api.bls12381_g2_signature_aggregate(sigs_vec)?;
+
+        self.allocate_buffer(agg_sig.to_vec())
+    }
+
     fn crypto_utils_keccak256_hash(
         &mut self,
         data: Vec<u8>,

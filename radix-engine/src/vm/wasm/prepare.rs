@@ -755,6 +755,21 @@ impl WasmModule {
                             ));
                         }
                     }
+                    CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
                     CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(

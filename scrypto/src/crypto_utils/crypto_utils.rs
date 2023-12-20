@@ -26,6 +26,20 @@ impl CryptoUtils {
         }
     }
 
+    /// Aggregate multiple BLS12-381 G2 signatures into single one
+    pub fn bls12381_g2_signature_aggregate(
+        signatures: Vec<Bls12381G2Signature>,
+    ) -> Bls12381G2Signature {
+        let agg_signature = copy_buffer(unsafe {
+            crypto_utils::crypto_utils_bls12381_g2_signature_aggregate(
+                signatures.as_ptr() as *const u8,
+                signatures.len() * Bls12381G2Signature::LENGTH,
+            )
+        });
+
+        Bls12381G2Signature::try_from(agg_signature.as_slice()).unwrap()
+    }
+
     /// Calculates Keccak-256 digest over given vector of bytes
     pub fn keccak256_hash(data: Vec<u8>) -> Hash {
         let hash = copy_buffer(unsafe {
