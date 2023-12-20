@@ -297,6 +297,10 @@ pub mod crypto_utils {
             signature_ptr: *const u8,
             signature_len: usize) -> u32;
 
+        pub fn crypto_utils_bls12381_g2_signature_aggregate(
+            signatures_ptr: *const u8,
+            signatures_len: usize) -> Buffer;
+
         pub fn crypto_utils_keccak256_hash(
             message_ptr: *const u8,
             message_len: usize) -> Buffer;

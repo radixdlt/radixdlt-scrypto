@@ -691,6 +691,25 @@ fn bls12381_v1_verify(
     runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
 }
 
+fn bls12381_g2_signature_aggregate(
+    mut caller: Caller<'_, HostState>,
+    signatures_ptr: u32,
+    signatures_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let signatures = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signatures_ptr,
+        signatures_len,
+    )?;
+
+    runtime
+        .crypto_utils_bls12381_g2_signature_aggregate(signatures)
+        .map(|buffer| buffer.0)
+}
+
 fn keccak256_hash(
     mut caller: Caller<'_, HostState>,
     data_ptr: u32,
@@ -1291,6 +1310,17 @@ impl WasmiModule {
             },
         );
 
+        let host_bls12381_g2_signature_aggregate = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             signatures_ptr: u32,
+             signatures_len: u32|
+             -> Result<u64, Trap> {
+                bls12381_g2_signature_aggregate(caller, signatures_ptr, signatures_len)
+                    .map_err(|e| e.into())
+            },
+        );
+
         let host_keccak256_hash = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, data_ptr: u32, data_len: u32| -> Result<u64, Trap> {
@@ -1460,6 +1490,12 @@ impl WasmiModule {
             CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME,
             host_bls12381_v1_verify
         );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME,
+            host_bls12381_g2_signature_aggregate
+        );
+
         linker_define!(
             linker,
             CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME,
