@@ -34,6 +34,28 @@ fn crypto_scrypto_bls12381_v1_verify(
 }
 
 #[cfg(test)]
+fn crypto_scrypto_bls12381_g2_signature_aggregate(
+    runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    package_address: PackageAddress,
+    signatures: Vec<Bls12381G2Signature>,
+) -> Bls12381G2Signature {
+    let receipt = runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(runner.faucet_component(), 500u32)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "bls12381_g2_signature_aggregate",
+                manifest_args!(signatures),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+    result.output(1)
+}
+
+#[cfg(test)]
 fn crypto_scrypto_keccak256_hash(
     runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
@@ -88,6 +110,32 @@ fn test_crypto_scrypto_verify_bls12381_v1() {
     // Assert
     assert!(msg1_verify);
     assert!(!msg2_verify);
+}
+
+#[test]
+fn test_crypto_scrypto_bls12381_aggregate_verify() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+
+    let sks: Vec<Bls12381G1PrivateKey> = (1..11)
+        .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
+        .collect();
+
+    let msg = "One message to sign for all".as_bytes();
+
+    let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(msg)).collect();
+
+    // Aggregate the signature
+    let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+    // Act
+    let agg_sig_from_scrypto =
+        crypto_scrypto_bls12381_g2_signature_aggregate(&mut test_runner, package_address, sigs);
+
+    // Assert
+    assert_eq!(agg_sig, agg_sig_from_scrypto);
 }
 
 #[test]
