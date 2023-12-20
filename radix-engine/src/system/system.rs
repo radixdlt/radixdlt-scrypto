@@ -2869,6 +2869,22 @@ where
         Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
     }
 
+    #[trace_resources(log=signatures.len())]
+    fn bls12381_g2_signature_aggregate(
+        &mut self,
+        signatures: Vec<Bls12381G2Signature>,
+    ) -> Result<Bls12381G2Signature, RuntimeError> {
+        /*
+        self.api.kernel_get_system().modules.apply_execution_cost(
+            ExecutionCostingEntry::Bls12381V1Verify {
+                size: message.len(),
+            },
+        )?;
+        */
+        Bls12381G2Signature::aggregate(&signatures)
+            .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))
+    }
+
     #[trace_resources(log=data.len())]
     fn keccak256_hash(&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError> {
         // TODO: apply execution costs

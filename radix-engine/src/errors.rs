@@ -251,6 +251,8 @@ pub enum SystemError {
 
     BlueprintTypeNotFound(String),
 
+    BlsError(String),
+
     /// A panic that's occurred in the system-layer or below. We're calling it system panic since
     /// we're treating the system as a black-box here.
     #[cfg(feature = "std")]
