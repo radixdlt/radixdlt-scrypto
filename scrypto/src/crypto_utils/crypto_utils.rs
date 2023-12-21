@@ -9,8 +9,8 @@ use sbor::prelude::Vec;
 pub struct CryptoUtils {}
 
 impl CryptoUtils {
-    /// Performs BLS12-381 G2 signature verification using following
-    /// domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+    /// Performs BLS12-381 G2 signature verification.
+    /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
     pub fn bls12381_v1_verify(
         message: Vec<u8>,
         public_key: Bls12381G1PublicKey,
@@ -28,7 +28,10 @@ impl CryptoUtils {
         }
     }
 
-    pub fn crypto_utils_bls12381_v1_aggregate_verify(
+    /// Performs BLS12-381 G2 aggregated signature verification of
+    /// multiple messages each signed with different key.
+    /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+    pub fn bls12381_v1_aggregate_verify(
         messages: Vec<Vec<u8>>,
         public_keys: Vec<Bls12381G1PublicKey>,
         signature: Bls12381G2Signature,
