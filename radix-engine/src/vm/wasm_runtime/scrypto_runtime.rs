@@ -606,6 +606,31 @@ where
         Ok(result)
     }
 
+    fn crypto_utils_bls12381_v1_fast_aggregate_verify(
+        &mut self,
+        message: Vec<u8>,
+        public_keys: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let signature = Bls12381G2Signature::try_from(signature.as_slice())
+            .map_err(WasmRuntimeError::InvalidBlsSignature)?;
+        let pks_cnt = public_keys.len() / Bls12381G1PublicKey::LENGTH;
+        let mut pks_vec = vec![];
+
+        for i in 0..pks_cnt {
+            let idx = i * Bls12381G1PublicKey::LENGTH;
+            let pk =
+                Bls12381G1PublicKey::try_from(&public_keys[idx..idx + Bls12381G1PublicKey::LENGTH])
+                    .map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
+            pks_vec.push(pk);
+        }
+
+        let result = self
+            .api
+            .bls12381_v1_fast_aggregate_verify(&message, &pks_vec, &signature)?;
+        Ok(result)
+    }
+
     fn crypto_utils_bls12381_g2_signature_aggregate(
         &mut self,
         signatures: Vec<u8>,

@@ -714,6 +714,25 @@ impl WasmerModule {
             runtime.crypto_utils_bls12381_v1_aggregate_verify(messages, public_keys, signature)
         }
 
+        pub fn bls12381_v1_fast_aggregate_verify(
+            env: &WasmerInstanceEnv,
+            message_ptr: u32,
+            message_len: u32,
+            public_keys_ptr: u32,
+            public_keys_len: u32,
+            signature_ptr: u32,
+            signature_len: u32,
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let message = read_memory(&instance, message_ptr, message_len)?;
+
+            let public_keys = read_memory(&instance, public_keys_ptr, public_keys_len)?;
+            let signature = read_memory(instance, signature_ptr, signature_len)?;
+
+            runtime.crypto_utils_bls12381_v1_fast_aggregate_verify(message, public_keys, signature)
+        }
+
         pub fn bls12381_g2_signature_aggregate(
             env: &WasmerInstanceEnv,
             signatures_ptr: u32,
@@ -847,6 +866,7 @@ impl WasmerModule {
                 BUFFER_CONSUME_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), buffer_consume),
                 CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_verify),
                 CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_aggregate_verify),
+                CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_fast_aggregate_verify),
                 CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_g2_signature_aggregate),
                 CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), keccak256_hash),
 
