@@ -691,6 +691,34 @@ fn bls12381_v1_verify(
     runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
 }
 
+fn bls12381_v1_aggregate_verify(
+    mut caller: Caller<'_, HostState>,
+    messages_ptr: u32,
+    messages_len: u32,
+    public_keys_ptr: u32,
+    public_keys_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let messages = read_memory(caller.as_context_mut(), memory, messages_ptr, messages_len)?;
+    let public_keys = read_memory(
+        caller.as_context_mut(),
+        memory,
+        public_keys_ptr,
+        public_keys_len,
+    )?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime.crypto_utils_bls12381_v1_aggregate_verify(messages, public_keys, signature)
+}
+
 fn bls12381_g2_signature_aggregate(
     mut caller: Caller<'_, HostState>,
     signatures_ptr: u32,
@@ -1310,6 +1338,28 @@ impl WasmiModule {
             },
         );
 
+        let host_bls12381_v1_aggregate_verify = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             messages_ptr: u32,
+             messages_len: u32,
+             public_keys_ptr: u32,
+             public_keys_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u32, Trap> {
+                bls12381_v1_aggregate_verify(
+                    caller,
+                    messages_ptr,
+                    messages_len,
+                    public_keys_ptr,
+                    public_keys_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
         let host_bls12381_g2_signature_aggregate = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -1489,6 +1539,11 @@ impl WasmiModule {
             linker,
             CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME,
             host_bls12381_v1_verify
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME,
+            host_bls12381_v1_aggregate_verify
         );
         linker_define!(
             linker,
