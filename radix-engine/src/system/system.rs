@@ -2881,6 +2881,17 @@ where
         Ok(aggregate_verify_bls12381_v1(messages, public_keys, signature) as u32)
     }
 
+    #[trace_resources(log=message.len(), log=public_keys.len())]
+    fn bls12381_v1_fast_aggregate_verify(
+        &mut self,
+        message: &[u8],
+        public_keys: &[Bls12381G1PublicKey],
+        signature: &Bls12381G2Signature,
+    ) -> Result<u32, RuntimeError> {
+        // TODO costing
+        Ok(fast_aggregate_verify_bls12381_v1(message, public_keys, signature) as u32)
+    }
+
     #[trace_resources(log=signatures.len())]
     fn bls12381_g2_signature_aggregate(
         &mut self,
