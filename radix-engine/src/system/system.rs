@@ -2869,7 +2869,8 @@ where
         Ok(verify_bls12381_v1(message, public_key, signature) as u32)
     }
 
-    #[trace_resources(log=messages.len())]
+    // Trace average message length and number of public_keys
+    #[trace_resources(log=messages.iter().map(Vec::len).sum::<usize>()/messages.len(),log=public_keys.len())]
     fn bls12381_v1_aggregate_verify(
         &mut self,
         messages: &[&[u8]],
