@@ -573,7 +573,7 @@ where
             .map_err(WasmRuntimeError::InvalidBlsSignature)?;
         let result = self
             .api
-            .bls12381_v1_verify(message, public_key, signature)?;
+            .bls12381_v1_verify(&message, &public_key, &signature)?;
         Ok(result)
     }
 
@@ -592,7 +592,7 @@ where
             sigs_vec.push(sig);
         }
 
-        let agg_sig = self.api.bls12381_g2_signature_aggregate(sigs_vec)?;
+        let agg_sig = self.api.bls12381_g2_signature_aggregate(&sigs_vec)?;
 
         self.allocate_buffer(agg_sig.to_vec())
     }
@@ -601,7 +601,7 @@ where
         &mut self,
         data: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let hash = self.api.keccak256_hash(data)?;
+        let hash = self.api.keccak256_hash(&data)?;
 
         self.allocate_buffer(hash.to_vec())
     }
