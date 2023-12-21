@@ -2874,13 +2874,7 @@ where
         &mut self,
         signatures: Vec<Bls12381G2Signature>,
     ) -> Result<Bls12381G2Signature, RuntimeError> {
-        /*
-        self.api.kernel_get_system().modules.apply_execution_cost(
-            ExecutionCostingEntry::Bls12381V1Verify {
-                size: message.len(),
-            },
-        )?;
-        */
+        // TODO costing
         Bls12381G2Signature::aggregate(&signatures)
             .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))
     }
