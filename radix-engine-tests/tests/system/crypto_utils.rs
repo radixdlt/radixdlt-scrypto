@@ -30,6 +30,30 @@ fn crypto_scrypto_bls12381_v1_verify(
 }
 
 #[cfg(test)]
+fn crypto_scrypto_bls12381_v1_aggregate_verify(
+    runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    package_address: PackageAddress,
+    msgs: Vec<Vec<u8>>,
+    pub_keys: Vec<Bls12381G1PublicKey>,
+    signature: Bls12381G2Signature,
+) -> bool {
+    let receipt = runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(runner.faucet_component(), 500u32)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "bls12381_v1_aggregate_verify",
+                manifest_args!(msgs, pub_keys, signature),
+            )
+            .build(),
+        vec![],
+    );
+    let result = receipt.expect_commit_success();
+    result.output(1)
+}
+
+#[cfg(test)]
 fn crypto_scrypto_bls12381_g2_signature_aggregate(
     runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
@@ -119,6 +143,36 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
         .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
         .collect();
 
+    //// Multiple messages
+    let msgs: Vec<Vec<u8>> = (1u8..11).map(|i| vec![i; 10]).collect();
+
+    let sigs: Vec<Bls12381G2Signature> = sks
+        .iter()
+        .zip(msgs.clone())
+        .map(|(sk, msg)| sk.sign_v1(&msg))
+        .collect();
+
+    let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+
+    // Aggregate the signature
+    let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+    // Act
+    let agg_sig_from_scrypto =
+        crypto_scrypto_bls12381_g2_signature_aggregate(&mut test_runner, package_address, sigs);
+    let agg_verify = crypto_scrypto_bls12381_v1_aggregate_verify(
+        &mut test_runner,
+        package_address,
+        msgs,
+        pks,
+        agg_sig,
+    );
+
+    // Assert
+    assert_eq!(agg_sig, agg_sig_from_scrypto);
+    assert!(agg_verify);
+
+    //// Single message
     let msg = "One message to sign for all".as_bytes();
 
     let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(msg)).collect();
