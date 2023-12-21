@@ -9,14 +9,10 @@ use transaction::builder::ManifestBuilder;
 fn crypto_scrypto_bls12381_v1_verify(
     runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
-    msg: &str,
-    pk: &str,
-    sig: &str,
+    msg: Vec<u8>,
+    pub_key: Bls12381G1PublicKey,
+    signature: Bls12381G2Signature,
 ) -> bool {
-    let msg = hex::decode(msg).unwrap();
-    let pub_key = Bls12381G1PublicKey::from_str(pk).unwrap();
-    let signature = Bls12381G2Signature::from_str(sig).unwrap();
-
     let receipt = runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(runner.faucet_component(), 500u32)
@@ -59,10 +55,8 @@ fn crypto_scrypto_bls12381_g2_signature_aggregate(
 fn crypto_scrypto_keccak256_hash(
     runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
-    data: &str,
+    data: Vec<u8>,
 ) -> Hash {
-    let data = data.as_bytes().to_vec();
-
     let receipt = runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(runner.faucet_component(), 500u32)
@@ -86,23 +80,25 @@ fn test_crypto_scrypto_verify_bls12381_v1() {
 
     let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
-    let msg1 = hash("Test").to_string();
-    let msg2 = hash("ExpectFailureTest").to_string();
+    let msg1 = hash("Test").to_vec();
+    let msg2 = hash("ExpectFailureTest").to_vec();
     let pk = "93b1aa7542a5423e21d8e84b4472c31664412cc604a666e9fdf03baf3c758e728c7a11576ebb01110ac39a0df95636e2";
     let msg1_signature = "8b84ff5a1d4f8095ab8a80518ac99230ed24a7d1ec90c4105f9c719aa7137ed5d7ce1454d4a953f5f55f3959ab416f3014f4cd2c361e4d32c6b4704a70b0e2e652a908f501acb54ec4e79540be010e3fdc1fbf8e7af61625705e185a71c884f1";
 
+    let pk = Bls12381G1PublicKey::from_str(pk).unwrap();
+    let msg1_signature = Bls12381G2Signature::from_str(msg1_signature).unwrap();
     // Act
     let msg1_verify = crypto_scrypto_bls12381_v1_verify(
         &mut test_runner,
         package_address,
-        &msg1,
+        msg1,
         pk,
         msg1_signature,
     );
     let msg2_verify = crypto_scrypto_bls12381_v1_verify(
         &mut test_runner,
         package_address,
-        &msg2,
+        msg2,
         pk,
         msg1_signature,
     );
@@ -145,8 +141,8 @@ fn test_crypto_scrypto_keccak256_hash() {
 
     let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
-    let data1 = "Hello Radix";
-    let data2 = "xidaR olleH";
+    let data1 = b"Hello Radix".to_vec();
+    let data2 = b"xidaR olleH".to_vec();
 
     // Act
     let data1_hash = crypto_scrypto_keccak256_hash(&mut test_runner, package_address, data1);
@@ -170,11 +166,13 @@ fn test_crypto_scrypto_flow() {
 
     let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
-    let msg = "Important message";
+    let msg = b"Important message".to_vec();
 
     // Act
     // Get the hash of the message using CryptoScrypto package
-    let msg_hash = crypto_scrypto_keccak256_hash(&mut test_runner, package_address, msg);
+    let msg_hash = crypto_scrypto_keccak256_hash(&mut test_runner, package_address, msg)
+        .as_bytes()
+        .to_vec();
 
     let secret_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
     let public_key = secret_key.public_key();
@@ -186,9 +184,9 @@ fn test_crypto_scrypto_flow() {
     let result = crypto_scrypto_bls12381_v1_verify(
         &mut test_runner,
         package_address,
-        &msg_hash.to_string(),
-        &public_key.to_string(),
-        &msg_signature.to_string(),
+        msg_hash,
+        public_key,
+        msg_signature,
     );
 
     // Assert
