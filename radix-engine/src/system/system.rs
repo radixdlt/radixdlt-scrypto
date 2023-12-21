@@ -2861,28 +2861,28 @@ where
     #[trace_resources(log=message.len())]
     fn bls12381_v1_verify(
         &mut self,
-        message: Vec<u8>,
-        public_key: Bls12381G1PublicKey,
-        signature: Bls12381G2Signature,
+        message: &[u8],
+        public_key: &Bls12381G1PublicKey,
+        signature: &Bls12381G2Signature,
     ) -> Result<u32, RuntimeError> {
         // TODO: apply execution costs
-        Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
+        Ok(verify_bls12381_v1(message, public_key, signature) as u32)
     }
 
     #[trace_resources(log=signatures.len())]
     fn bls12381_g2_signature_aggregate(
         &mut self,
-        signatures: Vec<Bls12381G2Signature>,
+        signatures: &[Bls12381G2Signature],
     ) -> Result<Bls12381G2Signature, RuntimeError> {
-        // TODO costing
-        Bls12381G2Signature::aggregate(&signatures)
+        // TODO: apply execution costs
+        Bls12381G2Signature::aggregate(signatures)
             .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))
     }
 
     #[trace_resources(log=data.len())]
-    fn keccak256_hash(&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError> {
+    fn keccak256_hash(&mut self, data: &[u8]) -> Result<Hash, RuntimeError> {
         // TODO: apply execution costs
-        Ok(keccak256_hash(&data))
+        Ok(keccak256_hash(data))
     }
 }
 

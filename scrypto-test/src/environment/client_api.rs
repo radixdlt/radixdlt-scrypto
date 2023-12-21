@@ -276,8 +276,8 @@ implement_client_api! {
         fee_balance: (&mut self) -> Result<Decimal, RuntimeError>,
     },
     ClientCryptoUtilsApi: {
-        bls12381_v1_verify: (&mut self, message: Vec<u8>, public_key: Bls12381G1PublicKey, signature: Bls12381G2Signature) -> Result<u32, RuntimeError>,
-        bls12381_g2_signature_aggregate: (&mut self, signatures: Vec<Bls12381G2Signature>) -> Result<Bls12381G2Signature, RuntimeError>,
-        keccak256_hash: (&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError>,
+        bls12381_v1_verify: (&mut self, message: &[u8], public_key: &Bls12381G1PublicKey, signature: &Bls12381G2Signature) -> Result<u32, RuntimeError>,
+        bls12381_g2_signature_aggregate: (&mut self, signatures: &[Bls12381G2Signature]) -> Result<Bls12381G2Signature, RuntimeError>,
+        keccak256_hash: (&mut self, data: &[u8]) -> Result<Hash, RuntimeError>,
     },
 }
