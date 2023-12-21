@@ -711,7 +711,7 @@ impl WasmerModule {
             let public_keys = read_memory(&instance, public_keys_ptr, public_keys_len)?;
             let signature = read_memory(instance, signature_ptr, signature_len)?;
 
-            runtime.crypto_utils_bls12381_v1_verify(messages, public_keys, signature)
+            runtime.crypto_utils_bls12381_v1_aggregate_verify(messages, public_keys, signature)
         }
 
         pub fn bls12381_g2_signature_aggregate(
