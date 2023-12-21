@@ -9,6 +9,13 @@ pub trait ClientCryptoUtilsApi<E> {
         signature: &Bls12381G2Signature,
     ) -> Result<u32, E>;
 
+    fn bls12381_v1_aggregate_verify(
+        &mut self,
+        messages: &[&[u8]],
+        public_keys: &[Bls12381G1PublicKey],
+        signature: &Bls12381G2Signature,
+    ) -> Result<u32, E>;
+
     fn bls12381_g2_signature_aggregate(
         &mut self,
         signatures: &[Bls12381G2Signature],

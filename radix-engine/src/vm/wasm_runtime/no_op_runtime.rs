@@ -315,6 +315,15 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
+    fn crypto_utils_bls12381_v1_aggregate_verify(
+        &mut self,
+        messages: Vec<u8>,
+        public_keys: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
     fn crypto_utils_bls12381_g2_signature_aggregate(
         &mut self,
         signatures: Vec<u8>,
