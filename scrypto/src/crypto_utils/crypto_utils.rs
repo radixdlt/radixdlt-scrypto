@@ -49,8 +49,8 @@ impl CryptoUtils {
         }
     }
 
-    /// Performs BLS12-381 G2 aggregated signature verification of
-    /// multiple messages each signed with different key.
+    /// Performs BLS12-381 G2 aggregated signature verification
+    /// one message signed with multiple keys.
     /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
     pub fn bls12381_v1_fast_aggregate_verify(
         message: Vec<u8>,
