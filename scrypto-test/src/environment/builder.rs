@@ -322,34 +322,34 @@ impl FlashSubstateDatabase {
     }
 
     pub fn database_updates(self) -> DatabaseUpdates {
-        DatabaseUpdates {
-            node_updates: self
-                .partitions
-                .into_iter()
-                .map(
-                    |(
-                        DbPartitionKey {
-                            node_key,
-                            partition_num,
+        let mut database_updates = DatabaseUpdates::default();
+
+        self.partitions.into_iter().for_each(
+            |(
+                DbPartitionKey {
+                    node_key,
+                    partition_num,
+                },
+                items,
+            )| {
+                database_updates
+                    .node_updates
+                    .entry(node_key)
+                    .or_default()
+                    .partition_updates
+                    .insert(
+                        partition_num,
+                        PartitionDatabaseUpdates::Delta {
+                            substate_updates: items
+                                .into_iter()
+                                .map(|(key, value)| (key, DatabaseUpdate::Set(value)))
+                                .collect(),
                         },
-                        sort_key_to_data_mapping,
-                    )| {
-                        (
-                            node_key,
-                            NodeDatabaseUpdates {
-                                partition_updates: indexmap! {
-                                    partition_num => PartitionDatabaseUpdates::Delta {
-                                        substate_updates: sort_key_to_data_mapping.into_iter()
-                                            .map(|(k, v)| (k, DatabaseUpdate::Set(v)))
-                                            .collect()
-                                    }
-                                },
-                            },
-                        )
-                    },
-                )
-                .collect(),
-        }
+                    );
+            },
+        );
+
+        database_updates
     }
 }
 
