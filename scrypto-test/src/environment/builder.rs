@@ -17,6 +17,8 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
+use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
+use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::*;
 use radix_engine_stores::memory_db::*;
 use transaction::model::*;
@@ -89,14 +91,46 @@ impl TestEnvironmentBuilder {
         };
         self.flash_database.commit(&database_updates);
 
-        // Get all of the global references and add them.
-        let scrypto_value = IndexedScryptoValue::from_typed(&database_updates);
-        self.add_global_references(
-            scrypto_value
-                .references()
-                .iter()
-                .filter_map(|item| GlobalAddress::try_from(*item).ok()),
-        )
+        self
+            /* Global references found in the NodeKeys */
+            .add_global_references(
+                database_updates
+                    .node_updates
+                    .keys()
+                    .map(SpreadPrefixKeyMapper::from_db_node_key)
+                    .filter_map(|item| GlobalAddress::try_from(item).ok()),
+            )
+            /* Global references found in the Substate Values */
+            .add_global_references(
+                database_updates
+                    .node_updates
+                    .values()
+                    .flat_map(|NodeDatabaseUpdates { partition_updates }| {
+                        partition_updates.values()
+                    })
+                    .filter_map(|item| {
+                        if let PartitionDatabaseUpdates::Delta { substate_updates } = item {
+                            Some(substate_updates.values())
+                        } else {
+                            None
+                        }
+                    })
+                    .flatten()
+                    .filter_map(|item| {
+                        if let DatabaseUpdate::Set(item) = item {
+                            Some(item)
+                        } else {
+                            None
+                        }
+                    })
+                    .flat_map(|value| {
+                        IndexedScryptoValue::from_slice(value)
+                            .unwrap()
+                            .references()
+                            .clone()
+                    })
+                    .filter_map(|item| GlobalAddress::try_from(item).ok()),
+            )
     }
 
     pub fn add_global_reference(mut self, global_address: GlobalAddress) -> Self {
