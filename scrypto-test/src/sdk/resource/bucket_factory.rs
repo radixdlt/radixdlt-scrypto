@@ -109,7 +109,7 @@ impl BucketFactory {
                                     non_fungible_handle,
                                 )?;
 
-                            if let Some(..) = cur_non_fungible {
+                            if cur_non_fungible.is_some() {
                                 return Err(RuntimeError::ApplicationError(
                                     ApplicationError::NonFungibleResourceManagerError(
                                         NonFungibleResourceManagerError::NonFungibleAlreadyExists(Box::new(
