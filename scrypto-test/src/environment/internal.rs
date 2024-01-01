@@ -63,6 +63,31 @@ impl EncapsulatedRadixEngine {
         .build()
     }
 
+    pub(super) fn create(
+        substate_db: InMemorySubstateDatabase,
+        scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+        native_vm: NativeVm<NoExtension>,
+        id_allocator: IdAllocator,
+        track_builder: impl Fn(&InMemorySubstateDatabase) -> TestTrack<'_>,
+        system_config_builder: impl Fn(&ScryptoVm<DefaultWasmEngine>) -> TestSystemConfig<'_>,
+        kernel_builder: impl for<'a> Fn(
+            &'a mut TestSystemConfig<'a>,
+            &'a mut TestTrack<'a>,
+            &'a mut IdAllocator,
+        ) -> TestKernel<'a>,
+    ) -> Self {
+        EncapsulatedRadixEngineBuilder {
+            substate_db,
+            scrypto_vm,
+            native_vm,
+            id_allocator,
+            track_builder,
+            system_config_builder,
+            kernel_builder,
+        }
+        .build()
+    }
+
     fn track_builder(substate_store: &InMemorySubstateDatabase) -> TestTrack<'_> {
         Track::new(substate_store)
     }
