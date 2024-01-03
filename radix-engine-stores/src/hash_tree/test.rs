@@ -403,14 +403,13 @@ fn serialized_keys_are_strictly_increasing() {
     tester.put_substate_changes(vec![change(3, 6, 4, Some(90))]);
     let previous_keys = tester
         .tree_store
-        .memory
-        .borrow()
+        .memory()
         .keys()
         .cloned()
         .collect::<HashSet<_>>();
     tester.put_substate_changes(vec![change(1, 7, 2, Some(80))]);
-    let binding = tester.tree_store.memory.borrow();
-    let min_next_key = binding
+    let tree_store_mem = tester.tree_store.memory();
+    let min_next_key = tree_store_mem
         .keys()
         .filter(|key| !previous_keys.contains(*key))
         .max()

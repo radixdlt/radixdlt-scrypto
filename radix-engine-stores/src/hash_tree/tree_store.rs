@@ -3,6 +3,7 @@ pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
 use utils::rust::collections::VecDeque;
@@ -160,8 +161,8 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
 /// A `TreeStore` based on serialized payloads stored in memory.
 #[derive(Debug, PartialEq, Eq)]
 pub struct SerializedInMemoryTreeStore {
-    pub memory: RefCell<HashMap<Vec<u8>, Vec<u8>>>,
-    pub stale_part_buffer: RefCell<Vec<Vec<u8>>>,
+    memory: RefCell<HashMap<Vec<u8>, Vec<u8>>>,
+    stale_part_buffer: RefCell<Vec<Vec<u8>>>,
 }
 
 impl SerializedInMemoryTreeStore {
@@ -171,6 +172,10 @@ impl SerializedInMemoryTreeStore {
             memory: RefCell::new(hash_map_new()),
             stale_part_buffer: RefCell::new(Vec::new()),
         }
+    }
+
+    pub fn memory(&self) -> Ref<HashMap<Vec<u8>, Vec<u8>>> {
+        self.memory.borrow()
     }
 }
 
