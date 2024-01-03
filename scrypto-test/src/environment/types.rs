@@ -4,7 +4,7 @@
 use crate::prelude::*;
 
 pub type TestVm<'g> = Vm<'g, DefaultWasmEngine, NoExtension>;
-pub type TestTrack<'g> = Track<'g, InMemorySubstateDatabase, SpreadPrefixKeyMapper>;
+pub type TestTrack<'g, D> = Track<'g, D, SpreadPrefixKeyMapper>;
 pub type TestSystemConfig<'g> = SystemConfig<TestVm<'g>>;
-pub type TestKernel<'g> = Kernel<'g, TestSystemConfig<'g>, TestTrack<'g>>;
-pub type TestSystemService<'g> = SystemService<'g, TestKernel<'g>, TestVm<'g>>;
+pub type TestKernel<'g, D> = Kernel<'g, TestSystemConfig<'g>, TestTrack<'g, D>>;
+pub type TestSystemService<'g, D> = SystemService<'g, TestKernel<'g, D>, TestVm<'g>>;

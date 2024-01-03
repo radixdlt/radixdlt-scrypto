@@ -164,17 +164,20 @@ use crate::prelude::*;
 /// ```norun
 #[doc = include_str!("../../../assets/blueprints/radiswap/tests/lib.rs")]
 /// ```
-pub struct TestEnvironment(pub(super) EncapsulatedRadixEngine);
+pub struct TestEnvironment<D>(pub(super) EncapsulatedRadixEngine<D>)
+where
+    D: SubstateDatabase + CommittableSubstateDatabase + 'static;
 
-impl TestEnvironment {
-    //================
-    // Initialization
-    //================
-
+impl TestEnvironment<InMemorySubstateDatabase> {
     pub fn new() -> Self {
         TestEnvironmentBuilder::new().build()
     }
+}
 
+impl<D> TestEnvironment<D>
+where
+    D: SubstateDatabase + CommittableSubstateDatabase + 'static,
+{
     //=============
     // Invocations
     //=============
@@ -680,7 +683,7 @@ impl TestEnvironment {
             CONSENSUS_MANAGER,
             ModuleId::Main,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
+            |env| -> Result<(), RuntimeError> {
                 let manager_handle = env
                     .actor_open_field(
                         ACTOR_STATE_SELF,
@@ -715,7 +718,7 @@ impl TestEnvironment {
             CONSENSUS_MANAGER,
             ModuleId::Main,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
+            |env| -> Result<(), RuntimeError> {
                 let handle = env.actor_open_field(
                     ACTOR_STATE_SELF,
                     ConsensusManagerField::ProposerMinuteTimestamp.into(),
@@ -759,7 +762,7 @@ impl TestEnvironment {
         F: FnOnce(&mut Self) -> O,
         O: ScryptoEncode,
     {
-        let object_info = self.0.with_kernel_mut(|kernel: &mut TestKernel<'_>| {
+        let object_info = self.0.with_kernel_mut(|kernel| {
             SystemService {
                 api: kernel,
                 phantom: PhantomData,
@@ -853,7 +856,7 @@ impl TestEnvironment {
     }
 }
 
-impl Default for TestEnvironment {
+impl Default for TestEnvironment<InMemorySubstateDatabase> {
     fn default() -> Self {
         Self::new()
     }

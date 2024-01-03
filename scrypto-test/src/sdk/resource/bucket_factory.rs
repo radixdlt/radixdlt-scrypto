@@ -4,12 +4,15 @@ use crate::prelude::*;
 pub struct BucketFactory;
 
 impl BucketFactory {
-    pub fn create_fungible_bucket(
+    pub fn create_fungible_bucket<S>(
         resource_address: ResourceAddress,
         amount: Decimal,
         creation_strategy: CreationStrategy,
-        env: &mut TestEnvironment,
-    ) -> Result<Bucket, RuntimeError> {
+        env: &mut TestEnvironment<S>,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        S: SubstateDatabase + CommittableSubstateDatabase + 'static,
+    {
         Self::create_bucket(
             FactoryResourceSpecifier::Amount(resource_address, amount),
             creation_strategy,
@@ -17,15 +20,16 @@ impl BucketFactory {
         )
     }
 
-    pub fn create_non_fungible_bucket<I, D>(
+    pub fn create_non_fungible_bucket<I, D, S>(
         resource_address: ResourceAddress,
         non_fungibles: I,
         creation_strategy: CreationStrategy,
-        env: &mut TestEnvironment,
+        env: &mut TestEnvironment<S>,
     ) -> Result<Bucket, RuntimeError>
     where
         I: IntoIterator<Item = (NonFungibleLocalId, D)>,
         D: ScryptoEncode,
+        S: SubstateDatabase + CommittableSubstateDatabase + 'static,
     {
         Self::create_bucket(
             FactoryResourceSpecifier::Ids(
@@ -46,11 +50,14 @@ impl BucketFactory {
         )
     }
 
-    pub fn create_bucket(
+    pub fn create_bucket<S>(
         resource_specifier: FactoryResourceSpecifier,
         creation_strategy: CreationStrategy,
-        env: &mut TestEnvironment,
-    ) -> Result<Bucket, RuntimeError> {
+        env: &mut TestEnvironment<S>,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        S: SubstateDatabase + CommittableSubstateDatabase + 'static,
+    {
         match (&resource_specifier, creation_strategy) {
             (
                 FactoryResourceSpecifier::Amount(resource_address, amount),
@@ -139,10 +146,13 @@ impl BucketFactory {
         }
     }
 
-    fn validate_resource_specifier(
+    fn validate_resource_specifier<S>(
         resource_specifier: &FactoryResourceSpecifier,
-        env: &mut TestEnvironment,
-    ) -> Result<bool, RuntimeError> {
+        env: &mut TestEnvironment<S>,
+    ) -> Result<bool, RuntimeError>
+    where
+        S: SubstateDatabase + CommittableSubstateDatabase + 'static,
+    {
         // Validating the resource is correct - can't mint IDs of a fungible resource and can't mint
         // an amount of a non-fungible resource.
         match resource_specifier {

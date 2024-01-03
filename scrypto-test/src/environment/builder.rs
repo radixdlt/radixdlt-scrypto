@@ -29,9 +29,12 @@ use super::*;
 
 pub type DbFlash = IndexMap<DbNodeKey, IndexMap<DbPartitionNum, IndexMap<DbSortKey, Vec<u8>>>>;
 
-pub struct TestEnvironmentBuilder {
+pub struct TestEnvironmentBuilder<D>
+where
+    D: SubstateDatabase + CommittableSubstateDatabase + 'static,
+{
     /// The database to use for the test environment.
-    database: InMemorySubstateDatabase,
+    database: D,
 
     /// The database that substates are flashed to and then flashed to the actual database at build
     /// time. This is to make sure that when we add methods for changing the database it doesn't
@@ -40,24 +43,32 @@ pub struct TestEnvironmentBuilder {
 
     /// Additional references to add to the root [`CallFrame`] upon its creation.
     added_global_references: IndexSet<GlobalAddress>,
+
+    bootstrap: bool,
 }
 
-impl Default for TestEnvironmentBuilder {
+impl Default for TestEnvironmentBuilder<InMemorySubstateDatabase> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl TestEnvironmentBuilder {
-    const DEFAULT_INTENT_HASH: Hash = Hash([0; 32]);
-
+impl TestEnvironmentBuilder<InMemorySubstateDatabase> {
     pub fn new() -> Self {
-        Self {
+        TestEnvironmentBuilder {
             database: InMemorySubstateDatabase::standard(),
             flash_database: FlashSubstateDatabase::standard(),
             added_global_references: Default::default(),
+            bootstrap: true,
         }
     }
+}
+
+impl<D> TestEnvironmentBuilder<D>
+where
+    D: SubstateDatabase + CommittableSubstateDatabase + 'static,
+{
+    const DEFAULT_INTENT_HASH: Hash = Hash([0; 32]);
 
     pub fn flash(mut self, data: DbFlash) -> Self {
         // Flash the substates to the database.
@@ -146,20 +157,27 @@ impl TestEnvironmentBuilder {
         self
     }
 
-    pub fn build(mut self) -> TestEnvironment {
+    pub fn bootstrap(mut self, value: bool) -> Self {
+        self.bootstrap = value;
+        self
+    }
+
+    pub fn build(mut self) -> TestEnvironment<D> {
         // Create the various VMs we will use
         let native_vm = NativeVm::new();
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
 
-        // Run genesis against the substate store.
-        let mut bootstrapper = Bootstrapper::new(
-            NetworkDefinition::simulator(),
-            &mut self.database,
-            vm,
-            false,
-        );
-        bootstrapper.bootstrap_test_default().unwrap();
+        if self.bootstrap {
+            // Run genesis against the substate store.
+            let mut bootstrapper = Bootstrapper::new(
+                NetworkDefinition::simulator(),
+                &mut self.database,
+                vm,
+                false,
+            );
+            bootstrapper.bootstrap_test_default().unwrap();
+        }
         self.database
             .commit(&self.flash_database.database_updates());
 
