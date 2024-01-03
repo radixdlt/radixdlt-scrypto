@@ -190,8 +190,10 @@ where
             );
             bootstrapper.bootstrap_test_default().unwrap();
         }
-        self.database
-            .commit(&self.flash_database.database_updates());
+        let database_updates = self.flash_database.database_updates();
+        if !database_updates.node_updates.is_empty() {
+            self.database.commit(&database_updates);
+        }
 
         // Create the Id allocator we will be using throughout this test
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
