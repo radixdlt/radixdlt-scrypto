@@ -157,6 +157,18 @@ where
         self
     }
 
+    pub fn database<ND>(self, database: ND) -> TestEnvironmentBuilder<ND>
+    where
+        ND: SubstateDatabase + CommittableSubstateDatabase,
+    {
+        TestEnvironmentBuilder {
+            database,
+            added_global_references: self.added_global_references,
+            flash_database: self.flash_database,
+            bootstrap: self.bootstrap,
+        }
+    }
+
     pub fn bootstrap(mut self, value: bool) -> Self {
         self.bootstrap = value;
         self
