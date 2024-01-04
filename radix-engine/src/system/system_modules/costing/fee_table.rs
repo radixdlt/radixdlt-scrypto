@@ -383,36 +383,32 @@ impl FeeTable {
 
     #[inline]
     pub fn bls12381_v1_verify_cost(&self, size: usize) -> u32 {
-        // Based on benchmark `bench_bls_verify`
-        // The cost of validating is:
-        // - calculate sha256 over a message and map it to the curve (depends on the data size)
-        //     42 µs for 100kB
-        //     430 µs for 1MB
-        //    which gives:
-        //      0.04 µs for 100B => 0.04 µs * 100 units/µs = 0.04 cost units for one byte
-        //     Assume cost 4 cost units for sizes < 100B
-        // - validate the signature (does not depend on the data size)
-        //     770 µs * 100 units/µs = 77,000 cost units
-        let size = if size < 100 { 100 } else { cast(size) };
-
-        div(mul(size, 4), 100) + 77_000
+        // Based on  `test_crypto_scrypto_verify_bls12381_v1_costing`
+        // - For sizes less than 1024, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 34.55672 * size + 10577803.13
+        //   Lets round:
+        //    34.55672       -> 35
+        //    10577803.13    -> 10577804
+        let size = if size < 1024 { 1024 } else { cast(size) };
+        let instructions_cnt = mul(size, 35) + 10577804;
+        // Convert to cost units
+        div(instructions_cnt, CPU_INSTRUCTIONS_TO_COST_UNIT)
     }
 
     #[inline]
     pub fn keccak256_hash_cost(&self, size: usize) -> u32 {
-        // Based on benchmark `bench_keccak256_hash`
-        // The cost of validating is:
-        // - calculate sha256 over a message and map it to the curve (depends on the data size)
-        //     176 µs for 100kB
-        //     1800 µs for 1MB
-        //     248 ns for 32B
-        //   which gives:
-        //     0.19 µs for 100B => 0.19 µs * 100 units/µs = 0.19 cost units for one byte
-        //     For sizes lower than 500B timings are non-linear, so assume 19 * 5 = 95 cost units
-        //     for sizes < 500B
-        let size = if size < 500 { 500 } else { cast(size) };
-
-        div(mul(size, 19), 100)
+        // Based on  `test_crypto_scrypto_keccak256_costing`
+        // - For sizes less than 100, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 46.41919 * size + 2641.66077
+        //   Lets round:
+        //     46.41919  -> 47
+        //     2641.66077 -> 2642
+        let size = if size < 100 { 100 } else { cast(size) };
+        let instructions_cnt = mul(size, 47) + 2642;
+        // Convert to cost units
+        div(instructions_cnt, CPU_INSTRUCTIONS_TO_COST_UNIT)
     }
 
     //======================
