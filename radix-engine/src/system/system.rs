@@ -2870,9 +2870,7 @@ where
     }
 
     // Trace average message length and number of public_keys
-    // FIXME: Improve resource tracker, because below line causes panic in resource tracker
-    //#[trace_resources(log=(messages.iter().map(|m| m.len()).sum::<usize>()/messages.len()),log=public_keys.len())]
-    #[trace_resources(log=messages.len(),log=public_keys.len())]
+    #[trace_resources(log={messages.iter().map(|m| m.len()).sum::<usize>()/messages.len()},log=public_keys.len())]
     fn bls12381_v1_aggregate_verify(
         &mut self,
         messages: &[&[u8]],
