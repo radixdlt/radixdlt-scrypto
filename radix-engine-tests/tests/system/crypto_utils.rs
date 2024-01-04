@@ -317,3 +317,157 @@ fn test_crypto_scrypto_flow() {
     // Assert
     assert!(result);
 }
+
+#[test]
+fn test_crypto_scrypto_keccak256_costing() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+
+    for size in [
+        100usize,
+        200,
+        500,
+        1024,
+        10 * 1024,
+        20 * 1024,
+        50 * 1024,
+        100 * 1024,
+        200 * 1024,
+        500 * 1024,
+        900 * 1024,
+    ] {
+        let data = vec![0u8; size];
+        let _hash = crypto_scrypto_keccak256_hash(&mut test_runner, package_address, data);
+    }
+}
+
+#[test]
+fn test_crypto_scrypto_verify_bls12381_v1_costing() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+
+    let secret_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
+    let public_key = secret_key.public_key();
+
+    for size in [
+        100usize,
+        200,
+        500,
+        1024,
+        10 * 1024,
+        20 * 1024,
+        50 * 1024,
+        100 * 1024,
+        200 * 1024,
+        500 * 1024,
+        900 * 1024,
+    ] {
+        let data = vec![0u8; size];
+        let signature = secret_key.sign_v1(data.as_slice());
+        let receipt = test_runner.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee(test_runner.faucet_component(), 500u32)
+                .call_function(
+                    package_address,
+                    "CryptoScrypto",
+                    "bls12381_v1_verify",
+                    manifest_args!(data, public_key, signature),
+                )
+                .build(),
+            vec![],
+        );
+        let _ = receipt.expect_commit_success();
+    }
+}
+
+#[test]
+fn test_crypto_scrypto_bls12381_g2_signature_aggregate_costing() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+
+    for cnt in [1, 2, 5, 10, 20, 50, 100] {
+        let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
+            .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
+            .collect();
+
+        // Single message
+        let msg = b"One message to sign for all".to_vec();
+
+        let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(&msg)).collect();
+
+        // Act
+        let _agg_sig_from_scrypto =
+            crypto_scrypto_bls12381_g2_signature_aggregate(&mut test_runner, package_address, sigs);
+    }
+}
+
+#[test]
+fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+
+    for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
+        for cnt in [1u8, 2, 5, 10, 20] {
+            let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
+                .map(|i| Bls12381G1PrivateKey::from_u64(i.into()).unwrap())
+                .collect();
+
+            // Multiple messages
+            let msgs: Vec<Vec<u8>> = (1..(cnt + 1)).map(|i| vec![i; msg_size]).collect();
+
+            let sigs: Vec<Bls12381G2Signature> = sks
+                .iter()
+                .zip(msgs.clone())
+                .map(|(sk, msg)| sk.sign_v1(&msg))
+                .collect();
+
+            let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+
+            let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+            let _agg_verify = crypto_scrypto_bls12381_v1_aggregate_verify(
+                &mut test_runner,
+                package_address,
+                msgs,
+                pks,
+                agg_sig_multiple_msgs,
+            );
+        }
+    }
+}
+
+#[test]
+fn test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+
+    for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
+        for cnt in [1u8, 2, 5, 10, 20, 50, 100] {
+            let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
+                .map(|i| Bls12381G1PrivateKey::from_u64(i.into()).unwrap())
+                .collect();
+
+            // Single message
+            let msg: Vec<u8> = vec![cnt; msg_size];
+
+            let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(&msg)).collect();
+
+            let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+
+            let agg_sig_single_msg = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+            let _agg_verify = crypto_scrypto_bls12381_v1_fast_aggregate_verify(
+                &mut test_runner,
+                package_address,
+                msg,
+                pks,
+                agg_sig_single_msg,
+            );
+        }
+    }
+}
