@@ -208,11 +208,22 @@ pub enum TimePrecision {
     Minute,
 }
 
+#[derive(Sbor, Copy, Clone, Debug, Eq, PartialEq)]
+pub enum TimePrecisionV2 {
+    Minute,
+    Second,
+}
+
 pub const CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT: &str = "get_current_time";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ConsensusManagerGetCurrentTimeInput {
     pub precision: TimePrecision,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ConsensusManagerGetCurrentTimeInputV2 {
+    pub precision: TimePrecisionV2,
 }
 
 pub type ConsensusManagerGetCurrentTimeOutput = Instant;
@@ -223,6 +234,13 @@ pub const CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT: &str = "compare_current_
 pub struct ConsensusManagerCompareCurrentTimeInput {
     pub instant: Instant,
     pub precision: TimePrecision,
+    pub operator: TimeComparisonOperator,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct ConsensusManagerCompareCurrentTimeInputV2 {
+    pub instant: Instant,
+    pub precision: TimePrecisionV2,
     pub operator: TimeComparisonOperator,
 }
 

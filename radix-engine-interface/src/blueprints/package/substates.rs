@@ -14,6 +14,7 @@ pub const ROLE_ASSIGNMENT_CODE_ID: u64 = 12u64;
 pub const POOL_CODE_ID: u64 = 13u64;
 pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
 pub const TEST_UTILS_CODE_ID: u64 = 15u64;
+pub const CONSENSUS_MANAGER_TIMESTAMP_SECONDS_CODE_ID: u64 = 16u64;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
@@ -119,7 +120,7 @@ pub struct BlueprintDefinition {
 
     // Backend implementation pointers
 
-    // There is an implicit variant that must be maintained in that the key set in `function_exports`
+    // There is an implicit invariant that must be maintained in that the key set in `function_exports`
     // matches that of the `functions` under `interface`. This is currently maintained since the
     // `publish` interface uses `BlueprintDefinitionInit` rather than `BlueprintDefinition`.
     pub function_exports: IndexMap<String, PackageExport>,
