@@ -276,12 +276,12 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok(substate.into_payload())
     }
 
-    pub fn read_object_collection_entry<K: ScryptoEncode, V: ScryptoDecode>(
+    pub fn get_partition_of_collection(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        collection_key: ObjectCollectionKey<K>,
-    ) -> Result<Option<V>, SystemReaderError> {
+        collection_index: CollectionIndex,
+    ) -> Result<PartitionNumber, SystemReaderError> {
         let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
         let definition = self.get_blueprint_definition(&blueprint_id)?;
 
@@ -289,7 +289,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .interface
             .state
             .collections
-            .get(collection_key.collection_index() as usize)
+            .get(collection_index as usize)
             .ok_or_else(|| SystemReaderError::CollectionDoesNotExist)?;
 
         let partition_number = match partition_description {
@@ -304,6 +304,21 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             }
             PartitionDescription::Physical(partition_number) => *partition_number,
         };
+
+        Ok(partition_number)
+    }
+
+    pub fn read_object_collection_entry<K: ScryptoEncode, V: ScryptoDecode>(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        collection_key: ObjectCollectionKey<K>,
+    ) -> Result<Option<V>, SystemReaderError> {
+        let partition_number = self.get_partition_of_collection(
+            node_id,
+            module_id,
+            collection_key.collection_index(),
+        )?;
 
         let entry = match collection_key {
             ObjectCollectionKey::KeyValue(_, key) => self
