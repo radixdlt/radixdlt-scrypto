@@ -294,13 +294,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {
-                let base_partition = match module_id {
-                    ModuleId::Main => MAIN_BASE_PARTITION,
-                    ModuleId::Metadata => METADATA_BASE_PARTITION,
-                    ModuleId::Royalty => ROYALTY_BASE_PARTITION,
-                    ModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
-                };
-                base_partition.at_offset(*offset).unwrap()
+                module_id.base_partition_num().at_offset(*offset).unwrap()
             }
             PartitionDescription::Physical(partition_number) => *partition_number,
         };
