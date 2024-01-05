@@ -2881,13 +2881,17 @@ where
         public_keys: &[Bls12381G1PublicKey],
         signature: &Bls12381G2Signature,
     ) -> Result<u32, RuntimeError> {
-        self.api.kernel_get_system().modules.apply_execution_cost(
-            ExecutionCostingEntry::Bls12381V1AggregateVerify {
-                size: messages.iter().map(|m| m.len()).sum::<usize>() / messages.len(),
-                keys_cnt: public_keys.len(),
-            },
-        )?;
-        Ok(aggregate_verify_bls12381_v1(messages, public_keys, signature) as u32)
+        if !messages.is_empty() && !public_keys.is_empty() {
+            self.api.kernel_get_system().modules.apply_execution_cost(
+                ExecutionCostingEntry::Bls12381V1AggregateVerify {
+                    size: messages.iter().map(|m| m.len()).sum::<usize>() / messages.len(),
+                    keys_cnt: public_keys.len(),
+                },
+            )?;
+            Ok(aggregate_verify_bls12381_v1(messages, public_keys, signature) as u32)
+        } else {
+            Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
+        }
     }
 
     #[trace_resources(log=message.len(), log=public_keys.len())]
@@ -2897,13 +2901,17 @@ where
         public_keys: &[Bls12381G1PublicKey],
         signature: &Bls12381G2Signature,
     ) -> Result<u32, RuntimeError> {
-        self.api.kernel_get_system().modules.apply_execution_cost(
-            ExecutionCostingEntry::Bls12381V1FastAggregateVerify {
-                size: message.len(),
-                keys_cnt: public_keys.len(),
-            },
-        )?;
-        Ok(fast_aggregate_verify_bls12381_v1(message, public_keys, signature) as u32)
+        if !public_keys.is_empty() {
+            self.api.kernel_get_system().modules.apply_execution_cost(
+                ExecutionCostingEntry::Bls12381V1FastAggregateVerify {
+                    size: message.len(),
+                    keys_cnt: public_keys.len(),
+                },
+            )?;
+            Ok(fast_aggregate_verify_bls12381_v1(message, public_keys, signature) as u32)
+        } else {
+            Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
+        }
     }
 
     #[trace_resources(log=signatures.len())]
@@ -2911,13 +2919,17 @@ where
         &mut self,
         signatures: &[Bls12381G2Signature],
     ) -> Result<Bls12381G2Signature, RuntimeError> {
-        self.api.kernel_get_system().modules.apply_execution_cost(
-            ExecutionCostingEntry::Bls12381G2SignatureAggregate {
-                signatures_cnt: signatures.len(),
-            },
-        )?;
-        Bls12381G2Signature::aggregate(signatures)
-            .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))
+        if !signatures.is_empty() {
+            self.api.kernel_get_system().modules.apply_execution_cost(
+                ExecutionCostingEntry::Bls12381G2SignatureAggregate {
+                    signatures_cnt: signatures.len(),
+                },
+            )?;
+            Bls12381G2Signature::aggregate(signatures)
+                .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))
+        } else {
+            Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
+        }
     }
 
     #[trace_resources(log=data.len())]
