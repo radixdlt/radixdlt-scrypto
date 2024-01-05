@@ -386,14 +386,63 @@ impl FeeTable {
         // Based on  `test_crypto_scrypto_verify_bls12381_v1_costing`
         // - For sizes less than 1024, instruction count remains the same.
         // - For greater sizes following linear equation might be applied:
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
         //   instructions_cnt = 34.55672 * size + 10577803.13
         //   Lets round:
         //    34.55672       -> 35
         //    10577803.13    -> 10577804
         let size = if size < 1024 { 1024 } else { cast(size) };
-        let instructions_cnt = mul(size, 35) + 10577804;
+        let instructions_cnt = add(mul(size, 35), 10577804);
         // Convert to cost units
-        div(instructions_cnt, CPU_INSTRUCTIONS_TO_COST_UNIT)
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn bls12381_v1_aggregate_verify_cost(&self, size: usize, keys_cnt: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_bls12381_v1_aggregate_verify_costing`
+        // - For sizes less than 1024, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 87.3416 * size + 1438527.7574 * keys_cnt + 9058827.9112
+        //   (used: https://www.socscistatistics.com/tests/multipleregression/default.aspx)
+        //   Lets round:
+        //    87.3416      -> 88
+        //    1438527.757  -> 1438528
+        //    9058827.911  -> 9058828
+        let size = if size < 1024 { 1024 } else { cast(size) };
+        let instructions_cnt = add(add(mul(size, 88), mul(cast(keys_cnt), 1438528)), 9058828);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn bls12381_v1_fast_aggregate_verify_cost(&self, size: usize, keys_cnt: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing`
+        // - For sizes less than 1024, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 32.1717 * size + 624919.5254 * keys_cnt + 9058827.9112
+        //   (used: https://www.socscistatistics.com/tests/multipleregression/default.aspx)
+        //   Lets round:
+        //    32.1717      -> 33
+        //    624919.5254  -> 624920
+        //    10096964.55  -> 10096965
+        let size = if size < 1024 { 1024 } else { cast(size) };
+        let instructions_cnt = add(add(mul(size, 33), mul(cast(keys_cnt), 624920)), 10096965);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn bls12381_g2_signature_aggregate_cost(&self, signatures_cnt: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_bls12381_g2_signature_aggregate_costing`
+        // Following linear equation might be applied:
+        //   instructions_cnt = 879553.91557 * signatures_cnt - 567872.58948
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   Lets round:
+        //    879553.91557 -> 879554
+        //    567872.5895  -> 567873
+        let instructions_cnt = sub(mul(cast(signatures_cnt), 879554), 567873);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
     #[inline]
@@ -402,13 +451,14 @@ impl FeeTable {
         // - For sizes less than 100, instruction count remains the same.
         // - For greater sizes following linear equation might be applied:
         //   instructions_cnt = 46.41919 * size + 2641.66077
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
         //   Lets round:
         //     46.41919  -> 47
         //     2641.66077 -> 2642
         let size = if size < 100 { 100 } else { cast(size) };
-        let instructions_cnt = mul(size, 47) + 2642;
+        let instructions_cnt = add(mul(size, 47), 2642);
         // Convert to cost units
-        div(instructions_cnt, CPU_INSTRUCTIONS_TO_COST_UNIT)
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
     //======================
@@ -458,11 +508,11 @@ fn add(a: u32, b: u32) -> u32 {
 }
 
 #[inline]
-fn mul(a: u32, b: u32) -> u32 {
-    a.checked_mul(b).unwrap_or(u32::MAX)
+fn sub(a: u32, b: u32) -> u32 {
+    a.checked_sub(b).unwrap_or(u32::MAX)
 }
 
 #[inline]
-fn div(a: u32, b: u32) -> u32 {
-    a.checked_div(b).unwrap_or(u32::MAX)
+fn mul(a: u32, b: u32) -> u32 {
+    a.checked_mul(b).unwrap_or(u32::MAX)
 }
