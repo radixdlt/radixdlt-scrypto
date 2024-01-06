@@ -1,5 +1,9 @@
 use crate::blueprints::models::KeyValueEntryContentSource;
-use crate::internal_prelude::{PackageCollection, VersionedPackageBlueprintVersionDefinition};
+use crate::internal_prelude::{
+    KeyValueEntryPayload, PackageCodeOriginalCodeV1, PackageCodeVmTypeV1, PackageCollection,
+    VersionedPackageBlueprintVersionDefinition, VersionedPackageCodeOriginalCode,
+    VersionedPackageCodeVmTypeVersion,
+};
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 use radix_engine_common::constants::CONSENSUS_MANAGER_PACKAGE;
@@ -14,7 +18,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintPayloadDef, BlueprintVersion, BlueprintVersionKey, CodeHash,
+    BlueprintPayloadDef, BlueprintVersion, BlueprintVersionKey, CodeHash, VmType,
     CONSENSUS_MANAGER_TIMESTAMP_SECONDS_CODE_ID,
 };
 use radix_engine_interface::prelude::HasSchemaHash;
@@ -25,9 +29,8 @@ use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
 use utils::indexmap;
 
-pub fn generate_timestamp_seconds_state_updates<S: SubstateDatabase>(
-    reader: SystemDatabaseReader<S>,
-) -> StateUpdates {
+pub fn generate_timestamp_seconds_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
     let consensus_mgr_node_id = CONSENSUS_MANAGER_PACKAGE.into_node_id();
 
     let bp_version_key = BlueprintVersionKey {
@@ -52,8 +55,18 @@ pub fn generate_timestamp_seconds_state_updates<S: SubstateDatabase>(
         .to_be_bytes()
         .to_vec();
     let code_hash = CodeHash::from_hash(hash(&original_code));
-    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+    let versioned_code = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
+        code: original_code,
+    });
+    let code_payload = versioned_code.into_payload();
+    let code_substate = code_payload.into_locked_substate();
+    let vm_type_substate = PackageCodeVmTypeV1 {
+        vm_type: VmType::Native,
+    }
+    .into_versioned()
+    .into_locked_substate();
 
+    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let get_current_time_input_v2 =
         aggregator.add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInputV2>();
     let compare_current_time_input_v2 =
@@ -103,6 +116,22 @@ pub fn generate_timestamp_seconds_state_updates<S: SubstateDatabase>(
         )
         .unwrap();
 
+    let code_vm_type_partition_num = reader
+        .get_partition_of_collection(
+            &consensus_mgr_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeVmTypeKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    let code_partition_num = reader
+        .get_partition_of_collection(
+            &consensus_mgr_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeOriginalCodeKeyValue.collection_index(),
+        )
+        .unwrap();
+
     let schema_partition_num = reader
         .get_partition_of_collection(
             &consensus_mgr_node_id,
@@ -119,6 +148,20 @@ pub fn generate_timestamp_seconds_state_updates<S: SubstateDatabase>(
                         by_substate: indexmap! {
                             SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()) => DatabaseUpdate::Set(
                                 scrypto_encode(&substate).unwrap(),
+                            )
+                        }
+                    },
+                    code_vm_type_partition_num => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(
+                                scrypto_encode(&vm_type_substate).unwrap(),
+                            )
+                        }
+                    },
+                    code_partition_num => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(
+                                scrypto_encode(&code_substate).unwrap(),
                             )
                         }
                     },

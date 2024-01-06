@@ -1,5 +1,6 @@
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerCompareCurrentTimeInput, ConsensusManagerGetCurrentTimeInput, TimePrecision,
+    ConsensusManagerCompareCurrentTimeInput, ConsensusManagerGetCurrentTimeInput,
+    ConsensusManagerGetCurrentTimeInputV2, TimePrecision, TimePrecisionV2,
     CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -13,6 +14,19 @@ use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 pub struct Clock {}
 
 impl Clock {
+    /// Returns the current timestamp (in seconds)
+    pub fn current_time_rounded_to_seconds() -> Instant {
+        let rtn = ScryptoVmV1Api::object_call(
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
+            scrypto_encode(&ConsensusManagerGetCurrentTimeInputV2 {
+                precision: TimePrecisionV2::Second,
+            })
+            .unwrap(),
+        );
+        scrypto_decode(&rtn).unwrap()
+    }
+
     /// Returns the current timestamp (in seconds), rounded down to minutes
     pub fn current_time_rounded_to_minutes() -> Instant {
         Self::current_time(TimePrecision::Minute)
