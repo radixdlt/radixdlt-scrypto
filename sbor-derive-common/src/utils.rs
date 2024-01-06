@@ -300,7 +300,7 @@ fn parse_u8_from_literal(literal: &Lit) -> Option<u8> {
     }
 }
 
-fn get_sbor_attribute_string_value(
+pub fn get_sbor_attribute_string_value(
     attributes: &[Attribute],
     field_name: &str,
 ) -> Result<Option<String>> {

@@ -40,7 +40,7 @@ impl ShowLedger {
         )
         .map_err(Error::IOError)?;
 
-        let instant = Self::get_current_time(out, TimePrecision::Minute)?;
+        let instant = Self::get_current_time(out, TimePrecisionV1::Minute)?;
         let date_time = UtcDateTime::from_instant(&instant).unwrap();
         writeln!(
             out,
@@ -127,7 +127,7 @@ impl ShowLedger {
 
     pub fn get_current_time<O: std::io::Write>(
         out: &mut O,
-        precision: TimePrecision,
+        precision: TimePrecisionV1,
     ) -> Result<Instant, Error> {
         let instructions = vec![InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),

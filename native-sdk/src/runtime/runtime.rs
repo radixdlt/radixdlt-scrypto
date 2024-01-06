@@ -60,7 +60,7 @@ impl Runtime {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn current_time<Y, E>(api: &mut Y, precision: TimePrecision) -> Result<Instant, E>
+    pub fn current_time<Y, E>(api: &mut Y, precision: TimePrecisionV1) -> Result<Instant, E>
     where
         Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
@@ -77,7 +77,7 @@ impl Runtime {
     pub fn compare_against_current_time<Y, E>(
         api: &mut Y,
         instant: Instant,
-        precision: TimePrecision,
+        precision: TimePrecisionV1,
         operator: TimeComparisonOperator,
     ) -> Result<bool, E>
     where

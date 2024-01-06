@@ -52,11 +52,11 @@ extern_blueprint_internal! {
     {
         fn get_current_epoch(&self) -> Epoch;
         fn start(&mut self);
-        fn get_current_time(&self, precision: TimePrecision) -> Instant;
+        fn get_current_time(&self, precision: TimePrecisionV1) -> Instant;
         fn compare_current_time(
             &self,
             instant: Instant,
-            precision: TimePrecision,
+            precision: TimePrecisionV1,
             operator: TimeComparisonOperator,
         ) -> bool;
         fn next_round(

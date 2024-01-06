@@ -6,7 +6,7 @@ use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
+use radix_engine_interface::blueprints::consensus_manager::TimePrecisionV1;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::time::TimeComparisonOperator;
 use sbor::rust::boxed::Box;
@@ -153,7 +153,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
                 _,
             ) => match self.timed_recovery_delay_in_minutes {
                 Some(delay_in_minutes) => {
-                    let current_time = Runtime::current_time(api, TimePrecision::Minute)?;
+                    let current_time = Runtime::current_time(api, TimePrecisionV1::Minute)?;
                     let timed_recovery_allowed_after = current_time
                         .add_minutes(delay_in_minutes as i64)
                         .map_or(access_controller_runtime_error!(TimeOverflow), |instant| {
@@ -454,7 +454,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
                 let recovery_time_has_elapsed = Runtime::compare_against_current_time(
                     api,
                     timed_recovery_allowed_after.clone(),
-                    TimePrecision::Minute,
+                    TimePrecisionV1::Minute,
                     TimeComparisonOperator::Gte,
                 )?;
 

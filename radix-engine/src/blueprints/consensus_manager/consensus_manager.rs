@@ -708,14 +708,14 @@ impl ConsensusManagerBlueprint {
     }
 
     pub(crate) fn get_current_time_v1<Y>(
-        precision: TimePrecision,
+        precision: TimePrecisionV1,
         api: &mut Y,
     ) -> Result<Instant, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         match precision {
-            TimePrecision::Minute => {
+            TimePrecisionV1::Minute => {
                 let handle = api.actor_open_field(
                     ACTOR_STATE_SELF,
                     ConsensusManagerField::ProposerMinuteTimestamp.into(),
@@ -780,7 +780,7 @@ impl ConsensusManagerBlueprint {
 
     pub(crate) fn compare_current_time_v1<Y>(
         other_arbitrary_precision_instant: Instant,
-        precision: TimePrecision,
+        precision: TimePrecisionV1,
         operator: TimeComparisonOperator,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
@@ -788,7 +788,7 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         match precision {
-            TimePrecision::Minute => {
+            TimePrecisionV1::Minute => {
                 let other_epoch_minute = other_arbitrary_precision_instant
                     .seconds_since_unix_epoch
                     .checked_mul(MILLIS_IN_SECOND)
