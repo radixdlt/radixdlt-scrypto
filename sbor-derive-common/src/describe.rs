@@ -317,14 +317,14 @@ mod tests {
             quote! {
                 impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[],
                         &#code_hash
                     );
 
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
-                            stringify!(Test),
+                            "Test",
                             ::sbor::rust::vec![
                                 ("a", <u32 as ::sbor::Describe<C>>::TYPE_ID),
                                 ("b", <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID),
@@ -359,7 +359,7 @@ mod tests {
                     for Test
                 {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[],
                         &#code_hash
                     );
@@ -368,7 +368,7 @@ mod tests {
                             radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>,
                             ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
-                            stringify!(Test),
+                            "Test",
                             ::sbor::rust::vec![
                                 (
                                     "a",
@@ -415,14 +415,14 @@ mod tests {
             quote! {
                 impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[],
                         &#code_hash
                     );
 
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_unnamed_fields(
-                            stringify!(Test),
+                            "Test",
                             ::sbor::rust::vec![
                                 <u32 as ::sbor::Describe<C>>::TYPE_ID,
                                 <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID,
@@ -451,13 +451,13 @@ mod tests {
             quote! {
                 impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[],
                         &#code_hash
                     );
 
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
-                        ::sbor::TypeData::struct_with_unit_fields(stringify!(Test))
+                        ::sbor::TypeData::struct_with_unit_fields("Test")
                     }
                 }
             },
@@ -480,7 +480,7 @@ mod tests {
                     T2: ::sbor::Describe<C>
                 {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[<T>::TYPE_ID, <T2>::TYPE_ID,],
                         &#code_hash
                     );
@@ -488,7 +488,7 @@ mod tests {
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
-                            stringify!(Test),
+                            "Test",
                             ::sbor::rust::prelude::indexmap![
                                 0u8 => ::sbor::TypeData::struct_with_unit_fields("A"),
                                 1u8 => ::sbor::TypeData::struct_with_unnamed_fields(
