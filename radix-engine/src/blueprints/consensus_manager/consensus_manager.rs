@@ -400,7 +400,7 @@ impl ConsensusManagerBlueprint {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
                     aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(),
+                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInputV1>(),
                 ),
                 output: TypeRef::Static(
                     aggregator

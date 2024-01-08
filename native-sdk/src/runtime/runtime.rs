@@ -60,7 +60,7 @@ impl Runtime {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn current_time<Y, E>(api: &mut Y, precision: TimePrecisionV1) -> Result<Instant, E>
+    pub fn current_time<Y, E>(api: &mut Y, precision: TimePrecision) -> Result<Instant, E>
     where
         Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
@@ -68,7 +68,7 @@ impl Runtime {
         let rtn = api.call_method(
             CONSENSUS_MANAGER.as_node_id(),
             CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
-            scrypto_encode(&ConsensusManagerGetCurrentTimeInput { precision }).unwrap(),
+            scrypto_encode(&ConsensusManagerGetCurrentTimeInputV2 { precision }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -77,7 +77,7 @@ impl Runtime {
     pub fn compare_against_current_time<Y, E>(
         api: &mut Y,
         instant: Instant,
-        precision: TimePrecisionV1,
+        precision: TimePrecision,
         operator: TimeComparisonOperator,
     ) -> Result<bool, E>
     where
@@ -87,7 +87,7 @@ impl Runtime {
         let rtn = api.call_method(
             CONSENSUS_MANAGER.as_node_id(),
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
-            scrypto_encode(&ConsensusManagerCompareCurrentTimeInput {
+            scrypto_encode(&ConsensusManagerCompareCurrentTimeInputV2 {
                 precision,
                 instant,
                 operator,

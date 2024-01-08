@@ -221,11 +221,13 @@ pub type TimePrecision = TimePrecisionV2;
 pub const CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT: &str = "get_current_time";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct ConsensusManagerGetCurrentTimeInput {
+#[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
+pub struct ConsensusManagerGetCurrentTimeInputV1 {
     pub precision: TimePrecisionV1,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+#[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
 pub struct ConsensusManagerGetCurrentTimeInputV2 {
     pub precision: TimePrecisionV2,
 }

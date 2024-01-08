@@ -350,7 +350,7 @@ mod tests {
             input,
             Some("radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>"),
         )
-            .unwrap();
+        .unwrap();
 
         assert_code_eq(
             output,

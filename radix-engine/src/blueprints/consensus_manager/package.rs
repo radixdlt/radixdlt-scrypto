@@ -62,9 +62,10 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => {
-                let input: ConsensusManagerGetCurrentTimeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let input: ConsensusManagerGetCurrentTimeInputV1 =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn = ConsensusManagerBlueprint::get_current_time_v1(input.precision, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
