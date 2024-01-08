@@ -2,7 +2,7 @@ use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 
-pub struct WasmValidator {
+pub struct ScryptoV1WasmValidator {
     pub max_memory_size_in_pages: u32,
     pub max_initial_table_size: u32,
     pub max_number_of_br_table_targets: u32,
@@ -13,7 +13,7 @@ pub struct WasmValidator {
     pub instrumenter_config: WasmValidatorConfigV1,
 }
 
-impl Default for WasmValidator {
+impl Default for ScryptoV1WasmValidator {
     fn default() -> Self {
         Self {
             max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
@@ -28,7 +28,7 @@ impl Default for WasmValidator {
     }
 }
 
-impl WasmValidator {
+impl ScryptoV1WasmValidator {
     pub fn validate<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
         &self,
         code: &[u8],
@@ -61,7 +61,7 @@ mod tests {
     use radix_engine_interface::blueprints::package::PackageDefinition;
     use wabt::{wasm2wat, wat2wasm};
 
-    use super::WasmValidator;
+    use super::ScryptoV1WasmValidator;
 
     #[test]
     fn test_validate() {
@@ -99,7 +99,7 @@ mod tests {
         .unwrap();
 
         let instrumented_code = wasm2wat(
-            WasmValidator::default()
+            ScryptoV1WasmValidator::default()
                 .validate(
                     &code,
                     PackageDefinition::new_single_function_test_definition("Test", "f")

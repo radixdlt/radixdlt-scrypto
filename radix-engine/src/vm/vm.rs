@@ -5,7 +5,7 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::types::*;
-use crate::vm::wasm::{WasmEngine, WasmValidator};
+use crate::vm::wasm::{WasmEngine, ScryptoV1WasmValidator};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -178,7 +178,7 @@ impl VmPackageValidation {
             VmType::Native => Ok(None),
             VmType::ScryptoV1 => {
                 // Validate WASM
-                let instrumented_code = WasmValidator::default()
+                let instrumented_code = ScryptoV1WasmValidator::default()
                     .validate(&code, definition.blueprints.values())
                     .map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::PackageError(

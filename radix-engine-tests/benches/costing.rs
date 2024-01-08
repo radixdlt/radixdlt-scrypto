@@ -7,7 +7,7 @@ use radix_engine::{
     utils::ExtractSchemaError,
     vm::{
         wasm::{
-            DefaultWasmEngine, WasmEngine, WasmInstance, WasmModule, WasmRuntime, WasmValidator,
+            DefaultWasmEngine, WasmEngine, WasmInstance, WasmModule, WasmRuntime, ScryptoV1WasmValidator,
         },
         wasm_runtime::NoOpWasmRuntime,
     },
@@ -97,7 +97,7 @@ fn bench_spin_loop(c: &mut Criterion) {
     let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "100000")).unwrap();
 
     // Instrument
-    let validator = WasmValidator::default();
+    let validator = ScryptoV1WasmValidator::default();
     let instrumented_code = validator
         .validate(&code, iter::empty())
         .map_err(|e| ExtractSchemaError::InvalidWasm(e))
@@ -175,7 +175,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
 
     c.bench_function("costing::validate_wasm", |b| {
         b.iter(|| {
-            WasmValidator::default()
+            ScryptoV1WasmValidator::default()
                 .validate(code, definition.blueprints.values())
                 .unwrap()
         })
