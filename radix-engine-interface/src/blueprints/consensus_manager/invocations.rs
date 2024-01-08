@@ -204,13 +204,13 @@ pub struct ConsensusManagerStartInput {}
 pub type ConsensusManagerStartOutput = ();
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Sbor)]
-#[sbor(name = "TimePrecision")]
+#[sbor(type_name = "TimePrecision")]
 pub enum TimePrecisionV1 {
     Minute,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Sbor)]
-#[sbor(name = "TimePrecision")]
+#[sbor(type_name = "TimePrecision")]
 pub enum TimePrecisionV2 {
     Minute,
     Second,

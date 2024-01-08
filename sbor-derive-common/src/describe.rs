@@ -71,15 +71,17 @@ fn handle_transparent_describe(
             };
 
             // Replace the type name, unless opted out using the "transparent_name" tag
-            if !get_sbor_bool_value(&attrs, "transparent_name")? {
+            if !get_sbor_attribute_bool_value(&attrs, "transparent_name")? {
+                let type_name = get_sbor_attribute_string_value(&attrs, "type_name")?
+                    .unwrap_or(ident.to_string());
                 type_data_content = quote! {
                     use ::sbor::rust::prelude::*;
                     #type_data_content
-                        .with_name(Some(Cow::Borrowed(stringify!(#ident))))
+                        .with_name(Some(Cow::Borrowed(#type_name)))
                 };
                 type_id = quote! {
                     ::sbor::RustTypeId::novel_with_code(
-                        stringify!(#ident),
+                        #type_name,
                         &[#type_id],
                         &#code_hash
                     )
@@ -126,15 +128,25 @@ fn handle_normal_describe(
     let (impl_generics, ty_generics, where_clause, child_types, custom_type_kind_generic) =
         build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
 
-    let name = get_sbor_attribute_string_value(&attrs, "name")?;
-    let name_token_stream = if let Some(name) = name {
-        quote! {
-            #name
-        }
-    } else {
-        quote! {
-            stringify!(#ident)
-        }
+    let type_name =
+        get_sbor_attribute_string_value(&attrs, "type_name")?.unwrap_or(ident.to_string());
+
+    let type_id = quote! {
+        ::sbor::RustTypeId::novel_with_code(
+            #type_name,
+            // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
+            // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
+            // different types depending on the generic types providing. Adding in the generic types' TYPE_IDs solves that issue.
+            //
+            // It's still technically possible to get a collision (by abusing type namespacing to have two types with identical code
+            // reference other types) but it's good enough - you're only shooting yourself in the food at that point.
+            //
+            // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
+            // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
+            // which the compiler will throw out for other reasons.
+            &[#(<#child_types>::TYPE_ID,)*],
+            &#code_hash
+        )
     };
 
     let output = match data {
@@ -146,28 +158,13 @@ fn handle_normal_describe(
                     ..
                 } = process_fields_for_describe(&s.fields)?;
                 let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
-
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                            #name_token_stream,
-                            // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
-                            // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
-                            // different types depending on the generic types providing. Adding in the generic types' TYPE_IDs solves that issue.
-                            //
-                            // It's still technically possible to get a collision (by abusing type namespacing to have two types with identical code
-                            // reference other types) but it's good enough - you're only shooting yourself in the food at that point.
-                            //
-                            // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
-                            // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
-                            // which the compiler will throw out for other reasons.
-                            &[#(<#child_types>::TYPE_ID,)*],
-                            &#code_hash
-                        );
+                        const TYPE_ID: ::sbor::RustTypeId = #type_id;
 
                         fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                             ::sbor::TypeData::struct_with_named_fields(
-                                #name_token_stream,
+                                #type_name,
                                 ::sbor::rust::vec![
                                     #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                 ],
@@ -189,25 +186,11 @@ fn handle_normal_describe(
 
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                            #name_token_stream,
-                            // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
-                            // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
-                            // different types depending on the generic types providing. Adding in the generic types' TYPE_IDs solves that issue.
-                            //
-                            // It's still technically possible to get a collision (by abusing type namespacing to have two types with identical code
-                            // reference other types) but it's good enough - you're only shooting yourself in the food at that point.
-                            //
-                            // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
-                            // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
-                            // which the compiler will throw out for other reasons.
-                            &[#(<#child_types>::TYPE_ID,)*],
-                            &#code_hash
-                        );
+                        const TYPE_ID: ::sbor::RustTypeId = #type_id;
 
                         fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                             ::sbor::TypeData::struct_with_unnamed_fields(
-                                #name_token_stream,
+                                #type_name,
                                 ::sbor::rust::vec![
                                     #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                 ],
@@ -223,14 +206,10 @@ fn handle_normal_describe(
             syn::Fields::Unit => {
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                            #name_token_stream,
-                            &[#(<#child_types>::TYPE_ID,)*],
-                            &#code_hash
-                        );
+                        const TYPE_ID: ::sbor::RustTypeId = #type_id;
 
                         fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
-                            ::sbor::TypeData::struct_with_unit_fields(#name_token_stream)
+                            ::sbor::TypeData::struct_with_unit_fields(#type_name)
                         }
                     }
                 }
@@ -290,16 +269,12 @@ fn handle_normal_describe(
 
             quote! {
                 impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        #name_token_stream,
-                        &[#(<#child_types>::TYPE_ID,)*],
-                        &#code_hash
-                    );
+                    const TYPE_ID: ::sbor::RustTypeId = #type_id;
 
                     fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
-                            #name_token_stream,
+                            #type_name,
                             ::sbor::rust::prelude::indexmap![
                                 #(#variant_discriminators => #variant_type_data,)*
                             ],
@@ -342,14 +317,14 @@ mod tests {
             quote! {
                 impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[],
                         &#code_hash
                     );
 
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
-                            stringify!(Test),
+                            "Test",
                             ::sbor::rust::vec![
                                 ("a", <u32 as ::sbor::Describe<C>>::TYPE_ID),
                                 ("b", <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID),
@@ -375,7 +350,7 @@ mod tests {
             input,
             Some("radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>"),
         )
-        .unwrap();
+            .unwrap();
 
         assert_code_eq(
             output,
@@ -384,7 +359,7 @@ mod tests {
                     for Test
                 {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[],
                         &#code_hash
                     );
@@ -393,7 +368,7 @@ mod tests {
                             radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>,
                             ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
-                            stringify!(Test),
+                            "Test",
                             ::sbor::rust::vec![
                                 (
                                     "a",
@@ -440,14 +415,14 @@ mod tests {
             quote! {
                 impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[],
                         &#code_hash
                     );
 
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_unnamed_fields(
-                            stringify!(Test),
+                            "Test",
                             ::sbor::rust::vec![
                                 <u32 as ::sbor::Describe<C>>::TYPE_ID,
                                 <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID,
@@ -476,13 +451,13 @@ mod tests {
             quote! {
                 impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[],
                         &#code_hash
                     );
 
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
-                        ::sbor::TypeData::struct_with_unit_fields(stringify!(Test))
+                        ::sbor::TypeData::struct_with_unit_fields("Test")
                     }
                 }
             },
@@ -505,7 +480,7 @@ mod tests {
                     T2: ::sbor::Describe<C>
                 {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Test),
+                        "Test",
                         &[<T>::TYPE_ID, <T2>::TYPE_ID,],
                         &#code_hash
                     );
@@ -513,7 +488,7 @@ mod tests {
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
-                            stringify!(Test),
+                            "Test",
                             ::sbor::rust::prelude::indexmap![
                                 0u8 => ::sbor::TypeData::struct_with_unit_fields("A"),
                                 1u8 => ::sbor::TypeData::struct_with_unnamed_fields(

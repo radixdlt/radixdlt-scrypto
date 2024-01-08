@@ -126,14 +126,14 @@ pub fn extract_typed_attributes(
             ));
         };
         let Meta::List(MetaList {
-            nested: options, ..
-        }) = meta
-        else {
-            return Err(Error::new(
-                attribute.span(),
-                format!("Expected list-based attribute as #[{name}(..)]"),
-            ));
-        };
+                           nested: options, ..
+                       }) = meta
+            else {
+                return Err(Error::new(
+                    attribute.span(),
+                    format!("Expected list-based attribute as #[{name}(..)]"),
+                ));
+            };
         let error_message = format!("Expected attribute of the form #[{name}(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y.");
         for option in options.into_iter() {
             match option {
@@ -212,7 +212,7 @@ pub fn get_variant_discriminator_mapping(
     }
 
     let use_repr_discriminators =
-        get_sbor_attribute_boolean_value(enum_attributes, "use_repr_discriminators")?;
+        get_sbor_attribute_bool_value(enum_attributes, "use_repr_discriminators")?;
     let mut variant_ids: BTreeMap<usize, VariantValue> = BTreeMap::new();
 
     for (i, variant) in variants.iter().enumerate() {
@@ -302,17 +302,16 @@ fn parse_u8_from_literal(literal: &Lit) -> Option<u8> {
 
 pub fn get_sbor_attribute_string_value(
     attributes: &[Attribute],
-    field_name: &str,
+    attribute_name: &str,
 ) -> Result<Option<String>> {
-    extract_sbor_typed_attributes(attributes)?.get_string_value(&field_name)
+    extract_sbor_typed_attributes(attributes)?.get_string_value(attribute_name)
 }
 
-fn get_sbor_attribute_boolean_value(attributes: &[Attribute], field_name: &str) -> Result<bool> {
-    extract_sbor_typed_attributes(attributes)?.get_bool_value(&field_name)
-}
-
-pub fn get_sbor_bool_value(attributes: &[Attribute], attribute_name: &str) -> Result<bool> {
-    extract_sbor_typed_attributes(&attributes)?.get_bool_value(attribute_name)
+pub fn get_sbor_attribute_bool_value(
+    attributes: &[Attribute],
+    attribute_name: &str,
+) -> Result<bool> {
+    extract_sbor_typed_attributes(attributes)?.get_bool_value(attribute_name)
 }
 
 pub fn is_categorize_skipped(f: &Field) -> Result<bool> {
@@ -364,13 +363,13 @@ pub fn parse_comma_separated_types(source_string: &str) -> syn::Result<Vec<Type>
 
 fn get_child_types(attributes: &[Attribute], existing_generics: &Generics) -> Result<Vec<Type>> {
     let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "child_types")?
-    else {
-        // If no explicit child_types list is set, we use all pre-existing generic type parameters.
-        // This means (eg) that they all have to implement the relevant trait (Encode/Decode/Describe)
-        // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
-        // It's not perfect - but it's typically good enough!
-        return Ok(get_generic_types(existing_generics));
-    };
+        else {
+            // If no explicit child_types list is set, we use all pre-existing generic type parameters.
+            // This means (eg) that they all have to implement the relevant trait (Encode/Decode/Describe)
+            // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
+            // It's not perfect - but it's typically good enough!
+            return Ok(get_generic_types(existing_generics));
+        };
 
     parse_comma_separated_types(&comma_separated_types)
 }
@@ -381,17 +380,17 @@ fn get_types_requiring_categorize_bound_for_encode_and_decode(
 ) -> Result<Vec<Type>> {
     let Some(comma_separated_types) =
         get_sbor_attribute_string_value(attributes, "categorize_types")?
-    else {
-        // A categorize bound is only needed for child types when you have a collection, eg Vec<T>
-        // But if no explicit "categorize_types" is set, we assume all are needed.
-        // > Note as of Aug 2023:
-        //   This is perhaps the wrong call.
-        //   In future, I'd suggest:
-        //   - Change this to assume none, and add categorize_child_types_for_encode if needed.
-        //   - Add separate categorize_child_types_for_categorize - and also default to not needed.
-        // These can be removed / overridden with the "categorize_types" field
-        return Ok(child_types.to_owned());
-    };
+        else {
+            // A categorize bound is only needed for child types when you have a collection, eg Vec<T>
+            // But if no explicit "categorize_types" is set, we assume all are needed.
+            // > Note as of Aug 2023:
+            //   This is perhaps the wrong call.
+            //   In future, I'd suggest:
+            //   - Change this to assume none, and add categorize_child_types_for_encode if needed.
+            //   - Add separate categorize_child_types_for_categorize - and also default to not needed.
+            // These can be removed / overridden with the "categorize_types" field
+            return Ok(child_types.to_owned());
+        };
 
     parse_comma_separated_types(&comma_separated_types)
 }
