@@ -276,9 +276,9 @@ impl ConsensusManagerNativePackage {
     }
 }
 
-pub struct ConsensusManagerTimestampSecondsNativeCode;
+pub struct ConsensusManagerSecondsPrecisionNativeCode;
 
-impl ConsensusManagerTimestampSecondsNativeCode {
+impl ConsensusManagerSecondsPrecisionNativeCode {
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,

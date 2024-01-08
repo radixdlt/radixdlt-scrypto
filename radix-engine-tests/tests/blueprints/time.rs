@@ -1,5 +1,5 @@
 use radix_engine_common::types::{Epoch, Round};
-use radix_engine_interface::blueprints::consensus_manager::TimePrecisionV1;
+use radix_engine_interface::blueprints::consensus_manager::{TimePrecision};
 use radix_engine_interface::time::UtcDateTime;
 use scrypto_unit::*;
 
@@ -29,7 +29,7 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
     // Assert
     assert_eq!(
         test_runner
-            .get_current_time(TimePrecisionV1::Minute)
+            .get_current_time(TimePrecision::Minute)
             .seconds_since_unix_epoch,
         epoch_seconds_rounded_to_minutes
     );

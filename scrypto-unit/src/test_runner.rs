@@ -31,8 +31,8 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
-    ConsensusManagerGetCurrentTimeInputV1, ConsensusManagerNextRoundInput, EpochChangeCondition,
-    LeaderProposalHistory, TimePrecisionV1, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    ConsensusManagerGetCurrentTimeInputV2, ConsensusManagerNextRoundInput, EpochChangeCondition,
+    LeaderProposalHistory, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
     VALIDATOR_STAKE_AS_OWNER_IDENT,
 };
@@ -2391,12 +2391,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .into_latest()
     }
 
-    pub fn get_current_time(&mut self, precision: TimePrecisionV1) -> Instant {
+    pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let receipt = self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInputV1 {
+                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInputV2 {
                     precision
                 }),
             }],

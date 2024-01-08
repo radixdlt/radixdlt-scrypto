@@ -1,7 +1,7 @@
 use crate::blueprints::access_controller::AccessControllerNativePackage;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::consensus_manager::{
-    ConsensusManagerNativePackage, ConsensusManagerTimestampSecondsNativeCode,
+    ConsensusManagerNativePackage, ConsensusManagerSecondsPrecisionNativeCode,
 };
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
@@ -119,8 +119,8 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     CONSENSUS_MANAGER_CODE_ID => {
                         ConsensusManagerNativePackage::invoke_export(export_name, input, api)
                     }
-                    CONSENSUS_MANAGER_TIMESTAMP_SECONDS_CODE_ID => {
-                        ConsensusManagerTimestampSecondsNativeCode::invoke_export(
+                    CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID => {
+                        ConsensusManagerSecondsPrecisionNativeCode::invoke_export(
                             export_name,
                             input,
                             api,

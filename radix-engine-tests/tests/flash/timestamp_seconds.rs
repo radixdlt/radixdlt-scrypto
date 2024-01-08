@@ -1,14 +1,14 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::prelude::ManifestArgs;
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine::utils::generate_timestamp_seconds_state_updates;
+use radix_engine::utils::generate_seconds_precision_state_updates;
 use radix_engine_common::constants::CONSENSUS_MANAGER;
 use radix_engine_common::prelude::{manifest_args, Round};
 use radix_engine_common::prelude::{Epoch};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::{CONSENSUS_MANAGER_NEXT_ROUND_IDENT, ConsensusManagerNextRoundInput};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine_store_interface::interface::{CommittableSubstateDatabase, DatabaseUpdates};
+use radix_engine_store_interface::interface::{CommittableSubstateDatabase};
 use radix_engine_tests::common::PackageLoader;
 use scrypto_unit::{CustomGenesis, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
@@ -35,7 +35,7 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
 
     // Act
     if flash_substates {
-        let state_updates = generate_timestamp_seconds_state_updates(test_runner.substate_db());
+        let state_updates = generate_seconds_precision_state_updates(test_runner.substate_db());
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         test_runner.substate_db_mut().commit(&db_updates);
     }

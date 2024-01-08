@@ -19,7 +19,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::{
     BlueprintPayloadDef, BlueprintVersion, BlueprintVersionKey, CodeHash, VmType,
-    CONSENSUS_MANAGER_TIMESTAMP_SECONDS_CODE_ID,
+    CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID,
 };
 use radix_engine_interface::prelude::HasSchemaHash;
 use radix_engine_interface::prelude::IsHash;
@@ -29,86 +29,116 @@ use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
 use utils::indexmap;
 
-pub fn generate_timestamp_seconds_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+/// Generates the state updates required for updating the Consensus Manager blueprint
+/// to use seconds precision
+pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
     let consensus_mgr_node_id = CONSENSUS_MANAGER_PACKAGE.into_node_id();
-
     let bp_version_key = BlueprintVersionKey {
         blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
         version: BlueprintVersion::default(),
     };
 
-    let versioned_definition: VersionedPackageBlueprintVersionDefinition = reader
-        .read_object_collection_entry(
-            &consensus_mgr_node_id,
-            ObjectModuleId::Main,
-            ObjectCollectionKey::KeyValue(
-                PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
-                &bp_version_key,
-            ),
+    // Generate the new code substates
+    let (new_code_substate, new_vm_type_substate, code_hash) = {
+        let original_code = CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID
+            .to_be_bytes()
+            .to_vec();
+
+        let code_hash = CodeHash::from_hash(hash(&original_code));
+        let versioned_code = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
+            code: original_code,
+        });
+        let code_payload = versioned_code.into_payload();
+        let code_substate = code_payload.into_locked_substate();
+        let vm_type_substate = PackageCodeVmTypeV1 {
+            vm_type: VmType::Native,
+        }
+        .into_versioned()
+        .into_locked_substate();
+        (
+            scrypto_encode(&code_substate).unwrap(),
+            scrypto_encode(&vm_type_substate).unwrap(),
+            code_hash,
+        )
+    };
+
+    // Generate the new schema substate
+    let (
+        new_schema_substate,
+        get_current_time_input_v2_type_id,
+        compare_current_time_input_v2_type_id,
+        new_schema_hash,
+    ) = {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let get_current_time_input_v2 =
+            aggregator.add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInputV2>();
+        let compare_current_time_input_v2 = aggregator
+            .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInputV2>();
+        let schema = generate_full_schema(aggregator);
+        let schema_hash = schema.generate_schema_hash();
+        let schema_substate = schema.into_locked_substate();
+        (
+            scrypto_encode(&schema_substate).unwrap(),
+            get_current_time_input_v2,
+            compare_current_time_input_v2,
+            schema_hash,
+        )
+    };
+
+    // Generate the blueprint definition substate updates
+    let updated_bp_definition_substate = {
+        let versioned_definition: VersionedPackageBlueprintVersionDefinition = reader
+            .read_object_collection_entry(
+                &consensus_mgr_node_id,
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                    &bp_version_key,
+                ),
+            )
+            .unwrap()
+            .unwrap();
+
+        let mut definition = versioned_definition.into_latest();
+
+        let export = definition
+            .function_exports
+            .get_mut(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT)
+            .unwrap();
+        export.code_hash = code_hash;
+        let function_schema = definition
+            .interface
+            .functions
+            .get_mut(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT)
+            .unwrap();
+        function_schema.input = BlueprintPayloadDef::Static(ScopedTypeId(
+            new_schema_hash,
+            get_current_time_input_v2_type_id,
+        ));
+
+        let export = definition
+            .function_exports
+            .get_mut(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT)
+            .unwrap();
+        export.code_hash = code_hash;
+        let function_schema = definition
+            .interface
+            .functions
+            .get_mut(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT)
+            .unwrap();
+        function_schema.input = BlueprintPayloadDef::Static(ScopedTypeId(
+            new_schema_hash,
+            compare_current_time_input_v2_type_id,
+        ));
+
+        scrypto_encode(
+            &VersionedPackageBlueprintVersionDefinition::V1(definition).into_locked_substate(),
         )
         .unwrap()
-        .unwrap();
-    let mut definition = versioned_definition.into_latest();
+    };
 
-    let original_code = CONSENSUS_MANAGER_TIMESTAMP_SECONDS_CODE_ID
-        .to_be_bytes()
-        .to_vec();
-    let code_hash = CodeHash::from_hash(hash(&original_code));
-    let versioned_code = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
-        code: original_code,
-    });
-    let code_payload = versioned_code.into_payload();
-    let code_substate = code_payload.into_locked_substate();
-    let vm_type_substate = PackageCodeVmTypeV1 {
-        vm_type: VmType::Native,
-    }
-    .into_versioned()
-    .into_locked_substate();
-
-    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-    let get_current_time_input_v2 =
-        aggregator.add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInputV2>();
-    let compare_current_time_input_v2 =
-        aggregator.add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInputV2>();
-    let schema = generate_full_schema(aggregator);
-    let schema_hash = schema.generate_schema_hash();
-    let schema_substate = schema.into_locked_substate();
-
-    {
-        let export = definition
-            .function_exports
-            .get_mut(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT)
-            .unwrap();
-        export.code_hash = code_hash;
-        let function_schema = definition
-            .interface
-            .functions
-            .get_mut(CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT)
-            .unwrap();
-        function_schema.input =
-            BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, get_current_time_input_v2));
-    }
-
-    {
-        let export = definition
-            .function_exports
-            .get_mut(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT)
-            .unwrap();
-        export.code_hash = code_hash;
-        let function_schema = definition
-            .interface
-            .functions
-            .get_mut(CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT)
-            .unwrap();
-        function_schema.input =
-            BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, compare_current_time_input_v2));
-    }
-
-    let substate =
-        VersionedPackageBlueprintVersionDefinition::V1(definition).into_locked_substate();
-
-    let partition_num = reader
+    let bp_definition_partition_num = reader
         .get_partition_of_collection(
             &consensus_mgr_node_id,
             ObjectModuleId::Main,
@@ -144,32 +174,26 @@ pub fn generate_timestamp_seconds_state_updates<S: SubstateDatabase>(db: &S) -> 
         by_node: indexmap!(
             consensus_mgr_node_id => NodeStateUpdates::Delta {
                 by_partition: indexmap! {
-                    partition_num => PartitionStateUpdates::Delta {
+                    bp_definition_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()) => DatabaseUpdate::Set(
-                                scrypto_encode(&substate).unwrap(),
+                                updated_bp_definition_substate
                             )
                         }
                     },
                     code_vm_type_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(
-                                scrypto_encode(&vm_type_substate).unwrap(),
-                            )
+                            SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(new_vm_type_substate)
                         }
                     },
                     code_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(
-                                scrypto_encode(&code_substate).unwrap(),
-                            )
+                            SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(new_code_substate)
                         }
                     },
                     schema_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&schema_hash).unwrap()) => DatabaseUpdate::Set(
-                                scrypto_encode(&schema_substate).unwrap(),
-                            )
+                            SubstateKey::Map(scrypto_encode(&new_schema_hash).unwrap()) => DatabaseUpdate::Set(new_schema_substate)
                         }
                     }
                 }
