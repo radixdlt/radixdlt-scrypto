@@ -10,6 +10,12 @@ pub struct TestStructNamed {
 }
 
 #[derive(Sbor, PartialEq, Eq, Debug)]
+#[sbor(transparent, type_name = "TestStructRenamed2")]
+pub struct TestStructRenamed {
+    pub state: u32,
+}
+
+#[derive(Sbor, PartialEq, Eq, Debug)]
 #[sbor(transparent)]
 pub struct TestStructUnnamed(u32);
 
@@ -134,6 +140,7 @@ fn decode_is_correct() {
 fn describe_is_correct() {
     // With inner u32
     check_identical_types::<TestStructNamed, u32>("TestStructNamed");
+    check_identical_types::<TestStructRenamed, u32>("TestStructRenamed2");
     check_identical_types::<TestStructUnnamed, u32>("TestStructUnnamed");
     check_identical_types::<TestStruct<u32>, u32>("TestStruct");
 
