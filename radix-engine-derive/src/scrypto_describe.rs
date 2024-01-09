@@ -31,13 +31,13 @@ mod tests {
             quote! {
                 impl ::sbor::Describe<radix_engine_common::data::scrypto::ScryptoCustomTypeKind > for MyStruct {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(MyStruct),
+                        "MyStruct",
                         &[],
                         &#code_hash
                     );
                     fn type_data() -> ::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
-                            stringify!(MyStruct),
+                            "MyStruct",
                             ::sbor::rust::vec![],
                         )
                     }
@@ -63,13 +63,13 @@ mod tests {
                     >
                 {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(Thing),
+                        "Thing",
                         &[<T>::TYPE_ID,],
                         &#code_hash
                     );
                     fn type_data() -> ::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
-                            stringify!(Thing),
+                            "Thing",
                             ::sbor::rust::vec![
                                 ("field", <T as ::sbor::Describe<radix_engine_common::data::scrypto::ScryptoCustomTypeKind >>::TYPE_ID),
                             ],
@@ -99,14 +99,14 @@ mod tests {
                     T: ::sbor::Describe<radix_engine_common::data::scrypto::ScryptoCustomTypeKind >
                 {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
-                        stringify!(MyEnum),
+                        "MyEnum",
                         &[<T>::TYPE_ID,],
                         &#code_hash
                     );
                     fn type_data() -> ::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
-                            stringify!(MyEnum),
+                            "MyEnum",
                             :: sbor :: rust :: prelude :: indexmap ! [
                                 0u8 => :: sbor :: TypeData :: struct_with_named_fields ("A", :: sbor :: rust :: vec ! [("named", < T as :: sbor :: Describe < radix_engine_common::data::scrypto::ScryptoCustomTypeKind >> :: TYPE_ID) ,] ,) ,
                                 1u8 => :: sbor :: TypeData :: struct_with_unnamed_fields ("B", :: sbor :: rust :: vec ! [< String as :: sbor :: Describe < radix_engine_common::data::scrypto::ScryptoCustomTypeKind >> :: TYPE_ID ,] ,) ,
