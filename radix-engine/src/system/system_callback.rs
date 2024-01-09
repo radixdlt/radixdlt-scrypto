@@ -101,12 +101,14 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type CallFrameData = Actor;
     type LockData = SystemLockData;
-    type CallbackState = ();
+    type CallbackState = C::CallbackState;
 
-    fn init(&mut self) -> Result<(), RuntimeError> {
+    fn init(&mut self) -> Result<C::CallbackState, RuntimeError> {
         self.modules.on_init()?;
 
-        Ok(())
+        let callback_state = self.callback_obj.init()?;
+
+        Ok(callback_state)
     }
 
     fn start<Y>(

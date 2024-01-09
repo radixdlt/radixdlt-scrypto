@@ -7,6 +7,10 @@ use radix_engine_interface::blueprints::package::PackageExport;
 
 /// Invocation callback invoked by the system layer
 pub trait SystemCallbackObject: Sized {
+    type CallbackState;
+
+    fn init(&mut self) -> Result<Self::CallbackState, RuntimeError>;
+
     fn invoke<Y>(
         package_address: &PackageAddress,
         package_export: PackageExport,

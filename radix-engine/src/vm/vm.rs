@@ -34,6 +34,12 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
 }
 
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
+    type CallbackState = ();
+
+    fn init(&mut self) -> Result<Self::CallbackState, RuntimeError> {
+        Ok(())
+    }
+
     fn invoke<Y>(
         address: &PackageAddress,
         export: PackageExport,
