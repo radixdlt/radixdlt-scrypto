@@ -37,8 +37,10 @@ pub struct KernelBoot<'g, M: KernelCallbackObject, S: CommitableSubstateStore> {
 }
 
 impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
-    pub fn create_kernel(&mut self) -> Kernel<M, S> {
-        Kernel {
+    pub fn create_kernel(&mut self) -> Result<Kernel<M, S>, RuntimeError> {
+        let callback_state = self.callback.init()?;
+
+        let kernel = Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
                 store: self.store,
@@ -51,7 +53,10 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
             current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
             callback: self.callback,
-        }
+            callback_state,
+        };
+
+        Ok(kernel)
     }
 }
 
@@ -69,9 +74,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, 
             v.borrow_mut();
         });
 
-        self.callback.init()?;
-
-        let mut kernel = self.create_kernel();
+        let mut kernel = self.create_kernel()?;
 
         // Reference management
         for reference in references.iter() {
@@ -177,6 +180,7 @@ pub struct Kernel<
 
     /// Upper system layer
     callback: &'g mut M,
+    callback_state: M::CallbackState,
 }
 
 struct KernelHandler<
@@ -1188,6 +1192,7 @@ where
         current_frame: CallFrame<M::CallFrameData, M::LockData>,
         prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
         callback: &'g mut M,
+        callback_state: M::CallbackState,
     ) -> Kernel<'g, M, S> {
         Self {
             current_frame,
@@ -1195,6 +1200,7 @@ where
             substate_io,
             id_allocator,
             callback,
+            callback_state,
         }
     }
 

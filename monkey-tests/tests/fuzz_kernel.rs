@@ -517,7 +517,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel();
+    let mut kernel = kernel_boot.create_kernel()?;
 
     let mut fuzzer = KernelFuzzer::new(seed);
 
