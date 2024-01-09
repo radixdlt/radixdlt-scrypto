@@ -17,7 +17,7 @@ use crate::system::actor::Actor;
 use crate::system::actor::BlueprintHookActor;
 use crate::system::actor::FunctionActor;
 use crate::system::actor::MethodActor;
-use crate::system::module::SystemModule;
+use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
@@ -102,11 +102,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type CallFrameData = Actor;
     type LockData = SystemLockData;
 
-    fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_init(api)
+    fn on_init(&mut self) -> Result<(), RuntimeError> {
+        self.modules.on_init()
     }
 
     fn start<Y>(

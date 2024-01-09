@@ -1360,6 +1360,7 @@ impl PackageNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         validate_royalties(&definition, api)?;
+
         let package_structure = Self::validate_and_build_package_structure(
             definition,
             VmType::ScryptoV1,

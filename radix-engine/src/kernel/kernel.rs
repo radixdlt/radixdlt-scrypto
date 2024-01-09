@@ -69,9 +69,9 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, 
             v.borrow_mut();
         });
 
-        let mut kernel = self.create_kernel();
+        self.callback.on_init()?;
 
-        M::on_init(&mut kernel)?;
+        let mut kernel = self.create_kernel();
 
         // Reference management
         for reference in references.iter() {

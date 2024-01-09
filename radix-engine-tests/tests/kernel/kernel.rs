@@ -50,10 +50,7 @@ impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
 
-    fn on_init<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_init(&mut self) -> Result<(), RuntimeError> {
         Ok(())
     }
 

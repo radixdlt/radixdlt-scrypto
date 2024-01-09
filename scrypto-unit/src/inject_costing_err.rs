@@ -98,12 +98,8 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
     type LockData = K::LockData;
     type CallFrameData = K::CallFrameData;
 
-    fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        let mut api = wrapped_api!(api);
-        K::on_init(&mut api)
+    fn on_init(&mut self) -> Result<(), RuntimeError> {
+        self.callback_object.on_init()
     }
 
     fn start<Y>(

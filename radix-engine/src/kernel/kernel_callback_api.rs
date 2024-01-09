@@ -130,9 +130,7 @@ pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
 
-    fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+    fn on_init(&mut self) -> Result<(), RuntimeError>;
 
     fn start<Y>(
         api: &mut Y,

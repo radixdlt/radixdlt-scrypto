@@ -67,10 +67,7 @@ impl KernelCallbackObject for TestCallbackObject {
         unreachable!()
     }
 
-    fn on_init<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_init(&mut self) -> Result<(), RuntimeError> {
         Ok(())
     }
 
