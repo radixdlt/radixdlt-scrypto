@@ -129,8 +129,9 @@ pub enum ScanSortedSubstatesEvent<'a> {
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
+    type CallbackState;
 
-    fn on_init(&mut self) -> Result<(), RuntimeError>;
+    fn init(&mut self) -> Result<Self::CallbackState, RuntimeError>;
 
     fn start<Y>(
         api: &mut Y,

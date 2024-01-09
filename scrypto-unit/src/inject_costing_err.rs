@@ -97,9 +97,10 @@ macro_rules! wrapped_internal_api {
 impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingError<K> {
     type LockData = K::LockData;
     type CallFrameData = K::CallFrameData;
+    type CallbackState = K::CallbackState;
 
-    fn on_init(&mut self) -> Result<(), RuntimeError> {
-        self.callback_object.on_init()
+    fn init(&mut self) -> Result<Self::CallbackState, RuntimeError> {
+        self.callback_object.init()
     }
 
     fn start<Y>(

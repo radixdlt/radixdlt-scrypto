@@ -49,8 +49,9 @@ struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
+    type CallbackState = ();
 
-    fn on_init(&mut self) -> Result<(), RuntimeError> {
+    fn init(&mut self) -> Result<(), RuntimeError> {
         Ok(())
     }
 

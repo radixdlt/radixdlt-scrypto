@@ -69,7 +69,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, 
             v.borrow_mut();
         });
 
-        self.callback.on_init()?;
+        self.callback.init()?;
 
         let mut kernel = self.create_kernel();
 
