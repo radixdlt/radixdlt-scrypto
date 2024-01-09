@@ -23,6 +23,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::prelude::HasSchemaHash;
 use radix_engine_interface::prelude::IsHash;
+use radix_engine_interface::prelude::ToString;
 use radix_engine_interface::types::CollectionDescriptor;
 use radix_engine_store_interface::interface::{DatabaseUpdate, SubstateDatabase};
 use sbor::HasLatestVersion;
