@@ -1,4 +1,3 @@
-use crate::crypto::*;
 use crate::internal_prelude::*;
 
 pub trait ClientCryptoUtilsApi<E> {
@@ -11,8 +10,7 @@ pub trait ClientCryptoUtilsApi<E> {
 
     fn bls12381_v1_aggregate_verify(
         &mut self,
-        messages: &[&[u8]],
-        public_keys: &[Bls12381G1PublicKey],
+        pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
         signature: &Bls12381G2Signature,
     ) -> Result<u32, E>;
 

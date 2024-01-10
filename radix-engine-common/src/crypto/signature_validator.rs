@@ -79,22 +79,23 @@ pub fn verify_bls12381_v1(
 /// multiple messages each signed with different key.
 /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
 pub fn aggregate_verify_bls12381_v1(
-    messages: &[&[u8]],
-    public_keys: &[Bls12381G1PublicKey],
+    pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
     signature: &Bls12381G2Signature,
 ) -> bool {
     if let Ok(sig) = blst::min_pk::Signature::from_bytes(&signature.0) {
         let mut pks = vec![];
-        for pk in public_keys {
+        let mut msg_refs = vec![];
+        for (pk, msg) in pub_keys_and_msgs.iter() {
             if let Ok(pk) = blst::min_pk::PublicKey::from_bytes(&pk.0) {
                 pks.push(pk);
             } else {
                 return false;
             }
+            msg_refs.push(msg.as_slice());
         }
         let pks_refs: Vec<&blst::min_pk::PublicKey> = pks.iter().collect();
 
-        let result = sig.aggregate_verify(true, messages, BLS12381_CIPHERSITE_V1, &pks_refs, true);
+        let result = sig.aggregate_verify(true, &msg_refs, BLS12381_CIPHERSITE_V1, &pks_refs, true);
 
         match result {
             blst::BLST_ERROR::BLST_SUCCESS => return true,
