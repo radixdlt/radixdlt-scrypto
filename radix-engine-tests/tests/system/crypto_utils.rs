@@ -24,6 +24,36 @@ macro_rules! get_failure {
     };
 }
 
+fn get_aggregate_verify_test_data(
+    cnt: u32,
+    msg_size: usize,
+) -> (
+    Vec<Bls12381G1PrivateKey>,
+    Vec<Bls12381G1PublicKey>,
+    Vec<Vec<u8>>,
+    Vec<Bls12381G2Signature>,
+) {
+    let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
+        .map(|i| Bls12381G1PrivateKey::from_u64(i.into()).unwrap())
+        .collect();
+
+    let msgs: Vec<Vec<u8>> = (1..(cnt + 1))
+        .map(|i| {
+            let u: u8 = (i % u8::MAX as u32) as u8;
+            vec![u; msg_size]
+        })
+        .collect();
+    let sigs: Vec<Bls12381G2Signature> = sks
+        .iter()
+        .zip(msgs.clone())
+        .map(|(sk, msg)| sk.sign_v1(&msg))
+        .collect();
+
+    let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+
+    (sks, pks, msgs, sigs)
+}
+
 fn crypto_scrypto_bls12381_v1_verify(
     runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
@@ -179,18 +209,7 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
 
     let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
-    let sks: Vec<Bls12381G1PrivateKey> = (1..11)
-        .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
-        .collect();
-
-    // Multiple messages
-    let msgs: Vec<Vec<u8>> = (1u8..11).map(|i| vec![i; 10]).collect();
-
-    let sigs: Vec<Bls12381G2Signature> = sks
-        .iter()
-        .zip(msgs.clone())
-        .map(|(sk, msg)| sk.sign_v1(&msg))
-        .collect();
+    let (_sks, _pks, _msgs, sigs) = get_aggregate_verify_test_data(10, 10);
 
     // Aggregate the signature
     let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs).unwrap();
@@ -201,6 +220,9 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
             .expect_commit_success()
             .output(1);
 
+    // Assert
+    assert_eq!(agg_sig_multiple_msgs, agg_sig_from_scrypto);
+
     // Attempt to aggregate signature from empty input
     let error_message =
         crypto_scrypto_bls12381_g2_signature_aggregate(&mut test_runner, package_address, vec![])
@@ -210,7 +232,6 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
             .to_string();
 
     // Assert
-    assert_eq!(agg_sig_multiple_msgs, agg_sig_from_scrypto);
     assert!(error_message.contains("InputDataEmpty"));
 }
 
@@ -221,20 +242,7 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
 
     let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
-    let sks: Vec<Bls12381G1PrivateKey> = (1..11)
-        .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
-        .collect();
-
-    // Multiple messages
-    let msgs: Vec<Vec<u8>> = (1u8..11).map(|i| vec![i; 10]).collect();
-
-    let sigs: Vec<Bls12381G2Signature> = sks
-        .iter()
-        .zip(msgs.clone())
-        .map(|(sk, msg)| sk.sign_v1(&msg))
-        .collect();
-
-    let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+    let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10);
 
     // Aggregate the signature
     let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs).unwrap();
@@ -544,21 +552,8 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
     let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
-        for cnt in [1u8, 2, 5, 10, 20] {
-            let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
-                .map(|i| Bls12381G1PrivateKey::from_u64(i.into()).unwrap())
-                .collect();
-
-            // Multiple messages
-            let msgs: Vec<Vec<u8>> = (1..(cnt + 1)).map(|i| vec![i; msg_size]).collect();
-
-            let sigs: Vec<Bls12381G2Signature> = sks
-                .iter()
-                .zip(msgs.clone())
-                .map(|(sk, msg)| sk.sign_v1(&msg))
-                .collect();
-
-            let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+        for cnt in [1u32, 2, 5, 10, 20] {
+            let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(cnt, msg_size);
 
             let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs).unwrap();
 
@@ -571,6 +566,67 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
             );
         }
     }
+}
+
+#[test]
+fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+
+    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+
+    for (cnt, msg_size) in [
+        (1, 100 * 1024),
+        (2, 50 * 1024),
+        (5, 20 * 1024),
+        (10, 10 * 1024),
+        (100, 1024),
+        (1024, 100),
+    ] {
+        let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(cnt, msg_size);
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+        let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
+            &mut test_runner,
+            package_address,
+            msgs,
+            pks,
+            agg_sig,
+        );
+    }
+
+    // 1x 99kB and 1000x1B
+    let (mut sks1, mut pks1, mut msgs1, mut sigs1) = get_aggregate_verify_test_data(1, 99 * 1024);
+    let (mut sks2, mut pks2, mut msgs2, mut sigs2) = get_aggregate_verify_test_data(1000, 1);
+    sks1.append(&mut sks2);
+    pks1.append(&mut pks2);
+    msgs1.append(&mut msgs2);
+    sigs1.append(&mut sigs2);
+    let agg_sig = Bls12381G2Signature::aggregate(&sigs1).unwrap();
+
+    let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
+        &mut test_runner,
+        package_address,
+        msgs1,
+        pks1,
+        agg_sig,
+    );
+
+    // 1x 90kB and 10 x 1kB
+    let (mut sks1, mut pks1, mut msgs1, mut sigs1) = get_aggregate_verify_test_data(1, 90 * 1024);
+    let (mut sks2, mut pks2, mut msgs2, mut sigs2) = get_aggregate_verify_test_data(10, 1024);
+    sks1.append(&mut sks2);
+    pks1.append(&mut pks2);
+    msgs1.append(&mut msgs2);
+    sigs1.append(&mut sigs2);
+    let agg_sig = Bls12381G2Signature::aggregate(&sigs1).unwrap();
+
+    let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
+        &mut test_runner,
+        package_address,
+        msgs1,
+        pks1,
+        agg_sig,
+    );
 }
 
 #[test]
