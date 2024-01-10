@@ -1,7 +1,7 @@
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::{Bootloader, Kernel};
+use radix_engine::kernel::kernel::{BootLoader, Kernel};
 use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
@@ -512,12 +512,12 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     let mut substate_db = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let mut callback = TestCallbackObject;
-    let mut kernel_boot = Bootloader {
+    let mut boot_loader = BootLoader {
         id_allocator: &mut id_allocator,
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.boot()?;
+    let mut kernel = boot_loader.boot()?;
 
     let mut fuzzer = KernelFuzzer::new(seed);
 
