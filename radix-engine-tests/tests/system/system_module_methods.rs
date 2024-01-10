@@ -4,7 +4,7 @@ use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmInvoke};
+use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
@@ -24,14 +24,16 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y>(
+        fn invoke<Y, V>(
             &mut self,
             _export_name: &str,
             input: &IndexedScryptoValue,
             api: &mut Y,
+            _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
         {
             let node_id = input.references()[0];
             let _ = api.call_module_method(
@@ -106,14 +108,16 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y>(
+        fn invoke<Y, V>(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
+            _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
         {
             match export_name {
                 "test" => {
@@ -176,14 +180,16 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
         globalized_parent: bool,
     }
     impl VmInvoke for TestInvoke {
-        fn invoke<Y>(
+        fn invoke<Y, V>(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
+            _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
         {
             match export_name {
                 "test" => {

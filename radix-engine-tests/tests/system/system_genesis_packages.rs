@@ -3,7 +3,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmInvoke};
+use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltiesInput, PackageDefinition, PACKAGE_CLAIM_ROYALTIES_IDENT,
@@ -20,14 +20,16 @@ fn claiming_royalties_on_native_packages_should_be_unauthorized() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y>(
+        fn invoke<Y, V>(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
+            _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
         {
             match export_name {
                 "test" => {

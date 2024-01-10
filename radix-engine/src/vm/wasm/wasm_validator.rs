@@ -11,10 +11,11 @@ pub struct ScryptoV1WasmValidator {
     pub max_number_of_function_locals: u32,
     pub max_number_of_globals: u32,
     pub instrumenter_config: WasmValidatorConfigV1,
+    pub minor_version: u64,
 }
 
-impl Default for ScryptoV1WasmValidator {
-    fn default() -> Self {
+impl ScryptoV1WasmValidator {
+    pub fn new(minor_version: u64) -> Self {
         Self {
             max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
             max_initial_table_size: MAX_INITIAL_TABLE_SIZE,
@@ -24,6 +25,7 @@ impl Default for ScryptoV1WasmValidator {
             max_number_of_function_locals: MAX_NUMBER_OF_FUNCTION_LOCALS,
             max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
             instrumenter_config: WasmValidatorConfigV1::new(),
+            minor_version,
         }
     }
 }
@@ -99,7 +101,7 @@ mod tests {
         .unwrap();
 
         let instrumented_code = wasm2wat(
-            ScryptoV1WasmValidator::default()
+            ScryptoV1WasmValidator::new(0u64)
                 .validate(
                     &code,
                     PackageDefinition::new_single_function_test_definition("Test", "f")

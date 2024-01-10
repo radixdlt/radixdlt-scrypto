@@ -4,7 +4,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmInvoke};
+use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::{
     AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_OUTER_OBJECT,
 };
@@ -20,14 +20,16 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y>(
+        fn invoke<Y, V>(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
+            _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
         {
             match export_name {
                 "test" => {

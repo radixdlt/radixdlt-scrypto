@@ -221,14 +221,16 @@ impl NativeVmExtension for NonStringPanicExtension {
 pub struct NonStringPanicExtensionInstance;
 
 impl VmInvoke for NonStringPanicExtensionInstance {
-    fn invoke<Y>(
+    fn invoke<Y, V>(
         &mut self,
         _: &str,
         _: &IndexedScryptoValue,
         _: &mut Y,
+        _: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
     {
         // A panic with a non-string type. Making sure that our panic infrastructure can catch those
         // panics too even if it can't make any useful messages out of them.

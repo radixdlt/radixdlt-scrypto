@@ -34,9 +34,19 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
     }
 }
 
-#[derive(Default)]
+pub trait VmApi {
+    fn get_scrypto_minor_version(&self) -> u64;
+}
+
+#[derive(Debug, Clone, Copy, Default)]
 pub struct VmVersion {
     scrypto_v1_minor_version: u64,
+}
+
+impl VmApi for VmVersion {
+    fn get_scrypto_minor_version(&self) -> u64 {
+        self.scrypto_v1_minor_version
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -108,6 +118,8 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 .unwrap_or_else(|| panic!("Vm type not found: {:?}", export))
         };
 
+        let vm_api = api.kernel_get_system_state().state.clone();
+
         let output = match vm_type.into_latest().vm_type {
             VmType::Native => {
                 let original_code = {
@@ -138,7 +150,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     .callback_obj
                     .native_vm
                     .create_instance(address, &original_code.into_latest().code)?;
-                let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
+                let output = { vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)? };
 
                 output
             }
@@ -183,7 +195,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 })?;
 
                 let output =
-                    { scrypto_vm_instance.invoke(export.export_name.as_str(), input, api)? };
+                    { scrypto_vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)? };
 
                 output
             }
@@ -195,29 +207,34 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 
 pub trait VmInvoke {
     // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api
-    fn invoke<Y>(
+    fn invoke<Y, V>(
         &mut self,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
+        vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>;
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi;
 }
 
 pub struct VmPackageValidation;
 
 impl VmPackageValidation {
-    pub fn validate(
+    pub fn validate<V: VmApi>(
         definition: &PackageDefinition,
         vm_type: VmType,
         code: &[u8],
+        vm_api: &V,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         match vm_type {
             VmType::Native => Ok(None),
             VmType::ScryptoV1 => {
+                let minor_version = vm_api.get_scrypto_minor_version();
+
                 // Validate WASM
-                let instrumented_code = ScryptoV1WasmValidator::default()
+                let instrumented_code = ScryptoV1WasmValidator::new(minor_version)
                     .validate(&code, definition.blueprints.values())
                     .map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::PackageError(
