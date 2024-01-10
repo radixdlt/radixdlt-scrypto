@@ -4,7 +4,7 @@ use radix_engine::kernel::call_frame::{
     PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::KernelBoot;
+use radix_engine::kernel::kernel::KernelBootloader;
 use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
@@ -51,7 +51,7 @@ impl KernelCallbackObject for TestCallbackObject {
     type CallFrameData = TestCallFrameData;
     type CallbackState = ();
 
-    fn init<S: CommitableSubstateStore>(&mut self, _store: &mut S) -> Result<(), RuntimeError> {
+    fn init<S: CommitableSubstateStore>(&mut self, _store: &S) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -262,7 +262,7 @@ fn kernel_move_node_via_create_with_opened_substate(
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut callback = TestCallbackObject;
-    let mut kernel_boot = KernelBoot {
+    let mut kernel_boot = KernelBootloader {
         id_allocator: &mut id_allocator,
         callback: &mut callback,
         store: &mut track,
@@ -404,7 +404,7 @@ fn kernel_close_substate_should_fail_if_opened_child_exists() {
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut callback = TestCallbackObject;
-    let mut kernel_boot = KernelBoot {
+    let mut kernel_boot = KernelBootloader {
         id_allocator: &mut id_allocator,
         callback: &mut callback,
         store: &mut track,

@@ -13,7 +13,7 @@ use crate::blueprints::transaction_tracker::{
 use crate::errors::*;
 use crate::internal_prelude::KeyValueEntrySubstateV1;
 use crate::kernel::id_allocator::IdAllocator;
-use crate::kernel::kernel::KernelBoot;
+use crate::kernel::kernel::KernelBootloader;
 use crate::kernel::kernel_callback_api::*;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -638,7 +638,7 @@ where
 
         let mut wrapped_system = T::create(system, init);
 
-        let kernel_boot = KernelBoot {
+        let kernel_boot = KernelBootloader {
             id_allocator: &mut id_allocator,
             callback: &mut wrapped_system,
             store: track,

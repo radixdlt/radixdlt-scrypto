@@ -70,7 +70,7 @@ pub trait CommitableSubstateStore {
     ) -> TrackedSubstateInfo;
 
     fn read_boot_substate(
-        &mut self,
+        &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,

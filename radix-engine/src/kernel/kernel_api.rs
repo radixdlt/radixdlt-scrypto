@@ -174,6 +174,7 @@ pub trait KernelInvokeApi<C> {
 
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
+    pub state: &'a M::CallbackState,
     pub current_call_frame: &'a M::CallFrameData,
     pub caller_call_frame: &'a M::CallFrameData,
 }

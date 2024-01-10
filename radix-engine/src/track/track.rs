@@ -402,7 +402,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         info
     }
 
-    fn read_boot_substate(&mut self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Option<IndexedScryptoValue> {
+    fn read_boot_substate(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
         let db_sort_key = M::to_db_sort_key(&substate_key);
 

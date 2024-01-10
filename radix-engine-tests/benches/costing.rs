@@ -7,7 +7,8 @@ use radix_engine::{
     utils::ExtractSchemaError,
     vm::{
         wasm::{
-            DefaultWasmEngine, WasmEngine, WasmInstance, WasmModule, WasmRuntime, ScryptoV1WasmValidator,
+            DefaultWasmEngine, ScryptoV1WasmValidator, WasmEngine, WasmInstance, WasmModule,
+            WasmRuntime,
         },
         wasm_runtime::NoOpWasmRuntime,
     },

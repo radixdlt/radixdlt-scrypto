@@ -4,8 +4,9 @@ use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstate
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::KeyValueEntrySubstate;
+use crate::track::CommitableSubstateStore;
 use crate::types::*;
-use crate::vm::wasm::{WasmEngine, ScryptoV1WasmValidator};
+use crate::vm::wasm::{ScryptoV1WasmValidator, WasmEngine};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -33,11 +34,43 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
     }
 }
 
-impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
-    type CallbackState = ();
+#[derive(Default)]
+pub struct VmVersion {
+    scrypto_v1_minor_version: u64,
+}
 
-    fn init(&mut self) -> Result<Self::CallbackState, RuntimeError> {
-        Ok(())
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum VmBoot {
+    V1 { scrypto_v1_minor_version: u64 },
+}
+
+impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
+    type CallbackState = VmVersion;
+
+    fn init<S: CommitableSubstateStore>(
+        &mut self,
+        store: &S,
+    ) -> Result<Self::CallbackState, RuntimeError> {
+        let vm_boot = store
+            .read_boot_substate(
+                &NodeId::new(13u8, &[1u8; NodeId::RID_LENGTH]),
+                PartitionNumber(2u8),
+                &SubstateKey::Field(0u8),
+            )
+            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .unwrap_or(VmBoot::V1 {
+                scrypto_v1_minor_version: 0u64,
+            });
+
+        let vm_version = match vm_boot {
+            VmBoot::V1 {
+                scrypto_v1_minor_version,
+            } => VmVersion {
+                scrypto_v1_minor_version,
+            },
+        };
+
+        Ok(vm_version)
     }
 
     fn invoke<Y>(

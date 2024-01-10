@@ -99,7 +99,10 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
     type CallFrameData = K::CallFrameData;
     type CallbackState = K::CallbackState;
 
-    fn init<S: CommitableSubstateStore>(&mut self, store: &mut S) -> Result<Self::CallbackState, RuntimeError> {
+    fn init<S: CommitableSubstateStore>(
+        &mut self,
+        store: &S,
+    ) -> Result<Self::CallbackState, RuntimeError> {
         self.callback_object.init(store)
     }
 
@@ -518,6 +521,7 @@ impl<'a, M: KernelCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInt
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
+            state: &state.state,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
@@ -561,6 +565,7 @@ impl<'a, M: KernelCallbackObject, K: KernelInternalApi<InjectCostingError<M>>> K
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
+            state: &state.state,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }

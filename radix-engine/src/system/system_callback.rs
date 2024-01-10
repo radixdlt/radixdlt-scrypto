@@ -23,6 +23,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
+use crate::track::CommitableSubstateStore;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -41,7 +42,6 @@ use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::RefTypes;
 use transaction::model::PreAllocatedAddress;
-use crate::track::CommitableSubstateStore;
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -104,17 +104,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type LockData = SystemLockData;
     type CallbackState = C::CallbackState;
 
-    fn init<S: CommitableSubstateStore>(&mut self, store: &mut S) -> Result<C::CallbackState, RuntimeError> {
+    fn init<S: CommitableSubstateStore>(
+        &mut self,
+        store: &S,
+    ) -> Result<C::CallbackState, RuntimeError> {
         self.modules.on_init()?;
 
-        // Temporary just to prove it's possible
-        let _ = store.read_boot_substate(
-            &NodeId::new(13u8, &[1u8; NodeId::RID_LENGTH]),
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        );
-
-        let callback_state = self.callback_obj.init()?;
+        let callback_state = self.callback_obj.init(store)?;
 
         Ok(callback_state)
     }

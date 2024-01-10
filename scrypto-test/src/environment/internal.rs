@@ -112,7 +112,7 @@ impl EncapsulatedRadixEngine {
             CallFrame::new_root(Actor::Root),
             vec![],
             system_config,
-            (),
+            VmVersion::default(),
         )
     }
 }
