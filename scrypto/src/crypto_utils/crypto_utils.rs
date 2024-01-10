@@ -32,17 +32,14 @@ impl CryptoUtils {
     /// multiple messages each signed with different key.
     /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
     pub fn bls12381_v1_aggregate_verify(
-        messages: Vec<Vec<u8>>,
-        public_keys: Vec<Bls12381G1PublicKey>,
+        pub_keys_and_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)>,
         signature: Bls12381G2Signature,
     ) -> bool {
-        let messages: Vec<u8> = scrypto_encode(&messages).unwrap();
+        let pub_keys_and_msgs: Vec<u8> = scrypto_encode(&pub_keys_and_msgs).unwrap();
         unsafe {
             crypto_utils::crypto_utils_bls12381_v1_aggregate_verify(
-                messages.as_ptr(),
-                messages.len(),
-                public_keys.as_ptr() as *const u8,
-                public_keys.len() * Bls12381G1PublicKey::LENGTH,
+                pub_keys_and_msgs.as_ptr(),
+                pub_keys_and_msgs.len(),
                 signature.0.as_ptr(),
                 signature.0.len(),
             ) != 0

@@ -52,6 +52,12 @@ fn crypto_scrypto_bls12381_v1_aggregate_verify(
     pub_keys: Vec<Bls12381G1PublicKey>,
     signature: Bls12381G2Signature,
 ) -> TransactionReceiptV1 {
+    let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> = pub_keys
+        .iter()
+        .zip(msgs)
+        .map(|(pk, sk)| (*pk, sk))
+        .collect();
+
     runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(runner.faucet_component(), 500u32)
@@ -59,7 +65,7 @@ fn crypto_scrypto_bls12381_v1_aggregate_verify(
                 package_address,
                 "CryptoScrypto",
                 "bls12381_v1_aggregate_verify",
-                manifest_args!(msgs, pub_keys, signature),
+                manifest_args!(pub_keys_msgs, signature),
             )
             .build(),
         vec![],
