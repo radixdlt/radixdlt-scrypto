@@ -585,7 +585,8 @@ where
         let signature: Bls12381G2Signature =
             scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
         let pub_keys_and_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
-            scrypto_decode(&pub_keys_and_msgs).map_err(WasmRuntimeError::InvalidBlsInput)?;
+            scrypto_decode(&pub_keys_and_msgs)
+                .map_err(WasmRuntimeError::InvalidBlsPublicKeyOrMessage)?;
 
         let result = self
             .api
