@@ -697,21 +697,18 @@ impl WasmerModule {
 
         pub fn bls12381_v1_aggregate_verify(
             env: &WasmerInstanceEnv,
-            messages_ptr: u32,
-            messages_len: u32,
-            public_keys_ptr: u32,
-            public_keys_len: u32,
+            pub_keys_and_msgs_ptr: u32,
+            pub_keys_and_msgs_len: u32,
             signature_ptr: u32,
             signature_len: u32,
         ) -> Result<u32, InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let messages = read_memory(&instance, messages_ptr, messages_len)?;
-
-            let public_keys = read_memory(&instance, public_keys_ptr, public_keys_len)?;
+            let pub_keys_and_msgs =
+                read_memory(&instance, pub_keys_and_msgs_ptr, pub_keys_and_msgs_len)?;
             let signature = read_memory(instance, signature_ptr, signature_len)?;
 
-            runtime.crypto_utils_bls12381_v1_aggregate_verify(messages, public_keys, signature)
+            runtime.crypto_utils_bls12381_v1_aggregate_verify(pub_keys_and_msgs, signature)
         }
 
         pub fn bls12381_v1_fast_aggregate_verify(
