@@ -156,7 +156,7 @@ pub enum WasmRuntimeError {
 
     InvalidBlsPublicKey(ParseBlsPublicKeyError),
     InvalidBlsSignature(ParseBlsSignatureError),
-    InvalidBlsMessage(DecodeError),
+    InvalidBlsInput(DecodeError),
 }
 
 impl SelfError for WasmRuntimeError {

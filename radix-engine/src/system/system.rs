@@ -2870,15 +2870,14 @@ where
     }
 
     // Trace average message length and number of public_keys
-    #[trace_resources(log={messages.iter().map(|m| m.len()).sum::<usize>()/messages.len()},log=public_keys.len())]
+    #[trace_resources(log={pub_keys_and_msgs.iter().map(|(_, msg)| msg.len()).sum::<usize>()/pub_keys_and_msgs.len()},log=pub_keys_and_msgs.len())]
     fn bls12381_v1_aggregate_verify(
         &mut self,
-        messages: &[&[u8]],
-        public_keys: &[Bls12381G1PublicKey],
+        pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
         signature: &Bls12381G2Signature,
     ) -> Result<u32, RuntimeError> {
         // TODO costing
-        Ok(aggregate_verify_bls12381_v1(messages, public_keys, signature) as u32)
+        Ok(aggregate_verify_bls12381_v1(pub_keys_and_msgs, signature) as u32)
     }
 
     #[trace_resources(log=message.len(), log=public_keys.len())]

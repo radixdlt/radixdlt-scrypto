@@ -693,21 +693,18 @@ fn bls12381_v1_verify(
 
 fn bls12381_v1_aggregate_verify(
     mut caller: Caller<'_, HostState>,
-    messages_ptr: u32,
-    messages_len: u32,
-    public_keys_ptr: u32,
-    public_keys_len: u32,
+    pub_keys_and_msgs_ptr: u32,
+    pub_keys_and_msgs_len: u32,
     signature_ptr: u32,
     signature_len: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let messages = read_memory(caller.as_context_mut(), memory, messages_ptr, messages_len)?;
-    let public_keys = read_memory(
+    let pub_keys_and_msgs = read_memory(
         caller.as_context_mut(),
         memory,
-        public_keys_ptr,
-        public_keys_len,
+        pub_keys_and_msgs_ptr,
+        pub_keys_and_msgs_len,
     )?;
     let signature = read_memory(
         caller.as_context_mut(),
@@ -716,7 +713,7 @@ fn bls12381_v1_aggregate_verify(
         signature_len,
     )?;
 
-    runtime.crypto_utils_bls12381_v1_aggregate_verify(messages, public_keys, signature)
+    runtime.crypto_utils_bls12381_v1_aggregate_verify(pub_keys_and_msgs, signature)
 }
 
 fn bls12381_v1_fast_aggregate_verify(
@@ -1369,19 +1366,15 @@ impl WasmiModule {
         let host_bls12381_v1_aggregate_verify = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             messages_ptr: u32,
-             messages_len: u32,
-             public_keys_ptr: u32,
-             public_keys_len: u32,
+             pub_keys_and_msgs_ptr: u32,
+             pub_keys_and_msgs_len: u32,
              signature_ptr: u32,
              signature_len: u32|
              -> Result<u32, Trap> {
                 bls12381_v1_aggregate_verify(
                     caller,
-                    messages_ptr,
-                    messages_len,
-                    public_keys_ptr,
-                    public_keys_len,
+                    pub_keys_and_msgs_ptr,
+                    pub_keys_and_msgs_len,
                     signature_ptr,
                     signature_len,
                 )

@@ -14,11 +14,10 @@ mod component_module {
         }
 
         pub fn bls12381_v1_aggregate_verify(
-            messages: Vec<Vec<u8>>,
-            pub_keys: Vec<Bls12381G1PublicKey>,
+            pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)>,
             signature: Bls12381G2Signature,
         ) -> bool {
-            CryptoUtils::bls12381_v1_aggregate_verify(messages, pub_keys, signature)
+            CryptoUtils::bls12381_v1_aggregate_verify(pub_keys_msgs, signature)
         }
 
         pub fn bls12381_v1_fast_aggregate_verify(

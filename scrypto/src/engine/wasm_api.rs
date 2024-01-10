@@ -298,10 +298,8 @@ pub mod crypto_utils {
             signature_len: usize) -> u32;
 
         pub fn crypto_utils_bls12381_v1_aggregate_verify(
-            messages_ptr: *const u8,
-            messages_len: usize,
-            public_keys_ptr: *const u8,
-            public_keys_len: usize,
+            pub_keys_and_msgs_ptr: *const u8,
+            pub_keys_and_msgs_len: usize,
             signature_ptr: *const u8,
             signature_len: usize) -> u32;
 

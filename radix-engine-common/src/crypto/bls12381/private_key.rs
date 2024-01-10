@@ -100,10 +100,11 @@ mod tests {
         // Aggregate the signature
         let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
 
-        let msgs_ref: Vec<&[u8]> = msgs.iter().map(|m| m.as_slice()).collect();
+        let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
+            pks.iter().zip(msgs).map(|(pk, sk)| (*pk, sk)).collect();
 
         // Verify the messages against public keys and aggregated signature
-        assert!(aggregate_verify_bls12381_v1(&msgs_ref, &pks, &agg_sig))
+        assert!(aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig))
     }
 
     #[test]

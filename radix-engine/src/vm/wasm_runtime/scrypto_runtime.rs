@@ -579,30 +579,18 @@ where
 
     fn crypto_utils_bls12381_v1_aggregate_verify(
         &mut self,
-        messages: Vec<u8>,
-        public_keys: Vec<u8>,
+        pub_keys_and_msgs: Vec<u8>,
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         let signature = Bls12381G2Signature::try_from(signature.as_slice())
             .map_err(WasmRuntimeError::InvalidBlsSignature)?;
-        let pks_cnt = public_keys.len() / Bls12381G1PublicKey::LENGTH;
-        let mut pks_vec = vec![];
 
-        for i in 0..pks_cnt {
-            let idx = i * Bls12381G1PublicKey::LENGTH;
-            let pk =
-                Bls12381G1PublicKey::try_from(&public_keys[idx..idx + Bls12381G1PublicKey::LENGTH])
-                    .map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
-            pks_vec.push(pk);
-        }
-
-        let messages: Vec<Vec<u8>> =
-            scrypto_decode(&messages).map_err(WasmRuntimeError::InvalidBlsMessage)?;
-        let msgs_ref: Vec<&[u8]> = messages.iter().map(|msg| msg.as_slice()).collect();
+        let pub_keys_and_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
+            scrypto_decode(&pub_keys_and_msgs).map_err(WasmRuntimeError::InvalidBlsInput)?;
 
         let result = self
             .api
-            .bls12381_v1_aggregate_verify(&msgs_ref, &pks_vec, &signature)?;
+            .bls12381_v1_aggregate_verify(&pub_keys_and_msgs, &signature)?;
         Ok(result)
     }
 
