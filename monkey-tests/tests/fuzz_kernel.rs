@@ -68,7 +68,7 @@ impl KernelCallbackObject for TestCallbackObject {
         unreachable!()
     }
 
-    fn init(&mut self) -> Result<(), RuntimeError> {
+    fn init<S: CommitableSubstateStore>(&mut self, _store: &mut S) -> Result<(), RuntimeError> {
         Ok(())
     }
 

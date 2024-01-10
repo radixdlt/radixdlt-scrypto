@@ -402,6 +402,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         info
     }
 
+    fn read_boot_substate(&mut self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Option<IndexedScryptoValue> {
+        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
+        let db_sort_key = M::to_db_sort_key(&substate_key);
+
+        self.substate_db
+            .get_substate(&db_partition_key, &db_sort_key)
+            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
+    }
+
     fn get_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,

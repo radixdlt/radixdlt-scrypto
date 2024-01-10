@@ -7,6 +7,7 @@ use crate::track::interface::{IOAccess, NodeSubstates};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use transaction::prelude::PreAllocatedAddress;
+use crate::track::CommitableSubstateStore;
 
 pub trait CallFrameReferences {
     fn root() -> Self;
@@ -131,7 +132,7 @@ pub trait KernelCallbackObject: Sized {
     type CallFrameData: CallFrameReferences;
     type CallbackState;
 
-    fn init(&mut self) -> Result<Self::CallbackState, RuntimeError>;
+    fn init<S: CommitableSubstateStore>(&mut self, store: &mut S) -> Result<Self::CallbackState, RuntimeError>;
 
     fn start<Y>(
         api: &mut Y,

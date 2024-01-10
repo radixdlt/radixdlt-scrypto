@@ -38,7 +38,7 @@ pub struct KernelBoot<'g, M: KernelCallbackObject, S: CommitableSubstateStore> {
 
 impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
     pub fn create_kernel(&mut self) -> Result<Kernel<M, S>, RuntimeError> {
-        let callback_state = self.callback.init()?;
+        let callback_state = self.callback.init(self.store)?;
 
         let kernel = Kernel {
             substate_io: SubstateIO {

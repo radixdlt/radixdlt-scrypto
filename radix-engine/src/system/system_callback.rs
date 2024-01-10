@@ -41,6 +41,7 @@ use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::RefTypes;
 use transaction::model::PreAllocatedAddress;
+use crate::track::CommitableSubstateStore;
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -103,8 +104,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type LockData = SystemLockData;
     type CallbackState = C::CallbackState;
 
-    fn init(&mut self) -> Result<C::CallbackState, RuntimeError> {
+    fn init<S: CommitableSubstateStore>(&mut self, store: &mut S) -> Result<C::CallbackState, RuntimeError> {
         self.modules.on_init()?;
+
+        // Temporary just to prove it's possible
+        let _ = store.read_boot_substate(
+            &NodeId::new(13u8, &[1u8; NodeId::RID_LENGTH]),
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        );
 
         let callback_state = self.callback_obj.init()?;
 

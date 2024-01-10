@@ -15,7 +15,7 @@ use radix_engine::kernel::kernel_callback_api::{
     RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
     WriteSubstateEvent,
 };
-use radix_engine::track::Track;
+use radix_engine::track::{CommitableSubstateStore, Track};
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -51,7 +51,7 @@ impl KernelCallbackObject for TestCallbackObject {
     type CallFrameData = TestCallFrameData;
     type CallbackState = ();
 
-    fn init(&mut self) -> Result<(), RuntimeError> {
+    fn init<S: CommitableSubstateStore>(&mut self, _store: &mut S) -> Result<(), RuntimeError> {
         Ok(())
     }
 

@@ -13,7 +13,7 @@ use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use radix_engine::track::NodeSubstates;
+use radix_engine::track::{CommitableSubstateStore, NodeSubstates};
 use radix_engine::transaction::WrappedSystem;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -99,8 +99,8 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
     type CallFrameData = K::CallFrameData;
     type CallbackState = K::CallbackState;
 
-    fn init(&mut self) -> Result<Self::CallbackState, RuntimeError> {
-        self.callback_object.init()
+    fn init<S: CommitableSubstateStore>(&mut self, store: &mut S) -> Result<Self::CallbackState, RuntimeError> {
+        self.callback_object.init(store)
     }
 
     fn start<Y>(

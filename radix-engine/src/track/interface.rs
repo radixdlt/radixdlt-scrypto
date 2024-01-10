@@ -69,6 +69,13 @@ pub trait CommitableSubstateStore {
         substate_key: &SubstateKey,
     ) -> TrackedSubstateInfo;
 
+    fn read_boot_substate(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue>;
+
     fn read_substate(
         &mut self,
         node_id: &NodeId,
