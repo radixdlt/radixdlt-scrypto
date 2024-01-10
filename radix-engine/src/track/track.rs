@@ -4,6 +4,7 @@ use crate::track::interface::{
 };
 use crate::track::state_updates::*;
 use crate::track::utils::OverlayingResultIterator;
+use crate::track::BootStore;
 use crate::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
@@ -15,7 +16,6 @@ use radix_engine_store_interface::{
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
-use crate::track::BootStore;
 
 use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, StoreCommitInfo};
 
@@ -317,8 +317,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     }
 }
 
-impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static>  BootStore for Track<'s, S, M> {
-    fn read_substate(&self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Option<IndexedScryptoValue> {
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Track<'s, S, M> {
+    fn read_substate(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
         let db_sort_key = M::to_db_sort_key(&substate_key);
 

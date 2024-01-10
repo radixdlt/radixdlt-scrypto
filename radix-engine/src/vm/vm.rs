@@ -57,10 +57,7 @@ pub enum VmBoot {
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
     type CallbackState = VmVersion;
 
-    fn init<S: BootStore>(
-        &mut self,
-        store: &S,
-    ) -> Result<Self::CallbackState, RuntimeError> {
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError> {
         let vm_boot = store
             .read_substate(
                 &NodeId::new(13u8, &[1u8; NodeId::RID_LENGTH]),
@@ -150,7 +147,8 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     .callback_obj
                     .native_vm
                     .create_instance(address, &original_code.into_latest().code)?;
-                let output = { vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)? };
+                let output =
+                    { vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)? };
 
                 output
             }
@@ -194,8 +192,9 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     size: instrumented_code.instrumented_code.len(),
                 })?;
 
-                let output =
-                    { scrypto_vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)? };
+                let output = {
+                    scrypto_vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)?
+                };
 
                 output
             }

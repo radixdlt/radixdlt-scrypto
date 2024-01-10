@@ -10,10 +10,7 @@ use radix_engine_interface::blueprints::package::PackageExport;
 pub trait SystemCallbackObject: Sized {
     type CallbackState;
 
-    fn init<S: BootStore>(
-        &mut self,
-        store: &S,
-    ) -> Result<Self::CallbackState, RuntimeError>;
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError>;
 
     fn invoke<Y>(
         package_address: &PackageAddress,

@@ -29,6 +29,7 @@ use crate::transaction::{
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
     TransactionResult,
 };
+use crate::vm::VmVersion;
 use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
@@ -60,7 +61,6 @@ use transaction::model::{
 };
 use transaction::prelude::{BlobV1, PreAllocatedAddress};
 use transaction::validation::ManifestIdAllocator;
-use crate::vm::VmVersion;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");

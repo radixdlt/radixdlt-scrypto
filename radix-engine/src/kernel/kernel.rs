@@ -21,6 +21,7 @@ use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
+use crate::track::BootStore;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
@@ -28,7 +29,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
-use crate::track::BootStore;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct Bootloader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> {
@@ -38,7 +38,7 @@ pub struct Bootloader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + 
 }
 
 impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Bootloader<'g, M, S> {
-    pub fn create_kernel(&mut self) -> Result<Kernel<M, S>, RuntimeError> {
+    pub fn boot(&mut self) -> Result<Kernel<M, S>, RuntimeError> {
         let callback_state = self.callback.init(self.store)?;
 
         let kernel = Kernel {
@@ -75,7 +75,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Bootlo
             v.borrow_mut();
         });
 
-        let mut kernel = self.create_kernel()?;
+        let mut kernel = self.boot()?;
 
         // Reference management
         for reference in references.iter() {

@@ -132,10 +132,7 @@ pub trait KernelCallbackObject: Sized {
     type CallFrameData: CallFrameReferences;
     type CallbackState;
 
-    fn init<S: BootStore>(
-        &mut self,
-        store: &S,
-    ) -> Result<Self::CallbackState, RuntimeError>;
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError>;
 
     fn start<Y>(
         api: &mut Y,

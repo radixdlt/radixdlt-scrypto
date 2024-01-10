@@ -112,7 +112,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                 })?;
 
                 match *native_package_code_id {
-                    PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api, vm_api),
+                    PACKAGE_CODE_ID => {
+                        PackageNativePackage::invoke_export(export_name, input, api, vm_api)
+                    }
                     RESOURCE_CODE_ID => {
                         ResourceNativePackage::invoke_export(export_name, input, api)
                     }

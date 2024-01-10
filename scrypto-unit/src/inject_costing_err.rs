@@ -99,10 +99,7 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
     type CallFrameData = K::CallFrameData;
     type CallbackState = K::CallbackState;
 
-    fn init<S: BootStore>(
-        &mut self,
-        store: &S,
-    ) -> Result<Self::CallbackState, RuntimeError> {
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError> {
         self.callback_object.init(store)
     }
 

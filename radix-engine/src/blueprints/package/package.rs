@@ -958,7 +958,8 @@ impl PackageNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = Self::publish_wasm(input.code, input.definition, input.metadata, api, vm_api)?;
+                let rtn =
+                    Self::publish_wasm(input.code, input.definition, input.metadata, api, vm_api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -1141,7 +1142,7 @@ impl PackageNativePackage {
         vm_type: VmType,
         original_code: Vec<u8>,
         system_instructions: BTreeMap<String, Vec<SystemInstruction>>,
-        vm_api: &V
+        vm_api: &V,
     ) -> Result<PackageStructure, RuntimeError> {
         // Validate schema
         validate_package_schema(&definition.blueprints)

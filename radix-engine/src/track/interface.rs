@@ -78,7 +78,6 @@ pub trait CommitableSubstateStore {
         substate_key: &SubstateKey,
     ) -> TrackedSubstateInfo;
 
-
     fn read_substate(
         &mut self,
         node_id: &NodeId,
