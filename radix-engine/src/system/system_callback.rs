@@ -23,7 +23,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
-use crate::track::CommitableSubstateStore;
+use crate::track::{BootStore, CommitableSubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -104,7 +104,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type LockData = SystemLockData;
     type CallbackState = C::CallbackState;
 
-    fn init<S: CommitableSubstateStore>(
+    fn init<S: BootStore>(
         &mut self,
         store: &S,
     ) -> Result<C::CallbackState, RuntimeError> {

@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstate
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::KeyValueEntrySubstate;
-use crate::track::CommitableSubstateStore;
+use crate::track::{BootStore, CommitableSubstateStore};
 use crate::types::*;
 use crate::vm::wasm::{ScryptoV1WasmValidator, WasmEngine};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
@@ -57,12 +57,12 @@ pub enum VmBoot {
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
     type CallbackState = VmVersion;
 
-    fn init<S: CommitableSubstateStore>(
+    fn init<S: BootStore>(
         &mut self,
         store: &S,
     ) -> Result<Self::CallbackState, RuntimeError> {
         let vm_boot = store
-            .read_boot_substate(
+            .read_substate(
                 &NodeId::new(13u8, &[1u8; NodeId::RID_LENGTH]),
                 PartitionNumber(2u8),
                 &SubstateKey::Field(0u8),
@@ -206,7 +206,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 }
 
 pub trait VmInvoke {
-    // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api
+    // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api, unify with VmApi
     fn invoke<Y, V>(
         &mut self,
         export_name: &str,

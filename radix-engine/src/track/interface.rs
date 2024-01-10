@@ -35,6 +35,15 @@ pub enum TrackedSubstateInfo {
     Unmodified,
 }
 
+pub trait BootStore {
+    fn read_substate(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue>;
+}
+
 /// Represents the interface between Radix Engine and Track.
 ///
 /// In practice, we will likely end up with only one implementation.
@@ -69,12 +78,6 @@ pub trait CommitableSubstateStore {
         substate_key: &SubstateKey,
     ) -> TrackedSubstateInfo;
 
-    fn read_boot_substate(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue>;
 
     fn read_substate(
         &mut self,

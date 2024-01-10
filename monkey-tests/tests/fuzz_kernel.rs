@@ -1,7 +1,7 @@
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::{Kernel, KernelBootloader};
+use radix_engine::kernel::kernel::{Kernel, Bootloader};
 use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
@@ -13,7 +13,7 @@ use radix_engine::kernel::kernel_callback_api::{
     WriteSubstateEvent,
 };
 use radix_engine::system::checkers::KernelDatabaseChecker;
-use radix_engine::track::{to_state_updates, CommitableSubstateStore, Track};
+use radix_engine::track::{to_state_updates, CommitableSubstateStore, Track, BootStore};
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
@@ -68,7 +68,7 @@ impl KernelCallbackObject for TestCallbackObject {
         unreachable!()
     }
 
-    fn init<S: CommitableSubstateStore>(&mut self, _store: &S) -> Result<(), RuntimeError> {
+    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -512,7 +512,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     let mut substate_db = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let mut callback = TestCallbackObject;
-    let mut kernel_boot = KernelBootloader {
+    let mut kernel_boot = Bootloader {
         id_allocator: &mut id_allocator,
         callback: &mut callback,
         store: &mut track,

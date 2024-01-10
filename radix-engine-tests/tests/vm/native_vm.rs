@@ -89,7 +89,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         ),
     };
 
-    let mut kernel_boot = KernelBootloader {
+    let mut kernel_boot = Bootloader {
         id_allocator: &mut id_allocator,
         callback: &mut system,
         store: &mut track,
@@ -163,7 +163,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         ),
     };
 
-    let mut kernel_boot = KernelBootloader {
+    let mut kernel_boot = Bootloader {
         id_allocator: &mut id_allocator,
         callback: &mut system,
         store: &mut track,

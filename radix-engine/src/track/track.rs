@@ -15,6 +15,7 @@ use radix_engine_store_interface::{
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
+use crate::track::BootStore;
 
 use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, StoreCommitInfo};
 
@@ -316,6 +317,17 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     }
 }
 
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static>  BootStore for Track<'s, S, M> {
+    fn read_substate(&self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Option<IndexedScryptoValue> {
+        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
+        let db_sort_key = M::to_db_sort_key(&substate_key);
+
+        self.substate_db
+            .get_substate(&db_partition_key, &db_sort_key)
+            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
+    }
+}
+
 impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstateStore
     for Track<'s, S, M>
 {
@@ -400,20 +412,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
             .unwrap_or(TrackedSubstateInfo::Unmodified);
 
         info
-    }
-
-    fn read_boot_substate(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue> {
-        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-        let db_sort_key = M::to_db_sort_key(&substate_key);
-
-        self.substate_db
-            .get_substate(&db_partition_key, &db_sort_key)
-            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
     }
 
     fn get_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(

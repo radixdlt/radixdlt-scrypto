@@ -28,15 +28,16 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
+use crate::track::BootStore;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct KernelBootloader<'g, M: KernelCallbackObject, S: CommitableSubstateStore> {
+pub struct Bootloader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> {
     pub id_allocator: &'g mut IdAllocator,
     pub callback: &'g mut M,
     pub store: &'g mut S,
 }
 
-impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBootloader<'g, M, S> {
+impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Bootloader<'g, M, S> {
     pub fn create_kernel(&mut self) -> Result<Kernel<M, S>, RuntimeError> {
         let callback_state = self.callback.init(self.store)?;
 
@@ -60,7 +61,7 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBootload
     }
 }
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBootloader<'g, M, S> {
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Bootloader<'g, M, S> {
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
         mut self,
