@@ -2874,7 +2874,7 @@ where
     }
 
     // Trace average message length and number of public_keys
-    #[trace_resources(log={pub_keys_and_msgs.iter().map(|(_, msg)| msg.len()).sum::<usize>()/pub_keys_and_msgs.len()},log=pub_keys_and_msgs.len())]
+    #[trace_resources(log={pub_keys_and_msgs.iter().flat_map(|(_, msg)| msg).count()/pub_keys_and_msgs.len()},log=pub_keys_and_msgs.len())]
     fn bls12381_v1_aggregate_verify(
         &mut self,
         pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
@@ -2883,10 +2883,7 @@ where
         if !pub_keys_and_msgs.is_empty() {
             self.api.kernel_get_system().modules.apply_execution_cost(
                 ExecutionCostingEntry::Bls12381V1AggregateVerify {
-                    size: pub_keys_and_msgs
-                        .iter()
-                        .map(|(_, msg)| msg.len())
-                        .sum::<usize>()
+                    size: pub_keys_and_msgs.iter().flat_map(|(_, msg)| msg).count()
                         / pub_keys_and_msgs.len(),
                     keys_cnt: pub_keys_and_msgs.len(),
                 },
