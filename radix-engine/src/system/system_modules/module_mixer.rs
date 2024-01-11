@@ -12,7 +12,7 @@ use crate::kernel::kernel_callback_api::{
 #[cfg(feature = "resource_tracker")]
 use crate::kernel::substate_io::SubstateDevice;
 use crate::system::actor::Actor;
-use crate::system::module::SystemModule;
+use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -87,7 +87,7 @@ pub struct SystemModuleMixer {
     pub(super) kernel_trace: KernelTraceModule,
     pub(super) limits: LimitsModule,
     pub(super) costing: CostingModule,
-    pub(crate) auth: AuthModule,
+    pub(super) auth: AuthModule,
     pub(crate) transaction_runtime: TransactionRuntimeModule,
     pub(super) execution_trace: ExecutionTraceModule,
 }
@@ -192,44 +192,46 @@ impl SystemModuleMixer {
 // This has an impact if there is module dependency.
 //====================================================================
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixer {
+impl InitSystemModule for SystemModuleMixer {
     #[trace_resources]
-    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
+    fn on_init(&mut self) -> Result<(), RuntimeError> {
+        let modules: EnabledModules = self.enabled_modules;
 
         // Enable execution trace
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_init(api)?;
+            self.execution_trace.on_init()?;
         }
 
         // Enable transaction runtime
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_init(api)?;
+            self.transaction_runtime.on_init()?;
         }
 
         // Enable auth
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_init(api)?;
+            self.auth.on_init()?;
         }
 
         // Enable costing
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_init(api)?;
+            self.costing.on_init()?;
         }
 
         // Enable transaction limits
         if modules.contains(EnabledModules::LIMITS) {
-            LimitsModule::on_init(api)?;
+            self.limits.on_init()?;
         }
 
         // Enable kernel trace
         if modules.contains(EnabledModules::KERNEL_TRACE) {
-            KernelTraceModule::on_init(api)?;
+            self.kernel_trace.on_init()?;
         }
 
         Ok(())
     }
+}
 
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixer {
     #[trace_resources]
     fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api.kernel_get_system(), on_teardown(api))

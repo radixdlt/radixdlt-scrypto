@@ -6,7 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::FromRepr;
-use radix_engine::vm::VmInvoke;
+use radix_engine::vm::{VmApi, VmInvoke};
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{
     manifest_decode, manifest_encode, scrypto_decode, scrypto_encode, ManifestValue,
@@ -33,14 +33,16 @@ pub const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
 #[derive(Clone)]
 pub struct ResourceTestInvoke;
 impl VmInvoke for ResourceTestInvoke {
-    fn invoke<Y>(
+    fn invoke<Y, V>(
         &mut self,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
+        _vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
     {
         match export_name {
             "call_vault" => {

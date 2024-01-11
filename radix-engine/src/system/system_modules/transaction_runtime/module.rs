@@ -1,5 +1,5 @@
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::system::module::SystemModule;
+use crate::system::module::{InitSystemModule, SystemModule};
 use crate::types::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::ModuleId;
@@ -92,6 +92,7 @@ impl TransactionRuntimeModule {
     }
 }
 
+impl InitSystemModule for TransactionRuntimeModule {}
 impl<K: KernelCallbackObject> SystemModule<K> for TransactionRuntimeModule {}
 
 #[cfg(test)]

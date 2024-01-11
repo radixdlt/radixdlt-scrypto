@@ -21,6 +21,7 @@ use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
+use crate::track::BootStore;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
@@ -30,15 +31,18 @@ use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct KernelBoot<'g, M: KernelCallbackObject, S: CommitableSubstateStore> {
+pub struct BootLoader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> {
     pub id_allocator: &'g mut IdAllocator,
     pub callback: &'g mut M,
     pub store: &'g mut S,
 }
 
-impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
-    pub fn create_kernel(&mut self) -> Kernel<M, S> {
-        Kernel {
+impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
+    /// Creates a new kernel with data loaded from the substate store
+    pub fn boot(&mut self) -> Result<Kernel<M, S>, RuntimeError> {
+        let callback_state = self.callback.init(self.store)?;
+
+        let kernel = Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
                 store: self.store,
@@ -51,11 +55,14 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g,
             current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
             callback: self.callback,
-        }
+            callback_state,
+        };
+
+        Ok(kernel)
     }
 }
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, S> {
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
         mut self,
@@ -69,9 +76,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelBoot<'g, M, 
             v.borrow_mut();
         });
 
-        let mut kernel = self.create_kernel();
-
-        M::on_init(&mut kernel)?;
+        let mut kernel = self.boot()?;
 
         // Reference management
         for reference in references.iter() {
@@ -176,7 +181,9 @@ pub struct Kernel<
     id_allocator: &'g mut IdAllocator,
 
     /// Upper system layer
+    /// TODO: Combine the two following
     callback: &'g mut M,
+    callback_state: M::CallbackState,
 }
 
 struct KernelHandler<
@@ -185,6 +192,7 @@ struct KernelHandler<
     F: FnMut(&mut KernelReadOnly<M>, IOAccess) -> Result<(), RuntimeError>,
 > {
     callback: &'a mut M,
+    callback_state: &'a M::CallbackState,
     prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
     on_io_access: F,
 }
@@ -206,6 +214,7 @@ impl<
             prev_frame: self.prev_frame,
             heap,
             callback: self.callback,
+            callback_state: self.callback_state,
         };
 
         (self.on_io_access)(&mut read_only, io_access)
@@ -231,6 +240,7 @@ impl<
             prev_frame: self.prev_frame,
             heap,
             callback: self.callback,
+            callback_state: &self.callback_state,
         };
 
         M::on_read_substate(
@@ -251,6 +261,7 @@ macro_rules! as_read_only {
             prev_frame: $kernel.prev_frame_stack.last(),
             heap: &$kernel.substate_io.heap,
             callback: $kernel.callback,
+            callback_state: &$kernel.callback_state,
         }
     }};
 }
@@ -294,6 +305,7 @@ where
 
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 M::on_create_node(api, CreateNodeEvent::IOAccess(&io_access))
@@ -331,6 +343,7 @@ where
 
             let mut handler = KernelHandler {
                 callback: self.callback,
+                callback_state: &self.callback_state,
                 prev_frame: self.prev_frame_stack.last(),
                 on_io_access: |api, io_access| {
                     M::on_create_node(api, CreateNodeEvent::IOAccess(&io_access))
@@ -358,6 +371,7 @@ where
         {
             let mut handler = KernelHandler {
                 callback: self.callback,
+                callback_state: &self.callback_state,
                 prev_frame: self.prev_frame_stack.last(),
                 on_io_access: |api, io_access| {
                     M::on_move_module(api, MoveModuleEvent::IOAccess(&io_access))
@@ -395,6 +409,7 @@ where
 
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 M::on_drop_node(api, DropNodeEvent::IOAccess(&io_access))
@@ -444,6 +459,7 @@ where
         };
         SystemState {
             system: &mut self.callback,
+            system_2: &self.callback_state,
             current_call_frame: self.current_frame.data(),
             caller_call_frame: caller_actor,
         }
@@ -468,6 +484,7 @@ where
     prev_frame: Option<&'g CallFrame<M::CallFrameData, M::LockData>>,
     heap: &'g Heap,
     callback: &'g mut M,
+    callback_state: &'g M::CallbackState,
 }
 
 impl<'g, M> KernelInternalApi<M> for KernelReadOnly<'g, M>
@@ -492,6 +509,7 @@ where
         };
         SystemState {
             system: self.callback,
+            system_2: self.callback_state,
             current_call_frame: self.current_frame.data(),
             caller_call_frame,
         }
@@ -693,6 +711,7 @@ where
 
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 M::on_open_substate(api, OpenSubstateEvent::IOAccess(&io_access))
@@ -720,6 +739,7 @@ where
                 if retry {
                     let mut handler = KernelHandler {
                         callback: self.callback,
+                        callback_state: &self.callback_state,
                         prev_frame: self.prev_frame_stack.last(),
                         on_io_access: |api, io_access| {
                             M::on_open_substate(api, OpenSubstateEvent::IOAccess(&io_access))
@@ -797,6 +817,7 @@ where
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 M::on_read_substate(api, ReadSubstateEvent::IOAccess(&io_access))
@@ -833,6 +854,7 @@ where
 
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 M::on_write_substate(api, WriteSubstateEvent::IOAccess(&io_access))
@@ -888,6 +910,7 @@ where
 
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
@@ -930,6 +953,7 @@ where
 
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
@@ -967,6 +991,7 @@ where
 
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
@@ -1005,6 +1030,7 @@ where
 
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
@@ -1043,6 +1069,7 @@ where
 
         let mut handler = KernelHandler {
             callback: self.callback,
+            callback_state: &self.callback_state,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
@@ -1188,6 +1215,7 @@ where
         current_frame: CallFrame<M::CallFrameData, M::LockData>,
         prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
         callback: &'g mut M,
+        callback_state: M::CallbackState,
     ) -> Kernel<'g, M, S> {
         Self {
             current_frame,
@@ -1195,6 +1223,7 @@ where
             substate_io,
             id_allocator,
             callback,
+            callback_state,
         }
     }
 
