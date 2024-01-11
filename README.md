@@ -26,7 +26,11 @@ Binaries, including libraries, CLIs and docker images, are licensed under the [R
      ```
    - macOS:
      - Make sure you have the xcode command line tools: `xcode-select --install`.
-     - Install cmake: `brew install cmake`
+     - Install cmake: `brew install cmake llvm`<br>
+       Add LLVM to the system path by adding below line to the `~/.profile`
+       ```
+       PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+       ```
      - Install the Rust compiler:
      ```bash
      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
