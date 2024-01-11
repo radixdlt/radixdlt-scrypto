@@ -1,6 +1,8 @@
 use crate::blueprints::access_controller::AccessControllerNativePackage;
 use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
+use crate::blueprints::consensus_manager::{
+    ConsensusManagerNativePackage, ConsensusManagerSecondsPrecisionNativeCode,
+};
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
@@ -116,6 +118,13 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     }
                     CONSENSUS_MANAGER_CODE_ID => {
                         ConsensusManagerNativePackage::invoke_export(export_name, input, api)
+                    }
+                    CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID => {
+                        ConsensusManagerSecondsPrecisionNativeCode::invoke_export(
+                            export_name,
+                            input,
+                            api,
+                        )
                     }
                     IDENTITY_CODE_ID => {
                         IdentityNativePackage::invoke_export(export_name, input, api)

@@ -203,16 +203,33 @@ pub struct ConsensusManagerStartInput {}
 
 pub type ConsensusManagerStartOutput = ();
 
-#[derive(Sbor, Copy, Clone, Debug, Eq, PartialEq)]
-pub enum TimePrecision {
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Sbor)]
+#[sbor(type_name = "TimePrecision")]
+pub enum TimePrecisionV1 {
     Minute,
 }
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Sbor)]
+#[sbor(type_name = "TimePrecision")]
+pub enum TimePrecisionV2 {
+    Minute,
+    Second,
+}
+
+pub type TimePrecision = TimePrecisionV2;
 
 pub const CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT: &str = "get_current_time";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct ConsensusManagerGetCurrentTimeInput {
-    pub precision: TimePrecision,
+#[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
+pub struct ConsensusManagerGetCurrentTimeInputV1 {
+    pub precision: TimePrecisionV1,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+#[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
+pub struct ConsensusManagerGetCurrentTimeInputV2 {
+    pub precision: TimePrecisionV2,
 }
 
 pub type ConsensusManagerGetCurrentTimeOutput = Instant;
@@ -222,7 +239,15 @@ pub const CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT: &str = "compare_current_
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ConsensusManagerCompareCurrentTimeInput {
     pub instant: Instant,
-    pub precision: TimePrecision,
+    pub precision: TimePrecisionV1,
+    pub operator: TimeComparisonOperator,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
+pub struct ConsensusManagerCompareCurrentTimeInputV2 {
+    pub instant: Instant,
+    pub precision: TimePrecisionV2,
     pub operator: TimeComparisonOperator,
 }
 

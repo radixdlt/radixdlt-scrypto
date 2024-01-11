@@ -7,7 +7,9 @@ use transaction::prelude::*;
 fn test_stake_reconciliation() {
     // Arrange
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .without_seconds_precision_update()
+        .build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);

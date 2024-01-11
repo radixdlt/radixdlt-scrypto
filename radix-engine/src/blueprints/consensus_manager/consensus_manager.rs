@@ -400,7 +400,7 @@ impl ConsensusManagerBlueprint {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
                     aggregator
-                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(),
+                        .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInputV1>(),
                 ),
                 output: TypeRef::Static(
                     aggregator
@@ -707,15 +707,15 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn get_current_time<Y>(
-        precision: TimePrecision,
+    pub(crate) fn get_current_time_v1<Y>(
+        precision: TimePrecisionV1,
         api: &mut Y,
     ) -> Result<Instant, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         match precision {
-            TimePrecision::Minute => {
+            TimePrecisionV1::Minute => {
                 let handle = api.actor_open_field(
                     ACTOR_STATE_SELF,
                     ConsensusManagerField::ProposerMinuteTimestamp.into(),
@@ -735,9 +735,52 @@ impl ConsensusManagerBlueprint {
         }
     }
 
-    pub(crate) fn compare_current_time<Y>(
+    pub(crate) fn get_current_time_v2<Y>(
+        precision: TimePrecisionV2,
+        api: &mut Y,
+    ) -> Result<Instant, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        match precision {
+            TimePrecisionV2::Minute => {
+                let handle = api.actor_open_field(
+                    ACTOR_STATE_SELF,
+                    ConsensusManagerField::ProposerMinuteTimestamp.into(),
+                    LockFlags::read_only(),
+                )?;
+                let proposer_minute_timestamp = api
+                    .field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
+                        handle,
+                    )?
+                    .into_latest();
+                api.field_close(handle)?;
+
+                Ok(Self::epoch_minute_to_instant(
+                    proposer_minute_timestamp.epoch_minute,
+                ))
+            }
+            TimePrecisionV2::Second => {
+                let handle = api.actor_open_field(
+                    ACTOR_STATE_SELF,
+                    ConsensusManagerField::ProposerMilliTimestamp.into(),
+                    LockFlags::read_only(),
+                )?;
+                let proposer_milli_timestamp = api
+                    .field_read_typed::<ConsensusManagerProposerMilliTimestampFieldPayload>(handle)?
+                    .into_latest();
+                api.field_close(handle)?;
+
+                Ok(Self::epoch_milli_to_instant(
+                    proposer_milli_timestamp.epoch_milli,
+                ))
+            }
+        }
+    }
+
+    pub(crate) fn compare_current_time_v1<Y>(
         other_arbitrary_precision_instant: Instant,
-        precision: TimePrecision,
+        precision: TimePrecisionV1,
         operator: TimeComparisonOperator,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
@@ -745,7 +788,7 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         match precision {
-            TimePrecision::Minute => {
+            TimePrecisionV1::Minute => {
                 let other_epoch_minute = other_arbitrary_precision_instant
                     .seconds_since_unix_epoch
                     .checked_mul(MILLIS_IN_SECOND)
@@ -784,8 +827,82 @@ impl ConsensusManagerBlueprint {
         }
     }
 
+    pub(crate) fn compare_current_time_v2<Y>(
+        other_arbitrary_precision_instant: Instant,
+        precision: TimePrecisionV2,
+        operator: TimeComparisonOperator,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        match precision {
+            TimePrecisionV2::Minute => {
+                let other_epoch_minute = other_arbitrary_precision_instant
+                    .seconds_since_unix_epoch
+                    .checked_mul(MILLIS_IN_SECOND)
+                    .and_then(|result| Self::milli_to_minute(result))
+                    .unwrap_or_else(|| {
+                        // This is to deal with overflows, i32 MAX and MIN values should work with current time
+                        if other_arbitrary_precision_instant
+                            .seconds_since_unix_epoch
+                            .is_negative()
+                        {
+                            i32::MIN
+                        } else {
+                            i32::MAX
+                        }
+                    });
+
+                let handle = api.actor_open_field(
+                    ACTOR_STATE_SELF,
+                    ConsensusManagerField::ProposerMinuteTimestamp.into(),
+                    LockFlags::read_only(),
+                )?;
+                let proposer_minute_timestamp = api
+                    .field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
+                        handle,
+                    )?
+                    .into_latest();
+                api.field_close(handle)?;
+
+                // convert back to Instant only for comparison operation
+                let proposer_instant =
+                    Self::epoch_minute_to_instant(proposer_minute_timestamp.epoch_minute);
+                let other_instant = Self::epoch_minute_to_instant(other_epoch_minute);
+                let result = proposer_instant.compare(other_instant, operator);
+                Ok(result)
+            }
+
+            TimePrecisionV2::Second => {
+                let other_epoch_second = other_arbitrary_precision_instant.seconds_since_unix_epoch;
+
+                let handle = api.actor_open_field(
+                    ACTOR_STATE_SELF,
+                    ConsensusManagerField::ProposerMilliTimestamp.into(),
+                    LockFlags::read_only(),
+                )?;
+                let proposer_milli_timestamp = api
+                    .field_read_typed::<ConsensusManagerProposerMilliTimestampFieldPayload>(handle)?
+                    .into_latest();
+                api.field_close(handle)?;
+
+                // convert back to Instant only for comparison operation
+                let proposer_instant =
+                    Self::epoch_milli_to_instant(proposer_milli_timestamp.epoch_milli);
+                let other_instant = Instant::new(other_epoch_second);
+                let result = proposer_instant.compare(other_instant, operator);
+                Ok(result)
+            }
+        }
+    }
+
     fn epoch_minute_to_instant(epoch_minute: i32) -> Instant {
         Instant::new(epoch_minute as i64 * SECONDS_IN_MINUTE)
+    }
+
+    fn epoch_milli_to_instant(epoch_milli: i64) -> Instant {
+        Instant::new(epoch_milli / MILLIS_IN_SECOND)
     }
 
     fn milli_to_minute(epoch_milli: i64) -> Option<i32> {

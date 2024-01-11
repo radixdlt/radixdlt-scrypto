@@ -1071,9 +1071,9 @@ impl PackageNativePackage {
 
         {
             let mut vm_type_partition = index_map_new();
-            for (hash, code_substate) in package_structure.vm_type {
+            for (hash, vm_type) in package_structure.vm_type {
                 let entry = KVEntry {
-                    value: Some(scrypto_encode(&code_substate).unwrap()),
+                    value: Some(scrypto_encode(&vm_type).unwrap()),
                     locked: true,
                 };
                 vm_type_partition.insert(scrypto_encode(&hash).unwrap(), entry);
