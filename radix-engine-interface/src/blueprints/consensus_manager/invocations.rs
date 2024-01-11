@@ -244,6 +244,7 @@ pub struct ConsensusManagerCompareCurrentTimeInput {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
 pub struct ConsensusManagerCompareCurrentTimeInputV2 {
     pub instant: Instant,
     pub precision: TimePrecisionV2,

@@ -26,6 +26,7 @@ fn get_current_time_rounded_to_seconds_with_state_flash_should_succeed() {
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new()
+        .without_seconds_precision_update()
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
