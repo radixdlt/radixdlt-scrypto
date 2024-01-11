@@ -5,22 +5,11 @@ use arbitrary::Arbitrary;
 /// Represents a BLS12-381 G1 public key.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(
-    Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode, BasicDescribe,
-)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct Bls12381G1PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
-
-impl Describe<ScryptoCustomTypeKind> for Bls12381G1PublicKey {
-    const TYPE_ID: RustTypeId =
-        RustTypeId::WellKnown(well_known_scrypto_custom_types::BLS12381G1_PUBLIC_KEY_TYPE);
-
-    fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::bls12381g1_public_key_type_data()
-    }
-}
 
 impl Bls12381G1PublicKey {
     pub const LENGTH: usize = 48;
