@@ -2,6 +2,8 @@ use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 
+pub const SCRYPTO_V1_CURRENT_MINOR_VERSION: u64 = 0u64;
+
 pub struct ScryptoV1WasmValidator {
     pub max_memory_size_in_pages: u32,
     pub max_initial_table_size: u32,
@@ -16,6 +18,10 @@ pub struct ScryptoV1WasmValidator {
 
 impl ScryptoV1WasmValidator {
     pub fn new(minor_version: u64) -> Self {
+        if minor_version > SCRYPTO_V1_CURRENT_MINOR_VERSION {
+            panic!("Invalid minor version: {}", minor_version);
+        }
+
         Self {
             max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
             max_initial_table_size: MAX_INITIAL_TABLE_SIZE,
@@ -26,6 +32,22 @@ impl ScryptoV1WasmValidator {
             max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
             instrumenter_config: WasmValidatorConfigV1::new(),
             minor_version,
+        }
+    }
+}
+
+impl Default for ScryptoV1WasmValidator {
+    fn default() -> Self {
+        Self {
+            max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
+            max_initial_table_size: MAX_INITIAL_TABLE_SIZE,
+            max_number_of_br_table_targets: MAX_NUMBER_OF_BR_TABLE_TARGETS,
+            max_number_of_functions: MAX_NUMBER_OF_FUNCTIONS,
+            max_number_of_function_params: MAX_NUMBER_OF_FUNCTION_PARAMS,
+            max_number_of_function_locals: MAX_NUMBER_OF_FUNCTION_LOCALS,
+            max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
+            instrumenter_config: WasmValidatorConfigV1::new(),
+            minor_version: SCRYPTO_V1_CURRENT_MINOR_VERSION,
         }
     }
 }

@@ -145,7 +145,7 @@ impl Publish {
             let mut vm_type_updates = index_map_new();
             let mut original_code_updates = index_map_new();
             let mut instrumented_code_updates = index_map_new();
-            let instrumented_code = ScryptoV1WasmValidator::default()
+            let instrumented_code = ScryptoV1WasmValidator::new(0u64)
                 .validate(&code, package_definition.blueprints.values())
                 .map_err(Error::InvalidPackage)?
                 .0;
