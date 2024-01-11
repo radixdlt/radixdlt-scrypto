@@ -2875,6 +2875,7 @@ where
 
     // Trace average message length and number of public_keys
     #[trace_resources(log={pub_keys_and_msgs.iter().flat_map(|(_, msg)| msg).count()/pub_keys_and_msgs.len()},log=pub_keys_and_msgs.len())]
+    #[cfg(feature = "enable_bls_aggregate_verify")]
     fn bls12381_v1_aggregate_verify(
         &mut self,
         pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],

@@ -398,6 +398,7 @@ impl FeeTable {
     }
 
     #[inline]
+    #[cfg(feature = "enable_bls_aggregate_verify")]
     pub fn bls12381_v1_aggregate_verify_cost(&self, sizes: &[usize]) -> u32 {
         // Below approach does not take aggregation into account.
         // Summing costs pers size gives greater values.

@@ -315,6 +315,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
+    #[cfg(feature = "enable_bls_aggregate_verify")]
     fn crypto_utils_bls12381_v1_aggregate_verify(
         &mut self,
         pub_keys_and_msgs: Vec<u8>,

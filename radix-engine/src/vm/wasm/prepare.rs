@@ -755,6 +755,7 @@ impl WasmModule {
                             ));
                         }
                     }
+                    #[cfg(feature = "enable_bls_aggregate_verify")]
                     CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => {
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(

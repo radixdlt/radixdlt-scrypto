@@ -78,6 +78,7 @@ pub fn verify_bls12381_v1(
 /// Performs BLS12-381 G2 aggregated signature verification of
 /// multiple messages each signed with different key.
 /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+#[cfg(feature = "enable_bls_aggregate_verify")]
 pub fn aggregate_verify_bls12381_v1(
     pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
     signature: &Bls12381G2Signature,

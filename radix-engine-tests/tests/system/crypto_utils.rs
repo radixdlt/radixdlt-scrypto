@@ -75,6 +75,7 @@ fn crypto_scrypto_bls12381_v1_verify(
     )
 }
 
+#[cfg(feature = "enable_bls_aggregate_verify")]
 fn crypto_scrypto_bls12381_v1_aggregate_verify(
     runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
@@ -236,6 +237,7 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
 }
 
 #[test]
+#[cfg(feature = "enable_bls_aggregate_verify")]
 fn test_crypto_scrypto_bls12381_aggregate_verify() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -546,6 +548,7 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate_costing() {
 }
 
 #[test]
+#[cfg(feature = "enable_bls_aggregate_verify")]
 fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
     let mut test_runner = TestRunnerBuilder::new().build();
 
@@ -569,6 +572,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
 }
 
 #[test]
+#[cfg(feature = "enable_bls_aggregate_verify")]
 fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
     let mut test_runner = TestRunnerBuilder::new().build();
 

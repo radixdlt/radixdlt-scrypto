@@ -297,6 +297,7 @@ pub mod crypto_utils {
             signature_ptr: *const u8,
             signature_len: usize) -> u32;
 
+        #[cfg(feature = "enable_bls_aggregate_verify")]
         pub fn crypto_utils_bls12381_v1_aggregate_verify(
             pub_keys_and_msgs_ptr: *const u8,
             pub_keys_and_msgs_len: usize,
