@@ -173,8 +173,9 @@ pub trait KernelInvokeApi<C> {
 }
 
 pub struct SystemState<'a, M: KernelCallbackObject> {
+    // TODO: Combine system and system_2
     pub system: &'a mut M,
-    pub state: &'a M::CallbackState,
+    pub system_2: &'a M::CallbackState,
     pub current_call_frame: &'a M::CallFrameData,
     pub caller_call_frame: &'a M::CallFrameData,
 }

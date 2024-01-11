@@ -11,6 +11,9 @@ use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 
+const BOOT_LOADER_VM_PARTITION_NUM: PartitionNumber = PartitionNumber(2u8);
+const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 0u8;
+
 pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
     pub native_vm: NativeVm<E>,
@@ -34,10 +37,13 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
     }
 }
 
+/// Api provided to clients of the VM layer
 pub trait VmApi {
+    /// Retrieve the current minor version of the Scrypto VM
     fn get_scrypto_minor_version(&self) -> u64;
 }
 
+/// Simple implementation of the VmAPI
 #[derive(Debug, Clone, Copy, Default)]
 pub struct VmVersion {
     scrypto_v1_minor_version: u64,
@@ -49,6 +55,7 @@ impl VmApi for VmVersion {
     }
 }
 
+/// Boot Loader state for the VM Layer
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmBoot {
     V1 { scrypto_v1_minor_version: u64 },
@@ -60,9 +67,9 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
     fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError> {
         let vm_boot = store
             .read_substate(
-                &NodeId::new(13u8, &[1u8; NodeId::RID_LENGTH]),
-                PartitionNumber(2u8),
-                &SubstateKey::Field(0u8),
+                &BOOT_LOADER_STATE,
+                BOOT_LOADER_VM_PARTITION_NUM,
+                &SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
             .unwrap_or(VmBoot::V1 {
@@ -115,7 +122,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 .unwrap_or_else(|| panic!("Vm type not found: {:?}", export))
         };
 
-        let vm_api = api.kernel_get_system_state().state.clone();
+        let vm_api = api.kernel_get_system_state().system_2.clone();
 
         let output = match vm_type.into_latest().vm_type {
             VmType::Native => {

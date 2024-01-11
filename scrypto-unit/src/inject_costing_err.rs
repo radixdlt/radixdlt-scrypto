@@ -518,7 +518,7 @@ impl<'a, M: KernelCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInt
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
-            state: &state.state,
+            system_2: &state.system_2,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
@@ -562,7 +562,7 @@ impl<'a, M: KernelCallbackObject, K: KernelInternalApi<InjectCostingError<M>>> K
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
-            state: &state.state,
+            system_2: &state.system_2,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }

@@ -38,6 +38,7 @@ pub struct BootLoader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + 
 }
 
 impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
+    /// Creates a new kernel with data loaded from the substate store
     pub fn boot(&mut self) -> Result<Kernel<M, S>, RuntimeError> {
         let callback_state = self.callback.init(self.store)?;
 
@@ -180,6 +181,7 @@ pub struct Kernel<
     id_allocator: &'g mut IdAllocator,
 
     /// Upper system layer
+    /// TODO: Combine the two following
     callback: &'g mut M,
     callback_state: M::CallbackState,
 }
@@ -457,7 +459,7 @@ where
         };
         SystemState {
             system: &mut self.callback,
-            state: &self.callback_state,
+            system_2: &self.callback_state,
             current_call_frame: self.current_frame.data(),
             caller_call_frame: caller_actor,
         }
@@ -507,7 +509,7 @@ where
         };
         SystemState {
             system: self.callback,
-            state: self.callback_state,
+            system_2: self.callback_state,
             current_call_frame: self.current_frame.data(),
             caller_call_frame,
         }
