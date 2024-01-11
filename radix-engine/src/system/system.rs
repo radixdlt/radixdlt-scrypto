@@ -2881,11 +2881,10 @@ where
         signature: &Bls12381G2Signature,
     ) -> Result<u32, RuntimeError> {
         if !pub_keys_and_msgs.is_empty() {
+            let sizes: Vec<usize> = pub_keys_and_msgs.iter().map(|(_, msg)| msg.len()).collect();
             self.api.kernel_get_system().modules.apply_execution_cost(
                 ExecutionCostingEntry::Bls12381V1AggregateVerify {
-                    size: pub_keys_and_msgs.iter().flat_map(|(_, msg)| msg).count()
-                        / pub_keys_and_msgs.len(),
-                    keys_cnt: pub_keys_and_msgs.len(),
+                    sizes: sizes.as_slice(),
                 },
             )?;
             Ok(aggregate_verify_bls12381_v1(pub_keys_and_msgs, signature) as u32)
