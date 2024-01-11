@@ -1,7 +1,6 @@
 use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-#[cfg(not(target_arch = "wasm32"))]
 use blst::{
     min_pk::{AggregatePublicKey, PublicKey},
     BLST_ERROR,
@@ -23,12 +22,10 @@ impl Bls12381G1PublicKey {
         self.0.to_vec()
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     fn to_native_public_key(self) -> Result<PublicKey, ParseBlsPublicKeyError> {
         PublicKey::from_bytes(&self.0).map_err(|err| err.into())
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     /// Aggregate multiple public keys into a single one
     pub fn aggregate(public_keys: &[Bls12381G1PublicKey]) -> Result<Self, ParseBlsPublicKeyError> {
         if !public_keys.is_empty() {
@@ -62,7 +59,6 @@ impl TryFrom<&[u8]> for Bls12381G1PublicKey {
 // error
 //======
 
-#[cfg(not(target_arch = "wasm32"))]
 impl From<BLST_ERROR> for ParseBlsPublicKeyError {
     fn from(error: BLST_ERROR) -> Self {
         let err_msg = format!("{:?}", error);

@@ -1,5 +1,4 @@
 use crate::internal_prelude::*;
-#[cfg(not(target_arch = "wasm32"))]
 use blst::{
     min_pk::{AggregateSignature, Signature},
     BLST_ERROR,
@@ -38,12 +37,10 @@ impl Bls12381G2Signature {
         self.0.to_vec()
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     fn to_native_signature(self) -> Result<Signature, ParseBlsSignatureError> {
         Signature::from_bytes(&self.0).map_err(|err| err.into())
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     /// Aggregate multiple signatures into a single one
     pub fn aggregate(signatures: &[Bls12381G2Signature]) -> Result<Self, ParseBlsSignatureError> {
         if !signatures.is_empty() {
@@ -77,7 +74,6 @@ impl TryFrom<&[u8]> for Bls12381G2Signature {
 // error
 //======
 
-#[cfg(not(target_arch = "wasm32"))]
 impl From<BLST_ERROR> for ParseBlsSignatureError {
     fn from(error: BLST_ERROR) -> Self {
         let err_msg = format!("{:?}", error);
