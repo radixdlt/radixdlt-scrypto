@@ -176,7 +176,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
 
     c.bench_function("costing::validate_wasm", |b| {
         b.iter(|| {
-            ScryptoV1WasmValidator::default()
+            ScryptoV1WasmValidator::new(0u64)
                 .validate(code, definition.blueprints.values())
                 .unwrap()
         })
