@@ -332,11 +332,11 @@ impl CustomGenesis {
 }
 
 pub trait TestDatabase:
-SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase
+    SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase
 {
 }
 impl<T: SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase> TestDatabase
-for T
+    for T
 {
 }
 
@@ -427,9 +427,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
     ) -> TestRunner<E, InMemorySubstateDatabase> {
         //---------- Override configs for resource tracker ---------------
         #[cfg(not(feature = "resource_tracker"))]
-            let trace = self.trace;
+        let trace = self.trace;
         #[cfg(feature = "resource_tracker")]
-            let trace = false;
+        let trace = false;
         //----------------------------------------------------------------
 
         TestRunner {
@@ -450,9 +450,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let bootstrap_trace = false;
 
         #[cfg(not(feature = "resource_tracker"))]
-            let trace = self.trace;
+        let trace = self.trace;
         #[cfg(feature = "resource_tracker")]
-            let trace = false;
+        let trace = false;
         //----------------------------------------------------------------
 
         let scrypto_vm = ScryptoVm {
@@ -1277,9 +1277,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                     address: address.into(),
                 }],
             }
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(btreeset!(AuthAddresses::system_role())),
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(btreeset!(AuthAddresses::system_role())),
             CostingParameters::default(),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         );
@@ -1417,8 +1417,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         amount: Decimal,
         initial_proofs: T,
     ) -> TransactionReceipt
-        where
-            T: IntoIterator<Item = NonFungibleGlobalId>,
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         manifest.instructions.insert(
             0,
@@ -1442,8 +1442,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         initial_proofs: T,
         init: R::Init,
     ) -> TransactionReceipt
-        where
-            T: IntoIterator<Item = NonFungibleGlobalId>,
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         manifest.instructions.insert(
             0,
@@ -1461,8 +1461,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         mut manifest: TransactionManifestV1,
         initial_proofs: T,
     ) -> TransactionReceipt
-        where
-            T: IntoIterator<Item = NonFungibleGlobalId>,
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         manifest.instructions.insert(
             0,
@@ -1496,8 +1496,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         manifest: TransactionManifestV1,
         initial_proofs: T,
     ) -> TransactionReceipt
-        where
-            T: IntoIterator<Item = NonFungibleGlobalId>,
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         self.execute_manifest_with_costing_params(
             manifest,
@@ -1512,8 +1512,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         initial_proofs: T,
         init: R::Init,
     ) -> TransactionReceipt
-        where
-            T: IntoIterator<Item = NonFungibleGlobalId>,
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction_with_system::<R>(
@@ -1533,8 +1533,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         initial_proofs: T,
         costing_parameters: CostingParameters,
     ) -> TransactionReceipt
-        where
-            T: IntoIterator<Item = NonFungibleGlobalId>,
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction(
@@ -1553,8 +1553,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         initial_proofs: T,
         execution_cost_unit_limit: u32,
     ) -> TransactionReceipt
-        where
-            T: IntoIterator<Item = NonFungibleGlobalId>,
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction(
@@ -1678,7 +1678,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             },
             self.trace,
         )
-            .unwrap()
+        .unwrap()
     }
 
     /// Calls a package blueprint function with the given arguments, paying the fee from the faucet.
@@ -2160,9 +2160,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         initial_supply: Option<T>,
         account: ComponentAddress,
     ) -> ResourceAddress
-        where
-            T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-            V: ManifestEncode + NonFungibleData,
+    where
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
+        V: ManifestEncode + NonFungibleData,
     {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -2222,8 +2222,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
         handler: F,
     ) -> ComponentAddress
-        where
-            F: FnOnce(ManifestBuilder) -> ManifestBuilder,
+    where
+        F: FnOnce(ManifestBuilder) -> ManifestBuilder,
     {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -2285,9 +2285,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_addresses,
             }
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(proofs),
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
             CostingParameters::default(),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
@@ -2315,9 +2315,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_addresses,
             }
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(proofs),
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
             CostingParameters::default(),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
@@ -2337,9 +2337,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_addresses: vec![],
             }
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(proofs),
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
             CostingParameters::default(),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
@@ -2433,9 +2433,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                         let type_info = reader.get_type_info(node_id).unwrap();
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo {
-                                                         blueprint_info: BlueprintInfo { blueprint_id, .. },
-                                                         ..
-                                                     }) => blueprint_id,
+                                blueprint_info: BlueprintInfo { blueprint_id, .. },
+                                ..
+                            }) => blueprint_id,
                             _ => {
                                 panic!("No event schema.")
                             }
@@ -2676,7 +2676,7 @@ pub fn wat2wasm(wat: &str) -> Vec<u8> {
             .replace("${memset}", include_str!("snippets/memset.wat")),
         features,
     )
-        .expect("Failed to compiled WAT into WASM")
+    .expect("Failed to compiled WAT into WASM")
 }
 
 /// Gets the default cargo directory for the given crate.
@@ -2810,8 +2810,8 @@ pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
     for (event_type_identifier, event_data) in &commit_result.application_events {
         match event_type_identifier.0 {
             Emitter::Function(BlueprintId {
-                                  package_address, ..
-                              }) if ![
+                package_address, ..
+            }) if ![
                 PACKAGE_PACKAGE,
                 RESOURCE_PACKAGE,
                 ACCOUNT_PACKAGE,
@@ -2828,20 +2828,20 @@ pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
                 FAUCET_PACKAGE,
                 TRANSACTION_TRACKER_PACKAGE,
             ]
-                .contains(&package_address) =>
-                {
-                    continue
-                }
+            .contains(&package_address) =>
+            {
+                continue
+            }
             Emitter::Method(node_id, ..)
-            if node_id.entity_type().map_or(false, |item| {
-                matches!(
+                if node_id.entity_type().map_or(false, |item| {
+                    matches!(
                         item,
                         EntityType::GlobalGenericComponent | EntityType::InternalGenericComponent
                     )
-            }) =>
-                {
-                    continue
-                }
+                }) =>
+            {
+                continue
+            }
             _ => {}
         };
         let _ = to_typed_native_event(event_type_identifier, event_data).unwrap();
