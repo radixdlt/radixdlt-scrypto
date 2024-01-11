@@ -398,20 +398,17 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn bls12381_v1_aggregate_verify_cost(&self, size: usize, keys_cnt: usize) -> u32 {
-        // Based on  `test_crypto_scrypto_bls12381_v1_aggregate_verify_costing`
-        // - For sizes less than 1024, instruction count remains the same.
-        // - For greater sizes following linear equation might be applied:
-        //   instructions_cnt = 87.3416 * size + 1438527.7574 * keys_cnt + 9058827.9112
-        //   (used: https://www.socscistatistics.com/tests/multipleregression/default.aspx)
-        //   Lets round:
-        //    87.3416      -> 88
-        //    1438527.757  -> 1438528
-        //    9058827.911  -> 9058828
-        let size = if size < 1024 { 1024 } else { cast(size) };
-        let instructions_cnt = add(add(mul(size, 88), mul(cast(keys_cnt), 1438528)), 9058828);
-        // Convert to cost units
-        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    pub fn bls12381_v1_aggregate_verify_cost(&self, sizes: &[usize]) -> u32 {
+        // Below approach does not take aggregation into account.
+        // Summing costs pers size gives greater values.
+        // We've found somewhat difficult to find a proper and effective equation to estimate
+        // the instructions count collected with `test_crypto_scrypto_verify_bls12381_v1_costing`
+        // TODO: Find more adequate cost estimation
+        let mut cost: u32 = 0;
+        for size in sizes {
+            cost += self.bls12381_v1_verify_cost(*size);
+        }
+        cost
     }
 
     #[inline]
