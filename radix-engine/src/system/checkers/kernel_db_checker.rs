@@ -55,7 +55,7 @@ impl KernelDatabaseChecker {
                     .map_err(KernelDatabaseCheckError::DecodeError)?;
                 for owned in value.owned_nodes() {
                     if owned.is_boot_loader() {
-                        return Err(KernelDatabaseCheckError::CannotOwnBootLoaderNode(*owned))
+                        return Err(KernelDatabaseCheckError::CannotOwnBootLoaderNode(*owned));
                     }
 
                     let state = internal_nodes
@@ -73,7 +73,9 @@ impl KernelDatabaseChecker {
 
                 for refed in value.references() {
                     if refed.is_boot_loader() {
-                        return Err(KernelDatabaseCheckError::CannotReferenceBootLoaderNode(*refed))
+                        return Err(KernelDatabaseCheckError::CannotReferenceBootLoaderNode(
+                            *refed,
+                        ));
                     }
 
                     if !refed.is_global() {

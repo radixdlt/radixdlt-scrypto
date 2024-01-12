@@ -79,10 +79,8 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
         let vm_version = match vm_boot {
             VmBoot::V1 {
                 scrypto_v1_minor_version,
-            } => {
-                VmVersion {
-                    scrypto_v1_minor_version,
-                }
+            } => VmVersion {
+                scrypto_v1_minor_version,
             },
         };
 
