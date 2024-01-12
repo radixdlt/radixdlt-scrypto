@@ -379,11 +379,6 @@ create_well_known_lookup!(
             MISC_TYPES_START + 7,
             named_transparent("Origin", string_type_data(),)
         ),
-        (
-            HASH,
-            MISC_TYPES_START + 8,
-            named_transparent("Hash", bytes_fixed_length_type_data(Hash::LENGTH),)
-        ),
         // Crypto-related types from CRYPTO_TYPES_START
         (
             PUBLIC_KEY,
