@@ -261,7 +261,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores, windows-latest-16-cores]
+        os: [ubuntu-latest-16-cores, gh-ephemeral-windows-runner]
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
@@ -287,7 +287,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores, windows-latest-16-cores, macos-latest]
+        os: [ubuntu-latest-16-cores, gh-ephemeral-windows-runner, macos-latest]
     steps:
       - uses: actions/checkout@v3
       - name: Setup environment
