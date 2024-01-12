@@ -215,6 +215,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 
         let reader = SystemDatabaseReader::new(substate_db);
         for (node_id, partition_number) in reader.partitions_iter() {
+            // Boot Loader is not part of the system state
             if node_id.is_boot_loader() {
                 continue;
             }

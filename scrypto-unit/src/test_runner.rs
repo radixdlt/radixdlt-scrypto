@@ -350,7 +350,7 @@ pub struct TestRunnerBuilder<E, D> {
 
     // The following are protocol updates on mainnet
     with_seconds_precision_update: bool,
-    with_scrypto_bls_update: bool,
+    with_crypto_utils_update: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -362,7 +362,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             trace: true,
             skip_receipt_check: false,
             with_seconds_precision_update: true,
-            with_scrypto_bls_update: true,
+            with_crypto_utils_update: true,
         }
     }
 }
@@ -381,7 +381,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             trace: self.trace,
             skip_receipt_check: false,
             with_seconds_precision_update: self.with_seconds_precision_update,
-            with_scrypto_bls_update: self.with_scrypto_bls_update,
+            with_crypto_utils_update: self.with_crypto_utils_update,
         }
     }
 
@@ -406,7 +406,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             trace: self.trace,
             skip_receipt_check: self.skip_receipt_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
-            with_scrypto_bls_update: self.with_scrypto_bls_update,
+            with_crypto_utils_update: self.with_crypto_utils_update,
         }
     }
 
@@ -418,7 +418,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             trace: self.trace,
             skip_receipt_check: self.skip_receipt_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
-            with_scrypto_bls_update: self.with_scrypto_bls_update,
+            with_crypto_utils_update: self.with_crypto_utils_update,
         }
     }
 
@@ -427,8 +427,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         self
     }
 
-    pub fn without_bls_update(mut self) -> Self {
-        self.with_scrypto_bls_update = false;
+    pub fn without_crypto_utils_update(mut self) -> Self {
+        self.with_crypto_utils_update = false;
         self
     }
 
@@ -527,7 +527,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             substate_db.commit(&db_updates);
         };
 
-        if self.with_scrypto_bls_update {
+        if self.with_crypto_utils_update {
             let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             substate_db.commit(&db_updates);
@@ -1318,6 +1318,20 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_package_addresses()[0]
+    }
+
+    pub fn try_publish_package<P: Into<PackagePublishingSource>>(
+        &mut self,
+        source: P,
+    ) -> TransactionReceipt {
+        let (code, definition) = source.into().code_and_definition();
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt
     }
 
     pub fn publish_package_simple<P: Into<PackagePublishingSource>>(
