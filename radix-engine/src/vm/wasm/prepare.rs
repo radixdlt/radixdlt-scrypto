@@ -59,7 +59,7 @@ impl WasmModule {
         }
     }
 
-    pub fn enforce_import_limit(self) -> Result<Self, PrepareError> {
+    pub fn enforce_import_limit(self, minor_version: u64) -> Result<Self, PrepareError> {
         // Only allow `env::radix_engine` import
         for entry in self
             .module
@@ -734,6 +734,12 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => {
+                        if minor_version < 1 {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -757,6 +763,12 @@ impl WasmModule {
                     }
                     #[cfg(feature = "enable_bls_aggregate_verify")]
                     CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => {
+                        if minor_version < 1 {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -772,6 +784,12 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME => {
+                        if minor_version < 1 {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -794,6 +812,12 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME => {
+                        if minor_version < 1 {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -809,6 +833,12 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => {
+                        if minor_version < 1 {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
                         if let TypeRef::Func(type_index) = entry.ty {
                             if Self::function_type_matches(
                                 &self.module,
@@ -1330,7 +1360,7 @@ mod tests {
             PrepareError::InvalidImport(InvalidImport::ImportNotAllowed(
                 "name_to_replace".to_string()
             )),
-            WasmModule::enforce_import_limit
+            |s| WasmModule::enforce_import_limit(s, 0u64)
         );
 
         for name in [
@@ -1377,7 +1407,7 @@ mod tests {
             assert_invalid_wasm!(
                 wat.replace("name_to_replace", name),
                 PrepareError::InvalidImport(InvalidImport::InvalidFunctionType(name.to_string())),
-                WasmModule::enforce_import_limit
+                |w| WasmModule::enforce_import_limit(w, 0u64)
             );
         }
     }

@@ -60,7 +60,7 @@ impl ScryptoV1WasmValidator {
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         WasmModule::init(code)?
             .enforce_no_start_function()?
-            .enforce_import_limit()?
+            .enforce_import_limit(self.minor_version)?
             .enforce_export_names()?
             .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?
             .enforce_table_limit(self.max_initial_table_size)?
