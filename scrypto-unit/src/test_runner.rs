@@ -31,8 +31,8 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
-    ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
-    LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    ConsensusManagerGetCurrentTimeInputV2, ConsensusManagerNextRoundInput, EpochChangeCondition,
+    LeaderProposalHistory, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
     VALIDATOR_STAKE_AS_OWNER_IDENT,
 };
@@ -347,6 +347,7 @@ pub struct TestRunnerBuilder<E, D> {
     custom_database: D,
     trace: bool,
     skip_receipt_check: bool,
+    with_seconds_precision_update: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -357,6 +358,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
             skip_receipt_check: false,
+            with_seconds_precision_update: true,
         }
     }
 }
@@ -374,6 +376,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
             trace: self.trace,
             skip_receipt_check: false,
+            with_seconds_precision_update: self.with_seconds_precision_update,
         }
     }
 
@@ -397,6 +400,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: self.custom_database,
             trace: self.trace,
             skip_receipt_check: self.skip_receipt_check,
+            with_seconds_precision_update: self.with_seconds_precision_update,
         }
     }
 
@@ -407,7 +411,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: database,
             trace: self.trace,
             skip_receipt_check: self.skip_receipt_check,
+            with_seconds_precision_update: self.with_seconds_precision_update,
         }
+    }
+
+    pub fn without_seconds_precision_update(mut self) -> Self {
+        self.with_seconds_precision_update = false;
+        self
     }
 
     pub fn build_from_snapshot(
@@ -498,6 +508,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
+
+        if self.with_seconds_precision_update {
+            let state_updates = generate_seconds_precision_state_updates(&substate_db);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            substate_db.commit(&db_updates);
+        };
 
         let runner = TestRunner {
             scrypto_vm,
@@ -2395,7 +2411,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInput {
+                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInputV2 {
                     precision
                 }),
             }],

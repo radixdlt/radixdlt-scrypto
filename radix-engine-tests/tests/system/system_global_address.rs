@@ -4,7 +4,7 @@ use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmInvoke};
+use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::{ClientApi, ACTOR_REF_GLOBAL};
 use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
 use scrypto_unit::*;
@@ -19,14 +19,16 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y>(
+        fn invoke<Y, V>(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
+            _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
         {
             match export_name {
                 "test" => {
@@ -95,14 +97,16 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
     #[derive(Clone)]
     struct ResourceOverride(HashSet<String>);
     impl VmInvoke for ResourceOverride {
-        fn invoke<Y>(
+        fn invoke<Y, V>(
             &mut self,
             export_name: &str,
             input: &IndexedScryptoValue,
             api: &mut Y,
+            _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
         {
             if self.0.contains(export_name) {
                 api.actor_get_node_id(ACTOR_REF_GLOBAL)

@@ -4,7 +4,7 @@ use radix_engine::kernel::call_frame::{
     PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::KernelBoot;
+use radix_engine::kernel::kernel::BootLoader;
 use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
@@ -15,7 +15,7 @@ use radix_engine::kernel::kernel_callback_api::{
     RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
     WriteSubstateEvent,
 };
-use radix_engine::track::Track;
+use radix_engine::track::{BootStore, Track};
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -49,11 +49,9 @@ struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
+    type CallbackState = ();
 
-    fn on_init<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -264,12 +262,12 @@ fn kernel_move_node_via_create_with_opened_substate(
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut callback = TestCallbackObject;
-    let mut kernel_boot = KernelBoot {
+    let mut boot_loader = BootLoader {
         id_allocator: &mut id_allocator,
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel();
+    let mut kernel = boot_loader.boot().unwrap();
 
     let child_id = {
         let child_id = kernel
@@ -406,12 +404,12 @@ fn kernel_close_substate_should_fail_if_opened_child_exists() {
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut callback = TestCallbackObject;
-    let mut kernel_boot = KernelBoot {
+    let mut boot_loader = BootLoader {
         id_allocator: &mut id_allocator,
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel();
+    let mut kernel = boot_loader.boot().unwrap();
     let mut create_node = || {
         let id = kernel
             .kernel_allocate_node_id(EntityType::InternalKeyValueStore)

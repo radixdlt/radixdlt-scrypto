@@ -5,7 +5,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::attached_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmInvoke};
+use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_queries::typed_substate_layout::{FunctionAuth, PackageError};
@@ -234,14 +234,16 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
     #[derive(Clone)]
     struct TestInvoke(AccessRuleCreation, AccessRule);
     impl VmInvoke for TestInvoke {
-        fn invoke<Y>(
+        fn invoke<Y, V>(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
+            _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
         {
             match export_name {
                 "create_access_rule" => match self.0 {

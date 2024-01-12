@@ -1,6 +1,8 @@
 use crate::blueprints::access_controller::AccessControllerNativePackage;
 use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
+use crate::blueprints::consensus_manager::{
+    ConsensusManagerNativePackage, ConsensusManagerSecondsPrecisionNativeCode,
+};
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
@@ -15,7 +17,7 @@ use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackag
 use crate::system::attached_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
-use crate::vm::VmInvoke;
+use crate::vm::{VmApi, VmInvoke};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 use resources_tracker_macro::trace_resources;
@@ -87,18 +89,20 @@ impl<I: VmInvoke> NativeVmInstance<I> {
 
 impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
     #[trace_resources(log=self.package_address().is_native_package(), log=self.package_address().to_hex(), log=export_name)]
-    fn invoke<Y>(
+    fn invoke<Y, V>(
         &mut self,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
+        vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
     {
         #[allow(unused_mut)]
         let mut func = || match self {
-            NativeVmInstance::Extension(e) => e.invoke(export_name, input, api),
+            NativeVmInstance::Extension(e) => e.invoke(export_name, input, api, vm_api),
             NativeVmInstance::Native {
                 native_package_code_id,
                 package_address,
@@ -110,12 +114,21 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                 })?;
 
                 match *native_package_code_id {
-                    PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
+                    PACKAGE_CODE_ID => {
+                        PackageNativePackage::invoke_export(export_name, input, api, vm_api)
+                    }
                     RESOURCE_CODE_ID => {
                         ResourceNativePackage::invoke_export(export_name, input, api)
                     }
                     CONSENSUS_MANAGER_CODE_ID => {
                         ConsensusManagerNativePackage::invoke_export(export_name, input, api)
+                    }
+                    CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID => {
+                        ConsensusManagerSecondsPrecisionNativeCode::invoke_export(
+                            export_name,
+                            input,
+                            api,
+                        )
                     }
                     IDENTITY_CODE_ID => {
                         IdentityNativePackage::invoke_export(export_name, input, api)
@@ -209,14 +222,16 @@ impl DefaultNativeVm {
 pub struct NullVmInvoke;
 
 impl VmInvoke for NullVmInvoke {
-    fn invoke<Y>(
+    fn invoke<Y, V>(
         &mut self,
         _export_name: &str,
         _input: &IndexedScryptoValue,
         _api: &mut Y,
+        _vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
     {
         panic!("Invocation was called on null VmInvoke");
     }

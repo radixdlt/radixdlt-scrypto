@@ -29,6 +29,7 @@ use crate::transaction::{
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
     TransactionResult,
 };
+use crate::vm::VmVersion;
 use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
@@ -577,6 +578,7 @@ pub fn create_system_bootstrap_flash(
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
+                &VmVersion::default(),
             )
             .unwrap_or_else(|err| {
                 panic!(
