@@ -54,8 +54,8 @@ pub fn verify_ed25519(
     false
 }
 
-/// Performs BLS12-381 G2 signature verification using following
-/// domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+/// Performs BLS12-381 G2 signature verification.
+/// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
 pub fn verify_bls12381_v1(
     message: &[u8],
     public_key: &Bls12381G1PublicKey,
@@ -70,6 +70,53 @@ pub fn verify_bls12381_v1(
                 _ => return false,
             }
         }
+    }
+
+    false
+}
+
+/// Performs BLS12-381 G2 aggregated signature verification of
+/// multiple messages each signed with different key.
+/// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+#[cfg(feature = "enable_bls_aggregate_verify")]
+pub fn aggregate_verify_bls12381_v1(
+    pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
+    signature: &Bls12381G2Signature,
+) -> bool {
+    if let Ok(sig) = blst::min_pk::Signature::from_bytes(&signature.0) {
+        let mut pks = vec![];
+        let mut msg_refs = vec![];
+        for (pk, msg) in pub_keys_and_msgs.iter() {
+            if let Ok(pk) = blst::min_pk::PublicKey::from_bytes(&pk.0) {
+                pks.push(pk);
+            } else {
+                return false;
+            }
+            msg_refs.push(msg.as_slice());
+        }
+        let pks_refs: Vec<&blst::min_pk::PublicKey> = pks.iter().collect();
+
+        let result = sig.aggregate_verify(true, &msg_refs, BLS12381_CIPHERSITE_V1, &pks_refs, true);
+
+        match result {
+            blst::BLST_ERROR::BLST_SUCCESS => return true,
+            _ => return false,
+        }
+    }
+
+    false
+}
+
+/// Performs BLS12-381 G2 aggregated signature verification
+/// one message signed with multiple keys.
+/// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+pub fn fast_aggregate_verify_bls12381_v1(
+    message: &[u8],
+    public_keys: &[Bls12381G1PublicKey],
+    signature: &Bls12381G2Signature,
+) -> bool {
+    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate(public_keys) {
+        return verify_bls12381_v1(message, &agg_pk, signature);
     }
 
     false

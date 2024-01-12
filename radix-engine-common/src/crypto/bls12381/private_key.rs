@@ -80,4 +80,50 @@ mod tests {
         assert_eq!(sk.sign_v1(&test_message_hash), sig);
         assert!(verify_bls12381_v1(&test_message_hash, &pk, &sig));
     }
+
+    #[test]
+    #[cfg(feature = "enable_bls_aggregate_verify")]
+    fn sign_and_verify_aggregated() {
+        let sks: Vec<Bls12381G1PrivateKey> = (1..11)
+            .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
+            .collect();
+
+        let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+
+        let msgs: Vec<Vec<u8>> = (1..11).map(|i| vec![i; 10]).collect();
+
+        let sigs: Vec<Bls12381G2Signature> = sks
+            .iter()
+            .zip(&msgs)
+            .map(|(sk, msg)| sk.sign_v1(msg))
+            .collect();
+
+        // Aggregate the signature
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+        let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
+            pks.iter().zip(msgs).map(|(pk, sk)| (*pk, sk)).collect();
+
+        // Verify the messages against public keys and aggregated signature
+        assert!(aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig))
+    }
+
+    #[test]
+    fn sign_and_verify_fast_aggregated() {
+        let sks: Vec<Bls12381G1PrivateKey> = (1..11)
+            .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
+            .collect();
+
+        let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+
+        let msg = "One message to sign for all".as_bytes();
+
+        let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(msg)).collect();
+
+        // Aggregate the signature
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+        // Verify the message against public keys and aggregated signature
+        assert!(fast_aggregate_verify_bls12381_v1(msg, &pks, &agg_sig))
+    }
 }

@@ -154,8 +154,9 @@ pub enum WasmRuntimeError {
 
     TooManyBuffers,
 
-    InvalidBlsPublicKey(ParseBlsPublicKeyError),
-    InvalidBlsSignature(ParseBlsSignatureError),
+    InvalidBlsPublicKey(DecodeError),
+    InvalidBlsSignature(DecodeError),
+    InvalidBlsPublicKeyOrMessage(DecodeError),
 }
 
 impl SelfError for WasmRuntimeError {

@@ -567,21 +567,70 @@ where
         public_key: Vec<u8>,
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-        let public_key = Bls12381G1PublicKey::try_from(public_key.as_slice())
-            .map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
-        let signature = Bls12381G2Signature::try_from(signature.as_slice())
-            .map_err(WasmRuntimeError::InvalidBlsSignature)?;
+        let public_key: Bls12381G1PublicKey =
+            scrypto_decode(&public_key).map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
+        let signature: Bls12381G2Signature =
+            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
         let result = self
             .api
-            .bls12381_v1_verify(message, public_key, signature)?;
+            .bls12381_v1_verify(&message, &public_key, &signature)?;
         Ok(result)
+    }
+
+    #[cfg(feature = "enable_bls_aggregate_verify")]
+    fn crypto_utils_bls12381_v1_aggregate_verify(
+        &mut self,
+        pub_keys_and_msgs: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let signature: Bls12381G2Signature =
+            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
+        let pub_keys_and_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
+            scrypto_decode(&pub_keys_and_msgs)
+                .map_err(WasmRuntimeError::InvalidBlsPublicKeyOrMessage)?;
+
+        let result = self
+            .api
+            .bls12381_v1_aggregate_verify(&pub_keys_and_msgs, &signature)?;
+        Ok(result)
+    }
+
+    fn crypto_utils_bls12381_v1_fast_aggregate_verify(
+        &mut self,
+        message: Vec<u8>,
+        public_keys: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let public_keys: Vec<Bls12381G1PublicKey> =
+            scrypto_decode(&public_keys).map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
+        let signature: Bls12381G2Signature =
+            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
+
+        let result =
+            self.api
+                .bls12381_v1_fast_aggregate_verify(&message, &public_keys, &signature)?;
+        Ok(result)
+    }
+
+    fn crypto_utils_bls12381_g2_signature_aggregate(
+        &mut self,
+        signatures: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let signatures: Vec<Bls12381G2Signature> =
+            scrypto_decode(&signatures).map_err(WasmRuntimeError::InvalidBlsSignature)?;
+
+        let agg_sig = self.api.bls12381_g2_signature_aggregate(&signatures)?;
+
+        self.allocate_buffer(
+            scrypto_encode(&agg_sig).expect("Failed to encode Bls12381G2Signature"),
+        )
     }
 
     fn crypto_utils_keccak256_hash(
         &mut self,
         data: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let hash = self.api.keccak256_hash(data)?;
+        let hash = self.api.keccak256_hash(&data)?;
 
         self.allocate_buffer(hash.to_vec())
     }

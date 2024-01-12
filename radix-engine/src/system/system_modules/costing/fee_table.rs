@@ -381,6 +381,84 @@ impl FeeTable {
         500 + Self::data_processing_cost(size)
     }
 
+    #[inline]
+    pub fn bls12381_v1_verify_cost(&self, size: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_verify_bls12381_v1_costing`
+        // - For sizes less than 1024, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   instructions_cnt = 34.55672 * size + 10577803.13
+        //   Lets round:
+        //    34.55672       -> 35
+        //    10577803.13    -> 10577804
+        let size = if size < 1024 { 1024 } else { cast(size) };
+        let instructions_cnt = add(mul(size, 35), 10577804);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    #[cfg(feature = "enable_bls_aggregate_verify")]
+    pub fn bls12381_v1_aggregate_verify_cost(&self, sizes: &[usize]) -> u32 {
+        // Below approach does not take aggregation into account.
+        // Summing costs pers size gives greater values.
+        // We've found somewhat difficult to find a proper and effective equation to estimate
+        // the instructions count collected with `test_crypto_scrypto_verify_bls12381_v1_costing`
+        // TODO: Find more adequate cost estimation
+        let mut cost: u32 = 0;
+        for size in sizes {
+            cost += self.bls12381_v1_verify_cost(*size);
+        }
+        cost
+    }
+
+    #[inline]
+    pub fn bls12381_v1_fast_aggregate_verify_cost(&self, size: usize, keys_cnt: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing`
+        // - For sizes less than 1024, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 32.1717 * size + 624919.5254 * keys_cnt + 9058827.9112
+        //   (used: https://www.socscistatistics.com/tests/multipleregression/default.aspx)
+        //   Lets round:
+        //    32.1717      -> 33
+        //    624919.5254  -> 624920
+        //    10096964.55  -> 10096965
+        let size = if size < 1024 { 1024 } else { cast(size) };
+        let instructions_cnt = add(add(mul(size, 33), mul(cast(keys_cnt), 624920)), 10096965);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn bls12381_g2_signature_aggregate_cost(&self, signatures_cnt: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_bls12381_g2_signature_aggregate_costing`
+        // Following linear equation might be applied:
+        //   instructions_cnt = 879553.91557 * signatures_cnt - 567872.58948
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   Lets round:
+        //    879553.91557 -> 879554
+        //    567872.5895  -> 567873
+        let instructions_cnt = sub(mul(cast(signatures_cnt), 879554), 567873);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn keccak256_hash_cost(&self, size: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_keccak256_costing`
+        // - For sizes less than 100, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 46.41919 * size + 2641.66077
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   Lets round:
+        //     46.41919  -> 47
+        //     2641.66077 -> 2642
+        let size = if size < 100 { 100 } else { cast(size) };
+        let instructions_cnt = add(mul(size, 47), 2642);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
     //======================
     // Finalization costs
     // This is primarily to account for the additional work on the Node side
@@ -425,6 +503,11 @@ fn cast(a: usize) -> u32 {
 #[inline]
 fn add(a: u32, b: u32) -> u32 {
     a.checked_add(b).unwrap_or(u32::MAX)
+}
+
+#[inline]
+fn sub(a: u32, b: u32) -> u32 {
+    a.checked_sub(b).unwrap_or(u32::MAX)
 }
 
 #[inline]
