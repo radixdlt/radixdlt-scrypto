@@ -215,6 +215,10 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 
         let reader = SystemDatabaseReader::new(substate_db);
         for (node_id, partition_number) in reader.partitions_iter() {
+            if node_id.is_boot_loader() {
+                continue;
+            }
+
             let new_node = match &mut current_checker_node {
                 Some(checker_state) => {
                     if node_id.ne(&checker_state.node_id) {

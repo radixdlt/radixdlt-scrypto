@@ -79,7 +79,7 @@ impl KernelDatabaseChecker {
         for (node_id, state) in internal_nodes {
             match state {
                 NodeCheckerState::NoOwner(partition_count) => {
-                    if !node_id.is_global() {
+                    if !node_id.is_global() && !node_id.is_boot_loader() {
                         return Err(KernelDatabaseCheckError::NoOwnerForNonGlobalNode(node_id));
                     }
 

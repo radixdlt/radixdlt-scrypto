@@ -6,7 +6,7 @@ use crate::internal_prelude::{
 };
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
-use radix_engine_common::constants::CONSENSUS_MANAGER_PACKAGE;
+use radix_engine_common::constants::{BOOT_LOADER_STATE, CONSENSUS_MANAGER_PACKAGE};
 use radix_engine_common::crypto::hash;
 use radix_engine_common::prelude::ScopedTypeId;
 use radix_engine_common::prelude::{scrypto_encode, ScryptoCustomTypeKind};
@@ -29,6 +29,25 @@ use radix_engine_store_interface::interface::{DatabaseUpdate, SubstateDatabase};
 use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
 use utils::indexmap;
+use crate::vm::{BOOT_LOADER_VM_PARTITION_NUM, BOOT_LOADER_VM_SUBSTATE_FIELD_KEY, VmBoot};
+
+pub fn generate_vm_boot_scrypto_minor_version_state_updates() -> StateUpdates {
+    let substate = scrypto_encode(&VmBoot::V1 { scrypto_v1_minor_version: 1u64 }).unwrap();
+
+    StateUpdates {
+        by_node: indexmap!(
+            BOOT_LOADER_STATE => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    BOOT_LOADER_VM_PARTITION_NUM => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(substate)
+                        }
+                    },
+                }
+            }
+        ),
+    }
+}
 
 /// Generates the state updates required for updating the Consensus Manager blueprint
 /// to use seconds precision
