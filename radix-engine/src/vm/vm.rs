@@ -11,8 +11,8 @@ use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 
-const BOOT_LOADER_VM_PARTITION_NUM: PartitionNumber = PartitionNumber(2u8);
-const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 0u8;
+pub const BOOT_LOADER_VM_PARTITION_NUM: PartitionNumber = PartitionNumber(2u8);
+pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 0u8;
 
 pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,

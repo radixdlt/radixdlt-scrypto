@@ -2,7 +2,7 @@ use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 
-pub const SCRYPTO_V1_CURRENT_MINOR_VERSION: u64 = 0u64;
+pub const SCRYPTO_V1_LATEST_MINOR_VERSION: u64 = 1u64;
 
 pub struct ScryptoV1WasmValidator {
     pub max_memory_size_in_pages: u32,
@@ -18,7 +18,7 @@ pub struct ScryptoV1WasmValidator {
 
 impl ScryptoV1WasmValidator {
     pub fn new(minor_version: u64) -> Self {
-        if minor_version > SCRYPTO_V1_CURRENT_MINOR_VERSION {
+        if minor_version > SCRYPTO_V1_LATEST_MINOR_VERSION {
             panic!("Invalid minor version: {}", minor_version);
         }
 
@@ -47,7 +47,7 @@ impl Default for ScryptoV1WasmValidator {
             max_number_of_function_locals: MAX_NUMBER_OF_FUNCTION_LOCALS,
             max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
             instrumenter_config: WasmValidatorConfigV1::new(),
-            minor_version: SCRYPTO_V1_CURRENT_MINOR_VERSION,
+            minor_version: SCRYPTO_V1_LATEST_MINOR_VERSION,
         }
     }
 }
@@ -60,7 +60,7 @@ impl ScryptoV1WasmValidator {
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         WasmModule::init(code)?
             .enforce_no_start_function()?
-            .enforce_import_limit()?
+            .enforce_import_constraints(self.minor_version)?
             .enforce_export_names()?
             .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?
             .enforce_table_limit(self.max_initial_table_size)?

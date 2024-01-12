@@ -9,6 +9,7 @@ fn test_stake_reconciliation() {
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let mut test_runner = TestRunnerBuilder::new()
         .without_seconds_precision_update()
+        .without_crypto_utils_update()
         .build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
