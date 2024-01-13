@@ -1,7 +1,11 @@
 use crate::internal_prelude::*;
-use ::secp256k1::{Message, PublicKey, SecretKey, SECP256K1};
+use ::secp256k1::{All, Message, PublicKey, Secp256k1, SecretKey};
 
 use super::Secp256k1Signature;
+
+lazy_static::lazy_static! {
+    pub(crate) static ref SECP256K1_CTX: Secp256k1<All> = secp256k1::Secp256k1::new();
+}
 
 pub struct Secp256k1PrivateKey(SecretKey);
 
@@ -9,12 +13,12 @@ impl Secp256k1PrivateKey {
     pub const LENGTH: usize = 32;
 
     pub fn public_key(&self) -> Secp256k1PublicKey {
-        Secp256k1PublicKey(PublicKey::from_secret_key_global(&self.0).serialize())
+        Secp256k1PublicKey(PublicKey::from_secret_key(&SECP256K1_CTX, &self.0).serialize())
     }
 
     pub fn sign(&self, msg_hash: &impl IsHash) -> Secp256k1Signature {
         let m = Message::from_slice(msg_hash.as_ref()).expect("Hash is always a valid message");
-        let signature = SECP256K1.sign_ecdsa_recoverable(&m, &self.0);
+        let signature = SECP256K1_CTX.sign_ecdsa_recoverable(&m, &self.0);
         let (recovery_id, signature_data) = signature.serialize_compact();
 
         let mut buf = [0u8; 65];
@@ -56,8 +60,6 @@ impl Secp256k1PrivateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::validation::verify_secp256k1;
-    use radix_engine_interface::crypto::hash;
     use sbor::rust::str::FromStr;
 
     #[test]

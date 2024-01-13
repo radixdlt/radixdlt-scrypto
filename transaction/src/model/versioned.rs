@@ -67,7 +67,6 @@ mod tests {
     use super::*;
     use crate::manifest::e2e::tests::print_blob;
     use crate::model::*;
-    use crate::{signing::ed25519::Ed25519PrivateKey, signing::secp256k1::Secp256k1PrivateKey};
 
     fn hash_manifest_encoded_without_prefix_byte<T: ManifestEncode>(value: T) -> Hash {
         hash(&manifest_encode(&value).unwrap()[1..])

@@ -13,6 +13,8 @@ pub enum KernelDatabaseCheckError {
     NonGlobalReference(NodeId),
     NoOwnerForNonGlobalNode(NodeId),
     ZeroPartitionCount(NodeId),
+    CannotOwnBootLoaderNode(NodeId),
+    CannotReferenceBootLoaderNode(NodeId),
 }
 
 pub enum NodeCheckerState {
@@ -52,6 +54,10 @@ impl KernelDatabaseChecker {
                 let value = IndexedScryptoValue::from_vec(value)
                     .map_err(KernelDatabaseCheckError::DecodeError)?;
                 for owned in value.owned_nodes() {
+                    if owned.is_boot_loader() {
+                        return Err(KernelDatabaseCheckError::CannotOwnBootLoaderNode(*owned));
+                    }
+
                     let state = internal_nodes
                         .entry(*owned)
                         .or_insert(NodeCheckerState::NoOwner(0u8));
@@ -66,6 +72,12 @@ impl KernelDatabaseChecker {
                 }
 
                 for refed in value.references() {
+                    if refed.is_boot_loader() {
+                        return Err(KernelDatabaseCheckError::CannotReferenceBootLoaderNode(
+                            *refed,
+                        ));
+                    }
+
                     if !refed.is_global() {
                         return Err(KernelDatabaseCheckError::NonGlobalReference(*refed));
                     }
@@ -79,7 +91,7 @@ impl KernelDatabaseChecker {
         for (node_id, state) in internal_nodes {
             match state {
                 NodeCheckerState::NoOwner(partition_count) => {
-                    if !node_id.is_global() {
+                    if !node_id.is_global() && !node_id.is_boot_loader() {
                         return Err(KernelDatabaseCheckError::NoOwnerForNonGlobalNode(node_id));
                     }
 

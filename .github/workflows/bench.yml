@@ -14,15 +14,8 @@ jobs:
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: RDXWorks-actions/checkout@main
-      - name: Setup cmake
-        uses: RDXWorks-actions/actions-setup-cmake@master
-        with:
-          cmake-version: '3.27.9'
-      - uses: RDXWorks-actions/toolchain@master
-        with:
-          toolchain: stable
-      - name: Add wasm target
-        run: rustup target add wasm32-unknown-unknown
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - uses: radixdlt/criterion-compare-action@update-same-commit
         with:
           branchName: ${{ github.base_ref }}

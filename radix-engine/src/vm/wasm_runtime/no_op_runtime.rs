@@ -305,4 +305,45 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
     fn costing_get_fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
+
+    fn crypto_utils_bls12381_v1_verify(
+        &mut self,
+        message: Vec<u8>,
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    #[cfg(feature = "enable_bls_aggregate_verify")]
+    fn crypto_utils_bls12381_v1_aggregate_verify(
+        &mut self,
+        pub_keys_and_msgs: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn crypto_utils_bls12381_v1_fast_aggregate_verify(
+        &mut self,
+        message: Vec<u8>,
+        public_keys: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn crypto_utils_bls12381_g2_signature_aggregate(
+        &mut self,
+        signatures: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn crypto_utils_keccak256_hash(
+        &mut self,
+        data: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
 }

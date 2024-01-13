@@ -66,6 +66,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "blst"
+version = "0.3.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c94087b935a822949d3291a9989ad2b2051ea141eda0fd4e478a75f6aa3e604b"
+dependencies = [
+ "cc",
+ "glob 0.3.1",
+ "threadpool",
+ "zeroize",
+]
+
+[[package]]
 name = "bnum"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -515,6 +527,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 
 [[package]]
+name = "keccak"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f6d5ed8676d904364de097082f4e7d240b571b67989ced0240f08b7f966f940"
+dependencies = [
+ "cpufeatures",
+]
+
+[[package]]
 name = "kv_store"
 version = "0.1.0"
 dependencies = [
@@ -849,7 +870,9 @@ version = "1.0.2-dev"
 dependencies = [
  "bech32",
  "blake2",
+ "blst",
  "bnum",
+ "ed25519-dalek",
  "hex",
  "lazy_static",
  "num-bigint",
@@ -858,7 +881,9 @@ dependencies = [
  "paste",
  "radix-engine-derive",
  "sbor",
+ "secp256k1",
  "serde",
+ "sha3",
  "strum",
  "utils",
 ]
@@ -1281,6 +1306,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3"
+version = "0.10.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
+dependencies = [
+ "digest 0.10.7",
+ "keccak",
+]
+
+[[package]]
 name = "signature"
 version = "1.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1430,17 +1465,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "threadpool"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
+dependencies = [
+ "num_cpus",
+]
+
+[[package]]
 name = "transaction"
 version = "1.0.2-dev"
 dependencies = [
  "bech32",
- "ed25519-dalek",
  "hex",
  "lazy_static",
  "radix-engine-common",
  "radix-engine-interface",
  "sbor",
- "secp256k1",
  "strum",
  "utils",
 ]

@@ -45,8 +45,6 @@ impl Ed25519PrivateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::validation::verify_ed25519;
-    use radix_engine_interface::crypto::hash;
     use sbor::rust::str::FromStr;
 
     #[test]
