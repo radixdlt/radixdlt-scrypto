@@ -81,6 +81,13 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
         // Reference management
         for reference in references.iter() {
             let node_id = &reference.0;
+
+            if node_id.is_boot_loader() {
+                return Err(RuntimeError::KernelError(KernelError::InvalidReference(
+                    *node_id,
+                )));
+            }
+
             if node_id.is_global_virtual() {
                 // For virtual accounts, create a reference directly
                 kernel

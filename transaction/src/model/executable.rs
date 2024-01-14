@@ -81,7 +81,7 @@ impl Default for TransactionCostingParameters {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Executable<'a> {
     pub(crate) encoded_instructions: &'a [u8],
-    pub(crate) references: IndexSet<Reference>,
+    pub references: IndexSet<Reference>,
     pub(crate) blobs: &'a IndexMap<Hash, Vec<u8>>,
     pub(crate) context: ExecutionContext,
 }
