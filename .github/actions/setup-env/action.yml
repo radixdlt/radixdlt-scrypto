@@ -4,12 +4,12 @@ description: 'Common GH action to setup job environment'
 runs:
   using: "composite"
   steps:
-    - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        default: true
-        target: wasm32-unknown-unknown
+    # - name: Install Rust toolchain
+    #   uses: actions-rs/toolchain@v1
+    #   with:
+    #     toolchain: stable
+    #     default: true
+    #     target: wasm32-unknown-unknown
 
     - name: Install nextest
       uses: taiki-e/install-action@nextest
