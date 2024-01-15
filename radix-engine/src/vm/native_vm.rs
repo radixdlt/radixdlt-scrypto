@@ -5,7 +5,7 @@ use crate::blueprints::consensus_manager::{
 };
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
-use crate::blueprints::pool::PoolNativePackage;
+use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::test_utils::TestUtilsNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
@@ -147,7 +147,12 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     ROLE_ASSIGNMENT_CODE_ID => {
                         RoleAssignmentNativePackage::invoke_export(export_name, input, api)
                     }
-                    POOL_CODE_ID => PoolNativePackage::invoke_export(export_name, input, api),
+                    POOL_V1_0_CODE_ID => PoolNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        PoolV1MinorVersion::Zero,
+                        api,
+                    ),
                     TRANSACTION_TRACKER_CODE_ID => {
                         TransactionTrackerNativePackage::invoke_export(export_name, input, api)
                     }

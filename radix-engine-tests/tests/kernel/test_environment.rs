@@ -1,6 +1,6 @@
-use radix_engine_tests::common::*;
 use native_sdk::resource::*;
 use radix_engine_queries::typed_substate_layout::two_resource_pool::*;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
 #[test]
@@ -176,10 +176,12 @@ fn references_read_from_state_are_visible_in_tests1() {
         .unwrap();
 
     // Act
-    let VersionedTwoResourcePoolState::V1(TwoResourcePoolSubstate {
-        vaults: [(_, vault1), (_, _)],
-        ..
-    }) = env.read_component_state(radiswap_pool_component).unwrap();
+    let VersionedTwoResourcePoolState::V1(
+        radix_engine::blueprints::pool::v1::substates::two_resource_pool::Substate {
+            vaults: [(_, vault1), (_, _)],
+            ..
+        },
+    ) = env.read_component_state(radiswap_pool_component).unwrap();
 
     // Assert
     vault1

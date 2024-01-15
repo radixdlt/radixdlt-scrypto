@@ -1,4 +1,6 @@
-use radix_engine::blueprints::pool::one_resource_pool::*;
+use radix_engine::blueprints::pool::v1::constants::*;
+use radix_engine::blueprints::pool::v1::errors::one_resource_pool::Error as OneResourcePoolError;
+use radix_engine::blueprints::pool::v1::events::one_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;

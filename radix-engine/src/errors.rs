@@ -2,9 +2,11 @@ use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::consensus_manager::{ConsensusManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
-use crate::blueprints::pool::multi_resource_pool::MultiResourcePoolError;
-use crate::blueprints::pool::one_resource_pool::OneResourcePoolError;
-use crate::blueprints::pool::two_resource_pool::TwoResourcePoolError;
+use crate::blueprints::pool::v1::errors::{
+    multi_resource_pool::Error as MultiResourcePoolError,
+    one_resource_pool::Error as OneResourcePoolError,
+    two_resource_pool::Error as TwoResourcePoolError,
+};
 use crate::blueprints::resource::{AuthZoneError, NonFungibleVaultError};
 use crate::blueprints::resource::{
     BucketError, FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError,

@@ -1,6 +1,5 @@
 use radix_engine::errors::{SystemError, SystemModuleError};
 use radix_engine::{
-    blueprints::pool::multi_resource_pool::*,
     errors::{ApplicationError, RuntimeError},
     transaction::{BalanceChange, TransactionReceipt},
     types::*,
@@ -11,6 +10,10 @@ use radix_engine_interface::blueprints::pool::*;
 use scrypto::prelude::Pow;
 use scrypto_unit::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
+
+use radix_engine::blueprints::pool::v1::constants::*;
+use radix_engine::blueprints::pool::v1::errors::multi_resource_pool::Error as MultiResourcePoolError;
+use radix_engine::blueprints::pool::v1::events::multi_resource_pool::*;
 
 #[test]
 fn multi_resource_pool_can_be_instantiated() {

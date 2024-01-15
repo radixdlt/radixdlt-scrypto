@@ -1,218 +1,21 @@
-use crate::blueprints::pool::one_resource_pool::*;
-use crate::blueprints::pool::POOL_MANAGER_ROLE;
-use crate::errors::*;
+use crate::blueprints::pool::v1::constants::*;
+use crate::blueprints::pool::v1::errors::one_resource_pool::*;
+use crate::blueprints::pool::v1::events::one_resource_pool::*;
+use crate::blueprints::pool::v1::substates::one_resource_pool::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::*;
-use crate::types::{ReceiverInfo, TypeRef};
-use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::*;
 use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
-use native_sdk::runtime::Runtime;
-use radix_engine_common::math::*;
-use radix_engine_common::prelude::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::component::Global;
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
-};
+use native_sdk::runtime::*;
+use radix_engine_interface::blueprints::component::*;
 use radix_engine_interface::blueprints::pool::*;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::prelude::{
-    BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintSchemaInit, FunctionSchemaInit,
-};
-use radix_engine_interface::types::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::*;
-
-pub const ONE_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "OneResourcePool";
-
-declare_native_blueprint_state! {
-    blueprint_ident: OneResourcePool,
-    blueprint_snake_case: one_resource_pool,
-    features: {
-    },
-    fields: {
-        state:  {
-            ident: State,
-            field_type: {
-                kind: StaticSingleVersioned,
-            },
-            condition: Condition::Always,
-        }
-    },
-    collections: {
-    }
-}
-
-pub type OneResourcePoolStateV1 = OneResourcePoolSubstate;
 
 pub struct OneResourcePoolBlueprint;
 impl OneResourcePoolBlueprint {
-    pub fn definition() -> BlueprintDefinitionInit {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let feature_set = OneResourcePoolFeatureSet::all_features();
-        let state = OneResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
-        let mut functions = index_map_new();
-
-        functions.insert(
-            ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: None,
-                input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<OneResourcePoolInstantiateInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<OneResourcePoolInstantiateOutput>(),
-                ),
-                export: ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            ONE_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<OneResourcePoolContributeInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<OneResourcePoolContributeOutput>(),
-                ),
-                export: ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            ONE_RESOURCE_POOL_REDEEM_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<OneResourcePoolRedeemInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<OneResourcePoolRedeemOutput>(),
-                ),
-                export: ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedDepositOutput>(),
-                ),
-                export: ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolProtectedWithdrawOutput>(),
-                ),
-                export: ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetRedemptionValueOutput>(
-                        ),
-                ),
-                export: ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<OneResourcePoolGetVaultAmountOutput>(),
-                ),
-                export: ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME.to_string(),
-            },
-        );
-
-        let event_schema = event_schema! {
-            aggregator,
-            [
-                ContributionEvent,
-                RedemptionEvent,
-                WithdrawEvent,
-                DepositEvent
-            ]
-        };
-
-        let schema = generate_full_schema(aggregator);
-
-        BlueprintDefinitionInit {
-            blueprint_type: BlueprintType::default(),
-            is_transient: false,
-            dependencies: indexset!(),
-            feature_set,
-
-            schema: BlueprintSchemaInit {
-                generics: vec![],
-                schema,
-                state,
-                events: event_schema,
-                types: BlueprintTypeSchemaInit::default(),
-                functions: BlueprintFunctionsSchemaInit { functions },
-                hooks: BlueprintHooksInit::default(),
-            },
-
-            royalty_config: PackageRoyaltyConfig::default(),
-            auth_config: AuthConfig {
-                function_auth: FunctionAuth::AllowAll,
-                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
-                    roles {
-                        POOL_MANAGER_ROLE;
-                    },
-                    methods {
-                        // Main Module rules
-                        ONE_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
-                        ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
-                        ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT => MethodAccessibility::Public;
-                        ONE_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
-                        ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
-                        ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
-                    }
-                }),
-            },
-        }
-    }
-
     pub fn instantiate<Y>(
         resource_address: ResourceAddress,
         owner_role: OwnerRole,
@@ -227,7 +30,7 @@ impl OneResourcePoolBlueprint {
         // fungible resources.
         let resource_manager = ResourceManager(resource_address);
         if let ResourceType::NonFungible { .. } = resource_manager.resource_type(api)? {
-            Err(OneResourcePoolError::NonFungibleResourcesAreNotAccepted { resource_address })?
+            Err(Error::NonFungibleResourcesAreNotAccepted { resource_address })?
         }
 
         // Allocating the component address of the pool - this will be used later for the component
@@ -291,7 +94,7 @@ impl OneResourcePoolBlueprint {
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
         let object_id = {
             let vault = Vault::create(resource_address, api)?;
-            let substate = OneResourcePoolSubstate {
+            let substate = Substate {
                 vault,
                 pool_unit_resource_manager,
             };
@@ -333,7 +136,7 @@ impl OneResourcePoolBlueprint {
         let mut vault = substate.vault;
 
         if bucket.is_empty(api)? {
-            return Err(OneResourcePoolError::ContributionOfEmptyBucketError.into());
+            return Err(Error::ContributionOfEmptyBucketError.into());
         }
 
         /*
@@ -368,14 +171,14 @@ impl OneResourcePoolBlueprint {
             (false, false) => Ok(amount_of_contributed_resources),
             (false, true) => amount_of_contributed_resources
                 .checked_add(reserves)
-                .ok_or(OneResourcePoolError::DecimalOverflowError),
-            (true, false) => Err(OneResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves),
+                .ok_or(Error::DecimalOverflowError),
+            (true, false) => Err(Error::NonZeroPoolUnitSupplyButZeroReserves),
             // Note: we do the division first to make it harder for the calculation to overflow. The
             // amount_of_contributed_resources / reserves is guaranteed to be in the range of [0, 1]
             (true, true) => amount_of_contributed_resources
                 .checked_div(reserves)
                 .and_then(|d| d.checked_mul(pool_unit_total_supply))
-                .ok_or(OneResourcePoolError::DecimalOverflowError),
+                .ok_or(Error::DecimalOverflowError),
         }?;
 
         vault.put(bucket, api)?;
@@ -414,7 +217,7 @@ impl OneResourcePoolBlueprint {
         // Ensure that the passed pool resources are indeed pool resources
         let bucket_resource_address = bucket.resource_address(api)?;
         if bucket_resource_address != pool_unit_resource_manager.0 {
-            return Err(OneResourcePoolError::InvalidPoolUnitResource {
+            return Err(Error::InvalidPoolUnitResource {
                 expected: pool_unit_resource_manager.0,
                 actual: bucket_resource_address,
             }
@@ -535,7 +338,7 @@ impl OneResourcePoolBlueprint {
             || amount_of_pool_units.is_zero()
             || amount_of_pool_units > pool_units_total_supply
         {
-            return Err(OneResourcePoolError::InvalidGetRedemptionAmount.into());
+            return Err(Error::InvalidGetRedemptionAmount.into());
         }
 
         let pool_resource_reserves = vault.amount(api)?;
@@ -587,14 +390,14 @@ impl OneResourcePoolBlueprint {
         let amount_owed = pool_units_to_redeem
             .checked_div(pool_units_total_supply)
             .and_then(|d| d.checked_mul(pool_resource_reserves))
-            .ok_or(OneResourcePoolError::DecimalOverflowError)?;
+            .ok_or(Error::DecimalOverflowError)?;
 
         let amount_owed = if pool_resource_divisibility == 18 {
             amount_owed
         } else {
             amount_owed
                 .checked_round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
-                .ok_or(OneResourcePoolError::DecimalOverflowError)?
+                .ok_or(Error::DecimalOverflowError)?
         };
 
         Ok(amount_owed)
@@ -603,7 +406,7 @@ impl OneResourcePoolBlueprint {
     fn lock_and_read<Y>(
         api: &mut Y,
         lock_flags: LockFlags,
-    ) -> Result<(OneResourcePoolSubstate, SubstateHandle), RuntimeError>
+    ) -> Result<(Substate, SubstateHandle), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

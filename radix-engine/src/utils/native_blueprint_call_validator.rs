@@ -1,8 +1,6 @@
 use crate::blueprints::native_schema::*;
 use crate::blueprints::package::*;
-use crate::blueprints::pool::multi_resource_pool::*;
-use crate::blueprints::pool::one_resource_pool::*;
-use crate::blueprints::pool::two_resource_pool::*;
+use crate::blueprints::pool::v1::constants::*;
 use radix_engine_common::data::manifest::*;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -164,7 +162,8 @@ fn get_arguments_schema<'s>(
             .map(Some)?
         }
         Invocation::Function(package_address @ POOL_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(&POOL_PACKAGE_DEFINITION, package_address, blueprint).map(Some)?
+            get_blueprint_schema(&POOL_PACKAGE_DEFINITION_V1_0, package_address, blueprint)
+                .map(Some)?
         }
         Invocation::Function(package_address @ TRANSACTION_PROCESSOR_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
@@ -222,13 +221,13 @@ fn get_arguments_schema<'s>(
                     .blueprints
                     .get(ACCESS_CONTROLLER_BLUEPRINT),
 
-                EntityType::GlobalOneResourcePool => POOL_PACKAGE_DEFINITION
+                EntityType::GlobalOneResourcePool => POOL_PACKAGE_DEFINITION_V1_0
                     .blueprints
                     .get(ONE_RESOURCE_POOL_BLUEPRINT_IDENT),
-                EntityType::GlobalTwoResourcePool => POOL_PACKAGE_DEFINITION
+                EntityType::GlobalTwoResourcePool => POOL_PACKAGE_DEFINITION_V1_0
                     .blueprints
                     .get(TWO_RESOURCE_POOL_BLUEPRINT_IDENT),
-                EntityType::GlobalMultiResourcePool => POOL_PACKAGE_DEFINITION
+                EntityType::GlobalMultiResourcePool => POOL_PACKAGE_DEFINITION_V1_0
                     .blueprints
                     .get(MULTI_RESOURCE_POOL_BLUEPRINT_IDENT),
 
