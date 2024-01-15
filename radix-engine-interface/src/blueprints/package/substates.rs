@@ -15,6 +15,7 @@ pub const POOL_V1_0_CODE_ID: u64 = 13u64;
 pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
 pub const TEST_UTILS_CODE_ID: u64 = 15u64;
 pub const CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID: u64 = 16u64;
+pub const POOL_V1_1_CODE_ID: u64 = 17u64;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
