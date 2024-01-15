@@ -13,6 +13,8 @@ use sbor::rust::prelude::*;
 
 pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
 
+pub const BOOT_LOADER_PARTITION: PartitionNumber = PartitionNumber(32u8);
+
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum TypeInfoField {

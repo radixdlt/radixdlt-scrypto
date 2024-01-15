@@ -57,12 +57,6 @@ impl NodeId {
         EntityType::from_repr(self.0[0])
     }
 
-    /// Boot Loader means the Node is part of the boot loading process and does
-    /// not represent any sort of entity.
-    pub const fn is_boot_loader(&self) -> bool {
-        self.0[0] == BOOT_LOADER_RESERVED_NODE_ID_FIRST_BYTE
-    }
-
     /// `Global` means root nodes in the store
     pub const fn is_global(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_global())
