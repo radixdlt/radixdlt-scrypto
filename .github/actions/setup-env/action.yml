@@ -24,7 +24,9 @@ runs:
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
       if: runner.os == 'Windows'
       run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+      shell: cmd
     - name: Install dependencies
       if: runner.os == 'Windows'
       run: choco install llvm -y
+      shell: cmd
 
