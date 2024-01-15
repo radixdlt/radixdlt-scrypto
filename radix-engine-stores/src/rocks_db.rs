@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use radix_engine_common::prelude::MAX_SUBSTATE_KEY_SIZE;
 use radix_engine_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
 use rocksdb::{
@@ -102,13 +103,16 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
                     PartitionDatabaseUpdates::Reset {
                         new_substate_values,
                     } => {
+                        let group =
+                            DbSortKey(vec![])..DbSortKey(vec![u8::MAX; 2 * MAX_SUBSTATE_KEY_SIZE]);
+
                         // Note: a plain `delete_range()` is missing from rocksdb's API, and
                         // (at the moment of writing) this is the only reason of having CF.
                         self.db
                             .delete_range_cf(
                                 self.cf(),
-                                encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
-                                encode_to_rocksdb_bytes(&partition_key.next(), &DbSortKey(vec![])),
+                                encode_to_rocksdb_bytes(&partition_key, &group.start),
+                                encode_to_rocksdb_bytes(&partition_key, &group.end),
                             )
                             .expect("IO error");
                         for (sort_key, value_bytes) in new_substate_values {
