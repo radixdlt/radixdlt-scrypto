@@ -12,6 +12,7 @@ runs:
     #     target: wasm32-unknown-unknown
 
     - name: Install Rust toolchain
+      if: runner.os != 'Windows'
       uses: crusty-pie/toolchain@v1
       with:
           toolchain: stable
