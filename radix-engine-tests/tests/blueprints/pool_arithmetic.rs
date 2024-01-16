@@ -533,6 +533,59 @@ fn two_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_er
 }
 
 #[test]
+fn two_resource_pool_contribution_errors_when_both_reserves_are_empty() -> Result<(), RuntimeError>
+{
+    // Arrange
+    let env = &mut TestEnvironment::new();
+
+    let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
+        .divisibility(DIVISIBILITY_MAXIMUM)
+        .mint_initial_supply(dec!(100_000_000_000), env)?;
+    let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
+        .divisibility(DIVISIBILITY_MAXIMUM)
+        .mint_initial_supply(dec!(100_000_000_000), env)?;
+
+    let resource_address1 = bucket1.resource_address(env)?;
+    let resource_address2 = bucket2.resource_address(env)?;
+
+    let mut pool = TwoResourcePool::instantiate(
+        (resource_address1, resource_address2),
+        OwnerRole::None,
+        rule!(allow_all),
+        None,
+        env,
+    )?;
+
+    let _ = {
+        let contribution_bucket1 = bucket1.take(dec!(1), env)?;
+        let contribution_bucket2 = bucket2.take(dec!(1), env)?;
+        pool.contribute((contribution_bucket1, contribution_bucket2), env)?
+    };
+
+    let _ = pool.protected_withdraw(resource_address1, dec!(1), WithdrawStrategy::Exact, env)?;
+    let _ = pool.protected_withdraw(resource_address2, dec!(1), WithdrawStrategy::Exact, env)?;
+
+    // Act
+    let rtn = {
+        let contribution_bucket1 = bucket1.take(dec!(1), env)?;
+        let contribution_bucket2 = bucket2.take(dec!(1), env)?;
+        pool.contribute((contribution_bucket1, contribution_bucket2), env)
+    };
+
+    // Assert
+    assert!(matches!(
+        rtn,
+        Err(RuntimeError::ApplicationError(
+            ApplicationError::TwoResourcePoolError(
+                TwoResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves
+            )
+        ))
+    ));
+
+    Ok(())
+}
+
+#[test]
 fn multi_resource_pool_accepts_very_large_contributions() -> Result<(), RuntimeError> {
     // Arrange
     let divisibility = core::array::from_fn::<u8, 16, _>(|_| DIVISIBILITY_MAXIMUM);
@@ -823,6 +876,46 @@ fn multi_resource_pool_redemption_value_calculation_does_not_lose_precision_at_d
 
             // Assert
             assert!(redemption_amount.values().all(|value| !value.is_zero()));
+            Ok(())
+        },
+    )
+}
+
+#[test]
+fn multi_resource_pool_contribution_errors_when_both_reserves_are_empty() -> Result<(), RuntimeError>
+{
+    // Arrange
+    with_multi_resource_pool(
+        [18, 18],
+        |env, [(bucket1, resource_address1), (bucket2, resource_address2)], mut pool| {
+            let _ = {
+                let contribution_bucket1 = bucket1.take(dec!(1), env)?;
+                let contribution_bucket2 = bucket2.take(dec!(1), env)?;
+                pool.contribute([contribution_bucket1, contribution_bucket2], env)?
+            };
+
+            let _ =
+                pool.protected_withdraw(resource_address1, dec!(1), WithdrawStrategy::Exact, env)?;
+            let _ =
+                pool.protected_withdraw(resource_address2, dec!(1), WithdrawStrategy::Exact, env)?;
+
+            // Act
+            let rtn = {
+                let contribution_bucket1 = bucket1.take(dec!(1), env)?;
+                let contribution_bucket2 = bucket2.take(dec!(1), env)?;
+                pool.contribute([contribution_bucket1, contribution_bucket2], env)
+            };
+
+            // Assert
+            assert!(matches!(
+                rtn,
+                Err(RuntimeError::ApplicationError(
+                    ApplicationError::MultiResourcePoolError(
+                        MultiResourcePoolError::NoMinimumRatio
+                    )
+                ))
+            ));
+
             Ok(())
         },
     )
