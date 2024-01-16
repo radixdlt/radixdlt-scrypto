@@ -1,5 +1,4 @@
 use crate::crypto::blake2b_256_hash;
-use crate::ScryptoSbor;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;

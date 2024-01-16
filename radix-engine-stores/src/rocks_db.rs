@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use radix_engine_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_engine_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
 use rocksdb::{
@@ -108,7 +109,10 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
                             .delete_range_cf(
                                 self.cf(),
                                 encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
-                                encode_to_rocksdb_bytes(&partition_key.next(), &DbSortKey(vec![])),
+                                encode_to_rocksdb_bytes(
+                                    &partition_key,
+                                    &DbSortKey(vec![u8::MAX; 2 * MAX_SUBSTATE_KEY_SIZE]),
+                                ),
                             )
                             .expect("IO error");
                         for (sort_key, value_bytes) in new_substate_values {

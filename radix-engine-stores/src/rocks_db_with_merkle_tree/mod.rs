@@ -2,6 +2,7 @@ use crate::hash_tree::tree_store::{
     encode_key, NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, TreeNodeV1, VersionedTreeNode,
 };
 use itertools::Itertools;
+use radix_engine_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_common::prelude::Hash;
 use radix_engine_derive::ScryptoSbor;
@@ -184,7 +185,10 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
                             .delete_range_cf(
                                 self.cf(SUBSTATES_CF),
                                 encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
-                                encode_to_rocksdb_bytes(&partition_key.next(), &DbSortKey(vec![])),
+                                encode_to_rocksdb_bytes(
+                                    &partition_key,
+                                    &DbSortKey(vec![u8::MAX; 2 * MAX_SUBSTATE_KEY_SIZE]),
+                                ),
                             )
                             .expect("IO error");
                         for (sort_key, value_bytes) in new_substate_values {
