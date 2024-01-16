@@ -106,6 +106,7 @@ pub enum SystemPartitionCheckError {
     InvalidTypeInfoValue,
     InvalidSchemaKey,
     InvalidSchemaValue,
+    InvalidBootLoaderPartition,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -480,6 +481,20 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 
         for partition_descriptor in partition_descriptors {
             match partition_descriptor {
+                SystemPartitionDescriptor::BootLoader => {
+                    if node_checker_state
+                        .node_id
+                        .ne(TRANSACTION_TRACKER.as_node_id())
+                    {
+                        return Err(SystemPartitionCheckError::InvalidBootLoaderPartition);
+                    }
+
+                    for (key, _value) in reader
+                        .substates_iter::<FieldKey>(&node_checker_state.node_id, partition_number)
+                    {
+                        substate_count += 1;
+                    }
+                }
                 SystemPartitionDescriptor::TypeInfo => {
                     for (key, value) in reader
                         .substates_iter::<FieldKey>(&node_checker_state.node_id, partition_number)
