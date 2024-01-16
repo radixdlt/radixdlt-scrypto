@@ -54,6 +54,7 @@ pub enum ObjectPartitionDescriptor {
 
 #[derive(Clone, Debug)]
 pub enum SystemPartitionDescriptor {
+    BootLoader,
     TypeInfo,
     Schema,
     KeyValueStore,
@@ -947,6 +948,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         partition_num: &PartitionNumber,
     ) -> Result<Vec<SystemPartitionDescriptor>, SystemReaderError> {
         let mut descriptors = Vec::new();
+
+        if partition_num.eq(&BOOT_LOADER_PARTITION) {
+            descriptors.push(SystemPartitionDescriptor::BootLoader);
+        }
 
         if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
             descriptors.push(SystemPartitionDescriptor::TypeInfo);

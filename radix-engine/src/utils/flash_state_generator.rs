@@ -1,6 +1,5 @@
 use crate::blueprints::consensus_manager::{
     ConsensusManagerField, VersionedConsensusManagerConfiguration,
-    VersionedConsensusManagerConfigurationVersion,
 };
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::internal_prelude::{
@@ -10,9 +9,9 @@ use crate::internal_prelude::{
 };
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
-use crate::vm::{VmBoot, BOOT_LOADER_VM_PARTITION_NUM, BOOT_LOADER_VM_SUBSTATE_FIELD_KEY};
+use crate::vm::{VmBoot, BOOT_LOADER_VM_SUBSTATE_FIELD_KEY};
 use radix_engine_common::constants::{
-    BOOT_LOADER_STATE, CONSENSUS_MANAGER, CONSENSUS_MANAGER_PACKAGE,
+    CONSENSUS_MANAGER, CONSENSUS_MANAGER_PACKAGE, TRANSACTION_TRACKER,
 };
 use radix_engine_common::crypto::hash;
 use radix_engine_common::math::Decimal;
@@ -32,7 +31,9 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::prelude::IsHash;
 use radix_engine_interface::prelude::ToString;
 use radix_engine_interface::prelude::{HasSchemaHash, ModuleId};
-use radix_engine_interface::types::{CollectionDescriptor, MAIN_BASE_PARTITION};
+use radix_engine_interface::types::{
+    CollectionDescriptor, BOOT_LOADER_PARTITION, MAIN_BASE_PARTITION,
+};
 use radix_engine_store_interface::interface::{DatabaseUpdate, SubstateDatabase};
 use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
@@ -46,9 +47,9 @@ pub fn generate_vm_boot_scrypto_minor_version_state_updates() -> StateUpdates {
 
     StateUpdates {
         by_node: indexmap!(
-            BOOT_LOADER_STATE => NodeStateUpdates::Delta {
+            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
                 by_partition: indexmap! {
-                    BOOT_LOADER_VM_PARTITION_NUM => PartitionStateUpdates::Delta {
+                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(substate)
                         }
