@@ -13,7 +13,6 @@ pub enum KernelDatabaseCheckError {
     NonGlobalReference(NodeId),
     NoOwnerForNonGlobalNode(NodeId),
     ZeroPartitionCount(NodeId),
-    CannotOwnBootLoaderNode(NodeId),
 }
 
 pub enum NodeCheckerState {
