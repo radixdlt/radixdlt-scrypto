@@ -1,13 +1,10 @@
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
+use crate::blueprints::pool::v1::constants::*;
 use crate::blueprints::pool::v1::package::*;
-use crate::internal_prelude::{
-    KeyValueEntryPayload, PackageCodeOriginalCodeV1, PackageCodeVmTypeV1, PackageCollection,
-    VersionedPackageBlueprintVersionDefinition, VersionedPackageCodeOriginalCode,
-    VersionedPackageCodeVmTypeVersion,
-};
+use crate::internal_prelude::*;
+use crate::system::attached_modules::role_assignment::*;
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
-use crate::system::system_type_checker::SystemMapper;
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 use crate::vm::VmApi;
 use crate::vm::{VmBoot, BOOT_LOADER_VM_PARTITION_NUM, BOOT_LOADER_VM_SUBSTATE_FIELD_KEY};
@@ -18,10 +15,10 @@ use radix_engine_common::prelude::{scrypto_encode, ScryptoCustomTypeKind};
 use radix_engine_common::types::SubstateKey;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::CollectionDescriptor;
-use radix_engine_store_interface::interface::{DatabaseUpdate, SubstateDatabase};
+use radix_engine_store_interface::db_key_mapper::*;
+use radix_engine_store_interface::interface::*;
 use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
 use utils::indexmap;
@@ -234,9 +231,12 @@ pub mod pools_package_v1_1 {
         PackageCollection::CodeInstrumentedCodeKeyValue,
     ];
 
-    pub fn generate_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+    pub fn generate_state_updates<S: SubstateDatabase + ListableSubstateDatabase>(
+        db: &S,
+    ) -> StateUpdates {
         let mut state_updates = StateUpdates::default();
         generate_package_state_updated(db, &mut state_updates);
+        generate_role_assignment_update(db, &mut state_updates);
         state_updates
     }
 
@@ -300,6 +300,61 @@ pub mod pools_package_v1_1 {
                             .map(|(key, value)| (key, DatabaseUpdate::Set(value.into()))),
                     );
             })
+    }
+
+    fn generate_role_assignment_update<S: SubstateDatabase + ListableSubstateDatabase>(
+        db: &S,
+        state_updates: &mut StateUpdates,
+    ) {
+        let reader = SystemDatabaseReader::new(db);
+
+        // Find all pools so that we apply this state changes to them
+        let pools = reader.partitions_iter().filter_map(|(node_id, _)| {
+            if node_id.entity_type().is_some_and(|entity_type| {
+                matches!(
+                    entity_type,
+                    EntityType::GlobalOneResourcePool
+                        | EntityType::GlobalTwoResourcePool
+                        | EntityType::GlobalMultiResourcePool
+                )
+            }) {
+                Some(node_id)
+            } else {
+                None
+            }
+        });
+
+        let key = SubstateKey::Map(scrypto_encode(&POOL_CONTRIBUTOR_ROLE).unwrap());
+        let mut already_seen = indexset! {};
+        for node_id in pools {
+            if already_seen.contains(&node_id) {
+                continue;
+            } else {
+                already_seen.insert(node_id)
+            };
+
+            let partition_number = reader
+                .get_partition_of_collection(
+                    &node_id,
+                    ModuleId::RoleAssignment,
+                    RoleAssignmentCollection::AccessRuleKeyValue.collection_index(),
+                )
+                .unwrap();
+
+            let substate_value = db
+                .get_substate(
+                    &SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_number),
+                    &SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
+                        scrypto_encode(&POOL_MANAGER_ROLE).unwrap(),
+                    )),
+                )
+                .unwrap();
+
+            state_updates
+                .of_node(node_id)
+                .of_partition(partition_number)
+                .update_substates([(key.clone(), DatabaseUpdate::Set(substate_value))])
+        }
     }
 
     struct MockVmApi;

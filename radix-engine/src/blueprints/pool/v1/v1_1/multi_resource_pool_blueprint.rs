@@ -26,6 +26,27 @@ impl MultiResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi,
     {
+        Self::instantiate_with_contributor_rule(
+            resource_addresses,
+            owner_role,
+            pool_manager_rule.clone(),
+            pool_manager_rule,
+            address_reservation,
+            api,
+        )
+    }
+
+    pub fn instantiate_with_contributor_rule<Y>(
+        resource_addresses: IndexSet<ResourceAddress>,
+        owner_role: OwnerRole,
+        pool_manager_rule: AccessRule,
+        pool_contributor_rule: AccessRule,
+        address_reservation: Option<GlobalAddressReservation>,
+        api: &mut Y,
+    ) -> Result<MultiResourcePoolInstantiateOutput, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi,
+    {
         // A pool can't be created where one of the resources is non-fungible - error out if any of
         // them are
         for resource_address in resource_addresses.iter() {
@@ -91,6 +112,7 @@ impl MultiResourcePoolBlueprint {
             indexmap! {
                 ModuleId::Main => roles_init! {
                     RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
+                    RoleKey { key: POOL_CONTRIBUTOR_ROLE.to_owned() } => pool_contributor_rule;
                 }
             },
             api,

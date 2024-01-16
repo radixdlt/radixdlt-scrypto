@@ -26,6 +26,27 @@ impl OneResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi,
     {
+        Self::instantiate_with_contributor_rule(
+            resource_address,
+            owner_role,
+            pool_manager_rule.clone(),
+            pool_manager_rule,
+            address_reservation,
+            api,
+        )
+    }
+
+    pub fn instantiate_with_contributor_rule<Y>(
+        resource_address: ResourceAddress,
+        owner_role: OwnerRole,
+        pool_manager_rule: AccessRule,
+        pool_contributor_rule: AccessRule,
+        address_reservation: Option<GlobalAddressReservation>,
+        api: &mut Y,
+    ) -> Result<OneResourcePoolInstantiateOutput, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi,
+    {
         // Validate that the resource is a fungible resource - a pool can't be created with non
         // fungible resources.
         let resource_manager = ResourceManager(resource_address);
@@ -78,6 +99,7 @@ impl OneResourcePoolBlueprint {
             indexmap! {
                 ModuleId::Main => roles_init! {
                     RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
+                    RoleKey { key: POOL_CONTRIBUTOR_ROLE.to_owned() } => pool_contributor_rule;
                 }
             },
             api,

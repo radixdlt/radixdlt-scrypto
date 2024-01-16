@@ -26,6 +26,27 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi,
     {
+        Self::instantiate_with_contributor_rule(
+            (resource_address1, resource_address2),
+            owner_role,
+            pool_manager_rule.clone(),
+            pool_manager_rule,
+            address_reservation,
+            api,
+        )
+    }
+
+    pub fn instantiate_with_contributor_rule<Y>(
+        (resource_address1, resource_address2): (ResourceAddress, ResourceAddress),
+        owner_role: OwnerRole,
+        pool_manager_rule: AccessRule,
+        pool_contributor_rule: AccessRule,
+        address_reservation: Option<GlobalAddressReservation>,
+        api: &mut Y,
+    ) -> Result<TwoResourcePoolInstantiateOutput, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi,
+    {
         // A pool can't be created between the same resources - error out if it's
         if resource_address1 == resource_address2 {
             return Err(Error::PoolCreationWithSameResource.into());
@@ -86,6 +107,7 @@ impl TwoResourcePoolBlueprint {
             indexmap! {
                 ModuleId::Main => roles_init! {
                     RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
+                    RoleKey { key: POOL_CONTRIBUTOR_ROLE.to_owned() } => pool_contributor_rule;
                 }
             },
             api,
