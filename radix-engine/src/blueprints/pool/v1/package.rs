@@ -60,6 +60,31 @@ impl PoolNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
+            ONE_RESOURCE_POOL_INSTANTIATE_WITH_CONTRIBUTOR_RULE_EXPORT_NAME
+                if minor_version >= PoolV1MinorVersion::One =>
+            {
+                let OneResourcePoolInstantiateWithContributorRuleInput {
+                    resource_address,
+                    pool_manager_rule,
+                    pool_contributor_rule,
+                    owner_role,
+                    address_reservation,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = super::v1_1::OneResourcePoolBlueprint::instantiate_with_contributor_rule(
+                    resource_address,
+                    owner_role,
+                    pool_manager_rule,
+                    pool_contributor_rule,
+                    address_reservation,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
             ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME => {
                 let OneResourcePoolContributeInput { bucket } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -195,6 +220,31 @@ impl PoolNativePackage {
                         api,
                     )?,
                 };
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
+            TWO_RESOURCE_POOL_INSTANTIATE_WITH_CONTRIBUTOR_RULE_EXPORT_NAME
+                if minor_version >= PoolV1MinorVersion::One =>
+            {
+                let TwoResourcePoolInstantiateWithContributorRuleInput {
+                    resource_addresses,
+                    pool_manager_rule,
+                    pool_contributor_rule,
+                    owner_role,
+                    address_reservation,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = super::v1_1::TwoResourcePoolBlueprint::instantiate_with_contributor_rule(
+                    resource_addresses,
+                    owner_role,
+                    pool_manager_rule,
+                    pool_contributor_rule,
+                    address_reservation,
+                    api,
+                )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -341,6 +391,32 @@ impl PoolNativePackage {
                         )?
                     }
                 };
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
+            MULTI_RESOURCE_POOL_INSTANTIATE_WITH_CONTRIBUTOR_RULE_EXPORT_NAME
+                if minor_version >= PoolV1MinorVersion::One =>
+            {
+                let MultiResourcePoolInstantiateWithContributorRuleInput {
+                    resource_addresses,
+                    pool_manager_rule,
+                    pool_contributor_rule,
+                    owner_role,
+                    address_reservation,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn =
+                    super::v1_1::MultiResourcePoolBlueprint::instantiate_with_contributor_rule(
+                        resource_addresses,
+                        owner_role,
+                        pool_manager_rule,
+                        pool_contributor_rule,
+                        address_reservation,
+                        api,
+                    )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

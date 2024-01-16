@@ -171,22 +171,25 @@ impl OneResourcePoolBlueprint {
                      have been burned. The first contribution to this pool gets whatever dust is
                      left behind.
             1   0 => This is an illegal state! Some amount of people own some % of zero which is
-                     invalid
+                     invalid. There is pretty much nothing we can do in this case because we can't
+                     determine how much pool units to mint for this contribution. To signify that
+                     the user has 100% ownership of the pool we must mint the maximum mint amount
+                     which will dilute the worth of the pool units.
             1   1 => The pool is in normal operations.
 
             Thus depending on the supply of these resources the pool behaves differently.
              */
 
-            let reserves_decimal = substate.vault.amount(api)?;
-            let pool_unit_total_supply_decimal = substate
+            let initial_reserves_decimal = substate.vault.amount(api)?;
+            let initial_pool_unit_total_supply_decimal = substate
                 .pool_unit_resource_manager
                 .total_supply(api)?
                 .expect("Total supply is always enabled for pool unit resource.");
             let amount_of_contributed_resources_decimal = bucket.amount(api)?;
 
-            let initial_reserves = PreciseDecimal::from(reserves_decimal);
+            let initial_reserves = PreciseDecimal::from(initial_reserves_decimal);
             let initial_pool_unit_total_supply =
-                PreciseDecimal::from(pool_unit_total_supply_decimal);
+                PreciseDecimal::from(initial_pool_unit_total_supply_decimal);
             let amount_of_contributed_resources =
                 PreciseDecimal::from(amount_of_contributed_resources_decimal);
 
@@ -245,12 +248,12 @@ impl OneResourcePoolBlueprint {
 
             // Calculating the amount owed based on the passed pool units.
             let pool_units_to_redeem = bucket.amount(api)?;
-            let pool_units_total_supply = substate
+            let initial_pool_units_total_supply = substate
                 .pool_unit_resource_manager
                 .total_supply(api)?
                 .expect("Total supply is always enabled for pool unit resource.");
-            let pool_resource_reserves = substate.vault.amount(api)?;
-            let pool_resource_divisibility = substate.vault
+            let initial_pool_resource_reserves = substate.vault.amount(api)?;
+            let reserves_divisibility = substate.vault
             .resource_address(api)
             .and_then(|resource_address| ResourceManager(resource_address).resource_type(api))
             .map(|resource_type| {
@@ -263,9 +266,9 @@ impl OneResourcePoolBlueprint {
 
             let amount_owed = Self::calculate_amount_owed(
                 pool_units_to_redeem,
-                pool_units_total_supply,
-                pool_resource_reserves,
-                pool_resource_divisibility,
+                initial_pool_units_total_supply,
+                initial_pool_resource_reserves,
+                reserves_divisibility,
             )?;
 
             // Return an error if the amount owed to them is zero. This is to guard from cases where
@@ -394,23 +397,23 @@ impl OneResourcePoolBlueprint {
     fn calculate_amount_owed(
         pool_units_to_redeem: Decimal,
         pool_units_total_supply: Decimal,
-        pool_resource_reserves: Decimal,
-        pool_resource_divisibility: u8,
+        reserves_amount: Decimal,
+        reserves_divisibility: u8,
     ) -> Result<Decimal, RuntimeError> {
         let pool_units_to_redeem = PreciseDecimal::from(pool_units_to_redeem);
         let pool_units_total_supply = PreciseDecimal::from(pool_units_total_supply);
-        let pool_resource_reserves = PreciseDecimal::from(pool_resource_reserves);
+        let reserves_amount = PreciseDecimal::from(reserves_amount);
 
         let amount_owed = pool_units_to_redeem
             .checked_div(pool_units_total_supply)
-            .and_then(|d| d.checked_mul(pool_resource_reserves))
+            .and_then(|d| d.checked_mul(reserves_amount))
             .ok_or(Error::DecimalOverflowError)?;
 
-        let amount_owed = if pool_resource_divisibility == 18 {
+        let amount_owed = if reserves_divisibility == 18 {
             amount_owed
         } else {
             amount_owed
-                .checked_round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
+                .checked_round(reserves_divisibility, RoundingMode::ToNegativeInfinity)
                 .ok_or(Error::DecimalOverflowError)?
         };
 

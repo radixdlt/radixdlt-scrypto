@@ -3,7 +3,7 @@ use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
 use crate::blueprints::package::{
-    create_bootstrap_package_partitions, PackageCollection, PackageNativePackage,
+    create_package_partition_substates, PackageCollection, PackageNativePackage,
     PackageOwnerBadgeData, SystemInstruction,
 };
 use crate::blueprints::pool::v1::package::{PoolNativePackage, PoolV1MinorVersion};
@@ -586,7 +586,7 @@ pub fn create_system_bootstrap_flash(
                 )
             });
 
-            create_bootstrap_package_partitions(package_structure, metadata_init)
+            create_package_partition_substates(package_structure, metadata_init, None)
         };
 
         for (partition_num, partition_substates) in partitions {

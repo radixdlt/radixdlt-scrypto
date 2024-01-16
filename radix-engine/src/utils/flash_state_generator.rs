@@ -278,12 +278,25 @@ pub mod pools_package_v1_1 {
         )
         .unwrap();
 
-        let node_substates = create_bootstrap_package_partitions(
+        let royalty_vault = reader
+            .read_object_field(
+                &node_id,
+                ModuleId::Main,
+                PackageField::RoyaltyAccumulator.field_index(),
+            )
+            .unwrap()
+            .as_typed::<PackageRoyaltyAccumulatorFieldPayload>()
+            .unwrap()
+            .into_latest()
+            .royalty_vault;
+
+        let node_substates = create_package_partition_substates(
             package_structure,
             metadata_init! {
                 "name" => "Pool Package".to_owned(), locked;
                 "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
             },
+            Some(royalty_vault),
         );
 
         node_substates
@@ -302,6 +315,15 @@ pub mod pools_package_v1_1 {
             })
     }
 
+    /// Generates the state updates required for the new pool role.
+    ///
+    /// We have added a new role to the pool blueprints with v1.1 of the blueprints called the
+    /// `pool_contributor` role, which is the role that is allowed to contribute assets to the pool.
+    /// We would like pools that have already been instantiated to continue to function in the same
+    /// way as it did before the protocol update. As in, the protocol manager was the only role that
+    /// has contribution powers. So, for each pool that we find, we add a new role assignment for
+    /// the contributor role with the same rule as the pool manager. Thus, pools that were created
+    /// without this role will continue to function in the same way.
     fn generate_role_assignment_update<S: SubstateDatabase + ListableSubstateDatabase>(
         db: &S,
         state_updates: &mut StateUpdates,
@@ -324,7 +346,9 @@ pub mod pools_package_v1_1 {
             }
         });
 
-        let key = SubstateKey::Map(scrypto_encode(&POOL_CONTRIBUTOR_ROLE).unwrap());
+        let key = SubstateKey::Map(
+            scrypto_encode(&ModuleRoleKey::new(ModuleId::Main, POOL_CONTRIBUTOR_ROLE)).unwrap(),
+        );
         let mut already_seen = indexset! {};
         for node_id in pools {
             if already_seen.contains(&node_id) {
@@ -345,7 +369,8 @@ pub mod pools_package_v1_1 {
                 .get_substate(
                     &SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_number),
                     &SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Map(
-                        scrypto_encode(&POOL_MANAGER_ROLE).unwrap(),
+                        scrypto_encode(&ModuleRoleKey::new(ModuleId::Main, POOL_MANAGER_ROLE))
+                            .unwrap(),
                     )),
                 )
                 .unwrap();

@@ -674,15 +674,15 @@ fn blueprint_state_schema(
     )
 }
 
-pub fn create_bootstrap_package_partitions(
+pub fn create_package_partition_substates(
     package_structure: PackageStructure,
     metadata: MetadataInit,
+    royalty_vault: Option<Vault>,
 ) -> NodeSubstates {
     let mut node_substates = NodeSubstates::new();
 
     let own_features = PackageFeatureSet {
-        // Bootstrap packages are native packages which don't need royalties
-        package_royalty: false,
+        package_royalty: royalty_vault.is_some(),
     };
 
     //-----------------
@@ -698,7 +698,7 @@ pub fn create_bootstrap_package_partitions(
             indexmap!(PackageCollection::SchemaKeyValue.collection_index() as usize => SCHEMAS_PARTITION),
         );
         let package_system_struct =
-            PackageNativePackage::init_system_struct(None, package_structure);
+            PackageNativePackage::init_system_struct(royalty_vault, package_structure);
         let package_substates = SystemMapper::system_struct_to_node_substates(
             &package_schema,
             package_system_struct,

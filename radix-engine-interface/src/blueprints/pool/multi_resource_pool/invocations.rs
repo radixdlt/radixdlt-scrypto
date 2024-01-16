@@ -54,7 +54,7 @@ define_invocation! {
     },
     output: type (Bucket, Vec<Bucket>),
     manifest_input: struct {
-        buckets: (ManifestBucket, ManifestBucket)
+        buckets: Vec<ManifestBucket>
     }
 }
 
