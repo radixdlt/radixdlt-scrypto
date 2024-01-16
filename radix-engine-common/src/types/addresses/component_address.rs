@@ -95,8 +95,7 @@ impl ComponentAddress {
 }
 
 #[cfg(feature = "radix_engine_fuzzing")]
-// Implementing arbitrary by hand to make sure that EntityType::GlobalPackage marker is present.
-// Otherwise 'InvalidCustomValue' error is returned
+// Implementing arbitrary by hand to make sure that global component address is generated.
 impl<'a> Arbitrary<'a> for ComponentAddress {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
         use core::cmp::min;
@@ -123,7 +122,7 @@ impl<'a> Arbitrary<'a> for ComponentAddress {
         let len = min(NodeId::LENGTH - 1, u.len());
         let (_left, right) = node_id.split_at_mut(NodeId::LENGTH - len);
         let b = u.bytes(len).unwrap();
-        right.copy_from_slice(&b);
+        right.copy_from_slice(b);
         Ok(Self::new_or_panic(node_id))
     }
 }
