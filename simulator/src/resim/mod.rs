@@ -521,7 +521,8 @@ mod tests {
 
     fn test_no_value() {
         let mut out = std::io::stdout();
-        assert!(Reset {}.run(&mut out).is_ok());
+        let rtn = Reset {}.run(&mut out);
+        assert!(rtn.is_ok(), "Reset failed with: {:?}", rtn);
         let new_account = NewAccount {
             network: None,
             manifest: None,
