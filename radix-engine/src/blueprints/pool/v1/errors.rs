@@ -17,6 +17,8 @@ pub mod one_resource_pool {
         ContributionOfEmptyBucketError,
         DecimalOverflowError,
         InvalidGetRedemptionAmount,
+        ZeroPoolUnitsMinted,
+        RedeemedZeroTokens,
     }
 
     impl From<Error> for RuntimeError {
@@ -46,6 +48,7 @@ pub mod two_resource_pool {
         ContributionOfEmptyBucketError,
         DecimalOverflowError,
         InvalidGetRedemptionAmount,
+        ZeroPoolUnitsMinted,
     }
 
     impl From<Error> for RuntimeError {
@@ -79,6 +82,8 @@ pub mod multi_resource_pool {
         CantCreatePoolWithLessThanOneResource,
         DecimalOverflowError,
         InvalidGetRedemptionAmount,
+        NoMinimumRatio,
+        ZeroPoolUnitsMinted,
     }
 
     impl From<Error> for RuntimeError {

@@ -993,7 +993,7 @@ impl PackageNativePackage {
         }
     }
 
-    fn init_system_struct(
+    pub(crate) fn init_system_struct(
         royalty_vault: Option<Vault>,
         package_structure: PackageStructure,
     ) -> (

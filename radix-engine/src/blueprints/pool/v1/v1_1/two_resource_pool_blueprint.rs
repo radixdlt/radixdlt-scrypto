@@ -115,7 +115,7 @@ impl TwoResourcePoolBlueprint {
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                 indexmap! {
-                    TwoResourcePoolField::State.field_index() => FieldValue::immutable(&TwoResourcePoolStateFieldPayload::from_content_source(substate)),
+                    TwoResourcePoolField::State.field_index() => FieldValue::immutable(TwoResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
         };
@@ -142,165 +142,150 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        Self::with_state(api, |mut substate, api| {
+            // Sort the buckets and vaults in a predictable order.
+            let (mut vault1, mut vault2, bucket1, bucket2) = {
+                // Getting the vaults of the two resource pool - before getting them we sort them
+                // according to a deterministic and predictable order. This helps make the code less
+                // generalized and simple.
+                let ((vault1, vault1_resource_address), (vault2, vault2_resource_address)) = {
+                    let vault1 = Vault(substate.vaults[0].1 .0);
+                    let vault2 = Vault(substate.vaults[1].1 .0);
 
-        let (resource_address1, resource_address2, mut vault1, mut vault2, bucket1, bucket2) = {
-            // Getting the vaults of the two resource pool - before getting them we sort them according
-            // to a deterministic and predictable order. This helps make the code less generalized and
-            // simple.
-            let ((vault1, vault1_resource_address), (vault2, vault2_resource_address)) = {
-                let vault1 = Vault((&substate.vaults[0].1 .0).clone());
-                let vault2 = Vault((&substate.vaults[1].1 .0).clone());
+                    let resource_address1 = substate.vaults[0].0;
+                    let resource_address2 = substate.vaults[1].0;
 
-                let resource_address1 = substate.vaults[0].0;
-                let resource_address2 = substate.vaults[1].0;
+                    if resource_address1 > resource_address2 {
+                        ((vault1, resource_address1), (vault2, resource_address2))
+                    } else {
+                        ((vault2, resource_address2), (vault1, resource_address1))
+                    }
+                };
 
-                if resource_address1 > resource_address2 {
-                    ((vault1, resource_address1), (vault2, resource_address2))
-                } else {
-                    ((vault2, resource_address2), (vault1, resource_address1))
+                // Getting the buckets of the two resource pool - before getting them we sort them
+                // according to a deterministic and predictable order. This helps make the code less
+                // generalized and simple.
+                let ((bucket1, bucket1_resource_address), (bucket2, bucket2_resource_address)) = {
+                    let resource_address1 = bucket1.resource_address(api)?;
+                    let resource_address2 = bucket2.resource_address(api)?;
+
+                    if resource_address1 > resource_address2 {
+                        ((bucket1, resource_address1), (bucket2, resource_address2))
+                    } else {
+                        ((bucket2, resource_address2), (bucket1, resource_address1))
+                    }
+                };
+
+                // Ensure that the two buckets given as arguments match the two vaults that the pool
+                // has.
+                if bucket1_resource_address != vault1_resource_address {
+                    return Err(Error::ResourceDoesNotBelongToPool {
+                        resource_address: bucket1_resource_address,
+                    }
+                    .into());
                 }
+                if bucket2_resource_address != vault2_resource_address {
+                    return Err(Error::ResourceDoesNotBelongToPool {
+                        resource_address: bucket2_resource_address,
+                    }
+                    .into());
+                }
+
+                (vault1, vault2, bucket1, bucket2)
             };
 
-            // Getting the buckets of the two resource pool - before getting them we sort them according
-            // to a deterministic and predictable order. This helps make the code less generalized and
-            // simple.
-            let ((bucket1, bucket1_resource_address), (bucket2, bucket2_resource_address)) = {
-                let resource_address1 = bucket1.resource_address(api)?;
-                let resource_address2 = bucket2.resource_address(api)?;
+            // Determine the amount of pool units to mint and the amount of resource to contribute
+            // to the pool based on the current state of the pool.
+            let (amount1, amount2, pool_units_to_mint) = {
+                let pool_unit_total_supply = substate
+                    .pool_unit_resource_manager
+                    .total_supply(api)?
+                    .expect("Total supply is always enabled for pool unit resource.");
+                let reserves1 = vault1.amount(api)?;
+                let reserves2 = vault2.amount(api)?;
+                let contribution1 = bucket1.amount(api)?;
+                let contribution2 = bucket2.amount(api)?;
 
-                if resource_address1 > resource_address2 {
-                    ((bucket1, resource_address1), (bucket2, resource_address2))
-                } else {
-                    ((bucket2, resource_address2), (bucket1, resource_address1))
-                }
-            };
+                let pool_unit_total_supply = PreciseDecimal::from(pool_unit_total_supply);
+                let reserves1 = PreciseDecimal::from(reserves1);
+                let reserves2 = PreciseDecimal::from(reserves2);
+                let contribution1 = PreciseDecimal::from(contribution1);
+                let contribution2 = PreciseDecimal::from(contribution2);
 
-            // Ensure that the two buckets given as arguments match the two vaults that the pool has.
-            if bucket1_resource_address != vault1_resource_address {
-                return Err(Error::ResourceDoesNotBelongToPool {
-                    resource_address: bucket1_resource_address,
-                }
-                .into());
-            }
-            if bucket2_resource_address != vault2_resource_address {
-                return Err(Error::ResourceDoesNotBelongToPool {
-                    resource_address: bucket2_resource_address,
-                }
-                .into());
-            }
+                let is_reserves1_not_empty = reserves1 > PreciseDecimal::ZERO;
+                let is_reserves2_not_empty = reserves2 > PreciseDecimal::ZERO;
+                let is_pool_units_in_circulation = pool_unit_total_supply > PreciseDecimal::ZERO;
 
-            (
-                bucket1_resource_address,
-                bucket2_resource_address,
-                vault1,
-                vault2,
-                bucket1,
-                bucket2,
-            )
-        };
-
-        // Determine the amount of pool units to mint based on the the current state of the pool.
-        let (pool_units_to_mint, amount1, amount2) = {
-            let pool_unit_total_supply = substate
-                .pool_unit_resource_manager
-                .total_supply(api)?
-                .expect("Total supply is always enabled for pool unit resource.");
-            let reserves1 = vault1.amount(api)?;
-            let reserves2 = vault2.amount(api)?;
-            let contribution1 = bucket1.amount(api)?;
-            let contribution2 = bucket2.amount(api)?;
-            let divisibility1 = ResourceManager(resource_address1).resource_type(api).map(|resource_type| {
-                if let ResourceType::Fungible { divisibility } = resource_type {
-                    divisibility
-                } else {
-                    panic!("Impossible case, we check for this in the constructor and have a test for this.")
-                }
-            })?;
-            let divisibility2 = ResourceManager(resource_address2).resource_type(api).map(|resource_type| {
-                if let ResourceType::Fungible { divisibility } = resource_type {
-                    divisibility
-                } else {
-                    panic!("Impossible case, we check for this in the constructor and have a test for this.")
-                }
-            })?;
-
-            if contribution1 == Decimal::ZERO || contribution2 == Decimal::ZERO {
-                return Err(Error::ContributionOfEmptyBucketError.into());
-            }
-
-            match (
-                pool_unit_total_supply > Decimal::ZERO,
-                reserves1 > Decimal::ZERO,
-                reserves2 > Decimal::ZERO,
-            ) {
-                (false, false, false) => Ok((
-                    /*
-                    This is doing the following:
-                    dec(
-                        round(
-                            sqrt(pdec(c1)) * sqrt(pdec(c2)),
-                            19
-                        )
-                    )
-                     */
-                    PreciseDecimal::from(contribution1)
-                        .checked_sqrt()
-                        .and_then(|c1_sqrt| {
-                            PreciseDecimal::from(contribution2)
+                let (amount1, amount2, pool_units_to_mint) = match (
+                    is_reserves1_not_empty,
+                    is_reserves2_not_empty,
+                    is_pool_units_in_circulation,
+                ) {
+                    // The total supply of pool units is zero and none of them are in circulation.
+                    // This pool is currently in the "new pool" state and any amount can be
+                    // contributed to it and we will mint for them the geometric average of their
+                    // contribution in pool units.
+                    (_, _, false) => {
+                        let pool_units_to_mint = if contribution1 == PreciseDecimal::ZERO
+                            || contribution2 == PreciseDecimal::ZERO
+                        {
+                            // Take C1 or C2 whichever of them is the largest to avoid minting zero
+                            // pool units. If both are zero then zero pool units will be minted for
+                            // zero contribution which is fine.
+                            contribution1.max(contribution2)
+                        } else {
+                            // Pool units to mint = Geometric Average
+                            //                    = sqrt(contribution1 * contribution2)
+                            //                    = sqrt(contribution1) * sqrt(contribution2)
+                            contribution1
                                 .checked_sqrt()
-                                .and_then(|c2_sqrt| c1_sqrt.checked_mul(c2_sqrt))
-                        })
-                        .and_then(|d| d.checked_round(19, RoundingMode::ToPositiveInfinity))
-                        .and_then(|d| Decimal::try_from(d).ok())
-                        .ok_or(Error::DecimalOverflowError)?,
-                    contribution1,
-                    contribution2,
-                )),
-                (false, _, _) => Ok((
-                    /*
-                    This is doing the following:
-                    dec(
-                        round(
-                            sqrt(pdec(c1) + pdec(r1)) * sqrt(pdec(c2) + pdec(r2)),
-                            19
-                        )
-                    )
-                     */
-                    PreciseDecimal::from(contribution1)
-                        .checked_add(PreciseDecimal::from(reserves1))
-                        .and_then(|d| d.checked_sqrt())
-                        .and_then(|sqrt_cr1| {
-                            PreciseDecimal::from(contribution2)
-                                .checked_add(PreciseDecimal::from(reserves2))
-                                .and_then(|d| d.checked_sqrt())
-                                .and_then(|sqrt_cr2| sqrt_cr1.checked_mul(sqrt_cr2))
-                        })
-                        .and_then(|d| d.checked_round(19, RoundingMode::ToPositiveInfinity))
-                        .and_then(|d| Decimal::try_from(d).ok())
-                        .ok_or(Error::DecimalOverflowError)?,
-                    contribution1,
-                    contribution2,
-                )),
-                (true, true, true) => {
+                                .and_then(|c1| {
+                                    contribution2
+                                        .checked_sqrt()
+                                        .and_then(|c2| c1.checked_mul(c2))
+                                })
+                                .and_then(|value| {
+                                    value.checked_round(19, RoundingMode::ToPositiveInfinity)
+                                })
+                                .ok_or(Error::DecimalOverflowError)?
+                        };
+                        (contribution1, contribution2, pool_units_to_mint)
+                    }
+                    // One sided liquidity - one of the reserves is empty and contributions to it
+                    // will be rejected whereas contributions to the other side will be accepted in
+                    // full.
+                    (false, true, true) => (
+                        PreciseDecimal::ZERO,
+                        contribution2,
+                        contribution2
+                            .checked_div(reserves2)
+                            .and_then(|d| d.checked_mul(pool_unit_total_supply))
+                            .ok_or(Error::DecimalOverflowError)?,
+                    ),
+                    (true, false, true) => (
+                        contribution1,
+                        PreciseDecimal::ZERO,
+                        contribution1
+                            .checked_div(reserves1)
+                            .and_then(|d| d.checked_mul(pool_unit_total_supply))
+                            .ok_or(Error::DecimalOverflowError)?,
+                    ),
+                    // Normal operations.
+                    //
                     // We need to determine how much of the resources given for contribution can
                     // actually be contributed to keep the ratio of resources in the pool the same.
                     //
-                    // The logic to do this follows a simple algorithm:
-                    // For contribution1 we calculated the required_contribution2. We do the same
-                    // for contribution2 we calculated the required_contribution1. We collect them
-                    // into an array of tuples of:
-                    // [
-                    //     (contribution1, required_contribution2),
-                    //     (required_contribution1, contribution2)
-                    // ]
-                    // We filter out entries in this array where the amounts contributed is less
-                    // than the amounts required.
+                    // This follows the following algorithm:
                     //
-                    // If both of the entries remain in the array, we calculate the pool units that
-                    // can be minted for both of them and then take the one which yield the largest
-                    // amount of pool units.
-                    [
+                    // * Calculate the amount of contribution 2 required to fulfill contribution 1
+                    // in full.
+                    // * Calculate the amount of contribution 1 required to fulfill contribution 2
+                    // in full.
+                    // * Collect this into an array of `[(contribution1, required_contribution2),
+                    // (required_contribution1, contribution2)]`.
+                    // * Eliminate any entry in the array that exceeds the amount of resources that
+                    // were provided for liquidity.
+                    (true, true, true) => [
                         contribution1
                             .checked_div(reserves1)
                             .and_then(|d| d.checked_mul(reserves2))
@@ -315,73 +300,90 @@ impl TwoResourcePoolBlueprint {
                         v @ Some((c1, c2)) if c1 <= contribution1 && c2 <= contribution2 => v,
                         _ => None,
                     })
-                    .map(|(c1, c2)| -> Result<(Decimal, Decimal), RuntimeError> {
-                        Ok((
-                            c1.checked_round(divisibility1, RoundingMode::ToNegativeInfinity)
-                                .ok_or(Error::DecimalOverflowError)?,
-                            c2.checked_round(divisibility2, RoundingMode::ToNegativeInfinity)
-                                .ok_or(Error::DecimalOverflowError)?,
-                        ))
+                    .map(|(c1, c2)| -> Result<_, RuntimeError> {
+                        let pool_units_to_mint = c1
+                            .checked_div(reserves1)
+                            .and_then(|d| d.checked_mul(pool_unit_total_supply))
+                            .ok_or(Error::DecimalOverflowError)?;
+                        Ok((c1, c2, pool_units_to_mint))
                     })
                     .filter_map(Result::ok)
-                    .map(
-                        |(c1, c2)| -> Result<(Decimal, Decimal, Decimal), RuntimeError> {
-                            let pool_units_to_mint = c1
-                                .checked_div(reserves1)
-                                .and_then(|d| d.checked_mul(pool_unit_total_supply))
-                                .ok_or(Error::DecimalOverflowError)?;
-                            Ok((pool_units_to_mint, c1, c2))
-                        },
-                    )
-                    .filter_map(Result::ok)
-                    .max_by(|(mint1, _, _), (mint2, _, _)| mint1.cmp(mint2))
-                    .ok_or(Error::DecimalOverflowError)
-                }
-                (true, _, _) => Err(Error::NonZeroPoolUnitSupplyButZeroReserves),
+                    .max_by(|(_, _, mint1), (_, _, mint2)| mint1.cmp(mint2))
+                    .ok_or(Error::DecimalOverflowError)?,
+                    // Illegal State: There is zero reserves in the liquidity pool but a non-zero
+                    // amount of pool units. If this contribution goes through, then how much would
+                    // this person own in the pool? Probably 100%. To signal that they own 100% we
+                    // would have to mint Decimal::MAX or the maximum mint limit which is infeasible
+                    // and dilutes the worth of pool units heavily.
+                    (false, false, true) => {
+                        return Err(Error::NonZeroPoolUnitSupplyButZeroReserves.into())
+                    }
+                };
+
+                let amount1 =
+                    Decimal::try_from(amount1).map_err(|_| Error::DecimalOverflowError)?;
+                let amount2 =
+                    Decimal::try_from(amount2).map_err(|_| Error::DecimalOverflowError)?;
+                let pool_units_to_mint = Decimal::try_from(pool_units_to_mint)
+                    .map_err(|_| Error::DecimalOverflowError)?;
+
+                (amount1, amount2, pool_units_to_mint)
+            };
+
+            // Get the amounts after the rounding
+            let contribution_bucket1 = bucket1.take_advanced(
+                amount1,
+                WithdrawStrategy::Rounded(RoundingMode::ToNegativeInfinity),
+                api,
+            )?;
+            let contribution_bucket2 = bucket2.take_advanced(
+                amount2,
+                WithdrawStrategy::Rounded(RoundingMode::ToNegativeInfinity),
+                api,
+            )?;
+            let amount1 = contribution_bucket1.amount(api)?;
+            let amount2 = contribution_bucket2.amount(api)?;
+
+            // Minting the pool unit tokens
+            if pool_units_to_mint == Decimal::ZERO {
+                return Err(Error::ZeroPoolUnitsMinted.into());
             }
-        }?;
+            let pool_units = substate
+                .pool_unit_resource_manager
+                .mint_fungible(pool_units_to_mint, api)?;
 
-        // Construct the event - this will be emitted once the resources are contributed to the pool
-        let event = ContributionEvent {
-            contributed_resources: indexmap! {
-                bucket1.resource_address(api)? => amount1,
-                bucket2.resource_address(api)? => amount2,
-            },
-            pool_units_minted: pool_units_to_mint,
-        };
+            // Construct the event - this will be emitted once the resources are contributed to the
+            // pool
+            let event = ContributionEvent {
+                contributed_resources: indexmap! {
+                    contribution_bucket1.resource_address(api)? => amount1,
+                    contribution_bucket2.resource_address(api)? => amount2,
+                },
+                pool_units_minted: pool_units_to_mint,
+            };
 
-        // Minting the pool unit tokens
-        let pool_units = substate
-            .pool_unit_resource_manager
-            .mint_fungible(pool_units_to_mint, api)?;
+            // Deposit the calculated amount of each of the buckets into appropriate vault.
+            vault1.put(contribution_bucket1, api)?;
+            vault2.put(contribution_bucket2, api)?;
 
-        // Deposit the calculated amount of each of the buckets into appropriate vault.
-        bucket1
-            .take(amount1, api)
-            .and_then(|bucket| vault1.put(bucket, api))?;
-        bucket2
-            .take(amount2, api)
-            .and_then(|bucket| vault2.put(bucket, api))?;
+            // Determine if there is any change to return back to the caller - if there is not then
+            // drop the empty buckets.
+            let change_bucket = if !bucket1.is_empty(api)? {
+                bucket2.drop_empty(api)?;
+                Some(bucket1)
+            } else if !bucket2.is_empty(api)? {
+                bucket1.drop_empty(api)?;
+                Some(bucket2)
+            } else {
+                bucket1.drop_empty(api)?;
+                bucket2.drop_empty(api)?;
+                None
+            };
 
-        // Determine if there is any change to return back to the caller - if there is not then drop
-        // the empty buckets.
-        let change_bucket = if !bucket1.is_empty(api)? {
-            bucket2.drop_empty(api)?;
-            Some(bucket1)
-        } else if !bucket2.is_empty(api)? {
-            bucket1.drop_empty(api)?;
-            Some(bucket2)
-        } else {
-            bucket1.drop_empty(api)?;
-            bucket2.drop_empty(api)?;
-            None
-        };
+            Runtime::emit_event(api, event)?;
 
-        api.field_close(handle)?;
-
-        Runtime::emit_event(api, event)?;
-
-        Ok((pool_units, change_bucket))
+            Ok((pool_units, change_bucket))
+        })
     }
 
     pub fn redeem<Y>(
@@ -391,27 +393,26 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-
-        // Ensure that the passed pool resources are indeed pool resources
-        let bucket_resource_address = bucket.resource_address(api)?;
-        if bucket_resource_address != substate.pool_unit_resource_manager.0 {
-            return Err(Error::InvalidPoolUnitResource {
-                expected: substate.pool_unit_resource_manager.0,
-                actual: bucket_resource_address,
+        Self::with_state(api, |substate, api| {
+            // Ensure that the passed pool resources are indeed pool resources
+            let bucket_resource_address = bucket.resource_address(api)?;
+            if bucket_resource_address != substate.pool_unit_resource_manager.0 {
+                return Err(Error::InvalidPoolUnitResource {
+                    expected: substate.pool_unit_resource_manager.0,
+                    actual: bucket_resource_address,
+                }
+                .into());
             }
-            .into());
-        }
 
-        let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = substate
-            .pool_unit_resource_manager
-            .total_supply(api)?
-            .expect("Total supply is always enabled for pool unit resource.");
-        let mut reserves = index_map_new();
-        for (resource_address, vault) in substate.vaults.iter() {
-            let amount = vault.amount(api)?;
-            let divisibility = ResourceManager(*resource_address).resource_type(api)
+            let pool_units_to_redeem = bucket.amount(api)?;
+            let pool_units_total_supply = substate
+                .pool_unit_resource_manager
+                .total_supply(api)?
+                .expect("Total supply is always enabled for pool unit resource.");
+            let mut reserves = index_map_new();
+            for (resource_address, vault) in substate.vaults.iter() {
+                let amount = vault.amount(api)?;
+                let divisibility = ResourceManager(*resource_address).resource_type(api)
                 .map(|resource_type| {
                     if let ResourceType::Fungible { divisibility } = resource_type {
                         divisibility
@@ -420,40 +421,41 @@ impl TwoResourcePoolBlueprint {
                     }
                 })?;
 
-            reserves.insert(
-                *resource_address,
-                ReserveResourceInformation {
-                    reserves: amount,
-                    divisibility,
+                reserves.insert(
+                    *resource_address,
+                    ReserveResourceInformation {
+                        reserves: amount,
+                        divisibility,
+                    },
+                );
+            }
+
+            let amounts_owed = Self::calculate_amount_owed(
+                pool_units_to_redeem,
+                pool_units_total_supply,
+                reserves,
+            )?;
+
+            bucket.burn(api)?;
+            Runtime::emit_event(
+                api,
+                RedemptionEvent {
+                    redeemed_resources: amounts_owed.clone(),
+                    pool_unit_tokens_redeemed: pool_units_to_redeem,
                 },
-            );
-        }
+            )?;
 
-        let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
-
-        let event = RedemptionEvent {
-            redeemed_resources: amounts_owed.clone(),
-            pool_unit_tokens_redeemed: pool_units_to_redeem,
-        };
-
-        // The following part does some unwraps and panic-able operations but should never panic.
-        let buckets = {
-            let buckets = amounts_owed
-                .into_iter()
-                .map(|(resource_address, amount)| {
-                    substate.vault(resource_address).unwrap().take(amount, api)
-                })
-                .collect::<Result<Vec<Bucket>, _>>()?;
-            (Bucket(buckets[0].0), Bucket(buckets[1].0))
-        };
-
-        bucket.burn(api)?;
-        api.field_close(handle)?;
-
-        Runtime::emit_event(api, event)?;
-
-        Ok(buckets)
+            // The following part does some unwraps and panic-able operations but should never panic.
+            {
+                let buckets = amounts_owed
+                    .into_iter()
+                    .map(|(resource_address, amount)| {
+                        substate.vault(resource_address).unwrap().take(amount, api)
+                    })
+                    .collect::<Result<Vec<Bucket>, _>>()?;
+                Ok((Bucket(buckets[0].0), Bucket(buckets[1].0)))
+            }
+        })
     }
 
     pub fn protected_deposit<Y>(
@@ -463,21 +465,21 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-        let resource_address = bucket.resource_address(api)?;
-        let vault = substate.vault(resource_address);
-        if let Some(mut vault) = vault {
-            let event = DepositEvent {
-                amount: bucket.amount(api)?,
-                resource_address,
-            };
-            vault.put(bucket, api)?;
-            api.field_close(handle)?;
-            Runtime::emit_event(api, event)?;
-            Ok(())
-        } else {
-            Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
-        }
+        Self::with_state(api, |substate, api| {
+            let resource_address = bucket.resource_address(api)?;
+            let vault = substate.vault(resource_address);
+            if let Some(mut vault) = vault {
+                let event = DepositEvent {
+                    amount: bucket.amount(api)?,
+                    resource_address,
+                };
+                vault.put(bucket, api)?;
+                Runtime::emit_event(api, event)?;
+                Ok(())
+            } else {
+                Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
+            }
+        })
     }
 
     pub fn protected_withdraw<Y>(
@@ -489,26 +491,26 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-        let vault = substate.vault(resource_address);
+        Self::with_state(api, |substate, api| {
+            let vault = substate.vault(resource_address);
 
-        if let Some(mut vault) = vault {
-            let bucket = vault.take_advanced(amount, withdraw_strategy, api)?;
-            api.field_close(handle)?;
-            let withdrawn_amount = bucket.amount(api)?;
+            if let Some(mut vault) = vault {
+                let bucket = vault.take_advanced(amount, withdraw_strategy, api)?;
+                let withdrawn_amount = bucket.amount(api)?;
 
-            Runtime::emit_event(
-                api,
-                WithdrawEvent {
-                    amount: withdrawn_amount,
-                    resource_address,
-                },
-            )?;
+                Runtime::emit_event(
+                    api,
+                    WithdrawEvent {
+                        amount: withdrawn_amount,
+                        resource_address,
+                    },
+                )?;
 
-            Ok(bucket)
-        } else {
-            Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
-        }
+                Ok(bucket)
+            } else {
+                Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
+            }
+        })
     }
 
     pub fn get_redemption_value<Y>(
@@ -518,48 +520,43 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        Self::with_state(api, |substate, api| {
+            let pool_units_to_redeem = amount_of_pool_units;
+            let pool_units_total_supply = substate
+                .pool_unit_resource_manager
+                .total_supply(api)?
+                .expect("Total supply is always enabled for pool unit resource.");
 
-        let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = substate
-            .pool_unit_resource_manager
-            .total_supply(api)?
-            .expect("Total supply is always enabled for pool unit resource.");
+            if amount_of_pool_units.is_negative()
+                || amount_of_pool_units.is_zero()
+                || amount_of_pool_units > pool_units_total_supply
+            {
+                return Err(Error::InvalidGetRedemptionAmount.into());
+            }
 
-        if amount_of_pool_units.is_negative()
-            || amount_of_pool_units.is_zero()
-            || amount_of_pool_units > pool_units_total_supply
-        {
-            return Err(Error::InvalidGetRedemptionAmount.into());
-        }
+            let mut reserves = index_map_new();
+            for (resource_address, vault) in substate.vaults.into_iter() {
+                let amount = vault.amount(api)?;
+                let divisibility = ResourceManager(resource_address).resource_type(api)
+                    .map(|resource_type| {
+                        if let ResourceType::Fungible { divisibility } = resource_type {
+                            divisibility
+                        } else {
+                            panic!("Impossible case, we check for this in the constructor and have a test for this.")
+                        }
+                    })?;
 
-        let mut reserves = index_map_new();
-        for (resource_address, vault) in substate.vaults.into_iter() {
-            let amount = vault.amount(api)?;
-            let divisibility = ResourceManager(resource_address).resource_type(api)
-                .map(|resource_type| {
-                    if let ResourceType::Fungible { divisibility } = resource_type {
-                        divisibility
-                    } else {
-                        panic!("Impossible case, we check for this in the constructor and have a test for this.")
-                    }
-                })?;
+                reserves.insert(
+                    resource_address,
+                    ReserveResourceInformation {
+                        reserves: amount,
+                        divisibility,
+                    },
+                );
+            }
 
-            reserves.insert(
-                resource_address,
-                ReserveResourceInformation {
-                    reserves: amount,
-                    divisibility,
-                },
-            );
-        }
-
-        let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
-
-        api.field_close(handle)?;
-
-        Ok(amounts_owed)
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)
+        })
     }
 
     pub fn get_vault_amounts<Y>(
@@ -568,42 +565,42 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (two_resource_pool_substate, handle) =
-            Self::lock_and_read(api, LockFlags::read_only())?;
-        let amounts = two_resource_pool_substate
-            .vaults
-            .into_iter()
-            .map(|(resource_address, vault)| {
-                vault.amount(api).map(|amount| (resource_address, amount))
-            })
-            .collect::<Result<IndexMap<_, _>, _>>()?;
-
-        api.field_close(handle)?;
-        Ok(amounts)
+        Self::with_state(api, |substate, api| {
+            substate
+                .vaults
+                .into_iter()
+                .map(|(resource_address, vault)| {
+                    vault.amount(api).map(|amount| (resource_address, amount))
+                })
+                .collect::<Result<IndexMap<_, _>, _>>()
+        })
     }
 
     //===================
     // Utility Functions
     //===================
 
-    fn lock_and_read<Y>(
-        api: &mut Y,
-        lock_flags: LockFlags,
-    ) -> Result<(Substate, SubstateHandle), RuntimeError>
+    fn with_state<Y, F, O>(api: &mut Y, callback: F) -> Result<O, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
+        F: FnOnce(Substate, &mut Y) -> Result<O, RuntimeError>,
     {
+        // Open
         let substate_key = TwoResourcePoolField::State.into();
-        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
-        let two_resource_pool_substate =
-            api.field_read_typed::<VersionedTwoResourcePoolState>(handle)?;
-        let two_resource_pool_substate = match two_resource_pool_substate {
-            VersionedTwoResourcePoolState::V1(two_resource_pool_substate) => {
-                two_resource_pool_substate
-            }
-        };
+        let handle =
+            api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::read_only())?;
+        let substate = api
+            .field_read_typed::<VersionedTwoResourcePoolState>(handle)?
+            .into_latest();
 
-        Ok((two_resource_pool_substate, handle))
+        // Op
+        let rtn = callback(substate, api);
+
+        // Close
+        if rtn.is_ok() {
+            api.field_close(handle)?;
+        }
+        rtn
     }
 
     fn calculate_amount_owed(
@@ -611,6 +608,9 @@ impl TwoResourcePoolBlueprint {
         pool_units_total_supply: Decimal,
         reserves: IndexMap<ResourceAddress, ReserveResourceInformation>,
     ) -> Result<IndexMap<ResourceAddress, Decimal>, RuntimeError> {
+        let pool_units_to_redeem = PreciseDecimal::from(pool_units_to_redeem);
+        let pool_units_total_supply = PreciseDecimal::from(pool_units_total_supply);
+
         reserves
             .into_iter()
             .map(
@@ -621,6 +621,7 @@ impl TwoResourcePoolBlueprint {
                         reserves,
                     },
                 )| {
+                    let reserves = PreciseDecimal::from(reserves);
                     let amount_owed = pool_units_to_redeem
                         .checked_div(pool_units_total_supply)
                         .and_then(|d| d.checked_mul(reserves))
@@ -633,6 +634,8 @@ impl TwoResourcePoolBlueprint {
                             .checked_round(divisibility, RoundingMode::ToNegativeInfinity)
                             .ok_or(Error::DecimalOverflowError)?
                     };
+                    let amount_owed =
+                        Decimal::try_from(amount_owed).map_err(|_| Error::DecimalOverflowError)?;
 
                     Ok((resource_address, amount_owed))
                 },

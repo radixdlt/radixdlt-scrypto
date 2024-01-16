@@ -350,6 +350,7 @@ pub struct TestRunnerBuilder<E, D> {
     // The following are protocol updates on mainnet
     with_seconds_precision_update: bool,
     with_crypto_utils_update: bool,
+    with_pools_v1_1: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -362,6 +363,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             skip_receipt_check: false,
             with_seconds_precision_update: true,
             with_crypto_utils_update: true,
+            with_pools_v1_1: true,
         }
     }
 }
@@ -381,6 +383,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             skip_receipt_check: false,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
+            with_pools_v1_1: self.with_pools_v1_1,
         }
     }
 
@@ -406,6 +409,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             skip_receipt_check: self.skip_receipt_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
+            with_pools_v1_1: self.with_pools_v1_1,
         }
     }
 
@@ -418,6 +422,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             skip_receipt_check: self.skip_receipt_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
+            with_pools_v1_1: self.with_pools_v1_1,
         }
     }
 
@@ -428,6 +433,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 
     pub fn without_crypto_utils_update(mut self) -> Self {
         self.with_crypto_utils_update = false;
+        self
+    }
+
+    pub fn without_pools_v1_1(mut self) -> Self {
+        self.with_pools_v1_1 = false;
         self
     }
 
@@ -528,6 +538,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 
         if self.with_crypto_utils_update {
             let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            substate_db.commit(&db_updates);
+        }
+
+        if self.with_pools_v1_1 {
+            let state_updates = pools_package_v1_1::generate_state_updates(&substate_db);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             substate_db.commit(&db_updates);
         }

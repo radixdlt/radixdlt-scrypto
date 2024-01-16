@@ -1,11 +1,15 @@
 use crate::blueprints::models::KeyValueEntryContentSource;
+use crate::blueprints::package::*;
+use crate::blueprints::pool::v1::package::*;
 use crate::internal_prelude::{
     KeyValueEntryPayload, PackageCodeOriginalCodeV1, PackageCodeVmTypeV1, PackageCollection,
     VersionedPackageBlueprintVersionDefinition, VersionedPackageCodeOriginalCode,
     VersionedPackageCodeVmTypeVersion,
 };
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
+use crate::system::system_type_checker::SystemMapper;
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
+use crate::vm::VmApi;
 use crate::vm::{VmBoot, BOOT_LOADER_VM_PARTITION_NUM, BOOT_LOADER_VM_SUBSTATE_FIELD_KEY};
 use radix_engine_common::constants::{BOOT_LOADER_STATE, CONSENSUS_MANAGER_PACKAGE};
 use radix_engine_common::crypto::hash;
@@ -13,18 +17,9 @@ use radix_engine_common::prelude::ScopedTypeId;
 use radix_engine_common::prelude::{scrypto_encode, ScryptoCustomTypeKind};
 use radix_engine_common::types::SubstateKey;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerCompareCurrentTimeInputV2, ConsensusManagerGetCurrentTimeInputV2,
-    CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
-    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
-};
-use radix_engine_interface::blueprints::package::{
-    BlueprintPayloadDef, BlueprintVersion, BlueprintVersionKey, CodeHash, VmType,
-    CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID,
-};
-use radix_engine_interface::prelude::HasSchemaHash;
-use radix_engine_interface::prelude::IsHash;
-use radix_engine_interface::prelude::ToString;
+use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::CollectionDescriptor;
 use radix_engine_store_interface::interface::{DatabaseUpdate, SubstateDatabase};
 use sbor::HasLatestVersion;
@@ -222,5 +217,96 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
                 }
             }
         ),
+    }
+}
+
+pub mod pools_package_v1_1 {
+    use super::*;
+
+    const PACKAGE_COLLECTIONS: [PackageCollection; 8] = [
+        PackageCollection::BlueprintVersionDefinitionKeyValue,
+        PackageCollection::BlueprintVersionDependenciesKeyValue,
+        PackageCollection::SchemaKeyValue,
+        PackageCollection::BlueprintVersionRoyaltyConfigKeyValue,
+        PackageCollection::BlueprintVersionAuthConfigKeyValue,
+        PackageCollection::CodeVmTypeKeyValue,
+        PackageCollection::CodeOriginalCodeKeyValue,
+        PackageCollection::CodeInstrumentedCodeKeyValue,
+    ];
+
+    pub fn generate_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+        let mut state_updates = StateUpdates::default();
+        generate_package_state_updated(db, &mut state_updates);
+        state_updates
+    }
+
+    fn generate_package_state_updated<S: SubstateDatabase>(
+        db: &S,
+        state_updates: &mut StateUpdates,
+    ) {
+        let reader = SystemDatabaseReader::new(db);
+        let node_id = POOL_PACKAGE.into_node_id();
+
+        // Mark the entire partition of the existing collections for deletion
+        for collection in PACKAGE_COLLECTIONS {
+            let partition_num = reader
+                .get_partition_of_collection(
+                    &node_id,
+                    ModuleId::Main,
+                    collection.collection_index(),
+                )
+                .unwrap();
+
+            state_updates
+                .by_node
+                .entry(node_id)
+                .or_default()
+                .of_partition(partition_num)
+                .delete()
+        }
+
+        // Create the new substates based on the new definition and code id.
+        let new_code_id = POOL_V1_1_CODE_ID;
+        let original_code = new_code_id.to_be_bytes().to_vec();
+
+        let package_structure = PackageNativePackage::validate_and_build_package_structure(
+            PoolNativePackage::definition(PoolV1MinorVersion::One),
+            VmType::Native,
+            original_code,
+            Default::default(),
+            &MockVmApi,
+        )
+        .unwrap();
+
+        let node_substates = create_bootstrap_package_partitions(
+            package_structure,
+            metadata_init! {
+                "name" => "Pool Package".to_owned(), locked;
+                "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
+            },
+        );
+
+        node_substates
+            .into_iter()
+            .for_each(|(partition_number, entries)| {
+                state_updates
+                    .by_node
+                    .entry(node_id)
+                    .or_default()
+                    .of_partition(partition_number)
+                    .update_substates(
+                        entries
+                            .into_iter()
+                            .map(|(key, value)| (key, DatabaseUpdate::Set(value.into()))),
+                    );
+            })
+    }
+
+    struct MockVmApi;
+
+    impl VmApi for MockVmApi {
+        fn get_scrypto_minor_version(&self) -> u64 {
+            0
+        }
     }
 }

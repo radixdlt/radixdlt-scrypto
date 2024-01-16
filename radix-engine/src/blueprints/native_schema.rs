@@ -25,6 +25,8 @@ lazy_static! {
         AccessControllerNativePackage::definition();
     pub static ref POOL_PACKAGE_DEFINITION_V1_0: PackageDefinition =
         PoolNativePackage::definition(PoolV1MinorVersion::Zero);
+    pub static ref POOL_PACKAGE_DEFINITION_V1_1: PackageDefinition =
+        PoolNativePackage::definition(PoolV1MinorVersion::One);
     pub static ref TRANSACTION_TRACKER_PACKAGE_DEFINITION: PackageDefinition =
         TransactionTrackerNativePackage::definition();
     pub static ref RESOURCE_PACKAGE_DEFINITION: PackageDefinition =

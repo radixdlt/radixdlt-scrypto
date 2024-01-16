@@ -40,7 +40,7 @@ impl MultiResourcePoolBlueprint {
 
         // A multi-resource pool can not be created with no resources - at minimum there should be
         // one resource.
-        if resource_addresses.len() < 1 {
+        if resource_addresses.is_empty() {
             return Err(Error::CantCreatePoolWithLessThanOneResource.into());
         }
 
@@ -166,9 +166,9 @@ impl MultiResourcePoolBlueprint {
     said to be in an illegal state. Some people out there are holding pool units that equate to some
     percentage of zero, which is an illegal state for the pool to be in.
     - **Pool units total supply is not zero, none of the reserves are empty:** The pool is operating
-    normally and is governed by the antilogarithm discussed below.
+    normally and is governed by the algorithm discussed below.
 
-    In the case when the pool is operating normally an antilogarithm is needed to determine the
+    In the case when the pool is operating normally an algorithm is needed to determine the
     following:
     - Given some resources, how much of these resources can the pool accept.
     - Given some resources, how much pool units should the pool mint.
@@ -206,194 +206,166 @@ impl MultiResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        Self::with_state(api, |mut substate, api| {
+            let pool_unit_total_supply = substate
+                .pool_unit_resource_manager
+                .total_supply(api)?
+                .expect("Total supply is always enabled for pool unit resource.");
+            let pool_unit_total_supply = PreciseDecimal::from(pool_unit_total_supply);
 
-        // Checks
-        let amounts_of_resources_provided = {
-            // Checking that all of the buckets passed belong to this pool
-            let mut resource_bucket_amount_mapping = substate
-                .vaults
-                .keys()
-                .map(|resource_address| (*resource_address, Decimal::ZERO))
-                .collect::<IndexMap<ResourceAddress, Decimal>>();
-            for bucket in buckets.iter() {
-                let bucket_resource_address = bucket.resource_address(api)?;
-                let bucket_amount = bucket.amount(api)?;
-                if let Some(value) =
-                    resource_bucket_amount_mapping.get_mut(&bucket_resource_address)
-                {
-                    *value = value
-                        .checked_add(bucket_amount)
-                        .ok_or(Error::DecimalOverflowError)?;
-                    Ok(())
-                } else {
-                    Err(Error::ResourceDoesNotBelongToPool {
-                        resource_address: bucket_resource_address,
-                    })
-                }?;
-            }
-
-            // Checking that there are no buckets missing.
-            let resources_with_missing_buckets = resource_bucket_amount_mapping
-                .iter()
-                .filter_map(|(resource_address, amount_provided)| {
-                    if amount_provided.is_zero() {
-                        Some(*resource_address)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<IndexSet<ResourceAddress>>();
-
-            if resources_with_missing_buckets.len() != 0 {
-                Err(Error::MissingOrEmptyBuckets {
-                    resource_addresses: resources_with_missing_buckets,
-                })
-            } else {
-                Ok(())
-            }?;
-
-            resource_bucket_amount_mapping
-        };
-
-        let pool_unit_total_supply = substate
-            .pool_unit_resource_manager
-            .total_supply(api)?
-            .expect("Total supply is always enabled for pool unit resource.");
-        // Case: New Pool
-        let (pool_units, change) = if pool_unit_total_supply.is_zero() {
-            // Regarding the unwrap here, there are two cases here where this unwrap could panic:
-            // 1- If the value.sqrt is done on a negative decimal - this is impossible, how can the
-            //    amount of buckets in a vault be negative?
-            // 2- If reduce is called over an empty iterator - this is also impossible, we ensure
-            //    that the pool has at least one resource.
-            let pool_units_to_mint = amounts_of_resources_provided
-                .values()
-                .copied()
-                .fold(
-                    Ok(None),
-                    |acc: Result<Option<Decimal>, Error>, item| match acc? {
-                        None => Ok(Some(item)),
-                        Some(acc) => {
-                            let result =
-                                acc.checked_mul(item).ok_or(Error::DecimalOverflowError)?;
-                            Ok(Some(result))
-                        }
-                    },
-                )?
-                .and_then(|d| d.checked_sqrt())
-                .ok_or(Error::DecimalOverflowError)?;
-
-            // The following unwrap is safe to do. We've already checked that all of the buckets
-            // provided belong to the pool and have a corresponding vault.
-            for bucket in buckets {
-                let bucket_resource_address = bucket.resource_address(api)?;
-                substate
+            let contribution_information = {
+                let mut information = substate
                     .vaults
-                    .get_mut(&bucket_resource_address)
-                    .unwrap()
-                    .put(bucket, api)?;
-            }
-
-            Runtime::emit_event(
-                api,
-                ContributionEvent {
-                    contributed_resources: amounts_of_resources_provided,
-                    pool_units_minted: pool_units_to_mint,
-                },
-            )?;
-
-            (
-                substate
-                    .pool_unit_resource_manager
-                    .mint_fungible(pool_units_to_mint, api)?,
-                vec![],
-            )
-        } else {
-            // Check if any of the vaults are empty. If any of them are, then the pool is in an
-            // illegal state and it can not be contributed to.
-            for vault in substate.vaults.values() {
-                let amount = vault.amount(api)?;
-                if amount.is_zero() {
-                    return Err(Error::NonZeroPoolUnitSupplyButZeroReserves.into());
-                }
-            }
-
-            let mut vaults_and_buckets: IndexMap<ResourceAddress, (Vault, Bucket)> =
-                index_map_new();
-            for bucket in buckets.into_iter() {
-                let bucket_resource_address = bucket.resource_address(api)?;
-
-                if let Some((_, store_bucket)) =
-                    vaults_and_buckets.get_mut(&bucket_resource_address)
-                {
-                    store_bucket.put(bucket, api)?;
-                } else {
-                    let vault = substate.vaults.get(&bucket_resource_address).map_or(
-                        Err(Error::ResourceDoesNotBelongToPool {
-                            resource_address: bucket_resource_address,
-                        }),
-                        |vault| Ok(Vault(vault.0.clone())),
-                    )?;
-
-                    vaults_and_buckets.insert(bucket_resource_address, (vault, bucket));
-                };
-            }
-
-            // Safe to unwrap here as well. Min returns `None` if called on an empty iterator. The
-            // pool has a minimum of one resource at all times thus min is never none.
-            let minimum_ratio = *vaults_and_buckets
-                .values()
-                .map(|(vault, bucket)| {
-                    vault.amount(api).and_then(|vault_amount| {
-                        bucket.amount(api).and_then(|bucket_amount| {
-                            let rtn = bucket_amount
-                                .checked_div(vault_amount)
-                                .ok_or(Error::DecimalOverflowError)?;
-                            Ok(rtn)
-                        })
+                    .iter()
+                    .map(|(resource_address, vault)| -> Result<_, RuntimeError> {
+                        Ok((
+                            *resource_address,
+                            ContributionInformation {
+                                resource_address: *resource_address,
+                                vault: Vault(vault.0),
+                                bucket: Bucket::create(*resource_address, api)?,
+                                reserves: vault.amount(api)?.into(),
+                                contribution: PreciseDecimal::ZERO,
+                            },
+                        ))
                     })
-                })
-                .collect::<Result<Vec<Decimal>, _>>()?
-                .iter()
-                .min()
-                .unwrap();
+                    .collect::<Result<IndexMap<_, _>, _>>()?;
 
-            let mut change = vec![];
-            let mut contributed_resources = index_map_new();
-            for (resource_address, (mut vault, bucket)) in vaults_and_buckets.into_iter() {
-                let divisibility = ResourceManager(resource_address).resource_type(api)
-                    .map(|resource_type| {
-                        if let ResourceType::Fungible { divisibility } = resource_type {
-                            divisibility
-                        } else {
-                            panic!("Impossible case, we check for this in the constructor and have a test for this.")
-                        }
-                    })?;
-
-                let amount_to_contribute = {
-                    let amount_to_contribute = vault
-                        .amount(api)?
-                        .checked_mul(minimum_ratio)
-                        .ok_or(Error::DecimalOverflowError)?;
-                    if divisibility == 18 {
-                        amount_to_contribute
+                for bucket in buckets {
+                    let resource_address = bucket.resource_address(api)?;
+                    if let Some(information) = information.get_mut(&resource_address) {
+                        information.contribution = information
+                            .contribution
+                            .checked_add(bucket.amount(api)?)
+                            .ok_or(Error::DecimalOverflowError)?;
+                        information.bucket.put(bucket, api)?;
                     } else {
-                        amount_to_contribute
-                            .checked_round(divisibility, RoundingMode::ToNegativeInfinity)
-                            .ok_or(Error::DecimalOverflowError)?
+                        return Err(Error::ResourceDoesNotBelongToPool { resource_address }.into());
                     }
+                }
+                information
+            };
+
+            // New Pool
+            let mut contributed_resources = index_map_new::<ResourceAddress, Decimal>();
+            let (pool_units_to_mint, change_buckets) = if pool_unit_total_supply.is_zero() {
+                // Calculating the pool units to mint through the geometric mean.
+                let pool_units_to_mint = {
+                    let contributions = contribution_information
+                        .values()
+                        .filter_map(|information| {
+                            if information.contribution.is_zero() {
+                                None
+                            } else {
+                                Some(information.contribution)
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    let root_order = contributions.len();
+
+                    // Pool Units to Mint = Geometric Average = root(n, c1 * c2 * ... * cn) Where
+                    // n is the number of non-zero contributions and cn is any non-zero contribution
+                    contributions
+                        .into_iter()
+                        .try_fold(PreciseDecimal::ONE, |accumulator, value| {
+                            value
+                                .checked_nth_root(root_order as u32)
+                                .and_then(|value| value.checked_mul(accumulator))
+                        })
+                        .and_then(|value| value.checked_round(19, RoundingMode::ToPositiveInfinity))
+                        .ok_or(Error::DecimalOverflowError)?
                 };
 
-                contributed_resources.insert(resource_address, amount_to_contribute);
+                for mut information in contribution_information.into_values() {
+                    let amount = information.bucket.amount(api)?;
+                    if !amount.is_zero() {
+                        let entry = contributed_resources
+                            .entry(information.resource_address)
+                            .or_default();
+                        *entry = entry
+                            .checked_add(amount)
+                            .ok_or(Error::DecimalOverflowError)?;
+                    }
 
-                vault.put(bucket.take(amount_to_contribute, api)?, api)?;
-                change.push(bucket)
+                    information.vault.put(information.bucket, api)?;
+                }
+
+                (pool_units_to_mint, Vec::default())
+            }
+            // Not a new Pool
+            else {
+                // Calculate the minimum ratio
+                let minimum_ratio = contribution_information
+                    .values()
+                    .filter_map(|information| {
+                        if !information.reserves.is_zero() {
+                            information.contribution.checked_div(information.reserves)
+                        } else {
+                            None
+                        }
+                    })
+                    .min()
+                    .ok_or(Error::NoMinimumRatio)?;
+
+                // Deposit the buckets into the vaults and then return the change buckets
+                let change_buckets = contribution_information
+                    .into_values()
+                    .map(|mut information| -> Result<_, RuntimeError> {
+                        let amount_to_contribute = information
+                            .reserves
+                            .checked_mul(minimum_ratio)
+                            .and_then(|value| Decimal::try_from(value).ok())
+                            .ok_or(Error::DecimalOverflowError)?;
+                        let bucket_to_contribute = information.bucket.take_advanced(
+                            amount_to_contribute,
+                            WithdrawStrategy::Rounded(RoundingMode::ToNegativeInfinity),
+                            api,
+                        )?;
+                        let amount_to_contribute = bucket_to_contribute.amount(api)?;
+                        information.vault.put(bucket_to_contribute, api)?;
+
+                        let entry = contributed_resources
+                            .entry(information.resource_address)
+                            .or_default();
+                        *entry = entry
+                            .checked_add(amount_to_contribute)
+                            .ok_or(Error::DecimalOverflowError)?;
+
+                        let is_empty = information.bucket.is_empty(api)?;
+                        if is_empty {
+                            Bucket(information.bucket.0).drop_empty(api)?;
+                        }
+
+                        Ok((is_empty, information.bucket))
+                    })
+                    .filter_map(|result| match result {
+                        Ok((is_empty, bucket)) => {
+                            if is_empty {
+                                None
+                            } else {
+                                Some(Ok(bucket))
+                            }
+                        }
+                        Err(error) => Some(Err(error)),
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                (
+                    pool_unit_total_supply
+                        .checked_mul(minimum_ratio)
+                        .ok_or(Error::DecimalOverflowError)?,
+                    change_buckets,
+                )
+            };
+            let pool_units_to_mint =
+                Decimal::try_from(pool_units_to_mint).map_err(|_| Error::DecimalOverflowError)?;
+            if pool_units_to_mint.is_zero() {
+                return Err(Error::ZeroPoolUnitsMinted.into());
             }
 
-            let pool_units_to_mint = pool_unit_total_supply
-                .checked_mul(minimum_ratio)
-                .ok_or(Error::DecimalOverflowError)?;
+            let pool_units = substate
+                .pool_unit_resource_manager
+                .mint_fungible(pool_units_to_mint, api)?;
 
             Runtime::emit_event(
                 api,
@@ -403,16 +375,8 @@ impl MultiResourcePoolBlueprint {
                 },
             )?;
 
-            (
-                substate
-                    .pool_unit_resource_manager
-                    .mint_fungible(pool_units_to_mint, api)?,
-                change,
-            )
-        };
-
-        api.field_close(lock_handle)?;
-        Ok((pool_units, change))
+            Ok((pool_units, change_buckets))
+        })
     }
 
     pub fn redeem<Y>(
@@ -422,27 +386,26 @@ impl MultiResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-
-        // Ensure that the passed pool resources are indeed pool resources
-        let bucket_resource_address = bucket.resource_address(api)?;
-        if bucket_resource_address != substate.pool_unit_resource_manager.0 {
-            return Err(Error::InvalidPoolUnitResource {
-                expected: substate.pool_unit_resource_manager.0,
-                actual: bucket_resource_address,
+        Self::with_state(api, |mut substate, api| {
+            // Ensure that the passed pool resources are indeed pool resources
+            let bucket_resource_address = bucket.resource_address(api)?;
+            if bucket_resource_address != substate.pool_unit_resource_manager.0 {
+                return Err(Error::InvalidPoolUnitResource {
+                    expected: substate.pool_unit_resource_manager.0,
+                    actual: bucket_resource_address,
+                }
+                .into());
             }
-            .into());
-        }
 
-        let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = substate
-            .pool_unit_resource_manager
-            .total_supply(api)?
-            .expect("Total supply is always enabled for pool unit resource.");
-        let mut reserves = index_map_new();
-        for (resource_address, vault) in substate.vaults.iter() {
-            let amount = vault.amount(api)?;
-            let divisibility = ResourceManager(*resource_address).resource_type(api)
+            let pool_units_to_redeem = bucket.amount(api)?;
+            let pool_units_total_supply = substate
+                .pool_unit_resource_manager
+                .total_supply(api)?
+                .expect("Total supply is always enabled for pool unit resource.");
+            let mut reserves = index_map_new();
+            for (resource_address, vault) in substate.vaults.iter() {
+                let amount = vault.amount(api)?;
+                let divisibility = ResourceManager(*resource_address).resource_type(api)
                 .map(|resource_type| {
                     if let ResourceType::Fungible { divisibility } = resource_type {
                         divisibility
@@ -451,41 +414,42 @@ impl MultiResourcePoolBlueprint {
                     }
                 })?;
 
-            reserves.insert(
-                *resource_address,
-                ReserveResourceInformation {
-                    reserves: amount,
-                    divisibility,
+                reserves.insert(
+                    *resource_address,
+                    ReserveResourceInformation {
+                        reserves: amount,
+                        divisibility,
+                    },
+                );
+            }
+
+            let amounts_owed = Self::calculate_amount_owed(
+                pool_units_to_redeem,
+                pool_units_total_supply,
+                reserves,
+            )?;
+
+            bucket.burn(api)?;
+            Runtime::emit_event(
+                api,
+                RedemptionEvent {
+                    redeemed_resources: amounts_owed.clone(),
+                    pool_unit_tokens_redeemed: pool_units_to_redeem,
                 },
-            );
-        }
+            )?;
 
-        let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
-
-        let event = RedemptionEvent {
-            redeemed_resources: amounts_owed.clone(),
-            pool_unit_tokens_redeemed: pool_units_to_redeem,
-        };
-
-        // The following part does some unwraps and panic-able operations but should never panic.
-        let buckets = amounts_owed
-            .into_iter()
-            .map(|(resource_address, amount)| {
-                substate
-                    .vaults
-                    .get_mut(&resource_address)
-                    .unwrap()
-                    .take(amount, api)
-            })
-            .collect::<Result<Vec<Bucket>, _>>()?;
-
-        bucket.burn(api)?;
-        api.field_close(handle)?;
-
-        Runtime::emit_event(api, event)?;
-
-        Ok(buckets)
+            // The following part does some unwraps and panic-able operations but should never panic
+            amounts_owed
+                .into_iter()
+                .map(|(resource_address, amount)| {
+                    substate
+                        .vaults
+                        .get_mut(&resource_address)
+                        .unwrap()
+                        .take(amount, api)
+                })
+                .collect::<Result<Vec<Bucket>, _>>()
+        })
     }
 
     pub fn protected_deposit<Y>(
@@ -495,21 +459,21 @@ impl MultiResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-        let resource_address = bucket.resource_address(api)?;
-        let vault = substate.vaults.get_mut(&resource_address);
-        if let Some(vault) = vault {
-            let event = DepositEvent {
-                amount: bucket.amount(api)?,
-                resource_address,
-            };
-            vault.put(bucket, api)?;
-            api.field_close(handle)?;
-            Runtime::emit_event(api, event)?;
-            Ok(())
-        } else {
-            Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
-        }
+        Self::with_state(api, |mut substate, api| {
+            let resource_address = bucket.resource_address(api)?;
+            let vault = substate.vaults.get_mut(&resource_address);
+            if let Some(vault) = vault {
+                let event = DepositEvent {
+                    amount: bucket.amount(api)?,
+                    resource_address,
+                };
+                vault.put(bucket, api)?;
+                Runtime::emit_event(api, event)?;
+                Ok(())
+            } else {
+                Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
+            }
+        })
     }
 
     pub fn protected_withdraw<Y>(
@@ -521,26 +485,26 @@ impl MultiResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-        let vault = substate.vaults.get_mut(&resource_address);
+        Self::with_state(api, |mut substate, api| {
+            let vault = substate.vaults.get_mut(&resource_address);
 
-        if let Some(vault) = vault {
-            let bucket = vault.take_advanced(amount, withdraw_strategy, api)?;
-            api.field_close(handle)?;
-            let withdrawn_amount = bucket.amount(api)?;
+            if let Some(vault) = vault {
+                let bucket = vault.take_advanced(amount, withdraw_strategy, api)?;
+                let withdrawn_amount = bucket.amount(api)?;
 
-            Runtime::emit_event(
-                api,
-                WithdrawEvent {
-                    amount: withdrawn_amount,
-                    resource_address,
-                },
-            )?;
+                Runtime::emit_event(
+                    api,
+                    WithdrawEvent {
+                        amount: withdrawn_amount,
+                        resource_address,
+                    },
+                )?;
 
-            Ok(bucket)
-        } else {
-            Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
-        }
+                Ok(bucket)
+            } else {
+                Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
+            }
+        })
     }
 
     pub fn get_redemption_value<Y>(
@@ -550,25 +514,24 @@ impl MultiResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        Self::with_state(api, |substate, api| {
+            let pool_units_to_redeem = amount_of_pool_units;
+            let pool_units_total_supply = substate
+                .pool_unit_resource_manager
+                .total_supply(api)?
+                .expect("Total supply is always enabled for pool unit resource.");
 
-        let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = substate
-            .pool_unit_resource_manager
-            .total_supply(api)?
-            .expect("Total supply is always enabled for pool unit resource.");
+            if amount_of_pool_units.is_negative()
+                || amount_of_pool_units.is_zero()
+                || amount_of_pool_units > pool_units_total_supply
+            {
+                return Err(Error::InvalidGetRedemptionAmount.into());
+            }
 
-        if amount_of_pool_units.is_negative()
-            || amount_of_pool_units.is_zero()
-            || amount_of_pool_units > pool_units_total_supply
-        {
-            return Err(Error::InvalidGetRedemptionAmount.into());
-        }
-
-        let mut reserves = index_map_new();
-        for (resource_address, vault) in substate.vaults.into_iter() {
-            let amount = vault.amount(api)?;
-            let divisibility = ResourceManager(resource_address).resource_type(api)
+            let mut reserves = index_map_new();
+            for (resource_address, vault) in substate.vaults.into_iter() {
+                let amount = vault.amount(api)?;
+                let divisibility = ResourceManager(resource_address).resource_type(api)
                 .map(|resource_type| {
                     if let ResourceType::Fungible { divisibility } = resource_type {
                         divisibility
@@ -577,62 +540,61 @@ impl MultiResourcePoolBlueprint {
                     }
                 })?;
 
-            reserves.insert(
-                resource_address,
-                ReserveResourceInformation {
-                    reserves: amount,
-                    divisibility,
-                },
-            );
-        }
+                reserves.insert(
+                    resource_address,
+                    ReserveResourceInformation {
+                        reserves: amount,
+                        divisibility,
+                    },
+                );
+            }
 
-        let amounts_owed =
-            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)?;
-
-        api.field_close(handle)?;
-
-        Ok(amounts_owed)
+            Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves)
+        })
     }
 
     pub fn get_vault_amounts<Y>(
         api: &mut Y,
-    ) -> Result<MultiResourcePoolGetVaultAmountsOutput, RuntimeError>
+    ) -> Result<TwoResourcePoolGetVaultAmountsOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (multi_resource_pool_substate, handle) =
-            Self::lock_and_read(api, LockFlags::read_only())?;
-        let amounts = multi_resource_pool_substate
-            .vaults
-            .into_iter()
-            .map(|(resource_address, vault)| {
-                vault.amount(api).map(|amount| (resource_address, amount))
-            })
-            .collect::<Result<IndexMap<_, _>, _>>()?;
-
-        api.field_close(handle)?;
-        Ok(amounts)
+        Self::with_state(api, |substate, api| {
+            substate
+                .vaults
+                .into_iter()
+                .map(|(resource_address, vault)| {
+                    vault.amount(api).map(|amount| (resource_address, amount))
+                })
+                .collect::<Result<IndexMap<_, _>, _>>()
+        })
     }
 
     //===================
     // Utility Functions
     //===================
 
-    fn lock_and_read<Y>(
-        api: &mut Y,
-        lock_flags: LockFlags,
-    ) -> Result<(Substate, SubstateHandle), RuntimeError>
+    fn with_state<Y, F, O>(api: &mut Y, callback: F) -> Result<O, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
+        F: FnOnce(Substate, &mut Y) -> Result<O, RuntimeError>,
     {
+        // Open
         let substate_key = MultiResourcePoolField::State.into();
-        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
-        let multi_resource_pool: VersionedMultiResourcePoolState = api.field_read_typed(handle)?;
-        let multi_resource_pool = match multi_resource_pool {
-            VersionedMultiResourcePoolState::V1(pool) => pool,
-        };
+        let handle =
+            api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::read_only())?;
+        let substate = api
+            .field_read_typed::<VersionedMultiResourcePoolState>(handle)?
+            .into_latest();
 
-        Ok((multi_resource_pool, handle))
+        // Op
+        let rtn = callback(substate, api);
+
+        // Close
+        if rtn.is_ok() {
+            api.field_close(handle)?;
+        }
+        rtn
     }
 
     fn calculate_amount_owed(
@@ -640,6 +602,9 @@ impl MultiResourcePoolBlueprint {
         pool_units_total_supply: Decimal,
         reserves: IndexMap<ResourceAddress, ReserveResourceInformation>,
     ) -> Result<IndexMap<ResourceAddress, Decimal>, RuntimeError> {
+        let pool_units_to_redeem = PreciseDecimal::from(pool_units_to_redeem);
+        let pool_units_total_supply = PreciseDecimal::from(pool_units_total_supply);
+
         reserves
             .into_iter()
             .map(
@@ -650,6 +615,7 @@ impl MultiResourcePoolBlueprint {
                         reserves,
                     },
                 )| {
+                    let reserves = PreciseDecimal::from(reserves);
                     let amount_owed = pool_units_to_redeem
                         .checked_div(pool_units_total_supply)
                         .and_then(|d| d.checked_mul(reserves))
@@ -662,6 +628,8 @@ impl MultiResourcePoolBlueprint {
                             .checked_round(divisibility, RoundingMode::ToNegativeInfinity)
                             .ok_or(Error::DecimalOverflowError)?
                     };
+                    let amount_owed =
+                        Decimal::try_from(amount_owed).map_err(|_| Error::DecimalOverflowError)?;
 
                     Ok((resource_address, amount_owed))
                 },
@@ -673,4 +641,18 @@ impl MultiResourcePoolBlueprint {
 struct ReserveResourceInformation {
     reserves: Decimal,
     divisibility: u8,
+}
+
+#[derive(Debug)]
+struct ContributionInformation {
+    /// The address of the resource.
+    pub resource_address: ResourceAddress,
+    /// The vault containing the reserves.
+    pub vault: Vault,
+    /// The bucket of the tokens the user wishes to contribute. Might not be contributed in full.
+    pub bucket: Bucket,
+    /// The amount of reserves in the vault.
+    pub reserves: PreciseDecimal,
+    /// The amount of resources the user wishes to contribute.
+    pub contribution: PreciseDecimal,
 }

@@ -153,6 +153,12 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         PoolV1MinorVersion::Zero,
                         api,
                     ),
+                    POOL_V1_1_CODE_ID => PoolNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        PoolV1MinorVersion::One,
+                        api,
+                    ),
                     TRANSACTION_TRACKER_CODE_ID => {
                         TransactionTrackerNativePackage::invoke_export(export_name, input, api)
                     }

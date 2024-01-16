@@ -1,3 +1,5 @@
+#![allow(clippy::let_unit_value)]
+
 use super::constants::*;
 use super::substates::multi_resource_pool::*;
 use super::substates::one_resource_pool::*;
@@ -14,6 +16,7 @@ use radix_engine_interface::prelude::*;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Sbor)]
 pub enum PoolV1MinorVersion {
     Zero,
+    One,
 }
 
 pub struct PoolNativePackage;
@@ -45,6 +48,13 @@ impl PoolNativePackage {
                         address_reservation,
                         api,
                     )?,
+                    PoolV1MinorVersion::One => super::v1_1::OneResourcePoolBlueprint::instantiate(
+                        resource_address,
+                        owner_role,
+                        pool_manager_rule,
+                        address_reservation,
+                        api,
+                    )?,
                 };
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -58,6 +68,9 @@ impl PoolNativePackage {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::OneResourcePoolBlueprint::contribute(bucket, api)?
                     }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::OneResourcePoolBlueprint::contribute(bucket, api)?
+                    }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -69,6 +82,9 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::OneResourcePoolBlueprint::redeem(bucket, api)?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::OneResourcePoolBlueprint::redeem(bucket, api)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -82,6 +98,9 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::OneResourcePoolBlueprint::protected_deposit(bucket, api)?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::OneResourcePoolBlueprint::protected_deposit(bucket, api)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -97,6 +116,13 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::OneResourcePoolBlueprint::protected_withdraw(
+                            amount,
+                            withdraw_strategy,
+                            api,
+                        )?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::OneResourcePoolBlueprint::protected_withdraw(
                             amount,
                             withdraw_strategy,
                             api,
@@ -119,6 +145,12 @@ impl PoolNativePackage {
                             api,
                         )?
                     }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::OneResourcePoolBlueprint::get_redemption_value(
+                            amount_of_pool_units,
+                            api,
+                        )?
+                    }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -130,6 +162,9 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::OneResourcePoolBlueprint::get_vault_amount(api)?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::OneResourcePoolBlueprint::get_vault_amount(api)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -152,6 +187,13 @@ impl PoolNativePackage {
                         address_reservation,
                         api,
                     )?,
+                    PoolV1MinorVersion::One => super::v1_1::TwoResourcePoolBlueprint::instantiate(
+                        resource_addresses,
+                        owner_role,
+                        pool_manager_rule,
+                        address_reservation,
+                        api,
+                    )?,
                 };
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -165,6 +207,9 @@ impl PoolNativePackage {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::TwoResourcePoolBlueprint::contribute(buckets, api)?
                     }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::TwoResourcePoolBlueprint::contribute(buckets, api)?
+                    }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -176,6 +221,9 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::TwoResourcePoolBlueprint::redeem(bucket, api)?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::TwoResourcePoolBlueprint::redeem(bucket, api)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -189,6 +237,9 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::TwoResourcePoolBlueprint::protected_deposit(bucket, api)?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::TwoResourcePoolBlueprint::protected_deposit(bucket, api)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -205,6 +256,14 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::TwoResourcePoolBlueprint::protected_withdraw(
+                            resource_address,
+                            amount,
+                            withdraw_strategy,
+                            api,
+                        )?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::TwoResourcePoolBlueprint::protected_withdraw(
                             resource_address,
                             amount,
                             withdraw_strategy,
@@ -228,6 +287,12 @@ impl PoolNativePackage {
                             api,
                         )?
                     }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::TwoResourcePoolBlueprint::get_redemption_value(
+                            amount_of_pool_units,
+                            api,
+                        )?
+                    }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -239,6 +304,9 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::TwoResourcePoolBlueprint::get_vault_amounts(api)?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::TwoResourcePoolBlueprint::get_vault_amounts(api)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -263,6 +331,15 @@ impl PoolNativePackage {
                             api,
                         )?
                     }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::MultiResourcePoolBlueprint::instantiate(
+                            resource_addresses,
+                            owner_role,
+                            pool_manager_rule,
+                            address_reservation,
+                            api,
+                        )?
+                    }
                 };
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -277,6 +354,9 @@ impl PoolNativePackage {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::MultiResourcePoolBlueprint::contribute(buckets, api)?
                     }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::MultiResourcePoolBlueprint::contribute(buckets, api)?
+                    }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -288,6 +368,9 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::MultiResourcePoolBlueprint::redeem(bucket, api)?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::MultiResourcePoolBlueprint::redeem(bucket, api)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -301,6 +384,9 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::MultiResourcePoolBlueprint::protected_deposit(bucket, api)?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::MultiResourcePoolBlueprint::protected_deposit(bucket, api)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -317,6 +403,14 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::MultiResourcePoolBlueprint::protected_withdraw(
+                            resource_address,
+                            amount,
+                            withdraw_strategy,
+                            api,
+                        )?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::MultiResourcePoolBlueprint::protected_withdraw(
                             resource_address,
                             amount,
                             withdraw_strategy,
@@ -340,6 +434,12 @@ impl PoolNativePackage {
                             api,
                         )?
                     }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::MultiResourcePoolBlueprint::get_redemption_value(
+                            amount_of_pool_units,
+                            api,
+                        )?
+                    }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -351,6 +451,9 @@ impl PoolNativePackage {
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::MultiResourcePoolBlueprint::get_vault_amounts(api)?
+                    }
+                    PoolV1MinorVersion::One => {
+                        super::v1_1::MultiResourcePoolBlueprint::get_vault_amounts(api)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))

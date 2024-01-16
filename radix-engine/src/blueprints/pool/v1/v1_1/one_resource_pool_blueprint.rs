@@ -101,7 +101,7 @@ impl OneResourcePoolBlueprint {
             api.new_simple_object(
                 ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
                 indexmap! {
-                    OneResourcePoolField::State.field_index() => FieldValue::immutable(&OneResourcePoolStateFieldPayload::from_content_source(substate)),
+                    OneResourcePoolField::State.field_index() => FieldValue::immutable(OneResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
         };
@@ -128,73 +128,79 @@ impl OneResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // No check that the bucket is of the same resource as the vault. This check will be handled
-        // by the vault itself on deposit.
-
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-        let mut pool_unit_resource_manager = substate.pool_unit_resource_manager;
-        let mut vault = substate.vault;
-
         if bucket.is_empty(api)? {
             return Err(Error::ContributionOfEmptyBucketError.into());
         }
 
-        /*
-        There are four states that the pool could be in at this point of time depending on the total
-        supply of the pool units and the the total amount of reserves that the pool unit has. We can
-        examine each of those states.
+        Self::with_state(api, |mut substate, api| {
+            /*
+            There are four states that the pool could be in at this point of time depending on the
+            total supply of the pool units and the the total amount of reserves that the pool has.
+            We can examine each of those states.
 
-        Let PU denote the total supply of pool units where 0 means that none exists and 1 means that
-        some amount exists. Let R denote the total amount of reserves that the pool has where 0 here
-        means that no reserves exist in the pool and 1 means that some reserves exist in the pool.
+            Let PU denote the total supply of pool units where 0 means that none exists and 1 means
+            that some amount exists. Let R denote the total amount of reserves that the pool has
+            where 0 here means that no reserves exist in the pool and 1 means that some reserves
+            exist in the pool.
 
-        PU  R
-        0   0 => This is a new pool - no pool units and no pool reserves.
-        0   1 => This is a pool which has been used but has dried out and all of the pool units have
-                 been burned. The first contribution to this pool gets whatever dust is left behind.
-        1   0 => This is an illegal state! Some amount of people own some % of zero which is invalid
-        1   1 => The pool is in normal operations.
+            PU  R
+            0   0 => This is a new pool - no pool units and no pool reserves.
+            0   1 => This is a pool which has been used but has dried out and all of the pool units
+                     have been burned. The first contribution to this pool gets whatever dust is
+                     left behind.
+            1   0 => This is an illegal state! Some amount of people own some % of zero which is
+                     invalid
+            1   1 => The pool is in normal operations.
 
-        Thus depending on the supply of these resources the pool behaves differently.
-         */
+            Thus depending on the supply of these resources the pool behaves differently.
+             */
 
-        let reserves = vault.amount(api)?;
-        let pool_unit_total_supply = pool_unit_resource_manager
-            .total_supply(api)?
-            .expect("Total supply is always enabled for pool unit resource.");
-        let amount_of_contributed_resources = bucket.amount(api)?;
+            let reserves_decimal = substate.vault.amount(api)?;
+            let pool_unit_total_supply_decimal = substate
+                .pool_unit_resource_manager
+                .total_supply(api)?
+                .expect("Total supply is always enabled for pool unit resource.");
+            let amount_of_contributed_resources_decimal = bucket.amount(api)?;
 
-        let pool_units_to_mint = match (
-            pool_unit_total_supply > Decimal::ZERO,
-            reserves > Decimal::ZERO,
-        ) {
-            (false, false) => Ok(amount_of_contributed_resources),
-            (false, true) => amount_of_contributed_resources
-                .checked_add(reserves)
-                .ok_or(Error::DecimalOverflowError),
-            (true, false) => Err(Error::NonZeroPoolUnitSupplyButZeroReserves),
-            // Note: we do the division first to make it harder for the calculation to overflow. The
-            // amount_of_contributed_resources / reserves is guaranteed to be in the range of [0, 1]
-            (true, true) => amount_of_contributed_resources
-                .checked_div(reserves)
-                .and_then(|d| d.checked_mul(pool_unit_total_supply))
-                .ok_or(Error::DecimalOverflowError),
-        }?;
+            let initial_reserves = PreciseDecimal::from(reserves_decimal);
+            let initial_pool_unit_total_supply =
+                PreciseDecimal::from(pool_unit_total_supply_decimal);
+            let amount_of_contributed_resources =
+                PreciseDecimal::from(amount_of_contributed_resources_decimal);
 
-        vault.put(bucket, api)?;
-        let pool_units = pool_unit_resource_manager.mint_fungible(pool_units_to_mint, api)?;
+            let pool_units_to_mint = match (
+                initial_pool_unit_total_supply > PreciseDecimal::ZERO,
+                initial_reserves > PreciseDecimal::ZERO,
+            ) {
+                (false, false) => Ok(amount_of_contributed_resources),
+                (false, true) => amount_of_contributed_resources
+                    .checked_add(initial_reserves)
+                    .ok_or(Error::DecimalOverflowError),
+                (true, false) => Err(Error::NonZeroPoolUnitSupplyButZeroReserves),
+                // Note: we do the division first to make it harder for the calculation to overflow.
+                (true, true) => amount_of_contributed_resources
+                    .checked_div(initial_reserves)
+                    .and_then(|d| d.checked_mul(initial_pool_unit_total_supply))
+                    .ok_or(Error::DecimalOverflowError),
+            }?;
+            let pool_units_to_mint =
+                Decimal::try_from(pool_units_to_mint).map_err(|_| Error::DecimalOverflowError)?;
+            if pool_units_to_mint == Decimal::ZERO {
+                return Err(Error::ZeroPoolUnitsMinted.into());
+            }
+            Runtime::emit_event(
+                api,
+                ContributionEvent {
+                    amount_of_resources_contributed: amount_of_contributed_resources_decimal,
+                    pool_units_minted: pool_units_to_mint,
+                },
+            )?;
+            substate.vault.put(bucket, api)?;
 
-        api.field_close(handle)?;
-
-        Runtime::emit_event(
-            api,
-            ContributionEvent {
-                amount_of_resources_contributed: amount_of_contributed_resources,
-                pool_units_minted: pool_units_to_mint,
-            },
-        )?;
-
-        Ok(pool_units)
+            substate
+                .pool_unit_resource_manager
+                .mint_fungible(pool_units_to_mint, api)
+        })
     }
 
     pub fn redeem<Y>(
@@ -204,33 +210,25 @@ impl OneResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (pool_unit_resource_manager, mut vault, handle) = {
-            let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-
-            (
-                substate.pool_unit_resource_manager,
-                substate.vault,
-                lock_handle,
-            )
-        };
-
-        // Ensure that the passed pool resources are indeed pool resources
-        let bucket_resource_address = bucket.resource_address(api)?;
-        if bucket_resource_address != pool_unit_resource_manager.0 {
-            return Err(Error::InvalidPoolUnitResource {
-                expected: pool_unit_resource_manager.0,
-                actual: bucket_resource_address,
+        Self::with_state(api, |mut substate, api| {
+            // Ensure that the passed pool resources are indeed pool resources
+            let bucket_resource_address = bucket.resource_address(api)?;
+            if bucket_resource_address != substate.pool_unit_resource_manager.0 {
+                return Err(Error::InvalidPoolUnitResource {
+                    expected: substate.pool_unit_resource_manager.0,
+                    actual: bucket_resource_address,
+                }
+                .into());
             }
-            .into());
-        }
 
-        // Calculating the amount owed based on the passed pool units.
-        let pool_units_to_redeem = bucket.amount(api)?;
-        let pool_units_total_supply = pool_unit_resource_manager
-            .total_supply(api)?
-            .expect("Total supply is always enabled for pool unit resource.");
-        let pool_resource_reserves = vault.amount(api)?;
-        let pool_resource_divisibility = vault
+            // Calculating the amount owed based on the passed pool units.
+            let pool_units_to_redeem = bucket.amount(api)?;
+            let pool_units_total_supply = substate
+                .pool_unit_resource_manager
+                .total_supply(api)?
+                .expect("Total supply is always enabled for pool unit resource.");
+            let pool_resource_reserves = substate.vault.amount(api)?;
+            let pool_resource_divisibility = substate.vault
             .resource_address(api)
             .and_then(|resource_address| ResourceManager(resource_address).resource_type(api))
             .map(|resource_type| {
@@ -241,28 +239,35 @@ impl OneResourcePoolBlueprint {
                 }
             })?;
 
-        let amount_owed = Self::calculate_amount_owed(
-            pool_units_to_redeem,
-            pool_units_total_supply,
-            pool_resource_reserves,
-            pool_resource_divisibility,
-        )?;
+            let amount_owed = Self::calculate_amount_owed(
+                pool_units_to_redeem,
+                pool_units_total_supply,
+                pool_resource_reserves,
+                pool_resource_divisibility,
+            )?;
 
-        // Burn the pool units and take the owed resources from the bucket.
-        bucket.burn(api)?;
-        let owed_resources = vault.take(amount_owed, api)?;
+            // Return an error if the amount owed to them is zero. This is to guard from cases where
+            // the amount owed is zero due to the divisibility. As an example. Imagine a pool with
+            // reserves of 100.00 of a resource that has two divisibility and a pool unit total
+            // supply of 100 pool units. Redeeming 10^-18 pool units from this pool would mean
+            // redeeming 10^-18 tokens which is invalid for this resource's divisibility. Thus, this
+            // calculation would round to 0.
+            if amount_owed == Decimal::ZERO {
+                return Err(Error::RedeemedZeroTokens.into());
+            }
 
-        api.field_close(handle)?;
+            Runtime::emit_event(
+                api,
+                RedemptionEvent {
+                    pool_unit_tokens_redeemed: pool_units_to_redeem,
+                    redeemed_amount: amount_owed,
+                },
+            )?;
 
-        Runtime::emit_event(
-            api,
-            RedemptionEvent {
-                pool_unit_tokens_redeemed: pool_units_to_redeem,
-                redeemed_amount: amount_owed,
-            },
-        )?;
-
-        Ok(owed_resources)
+            // Burn the pool units and take the owed resources from the bucket.
+            bucket.burn(api)?;
+            substate.vault.take(amount_owed, api)
+        })
     }
 
     pub fn protected_deposit<Y>(
@@ -272,16 +277,16 @@ impl OneResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        let bucket_amount = bucket.amount(api)?;
 
-        let event = DepositEvent {
-            amount: bucket.amount(api)?,
-        };
+        Self::with_state(api, |mut substate, api| substate.vault.put(bucket, api))?;
 
-        substate.vault.put(bucket, api)?;
-        api.field_close(handle)?;
-
-        Runtime::emit_event(api, event)?;
+        Runtime::emit_event(
+            api,
+            DepositEvent {
+                amount: bucket_amount,
+            },
+        )?;
 
         Ok(())
     }
@@ -294,14 +299,11 @@ impl OneResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        let bucket = Self::with_state(api, |mut substate, api| {
+            substate.vault.take_advanced(amount, withdraw_strategy, api)
+        })?;
 
-        let bucket = substate
-            .vault
-            .take_advanced(amount, withdraw_strategy, api)?;
-        api.field_close(handle)?;
         let withdrawn_amount = bucket.amount(api)?;
-
         Runtime::emit_event(
             api,
             WithdrawEvent {
@@ -319,30 +321,22 @@ impl OneResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (pool_unit_resource_manager, vault, handle) = {
-            let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
+        Self::with_state(api, |substate, api| {
+            let pool_units_to_redeem = amount_of_pool_units;
+            let pool_units_total_supply = substate
+                .pool_unit_resource_manager
+                .total_supply(api)?
+                .expect("Total supply is always enabled for pool unit resource.");
 
-            (
-                substate.pool_unit_resource_manager,
-                substate.vault,
-                lock_handle,
-            )
-        };
+            if amount_of_pool_units.is_negative()
+                || amount_of_pool_units.is_zero()
+                || amount_of_pool_units > pool_units_total_supply
+            {
+                return Err(Error::InvalidGetRedemptionAmount.into());
+            }
 
-        let pool_units_to_redeem = amount_of_pool_units;
-        let pool_units_total_supply = pool_unit_resource_manager
-            .total_supply(api)?
-            .expect("Total supply is always enabled for pool unit resource.");
-
-        if amount_of_pool_units.is_negative()
-            || amount_of_pool_units.is_zero()
-            || amount_of_pool_units > pool_units_total_supply
-        {
-            return Err(Error::InvalidGetRedemptionAmount.into());
-        }
-
-        let pool_resource_reserves = vault.amount(api)?;
-        let pool_resource_divisibility = vault
+            let pool_resource_reserves = substate.vault.amount(api)?;
+            let pool_resource_divisibility = substate.vault
             .resource_address(api)
             .and_then(|resource_address| ResourceManager(resource_address).resource_type(api))
             .map(|resource_type| {
@@ -353,16 +347,13 @@ impl OneResourcePoolBlueprint {
                 }
             })?;
 
-        let amount_owed = Self::calculate_amount_owed(
-            pool_units_to_redeem,
-            pool_units_total_supply,
-            pool_resource_reserves,
-            pool_resource_divisibility,
-        )?;
-
-        api.field_close(handle)?;
-
-        Ok(amount_owed)
+            Self::calculate_amount_owed(
+                pool_units_to_redeem,
+                pool_units_total_supply,
+                pool_resource_reserves,
+                pool_resource_divisibility,
+            )
+        })
     }
 
     pub fn get_vault_amount<Y>(
@@ -371,10 +362,7 @@ impl OneResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
-        let amount = substate.vault.amount(api)?;
-        api.field_close(handle)?;
-        Ok(amount)
+        Self::with_state(api, |substate, api| substate.vault.amount(api))
     }
 
     //===================
@@ -387,6 +375,10 @@ impl OneResourcePoolBlueprint {
         pool_resource_reserves: Decimal,
         pool_resource_divisibility: u8,
     ) -> Result<Decimal, RuntimeError> {
+        let pool_units_to_redeem = PreciseDecimal::from(pool_units_to_redeem);
+        let pool_units_total_supply = PreciseDecimal::from(pool_units_total_supply);
+        let pool_resource_reserves = PreciseDecimal::from(pool_resource_reserves);
+
         let amount_owed = pool_units_to_redeem
             .checked_div(pool_units_total_supply)
             .and_then(|d| d.checked_mul(pool_resource_reserves))
@@ -400,23 +392,32 @@ impl OneResourcePoolBlueprint {
                 .ok_or(Error::DecimalOverflowError)?
         };
 
-        Ok(amount_owed)
+        amount_owed
+            .try_into()
+            .map_err(|_| Error::DecimalOverflowError.into())
     }
 
-    fn lock_and_read<Y>(
-        api: &mut Y,
-        lock_flags: LockFlags,
-    ) -> Result<(Substate, SubstateHandle), RuntimeError>
+    /// Opens the substate, executes the callback, and closes the substate.
+    fn with_state<Y, F, O>(api: &mut Y, callback: F) -> Result<O, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
+        F: FnOnce(Substate, &mut Y) -> Result<O, RuntimeError>,
     {
+        // Open
         let substate_key = OneResourcePoolField::State.into();
-        let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
-        let substate = api.field_read_typed::<VersionedOneResourcePoolState>(handle)?;
-        let substate = match substate {
-            VersionedOneResourcePoolState::V1(state) => state,
-        };
+        let handle =
+            api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::read_only())?;
+        let substate = api
+            .field_read_typed::<VersionedOneResourcePoolState>(handle)?
+            .into_latest();
 
-        Ok((substate, handle))
+        // Op
+        let rtn = callback(substate, api);
+
+        // Close
+        if rtn.is_ok() {
+            api.field_close(handle)?;
+        }
+        rtn
     }
 }
