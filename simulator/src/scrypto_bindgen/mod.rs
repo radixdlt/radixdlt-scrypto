@@ -46,7 +46,7 @@ pub fn run() -> Result<(), Error> {
 
     let mut env = SimulatorEnvironment::new().map_err(Error::ResimError)?;
     if args.reset_ledger {
-        env.reset().map_err(Error::ResimError)?;
+        env = env.reset().map_err(Error::ResimError)?;
     }
     let db = env.db;
 

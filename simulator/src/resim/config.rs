@@ -20,12 +20,8 @@ pub struct SimulatorEnvironment {
 
 impl SimulatorEnvironment {
     pub fn new() -> Result<Self, Error> {
-        get_data_dir().map(Self::new_with_path)
-    }
-
-    pub fn new_with_path(path: impl Into<PathBuf>) -> Self {
         // Create the database
-        let mut db = RocksdbSubstateStore::standard(path.into());
+        let db = RocksdbSubstateStore::standard(get_data_dir()?);
 
         // Create the VMs
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -38,14 +34,16 @@ impl SimulatorEnvironment {
         };
         env.bootstrap();
 
-        env
+        Ok(env)
     }
 
-    pub fn reset(&mut self) -> Result<(), Error> {
+    pub fn reset(self) -> Result<Self, Error> {
+        drop(self);
+
         let dir = get_data_dir()?;
         std::fs::remove_dir_all(dir).map_err(Error::IOError)?;
-        self.bootstrap();
-        Ok(())
+
+        Self::new()
     }
 
     fn bootstrap(&mut self) {
