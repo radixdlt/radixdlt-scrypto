@@ -1,14 +1,21 @@
+use crate::blueprints::consensus_manager::{
+    ConsensusManagerField, VersionedConsensusManagerConfiguration,
+    VersionedConsensusManagerConfigurationVersion,
+};
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::internal_prelude::{
-    KeyValueEntryPayload, PackageCodeOriginalCodeV1, PackageCodeVmTypeV1, PackageCollection,
-    VersionedPackageBlueprintVersionDefinition, VersionedPackageCodeOriginalCode,
-    VersionedPackageCodeVmTypeVersion,
+    FieldContentSource, KeyValueEntryPayload, PackageCodeOriginalCodeV1, PackageCodeVmTypeV1,
+    PackageCollection, VersionedPackageBlueprintVersionDefinition,
+    VersionedPackageCodeOriginalCode, VersionedPackageCodeVmTypeVersion,
 };
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 use crate::vm::{VmBoot, BOOT_LOADER_VM_PARTITION_NUM, BOOT_LOADER_VM_SUBSTATE_FIELD_KEY};
-use radix_engine_common::constants::{BOOT_LOADER_STATE, CONSENSUS_MANAGER_PACKAGE};
+use radix_engine_common::constants::{
+    BOOT_LOADER_STATE, CONSENSUS_MANAGER, CONSENSUS_MANAGER_PACKAGE,
+};
 use radix_engine_common::crypto::hash;
+use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::ScopedTypeId;
 use radix_engine_common::prelude::{scrypto_encode, ScryptoCustomTypeKind};
 use radix_engine_common::types::SubstateKey;
@@ -22,10 +29,10 @@ use radix_engine_interface::blueprints::package::{
     BlueprintPayloadDef, BlueprintVersion, BlueprintVersionKey, CodeHash, VmType,
     CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID,
 };
-use radix_engine_interface::prelude::HasSchemaHash;
 use radix_engine_interface::prelude::IsHash;
 use radix_engine_interface::prelude::ToString;
-use radix_engine_interface::types::CollectionDescriptor;
+use radix_engine_interface::prelude::{HasSchemaHash, ModuleId};
+use radix_engine_interface::types::{CollectionDescriptor, MAIN_BASE_PARTITION};
 use radix_engine_store_interface::interface::{DatabaseUpdate, SubstateDatabase};
 use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
@@ -56,7 +63,7 @@ pub fn generate_vm_boot_scrypto_minor_version_state_updates() -> StateUpdates {
 /// to use seconds precision
 pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
-    let consensus_mgr_node_id = CONSENSUS_MANAGER_PACKAGE.into_node_id();
+    let consensus_mgr_pkg_node_id = CONSENSUS_MANAGER_PACKAGE.into_node_id();
     let bp_version_key = BlueprintVersionKey {
         blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
         version: BlueprintVersion::default(),
@@ -113,7 +120,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
     let updated_bp_definition_substate = {
         let versioned_definition: VersionedPackageBlueprintVersionDefinition = reader
             .read_object_collection_entry(
-                &consensus_mgr_node_id,
+                &consensus_mgr_pkg_node_id,
                 ObjectModuleId::Main,
                 ObjectCollectionKey::KeyValue(
                     PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
@@ -163,7 +170,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     let bp_definition_partition_num = reader
         .get_partition_of_collection(
-            &consensus_mgr_node_id,
+            &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
             PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
         )
@@ -171,7 +178,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     let code_vm_type_partition_num = reader
         .get_partition_of_collection(
-            &consensus_mgr_node_id,
+            &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
             PackageCollection::CodeVmTypeKeyValue.collection_index(),
         )
@@ -179,7 +186,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     let code_partition_num = reader
         .get_partition_of_collection(
-            &consensus_mgr_node_id,
+            &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
             PackageCollection::CodeOriginalCodeKeyValue.collection_index(),
         )
@@ -187,7 +194,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     let schema_partition_num = reader
         .get_partition_of_collection(
-            &consensus_mgr_node_id,
+            &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
             PackageCollection::SchemaKeyValue.collection_index(),
         )
@@ -195,7 +202,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     StateUpdates {
         by_node: indexmap!(
-            consensus_mgr_node_id => NodeStateUpdates::Delta {
+            consensus_mgr_pkg_node_id => NodeStateUpdates::Delta {
                 by_partition: indexmap! {
                     bp_definition_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
@@ -219,6 +226,40 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
                             SubstateKey::Map(scrypto_encode(&new_schema_hash).unwrap()) => DatabaseUpdate::Set(new_schema_substate)
                         }
                     }
+                }
+            }
+        ),
+    }
+}
+
+pub fn generate_validator_fee_fix_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
+    let consensus_mgr_node_id = CONSENSUS_MANAGER.into_node_id();
+
+    let versioned_config: VersionedConsensusManagerConfiguration = reader
+        .read_typed_object_field(
+            &consensus_mgr_node_id,
+            ModuleId::Main,
+            ConsensusManagerField::Configuration.field_index(),
+        )
+        .unwrap();
+
+    let mut config = versioned_config.into_latest();
+    config.config.validator_creation_usd_cost = Decimal::from(100);
+
+    let updated_substate = config.into_locked_substate();
+
+    StateUpdates {
+        by_node: indexmap!(
+            consensus_mgr_node_id => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    MAIN_BASE_PARTITION => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Field(ConsensusManagerField::Configuration.field_index()) => DatabaseUpdate::Set(
+                                scrypto_encode(&updated_substate).unwrap()
+                            )
+                        }
+                    },
                 }
             }
         ),
