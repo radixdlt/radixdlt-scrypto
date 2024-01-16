@@ -1134,7 +1134,7 @@ mod sdk {
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                 MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
                 MultiResourcePoolInstantiateInput {
-                    resource_addresses: resource_addresses.into(),
+                    resource_addresses: resource_addresses.into_iter().collect(),
                     owner_role,
                     pool_manager_rule,
                     address_reservation,
