@@ -1,6 +1,5 @@
 use crate::blueprints::consensus_manager::{
     ConsensusManagerField, VersionedConsensusManagerConfiguration,
-    VersionedConsensusManagerConfigurationVersion,
 };
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::internal_prelude::{

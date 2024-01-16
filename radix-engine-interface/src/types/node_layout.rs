@@ -10,11 +10,16 @@ use sbor::rust::prelude::*;
 //============================
 // System Partitions + Modules
 //============================
-
-pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
-
 /// Used only with TRANSACTION_TRACKER Node for boot loading
 pub const BOOT_LOADER_PARTITION: PartitionNumber = PartitionNumber(32u8);
+
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum BootLoaderField {
+    Vm = 2u8,
+}
+
+pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
 
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -341,6 +346,7 @@ impl CollectionDescriptor for CollectionIndex {
     }
 }
 
+substate_key!(BootLoaderField);
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(ComponentField);

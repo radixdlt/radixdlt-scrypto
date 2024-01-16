@@ -489,7 +489,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                         return Err(SystemPartitionCheckError::InvalidBootLoaderPartition);
                     }
 
-                    for (key, _value) in reader
+                    for _ in reader
                         .substates_iter::<FieldKey>(&node_checker_state.node_id, partition_number)
                     {
                         substate_count += 1;
