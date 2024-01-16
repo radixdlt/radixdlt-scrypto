@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     system::system_modules::costing::{
@@ -8,6 +7,7 @@ use radix_engine::{
 };
 use radix_engine_interface::schema::TypeRef;
 use radix_engine_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
+use radix_engine_tests::common::*;
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;
 use scrypto_unit::*;
