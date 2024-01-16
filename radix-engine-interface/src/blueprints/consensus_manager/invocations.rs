@@ -237,14 +237,15 @@ pub type ConsensusManagerGetCurrentTimeOutput = Instant;
 pub const CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT: &str = "compare_current_time";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ConsensusManagerCompareCurrentTimeInput {
+#[sbor(type_name = "ConsensusManagerCompareCurrentTimeInput")]
+pub struct ConsensusManagerCompareCurrentTimeInputV1 {
     pub instant: Instant,
     pub precision: TimePrecisionV1,
     pub operator: TimeComparisonOperator,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-#[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
+#[sbor(type_name = "ConsensusManagerCompareCurrentTimeInput")]
 pub struct ConsensusManagerCompareCurrentTimeInputV2 {
     pub instant: Instant,
     pub precision: TimePrecisionV2,

@@ -71,7 +71,7 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
-                let input: ConsensusManagerCompareCurrentTimeInput =
+                let input: ConsensusManagerCompareCurrentTimeInputV1 =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
