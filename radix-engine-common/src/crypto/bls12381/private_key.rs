@@ -82,7 +82,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "enable_bls_aggregate_verify")]
     fn sign_and_verify_aggregated() {
         let sks: Vec<Bls12381G1PrivateKey> = (1..11)
             .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
