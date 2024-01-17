@@ -8,7 +8,6 @@ pub trait ClientCryptoUtilsApi<E> {
         signature: &Bls12381G2Signature,
     ) -> Result<u32, E>;
 
-    #[cfg(feature = "enable_bls_aggregate_verify")]
     fn bls12381_v1_aggregate_verify(
         &mut self,
         pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],

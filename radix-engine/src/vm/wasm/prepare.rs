@@ -764,7 +764,6 @@ impl WasmModule {
                             ));
                         }
                     }
-                    #[cfg(feature = "enable_bls_aggregate_verify")]
                     CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => {
                         if minor_version < 1 {
                             return Err(PrepareError::InvalidImport(

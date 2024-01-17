@@ -49,10 +49,6 @@ serde = ["dep:serde", "utils/serde", "sbor/serde", "hex/serde"]
 std = ["hex/std", "sbor/std", "utils/std", "radix-engine-derive/std", "serde_json/std", "ed25519-dalek/std", "secp256k1/std", "blake2/std", "sha3/std" ]
 alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "lazy_static/spin_no_std", "blst/no-threads" ]
 
-# Temporary switch to disable code related to BLS aggregate verify
-# It does not work for WASM32 and no_std
-enable_bls_aggregate_verify = []
-
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
 radix_engine_fuzzing = ["arbitrary", "serde", "bnum/arbitrary", "bnum/serde", "sbor/radix_engine_fuzzing", "utils/radix_engine_fuzzing"]

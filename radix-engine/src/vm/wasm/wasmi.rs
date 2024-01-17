@@ -691,7 +691,6 @@ fn bls12381_v1_verify(
     runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
 }
 
-#[cfg(feature = "enable_bls_aggregate_verify")]
 fn bls12381_v1_aggregate_verify(
     mut caller: Caller<'_, HostState>,
     pub_keys_and_msgs_ptr: u32,
@@ -1364,7 +1363,6 @@ impl WasmiModule {
             },
         );
 
-        #[cfg(feature = "enable_bls_aggregate_verify")]
         let host_bls12381_v1_aggregate_verify = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -1587,7 +1585,6 @@ impl WasmiModule {
             CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME,
             host_bls12381_v1_verify
         );
-        #[cfg(feature = "enable_bls_aggregate_verify")]
         linker_define!(
             linker,
             CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME,
