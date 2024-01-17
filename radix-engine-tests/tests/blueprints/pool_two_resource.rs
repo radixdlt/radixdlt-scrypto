@@ -979,8 +979,8 @@ fn contributing_to_a_pool_with_very_large_difference_in_reserves_succeeds() {
     let mut test_runner = TestEnvironment::new((18, 18));
 
     let manifest = ManifestBuilder::new()
-        .mint_fungible(test_runner.pool_resource2, dec!("1"))
         .mint_fungible(test_runner.pool_resource1, max_mint_amount)
+        .mint_fungible(test_runner.pool_resource2, dec!("1"))
         .take_all_from_worktop(test_runner.pool_resource1, "resource_1")
         .take_all_from_worktop(test_runner.pool_resource2, "resource_2")
         .with_name_lookup(|builder, lookup| {
@@ -1002,8 +1002,8 @@ fn contributing_to_a_pool_with_very_large_difference_in_reserves_succeeds() {
 
     // Act
     let receipt = test_runner.contribute(
-        (test_runner.pool_resource1, dec!("100")),
-        (test_runner.pool_resource2, dec!("100")),
+        (test_runner.pool_resource1, dec!("5708990770.82384")),
+        (test_runner.pool_resource2, dec!("0.000000000000000001")),
         true,
     );
 
@@ -1044,7 +1044,7 @@ impl TestEnvironment {
     }
 
     pub fn new_with_owner((divisibility1, divisibility2): (u8, u8), owner_role: OwnerRole) -> Self {
-        let mut test_runner = TestRunnerBuilder::new().build();
+        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 

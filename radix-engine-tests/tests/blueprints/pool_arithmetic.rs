@@ -265,8 +265,7 @@ fn two_resource_pool_very_small_contributions_should_return_pool_units1() -> Res
 }
 
 #[test]
-fn two_resource_pool_very_small_contributions_should_return_pool_units2() -> Result<(), RuntimeError>
-{
+fn two_resource_pool_calculations_loading_to_zero_should_error() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -296,11 +295,17 @@ fn two_resource_pool_very_small_contributions_should_return_pool_units2() -> Res
     // Act
     let contribution_bucket1 = bucket1.take(atto!(1), env)?;
     let contribution_bucket2 = bucket2.take(atto!(50), env)?;
-    let (pool_units, _) = pool.contribute((contribution_bucket1, contribution_bucket2), env)?;
+    let rtn = pool.contribute((contribution_bucket1, contribution_bucket2), env);
 
     // Assert
-    let pool_units_amount = pool_units.amount(env)?;
-    assert_eq!(pool_units_amount, atto!(5));
+    assert!(matches!(
+        rtn,
+        Err(RuntimeError::ApplicationError(
+            ApplicationError::TwoResourcePoolError(
+                TwoResourcePoolError::LargerContributionRequiredToMeetRatio
+            )
+        ))
+    ));
 
     Ok(())
 }
@@ -335,7 +340,7 @@ fn two_resource_pool_very_small_contributions_should_return_pool_units_even_for_
     };
 
     // Act
-    let contribution_bucket1 = bucket1.take(dec!(0.01), env)?;
+    let contribution_bucket1 = bucket1.take(dec!(0.02), env)?;
     let contribution_bucket2 = bucket2.take(dec!(0.01), env)?;
     let (pool_units, _) = pool.contribute((contribution_bucket1, contribution_bucket2), env)?;
 
