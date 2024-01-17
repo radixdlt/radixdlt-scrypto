@@ -28,26 +28,6 @@ define_invocation! {
 
 define_invocation! {
     blueprint_name: TwoResourcePool,
-    function_name: instantiate_with_contributor_rule,
-    input: struct {
-        owner_role: OwnerRole,
-        pool_manager_rule: AccessRule,
-        pool_contributor_rule: AccessRule,
-        resource_addresses: (ResourceAddress, ResourceAddress),
-        address_reservation: Option<GlobalAddressReservation>
-    },
-    output: type Global<TwoResourcePoolObjectTypeInfo>,
-    manifest_input: struct {
-        owner_role: OwnerRole,
-        pool_manager_rule: AccessRule,
-        pool_contributor_rule: AccessRule,
-        resource_addresses: (ResourceAddress, ResourceAddress),
-        address_reservation: Option<ManifestAddressReservation>
-    }
-}
-
-define_invocation! {
-    blueprint_name: TwoResourcePool,
     function_name: contribute,
     input: struct {
         buckets: (Bucket, Bucket)
