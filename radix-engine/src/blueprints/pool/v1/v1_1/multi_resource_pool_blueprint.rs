@@ -143,18 +143,20 @@ impl MultiResourcePoolBlueprint {
     contributes them to the pool returning back a pool unit resource in exchange for the contributed
     resources.
 
-    Note that this function checks to ensure that:
-    - Some amount of resources were provided for each of the resources in the pool, otherwise the
-    operation errors out.
-    - No buckets are provided which do not belong to the liquidity pool. If this happens then the
-    contribution logic will fail and abort the transaction.
+    This function attempts its best to maintain the pool's ratio of assets before and after the
+    contribution. This means that if one of the reserves in the pool is zero then all amounts of
+    this particular resource contributed through this function will be returned as change. In the
+    case that all of the reserves of the pool are empty this function will error out with an
+    [`Error::NoMinimumRatio`].
 
     Note: it is acceptable for two buckets to contain the same resource, as long as the above checks
     pass then this is acceptable and the pool can account for it accordingly.
 
     In the case where the pool is new and there are currently no pool units all of the resources are
     accepted and the pool mints as many pool units as the geometric average of the contributed
-    resources.
+    resources. In such a case, the pool is considered to be a new pool. Otherwise, if some amount of
+    pool units are in circulation then the pool is not considered new, the amount contributed will
+    vary.
 
     There are three operation modes that a pool can be in:
 
@@ -162,11 +164,11 @@ impl MultiResourcePoolBlueprint {
     the pool is considered to be back to its initial state. The first contributor is able to
     determine the amount that they wish to contribute and they get minted an amount of pool units
     that is equal to the geometric average of their contribution.
-    - **Pool units total supply is not zero, but some reserves are empty:** In this case, the pool is
+    - **Pool units total supply is not zero, but all reserves are empty:** In this case, the pool is
     said to be in an illegal state. Some people out there are holding pool units that equate to some
     percentage of zero, which is an illegal state for the pool to be in.
-    - **Pool units total supply is not zero, none of the reserves are empty:** The pool is operating
-    normally and is governed by the algorithm discussed below.
+    - **Pool units total supply is not zero, some or none of the reserves are empty:** The pool is
+    operating normally and is governed by the algorithm discussed below.
 
     In the case when the pool is operating normally an algorithm is needed to determine the
     following:
@@ -294,7 +296,10 @@ impl MultiResourcePoolBlueprint {
             }
             // Not a new Pool
             else {
-                // Calculate the minimum ratio
+                // Calculate the minimum ratio. It is possible for this ratio to be zero. This can
+                // happen in a number of different cases including very small contributions (e.g.
+                // 1 atto) with any amount of reserves in the pool. In cases like this, we will just
+                // end up minting zero pool units and catching that later on.
                 let minimum_ratio = contribution_information
                     .values()
                     .filter_map(|information| {

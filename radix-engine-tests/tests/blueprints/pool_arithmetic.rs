@@ -773,6 +773,45 @@ fn multi_resource_pool_permits_some_zero_contributions2() -> Result<(), RuntimeE
 }
 
 #[test]
+fn multi_resource_pool_permits_some_zero_contributions3() -> Result<(), RuntimeError> {
+    // Arrange
+    with_multi_resource_pool(
+        [18, 18, 18],
+        |env, [(bucket1, _), (bucket2, _), (bucket3, _)], mut pool| {
+            let _ = pool
+                .contribute(
+                    [
+                        bucket1.take(dec!(100_000_000), env)?,
+                        bucket2.take(dec!(0), env)?,
+                        bucket3.take(dec!(100_000_000), env)?,
+                    ],
+                    env,
+                )
+                .expect("Must Succeed!");
+
+            // Act
+            let (pool_units, change) = pool
+                .contribute(
+                    [
+                        bucket1.take(dec!(100_000_000), env)?,
+                        bucket2.take(dec!(0), env)?,
+                        bucket3.take(dec!(100_000_000), env)?,
+                    ],
+                    env,
+                )
+                .expect("Must Succeed!");
+
+            // Assert
+            let pool_units_amount = pool_units.amount(env)?;
+
+            assert!(approximately_equals(pool_units_amount, dec!(100_000_000)));
+            assert_eq!(change.len(), 0);
+            Ok(())
+        },
+    )
+}
+
+#[test]
 fn multi_resource_pool_rejects_contributions_if_all_liquidity_has_been_removed(
 ) -> Result<(), RuntimeError> {
     // Arrange
