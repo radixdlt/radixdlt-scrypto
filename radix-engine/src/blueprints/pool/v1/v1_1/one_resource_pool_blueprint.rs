@@ -133,6 +133,19 @@ impl OneResourcePoolBlueprint {
         }
 
         Self::with_state(api, |mut substate, api| {
+            // Check if the provided resource belongs to the pool or not. If not, then error out.
+            {
+                let input_resource_address = bucket.resource_address(api)?;
+                let pool_reserves_resource_address = substate.vault.resource_address(api)?;
+
+                if input_resource_address != pool_reserves_resource_address {
+                    return Err(Error::ResourceDoesNotBelongToPool {
+                        resource_address: input_resource_address,
+                    }
+                    .into());
+                }
+            }
+
             /*
             There are four states that the pool could be in at this point of time depending on the
             total supply of the pool units and the the total amount of reserves that the pool has.

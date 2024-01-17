@@ -19,6 +19,9 @@ pub mod one_resource_pool {
         InvalidGetRedemptionAmount,
         ZeroPoolUnitsMinted,
         RedeemedZeroTokens,
+        ResourceDoesNotBelongToPool {
+            resource_address: ResourceAddress,
+        },
     }
 
     impl From<Error> for RuntimeError {
