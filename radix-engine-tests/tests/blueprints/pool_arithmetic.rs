@@ -586,6 +586,59 @@ fn two_resource_pool_contribution_errors_when_both_reserves_are_empty() -> Resul
 }
 
 #[test]
+fn two_resource_pool_errors_out_when_one_of_the_resources_is_calculated_out_to_be_zero_in_normal_operations(
+) -> Result<(), RuntimeError> {
+    // Arrange
+    let env = &mut TestEnvironment::new();
+
+    let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
+        .divisibility(18)
+        .mint_initial_supply(dec!(1000), env)?;
+    let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
+        .divisibility(2)
+        .mint_initial_supply(dec!(1000), env)?;
+
+    let resource_address1 = bucket1.resource_address(env)?;
+    let resource_address2 = bucket2.resource_address(env)?;
+
+    let mut pool = TwoResourcePool::instantiate(
+        (resource_address1, resource_address2),
+        OwnerRole::None,
+        rule!(allow_all),
+        None,
+        env,
+    )?;
+
+    {
+        let bucket1 = bucket1.take(dec!(1), env)?;
+        let bucket2 = bucket2.take(dec!(0.05), env)?;
+        let _ = pool.contribute((bucket1, bucket2), env)?;
+    }
+
+    // Act
+    let rtn = {
+        let bucket1 = bucket1.take(dec!(0.01), env)?;
+        let bucket2 = bucket2.take(dec!(0.01), env)?;
+        pool.contribute((bucket1, bucket2), env)
+    };
+
+    // Assert
+    assert!(
+        matches!(
+            rtn,
+            Err(RuntimeError::ApplicationError(
+                ApplicationError::TwoResourcePoolError(
+                    TwoResourcePoolError::LargerContributionRequiredToMeetRatio
+                )
+            ))
+        ),
+        "{rtn:#?}",
+    );
+
+    Ok(())
+}
+
+#[test]
 fn multi_resource_pool_accepts_very_large_contributions() -> Result<(), RuntimeError> {
     // Arrange
     let divisibility = core::array::from_fn::<u8, 16, _>(|_| DIVISIBILITY_MAXIMUM);
@@ -921,6 +974,41 @@ fn multi_resource_pool_contribution_errors_when_both_reserves_are_empty() -> Res
     )
 }
 
+#[test]
+fn multi_resource_pool_errors_out_when_one_of_the_resources_is_calculated_out_to_be_zero_in_normal_operations(
+) -> Result<(), RuntimeError> {
+    // Arrange
+    with_multi_resource_pool([18, 2], |env, [(bucket1, _), (bucket2, _)], mut pool| {
+        {
+            let bucket1 = bucket1.take(dec!(1), env)?;
+            let bucket2 = bucket2.take(dec!(0.05), env)?;
+            let _ = pool.contribute([bucket1, bucket2], env)?;
+        }
+
+        // Act
+        let rtn = {
+            let bucket1 = bucket1.take(dec!(0.01), env)?;
+            let bucket2 = bucket2.take(dec!(0.01), env)?;
+            pool.contribute([bucket1, bucket2], env)
+        };
+
+        // Assert
+        assert!(
+            matches!(
+                rtn,
+                Err(RuntimeError::ApplicationError(
+                    ApplicationError::MultiResourcePoolError(
+                        MultiResourcePoolError::LargerContributionRequiredToMeetRatio
+                    )
+                ))
+            ),
+            "{rtn:#?}",
+        );
+
+        Ok(())
+    })
+}
+
 fn with_multi_resource_pool<const N: usize, F, O>(divisibility: [u8; N], callback: F) -> O
 where
     F: FnOnce(
@@ -933,7 +1021,12 @@ where
     let array = divisibility.map(|divisibility| {
         let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
             .divisibility(divisibility)
-            .mint_initial_supply(MINT_LIMIT, env)
+            .mint_initial_supply(
+                MINT_LIMIT
+                    .checked_round(divisibility, RoundingMode::ToZero)
+                    .unwrap(),
+                env,
+            )
             .map(Cloneable)
             .unwrap();
         let resource_address = bucket.resource_address(env).unwrap();

@@ -322,6 +322,12 @@ impl MultiResourcePoolBlueprint {
                             api,
                         )?;
                         let amount_to_contribute = bucket_to_contribute.amount(api)?;
+                        if amount_to_contribute == Decimal::ZERO
+                            && information.reserves != PreciseDecimal::ZERO
+                        {
+                            return Err(Error::LargerContributionRequiredToMeetRatio.into());
+                        }
+
                         information.vault.put(bucket_to_contribute, api)?;
 
                         let entry = contributed_resources

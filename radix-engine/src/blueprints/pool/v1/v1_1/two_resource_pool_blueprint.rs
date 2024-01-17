@@ -194,6 +194,9 @@ impl TwoResourcePoolBlueprint {
                 (vault1, vault2, bucket1, bucket2)
             };
 
+            let reserves1 = vault1.amount(api)?;
+            let reserves2 = vault2.amount(api)?;
+
             // Determine the amount of pool units to mint and the amount of resource to contribute
             // to the pool based on the current state of the pool.
             let (amount1, amount2, pool_units_to_mint) = {
@@ -201,11 +204,9 @@ impl TwoResourcePoolBlueprint {
                     .pool_unit_resource_manager
                     .total_supply(api)?
                     .expect("Total supply is always enabled for pool unit resource.");
-                let reserves1 = vault1.amount(api)?;
-                let reserves2 = vault2.amount(api)?;
+
                 let contribution1 = bucket1.amount(api)?;
                 let contribution2 = bucket2.amount(api)?;
-
                 let pool_unit_total_supply = PreciseDecimal::from(pool_unit_total_supply);
                 let reserves1 = PreciseDecimal::from(reserves1);
                 let reserves2 = PreciseDecimal::from(reserves2);
@@ -343,6 +344,15 @@ impl TwoResourcePoolBlueprint {
             )?;
             let amount1 = contribution_bucket1.amount(api)?;
             let amount2 = contribution_bucket2.amount(api)?;
+
+            // If the amount that will be contributed of the two resources after the rounding and
+            // all is zero despite the reserves of that resource not being zero, then error out. It
+            // means that one of the resources was rounded down to zero due to its divisibility.
+            if (amount1 == Decimal::ZERO && reserves1 != Decimal::ZERO)
+                || (amount2 == Decimal::ZERO && reserves2 != Decimal::ZERO)
+            {
+                return Err(Error::LargerContributionRequiredToMeetRatio.into());
+            }
 
             // Minting the pool unit tokens
             if pool_units_to_mint == Decimal::ZERO {

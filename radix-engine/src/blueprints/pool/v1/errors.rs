@@ -52,6 +52,7 @@ pub mod two_resource_pool {
         DecimalOverflowError,
         InvalidGetRedemptionAmount,
         ZeroPoolUnitsMinted,
+        LargerContributionRequiredToMeetRatio,
     }
 
     impl From<Error> for RuntimeError {
@@ -87,6 +88,7 @@ pub mod multi_resource_pool {
         InvalidGetRedemptionAmount,
         NoMinimumRatio,
         ZeroPoolUnitsMinted,
+        LargerContributionRequiredToMeetRatio,
     }
 
     impl From<Error> for RuntimeError {
