@@ -299,6 +299,10 @@ impl MultiResourcePoolBlueprint {
                     .values()
                     .filter_map(|information| {
                         if !information.reserves.is_zero() {
+                            // There is a possibility that this can overflow if the reserves is not
+                            // zero but is very close to zero (1 atto for example). However, this is
+                            // fine since this would then just return a `None` and would not be one
+                            // of the ratios that we look at to determine the minimum ratio.
                             information.contribution.checked_div(information.reserves)
                         } else {
                             None
