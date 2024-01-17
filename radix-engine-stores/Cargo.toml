@@ -17,7 +17,7 @@ hex = { version = "0.4.3", default-features = false }
 tempfile = "3.8.0"
 
 [features]
-default = ["std", "rocksdb"]
+default = ["std"]
 std = ["hex/std", "sbor/std", "utils/std", "radix-engine-common/std", "radix-engine-derive/std", "radix-engine-store-interface/std", "itertools/use_std"]
 alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-common/alloc", "radix-engine-derive/alloc", "radix-engine-store-interface/alloc", "itertools/use_alloc"]
 
