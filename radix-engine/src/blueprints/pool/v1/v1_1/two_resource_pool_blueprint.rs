@@ -378,6 +378,11 @@ impl TwoResourcePoolBlueprint {
 
             // Determine if there is any change to return back to the caller - if there is not then
             // drop the empty buckets.
+            //
+            // The amount contributed must either be amount1 of bucket1 and/or amount2 of bucket2.
+            // This means that there must exist at least 1 empty bucket and at most two. So, this
+            // tries to find which of the buckets have been contributed in full to drop them and
+            // which have not been contributed in full to treat them as change.
             let change_bucket = if !bucket1.is_empty(api)? {
                 bucket2.drop_empty(api)?;
                 Some(bucket1)
