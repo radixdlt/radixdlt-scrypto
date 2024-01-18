@@ -54,7 +54,8 @@ impl PoolNativePackage {
                         pool_manager_rule,
                         address_reservation,
                         api,
-                    )?,
+                    )
+                    .map_err(super::errors::one_resource_pool::remap_application_error)?,
                 };
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -69,7 +70,8 @@ impl PoolNativePackage {
                         super::v1_0::OneResourcePoolBlueprint::contribute(bucket, api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::OneResourcePoolBlueprint::contribute(bucket, api)?
+                        super::v1_1::OneResourcePoolBlueprint::contribute(bucket, api)
+                            .map_err(super::errors::one_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -84,7 +86,8 @@ impl PoolNativePackage {
                         super::v1_0::OneResourcePoolBlueprint::redeem(bucket, api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::OneResourcePoolBlueprint::redeem(bucket, api)?
+                        super::v1_1::OneResourcePoolBlueprint::redeem(bucket, api)
+                            .map_err(super::errors::one_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -100,7 +103,8 @@ impl PoolNativePackage {
                         super::v1_0::OneResourcePoolBlueprint::protected_deposit(bucket, api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::OneResourcePoolBlueprint::protected_deposit(bucket, api)?
+                        super::v1_1::OneResourcePoolBlueprint::protected_deposit(bucket, api)
+                            .map_err(super::errors::one_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -126,7 +130,8 @@ impl PoolNativePackage {
                             amount,
                             withdraw_strategy,
                             api,
-                        )?
+                        )
+                        .map_err(super::errors::one_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -149,7 +154,8 @@ impl PoolNativePackage {
                         super::v1_1::OneResourcePoolBlueprint::get_redemption_value(
                             amount_of_pool_units,
                             api,
-                        )?
+                        )
+                        .map_err(super::errors::one_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -164,7 +170,8 @@ impl PoolNativePackage {
                         super::v1_0::OneResourcePoolBlueprint::get_vault_amount(api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::OneResourcePoolBlueprint::get_vault_amount(api)?
+                        super::v1_1::OneResourcePoolBlueprint::get_vault_amount(api)
+                            .map_err(super::errors::one_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -193,7 +200,8 @@ impl PoolNativePackage {
                         pool_manager_rule,
                         address_reservation,
                         api,
-                    )?,
+                    )
+                    .map_err(super::errors::two_resource_pool::remap_application_error)?,
                 };
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -208,7 +216,8 @@ impl PoolNativePackage {
                         super::v1_0::TwoResourcePoolBlueprint::contribute(buckets, api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::TwoResourcePoolBlueprint::contribute(buckets, api)?
+                        super::v1_1::TwoResourcePoolBlueprint::contribute(buckets, api)
+                            .map_err(super::errors::two_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -223,7 +232,8 @@ impl PoolNativePackage {
                         super::v1_0::TwoResourcePoolBlueprint::redeem(bucket, api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::TwoResourcePoolBlueprint::redeem(bucket, api)?
+                        super::v1_1::TwoResourcePoolBlueprint::redeem(bucket, api)
+                            .map_err(super::errors::two_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -239,7 +249,8 @@ impl PoolNativePackage {
                         super::v1_0::TwoResourcePoolBlueprint::protected_deposit(bucket, api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::TwoResourcePoolBlueprint::protected_deposit(bucket, api)?
+                        super::v1_1::TwoResourcePoolBlueprint::protected_deposit(bucket, api)
+                            .map_err(super::errors::two_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -268,7 +279,8 @@ impl PoolNativePackage {
                             amount,
                             withdraw_strategy,
                             api,
-                        )?
+                        )
+                        .map_err(super::errors::two_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -291,7 +303,8 @@ impl PoolNativePackage {
                         super::v1_1::TwoResourcePoolBlueprint::get_redemption_value(
                             amount_of_pool_units,
                             api,
-                        )?
+                        )
+                        .map_err(super::errors::two_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -306,7 +319,8 @@ impl PoolNativePackage {
                         super::v1_0::TwoResourcePoolBlueprint::get_vault_amounts(api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::TwoResourcePoolBlueprint::get_vault_amounts(api)?
+                        super::v1_1::TwoResourcePoolBlueprint::get_vault_amounts(api)
+                            .map_err(super::errors::two_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -338,7 +352,8 @@ impl PoolNativePackage {
                             pool_manager_rule,
                             address_reservation,
                             api,
-                        )?
+                        )
+                        .map_err(super::errors::multi_resource_pool::remap_application_error)?
                     }
                 };
 
@@ -355,7 +370,8 @@ impl PoolNativePackage {
                         super::v1_0::MultiResourcePoolBlueprint::contribute(buckets, api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::MultiResourcePoolBlueprint::contribute(buckets, api)?
+                        super::v1_1::MultiResourcePoolBlueprint::contribute(buckets, api)
+                            .map_err(super::errors::multi_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -370,7 +386,8 @@ impl PoolNativePackage {
                         super::v1_0::MultiResourcePoolBlueprint::redeem(bucket, api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::MultiResourcePoolBlueprint::redeem(bucket, api)?
+                        super::v1_1::MultiResourcePoolBlueprint::redeem(bucket, api)
+                            .map_err(super::errors::multi_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -386,7 +403,8 @@ impl PoolNativePackage {
                         super::v1_0::MultiResourcePoolBlueprint::protected_deposit(bucket, api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::MultiResourcePoolBlueprint::protected_deposit(bucket, api)?
+                        super::v1_1::MultiResourcePoolBlueprint::protected_deposit(bucket, api)
+                            .map_err(super::errors::multi_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -415,7 +433,8 @@ impl PoolNativePackage {
                             amount,
                             withdraw_strategy,
                             api,
-                        )?
+                        )
+                        .map_err(super::errors::multi_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -438,7 +457,8 @@ impl PoolNativePackage {
                         super::v1_1::MultiResourcePoolBlueprint::get_redemption_value(
                             amount_of_pool_units,
                             api,
-                        )?
+                        )
+                        .map_err(super::errors::multi_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -453,7 +473,8 @@ impl PoolNativePackage {
                         super::v1_0::MultiResourcePoolBlueprint::get_vault_amounts(api)?
                     }
                     PoolV1MinorVersion::One => {
-                        super::v1_1::MultiResourcePoolBlueprint::get_vault_amounts(api)?
+                        super::v1_1::MultiResourcePoolBlueprint::get_vault_amounts(api)
+                            .map_err(super::errors::multi_resource_pool::remap_application_error)?
                     }
                 };
                 Ok(IndexedScryptoValue::from_typed(&rtn))
