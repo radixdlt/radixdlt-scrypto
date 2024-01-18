@@ -803,11 +803,7 @@ pub fn test_complete_interactions() {
             account_balance_changes
                 .get(&test_runner.pool_unit_resource_address)
                 .cloned(),
-            Some(BalanceChange::Fungible(
-                (dec!("500").checked_mul(dec!("200")).unwrap())
-                    .checked_sqrt()
-                    .unwrap()
-            ))
+            Some(BalanceChange::Fungible(dec!(316.2277660168379332)))
         );
         assert_eq!(
             account_balance_changes
@@ -840,7 +836,7 @@ pub fn test_complete_interactions() {
             account_balance_changes
                 .get(&test_runner.pool_unit_resource_address)
                 .cloned(),
-            Some(BalanceChange::Fungible(dec!("442.718872423573106478")))
+            Some(BalanceChange::Fungible(dec!(442.71887242357310648)))
         );
         assert_eq!(
             account_balance_changes

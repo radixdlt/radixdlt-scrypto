@@ -246,7 +246,7 @@ impl TwoResourcePoolBlueprint {
                                         .and_then(|c2| c1.checked_mul(c2))
                                 })
                                 .and_then(|value| {
-                                    value.checked_round(19, RoundingMode::ToPositiveInfinity)
+                                    value.checked_round(18, RoundingMode::ToPositiveInfinity)
                                 })
                                 .ok_or(Error::DecimalOverflowError)?
                         };

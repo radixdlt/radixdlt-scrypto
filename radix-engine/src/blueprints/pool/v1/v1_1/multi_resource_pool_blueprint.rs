@@ -274,7 +274,7 @@ impl MultiResourcePoolBlueprint {
                                 .checked_nth_root(root_order as u32)
                                 .and_then(|value| value.checked_mul(accumulator))
                         })
-                        .and_then(|value| value.checked_round(19, RoundingMode::ToPositiveInfinity))
+                        .and_then(|value| value.checked_round(18, RoundingMode::ToPositiveInfinity))
                         .ok_or(Error::DecimalOverflowError)?
                 };
 
