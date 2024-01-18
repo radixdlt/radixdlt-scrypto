@@ -112,8 +112,8 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     );
     for (last, (resource_address, amount)) in resources.balances.iter().identify_last() {
         let metadata = get_entity_metadata(resource_address.as_node_id(), substate_db);
-        let symbol = if let Some(MetadataValue::String(symbol)) = metadata.get("symbol") {
-            symbol.as_str()
+        let name = if let Some(MetadataValue::String(name)) = metadata.get("name") {
+            name.as_str()
         } else {
             "?"
         };
@@ -123,7 +123,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             list_item_prefix(last),
             resource_address.display(&address_bech32_encoder),
             amount,
-            symbol,
+            name,
         );
     }
 
