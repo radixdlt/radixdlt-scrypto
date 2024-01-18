@@ -642,15 +642,12 @@ impl TwoResourcePoolBlueprint {
                         .and_then(|d| d.checked_mul(reserves))
                         .ok_or(Error::DecimalOverflowError)?;
 
-                    let amount_owed = if divisibility == 18 {
-                        amount_owed
-                    } else {
-                        amount_owed
-                            .checked_round(divisibility, RoundingMode::ToNegativeInfinity)
-                            .ok_or(Error::DecimalOverflowError)?
-                    };
-                    let amount_owed =
-                        Decimal::try_from(amount_owed).map_err(|_| Error::DecimalOverflowError)?;
+                    let amount_owed = Decimal::try_from(amount_owed)
+                        .ok()
+                        .and_then(|value| {
+                            value.checked_round(divisibility, RoundingMode::ToNegativeInfinity)
+                        })
+                        .ok_or(Error::DecimalOverflowError)?;
 
                     Ok((resource_address, amount_owed))
                 },

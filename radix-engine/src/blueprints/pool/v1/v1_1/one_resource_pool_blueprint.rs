@@ -400,17 +400,12 @@ impl OneResourcePoolBlueprint {
             .and_then(|d| d.checked_mul(reserves_amount))
             .ok_or(Error::DecimalOverflowError)?;
 
-        let amount_owed = if reserves_divisibility == 18 {
-            amount_owed
-        } else {
-            amount_owed
-                .checked_round(reserves_divisibility, RoundingMode::ToNegativeInfinity)
-                .ok_or(Error::DecimalOverflowError)?
-        };
-
-        amount_owed
-            .try_into()
-            .map_err(|_| Error::DecimalOverflowError.into())
+        Decimal::try_from(amount_owed)
+            .ok()
+            .and_then(|value| {
+                value.checked_round(reserves_divisibility, RoundingMode::ToNegativeInfinity)
+            })
+            .ok_or(Error::DecimalOverflowError.into())
     }
 
     /// Opens the substate, executes the callback, and closes the substate.
