@@ -2849,6 +2849,109 @@ where
     }
 }
 
+// Below structs are copies of PublicKey and Signature
+// Redefining them to be able to access point field, which is private for PublicKey and Signature
+struct LocalPublicKey {
+    point: blst::blst_p1_affine,
+}
+struct LocalSignature {
+    point: blst::blst_p2_affine,
+}
+
+#[trace_resources(log=msg.len())]
+fn pairing_aggregate_key_msg(
+    pairing: &mut blst::Pairing,
+    pk: blst::min_pk::PublicKey,
+    msg: &[u8],
+) -> blst::BLST_ERROR {
+    // transmute to LocalPublicKey to access point field
+    let local_pk: LocalPublicKey = unsafe { core::mem::transmute(pk) };
+    pairing.aggregate(
+        &local_pk.point,
+        true,
+        &unsafe { core::ptr::null::<blst::blst_p2_affine>().as_ref() },
+        false,
+        msg,
+        &[],
+    )
+}
+
+#[trace_resources]
+fn pairing_finalverify(pairing: &blst::Pairing, signature: blst::min_pk::Signature) -> bool {
+    if let Err(_err) = signature.validate(false) {
+        return false;
+    }
+    // transmute to LocalSignature to access point field
+    let local_sig: LocalSignature = unsafe { core::mem::transmute(signature) };
+
+    let mut gtsig = blst::blst_fp12::default();
+    blst::Pairing::aggregated(&mut gtsig, &local_sig.point);
+
+    pairing.finalverify(Some(&gtsig))
+}
+
+//#[cfg(any(target_arch = "wasm32", feature = "alloc"))]
+/// Local implementation of aggregated verify for no_std and WASM32 variants (no threads)
+/// see: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bls-signature-05#name-coreaggregateverify
+/// Inspired with blst::min_pk::Signature::aggregate_verify
+#[trace_resources(log=pub_keys_and_msgs.len())]
+fn aggregate_verify_bls12381_v1_no_threads(
+    pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
+    signature: blst::min_pk::Signature,
+) -> bool {
+    let mut pairing = blst::Pairing::new(true, BLS12381_CIPHERSITE_V1);
+
+    // Aggregate
+    for (pk, msg) in pub_keys_and_msgs.iter() {
+        if let Ok(pk) = blst::min_pk::PublicKey::from_bytes(&pk.0) {
+            /*
+                        if pairing.aggregate(
+                            &local_pk.point,
+                            true,
+                            &unsafe { core::ptr::null::<blst::blst_p2_affine>().as_ref() },
+                            false,
+                            msg,
+                            &[],
+                        ) != blst::BLST_ERROR::BLST_SUCCESS
+            */
+            if pairing_aggregate_key_msg(&mut pairing, pk, msg) != blst::BLST_ERROR::BLST_SUCCESS {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    pairing.commit();
+
+    /*
+    if let Err(_err) = signature.validate(false) {
+        return false;
+    }
+    // transmute to LocalSignature to access point field
+    let local_sig: LocalSignature = unsafe { core::mem::transmute(signature) };
+
+    let mut gtsig = blst::blst_fp12::default();
+    blst::Pairing::aggregated(&mut gtsig, &local_sig.point);
+
+    pairing.finalverify(Some(&gtsig))
+    */
+    pairing_finalverify(&pairing, signature)
+}
+
+/// Performs BLS12-381 G2 aggregated signature verification of
+/// multiple messages each signed with different key.
+/// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+fn local_aggregate_verify_bls12381_v1(
+    pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
+    signature: &Bls12381G2Signature,
+) -> bool {
+    if let Ok(sig) = blst::min_pk::Signature::from_bytes(&signature.0) {
+        aggregate_verify_bls12381_v1_no_threads(pub_keys_and_msgs, sig)
+    } else {
+        false
+    }
+}
+
 #[cfg_attr(
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
@@ -2887,7 +2990,8 @@ where
                     sizes: sizes.as_slice(),
                 },
             )?;
-            Ok(aggregate_verify_bls12381_v1(pub_keys_and_msgs, signature) as u32)
+            //Ok(aggregate_verify_bls12381_v1(pub_keys_and_msgs, signature) as u32)
+            Ok(local_aggregate_verify_bls12381_v1(pub_keys_and_msgs, signature) as u32)
         } else {
             Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
         }

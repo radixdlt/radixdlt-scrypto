@@ -635,8 +635,22 @@ fn test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing() {
 
     let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
-    for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
+    for msg_size in [
+        100usize,
+        200,
+        500,
+        1024,
+        10 * 1024,
+        20 * 1024,
+        100 * 1024,
+        200 * 1024,
+        500 * 1024,
+        1024 * 1024,
+    ] {
         for cnt in [1u8, 2, 5, 10, 20, 50, 100] {
+            if msg_size > 20 * 1024 && cnt > 2 {
+                continue;
+            }
             let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
                 .map(|i| Bls12381G1PrivateKey::from_u64(i.into()).unwrap())
                 .collect();
