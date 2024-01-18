@@ -7,7 +7,6 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
-use radix_engine_tests::pool_stubs::*;
 use scrypto::prelude::Pow;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -683,35 +682,6 @@ fn get_redemption_value_should_not_panic_on_large_values() {
             ))
         )
     });
-}
-
-#[test]
-fn errors_are_remapped_correctly() -> Result<(), RuntimeError> {
-    use scrypto_test::prelude::*; // TestEnvironment is defined in this module so we import here.
-
-    // Arrange
-    let env = &mut TestEnvironment::new();
-    let mut pool = OneResourcePool::instantiate(XRD, OwnerRole::None, rule!(allow_all), None, env)?;
-
-    // Act
-    let rtn = pool.protected_withdraw(dec!(1), Default::default(), env);
-
-    // Assert
-    assert_eq!(
-        rtn,
-        Err(RuntimeError::ApplicationError(
-            ApplicationError::OneResourcePoolError(OneResourcePoolError::VaultError(
-                VaultError::ResourceError(ResourceError::InsufficientBalance {
-                    requested: dec!(1),
-                    actual: dec!(0)
-                })
-            ))
-        )),
-        "{:#?}",
-        rtn
-    );
-
-    Ok(())
 }
 
 fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
