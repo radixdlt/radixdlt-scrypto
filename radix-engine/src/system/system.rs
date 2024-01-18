@@ -2876,6 +2876,11 @@ fn pairing_aggregate_key_msg(
     )
 }
 
+#[trace_resources(log=len)]
+fn pairing_commit(pairing: &mut blst::Pairing, len: usize) {
+    pairing.commit();
+}
+
 #[trace_resources]
 fn pairing_finalverify(pairing: &blst::Pairing, signature: blst::min_pk::Signature) -> bool {
     if let Err(_err) = signature.validate(false) {
@@ -2921,7 +2926,7 @@ fn aggregate_verify_bls12381_v1_no_threads(
             return false;
         }
     }
-    pairing.commit();
+    pairing_commit(&mut pairing, pub_keys_and_msgs.len());
 
     /*
     if let Err(_err) = signature.validate(false) {
