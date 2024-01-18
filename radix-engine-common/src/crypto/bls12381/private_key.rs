@@ -168,7 +168,10 @@ mod tests {
             pks.iter().zip(msgs_rev).map(|(pk, sk)| (*pk, sk)).collect();
 
         // Verify the messages in reversed order against public keys and aggregated signature
-        assert!(!aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig));
+        assert_eq!(
+            aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig),
+            false
+        );
     }
 
     #[test]
@@ -178,7 +181,7 @@ mod tests {
         // Aggregate the signature
         let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
 
-        // Skip the last key, msg tuple
+        // Skip the last key and message tuple
         let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> = pks
             .iter()
             .zip(msgs)
@@ -188,7 +191,10 @@ mod tests {
 
         // Verify the incomplete messages against public keys and aggregated
         // signature from all messages
-        assert!(!aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig));
+        assert_eq!(
+            aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig),
+            false
+        );
 
         // Aggregate the signatures from incomplete messages
         let agg_sig = Bls12381G2Signature::aggregate(&sigs[0..9]).unwrap();
