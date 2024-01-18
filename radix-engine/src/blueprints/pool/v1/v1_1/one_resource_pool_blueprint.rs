@@ -168,7 +168,8 @@ impl OneResourcePoolBlueprint {
                      which will dilute the worth of the pool units.
             1   1 => The pool is in normal operations.
 
-            Thus depending on the supply of these resources the pool behaves differently.
+            Thus depending on the supply of these resources the pool behaves differently and the
+            amount of pool units to mint changes as well.
              */
 
             let initial_reserves_decimal = substate.vault.amount(api)?;

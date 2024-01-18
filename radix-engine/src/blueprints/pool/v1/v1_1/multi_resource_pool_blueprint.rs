@@ -143,32 +143,21 @@ impl MultiResourcePoolBlueprint {
     contributes them to the pool returning back a pool unit resource in exchange for the contributed
     resources.
 
-    This function attempts its best to maintain the pool's ratio of assets before and after the
-    contribution. This means that if one of the reserves in the pool is zero then all amounts of
-    this particular resource contributed through this function will be returned as change. In the
-    case that all of the reserves of the pool are empty this function will error out with an
-    [`Error::NoMinimumRatio`].
+    The various states that the pool can be in can be outlined within the context laid out in the
+    docs of the [`TwoResourcePool::contribute`] function, but in a more generalized way.
 
-    Note: it is acceptable for two buckets to contain the same resource, as long as the above checks
-    pass then this is acceptable and the pool can account for it accordingly.
-
-    In the case where the pool is new and there are currently no pool units all of the resources are
-    accepted and the pool mints as many pool units as the geometric average of the contributed
-    resources. In such a case, the pool is considered to be a new pool. Otherwise, if some amount of
-    pool units are in circulation then the pool is not considered new, the amount contributed will
-    vary.
-
-    There are three operation modes that a pool can be in:
-
-    - **Pool units total supply is zero:** regardless of whether there are some reserves or not,
-    the pool is considered to be back to its initial state. The first contributor is able to
-    determine the amount that they wish to contribute and they get minted an amount of pool units
-    that is equal to the geometric average of their contribution.
-    - **Pool units total supply is not zero, but all reserves are empty:** In this case, the pool is
-    said to be in an illegal state. Some people out there are holding pool units that equate to some
-    percentage of zero, which is an illegal state for the pool to be in.
-    - **Pool units total supply is not zero, some or none of the reserves are empty:** The pool is
-    operating normally and is governed by the algorithm discussed below.
+    * State 1: If no pool units exist in circulation then consider the pool to be new. All of the
+    resources are accepted and an amount of pool units equivalent to the geometric mean of the non
+    zero contributions is minted.
+    * State 2: If pool units exist in circulation but all of the reserves are empty then this pool
+    is in an invalid state, one that requires external intervention from a protected withdraw or
+    deposit to get out of. This has to do with how we represent the fact that the user owns 100%
+    of the pool.
+    * State 3: If pool units exist in circulation and some but not all of the reserves are empty
+    then contributions will be accepted according to the ratio of resources in the pool and the
+    contribution of any of the resources with zero reserves will be returned as change.
+    * State 4: Pool units exist in circulation and none of the vaults are empty, the pool is in
+    normal operation.
 
     In the case when the pool is operating normally an algorithm is needed to determine the
     following:
@@ -200,6 +189,8 @@ impl MultiResourcePoolBlueprint {
     | k               | 2    | 1.5  | 1.33 |                                  |
     | k<sub>min</sub> |      |      | 1.33 |                                  |
     | ca              | 1333 | 2666 | 4000 | Amount of contribution to accept |
+
+    [`TwoResourcePool::contribute`]: super::TwoResourcePoolBlueprint::contribute
     */
     pub fn contribute<Y>(
         buckets: Vec<Bucket>,

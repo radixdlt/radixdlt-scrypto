@@ -135,6 +135,56 @@ impl TwoResourcePoolBlueprint {
         )))
     }
 
+    /// Contributes resources to the pool and mints pool units back representing the contributed
+    /// resources.
+    ///
+    /// In much of a similar way to the single resource pool, there are a number of states that
+    /// this pool can be in, there are more states than the single resource pool since this pool
+    /// has the 2 resource reserves instead of one.
+    ///
+    /// To examine the behavior of this function, lets first define the terminology to use: Let PU
+    /// denote the total supply of pool units where 0 means that none exists and 1 means that some
+    /// amount exists. Let R1 denote the total amount of reserves of resource 1 that the pool has
+    /// where 0 here means that no reserves exist in the pool and 1 means that some reserves exist
+    /// in the pool and R2 be the equivalent of R1 but for resource 2.
+    ///
+    /// PU  R1  R2
+    /// 0   0   0  => This a new pool since no pool units currently exist in circulation and there
+    ///               are no reserves of either of the resources. This contribution is accepted in
+    ///               full with no change and the geometric mean of the contribution amounts will be
+    ///               minted as pool units.
+    /// 0   0   1  => This is a new pool since no pool units exist in circulation but some dust is
+    ///               left behind in the pool from it being used in the past.
+    /// 0   1   0  => This is a new pool since no pool units exist in circulation but some dust is
+    ///               left behind in the pool from it being used in the past.
+    /// 0   1   1  => This is a new pool since no pool units exist in circulation but some dust is
+    ///               left behind in the pool from it being used in the past.
+    /// 1   0   0  => This is an illegal state and contributions in this state are not allowed! This
+    ///               is due to some pool units existing in circulation but the pool has no reserves
+    ///               of either of the assets. The contributor should have 100% pool ownership from
+    ///               their contribution but some people already have some pool units. The pool will
+    ///               not accept contributions when it is in this state.
+    /// 1   0   1  => The pool accepts one sided liquidity of R2 and returns all of the given R1 as
+    ///               change. The amount of pool units minted is equal to the ratio of the R2
+    ///               contribution to the R2 reserves.
+    /// 1   1   0  => The pool accepts one sided liquidity of R1 and returns all of the given R2 as
+    ///               change. The amount of pool units minted is equal to the ratio of the R1
+    ///               contribution to the R1 reserves.
+    /// 1   1   1  => The pool is in normal operation and both resources are accepted where some of
+    ///               them will be contributed and some of them will be change.
+    ///
+    /// There are common patterns that can be seen from the states above:
+    ///
+    /// * State 1: When PU = 0 the pool is considered new, the amount of reserves do not really
+    /// matter as the amount of pool units that the pool mins is the same.
+    /// * State 2: When PU = 1 and *all* reserves are empty then this is an illegal state that the
+    /// pool can't really do anything about.
+    /// * State 3: When PU = 1 and _some but not all_ of the reserves are empty then the resources
+    /// with the empty reserves are not contributed to the pool and are returned as change.
+    /// * State 4: When all is 1 then the pool is in normal operations.
+    ///
+    /// The above state names will be used in tests as its better than calling them out by name or
+    /// by description. A simple state _x_ is a lot simpler.
     pub fn contribute<Y>(
         (bucket1, bucket2): (Bucket, Bucket),
         api: &mut Y,
