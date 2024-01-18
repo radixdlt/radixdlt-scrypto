@@ -236,11 +236,11 @@ pub mod pools_package_v1_1 {
         db: &S,
     ) -> StateUpdates {
         let mut state_updates = StateUpdates::default();
-        generate_package_state_updated(db, &mut state_updates);
+        generate_package_state_updates(db, &mut state_updates);
         state_updates
     }
 
-    fn generate_package_state_updated<S: SubstateDatabase>(
+    fn generate_package_state_updates<S: SubstateDatabase>(
         db: &S,
         state_updates: &mut StateUpdates,
     ) {
