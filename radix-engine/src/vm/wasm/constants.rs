@@ -81,7 +81,6 @@ pub const SYS_PANIC_FUNCTION_NAME: &str = "sys_panic";
 // Crypto Utils
 //=================
 pub const CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME: &str = "crypto_utils_bls12381_v1_verify";
-#[cfg(feature = "enable_bls_aggregate_verify")]
 pub const CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME: &str =
     "crypto_utils_bls12381_v1_aggregate_verify";
 pub const CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME: &str =

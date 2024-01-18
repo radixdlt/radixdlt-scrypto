@@ -115,7 +115,6 @@ pub enum ExecutionCostingEntry<'a> {
     Bls12381V1Verify {
         size: usize,
     },
-    #[cfg(feature = "enable_bls_aggregate_verify")]
     Bls12381V1AggregateVerify {
         sizes: &'a [usize],
     },
@@ -192,7 +191,6 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::EmitLog { size } => ft.emit_log_cost(*size),
             ExecutionCostingEntry::Panic { size } => ft.panic_cost(*size),
             ExecutionCostingEntry::Bls12381V1Verify { size } => ft.bls12381_v1_verify_cost(*size),
-            #[cfg(feature = "enable_bls_aggregate_verify")]
             ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes } => {
                 ft.bls12381_v1_aggregate_verify_cost(sizes)
             }
