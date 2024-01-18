@@ -13,6 +13,9 @@ rocksdb = { version = "0.21.0", optional = true }
 itertools = { version = "0.10.3", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 
+[dev-dependencies]
+tempfile = "3.8.0"
+
 [features]
 default = ["std"]
 std = ["hex/std", "sbor/std", "utils/std", "radix-engine-common/std", "radix-engine-derive/std", "radix-engine-store-interface/std", "itertools/use_std"]

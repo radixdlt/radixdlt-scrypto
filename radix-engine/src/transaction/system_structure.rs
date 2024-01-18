@@ -30,6 +30,7 @@ pub struct SystemFieldStructure {
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SystemFieldKind {
     TypeInfo,
+    BootLoader,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -229,6 +230,11 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         key: &SubstateKey,
     ) -> SubstateSystemStructure {
         match &partition_descriptors[0] {
+            SystemPartitionDescriptor::BootLoader => {
+                SubstateSystemStructure::SystemField(SystemFieldStructure {
+                    field_kind: SystemFieldKind::BootLoader,
+                })
+            }
             SystemPartitionDescriptor::TypeInfo => {
                 SubstateSystemStructure::SystemField(SystemFieldStructure {
                     field_kind: SystemFieldKind::TypeInfo,

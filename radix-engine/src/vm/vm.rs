@@ -11,8 +11,7 @@ use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 
-pub const BOOT_LOADER_VM_PARTITION_NUM: PartitionNumber = PartitionNumber(2u8);
-pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 0u8;
+pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 
 pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
@@ -67,8 +66,8 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
     fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError> {
         let vm_boot = store
             .read_substate(
-                &BOOT_LOADER_STATE,
-                BOOT_LOADER_VM_PARTITION_NUM,
+                TRANSACTION_TRACKER.as_node_id(),
+                BOOT_LOADER_PARTITION,
                 &SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())

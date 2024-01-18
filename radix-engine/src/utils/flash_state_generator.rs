@@ -1,3 +1,6 @@
+use crate::blueprints::consensus_manager::{
+    ConsensusManagerField, VersionedConsensusManagerConfiguration,
+};
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::package::*;
@@ -5,9 +8,10 @@ use crate::internal_prelude::*;
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 use crate::vm::VmApi;
-use crate::vm::{VmBoot, BOOT_LOADER_VM_PARTITION_NUM, BOOT_LOADER_VM_SUBSTATE_FIELD_KEY};
-use radix_engine_common::constants::{BOOT_LOADER_STATE, CONSENSUS_MANAGER_PACKAGE};
+use crate::vm::*;
+use radix_engine_common::constants::*;
 use radix_engine_common::crypto::hash;
+use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::ScopedTypeId;
 use radix_engine_common::prelude::{scrypto_encode, ScryptoCustomTypeKind};
 use radix_engine_common::types::SubstateKey;
@@ -28,9 +32,9 @@ pub fn generate_vm_boot_scrypto_minor_version_state_updates() -> StateUpdates {
 
     StateUpdates {
         by_node: indexmap!(
-            BOOT_LOADER_STATE => NodeStateUpdates::Delta {
+            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
                 by_partition: indexmap! {
-                    BOOT_LOADER_VM_PARTITION_NUM => PartitionStateUpdates::Delta {
+                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(substate)
                         }
@@ -45,7 +49,7 @@ pub fn generate_vm_boot_scrypto_minor_version_state_updates() -> StateUpdates {
 /// to use seconds precision
 pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
-    let consensus_mgr_node_id = CONSENSUS_MANAGER_PACKAGE.into_node_id();
+    let consensus_mgr_pkg_node_id = CONSENSUS_MANAGER_PACKAGE.into_node_id();
     let bp_version_key = BlueprintVersionKey {
         blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
         version: BlueprintVersion::default(),
@@ -102,7 +106,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
     let updated_bp_definition_substate = {
         let versioned_definition: VersionedPackageBlueprintVersionDefinition = reader
             .read_object_collection_entry(
-                &consensus_mgr_node_id,
+                &consensus_mgr_pkg_node_id,
                 ObjectModuleId::Main,
                 ObjectCollectionKey::KeyValue(
                     PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
@@ -152,7 +156,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     let bp_definition_partition_num = reader
         .get_partition_of_collection(
-            &consensus_mgr_node_id,
+            &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
             PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
         )
@@ -160,7 +164,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     let code_vm_type_partition_num = reader
         .get_partition_of_collection(
-            &consensus_mgr_node_id,
+            &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
             PackageCollection::CodeVmTypeKeyValue.collection_index(),
         )
@@ -168,7 +172,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     let code_partition_num = reader
         .get_partition_of_collection(
-            &consensus_mgr_node_id,
+            &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
             PackageCollection::CodeOriginalCodeKeyValue.collection_index(),
         )
@@ -176,7 +180,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     let schema_partition_num = reader
         .get_partition_of_collection(
-            &consensus_mgr_node_id,
+            &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
             PackageCollection::SchemaKeyValue.collection_index(),
         )
@@ -184,7 +188,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     StateUpdates {
         by_node: indexmap!(
-            consensus_mgr_node_id => NodeStateUpdates::Delta {
+            consensus_mgr_pkg_node_id => NodeStateUpdates::Delta {
                 by_partition: indexmap! {
                     bp_definition_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
@@ -317,5 +321,39 @@ pub mod pools_package_v1_1 {
         fn get_scrypto_minor_version(&self) -> u64 {
             0
         }
+    }
+}
+
+pub fn generate_validator_fee_fix_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
+    let consensus_mgr_node_id = CONSENSUS_MANAGER.into_node_id();
+
+    let versioned_config: VersionedConsensusManagerConfiguration = reader
+        .read_typed_object_field(
+            &consensus_mgr_node_id,
+            ModuleId::Main,
+            ConsensusManagerField::Configuration.field_index(),
+        )
+        .unwrap();
+
+    let mut config = versioned_config.into_latest();
+    config.config.validator_creation_usd_cost = Decimal::from(100);
+
+    let updated_substate = config.into_locked_substate();
+
+    StateUpdates {
+        by_node: indexmap!(
+            consensus_mgr_node_id => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    MAIN_BASE_PARTITION => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Field(ConsensusManagerField::Configuration.field_index()) => DatabaseUpdate::Set(
+                                scrypto_encode(&updated_substate).unwrap()
+                            )
+                        }
+                    },
+                }
+            }
+        ),
     }
 }

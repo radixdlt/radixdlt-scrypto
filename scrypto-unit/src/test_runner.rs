@@ -530,16 +530,25 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
 
-        if self.with_seconds_precision_update {
-            let state_updates = generate_seconds_precision_state_updates(&substate_db);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            substate_db.commit(&db_updates);
-        };
+        // Protocol Updates
+        {
+            if self.with_seconds_precision_update {
+                let state_updates = generate_seconds_precision_state_updates(&substate_db);
+                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                substate_db.commit(&db_updates);
+            };
 
-        if self.with_crypto_utils_update {
-            let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            substate_db.commit(&db_updates);
+            if self.with_crypto_utils_update {
+                let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
+                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                substate_db.commit(&db_updates);
+            }
+
+            {
+                let state_updates = generate_validator_fee_fix_state_updates(&substate_db);
+                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                substate_db.commit(&db_updates);
+            }
         }
 
         if self.with_pools_v1_1 {
