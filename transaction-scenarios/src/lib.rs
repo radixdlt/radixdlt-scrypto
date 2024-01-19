@@ -31,8 +31,6 @@ pub mod prelude {}
 
 // Extra things which this crate wants which upstream crates likely don't
 pub(crate) mod internal_prelude {
-    pub use crate::prelude::*;
-
     pub use crate::accounts::*;
     pub use crate::scenario::*;
     pub use radix_engine::transaction::*;

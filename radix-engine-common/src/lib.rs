@@ -24,7 +24,6 @@ pub mod time;
 pub mod types;
 
 mod macros;
-pub use macros::*;
 
 // Re-export SBOR derive.
 extern crate sbor;
@@ -62,7 +61,6 @@ pub mod prelude {
     pub use super::crypto::*;
     pub use super::data::manifest::prelude::*;
     pub use super::data::scrypto::prelude::*;
-    pub use super::macros::*;
     pub use super::math::*;
     pub use super::network::*;
     pub use super::time::*;
