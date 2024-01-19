@@ -1,6 +1,6 @@
 [package]
 name = "vault"
-version = "1.1.0-rc1"
+version = "1.1.0-dev"
 edition = "2021"
 
 [dependencies]
