@@ -4,7 +4,6 @@ use crate::*;
 use arbitrary::Arbitrary;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::types::*;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 

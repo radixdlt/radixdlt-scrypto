@@ -1,6 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataValue, SingleMetadataVal, UncheckedOrigin, UncheckedUrl,
 };

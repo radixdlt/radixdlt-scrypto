@@ -9,7 +9,6 @@ use radix_engine_common::data::scrypto::{
 };
 use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::prelude::*;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::types::NonFungibleData;

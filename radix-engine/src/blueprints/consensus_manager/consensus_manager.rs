@@ -12,8 +12,6 @@ use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::UncheckedUrl;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{
