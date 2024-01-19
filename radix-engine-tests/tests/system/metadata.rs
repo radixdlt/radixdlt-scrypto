@@ -425,3 +425,131 @@ fn verify_metadata_conversion_from_various_array_and_vector_types() {
     let v = [PackageAddress::new_or_panic([13u8; NodeId::LENGTH])];
     assert!((&v).to_metadata_entry().is_some());
 }
+
+/// Given some value, we encode it through its [`MetadataVal`] encoding and then through its
+/// [`MetadataValue`] encoding and check if both are equal. This is to detect if [`MetadataVal`]
+/// is using an incorrect discriminator.
+#[test]
+fn encoding_metadata_through_metadata_val_is_the_same_as_metadata_value() {
+    assert_metadata_val_encoding("Hello World!".to_owned());
+    assert_metadata_val_encoding(false);
+    assert_metadata_val_encoding(1u8);
+    assert_metadata_val_encoding(1u32);
+    assert_metadata_val_encoding(1u64);
+    assert_metadata_val_encoding(1i32);
+    assert_metadata_val_encoding(1i64);
+    assert_metadata_val_encoding(dec!(1));
+    assert_metadata_val_encoding(GlobalAddress::from(XRD));
+    assert_metadata_val_encoding(PublicKey::Ed25519(Ed25519PublicKey(
+        [0; Ed25519PublicKey::LENGTH],
+    )));
+    assert_metadata_val_encoding(PublicKey::Secp256k1(Secp256k1PublicKey(
+        [0; Secp256k1PublicKey::LENGTH],
+    )));
+    assert_metadata_val_encoding(NonFungibleGlobalId::from_public_key(&Secp256k1PublicKey(
+        [0; Secp256k1PublicKey::LENGTH],
+    )));
+    assert_metadata_val_encoding(NonFungibleGlobalId::from_public_key(&Ed25519PublicKey(
+        [0; Ed25519PublicKey::LENGTH],
+    )));
+    assert_metadata_val_encoding(NonFungibleLocalId::integer(1));
+    assert_metadata_val_encoding(NonFungibleLocalId::string("HelloWorld").unwrap());
+    assert_metadata_val_encoding(NonFungibleLocalId::bytes(b"HelloWorld").unwrap());
+    assert_metadata_val_encoding(NonFungibleLocalId::ruid([0x11; 32]));
+    assert_metadata_val_encoding(Instant::new(100));
+    assert_metadata_val_encoding(UncheckedUrl("https://www.google.com/".into()));
+    assert_metadata_val_encoding(UncheckedOrigin("https://www.google.com/".into()));
+    assert_metadata_val_encoding(PublicKeyHash::Ed25519(Ed25519PublicKeyHash(
+        [0; Ed25519PublicKeyHash::LENGTH],
+    )));
+    assert_metadata_val_encoding(PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(
+        [0; Secp256k1PublicKeyHash::LENGTH],
+    )));
+
+    assert_metadata_val_encoding(vec!["Hello World!".to_owned(), "Hello World!".to_owned()]);
+    assert_metadata_val_encoding(vec![false, false]);
+    assert_metadata_val_encoding(vec![1u8, 1u8]);
+    assert_metadata_val_encoding(vec![1u32, 1u32]);
+    assert_metadata_val_encoding(vec![1u64, 1u64]);
+    assert_metadata_val_encoding(vec![1i32, 1i32]);
+    assert_metadata_val_encoding(vec![1i64, 1i64]);
+    assert_metadata_val_encoding(vec![dec!(1), dec!(1)]);
+    assert_metadata_val_encoding(vec![GlobalAddress::from(XRD), GlobalAddress::from(XRD)]);
+    assert_metadata_val_encoding(vec![
+        PublicKey::Ed25519(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
+        PublicKey::Ed25519(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
+    ]);
+    assert_metadata_val_encoding(vec![
+        PublicKey::Secp256k1(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
+        PublicKey::Secp256k1(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
+    ]);
+    assert_metadata_val_encoding(vec![
+        NonFungibleGlobalId::from_public_key(&Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
+        NonFungibleGlobalId::from_public_key(&Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
+    ]);
+    assert_metadata_val_encoding(vec![
+        NonFungibleGlobalId::from_public_key(&Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
+        NonFungibleGlobalId::from_public_key(&Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
+    ]);
+    assert_metadata_val_encoding(vec![
+        NonFungibleLocalId::integer(1),
+        NonFungibleLocalId::integer(1),
+    ]);
+    assert_metadata_val_encoding(vec![
+        NonFungibleLocalId::string("HelloWorld").unwrap(),
+        NonFungibleLocalId::string("HelloWorld").unwrap(),
+    ]);
+    assert_metadata_val_encoding(vec![
+        NonFungibleLocalId::bytes(b"HelloWorld").unwrap(),
+        NonFungibleLocalId::bytes(b"HelloWorld").unwrap(),
+    ]);
+    assert_metadata_val_encoding(vec![
+        NonFungibleLocalId::ruid([0x11; 32]),
+        NonFungibleLocalId::ruid([0x11; 32]),
+    ]);
+    assert_metadata_val_encoding(vec![Instant::new(100), Instant::new(100)]);
+    assert_metadata_val_encoding(vec![
+        UncheckedUrl("https://www.google.com/".into()),
+        UncheckedUrl("https://www.google.com/".into()),
+    ]);
+    assert_metadata_val_encoding(vec![
+        UncheckedOrigin("https://www.google.com/".into()),
+        UncheckedOrigin("https://www.google.com/".into()),
+    ]);
+    assert_metadata_val_encoding(vec![
+        PublicKeyHash::Ed25519(Ed25519PublicKeyHash([0; Ed25519PublicKeyHash::LENGTH])),
+        PublicKeyHash::Ed25519(Ed25519PublicKeyHash([0; Ed25519PublicKeyHash::LENGTH])),
+    ]);
+    assert_metadata_val_encoding(vec![
+        PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash([0; Secp256k1PublicKeyHash::LENGTH])),
+        PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash([0; Secp256k1PublicKeyHash::LENGTH])),
+    ]);
+}
+
+fn assert_metadata_val_encoding<T>(item: T)
+where
+    T: MetadataVal + Debug + Clone,
+{
+    assert_eq!(
+        metadata_val_encode(&item),
+        scrypto_encode(&item.clone().to_metadata_value()).unwrap(),
+        "Encoding is not the same: {item:#?}"
+    )
+}
+
+fn metadata_val_encode<T>(value: &T) -> Vec<u8>
+where
+    T: MetadataVal,
+{
+    let mut buffer = Vec::new();
+    let mut encoder =
+        VecEncoder::<ScryptoCustomValueKind>::new(&mut buffer, SCRYPTO_SBOR_V1_MAX_DEPTH);
+    encoder
+        .write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+        .unwrap();
+    encoder.write_value_kind(ValueKind::Enum).unwrap();
+    encoder.write_discriminator(T::DISCRIMINATOR).unwrap();
+    encoder.write_size(1).unwrap();
+    encoder.encode(&value).unwrap();
+    buffer
+}
