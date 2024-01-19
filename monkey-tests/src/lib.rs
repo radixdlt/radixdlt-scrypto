@@ -27,7 +27,6 @@ use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
-use radix_engine_interface::prelude::node_modules::auth::RoleDefinition;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
@@ -35,7 +34,7 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use scrypto::prelude::{ToRoleEntry, Zero};
+use scrypto::prelude::Zero;
 use scrypto_unit::InjectSystemCostingError;
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;

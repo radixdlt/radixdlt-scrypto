@@ -454,7 +454,7 @@ fn encoding_metadata_through_metadata_val_is_the_same_as_metadata_value() {
     )));
     assert_metadata_val_encoding(NonFungibleLocalId::integer(1));
     assert_metadata_val_encoding(NonFungibleLocalId::string("HelloWorld").unwrap());
-    assert_metadata_val_encoding(NonFungibleLocalId::bytes(b"HelloWorld").unwrap());
+    assert_metadata_val_encoding(NonFungibleLocalId::bytes(*b"HelloWorld").unwrap());
     assert_metadata_val_encoding(NonFungibleLocalId::ruid([0x11; 32]));
     assert_metadata_val_encoding(Instant::new(100));
     assert_metadata_val_encoding(UncheckedUrl("https://www.google.com/".into()));
@@ -500,8 +500,8 @@ fn encoding_metadata_through_metadata_val_is_the_same_as_metadata_value() {
         NonFungibleLocalId::string("HelloWorld").unwrap(),
     ]);
     assert_metadata_val_encoding(vec![
-        NonFungibleLocalId::bytes(b"HelloWorld").unwrap(),
-        NonFungibleLocalId::bytes(b"HelloWorld").unwrap(),
+        NonFungibleLocalId::bytes(*b"HelloWorld").unwrap(),
+        NonFungibleLocalId::bytes(*b"HelloWorld").unwrap(),
     ]);
     assert_metadata_val_encoding(vec![
         NonFungibleLocalId::ruid([0x11; 32]),
