@@ -232,7 +232,7 @@ pub mod pools_package_v1_1 {
         PackageCollection::CodeInstrumentedCodeKeyValue,
     ];
 
-    pub fn generate_state_updates<S: SubstateDatabase + ListableSubstateDatabase>(
+    pub fn generate_state_updates<S: SubstateDatabase>(
         db: &S,
     ) -> StateUpdates {
         let mut state_updates = StateUpdates::default();
