@@ -16,8 +16,7 @@ use crate::resource::{
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
-use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
-use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
+use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
 use radix_engine::prelude::node_modules::ModuleConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};

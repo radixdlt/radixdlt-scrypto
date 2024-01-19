@@ -1,13 +1,44 @@
-use radix_engine::blueprints::pool::one_resource_pool::*;
+use radix_engine::blueprints::pool::v1::constants::*;
+use radix_engine::blueprints::pool::v1::errors::one_resource_pool::Error as OneResourcePoolError;
+use radix_engine::blueprints::pool::v1::events::one_resource_pool::*;
+use radix_engine::blueprints::pool::v1::package::PoolNativePackage;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
+use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
+use radix_engine_store_interface::interface::{DbSortKey, SubstateDatabase};
 use scrypto::prelude::Pow;
 use scrypto_unit::*;
 use transaction::prelude::*;
+
+#[test]
+fn x() {
+    let test_runner = TestRunnerBuilder::new().without_pools_v1_1().build();
+    let db = test_runner.substate_db();
+
+    let node_id = POOL_PACKAGE.into_node_id();
+
+    let mut map =
+        IndexMap::<NodeId, IndexMap<PartitionNumber, IndexMap<DbSortKey, ScryptoValue>>>::default();
+    for partition_num in 0x00..0xff {
+        let partition_num = PartitionNumber(partition_num);
+
+        let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num);
+        for (key, value) in db.list_entries(&partition_key) {
+            map.entry(node_id)
+                .or_default()
+                .entry(partition_num)
+                .or_default()
+                .insert(key, scrypto_decode::<ScryptoValue>(&value).unwrap());
+        }
+    }
+
+    println!("{map:#?}")
+}
 
 #[test]
 fn one_resource_pool_can_be_instantiated() {

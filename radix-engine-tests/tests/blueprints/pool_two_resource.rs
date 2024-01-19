@@ -1,4 +1,6 @@
-use radix_engine::blueprints::pool::two_resource_pool::*;
+use radix_engine::blueprints::pool::v1::constants::*;
+use radix_engine::blueprints::pool::v1::errors::two_resource_pool::Error as TwoResourcePoolError;
+use radix_engine::blueprints::pool::v1::events::two_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;
@@ -801,11 +803,7 @@ pub fn test_complete_interactions() {
             account_balance_changes
                 .get(&test_runner.pool_unit_resource_address)
                 .cloned(),
-            Some(BalanceChange::Fungible(
-                (dec!("500").checked_mul(dec!("200")).unwrap())
-                    .checked_sqrt()
-                    .unwrap()
-            ))
+            Some(BalanceChange::Fungible(dec!(316.2277660168379332)))
         );
         assert_eq!(
             account_balance_changes
@@ -838,7 +836,7 @@ pub fn test_complete_interactions() {
             account_balance_changes
                 .get(&test_runner.pool_unit_resource_address)
                 .cloned(),
-            Some(BalanceChange::Fungible(dec!("442.718872423573106478")))
+            Some(BalanceChange::Fungible(dec!(442.71887242357310648)))
         );
         assert_eq!(
             account_balance_changes
@@ -976,39 +974,32 @@ fn contributing_to_a_pool_with_very_large_difference_in_reserves_succeeds() {
     let max_mint_amount = Decimal(I192::from(2).pow(152));
     let mut test_runner = TestEnvironment::new((18, 18));
 
-    let manifest = {
-        let mut manifest_builder = ManifestBuilder::new();
-        for _ in 0..10 {
-            manifest_builder =
-                manifest_builder.mint_fungible(test_runner.pool_resource1, max_mint_amount)
-        }
-
-        manifest_builder
-            .mint_fungible(test_runner.pool_resource2, dec!("0.000000000000000001"))
-            .take_all_from_worktop(test_runner.pool_resource1, "resource_1")
-            .take_all_from_worktop(test_runner.pool_resource2, "resource_2")
-            .with_name_lookup(|builder, lookup| {
-                let bucket1 = lookup.bucket("resource_1");
-                let bucket2 = lookup.bucket("resource_2");
-                builder.call_method(
-                    test_runner.pool_component_address,
-                    TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-                    TwoResourcePoolContributeManifestInput {
-                        buckets: (bucket1, bucket2),
-                    },
-                )
-            })
-            .try_deposit_entire_worktop_or_abort(test_runner.account_component_address, None)
-            .build()
-    };
+    let manifest = ManifestBuilder::new()
+        .mint_fungible(test_runner.pool_resource1, max_mint_amount)
+        .mint_fungible(test_runner.pool_resource2, dec!("1"))
+        .take_all_from_worktop(test_runner.pool_resource1, "resource_1")
+        .take_all_from_worktop(test_runner.pool_resource2, "resource_2")
+        .with_name_lookup(|builder, lookup| {
+            let bucket1 = lookup.bucket("resource_1");
+            let bucket2 = lookup.bucket("resource_2");
+            builder.call_method(
+                test_runner.pool_component_address,
+                TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
+                TwoResourcePoolContributeManifestInput {
+                    buckets: (bucket1, bucket2),
+                },
+            )
+        })
+        .try_deposit_entire_worktop_or_abort(test_runner.account_component_address, None)
+        .build();
     test_runner
         .execute_manifest(manifest, true)
         .expect_commit_success();
 
     // Act
     let receipt = test_runner.contribute(
-        (test_runner.pool_resource1, dec!("1")),
-        (test_runner.pool_resource2, dec!("1")),
+        (test_runner.pool_resource1, dec!("5708990770.82384")),
+        (test_runner.pool_resource2, dec!("0.000000000000000001")),
         true,
     );
 

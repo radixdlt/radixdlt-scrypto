@@ -1,221 +1,21 @@
-use crate::blueprints::pool::multi_resource_pool::*;
-use crate::blueprints::pool::POOL_MANAGER_ROLE;
-use crate::errors::*;
-use crate::internal_prelude::declare_native_blueprint_state;
+use crate::blueprints::pool::v1::constants::*;
+use crate::blueprints::pool::v1::errors::multi_resource_pool::*;
+use crate::blueprints::pool::v1::events::multi_resource_pool::*;
+use crate::blueprints::pool::v1::substates::multi_resource_pool::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::*;
-use crate::prelude::BlueprintSchemaInit;
-use crate::types::{BlueprintHooksInit, FunctionSchemaInit, ReceiverInfo, TypeRef};
-use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::*;
 use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
-use native_sdk::runtime::Runtime;
-use radix_engine_common::math::*;
-use radix_engine_common::prelude::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::component::Global;
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
-};
+use native_sdk::runtime::*;
+use radix_engine_interface::blueprints::component::*;
 use radix_engine_interface::blueprints::pool::*;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::prelude::BlueprintFunctionsSchemaInit;
-use radix_engine_interface::types::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::*;
-
-pub const MULTI_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "MultiResourcePool";
-
-declare_native_blueprint_state! {
-    blueprint_ident: MultiResourcePool,
-    blueprint_snake_case: multi_resource_pool,
-    features: {
-    },
-    fields: {
-        state:  {
-            ident: State,
-            field_type: {
-                kind: StaticSingleVersioned,
-            },
-            condition: Condition::Always,
-        }
-    },
-    collections: {
-    }
-}
-
-pub type MultiResourcePoolStateV1 = MultiResourcePoolSubstate;
 
 pub struct MultiResourcePoolBlueprint;
 impl MultiResourcePoolBlueprint {
-    pub fn definition() -> BlueprintDefinitionInit {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-
-        let feature_set = MultiResourcePoolFeatureSet::all_features();
-        let state = MultiResourcePoolStateSchemaInit::create_schema_init(&mut aggregator);
-
-        let mut functions = index_map_new();
-
-        functions.insert(
-            MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: None,
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolInstantiateInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolInstantiateOutput>(),
-                ),
-                export: MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<MultiResourcePoolContributeInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolContributeOutput>(),
-                ),
-                export: MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            MULTI_RESOURCE_POOL_REDEEM_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<MultiResourcePoolRedeemInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<MultiResourcePoolRedeemOutput>(),
-                ),
-                export: MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolProtectedDepositOutput>(
-                        ),
-                ),
-                export: MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawInput>(
-                        ),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolProtectedWithdrawOutput>(
-                        ),
-                ),
-                export: MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: TypeRef::Static(aggregator
-                    .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueInput>(
-                    )),
-                output: TypeRef::Static(aggregator
-                    .add_child_type_and_descendents::<MultiResourcePoolGetRedemptionValueOutput>(
-                    )),
-                export: MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME.to_string(),
-            },
-        );
-
-        functions.insert(
-            MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<MultiResourcePoolGetVaultAmountsOutput>(),
-                ),
-                export: MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME.to_string(),
-            },
-        );
-
-        let event_schema = event_schema! {
-            aggregator,
-            [
-                ContributionEvent,
-                RedemptionEvent,
-                WithdrawEvent,
-                DepositEvent
-            ]
-        };
-
-        let schema = generate_full_schema(aggregator);
-
-        BlueprintDefinitionInit {
-            blueprint_type: BlueprintType::default(),
-            is_transient: false,
-            dependencies: indexset!(),
-            feature_set,
-
-            schema: BlueprintSchemaInit {
-                generics: vec![],
-                schema,
-                state,
-                events: event_schema,
-                types: BlueprintTypeSchemaInit::default(),
-                functions: BlueprintFunctionsSchemaInit { functions },
-                hooks: BlueprintHooksInit::default(),
-            },
-            royalty_config: PackageRoyaltyConfig::default(),
-            auth_config: AuthConfig {
-                function_auth: FunctionAuth::AllowAll,
-                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
-                    roles {
-                        POOL_MANAGER_ROLE;
-                    },
-                    methods {
-                        MULTI_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
-                        MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
-                        MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodAccessibility::Public;
-                        MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
-                        MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
-                        MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
-                    }
-                }),
-            },
-        }
-    }
-
     pub fn instantiate<Y>(
         resource_addresses: IndexSet<ResourceAddress>,
         owner_role: OwnerRole,
@@ -231,7 +31,7 @@ impl MultiResourcePoolBlueprint {
         for resource_address in resource_addresses.iter() {
             let resource_manager = ResourceManager(*resource_address);
             if let ResourceType::NonFungible { .. } = resource_manager.resource_type(api)? {
-                return Err(MultiResourcePoolError::NonFungibleResourcesAreNotAccepted {
+                return Err(Error::NonFungibleResourcesAreNotAccepted {
                     resource_address: *resource_address,
                 }
                 .into());
@@ -241,7 +41,7 @@ impl MultiResourcePoolBlueprint {
         // A multi-resource pool can not be created with no resources - at minimum there should be
         // one resource.
         if resource_addresses.len() < 1 {
-            return Err(MultiResourcePoolError::CantCreatePoolWithLessThanOneResource.into());
+            return Err(Error::CantCreatePoolWithLessThanOneResource.into());
         }
 
         // Allocating the address of the pool - this is going to be needed for the metadata of the
@@ -306,7 +106,7 @@ impl MultiResourcePoolBlueprint {
         )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
         let object_id = {
-            let substate = MultiResourcePoolSubstate {
+            let substate = Substate {
                 vaults: resource_addresses
                     .into_iter()
                     .map(|resource_address| {
@@ -424,10 +224,10 @@ impl MultiResourcePoolBlueprint {
                 {
                     *value = value
                         .checked_add(bucket_amount)
-                        .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
+                        .ok_or(Error::DecimalOverflowError)?;
                     Ok(())
                 } else {
-                    Err(MultiResourcePoolError::ResourceDoesNotBelongToPool {
+                    Err(Error::ResourceDoesNotBelongToPool {
                         resource_address: bucket_resource_address,
                     })
                 }?;
@@ -446,7 +246,7 @@ impl MultiResourcePoolBlueprint {
                 .collect::<IndexSet<ResourceAddress>>();
 
             if resources_with_missing_buckets.len() != 0 {
-                Err(MultiResourcePoolError::MissingOrEmptyBuckets {
+                Err(Error::MissingOrEmptyBuckets {
                     resource_addresses: resources_with_missing_buckets,
                 })
             } else {
@@ -472,18 +272,17 @@ impl MultiResourcePoolBlueprint {
                 .copied()
                 .fold(
                     Ok(None),
-                    |acc: Result<Option<Decimal>, MultiResourcePoolError>, item| match acc? {
+                    |acc: Result<Option<Decimal>, Error>, item| match acc? {
                         None => Ok(Some(item)),
                         Some(acc) => {
-                            let result = acc
-                                .checked_mul(item)
-                                .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
+                            let result =
+                                acc.checked_mul(item).ok_or(Error::DecimalOverflowError)?;
                             Ok(Some(result))
                         }
                     },
                 )?
                 .and_then(|d| d.checked_sqrt())
-                .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
+                .ok_or(Error::DecimalOverflowError)?;
 
             // The following unwrap is safe to do. We've already checked that all of the buckets
             // provided belong to the pool and have a corresponding vault.
@@ -516,7 +315,7 @@ impl MultiResourcePoolBlueprint {
             for vault in substate.vaults.values() {
                 let amount = vault.amount(api)?;
                 if amount.is_zero() {
-                    return Err(MultiResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves.into());
+                    return Err(Error::NonZeroPoolUnitSupplyButZeroReserves.into());
                 }
             }
 
@@ -531,7 +330,7 @@ impl MultiResourcePoolBlueprint {
                     store_bucket.put(bucket, api)?;
                 } else {
                     let vault = substate.vaults.get(&bucket_resource_address).map_or(
-                        Err(MultiResourcePoolError::ResourceDoesNotBelongToPool {
+                        Err(Error::ResourceDoesNotBelongToPool {
                             resource_address: bucket_resource_address,
                         }),
                         |vault| Ok(Vault(vault.0.clone())),
@@ -550,7 +349,7 @@ impl MultiResourcePoolBlueprint {
                         bucket.amount(api).and_then(|bucket_amount| {
                             let rtn = bucket_amount
                                 .checked_div(vault_amount)
-                                .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
+                                .ok_or(Error::DecimalOverflowError)?;
                             Ok(rtn)
                         })
                     })
@@ -576,13 +375,13 @@ impl MultiResourcePoolBlueprint {
                     let amount_to_contribute = vault
                         .amount(api)?
                         .checked_mul(minimum_ratio)
-                        .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
+                        .ok_or(Error::DecimalOverflowError)?;
                     if divisibility == 18 {
                         amount_to_contribute
                     } else {
                         amount_to_contribute
                             .checked_round(divisibility, RoundingMode::ToNegativeInfinity)
-                            .ok_or(MultiResourcePoolError::DecimalOverflowError)?
+                            .ok_or(Error::DecimalOverflowError)?
                     }
                 };
 
@@ -594,7 +393,7 @@ impl MultiResourcePoolBlueprint {
 
             let pool_units_to_mint = pool_unit_total_supply
                 .checked_mul(minimum_ratio)
-                .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
+                .ok_or(Error::DecimalOverflowError)?;
 
             Runtime::emit_event(
                 api,
@@ -628,7 +427,7 @@ impl MultiResourcePoolBlueprint {
         // Ensure that the passed pool resources are indeed pool resources
         let bucket_resource_address = bucket.resource_address(api)?;
         if bucket_resource_address != substate.pool_unit_resource_manager.0 {
-            return Err(MultiResourcePoolError::InvalidPoolUnitResource {
+            return Err(Error::InvalidPoolUnitResource {
                 expected: substate.pool_unit_resource_manager.0,
                 actual: bucket_resource_address,
             }
@@ -709,7 +508,7 @@ impl MultiResourcePoolBlueprint {
             Runtime::emit_event(api, event)?;
             Ok(())
         } else {
-            Err(MultiResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into())
+            Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
         }
     }
 
@@ -740,7 +539,7 @@ impl MultiResourcePoolBlueprint {
 
             Ok(bucket)
         } else {
-            Err(MultiResourcePoolError::ResourceDoesNotBelongToPool { resource_address }.into())
+            Err(Error::ResourceDoesNotBelongToPool { resource_address }.into())
         }
     }
 
@@ -763,7 +562,7 @@ impl MultiResourcePoolBlueprint {
             || amount_of_pool_units.is_zero()
             || amount_of_pool_units > pool_units_total_supply
         {
-            return Err(MultiResourcePoolError::InvalidGetRedemptionAmount.into());
+            return Err(Error::InvalidGetRedemptionAmount.into());
         }
 
         let mut reserves = index_map_new();
@@ -822,7 +621,7 @@ impl MultiResourcePoolBlueprint {
     fn lock_and_read<Y>(
         api: &mut Y,
         lock_flags: LockFlags,
-    ) -> Result<(MultiResourcePoolSubstate, SubstateHandle), RuntimeError>
+    ) -> Result<(Substate, SubstateHandle), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -854,14 +653,14 @@ impl MultiResourcePoolBlueprint {
                     let amount_owed = pool_units_to_redeem
                         .checked_div(pool_units_total_supply)
                         .and_then(|d| d.checked_mul(reserves))
-                        .ok_or(MultiResourcePoolError::DecimalOverflowError)?;
+                        .ok_or(Error::DecimalOverflowError)?;
 
                     let amount_owed = if divisibility == 18 {
                         amount_owed
                     } else {
                         amount_owed
                             .checked_round(divisibility, RoundingMode::ToNegativeInfinity)
-                            .ok_or(MultiResourcePoolError::DecimalOverflowError)?
+                            .ok_or(Error::DecimalOverflowError)?
                     };
 
                     Ok((resource_address, amount_owed))

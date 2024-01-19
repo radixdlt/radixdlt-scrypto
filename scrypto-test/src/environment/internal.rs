@@ -46,6 +46,21 @@ impl EncapsulatedRadixEngine {
             Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
         bootstrapper.bootstrap_test_default().unwrap();
 
+        // TODO: Remove this once we add the builder pattern.
+        {
+            let state_updates = generate_seconds_precision_state_updates(&substate_db);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            substate_db.commit(&db_updates);
+
+            let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            substate_db.commit(&db_updates);
+
+            let state_updates = pools_package_v1_1::generate_state_updates(&substate_db);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            substate_db.commit(&db_updates);
+        }
+
         // Create the Id allocator we will be using throughout this test
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
 

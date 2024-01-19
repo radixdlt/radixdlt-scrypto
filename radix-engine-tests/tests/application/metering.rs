@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
@@ -8,6 +7,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_tests::common::*;
 use scrypto::api::node_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
@@ -26,9 +26,14 @@ fn update_expected_costs() {
     run_basic_transfer_to_virtual_account(Mode::OutputCosting(
         path_local_meterng_csv!("cost_transfer_to_virtual_account.csv").to_string(),
     ));
-    run_radiswap(Mode::OutputCosting(
-        path_local_meterng_csv!("cost_radiswap.csv").to_string(),
-    ));
+    run_radiswap(
+        Mode::OutputCosting(path_local_meterng_csv!("cost_radiswap.csv").to_string()),
+        false,
+    );
+    run_radiswap(
+        Mode::OutputCosting(path_local_meterng_csv!("cost_radiswap_pools_v1_1.csv").to_string()),
+        true,
+    );
     run_flash_loan(Mode::OutputCosting(
         path_local_meterng_csv!("cost_flash_loan.csv").to_string(),
     ));
@@ -45,43 +50,63 @@ fn update_expected_costs() {
 
 #[test]
 fn test_basic_transfer() {
-    run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!("cost_transfer.csv")
+    run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(
+        include_local_meterng_csv_str!("cost_transfer.csv"),
     )));
 }
 
 #[test]
 fn test_transfer_to_virtual_account() {
-    run_basic_transfer_to_virtual_account(Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!("cost_transfer_to_virtual_account.csv")
+    run_basic_transfer_to_virtual_account(Mode::AssertCosting(load_cost_breakdown(
+        include_local_meterng_csv_str!("cost_transfer_to_virtual_account.csv"),
     )));
 }
 
 #[test]
 fn test_radiswap() {
-    run_radiswap(Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!("cost_radiswap.csv")
-    )));
+    run_radiswap(
+        Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!(
+            "cost_radiswap.csv"
+        ))),
+        false,
+    );
+}
+
+#[test]
+fn test_radiswap_with_pools_v1_1() {
+    run_radiswap(
+        Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!(
+            "cost_radiswap_pools_v1_1.csv"
+        ))),
+        true,
+    );
 }
 
 #[test]
 fn test_flash_loan() {
-    run_flash_loan(Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!("cost_flash_loan.csv")
+    run_flash_loan(Mode::AssertCosting(load_cost_breakdown(
+        include_local_meterng_csv_str!("cost_flash_loan.csv"),
     )));
 }
 
 #[test]
 fn test_publish_large_package() {
-    run_publish_large_package(Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!("cost_publish_large_package.csv")
+    run_publish_large_package(Mode::AssertCosting(load_cost_breakdown(
+        include_local_meterng_csv_str!("cost_publish_large_package.csv"),
     )));
 }
 
 #[test]
 fn test_mint_large_size_nfts_from_manifest() {
-    run_mint_large_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!("cost_mint_large_size_nfts_from_manifest.csv")
+    run_mint_large_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(
+        include_local_meterng_csv_str!("cost_mint_large_size_nfts_from_manifest.csv"),
     )));
 }
 
 #[test]
 fn test_mint_small_size_nfts_from_manifest() {
-    run_mint_small_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!("cost_mint_small_size_nfts_from_manifest.csv")
+    run_mint_small_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(
+        include_local_meterng_csv_str!("cost_mint_small_size_nfts_from_manifest.csv"),
     )));
 }
 
@@ -392,8 +417,12 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
     mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
-fn run_radiswap(mode: Mode) {
-    let mut test_runner = TestRunnerBuilder::new().build();
+fn run_radiswap(mode: Mode, use_v1_1_pools: bool) {
+    let mut test_runner = if use_v1_1_pools {
+        TestRunnerBuilder::new().build()
+    } else {
+        TestRunnerBuilder::new().without_pools_v1_1().build()
+    };
 
     // Scrypto developer
     let (pk1, _, _) = test_runner.new_allocated_account();

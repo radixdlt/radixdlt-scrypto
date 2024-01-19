@@ -6,16 +6,16 @@ pub use radix_engine::blueprints::account::{AccountBlueprint, AccountError, Acco
 use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSubstateValue};
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
-pub use radix_engine::blueprints::pool::multi_resource_pool;
-use radix_engine::blueprints::pool::multi_resource_pool::{
+pub use radix_engine::blueprints::pool::v1::substates::multi_resource_pool;
+use radix_engine::blueprints::pool::v1::substates::multi_resource_pool::{
     MultiResourcePoolTypedSubstateKey, MultiResourcePoolTypedSubstateValue,
 };
-pub use radix_engine::blueprints::pool::one_resource_pool;
-use radix_engine::blueprints::pool::one_resource_pool::{
+pub use radix_engine::blueprints::pool::v1::substates::one_resource_pool;
+use radix_engine::blueprints::pool::v1::substates::one_resource_pool::{
     OneResourcePoolTypedSubstateKey, OneResourcePoolTypedSubstateValue,
 };
-pub use radix_engine::blueprints::pool::two_resource_pool;
-use radix_engine::blueprints::pool::two_resource_pool::{
+pub use radix_engine::blueprints::pool::v1::substates::two_resource_pool;
+use radix_engine::blueprints::pool::v1::substates::two_resource_pool::{
     TwoResourcePoolTypedSubstateKey, TwoResourcePoolTypedSubstateValue,
 };
 pub use radix_engine::blueprints::resource::*;
