@@ -1,12 +1,10 @@
 use radix_engine_tests::common::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::types::node_modules::auth::ToRoleEntry;
 use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
 use radix_engine_interface::api::node_modules::auth::{
-    RoleAssignmentSetInput, ROLE_ASSIGNMENT_SET_IDENT,
-    RoleDefinition,
+    RoleAssignmentSetInput, ROLE_ASSIGNMENT_SET_IDENT, 
 };
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
