@@ -164,98 +164,20 @@ use crate::prelude::*;
 /// ```norun
 #[doc = include_str!("../../../assets/blueprints/radiswap/tests/lib.rs")]
 /// ```
-pub struct TestEnvironment(pub(super) EncapsulatedRadixEngine);
+pub struct TestEnvironment<D>(pub(super) EncapsulatedRadixEngine<D>)
+where
+    D: SubstateDatabase + CommittableSubstateDatabase + 'static;
 
-impl TestEnvironment {
-    //================
-    // Initialization
-    //================
-
+impl TestEnvironment<InMemorySubstateDatabase> {
     pub fn new() -> Self {
-        let mut env = Self(EncapsulatedRadixEngine::standard());
-
-        // Adding references to all of the well-known global nodes.
-        env.0.with_kernel_mut(|kernel| {
-            let (_, current_frame) = kernel.kernel_current_frame_mut();
-            for node_id in GLOBAL_VISIBLE_NODES {
-                let Ok(global_address) = GlobalAddress::try_from(node_id.0) else {
-                    continue;
-                };
-                current_frame.add_global_reference(global_address)
-            }
-        });
-
-        // Publishing the test-environment package.
-        let test_environment_package = {
-            let code = include_bytes!("../../../assets/test_environment.wasm");
-            let package_definition = manifest_decode::<PackageDefinition>(include_bytes!(
-                "../../../assets/test_environment.rpd"
-            ))
-            .expect("Must succeed");
-
-            env.with_auth_module_disabled(|env| {
-                Package::publish_advanced(
-                    OwnerRole::None,
-                    package_definition,
-                    code.to_vec(),
-                    Default::default(),
-                    None,
-                    env,
-                )
-                .expect("Must succeed")
-            })
-        };
-
-        // Creating the call-frame of the test environment & making it the current call frame
-        {
-            // Creating the auth zone of the next call-frame
-            let auth_zone = env.0.with_kernel_mut(|kernel| {
-                let mut system_service = SystemService {
-                    api: kernel,
-                    phantom: PhantomData,
-                };
-                AuthModule::on_call_fn_mock(
-                    &mut system_service,
-                    Some((TRANSACTION_PROCESSOR_PACKAGE.as_node_id(), false)),
-                    Default::default(),
-                    Default::default(),
-                )
-                .expect("Must succeed")
-            });
-
-            // Define the actor of the next call-frame. This would be a function actor of the test
-            // environment package.
-            let actor = Actor::Function(FunctionActor {
-                blueprint_id: BlueprintId {
-                    package_address: test_environment_package,
-                    blueprint_name: "TestEnvironment".to_owned(),
-                },
-                ident: "run".to_owned(),
-                auth_zone,
-            });
-
-            // Creating the message, call-frame, and doing the replacement.
-            let message = {
-                let mut message =
-                    CallFrameMessage::from_input(&IndexedScryptoValue::from_typed(&()), &actor);
-                for node_id in GLOBAL_VISIBLE_NODES {
-                    message.copy_global_references.push(node_id);
-                }
-                message
-            };
-            env.0.with_kernel_mut(|kernel| {
-                let (substate_io, current_frame) = kernel.kernel_current_frame_mut();
-                let new_frame =
-                    CallFrame::new_child_from_parent(substate_io, current_frame, actor, message)
-                        .expect("Must succeed.");
-                let previous_frame = core::mem::replace(current_frame, new_frame);
-                kernel.kernel_prev_frame_stack_mut().push(previous_frame)
-            });
-        }
-
-        env
+        TestEnvironmentBuilder::new().build()
     }
+}
 
+impl<D> TestEnvironment<D>
+where
+    D: SubstateDatabase + CommittableSubstateDatabase + 'static,
+{
     //=============
     // Invocations
     //=============
@@ -761,7 +683,7 @@ impl TestEnvironment {
             CONSENSUS_MANAGER,
             ModuleId::Main,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
+            |env| -> Result<(), RuntimeError> {
                 let manager_handle = env
                     .actor_open_field(
                         ACTOR_STATE_SELF,
@@ -796,7 +718,7 @@ impl TestEnvironment {
             CONSENSUS_MANAGER,
             ModuleId::Main,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
+            |env| -> Result<(), RuntimeError> {
                 let handle = env.actor_open_field(
                     ACTOR_STATE_SELF,
                     ConsensusManagerField::ProposerMinuteTimestamp.into(),
@@ -840,7 +762,7 @@ impl TestEnvironment {
         F: FnOnce(&mut Self) -> O,
         O: ScryptoEncode,
     {
-        let object_info = self.0.with_kernel_mut(|kernel: &mut TestKernel<'_>| {
+        let object_info = self.0.with_kernel_mut(|kernel| {
             SystemService {
                 api: kernel,
                 phantom: PhantomData,
@@ -931,6 +853,12 @@ impl TestEnvironment {
             })?;
 
         Ok(rtn)
+    }
+}
+
+impl Default for TestEnvironment<InMemorySubstateDatabase> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

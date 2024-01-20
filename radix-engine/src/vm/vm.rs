@@ -11,6 +11,8 @@ use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 
+use super::wasm::SCRYPTO_V1_LATEST_MINOR_VERSION;
+
 pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 
 pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
@@ -46,6 +48,14 @@ pub trait VmApi {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct VmVersion {
     scrypto_v1_minor_version: u64,
+}
+
+impl VmVersion {
+    pub fn latest() -> Self {
+        Self {
+            scrypto_v1_minor_version: SCRYPTO_V1_LATEST_MINOR_VERSION,
+        }
+    }
 }
 
 impl VmApi for VmVersion {

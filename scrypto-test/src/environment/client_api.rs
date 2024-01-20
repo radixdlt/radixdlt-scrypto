@@ -44,7 +44,10 @@ macro_rules! implement_client_api {
         ),* $(,)*
     ) => {
         $(
-            impl $trait<RuntimeError> for TestEnvironment {
+            impl<D> $trait<RuntimeError> for TestEnvironment<D>
+            where
+                D: SubstateDatabase + CommittableSubstateDatabase + 'static
+            {
                 $(
                     #[inline]
                     fn $func_ident(&mut self, $($input_ident: $input_type),*) -> $outputs {
