@@ -65,11 +65,7 @@ impl TestEnvironmentBuilder<InMemorySubstateDatabase> {
             flash_database: FlashSubstateDatabase::standard(),
             added_global_references: Default::default(),
             bootstrap: true,
-            protocol_updates: ProtocolUpdateOptIns {
-                consensus_manager_seconds_precision: true,
-                crypto_utils: true,
-                updated_pools: true,
-            },
+            protocol_updates: ProtocolUpdateOptIns::default(),
         }
     }
 }
@@ -240,7 +236,7 @@ where
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
 
         // Determine if any protocol updates need to be run against the database.
-        if self.protocol_updates.consensus_manager_seconds_precision {
+        if dbg!(self.protocol_updates.consensus_manager_seconds_precision) {
             let state_updates = generate_seconds_precision_state_updates(&self.database);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
@@ -250,8 +246,13 @@ where
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
-        if self.protocol_updates.updated_pools {
+        if self.protocol_updates.validator_fee_update {
             let state_updates = generate_validator_fee_fix_state_updates(&self.database);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            self.database.commit(&db_updates);
+        }
+        if self.protocol_updates.updated_pools {
+            let state_updates = pools_package_v1_1::generate_state_updates(&self.database);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
@@ -515,5 +516,17 @@ impl CommittableSubstateDatabase for FlashSubstateDatabase {
 struct ProtocolUpdateOptIns {
     pub consensus_manager_seconds_precision: bool,
     pub crypto_utils: bool,
+    pub validator_fee_update: bool,
     pub updated_pools: bool,
+}
+
+impl Default for ProtocolUpdateOptIns {
+    fn default() -> Self {
+        Self {
+            consensus_manager_seconds_precision: true,
+            crypto_utils: true,
+            validator_fee_update: true,
+            updated_pools: true,
+        }
+    }
 }
