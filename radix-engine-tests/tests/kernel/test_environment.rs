@@ -257,6 +257,7 @@ fn can_read_kv_entries_from_a_store_read_from_state() {
             )
             .unwrap();
         let epoch = env.key_value_entry_get_typed::<Epoch>(handle).unwrap();
+        env.key_value_entry_close(handle).unwrap();
 
         // Assert
         assert!(epoch.is_some())
