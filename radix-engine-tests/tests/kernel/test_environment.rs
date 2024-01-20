@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use native_sdk::resource::*;
 use radix_engine_queries::typed_substate_layout::two_resource_pool::*;
 use radix_engine_tests::common::*;
@@ -7,19 +9,58 @@ use scrypto_test::prelude::*;
 fn kernel_modules_are_reset_after_calling_a_with_method() {
     // Arrange
     let mut env = TestEnvironment::new();
-    let with_methods: &[fn(&mut TestEnvironment, fn(&mut TestEnvironment))] = &[
-        TestEnvironment::with_kernel_trace_module_enabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_limits_module_enabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_costing_module_enabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_auth_module_enabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_transaction_runtime_module_enabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_execution_trace_module_enabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_kernel_trace_module_disabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_limits_module_disabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_costing_module_disabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_auth_module_disabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_transaction_runtime_module_disabled::<fn(&mut TestEnvironment), ()>,
-        TestEnvironment::with_execution_trace_module_disabled::<fn(&mut TestEnvironment), ()>,
+    let with_methods: &[fn(
+        &mut TestEnvironment<InMemorySubstateDatabase>,
+        fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+    )] = &[
+        TestEnvironment::with_kernel_trace_module_enabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_limits_module_enabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_costing_module_enabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_auth_module_enabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_transaction_runtime_module_enabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_execution_trace_module_enabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_kernel_trace_module_disabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_limits_module_disabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_costing_module_disabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_auth_module_disabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_transaction_runtime_module_disabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
+        TestEnvironment::with_execution_trace_module_disabled::<
+            fn(&mut TestEnvironment<InMemorySubstateDatabase>),
+            (),
+        >,
     ];
 
     for method in with_methods {
@@ -52,7 +93,7 @@ fn state_of_components_can_be_read() {
     let mut env = TestEnvironment::new();
 
     // Act
-    let rtn = env.read_component_state::<(Vault, Own), _>(FAUCET);
+    let rtn = env.with_component_state::<(Vault, Own), _, _, _>(FAUCET, |_, _| {});
 
     // Assert
     assert!(rtn.is_ok())
@@ -64,13 +105,12 @@ fn can_invoke_owned_nodes_read_from_state() {
     let mut env = TestEnvironment::new();
 
     // Act
-    let (vault, _) = env
-        .read_component_state::<(Vault, Own), _>(FAUCET)
-        .expect("Should succeed");
+    let amount = env
+        .with_component_state::<(Vault, Own), _, _, _>(FAUCET, |(vault, _), env| vault.amount(env));
 
     // Assert
-    vault
-        .amount(&mut env)
+    amount
+        .expect("Failed to get the vault amount")
         .expect("Failed to get the vault amount");
 }
 
@@ -116,8 +156,10 @@ fn references_read_from_state_are_visible_in_tests() {
         .unwrap();
 
     // Act
-    let (radiswap_pool_component,) = env
-        .read_component_state::<(ComponentAddress,), _>(radiswap_component)
+    let radiswap_pool_component = env
+        .with_component_state::<(ComponentAddress,), _, _, _>(radiswap_component, |address, _| {
+            address.0
+        })
         .unwrap();
 
     // Assert
@@ -171,22 +213,30 @@ fn references_read_from_state_are_visible_in_tests1() {
         )
         .unwrap();
 
-    let (radiswap_pool_component,) = env
-        .read_component_state::<(ComponentAddress,), _>(radiswap_component)
+    let radiswap_pool_component = env
+        .with_component_state::<(ComponentAddress,), _, _, _>(radiswap_component, |address, _| {
+            address.0
+        })
         .unwrap();
 
     // Act
-    let VersionedTwoResourcePoolState::V1(
-        radix_engine::blueprints::pool::v1::substates::two_resource_pool::Substate {
-            vaults: [(_, vault1), (_, _)],
-            ..
-        },
-    ) = env.read_component_state(radiswap_pool_component).unwrap();
+    let amount = env
+        .with_component_state::<VersionedTwoResourcePoolState, _, _, _>(
+            radiswap_pool_component,
+            |state, env| {
+                let VersionedTwoResourcePoolState::V1(
+                    radix_engine::blueprints::pool::v1::substates::two_resource_pool::Substate {
+                        vaults: [(_, vault1), (_, _)],
+                        ..
+                    },
+                ) = state;
+                vault1.amount(env)
+            },
+        )
+        .unwrap();
 
     // Assert
-    vault1
-        .amount(&mut env)
-        .expect("Failed to get the vault amount");
+    amount.expect("Failed to get the vault amount");
 }
 
 #[test]
@@ -196,22 +246,22 @@ fn can_read_kv_entries_from_a_store_read_from_state() {
     let _ = env
         .call_method_typed::<_, _, Bucket>(FAUCET, "free", &())
         .unwrap();
-    let (_, kv_store) = env
-        .read_component_state::<(Vault, Own), _>(FAUCET)
-        .expect("Should succeed");
 
-    // Act
-    let handle = env
-        .key_value_store_open_entry(
-            kv_store.as_node_id(),
-            &scrypto_encode(&Hash([0; 32])).unwrap(),
-            LockFlags::empty(),
-        )
-        .unwrap();
-    let epoch = env.key_value_entry_get_typed::<Epoch>(handle).unwrap();
+    env.with_component_state::<(Vault, Own), _, _, _>(FAUCET, |(_, kv_store), env| {
+        // Act
+        let handle = env
+            .key_value_store_open_entry(
+                kv_store.as_node_id(),
+                &scrypto_encode(&Hash([0; 32])).unwrap(),
+                LockFlags::empty(),
+            )
+            .unwrap();
+        let epoch = env.key_value_entry_get_typed::<Epoch>(handle).unwrap();
 
-    // Assert
-    assert!(epoch.is_some())
+        // Assert
+        assert!(epoch.is_some())
+    })
+    .unwrap();
 }
 
 #[test]

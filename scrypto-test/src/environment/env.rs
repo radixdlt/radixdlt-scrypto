@@ -641,12 +641,18 @@ where
     ///
     /// This method panics if the component state can not be decoded as the generic type parameter
     /// [`S`].
-    pub fn read_component_state<S, N>(&mut self, node_id: N) -> Result<S, RuntimeError>
+    pub fn with_component_state<S, N, F, O>(
+        &mut self,
+        node_id: N,
+        mut callback: F,
+    ) -> Result<O, RuntimeError>
     where
         S: ScryptoDecode,
         N: Into<NodeId>,
+        F: FnMut(&mut S, &mut Self) -> O,
     {
-        self.0.with_kernel_mut(|kernel| {
+        let (handle, state) = self.0.with_kernel_mut(|kernel| {
+            // Lock
             let handle = kernel.kernel_open_substate(
                 &node_id.into(),
                 MAIN_BASE_PARTITION,
@@ -654,18 +660,28 @@ where
                 LockFlags::read_only(),
                 SystemLockData::Field(FieldLockData::Read),
             )?;
+
+            // Read
             let state = kernel.kernel_read_substate(handle).map(|v| {
                 let FieldSubstate::<ScryptoValue>::V1(FieldSubstateV1 { payload, .. }) =
                     v.as_typed().unwrap();
                 scrypto_encode(&payload).unwrap()
             })?;
 
-            // We do not close the substate lock. This is intentional. Closing the lock will mean
-            // that we will lose all of the references provided to us by this substate.
+            Ok::<_, RuntimeError>((handle, state))
+        })?;
 
-            // Decode and return
-            Ok(scrypto_decode::<S>(&state).unwrap())
-        })
+        // Decode
+        let mut state = scrypto_decode::<S>(&state).unwrap();
+
+        // Callback
+        let rtn = callback(&mut state, self);
+
+        // Unlock
+        self.0
+            .with_kernel_mut(|kernel| kernel.kernel_close_substate(handle))?;
+
+        Ok(rtn)
     }
 
     //===================
