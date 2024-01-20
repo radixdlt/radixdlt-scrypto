@@ -4,12 +4,9 @@ pub mod schema;
 pub mod translation;
 
 use clap::Parser;
-use radix_engine::system::{bootstrap::*, system_db_reader::SystemDatabaseReader};
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::types::*;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
-use radix_engine_stores::rocks_db::*;
 use std::io::Write;
 
 use crate::resim::*;

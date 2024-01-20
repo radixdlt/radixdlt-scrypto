@@ -112,18 +112,24 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     );
     for (last, (resource_address, amount)) in resources.balances.iter().identify_last() {
         let metadata = get_entity_metadata(resource_address.as_node_id(), substate_db);
-        let symbol = if let Some(MetadataValue::String(symbol)) = metadata.get("symbol") {
-            symbol.as_str()
+        let name = if let Some(MetadataValue::String(name)) = metadata.get("name") {
+            name.as_str()
         } else {
             "?"
         };
+        let symbol_text = if let Some(MetadataValue::String(symbol)) = metadata.get("symbol") {
+            format!(" ({})", symbol)
+        } else {
+            "".to_string()
+        };
         writeln!(
             output,
-            "{} {}: {} {}",
+            "{} {}: {} {}{}",
             list_item_prefix(last),
             resource_address.display(&address_bech32_encoder),
             amount,
-            symbol,
+            name,
+            symbol_text,
         );
     }
 
@@ -135,18 +141,24 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     );
     for (last, (resource_address, ids)) in resources.non_fungibles.iter().identify_last() {
         let metadata = get_entity_metadata(resource_address.as_node_id(), substate_db);
-        let symbol = if let Some(MetadataValue::String(symbol)) = metadata.get("symbol") {
-            symbol.as_str()
+        let name = if let Some(MetadataValue::String(name)) = metadata.get("name") {
+            name.as_str()
         } else {
             "?"
         };
+        let symbol_text = if let Some(MetadataValue::String(symbol)) = metadata.get("symbol") {
+            format!(" ({})", symbol)
+        } else {
+            "".to_string()
+        };
         writeln!(
             output,
-            "{} {}: {} {}",
+            "{} {}: {} {}{}",
             list_item_prefix(last),
             resource_address.display(&address_bech32_encoder),
             ids.len(),
-            symbol,
+            name,
+            symbol_text,
         );
         for (last, id) in ids.iter().identify_last() {
             writeln!(output, "   {} {}", list_item_prefix(last), id);

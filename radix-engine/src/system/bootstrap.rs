@@ -34,7 +34,6 @@ use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::consensus_manager::{

@@ -26,6 +26,14 @@ pub struct AccessControllerCreateInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccessControllerCreateManifestInput {
+    pub controlled_asset: ManifestBucket,
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+    pub address_reservation: Option<ManifestAddressReservation>,
+}
+
 pub type AccessControllerCreateGlobalOutput = Global<AccessControllerObjectTypeInfo>;
 
 //================================

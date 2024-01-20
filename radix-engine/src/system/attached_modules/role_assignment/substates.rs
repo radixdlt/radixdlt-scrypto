@@ -1,7 +1,5 @@
 use crate::internal_prelude::*;
 use crate::types::*;
-
-use crate::system::system_substates::FieldSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::*;
 use radix_engine_interface::types::*;

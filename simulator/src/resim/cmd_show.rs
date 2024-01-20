@@ -12,7 +12,7 @@ pub struct Show {
 
 impl Show {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let SimulatorEnvironment { mut db, .. } = SimulatorEnvironment::new()?;
+        let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
         match &self.address {
             Some(address) => {
