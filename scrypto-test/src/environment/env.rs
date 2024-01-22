@@ -620,22 +620,31 @@ where
     // State
     //=======
 
-    /// Reads the state of a component and SBOR decodes it to the specified generic.
+    /// Reads the state of a component and allows for a callback to be executed over the decoded
+    /// state.
     ///
-    /// This method reads the state of a component and returns it as an instance of [`S`]. Owned
-    /// nodes encountered in the component state are added as transient references to the test call
-    /// frame and references are added as references to the test call frame. This means that all
-    /// nodes in the component state become visible to the tests.
+    /// This method performs the steps needed to read the state of a component and then perform the
+    /// various steps needed before the state can be read or used such as the locking, reading, and
+    /// decoding of the substate and the various steps that need to be performed after the state is
+    /// read such as unlocking the substate.
+    ///
+    /// Users of this method are expected to pass in a callback function to operate over the state
+    /// as this is the main way that this method ensures that references do not escape out of this
+    /// method after the substate is closed.
     ///
     /// # Arguments
     ///
     /// * `node_id`: [`N`] - The address of the component to read the state of. This is a generic
     /// type parameter that's satisfied by any type that implements [`Into<NodeId>`].
+    /// * `callback`: [`F`] - A callback function to call after the component state has been read
+    /// and decoded into the type specified by the generic parameter [`S`]. Anything returned from
+    /// this callback is returned from this method unless an error happens after the callback is
+    /// executed.
     ///
     /// # Returns
     ///
-    /// * [`Result<S, RuntimeError>`] - If the component state could be read successfully then an
-    /// [`Ok`] is returned, otherwise an [`Err`] is returned.
+    /// * [`Result<O, RuntimeError>`] - The output of the callback function passed in or a runtime
+    /// error if one of the steps failed.
     ///
     /// # Panics
     ///
