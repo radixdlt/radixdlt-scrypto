@@ -28,10 +28,7 @@ pub use custom_extension::*;
 pub use custom_formatting::*;
 pub use custom_payload_wrappers::*;
 pub use custom_schema::*;
-#[cfg(feature = "serde")]
-pub use custom_serde::*;
 pub use custom_traversal::*;
-pub use custom_validation::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
 pub use custom_well_known_types::*;
@@ -49,10 +46,7 @@ pub mod prelude {
     pub use super::custom_formatting::*;
     pub use super::custom_payload_wrappers::*;
     pub use super::custom_schema::*;
-    #[cfg(feature = "serde")]
-    pub use super::custom_serde::*;
     pub use super::custom_traversal::*;
-    pub use super::custom_validation::*;
     pub use super::custom_value::*;
     pub use super::custom_value_kind::*;
     pub use super::custom_well_known_types::well_known_scrypto_custom_types::*;

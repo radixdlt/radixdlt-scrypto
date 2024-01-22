@@ -16,7 +16,7 @@ pub struct RocksdbSubstateStore {
 
 impl RocksdbSubstateStore {
     // Technically we don't need CFs here at all; however, delete range API is only available for CF
-    const THE_ONLY_CF: &str = "the_only";
+    const THE_ONLY_CF: &'static str = "the_only";
 
     pub fn standard(root: PathBuf) -> Self {
         Self::with_options(&Options::default(), root)
