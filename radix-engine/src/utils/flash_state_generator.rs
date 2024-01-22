@@ -1,13 +1,10 @@
-use crate::blueprints::consensus_manager::{
-    ConsensusManagerField, VersionedConsensusManagerConfiguration,
-};
+use crate::blueprints::consensus_manager::*;
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
-use crate::blueprints::pool::v1::package::*;
+use crate::blueprints::pool::v1::constants::*;
 use crate::internal_prelude::*;
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
-use crate::vm::VmApi;
 use crate::vm::*;
 use radix_engine_common::constants::*;
 use radix_engine_common::crypto::hash;
@@ -218,107 +215,138 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
     }
 }
 
-pub mod pools_package_v1_1 {
-    use super::*;
+/// Generates the state updates required to update the pool package from the v1.0 to the v1.1
+/// logic. No schema changes took place, just a change of logic. It produces the following
+/// updates:
+///
+/// * Removes the old code_hash => vm_type substate.
+/// * Adds a new code_hash => vm_type substate.
+/// * Removes the old code_hash => original_code substate.
+/// * Adds a new code_hash => original_code substate.
+/// * Updates the function exports in the blueprint definitions to point to the new code hash.
+pub fn generate_pools_v1_1_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
 
-    const PACKAGE_COLLECTIONS: [PackageCollection; 8] = [
-        PackageCollection::BlueprintVersionDefinitionKeyValue,
-        PackageCollection::BlueprintVersionDependenciesKeyValue,
-        PackageCollection::SchemaKeyValue,
-        PackageCollection::BlueprintVersionRoyaltyConfigKeyValue,
-        PackageCollection::BlueprintVersionAuthConfigKeyValue,
-        PackageCollection::CodeVmTypeKeyValue,
-        PackageCollection::CodeOriginalCodeKeyValue,
-        PackageCollection::CodeInstrumentedCodeKeyValue,
-    ];
+    let pool_package_node_id = POOL_PACKAGE.into_node_id();
 
-    pub fn generate_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
-        let mut state_updates = StateUpdates::default();
-        generate_package_state_updates(db, &mut state_updates);
-        state_updates
-    }
+    // The old and new code hashes
+    let old_code_id = POOL_V1_0_CODE_ID;
+    let new_code_id = POOL_V1_1_CODE_ID;
 
-    fn generate_package_state_updates<S: SubstateDatabase>(
-        db: &S,
-        state_updates: &mut StateUpdates,
-    ) {
-        let reader = SystemDatabaseReader::new(db);
-        let node_id = POOL_PACKAGE.into_node_id();
+    let old_code = old_code_id.to_be_bytes().to_vec();
+    let new_code = new_code_id.to_be_bytes().to_vec();
 
-        // Mark the entire partition of the existing collections for deletion
-        for collection in PACKAGE_COLLECTIONS {
-            let partition_num = reader
-                .get_partition_of_collection(
-                    &node_id,
-                    ModuleId::Main,
-                    collection.collection_index(),
+    let old_code_hash = CodeHash::from_hash(hash(&old_code));
+    let new_code_hash = CodeHash::from_hash(hash(&new_code));
+
+    // New code substate created from the new code
+    let new_code_substate =
+        VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 { code: new_code })
+            .into_payload()
+            .into_locked_substate();
+
+    // New VM substate, which we will map the new code hash to.
+    let new_vm_type_substate = VersionedPackageCodeVmType::V1(PackageCodeVmTypeV1 {
+        vm_type: VmType::Native,
+    })
+    .into_payload()
+    .into_locked_substate();
+
+    // Update the function exports in the blueprint definition.
+    let [(one_resource_pool_blueprint_key, one_resource_pool_blueprint_definition), (two_resource_pool_blueprint_key, two_resource_pool_blueprint_definition), (multi_resource_pool_blueprint_key, multi_resource_pool_blueprint_definition)] =
+        [
+            ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
+            TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
+            MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
+        ]
+        .map(|blueprint_name| {
+            let blueprint_version_key = BlueprintVersionKey {
+                blueprint: blueprint_name.to_owned(),
+                version: BlueprintVersion::default(),
+            };
+
+            let versioned_definition: VersionedPackageBlueprintVersionDefinition = reader
+                .read_object_collection_entry(
+                    &pool_package_node_id,
+                    ObjectModuleId::Main,
+                    ObjectCollectionKey::KeyValue(
+                        PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                        &blueprint_version_key,
+                    ),
                 )
+                .unwrap()
                 .unwrap();
+            let mut blueprint_definition = versioned_definition.into_latest();
 
-            state_updates
-                .by_node
-                .entry(node_id)
-                .or_default()
-                .of_partition(partition_num)
-                .delete()
-        }
+            for (_, export) in blueprint_definition.function_exports.iter_mut() {
+                export.code_hash = new_code_hash
+            }
 
-        // Create the new substates based on the new definition and code id.
-        let new_code_id = POOL_V1_1_CODE_ID;
-        let original_code = new_code_id.to_be_bytes().to_vec();
+            (
+                blueprint_version_key,
+                VersionedPackageBlueprintVersionDefinition::V1(blueprint_definition)
+                    .into_payload()
+                    .into_locked_substate(),
+            )
+        });
 
-        let package_structure = PackageNativePackage::validate_and_build_package_structure(
-            PoolNativePackage::definition(PoolV1MinorVersion::One),
-            VmType::Native,
-            original_code,
-            Default::default(),
-            &MockVmApi,
+    let original_code_partition_number = reader
+        .get_partition_of_collection(
+            &pool_package_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeOriginalCodeKeyValue.collection_index(),
         )
         .unwrap();
 
-        let royalty_vault = reader
-            .read_object_field(
-                &node_id,
-                ModuleId::Main,
-                PackageField::RoyaltyAccumulator.field_index(),
-            )
-            .unwrap()
-            .as_typed::<PackageRoyaltyAccumulatorFieldPayload>()
-            .unwrap()
-            .into_latest()
-            .royalty_vault;
+    let code_vm_type_partition_number = reader
+        .get_partition_of_collection(
+            &pool_package_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeVmTypeKeyValue.collection_index(),
+        )
+        .unwrap();
 
-        let node_substates = create_package_partition_substates(
-            package_structure,
-            metadata_init! {
-                "name" => "Pool Package".to_owned(), locked;
-                "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
-            },
-            Some(royalty_vault),
-        );
+    let blueprint_definition_partition_number = reader
+        .get_partition_of_collection(
+            &pool_package_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+        )
+        .unwrap();
 
-        node_substates
-            .into_iter()
-            .for_each(|(partition_number, entries)| {
-                state_updates
-                    .by_node
-                    .entry(node_id)
-                    .or_default()
-                    .of_partition(partition_number)
-                    .update_substates(
-                        entries
-                            .into_iter()
-                            .map(|(key, value)| (key, DatabaseUpdate::Set(value.into()))),
-                    );
-            })
-    }
-
-    struct MockVmApi;
-
-    impl VmApi for MockVmApi {
-        fn get_scrypto_minor_version(&self) -> u64 {
-            0
-        }
+    StateUpdates {
+        by_node: indexmap! {
+            pool_package_node_id => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    original_code_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap())
+                                => DatabaseUpdate::Delete,
+                            SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap())
+                                => DatabaseUpdate::Set(scrypto_encode(&new_code_substate).unwrap()),
+                        }
+                    },
+                    code_vm_type_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap())
+                                => DatabaseUpdate::Delete,
+                            SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap())
+                                => DatabaseUpdate::Set(scrypto_encode(&new_vm_type_substate).unwrap()),
+                        }
+                    },
+                    blueprint_definition_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&one_resource_pool_blueprint_key).unwrap())
+                                => DatabaseUpdate::Set(scrypto_encode(&one_resource_pool_blueprint_definition).unwrap()),
+                            SubstateKey::Map(scrypto_encode(&two_resource_pool_blueprint_key).unwrap())
+                                => DatabaseUpdate::Set(scrypto_encode(&two_resource_pool_blueprint_definition).unwrap()),
+                            SubstateKey::Map(scrypto_encode(&multi_resource_pool_blueprint_key).unwrap())
+                                => DatabaseUpdate::Set(scrypto_encode(&multi_resource_pool_blueprint_definition).unwrap()),
+                        }
+                    }
+                }
+            }
+        },
     }
 }
 
