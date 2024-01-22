@@ -63,9 +63,9 @@ impl TransactionProcessorNativePackage {
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    /// Only allow the root call frame to call any function in transaction processor.
-                    /// This is a safety precaution to reduce surface area of attack. This may be removed
-                    /// if/when the transaction processor is verified to be safe.
+                    // Only allow the root call frame to call any function in transaction processor.
+                    // This is a safety precaution to reduce surface area of attack. This may be removed
+                    // if/when the transaction processor is verified to be safe.
                     function_auth: FunctionAuth::RootOnly,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },

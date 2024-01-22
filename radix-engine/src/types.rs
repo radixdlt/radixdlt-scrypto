@@ -11,6 +11,5 @@ pub use sbor::rust::num::NonZeroU32;
 pub use sbor::rust::num::NonZeroUsize;
 pub use sbor::rust::ops::AddAssign;
 pub use sbor::rust::ops::SubAssign;
-pub use sbor::*;
 #[cfg(feature = "std")]
 pub use std::alloc;

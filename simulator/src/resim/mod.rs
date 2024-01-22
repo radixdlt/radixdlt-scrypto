@@ -29,7 +29,6 @@ pub use cmd_call_function::*;
 pub use cmd_call_method::*;
 pub use cmd_export_package_definition::*;
 pub use cmd_generate_key_pair::*;
-pub use cmd_mint::*;
 pub use cmd_new_account::*;
 pub use cmd_new_badge_fixed::*;
 pub use cmd_new_badge_mutable::*;

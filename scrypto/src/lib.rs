@@ -33,7 +33,6 @@ pub mod runtime;
 
 // Export macros
 mod macros;
-pub use macros::*;
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;

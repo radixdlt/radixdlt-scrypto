@@ -8,6 +8,8 @@ use crate::vm::wasm::traits::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::sync::{Arc, Mutex};
+#[cfg(feature = "radix_engine_tests")]
+use wasmer::ImportObject;
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,
@@ -866,14 +868,34 @@ impl WasmerModule {
                 CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_fast_aggregate_verify),
                 CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_g2_signature_aggregate),
                 CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), keccak256_hash),
-
-                #[cfg(feature = "radix_engine_tests")]
-                "test_host_read_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_read_memory),
-                #[cfg(feature = "radix_engine_tests")]
-                "test_host_write_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_write_memory),
-                #[cfg(feature = "radix_engine_tests")]
-                "test_host_check_memory_is_clean" => Function::new_native_with_env(self.module.store(), env.clone(), host_check_memory_is_clean),
             }
+        };
+
+        #[cfg(feature = "radix_engine_tests")]
+        let import_object = {
+            let mut exports = import_object
+                .get_namespace_exports(MODULE_ENV_NAME)
+                .unwrap();
+
+            exports.insert(
+                "test_host_read_memory",
+                Function::new_native_with_env(self.module.store(), env.clone(), host_read_memory),
+            );
+            exports.insert(
+                "test_host_write_memory",
+                Function::new_native_with_env(self.module.store(), env.clone(), host_write_memory),
+            );
+            exports.insert(
+                "test_host_check_memory_is_clean",
+                Function::new_native_with_env(
+                    self.module.store(),
+                    env.clone(),
+                    host_check_memory_is_clean,
+                ),
+            );
+            let mut import_object = ImportObject::new();
+            import_object.register(MODULE_ENV_NAME, exports);
+            import_object
         };
 
         // instantiate
