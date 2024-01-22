@@ -219,56 +219,80 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 }
 
 pub mod pools_package_v1_1 {
-    use super::*;
+    use crate::track::NodeSubstates;
 
-    const PACKAGE_COLLECTIONS: [PackageCollection; 8] = [
-        PackageCollection::BlueprintVersionDefinitionKeyValue,
-        PackageCollection::BlueprintVersionDependenciesKeyValue,
-        PackageCollection::SchemaKeyValue,
-        PackageCollection::BlueprintVersionRoyaltyConfigKeyValue,
-        PackageCollection::BlueprintVersionAuthConfigKeyValue,
-        PackageCollection::CodeVmTypeKeyValue,
-        PackageCollection::CodeOriginalCodeKeyValue,
-        PackageCollection::CodeInstrumentedCodeKeyValue,
-    ];
+    use super::*;
 
     pub fn generate_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
         let mut state_updates = StateUpdates::default();
-        generate_package_state_updates(db, &mut state_updates);
+
+        let node_id = POOL_PACKAGE.into_node_id();
+        let node_substates_v0 = compute_pool_package_substates(db, PoolV1MinorVersion::Zero);
+        let node_substates_v1 = compute_pool_package_substates(db, PoolV1MinorVersion::One);
+
+        let mut a = 0u32;
+        let mut b = 0u32;
+        for (partition_number, entries) in &node_substates_v0 {
+            for (key, _) in entries {
+                if node_substates_v1
+                    .get(partition_number)
+                    .and_then(|entries| entries.get(key))
+                    .is_none()
+                {
+                    a += 1;
+                    state_updates
+                        .by_node
+                        .entry(node_id)
+                        .or_default()
+                        .of_partition(*partition_number)
+                        .update_substates(vec![(key.clone(), DatabaseUpdate::Delete)])
+                }
+            }
+        }
+
+        for (partition_number, entries) in &node_substates_v1 {
+            for (key, value) in entries {
+                if node_substates_v0
+                    .get(partition_number)
+                    .and_then(|entries| entries.get(key))
+                    != Some(value)
+                {
+                    b += 1;
+                    state_updates
+                        .by_node
+                        .entry(node_id)
+                        .or_default()
+                        .of_partition(*partition_number)
+                        .update_substates(vec![(
+                            key.clone(),
+                            DatabaseUpdate::Set(value.clone().into()),
+                        )])
+                }
+            }
+        }
+
+        assert_eq!(a, 2);
+        assert_eq!(b, 2 + 3);
+
         state_updates
     }
 
-    fn generate_package_state_updates<S: SubstateDatabase>(
+    fn compute_pool_package_substates<S: SubstateDatabase>(
         db: &S,
-        state_updates: &mut StateUpdates,
-    ) {
+        version: PoolV1MinorVersion,
+    ) -> NodeSubstates {
         let reader = SystemDatabaseReader::new(db);
         let node_id = POOL_PACKAGE.into_node_id();
 
-        // Mark the entire partition of the existing collections for deletion
-        for collection in PACKAGE_COLLECTIONS {
-            let partition_num = reader
-                .get_partition_of_collection(
-                    &node_id,
-                    ModuleId::Main,
-                    collection.collection_index(),
-                )
-                .unwrap();
-
-            state_updates
-                .by_node
-                .entry(node_id)
-                .or_default()
-                .of_partition(partition_num)
-                .delete()
+        let original_code = match version {
+            PoolV1MinorVersion::Zero => POOL_V1_0_CODE_ID,
+            PoolV1MinorVersion::One => POOL_V1_1_CODE_ID,
         }
-
-        // Create the new substates based on the new definition and code id.
-        let new_code_id = POOL_V1_1_CODE_ID;
-        let original_code = new_code_id.to_be_bytes().to_vec();
+        .to_be_bytes()
+        .to_vec();
 
         let package_structure = PackageNativePackage::validate_and_build_package_structure(
-            PoolNativePackage::definition(PoolV1MinorVersion::One),
+            PoolNativePackage::definition(version),
             VmType::Native,
             original_code,
             Default::default(),
@@ -288,29 +312,14 @@ pub mod pools_package_v1_1 {
             .into_latest()
             .royalty_vault;
 
-        let node_substates = create_package_partition_substates(
+        create_package_partition_substates(
             package_structure,
             metadata_init! {
                 "name" => "Pool Package".to_owned(), locked;
                 "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
             },
             Some(royalty_vault),
-        );
-
-        node_substates
-            .into_iter()
-            .for_each(|(partition_number, entries)| {
-                state_updates
-                    .by_node
-                    .entry(node_id)
-                    .or_default()
-                    .of_partition(partition_number)
-                    .update_substates(
-                        entries
-                            .into_iter()
-                            .map(|(key, value)| (key, DatabaseUpdate::Set(value.into()))),
-                    );
-            })
+        )
     }
 
     struct MockVmApi;
