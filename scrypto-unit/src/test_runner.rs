@@ -552,7 +552,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         }
 
         if self.with_pools_v1_1 {
-            let state_updates = pools_package_v1_1::generate_state_updates(&substate_db);
+            let state_updates = generate_pools_v1_1_state_updates(&substate_db);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             substate_db.commit(&db_updates);
         }
