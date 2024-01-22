@@ -125,19 +125,20 @@ where
                     .flat_map(|NodeDatabaseUpdates { partition_updates }| {
                         partition_updates.values()
                     })
-                    .filter_map(|item| {
-                        if let PartitionDatabaseUpdates::Delta { substate_updates } = item {
-                            Some(substate_updates.values())
-                        } else {
-                            None
-                        }
-                    })
-                    .flatten()
-                    .filter_map(|item| {
-                        if let DatabaseUpdate::Set(item) = item {
-                            Some(item)
-                        } else {
-                            None
+                    .flat_map(|item| -> Box<dyn Iterator<Item = &Vec<u8>>> {
+                        match item {
+                            PartitionDatabaseUpdates::Delta { substate_updates } => {
+                                Box::new(substate_updates.values().filter_map(|item| {
+                                    if let DatabaseUpdate::Set(value) = item {
+                                        Some(value)
+                                    } else {
+                                        None
+                                    }
+                                }))
+                            }
+                            PartitionDatabaseUpdates::Reset {
+                                new_substate_values,
+                            } => Box::new(new_substate_values.values()),
                         }
                     })
                     .flat_map(|value| {
