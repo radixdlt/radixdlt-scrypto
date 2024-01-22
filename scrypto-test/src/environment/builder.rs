@@ -227,10 +227,6 @@ where
             );
             bootstrapper.bootstrap_test_default().unwrap();
         }
-        let database_updates = self.flash_database.database_updates();
-        if !database_updates.node_updates.is_empty() {
-            self.database.commit(&database_updates);
-        }
 
         // Create the Id allocator we will be using throughout this test
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
@@ -255,6 +251,12 @@ where
             let state_updates = pools_package_v1_1::generate_state_updates(&self.database);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
+        }
+
+        // If a flash is specified execute it.
+        let database_updates = self.flash_database.database_updates();
+        if !database_updates.node_updates.is_empty() {
+            self.database.commit(&database_updates);
         }
 
         let mut env = TestEnvironment(EncapsulatedRadixEngine::create(
