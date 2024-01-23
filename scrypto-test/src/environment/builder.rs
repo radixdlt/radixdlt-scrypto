@@ -249,7 +249,7 @@ where
             self.database.commit(&db_updates);
         }
         if self.protocol_updates.updated_pools {
-            let state_updates = pools_package_v1_1::generate_state_updates(&self.database);
+            let state_updates = generate_pools_v1_1_state_updates(&self.database);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
