@@ -164,98 +164,20 @@ use crate::prelude::*;
 /// ```norun
 #[doc = include_str!("../../../assets/blueprints/radiswap/tests/lib.rs")]
 /// ```
-pub struct TestEnvironment(pub(super) EncapsulatedRadixEngine);
+pub struct TestEnvironment<D>(pub(super) EncapsulatedRadixEngine<D>)
+where
+    D: SubstateDatabase + CommittableSubstateDatabase + 'static;
 
-impl TestEnvironment {
-    //================
-    // Initialization
-    //================
-
+impl TestEnvironment<InMemorySubstateDatabase> {
     pub fn new() -> Self {
-        let mut env = Self(EncapsulatedRadixEngine::standard());
-
-        // Adding references to all of the well-known global nodes.
-        env.0.with_kernel_mut(|kernel| {
-            let (_, current_frame) = kernel.kernel_current_frame_mut();
-            for node_id in GLOBAL_VISIBLE_NODES {
-                let Ok(global_address) = GlobalAddress::try_from(node_id.0) else {
-                    continue;
-                };
-                current_frame.add_global_reference(global_address)
-            }
-        });
-
-        // Publishing the test-environment package.
-        let test_environment_package = {
-            let code = include_bytes!("../../../assets/test_environment.wasm");
-            let package_definition = manifest_decode::<PackageDefinition>(include_bytes!(
-                "../../../assets/test_environment.rpd"
-            ))
-            .expect("Must succeed");
-
-            env.with_auth_module_disabled(|env| {
-                Package::publish_advanced(
-                    OwnerRole::None,
-                    package_definition,
-                    code.to_vec(),
-                    Default::default(),
-                    None,
-                    env,
-                )
-                .expect("Must succeed")
-            })
-        };
-
-        // Creating the call-frame of the test environment & making it the current call frame
-        {
-            // Creating the auth zone of the next call-frame
-            let auth_zone = env.0.with_kernel_mut(|kernel| {
-                let mut system_service = SystemService {
-                    api: kernel,
-                    phantom: PhantomData,
-                };
-                AuthModule::on_call_fn_mock(
-                    &mut system_service,
-                    Some((TRANSACTION_PROCESSOR_PACKAGE.as_node_id(), false)),
-                    Default::default(),
-                    Default::default(),
-                )
-                .expect("Must succeed")
-            });
-
-            // Define the actor of the next call-frame. This would be a function actor of the test
-            // environment package.
-            let actor = Actor::Function(FunctionActor {
-                blueprint_id: BlueprintId {
-                    package_address: test_environment_package,
-                    blueprint_name: "TestEnvironment".to_owned(),
-                },
-                ident: "run".to_owned(),
-                auth_zone,
-            });
-
-            // Creating the message, call-frame, and doing the replacement.
-            let message = {
-                let mut message =
-                    CallFrameMessage::from_input(&IndexedScryptoValue::from_typed(&()), &actor);
-                for node_id in GLOBAL_VISIBLE_NODES {
-                    message.copy_global_references.push(node_id);
-                }
-                message
-            };
-            env.0.with_kernel_mut(|kernel| {
-                let (substate_io, current_frame) = kernel.kernel_current_frame_mut();
-                let new_frame =
-                    CallFrame::new_child_from_parent(substate_io, current_frame, actor, message)
-                        .expect("Must succeed.");
-                let previous_frame = core::mem::replace(current_frame, new_frame);
-                kernel.kernel_prev_frame_stack_mut().push(previous_frame)
-            });
-        }
-
-        env
+        TestEnvironmentBuilder::new().build()
     }
+}
 
+impl<D> TestEnvironment<D>
+where
+    D: SubstateDatabase + CommittableSubstateDatabase + 'static,
+{
     //=============
     // Invocations
     //=============
@@ -698,33 +620,48 @@ impl TestEnvironment {
     // State
     //=======
 
-    /// Reads the state of a component and SBOR decodes it to the specified generic.
+    /// Reads the state of a component and allows for a callback to be executed over the decoded
+    /// state.
     ///
-    /// This method reads the state of a component and returns it as an instance of [`S`]. Owned
-    /// nodes encountered in the component state are added as transient references to the test call
-    /// frame and references are added as references to the test call frame. This means that all
-    /// nodes in the component state become visible to the tests.
+    /// This method performs the steps needed to read the state of a component and then perform the
+    /// various steps needed before the state can be read or used such as the locking, reading, and
+    /// decoding of the substate and the various steps that need to be performed after the state is
+    /// read such as unlocking the substate.
+    ///
+    /// Users of this method are expected to pass in a callback function to operate over the state
+    /// as this is the main way that this method ensures that references do not escape out of this
+    /// method after the substate is closed.
     ///
     /// # Arguments
     ///
     /// * `node_id`: [`N`] - The address of the component to read the state of. This is a generic
     /// type parameter that's satisfied by any type that implements [`Into<NodeId>`].
+    /// * `callback`: [`F`] - A callback function to call after the component state has been read
+    /// and decoded into the type specified by the generic parameter [`S`]. Anything returned from
+    /// this callback is returned from this method unless an error happens after the callback is
+    /// executed.
     ///
     /// # Returns
     ///
-    /// * [`Result<S, RuntimeError>`] - If the component state could be read successfully then an
-    /// [`Ok`] is returned, otherwise an [`Err`] is returned.
+    /// * [`Result<O, RuntimeError>`] - The output of the callback function passed in or a runtime
+    /// error if one of the steps failed.
     ///
     /// # Panics
     ///
     /// This method panics if the component state can not be decoded as the generic type parameter
     /// [`S`].
-    pub fn read_component_state<S, N>(&mut self, node_id: N) -> Result<S, RuntimeError>
+    pub fn with_component_state<S, N, F, O>(
+        &mut self,
+        node_id: N,
+        mut callback: F,
+    ) -> Result<O, RuntimeError>
     where
         S: ScryptoDecode,
         N: Into<NodeId>,
+        F: FnMut(&mut S, &mut Self) -> O,
     {
-        self.0.with_kernel_mut(|kernel| {
+        let (handle, state) = self.0.with_kernel_mut(|kernel| {
+            // Lock
             let handle = kernel.kernel_open_substate(
                 &node_id.into(),
                 MAIN_BASE_PARTITION,
@@ -732,18 +669,28 @@ impl TestEnvironment {
                 LockFlags::read_only(),
                 SystemLockData::Field(FieldLockData::Read),
             )?;
+
+            // Read
             let state = kernel.kernel_read_substate(handle).map(|v| {
                 let FieldSubstate::<ScryptoValue>::V1(FieldSubstateV1 { payload, .. }) =
                     v.as_typed().unwrap();
                 scrypto_encode(&payload).unwrap()
             })?;
 
-            // We do not close the substate lock. This is intentional. Closing the lock will mean
-            // that we will lose all of the references provided to us by this substate.
+            Ok::<_, RuntimeError>((handle, state))
+        })?;
 
-            // Decode and return
-            Ok(scrypto_decode::<S>(&state).unwrap())
-        })
+        // Decode
+        let mut state = scrypto_decode::<S>(&state).unwrap();
+
+        // Callback
+        let rtn = callback(&mut state, self);
+
+        // Unlock
+        self.0
+            .with_kernel_mut(|kernel| kernel.kernel_close_substate(handle))?;
+
+        Ok(rtn)
     }
 
     //===================
@@ -761,7 +708,7 @@ impl TestEnvironment {
             CONSENSUS_MANAGER,
             ModuleId::Main,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
+            |env| -> Result<(), RuntimeError> {
                 let manager_handle = env
                     .actor_open_field(
                         ACTOR_STATE_SELF,
@@ -796,7 +743,7 @@ impl TestEnvironment {
             CONSENSUS_MANAGER,
             ModuleId::Main,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            |env: &mut TestEnvironment| -> Result<(), RuntimeError> {
+            |env| -> Result<(), RuntimeError> {
                 let handle = env.actor_open_field(
                     ACTOR_STATE_SELF,
                     ConsensusManagerField::ProposerMinuteTimestamp.into(),
@@ -840,7 +787,7 @@ impl TestEnvironment {
         F: FnOnce(&mut Self) -> O,
         O: ScryptoEncode,
     {
-        let object_info = self.0.with_kernel_mut(|kernel: &mut TestKernel<'_>| {
+        let object_info = self.0.with_kernel_mut(|kernel| {
             SystemService {
                 api: kernel,
                 phantom: PhantomData,
@@ -931,6 +878,12 @@ impl TestEnvironment {
             })?;
 
         Ok(rtn)
+    }
+}
+
+impl Default for TestEnvironment<InMemorySubstateDatabase> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

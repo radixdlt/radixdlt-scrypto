@@ -604,6 +604,17 @@ impl SystemModuleMixer {
         }
     }
 
+    pub fn transaction_runtime(&mut self) -> Option<&TransactionRuntimeModule> {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            Some(&self.transaction_runtime)
+        } else {
+            None
+        }
+    }
+
     pub fn transaction_hash(&self) -> Option<Hash> {
         if self
             .enabled_modules

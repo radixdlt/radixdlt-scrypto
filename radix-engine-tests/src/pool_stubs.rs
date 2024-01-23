@@ -7,7 +7,7 @@ pub const MINT_LIMIT: Decimal = dec!(5708990770823839524233143877.79798054553098
 pub fn with_multi_resource_pool<const N: usize, F, O>(divisibility: [u8; N], callback: F) -> O
 where
     F: FnOnce(
-        &mut TestEnvironment,
+        &mut TestEnvironment<InMemorySubstateDatabase>,
         [(Cloneable<Bucket>, ResourceAddress); N],
         MultiResourcePool<N>,
     ) -> O,
