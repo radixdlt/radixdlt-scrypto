@@ -3,6 +3,7 @@ name: Benchmark PR
 on:
   pull_request:
     # Run on PR against any branch
+  pull_request_target:
 
 concurrency:
   group: benchmark-comparison-${{ github.ref }}
@@ -10,7 +11,26 @@ concurrency:
 
 jobs:
   benchmark:
+    if: ${{ github.event_name == 'pull_request' }}
     name: Run bench
+    runs-on: ubuntu-latest-16-cores
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+      - uses: radixdlt/criterion-compare-action@update-same-commit
+        with:
+          branchName: ${{ github.base_ref }}
+
+  benchmark_fork:
+    permissions:
+      pull-requests: write
+    if: ${{ github.event_name == 'pull_request_target' }}
+    environment: "benchmark-prs-forked"
+    name: Run bench forked
     runs-on: ubuntu-latest-16-cores
     steps:
       - uses: actions/checkout@v3
