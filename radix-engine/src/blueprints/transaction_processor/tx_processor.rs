@@ -22,6 +22,15 @@ use transaction::data::TransformHandler;
 use transaction::model::*;
 use transaction::validation::*;
 
+pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 1024 * 1024;
+
+/// The minor version of the TransactionProcessor V1 package
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Sbor)]
+pub enum TransactionProcessorV1MinorVersion {
+    Zero,
+    One,
+}
+
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorRunInput {
     pub manifest_encoded_instructions: Vec<u8>,
@@ -68,6 +77,7 @@ fn handle_invocation<'a, 'p, 'w, F, Y, L>(
     worktop: &'w mut Worktop,
     args: ManifestValue,
     invocation_handler: F,
+    version: TransactionProcessorV1MinorVersion,
 ) -> Result<InstructionOutput, RuntimeError>
 where
     Y: ClientApi<RuntimeError> + KernelSubstateApi<L>,
@@ -80,7 +90,10 @@ where
             processor,
             api,
             current_total_size_of_blobs: 0,
-            max_total_size_of_blobs: usize::MAX,
+            max_total_size_of_blobs: match version {
+                TransactionProcessorV1MinorVersion::Zero => usize::MAX,
+                TransactionProcessorV1MinorVersion::One => MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+            },
         };
         transform(args, &mut processor_with_api)?
     };
@@ -101,6 +114,7 @@ impl TransactionProcessorBlueprint {
         global_address_reservations: Vec<GlobalAddressReservation>,
         _references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
         blobs: IndexMap<Hash, Vec<u8>>,
+        version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError>
     where
@@ -293,15 +307,22 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let package_address = processor.resolve_package_address(package_address)?;
-                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
-                        api.call_function(
-                            package_address,
-                            &blueprint_name,
-                            &function_name,
-                            scrypto_encode(&args)
-                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
-                        )
-                    })?
+                    handle_invocation(
+                        api,
+                        &mut processor,
+                        &mut worktop,
+                        args,
+                        |api, args| {
+                            api.call_function(
+                                package_address,
+                                &blueprint_name,
+                                &function_name,
+                                scrypto_encode(&args)
+                                    .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                            )
+                        },
+                        version,
+                    )?
                 }
                 InstructionV1::CallMethod {
                     address,
@@ -309,14 +330,21 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
-                        api.call_method(
-                            address.as_node_id(),
-                            &method_name,
-                            scrypto_encode(&args)
-                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
-                        )
-                    })?
+                    handle_invocation(
+                        api,
+                        &mut processor,
+                        &mut worktop,
+                        args,
+                        |api, args| {
+                            api.call_method(
+                                address.as_node_id(),
+                                &method_name,
+                                scrypto_encode(&args)
+                                    .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                            )
+                        },
+                        version,
+                    )?
                 }
                 InstructionV1::CallRoyaltyMethod {
                     address,
@@ -324,15 +352,22 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
-                        api.call_module_method(
-                            address.as_node_id(),
-                            AttachedModuleId::Royalty,
-                            &method_name,
-                            scrypto_encode(&args)
-                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
-                        )
-                    })?
+                    handle_invocation(
+                        api,
+                        &mut processor,
+                        &mut worktop,
+                        args,
+                        |api, args| {
+                            api.call_module_method(
+                                address.as_node_id(),
+                                AttachedModuleId::Royalty,
+                                &method_name,
+                                scrypto_encode(&args)
+                                    .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                            )
+                        },
+                        version,
+                    )?
                 }
                 InstructionV1::CallMetadataMethod {
                     address,
@@ -340,15 +375,22 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
-                        api.call_module_method(
-                            address.as_node_id(),
-                            AttachedModuleId::Metadata,
-                            &method_name,
-                            scrypto_encode(&args)
-                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
-                        )
-                    })?
+                    handle_invocation(
+                        api,
+                        &mut processor,
+                        &mut worktop,
+                        args,
+                        |api, args| {
+                            api.call_module_method(
+                                address.as_node_id(),
+                                AttachedModuleId::Metadata,
+                                &method_name,
+                                scrypto_encode(&args)
+                                    .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                            )
+                        },
+                        version,
+                    )?
                 }
                 InstructionV1::CallRoleAssignmentMethod {
                     address,
@@ -356,28 +398,42 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
-                    handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
-                        api.call_module_method(
-                            address.as_node_id(),
-                            AttachedModuleId::RoleAssignment,
-                            &method_name,
-                            scrypto_encode(&args)
-                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
-                        )
-                    })?
+                    handle_invocation(
+                        api,
+                        &mut processor,
+                        &mut worktop,
+                        args,
+                        |api, args| {
+                            api.call_module_method(
+                                address.as_node_id(),
+                                AttachedModuleId::RoleAssignment,
+                                &method_name,
+                                scrypto_encode(&args)
+                                    .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                            )
+                        },
+                        version,
+                    )?
                 }
                 InstructionV1::CallDirectVaultMethod {
                     address,
                     method_name,
                     args,
-                } => handle_invocation(api, &mut processor, &mut worktop, args, |api, args| {
-                    api.call_direct_access_method(
-                        address.as_node_id(),
-                        &method_name,
-                        scrypto_encode(&args)
-                            .map_err(TransactionProcessorError::ArgsEncodeError)?,
-                    )
-                })?,
+                } => handle_invocation(
+                    api,
+                    &mut processor,
+                    &mut worktop,
+                    args,
+                    |api, args| {
+                        api.call_direct_access_method(
+                            address.as_node_id(),
+                            &method_name,
+                            scrypto_encode(&args)
+                                .map_err(TransactionProcessorError::ArgsEncodeError)?,
+                        )
+                    },
+                    version,
+                )?,
                 InstructionV1::DropNamedProofs => {
                     for (_, real_id) in processor.proof_mapping.drain(..) {
                         let proof = Proof(Own(real_id));

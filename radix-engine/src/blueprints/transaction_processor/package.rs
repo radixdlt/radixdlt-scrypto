@@ -16,6 +16,7 @@ use radix_engine_interface::schema::{
 
 use super::TransactionProcessorBlueprint;
 use super::TransactionProcessorRunInput;
+use super::TransactionProcessorV1MinorVersion;
 
 pub struct TransactionProcessorNativePackage;
 
@@ -78,6 +79,7 @@ impl TransactionProcessorNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,
+        version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -94,6 +96,7 @@ impl TransactionProcessorNativePackage {
                     input.global_address_reservations,
                     input.references,
                     input.blobs,
+                    version,
                     api,
                 )?;
 

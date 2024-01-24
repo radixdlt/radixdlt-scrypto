@@ -8,7 +8,9 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::test_utils::TestUtilsNativePackage;
-use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
+use crate::blueprints::transaction_processor::{
+    TransactionProcessorNativePackage, TransactionProcessorV1MinorVersion,
+};
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -138,7 +140,20 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         AccessControllerNativePackage::invoke_export(export_name, input, api)
                     }
                     TRANSACTION_PROCESSOR_V1_0_CODE_ID => {
-                        TransactionProcessorNativePackage::invoke_export(export_name, input, api)
+                        TransactionProcessorNativePackage::invoke_export(
+                            export_name,
+                            input,
+                            TransactionProcessorV1MinorVersion::Zero,
+                            api,
+                        )
+                    }
+                    TRANSACTION_PROCESSOR_V1_1_CODE_ID => {
+                        TransactionProcessorNativePackage::invoke_export(
+                            export_name,
+                            input,
+                            TransactionProcessorV1MinorVersion::One,
+                            api,
+                        )
                     }
                     METADATA_CODE_ID => {
                         MetadataNativePackage::invoke_export(export_name, input, api)
