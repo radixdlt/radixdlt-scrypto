@@ -423,12 +423,10 @@ impl FeeTable {
         // every multiple of 8
         let mut instructions_cnt = 0u32;
 
-        // P
         for s in sizes {
             instructions_cnt = add(add(instructions_cnt, mul(35, cast(*s))), 2620296);
         }
         let multiplier = cast(sizes.len() / 8);
-
         instructions_cnt = add(instructions_cnt, mul(multiplier, 16850000));
 
         // Pairing commit
@@ -436,6 +434,7 @@ impl FeeTable {
         instructions_cnt = add(
             instructions_cnt,
             match sizes.len() % 8 {
+                0 => 0,
                 1 => 3051556,
                 2 => 5020768,
                 3 => 6990111,
@@ -443,7 +442,6 @@ impl FeeTable {
                 5 => 10928798,
                 6 => 12898141,
                 7 => 14867484,
-                0 => 0,
                 _ => unreachable!(),
             },
         );
