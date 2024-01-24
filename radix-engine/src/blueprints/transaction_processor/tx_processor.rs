@@ -53,6 +53,7 @@ pub enum TransactionProcessorError {
     AuthZoneIsEmpty,
     InvocationOutputDecodeError(DecodeError),
     ArgsEncodeError(EncodeError),
+    TotalBlobSizeLimitExceeded,
 }
 
 impl From<TransactionProcessorError> for RuntimeError {
@@ -78,6 +79,8 @@ where
             worktop,
             processor,
             api,
+            current_total_size_of_blobs: 0,
+            max_total_size_of_blobs: usize::MAX,
         };
         transform(args, &mut processor_with_api)?
     };
@@ -642,6 +645,8 @@ struct TransactionProcessorWithApi<'a, 'p, 'w, Y: ClientApi<RuntimeError>> {
     worktop: &'w mut Worktop,
     processor: &'p mut TransactionProcessor,
     api: &'a mut Y,
+    current_total_size_of_blobs: usize,
+    max_total_size_of_blobs: usize,
 }
 
 impl<'a, 'p, 'w, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
@@ -680,6 +685,19 @@ impl<'a, 'p, 'w, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     }
 
     fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, RuntimeError> {
-        Ok(self.processor.get_blob(&b)?.to_vec())
+        let blob = self.processor.get_blob(&b)?;
+
+        if let Some(new_total) = self.current_total_size_of_blobs.checked_add(blob.len()) {
+            if new_total <= self.max_total_size_of_blobs {
+                self.current_total_size_of_blobs = new_total;
+                return Ok(blob.to_vec());
+            }
+        }
+
+        Err(RuntimeError::ApplicationError(
+            ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::TotalBlobSizeLimitExceeded,
+            ),
+        ))
     }
 }
