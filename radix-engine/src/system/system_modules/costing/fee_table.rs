@@ -461,14 +461,15 @@ impl FeeTable {
         // Based on  `test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing`
         // - For sizes less than 1024, instruction count remains the same.
         // - For greater sizes following linear equation might be applied:
-        //   instructions_cnt = 32.1717 * size + 624919.5254 * keys_cnt + 9058827.9112
+        //   instructions_cnt = 35.008 * size + 626055.4801 * keys_cnt + 15125588.5419
         //   (used: https://www.socscistatistics.com/tests/multipleregression/default.aspx)
         //   Lets round:
-        //    32.1717      -> 33
-        //    624919.5254  -> 624920
-        //    10096964.55  -> 10096965
+        //    35.008        -> 36
+        //    626055.4801   -> 626056
+        //    15125588.5419 -> 15200000  (increased slightly to get the positive difference between
+        //             calculated and measured number of instructions)
         let size = if size < 1024 { 1024 } else { cast(size) };
-        let instructions_cnt = add(add(mul(size, 33), mul(cast(keys_cnt), 624920)), 10096965);
+        let instructions_cnt = add(add(mul(size, 36), mul(cast(keys_cnt), 626056)), 15200000);
         // Convert to cost units
         instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
