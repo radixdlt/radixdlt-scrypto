@@ -387,7 +387,7 @@ impl FeeTable {
         // - For sizes less than 1024, instruction count remains the same.
         // - For greater sizes following linear equation might be applied:
         //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
-        //   instructions_cnt = 34.55672 * size + 10577803.13
+        //   instructions_cnt = 35.83223 * size + 15563087.39
         //   Lets round:
         //    35.83223       -> 36
         //    15563087.39    -> 15650000 (increased slightly to get the positive difference between
@@ -482,7 +482,7 @@ impl FeeTable {
         //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
         //   Lets round:
         //    879553.91557 -> 879554
-        //    567872.5895  -> 500000 (decrease b to get more accurate difference between calculated
+        //    567872.5895  -> 500000 (decreased to get more accurate difference between calculated
         //           and measured instructions)
         let instructions_cnt = sub(mul(cast(signatures_cnt), 879554), 500000);
         // Convert to cost units
