@@ -389,10 +389,11 @@ impl FeeTable {
         //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
         //   instructions_cnt = 34.55672 * size + 10577803.13
         //   Lets round:
-        //    34.55672       -> 35
-        //    10577803.13    -> 10577804
+        //    35.83223       -> 36
+        //    15563087.39    -> 15650000 (increased slightly to get the positive difference between
+        //             calculated and measured number of instructions)
         let size = if size < 1024 { 1024 } else { cast(size) };
-        let instructions_cnt = add(mul(size, 35), 10577804);
+        let instructions_cnt = add(mul(size, 36), 15650000);
         // Convert to cost units
         instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
