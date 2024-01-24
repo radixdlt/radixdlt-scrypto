@@ -399,16 +399,66 @@ impl FeeTable {
 
     #[inline]
     pub fn bls12381_v1_aggregate_verify_cost(&self, sizes: &[usize]) -> u32 {
-        // Below approach does not take aggregation into account.
-        // Summing costs pers size gives greater values.
-        // We've found somewhat difficult to find a proper and effective equation to estimate
-        // the instructions count collected with `test_crypto_scrypto_verify_bls12381_v1_costing`
-        // TODO: Find more adequate cost estimation
-        let mut cost: u32 = 0;
-        for size in sizes {
-            cost += self.bls12381_v1_verify_cost(*size);
+        #[inline]
+        fn pairing_aggregate_instructions(sizes: &[usize]) -> u32 {
+            // Following linerar equation might be applied:
+            //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+            //   instructions_cnt = 34.42199 * size + 2620295.64271
+            //   Lets round:
+            //    34.42199      -> 35
+            //    2620295.64271 -> 2620296
+            //
+            // Also observed that additional 16850000 instructions are performed
+            // every multiple of 7
+            let mut instructions = 0u32;
+
+            for s in sizes {
+                instructions = add(add(instructions, mul(35, cast(*s))), 2620296);
+            }
+            let multiplier = cast(sizes.len() / 7);
+
+            add(instructions, mul(multiplier, 16850000))
         }
-        cost
+
+        #[inline]
+        fn pairing_commit_instructions(sizes: &[usize]) -> u32 {
+            // Observed that number commit instructions repeats every multiple of 8
+            match sizes.len() % 8 {
+                1 => 3051556,
+                2 => 5020768,
+                3 => 6990111,
+                4 => 8959454,
+                5 => 10928798,
+                6 => 12898141,
+                7 => 14867484,
+                0 => 0,
+                _ => unreachable!(),
+            }
+        }
+
+        // Observed that aggregated verify might be broken down into:
+        // - steps depending on message size
+        //   - aggregation of pairings of each corresponding key and message pair
+        //   - commit each above aggregation
+        // - steps that do not depend on message size
+        //   - read signature from bytes: 281125 instructions
+        //   - signature validation: 583573 instructions
+        //   - aggregated pairing of signature to verify and initialization point: 3027639 instructions
+        //   - final verification: 4280077 instructions
+        //
+        // more details and data in https://docs.google.com/spreadsheets/d/1rV0KyB7UQrg2tOenbh2MQ1fo9MXwrwPFW4l0_CVO-6o/edit?usp=sharing
+        let mut instructions_cnt = add(
+            add(
+                pairing_aggregate_instructions(sizes),
+                pairing_commit_instructions(sizes),
+            ),
+            281125 + 583573 + 3027639 + 4280077,
+        );
+
+        // Observed that threaded takes ~1.21 more instructions than no threaded
+        instructions_cnt = mul(instructions_cnt / 100, 121);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
     #[inline]
