@@ -253,6 +253,11 @@ where
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
+        if self.protocol_updates.updated_transaction_processor {
+            let state_updates = generate_transaction_processor_v1_1_state_updates(&self.database);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            self.database.commit(&db_updates);
+        }
 
         // If a flash is specified execute it.
         let database_updates = self.flash_database.database_updates();
@@ -521,6 +526,7 @@ struct ProtocolUpdateOptIns {
     pub crypto_utils: bool,
     pub validator_fee_update: bool,
     pub updated_pools: bool,
+    pub updated_transaction_processor: bool,
 }
 
 impl Default for ProtocolUpdateOptIns {
@@ -530,6 +536,7 @@ impl Default for ProtocolUpdateOptIns {
             crypto_utils: true,
             validator_fee_update: true,
             updated_pools: true,
+            updated_transaction_processor: true,
         }
     }
 }

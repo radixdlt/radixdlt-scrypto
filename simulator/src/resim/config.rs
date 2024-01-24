@@ -70,6 +70,11 @@ impl SimulatorEnvironment {
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.db.commit(&db_updates);
         }
+        {
+            let state_updates = generate_transaction_processor_v1_1_state_updates(&self.db);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            self.db.commit(&db_updates);
+        }
     }
 }
 

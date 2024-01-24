@@ -137,7 +137,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     ACCESS_CONTROLLER_CODE_ID => {
                         AccessControllerNativePackage::invoke_export(export_name, input, api)
                     }
-                    TRANSACTION_PROCESSOR_CODE_ID => {
+                    TRANSACTION_PROCESSOR_V1_0_CODE_ID => {
                         TransactionProcessorNativePackage::invoke_export(export_name, input, api)
                     }
                     METADATA_CODE_ID => {

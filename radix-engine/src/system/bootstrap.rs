@@ -507,7 +507,7 @@ pub fn create_system_bootstrap_flash(
         (
             TRANSACTION_PROCESSOR_PACKAGE,
             TransactionProcessorNativePackage::definition(),
-            TRANSACTION_PROCESSOR_CODE_ID,
+            TRANSACTION_PROCESSOR_V1_0_CODE_ID,
             metadata_init! {
                 "name" => "Transaction Processor Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the processing of manifest instructions and transaction runtime.".to_owned(), locked;

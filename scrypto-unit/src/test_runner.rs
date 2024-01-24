@@ -351,6 +351,7 @@ pub struct TestRunnerBuilder<E, D> {
     with_seconds_precision_update: bool,
     with_crypto_utils_update: bool,
     with_pools_v1_1: bool,
+    with_transaction_processor_v1_1: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -364,6 +365,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             with_seconds_precision_update: true,
             with_crypto_utils_update: true,
             with_pools_v1_1: true,
+            with_transaction_processor_v1_1: true,
         }
     }
 }
@@ -384,6 +386,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_pools_v1_1: self.with_pools_v1_1,
+            with_transaction_processor_v1_1: self.with_transaction_processor_v1_1,
         }
     }
 
@@ -410,6 +413,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_pools_v1_1: self.with_pools_v1_1,
+            with_transaction_processor_v1_1: self.with_transaction_processor_v1_1,
         }
     }
 
@@ -423,6 +427,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_pools_v1_1: self.with_pools_v1_1,
+            with_transaction_processor_v1_1: self.with_transaction_processor_v1_1,
         }
     }
 
@@ -553,6 +558,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 
         if self.with_pools_v1_1 {
             let state_updates = generate_pools_v1_1_state_updates(&substate_db);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            substate_db.commit(&db_updates);
+        }
+
+        if self.with_transaction_processor_v1_1 {
+            let state_updates = generate_transaction_processor_v1_1_state_updates(&substate_db);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             substate_db.commit(&db_updates);
         }
