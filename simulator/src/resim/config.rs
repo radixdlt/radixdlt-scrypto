@@ -66,6 +66,11 @@ impl SimulatorEnvironment {
             self.db.commit(&db_updates);
         }
         {
+            let state_updates = generate_validator_fee_fix_state_updates(&self.db);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            self.db.commit(&db_updates);
+        }
+        {
             let state_updates = generate_pools_v1_1_state_updates(&self.db);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.db.commit(&db_updates);

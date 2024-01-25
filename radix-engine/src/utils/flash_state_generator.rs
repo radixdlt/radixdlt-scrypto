@@ -160,7 +160,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
         )
         .unwrap();
 
-    let code_vm_type_partition_num = reader
+    let vm_type_partition_num = reader
         .get_partition_of_collection(
             &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
@@ -168,7 +168,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
         )
         .unwrap();
 
-    let code_partition_num = reader
+    let original_code_partition_num = reader
         .get_partition_of_collection(
             &consensus_mgr_pkg_node_id,
             ObjectModuleId::Main,
@@ -195,12 +195,12 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
                             )
                         }
                     },
-                    code_vm_type_partition_num => PartitionStateUpdates::Delta {
+                    vm_type_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(new_vm_type_substate)
                         }
                     },
-                    code_partition_num => PartitionStateUpdates::Delta {
+                    original_code_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(new_code_substate)
                         }
@@ -284,7 +284,7 @@ pub fn generate_transaction_processor_v1_1_state_updates<S: SubstateDatabase>(
         )
         .unwrap();
 
-    let code_vm_type_partition_num = reader
+    let vm_type_partition_num = reader
         .get_partition_of_collection(
             &tx_processor_pkg_node_id,
             ObjectModuleId::Main,
@@ -292,7 +292,7 @@ pub fn generate_transaction_processor_v1_1_state_updates<S: SubstateDatabase>(
         )
         .unwrap();
 
-    let code_partition_num = reader
+    let original_code_partition_num = reader
         .get_partition_of_collection(
             &tx_processor_pkg_node_id,
             ObjectModuleId::Main,
@@ -311,12 +311,12 @@ pub fn generate_transaction_processor_v1_1_state_updates<S: SubstateDatabase>(
                             )
                         }
                     },
-                    code_vm_type_partition_num => PartitionStateUpdates::Delta {
+                    vm_type_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap()) => DatabaseUpdate::Set(new_vm_type_substate)
                         }
                     },
-                    code_partition_num => PartitionStateUpdates::Delta {
+                    original_code_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap()) => DatabaseUpdate::Set(new_code_substate)
                         }
@@ -410,7 +410,7 @@ pub fn generate_pools_v1_1_state_updates<S: SubstateDatabase>(db: &S) -> StateUp
         )
         .unwrap();
 
-    let code_vm_type_partition_number = reader
+    let vm_type_partition_number = reader
         .get_partition_of_collection(
             &pool_package_node_id,
             ObjectModuleId::Main,
@@ -438,7 +438,7 @@ pub fn generate_pools_v1_1_state_updates<S: SubstateDatabase>(db: &S) -> StateUp
                                 => DatabaseUpdate::Set(scrypto_encode(&new_code_substate).unwrap()),
                         }
                     },
-                    code_vm_type_partition_number => PartitionStateUpdates::Delta {
+                    vm_type_partition_number => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap())
                                 => DatabaseUpdate::Delete,

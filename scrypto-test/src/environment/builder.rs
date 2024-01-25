@@ -187,8 +187,13 @@ where
         self
     }
 
-    pub fn with_updated_pools_protocol_update(mut self) -> Self {
-        self.protocol_updates.updated_pools = true;
+    pub fn with_pools_v1_1_protocol_update(mut self) -> Self {
+        self.protocol_updates.pools_v1_1 = true;
+        self
+    }
+
+    pub fn with_transaction_processor_v1_1_protocol_update(mut self) -> Self {
+        self.protocol_updates.transaction_processor_v1_1 = true;
         self
     }
 
@@ -202,8 +207,13 @@ where
         self
     }
 
-    pub fn without_updated_pools_protocol_update(mut self) -> Self {
-        self.protocol_updates.updated_pools = false;
+    pub fn without_pools_v1_1_protocol_update(mut self) -> Self {
+        self.protocol_updates.pools_v1_1 = false;
+        self
+    }
+
+    pub fn without_transaction_processor_v1_1_protocol_update(mut self) -> Self {
+        self.protocol_updates.transaction_processor_v1_1 = false;
         self
     }
 
@@ -248,12 +258,12 @@ where
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
-        if self.protocol_updates.updated_pools {
+        if self.protocol_updates.pools_v1_1 {
             let state_updates = generate_pools_v1_1_state_updates(&self.database);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
-        if self.protocol_updates.updated_transaction_processor {
+        if self.protocol_updates.transaction_processor_v1_1 {
             let state_updates = generate_transaction_processor_v1_1_state_updates(&self.database);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
@@ -525,8 +535,8 @@ struct ProtocolUpdateOptIns {
     pub consensus_manager_seconds_precision: bool,
     pub crypto_utils: bool,
     pub validator_fee_update: bool,
-    pub updated_pools: bool,
-    pub updated_transaction_processor: bool,
+    pub pools_v1_1: bool,
+    pub transaction_processor_v1_1: bool,
 }
 
 impl Default for ProtocolUpdateOptIns {
@@ -535,8 +545,8 @@ impl Default for ProtocolUpdateOptIns {
             consensus_manager_seconds_precision: true,
             crypto_utils: true,
             validator_fee_update: true,
-            updated_pools: true,
-            updated_transaction_processor: true,
+            pools_v1_1: true,
+            transaction_processor_v1_1: true,
         }
     }
 }
