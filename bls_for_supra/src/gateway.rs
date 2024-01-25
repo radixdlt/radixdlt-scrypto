@@ -2,20 +2,20 @@ use reqwest::{blocking, header::*};
 use serde::{Deserialize, Serialize};
 use transaction::prelude::*;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GatewayApiClient {
     url: String,
     client: blocking::Client,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ReleaseInfo {
     pub release_version: String,
     pub open_api_schema_version: String,
     pub image_tag: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LedgerState {
     pub network: String,
     pub state_version: u32,
@@ -24,18 +24,26 @@ pub struct LedgerState {
     pub round: u64,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GatewayStatus {
     pub ledger_state: LedgerState,
     pub release_info: ReleaseInfo,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ErrorDetails {
+    pub r#type: String,
+    pub address: Option<String>,
+    pub exception: Option<String>,
+    pub cause: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TransactionSubmit {
     pub duplicate: bool,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct KnownPayloads {
     pub payload_hash: String,
     pub status: String,
@@ -45,28 +53,41 @@ pub struct KnownPayloads {
     pub handling_status_reason: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct TransactionError {
+    // response 4xx
+    pub message: String,
+    pub code: u32,
+    pub details: ErrorDetails,
+    pub trace_id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TransactionStatus {
+    // transaction status 200
     pub status: String,
     pub intent_status: String,
     pub ledger_state: LedgerState,
     pub intent_status_description: String,
     pub known_payloads: Vec<KnownPayloads>,
+    pub committed_state_version: Option<u32>,
+    pub error_message: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TransactionOutput {
     pub hex: String,
     pub programmatic_json: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TransactionReceipt {
     pub status: String,
-    pub output: Vec<TransactionOutput>,
+    pub output: Option<Vec<TransactionOutput>>,
+    pub error_message: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TransactionDetailsStatus {
     pub transaction_status: String,
     pub state_version: u32,
@@ -87,14 +108,17 @@ pub struct TransactionDetails {
 }
 
 impl TransactionDetails {
-    pub fn get_output(&self, idx: usize) -> String {
+    pub fn get_output(&self, idx: usize) -> Option<String> {
         self.transaction
             .receipt
             .output
+            .clone()?
             .get(idx)
-            .unwrap()
-            .hex
-            .clone()
+            .map(|t| t.hex.clone())
+    }
+
+    pub fn get_error(&self) -> Option<String> {
+        self.transaction.receipt.error_message.clone()
     }
 }
 
@@ -125,7 +149,10 @@ impl GatewayApiClient {
         self.gateway_status().ledger_state.epoch
     }
 
-    pub fn transaction_submit(&self, transaction: NotarizedTransactionV1) -> TransactionSubmit {
+    pub fn transaction_submit(
+        &self,
+        transaction: NotarizedTransactionV1,
+    ) -> Result<TransactionSubmit, TransactionError> {
         let notarized_transaction_bytes = transaction.to_payload_bytes().unwrap();
         let notarized_transaction_hex = hex::encode(&notarized_transaction_bytes);
 
@@ -142,11 +169,15 @@ impl GatewayApiClient {
             .unwrap()
             .text()
             .unwrap();
-        let status: TransactionSubmit = serde_json::from_str(&resp).unwrap();
-        status
+
+        serde_json::from_str::<TransactionSubmit>(&resp)
+            .map_err(|_| serde_json::from_str::<TransactionError>(&resp).unwrap())
     }
 
-    pub fn transaction_status(&self, intent_hash: &str) -> TransactionStatus {
+    pub fn transaction_status(
+        &self,
+        intent_hash: &str,
+    ) -> Result<TransactionStatus, TransactionError> {
         let mut map = HashMap::new();
         map.insert("intent_hash", intent_hash);
 
@@ -161,11 +192,14 @@ impl GatewayApiClient {
             .text()
             .unwrap();
 
-        let status: TransactionStatus = serde_json::from_str(&resp).unwrap();
-        status
+        serde_json::from_str::<TransactionStatus>(&resp)
+            .map_err(|_| serde_json::from_str::<TransactionError>(&resp).unwrap())
     }
 
-    pub fn transaction_details(&self, intent_hash: &str) -> TransactionDetails {
+    pub fn transaction_details(
+        &self,
+        intent_hash: &str,
+    ) -> Result<TransactionDetails, TransactionError> {
         let mut map = HashMap::new();
         map.insert("intent_hash", intent_hash);
 
@@ -179,7 +213,8 @@ impl GatewayApiClient {
             .unwrap()
             .text()
             .unwrap();
-        let status: TransactionDetails = serde_json::from_str(&resp).unwrap();
-        status
+
+        serde_json::from_str::<TransactionDetails>(&resp)
+            .map_err(|_| serde_json::from_str::<TransactionError>(&resp).unwrap())
     }
 }
