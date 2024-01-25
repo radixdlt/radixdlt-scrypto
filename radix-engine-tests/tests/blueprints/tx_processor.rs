@@ -18,7 +18,7 @@ fn test_blob_replacement_beyond_blob_size_limit() {
     let package_address = publish_test_package(&mut test_runner);
 
     // Act
-    let blob = vec![0u8; 512 * 1024];
+    let blob = vec![0u8; 1024];
     let blob_hash = hash(&blob);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -26,7 +26,7 @@ fn test_blob_replacement_beyond_blob_size_limit() {
             package_address,
             "Test",
             "f",
-            ((0..MAX_TOTAL_BLOB_SIZE_PER_INVOCATION / blob.len() + 1)
+            ((0..MAX_TOTAL_BLOB_SIZE_PER_INVOCATION / blob.len() + 10)
                 .map(|_| ManifestBlobRef(blob_hash.0))
                 .collect::<Vec<ManifestBlobRef>>(),),
         )
@@ -55,7 +55,7 @@ fn test_blob_replacement_within_blob_size_limit() {
     let package_address = publish_test_package(&mut test_runner);
 
     // Act
-    let blob = vec![0u8; 512 * 1024];
+    let blob = vec![0u8; 1024];
     let blob_hash = hash(&blob);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -63,7 +63,7 @@ fn test_blob_replacement_within_blob_size_limit() {
             package_address,
             "Test",
             "f",
-            ((0..MAX_TOTAL_BLOB_SIZE_PER_INVOCATION / blob.len())
+            ((0..MAX_TOTAL_BLOB_SIZE_PER_INVOCATION / blob.len() - 10)
                 .map(|_| ManifestBlobRef(blob_hash.0))
                 .collect::<Vec<ManifestBlobRef>>(),),
         )
@@ -71,7 +71,7 @@ fn test_blob_replacement_within_blob_size_limit() {
             package_address,
             "Test",
             "f",
-            ((0..MAX_TOTAL_BLOB_SIZE_PER_INVOCATION / blob.len())
+            ((0..MAX_TOTAL_BLOB_SIZE_PER_INVOCATION / blob.len() - 10)
                 .map(|_| ManifestBlobRef(blob_hash.0))
                 .collect::<Vec<ManifestBlobRef>>(),),
         )

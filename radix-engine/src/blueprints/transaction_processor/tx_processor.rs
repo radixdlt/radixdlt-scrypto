@@ -22,7 +22,7 @@ use transaction::data::TransformHandler;
 use transaction::model::*;
 use transaction::validation::*;
 
-pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 512 * 1024;
+pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 1024 * 1024;
 
 /// The minor version of the TransactionProcessor V1 package
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Sbor)]
