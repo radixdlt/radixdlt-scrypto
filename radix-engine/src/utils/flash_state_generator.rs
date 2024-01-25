@@ -229,13 +229,15 @@ pub fn generate_transaction_processor_v1_1_state_updates<S: SubstateDatabase>(
     };
 
     // Generate the new code substates
-    let (new_code_substate, new_vm_type_substate, new_code_hash) = {
-        let original_code = TRANSACTION_PROCESSOR_V1_1_CODE_ID.to_be_bytes().to_vec();
+    let (new_code_substate, new_vm_type_substate, old_code_hash, new_code_hash) = {
+        let old_code = TRANSACTION_PROCESSOR_V1_0_CODE_ID.to_be_bytes().to_vec();
+        let old_code_hash = CodeHash::from_hash(hash(&old_code));
 
-        let code_hash = CodeHash::from_hash(hash(&original_code));
-        let versioned_code = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
-            code: original_code,
-        });
+        let new_code = TRANSACTION_PROCESSOR_V1_1_CODE_ID.to_be_bytes().to_vec();
+        let new_code_hash = CodeHash::from_hash(hash(&new_code));
+
+        let versioned_code =
+            VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 { code: new_code });
         let code_payload = versioned_code.into_payload();
         let code_substate = code_payload.into_locked_substate();
         let vm_type_substate = PackageCodeVmTypeV1 {
@@ -246,7 +248,8 @@ pub fn generate_transaction_processor_v1_1_state_updates<S: SubstateDatabase>(
         (
             scrypto_encode(&code_substate).unwrap(),
             scrypto_encode(&vm_type_substate).unwrap(),
-            code_hash,
+            old_code_hash,
+            new_code_hash,
         )
     };
 
@@ -313,11 +316,13 @@ pub fn generate_transaction_processor_v1_1_state_updates<S: SubstateDatabase>(
                     },
                     vm_type_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap()) => DatabaseUpdate::Delete,
                             SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap()) => DatabaseUpdate::Set(new_vm_type_substate)
                         }
                     },
                     original_code_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap()) => DatabaseUpdate::Delete,
                             SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap()) => DatabaseUpdate::Set(new_code_substate)
                         }
                     },
