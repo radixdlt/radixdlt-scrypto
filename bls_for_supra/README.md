@@ -3,7 +3,7 @@
   The works with Enkinet test network. It communicates with it via Gateway HTTP REST API.
 
   The tool by default uses CryptoScrypto package published at address:
-    package_tdx_21_1pkt7zdllsneytdc9g60xn9jjhhwx7jaqxmeh58l4dwyx7rt5z9428f
+    package_tdx_21_1p5hg2nmhxthzz8hdhqaclx376pq77yv8zfagq6h9hxk6tw5sdmx090
 
 
   Enkinet network:
@@ -46,6 +46,13 @@ cargo run -- bls-verify
 - help
 ```
 cargo run -- bls-verify --help
+```
+
+## Other BLS related methods
+```
+cargo run -- bls-aggregate-verify
+cargo run -- bls-fast-aggregate-verify
+cargo run -- bls-signature-aggregate
 ```
 
 ## Publish package
