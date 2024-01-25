@@ -13,7 +13,7 @@ jobs:
     outputs:
       tag: ${{ steps.setup_tags.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4.0.0
+      - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
       - id: setup_tags

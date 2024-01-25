@@ -4,7 +4,7 @@ use ::secp256k1::{All, Message, PublicKey, Secp256k1, SecretKey};
 use super::Secp256k1Signature;
 
 lazy_static::lazy_static! {
-    pub static ref SECP256K1_CTX: Secp256k1<All> = secp256k1::Secp256k1::new();
+    pub(crate) static ref SECP256K1_CTX: Secp256k1<All> = secp256k1::Secp256k1::new();
 }
 
 pub struct Secp256k1PrivateKey(SecretKey);

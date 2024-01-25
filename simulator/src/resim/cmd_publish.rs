@@ -83,12 +83,7 @@ impl Publish {
         .map_err(Error::SborDecodeError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-            let native_vm = DefaultNativeVm::new();
-            let vm = Vm::new(&scrypto_vm, native_vm);
-            let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-                .bootstrap_test_default();
+            let SimulatorEnvironment { mut db, .. } = SimulatorEnvironment::new()?;
 
             let node_id: NodeId = package_address.0.into();
 
@@ -145,7 +140,7 @@ impl Publish {
             let mut vm_type_updates = index_map_new();
             let mut original_code_updates = index_map_new();
             let mut instrumented_code_updates = index_map_new();
-            let instrumented_code = WasmValidator::default()
+            let instrumented_code = ScryptoV1WasmValidator::new(0u64)
                 .validate(&code, package_definition.blueprints.values())
                 .map_err(Error::InvalidPackage)?
                 .0;
@@ -309,7 +304,7 @@ impl Publish {
                 instrumented_code_partition_key => instrumented_code_updates,
             );
 
-            substate_db.commit(&DatabaseUpdates::from_delta_maps(database_updates));
+            db.commit(&DatabaseUpdates::from_delta_maps(database_updates));
 
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {

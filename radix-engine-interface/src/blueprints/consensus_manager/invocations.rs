@@ -203,16 +203,33 @@ pub struct ConsensusManagerStartInput {}
 
 pub type ConsensusManagerStartOutput = ();
 
-#[derive(Sbor, Copy, Clone, Debug, Eq, PartialEq)]
-pub enum TimePrecision {
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Sbor)]
+#[sbor(type_name = "TimePrecision")]
+pub enum TimePrecisionV1 {
     Minute,
 }
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Sbor)]
+#[sbor(type_name = "TimePrecision")]
+pub enum TimePrecisionV2 {
+    Minute,
+    Second,
+}
+
+pub type TimePrecision = TimePrecisionV2;
 
 pub const CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT: &str = "get_current_time";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct ConsensusManagerGetCurrentTimeInput {
-    pub precision: TimePrecision,
+#[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
+pub struct ConsensusManagerGetCurrentTimeInputV1 {
+    pub precision: TimePrecisionV1,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+#[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
+pub struct ConsensusManagerGetCurrentTimeInputV2 {
+    pub precision: TimePrecisionV2,
 }
 
 pub type ConsensusManagerGetCurrentTimeOutput = Instant;
@@ -220,9 +237,18 @@ pub type ConsensusManagerGetCurrentTimeOutput = Instant;
 pub const CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT: &str = "compare_current_time";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ConsensusManagerCompareCurrentTimeInput {
+#[sbor(type_name = "ConsensusManagerCompareCurrentTimeInput")]
+pub struct ConsensusManagerCompareCurrentTimeInputV1 {
     pub instant: Instant,
-    pub precision: TimePrecision,
+    pub precision: TimePrecisionV1,
+    pub operator: TimeComparisonOperator,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[sbor(type_name = "ConsensusManagerCompareCurrentTimeInput")]
+pub struct ConsensusManagerCompareCurrentTimeInputV2 {
+    pub instant: Instant,
+    pub precision: TimePrecisionV2,
     pub operator: TimeComparisonOperator,
 }
 
@@ -335,38 +361,55 @@ pub struct ValidatorStakeAsOwnerInput {
     pub stake: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorStakeAsOwnerManifestInput {
+    pub stake: ManifestBucket,
+}
+
 pub type ValidatorStakeAsOwnerOutput = Bucket;
 
 pub const VALIDATOR_STAKE_IDENT: &str = "stake";
-
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorStakeInput {
     pub stake: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorStakeManifestInput {
+    pub stake: ManifestBucket,
+}
+
 pub type ValidatorStakeOutput = Bucket;
 
 pub const VALIDATOR_UNSTAKE_IDENT: &str = "unstake";
-
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorUnstakeInput {
     pub stake_unit_bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorUnstakeManifestInput {
+    pub stake_unit_bucket: ManifestBucket,
+}
+
 pub type ValidatorUnstakeOutput = Bucket;
 
 pub const VALIDATOR_CLAIM_XRD_IDENT: &str = "claim_xrd";
-
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorClaimXrdInput {
     pub bucket: Bucket,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorClaimXrdManifestInput {
+    pub bucket: ManifestBucket,
 }
 
 pub type ValidatorClaimXrdOutput = Bucket;
 
 pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ValidatorUpdateKeyInput {
     pub key: Secp256k1PublicKey,
 }
@@ -375,7 +418,7 @@ pub type ValidatorUpdateKeyOutput = ();
 
 pub const VALIDATOR_UPDATE_FEE_IDENT: &str = "update_fee";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ValidatorUpdateFeeInput {
     /// A fraction of the effective emission amount which gets transferred to the validator's owner.
     /// Must be within `[0.0, 1.0]`.
@@ -475,11 +518,16 @@ pub struct ValidatorLockOwnerStakeUnitsInput {
     pub stake_unit_bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorLockOwnerStakeUnitsManifestInput {
+    pub stake_unit_bucket: ManifestBucket,
+}
+
 pub type ValidatorLockOwnerStakeUnitsOutput = ();
 
 pub const VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT: &str = "start_unlock_owner_stake_units";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ValidatorStartUnlockOwnerStakeUnitsInput {
     pub requested_stake_unit_amount: Decimal,
 }
@@ -488,7 +536,7 @@ pub type ValidatorStartUnlockOwnerStakeUnitsOutput = ();
 
 pub const VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT: &str = "finish_unlock_owner_stake_units";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ValidatorFinishUnlockOwnerStakeUnitsInput {}
 
 pub type ValidatorFinishUnlockOwnerStakeUnitsOutput = Bucket;

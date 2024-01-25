@@ -1,6 +1,5 @@
 use radix_engine::errors::{SystemError, SystemModuleError};
 use radix_engine::{
-    blueprints::pool::multi_resource_pool::*,
     errors::{ApplicationError, RuntimeError},
     transaction::{BalanceChange, TransactionReceipt},
     types::*,
@@ -11,6 +10,10 @@ use radix_engine_interface::blueprints::pool::*;
 use scrypto::prelude::Pow;
 use scrypto_unit::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
+
+use radix_engine::blueprints::pool::v1::constants::*;
+use radix_engine::blueprints::pool::v1::errors::multi_resource_pool::Error as MultiResourcePoolError;
+use radix_engine::blueprints::pool::v1::events::multi_resource_pool::*;
 
 #[test]
 fn multi_resource_pool_can_be_instantiated() {
@@ -157,7 +160,7 @@ fn contributing_provides_expected_amount_of_pool_units1() {
         test_runner.pool_resources[1] => dec!("0"),
         test_runner.pool_resources[2] => dec!("0")
     );
-    let expected_pool_units = dec!("1000");
+    let expected_pool_units = dec!("100");
 
     // Act
     let receipt = test_runner.contribute(contributions, true);
@@ -181,7 +184,7 @@ fn contributing_provides_expected_amount_of_pool_units1() {
         account_balance_changes
             .get(&test_runner.pool_unit_resource_address)
             .cloned(),
-        Some(BalanceChange::Fungible(expected_pool_units.into()))
+        Some(BalanceChange::Fungible(expected_pool_units))
     );
 }
 
@@ -212,7 +215,7 @@ fn contributing_provides_expected_amount_of_pool_units2() {
         test_runner.pool_resources[1] => dec!("0"),
         test_runner.pool_resources[2] => dec!("0")
     );
-    let expected_pool_units = dec!("1000");
+    let expected_pool_units = dec!("100");
 
     // Act
     let receipt = test_runner.contribute(contributions, true);
@@ -236,7 +239,7 @@ fn contributing_provides_expected_amount_of_pool_units2() {
         account_balance_changes
             .get(&test_runner.pool_unit_resource_address)
             .cloned(),
-        Some(BalanceChange::Fungible(expected_pool_units.into()))
+        Some(BalanceChange::Fungible(expected_pool_units))
     );
 }
 
@@ -267,7 +270,7 @@ fn contributing_provides_expected_amount_of_pool_units3() {
         test_runner.pool_resources[1] => dec!("0"),
         test_runner.pool_resources[2] => dec!("10")
     );
-    let expected_pool_units = dec!("900");
+    let expected_pool_units = dec!("90");
 
     // Act
     let receipt = test_runner.contribute(contributions, true);
@@ -291,7 +294,7 @@ fn contributing_provides_expected_amount_of_pool_units3() {
         account_balance_changes
             .get(&test_runner.pool_unit_resource_address)
             .cloned(),
-        Some(BalanceChange::Fungible(expected_pool_units.into()))
+        Some(BalanceChange::Fungible(expected_pool_units))
     );
 }
 
@@ -322,7 +325,7 @@ fn contributing_provides_expected_amount_of_pool_units4() {
         test_runner.pool_resources[1] => dec!("10"),
         test_runner.pool_resources[2] => dec!("0")
     );
-    let expected_pool_units = dec!("800");
+    let expected_pool_units = dec!("80");
 
     // Act
     let receipt = test_runner.contribute(contributions, true);
@@ -346,7 +349,7 @@ fn contributing_provides_expected_amount_of_pool_units4() {
         account_balance_changes
             .get(&test_runner.pool_unit_resource_address)
             .cloned(),
-        Some(BalanceChange::Fungible(expected_pool_units.into()))
+        Some(BalanceChange::Fungible(expected_pool_units))
     );
 }
 
@@ -763,14 +766,7 @@ fn contribution_of_large_values_should_not_cause_panic() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::MultiResourcePoolError(
-                MultiResourcePoolError::DecimalOverflowError
-            ))
-        )
-    });
+    receipt.expect_commit_success();
 }
 
 #[test]

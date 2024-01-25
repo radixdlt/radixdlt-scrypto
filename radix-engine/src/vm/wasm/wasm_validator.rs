@@ -2,7 +2,9 @@ use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 
-pub struct WasmValidator {
+pub const SCRYPTO_V1_LATEST_MINOR_VERSION: u64 = 1u64;
+
+pub struct ScryptoV1WasmValidator {
     pub max_memory_size_in_pages: u32,
     pub max_initial_table_size: u32,
     pub max_number_of_br_table_targets: u32,
@@ -11,9 +13,30 @@ pub struct WasmValidator {
     pub max_number_of_function_locals: u32,
     pub max_number_of_globals: u32,
     pub instrumenter_config: WasmValidatorConfigV1,
+    pub minor_version: u64,
 }
 
-impl Default for WasmValidator {
+impl ScryptoV1WasmValidator {
+    pub fn new(minor_version: u64) -> Self {
+        if minor_version > SCRYPTO_V1_LATEST_MINOR_VERSION {
+            panic!("Invalid minor version: {}", minor_version);
+        }
+
+        Self {
+            max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
+            max_initial_table_size: MAX_INITIAL_TABLE_SIZE,
+            max_number_of_br_table_targets: MAX_NUMBER_OF_BR_TABLE_TARGETS,
+            max_number_of_functions: MAX_NUMBER_OF_FUNCTIONS,
+            max_number_of_function_params: MAX_NUMBER_OF_FUNCTION_PARAMS,
+            max_number_of_function_locals: MAX_NUMBER_OF_FUNCTION_LOCALS,
+            max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
+            instrumenter_config: WasmValidatorConfigV1::new(),
+            minor_version,
+        }
+    }
+}
+
+impl Default for ScryptoV1WasmValidator {
     fn default() -> Self {
         Self {
             max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
@@ -24,11 +47,12 @@ impl Default for WasmValidator {
             max_number_of_function_locals: MAX_NUMBER_OF_FUNCTION_LOCALS,
             max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
             instrumenter_config: WasmValidatorConfigV1::new(),
+            minor_version: SCRYPTO_V1_LATEST_MINOR_VERSION,
         }
     }
 }
 
-impl WasmValidator {
+impl ScryptoV1WasmValidator {
     pub fn validate<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
         &self,
         code: &[u8],
@@ -36,7 +60,7 @@ impl WasmValidator {
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         WasmModule::init(code)?
             .enforce_no_start_function()?
-            .enforce_import_limit()?
+            .enforce_import_constraints(self.minor_version)?
             .enforce_export_names()?
             .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?
             .enforce_table_limit(self.max_initial_table_size)?
@@ -61,7 +85,7 @@ mod tests {
     use radix_engine_interface::blueprints::package::PackageDefinition;
     use wabt::{wasm2wat, wat2wasm};
 
-    use super::WasmValidator;
+    use super::ScryptoV1WasmValidator;
 
     #[test]
     fn test_validate() {
@@ -99,7 +123,7 @@ mod tests {
         .unwrap();
 
         let instrumented_code = wasm2wat(
-            WasmValidator::default()
+            ScryptoV1WasmValidator::new(0u64)
                 .validate(
                     &code,
                     PackageDefinition::new_single_function_test_definition("Test", "f")

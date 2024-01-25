@@ -41,6 +41,48 @@ mod tests {
     use super::*;
     use sbor::rust::str::FromStr;
 
+    fn get_aggregate_verify_test_data(
+        cnt: u32,
+        msg_cnt: u32,
+        msg_size: usize,
+    ) -> (
+        Vec<Bls12381G1PrivateKey>,
+        Vec<Bls12381G1PublicKey>,
+        Vec<Vec<u8>>,
+        Vec<Bls12381G2Signature>,
+    ) {
+        let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
+            .map(|i| Bls12381G1PrivateKey::from_u64(i.into()).unwrap())
+            .collect();
+
+        let (msgs, sigs): (Vec<Vec<u8>>, Vec<Bls12381G2Signature>) = if msg_cnt == cnt {
+            let msgs: Vec<Vec<u8>> = (1..(cnt + 1))
+                .map(|i| {
+                    let u: u8 = (i % u8::MAX as u32) as u8;
+                    vec![u; msg_size]
+                })
+                .collect();
+            let sigs: Vec<Bls12381G2Signature> = sks
+                .iter()
+                .zip(msgs.clone())
+                .map(|(sk, msg)| sk.sign_v1(&msg))
+                .collect();
+            (msgs, sigs)
+        } else if msg_cnt == 1 {
+            let msgs: Vec<Vec<u8>> = vec![vec![(msg_size % u8::MAX as usize) as u8; msg_size]];
+
+            let sigs: Vec<Bls12381G2Signature> =
+                sks.iter().map(|sk| sk.sign_v1(&msgs[0])).collect();
+            (msgs, sigs)
+        } else {
+            panic!("msg_cnt {} might be equal to cnt {} or 1", msg_cnt, cnt);
+        };
+
+        let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+
+        (sks, pks, msgs, sigs)
+    }
+
     #[test]
     fn sign_and_verify() {
         let test_sk = "408157791befddd702672dcfcfc99da3512f9c0ea818890fcb6ab749580ef2cf";
@@ -79,5 +121,100 @@ mod tests {
         assert_eq!(sk.public_key(), pk);
         assert_eq!(sk.sign_v1(&test_message_hash), sig);
         assert!(verify_bls12381_v1(&test_message_hash, &pk, &sig));
+    }
+
+    #[test]
+    fn sign_and_verify_aggregated_multiple_messages() {
+        let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10, 10);
+
+        // Aggregate the signature
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+        let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
+            pks.iter().zip(msgs).map(|(pk, sk)| (*pk, sk)).collect();
+
+        // Verify the messages against public keys and aggregated signature
+        assert!(aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig));
+    }
+
+    #[test]
+    fn sign_and_verify_aggregated_single_message() {
+        let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(1, 1, 10);
+
+        // Aggregate the signature (in fact it does not make sense to aggregate one signature)
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+        // Aggregated signature of one signature must be the same
+        assert_eq!(agg_sig, sigs[0]);
+
+        let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
+            pks.iter().zip(msgs).map(|(pk, sk)| (*pk, sk)).collect();
+
+        // Aggregate verify a single message over a single key and aggregated signature
+        assert!(aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig));
+    }
+
+    #[test]
+    fn sign_and_verify_aggregated_reverse_order() {
+        let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10, 10);
+
+        // Aggregate the signature
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+        let mut msgs_rev = msgs.clone();
+        msgs_rev.reverse();
+
+        let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
+            pks.iter().zip(msgs_rev).map(|(pk, sk)| (*pk, sk)).collect();
+
+        // Verify the messages in reversed order against public keys and aggregated signature
+        assert_eq!(
+            aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig),
+            false
+        );
+    }
+
+    #[test]
+    fn sign_and_verify_aggregated_missing_message() {
+        let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10, 10);
+
+        // Aggregate the signature
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+        // Skip the last key and message tuple
+        let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> = pks
+            .iter()
+            .zip(msgs)
+            .take(9)
+            .map(|(pk, sk)| (*pk, sk))
+            .collect();
+
+        // Verify the incomplete messages against public keys and aggregated
+        // signature from all messages
+        assert_eq!(
+            aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig),
+            false
+        );
+
+        // Aggregate the signatures from incomplete messages
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs[0..9]).unwrap();
+        // Verify the incomplete messages against public keys and aggregated
+        // signature from incomplete messages
+        assert!(aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig));
+    }
+
+    #[test]
+    fn sign_and_verify_fast_aggregated() {
+        let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 1, 10);
+
+        // Aggregate the signature
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+
+        // Verify the message against public keys and aggregated signature
+        assert!(fast_aggregate_verify_bls12381_v1(
+            msgs[0].as_slice(),
+            &pks,
+            &agg_sig
+        ));
     }
 }

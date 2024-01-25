@@ -379,11 +379,6 @@ create_well_known_lookup!(
             MISC_TYPES_START + 7,
             named_transparent("Origin", string_type_data(),)
         ),
-        (
-            HASH,
-            MISC_TYPES_START + 8,
-            named_transparent("Hash", bytes_fixed_length_type_data(Hash::LENGTH),)
-        ),
         // Crypto-related types from CRYPTO_TYPES_START
         (
             PUBLIC_KEY,
@@ -410,14 +405,6 @@ create_well_known_lookup!(
             named_transparent(
                 "Ed25519PublicKey",
                 bytes_fixed_length_type_data(Ed25519PublicKey::LENGTH),
-            )
-        ),
-        (
-            BLS12381G1_PUBLIC_KEY,
-            CRYPTO_TYPES_START + 3,
-            named_transparent(
-                "Bls12381G1PublicKey",
-                bytes_fixed_length_type_data(Bls12381G1PublicKey::LENGTH),
             )
         ),
         (
@@ -448,14 +435,6 @@ create_well_known_lookup!(
             named_transparent(
                 "Ed25519PublicKeyHash",
                 bytes_fixed_length_type_data(Ed25519PublicKeyHash::LENGTH),
-            )
-        ),
-        (
-            BLS12381G2_SIGNATURE,
-            CRYPTO_TYPES_START + 12,
-            named_transparent(
-                "Bls12381G2Signature",
-                bytes_fixed_length_type_data(Bls12381G2Signature::LENGTH),
             )
         ),
         // ROLE ASSIGNMENT TYPES
@@ -642,10 +621,6 @@ mod tests {
             Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
         );
         test_equivalence(
-            BLS12381G1_PUBLIC_KEY_TYPE,
-            Bls12381G1PublicKey([0; Bls12381G1PublicKey::LENGTH]),
-        );
-        test_equivalence(
             PUBLIC_KEY_HASH_TYPE,
             PublicKeyHash::Ed25519(Ed25519PublicKeyHash([0; Ed25519PublicKeyHash::LENGTH])),
         );
@@ -660,10 +635,6 @@ mod tests {
         test_equivalence(
             SECP256K1_PUBLIC_KEY_HASH_TYPE,
             Secp256k1PublicKeyHash([0; Secp256k1PublicKeyHash::LENGTH]),
-        );
-        test_equivalence(
-            BLS12381G2_SIGNATURE_TYPE,
-            Bls12381G2Signature([0; Bls12381G2Signature::LENGTH]),
         );
     }
 

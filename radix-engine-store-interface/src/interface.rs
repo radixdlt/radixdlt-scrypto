@@ -1,6 +1,5 @@
 use radix_engine_common::Sbor;
 use utils::prelude::index_map_new;
-use utils::prelude::vec;
 use utils::rust::boxed::Box;
 use utils::rust::collections::IndexMap;
 use utils::rust::vec::Vec;
@@ -17,24 +16,6 @@ pub type DbPartitionNum = u8;
 pub struct DbPartitionKey {
     pub node_key: DbNodeKey,
     pub partition_num: DbPartitionNum,
-}
-
-impl DbPartitionKey {
-    /// Calculates a hypothetical "next partition" key in the database.
-    /// This method is suitable for constructing an open right bound of a database key range; the
-    /// partition of the returned key may in practice not even exist in the database.
-    pub fn next(&self) -> Self {
-        self.partition_num
-            .checked_add(1)
-            .map(|next_partition_num| DbPartitionKey {
-                node_key: self.node_key.clone(),
-                partition_num: next_partition_num,
-            })
-            .unwrap_or_else(|| DbPartitionKey {
-                node_key: [self.node_key.clone(), vec![0]].concat(),
-                partition_num: 0,
-            })
-    }
 }
 
 /// A database-level key of a substate within a known partition.

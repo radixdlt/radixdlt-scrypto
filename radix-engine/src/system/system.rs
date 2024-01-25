@@ -2858,21 +2858,86 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    #[trace_resources]
+    #[trace_resources(log=message.len())]
     fn bls12381_v1_verify(
         &mut self,
-        message: Vec<u8>,
-        public_key: Bls12381G1PublicKey,
-        signature: Bls12381G2Signature,
+        message: &[u8],
+        public_key: &Bls12381G1PublicKey,
+        signature: &Bls12381G2Signature,
     ) -> Result<u32, RuntimeError> {
-        // TODO: apply execution costs
-        Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
+        self.api.kernel_get_system().modules.apply_execution_cost(
+            ExecutionCostingEntry::Bls12381V1Verify {
+                size: message.len(),
+            },
+        )?;
+        Ok(verify_bls12381_v1(message, public_key, signature) as u32)
     }
 
-    #[trace_resources]
-    fn keccak256_hash(&mut self, data: Vec<u8>) -> Result<Hash, RuntimeError> {
-        // TODO: apply execution costs
-        Ok(keccak256_hash(&data))
+    // Trace average message length and number of public_keys
+    #[trace_resources(log={pub_keys_and_msgs.iter().flat_map(|(_, msg)| msg).count()/pub_keys_and_msgs.len()},log=pub_keys_and_msgs.len())]
+    fn bls12381_v1_aggregate_verify(
+        &mut self,
+        pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
+        signature: &Bls12381G2Signature,
+    ) -> Result<u32, RuntimeError> {
+        if !pub_keys_and_msgs.is_empty() {
+            let sizes: Vec<usize> = pub_keys_and_msgs.iter().map(|(_, msg)| msg.len()).collect();
+            self.api.kernel_get_system().modules.apply_execution_cost(
+                ExecutionCostingEntry::Bls12381V1AggregateVerify {
+                    sizes: sizes.as_slice(),
+                },
+            )?;
+            Ok(aggregate_verify_bls12381_v1(pub_keys_and_msgs, signature) as u32)
+        } else {
+            Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
+        }
+    }
+
+    #[trace_resources(log=message.len(), log=public_keys.len())]
+    fn bls12381_v1_fast_aggregate_verify(
+        &mut self,
+        message: &[u8],
+        public_keys: &[Bls12381G1PublicKey],
+        signature: &Bls12381G2Signature,
+    ) -> Result<u32, RuntimeError> {
+        if !public_keys.is_empty() {
+            self.api.kernel_get_system().modules.apply_execution_cost(
+                ExecutionCostingEntry::Bls12381V1FastAggregateVerify {
+                    size: message.len(),
+                    keys_cnt: public_keys.len(),
+                },
+            )?;
+            Ok(fast_aggregate_verify_bls12381_v1(message, public_keys, signature) as u32)
+        } else {
+            Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
+        }
+    }
+
+    #[trace_resources(log=signatures.len())]
+    fn bls12381_g2_signature_aggregate(
+        &mut self,
+        signatures: &[Bls12381G2Signature],
+    ) -> Result<Bls12381G2Signature, RuntimeError> {
+        if !signatures.is_empty() {
+            self.api.kernel_get_system().modules.apply_execution_cost(
+                ExecutionCostingEntry::Bls12381G2SignatureAggregate {
+                    signatures_cnt: signatures.len(),
+                },
+            )?;
+            Bls12381G2Signature::aggregate(signatures)
+                .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))
+        } else {
+            Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
+        }
+    }
+
+    #[trace_resources(log=data.len())]
+    fn keccak256_hash(&mut self, data: &[u8]) -> Result<Hash, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(ExecutionCostingEntry::Keccak256Hash { size: data.len() })?;
+        Ok(keccak256_hash(data))
     }
 }
 

@@ -1,7 +1,7 @@
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::{Kernel, KernelBoot};
+use radix_engine::kernel::kernel::{BootLoader, Kernel};
 use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
@@ -13,7 +13,7 @@ use radix_engine::kernel::kernel_callback_api::{
     WriteSubstateEvent,
 };
 use radix_engine::system::checkers::KernelDatabaseChecker;
-use radix_engine::track::{to_state_updates, CommitableSubstateStore, Track};
+use radix_engine::track::{to_state_updates, BootStore, CommitableSubstateStore, Track};
 use radix_engine::types::*;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
@@ -53,6 +53,7 @@ struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
+    type CallbackState = ();
 
     fn start<Y>(
         _: &mut Y,
@@ -67,10 +68,7 @@ impl KernelCallbackObject for TestCallbackObject {
         unreachable!()
     }
 
-    fn on_init<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -514,12 +512,12 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     let mut substate_db = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let mut callback = TestCallbackObject;
-    let mut kernel_boot = KernelBoot {
+    let mut boot_loader = BootLoader {
         id_allocator: &mut id_allocator,
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = kernel_boot.create_kernel();
+    let mut kernel = boot_loader.boot()?;
 
     let mut fuzzer = KernelFuzzer::new(seed);
 

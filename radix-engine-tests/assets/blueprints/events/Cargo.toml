@@ -1,6 +1,6 @@
 [package]
 name = "events"
-version = "1.0.2-dev"
+version = "1.1.0-rc1"
 edition = "2021"
 
 [dependencies]

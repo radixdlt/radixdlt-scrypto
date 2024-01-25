@@ -16,10 +16,7 @@ mod definitions;
 mod display_context;
 
 pub use custom_extension::*;
-pub use custom_formatting::*;
 pub use custom_payload_wrappers::*;
-#[cfg(feature = "serde")]
-pub use custom_serde::*;
 pub use custom_traversal::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
@@ -35,10 +32,7 @@ pub mod prelude {
 
     // Private modules to include in prelude
     pub use super::custom_extension::*;
-    pub use super::custom_formatting::*;
     pub use super::custom_payload_wrappers::*;
-    #[cfg(feature = "serde")]
-    pub use super::custom_serde::*;
     pub use super::custom_traversal::*;
     pub use super::custom_value::*;
     pub use super::custom_value_kind::*;

@@ -31,4 +31,10 @@ runs:
       if: runner.os == 'Linux'
       run: sudo apt-get -y update && sudo apt-get install clang libclang-dev -y -f
       shell: bash
+    - name: Setup LLVM
+      if: runner.os == 'macOS'
+      # Switch to more recent LLVM/Clang 15.0.7
+      # see: https://github.com/actions/runner-images/blob/macOS-12/20240105.3/images/macos/macos-12-Readme.md
+      run: echo "$(brew --prefix llvm@15)/bin" >> $GITHUB_PATH
+      shell: bash
 

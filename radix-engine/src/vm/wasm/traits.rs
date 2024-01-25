@@ -208,6 +208,24 @@ pub trait WasmRuntime {
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
+    fn crypto_utils_bls12381_v1_aggregate_verify(
+        &mut self,
+        pub_keys_and_msgs: Vec<u8>,
+        signatures: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>>;
+
+    fn crypto_utils_bls12381_v1_fast_aggregate_verify(
+        &mut self,
+        message: Vec<u8>,
+        public_keys: Vec<u8>,
+        signatures: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>>;
+
+    fn crypto_utils_bls12381_g2_signature_aggregate(
+        &mut self,
+        signatures: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn crypto_utils_keccak256_hash(
         &mut self,
         data: Vec<u8>,

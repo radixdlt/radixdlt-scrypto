@@ -1,4 +1,8 @@
 use crate::internal_prelude::*;
+use blst::{
+    min_pk::{AggregateSignature, Signature},
+    BLST_ERROR,
+};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -20,28 +24,37 @@ pub const BLS12381_CIPHERSITE_V1: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_
 
 /// Represents a BLS12-381 G2 signature (variant with 96-byte signature and 48-byte public key)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(
-    Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode, BasicDescribe,
-)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct Bls12381G2Signature(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
-
-impl Describe<ScryptoCustomTypeKind> for Bls12381G2Signature {
-    const TYPE_ID: RustTypeId =
-        RustTypeId::WellKnown(well_known_scrypto_custom_types::BLS12381G2_SIGNATURE_TYPE);
-
-    fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::bls12381g2_signature_type_data()
-    }
-}
 
 impl Bls12381G2Signature {
     pub const LENGTH: usize = 96;
 
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
+    }
+
+    fn to_native_signature(self) -> Result<Signature, ParseBlsSignatureError> {
+        Signature::from_bytes(&self.0).map_err(|err| err.into())
+    }
+
+    /// Aggregate multiple signatures into a single one
+    pub fn aggregate(signatures: &[Bls12381G2Signature]) -> Result<Self, ParseBlsSignatureError> {
+        if !signatures.is_empty() {
+            let sig_first = signatures[0].to_native_signature()?;
+
+            let mut agg_sig = AggregateSignature::from_signature(&sig_first);
+
+            for sig in signatures.iter().skip(1) {
+                agg_sig.add_signature(&sig.to_native_signature()?, true)?;
+            }
+            Ok(Bls12381G2Signature(agg_sig.to_signature().to_bytes()))
+        } else {
+            Err(ParseBlsSignatureError::NoSignatureGiven)
+        }
     }
 }
 
@@ -61,17 +74,26 @@ impl TryFrom<&[u8]> for Bls12381G2Signature {
 // error
 //======
 
+impl From<BLST_ERROR> for ParseBlsSignatureError {
+    fn from(error: BLST_ERROR) -> Self {
+        let err_msg = format!("{:?}", error);
+        Self::BlsError(err_msg)
+    }
+}
+
+/// Represents an error when retrieving BLS signature from hex or when aggregating.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseBlsSignatureError {
     InvalidHex(String),
     InvalidLength(usize),
+    NoSignatureGiven,
+    // Error returned by underlying BLS library
+    BlsError(String),
 }
 
-/// Represents an error when parsing BLS signature from hex.
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for ParseBlsSignatureError {}
 
-#[cfg(not(feature = "alloc"))]
 impl fmt::Display for ParseBlsSignatureError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)

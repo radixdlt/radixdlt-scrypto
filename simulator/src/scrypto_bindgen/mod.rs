@@ -4,12 +4,9 @@ pub mod schema;
 pub mod translation;
 
 use clap::Parser;
-use radix_engine::system::{bootstrap::*, system_db_reader::SystemDatabaseReader};
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::types::*;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
-use radix_engine_stores::rocks_db::*;
 use std::io::Write;
 
 use crate::resim::*;
@@ -44,28 +41,11 @@ pub fn run() -> Result<(), Error> {
     // Everything will be written to the std-out
     let mut out = std::io::stdout();
 
-    // Create the substate database
-    let ledger_path = get_data_dir().map_err(Error::ResimError)?;
-    let mut substate_db = RocksdbSubstateStore::standard(ledger_path);
-
-    // Reset the ledger if required to.
+    let mut env = SimulatorEnvironment::new().map_err(Error::ResimError)?;
     if args.reset_ledger {
-        let mut buffer = Vec::new();
-        crate::resim::Reset {}
-            .run(&mut buffer)
-            .map_err(Error::ResimError)?;
-
-        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-        let native_vm = DefaultNativeVm::new();
-        let vm = Vm::new(&scrypto_vm, native_vm);
-        Bootstrapper::new(
-            NetworkDefinition::simulator(),
-            &mut substate_db,
-            vm.clone(),
-            false,
-        )
-        .bootstrap_test_default();
+        env = env.reset().map_err(Error::ResimError)?;
     }
+    let db = env.db;
 
     // Decode the package address without network context.
     let package_address = {
@@ -77,9 +57,9 @@ pub fn run() -> Result<(), Error> {
 
     // Generating the bindings
     let bindings = {
-        let reader = SystemDatabaseReader::new(&substate_db);
+        let reader = SystemDatabaseReader::new(&db);
         let definition = reader.get_package_definition(package_address);
-        let schema_resolver = SchemaResolver::new(package_address, &substate_db);
+        let schema_resolver = SchemaResolver::new(package_address, &db);
 
         let package_interface =
             schema::package_interface_from_package_definition(definition, &schema_resolver)

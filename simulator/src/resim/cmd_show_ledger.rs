@@ -19,17 +19,10 @@ pub struct ShowLedger {}
 
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-        let native_vm = DefaultNativeVm::new();
-        let vm = Vm::new(&scrypto_vm, native_vm);
-        let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-            .bootstrap_test_default();
-
-        Self::list_entries(out, &substate_db)?;
-
-        // Close the database
-        drop(substate_db);
+        {
+            let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
+            Self::list_entries(out, &db)?;
+        }
 
         let current_epoch = Self::get_current_epoch(out)?;
         writeln!(
@@ -40,7 +33,7 @@ impl ShowLedger {
         )
         .map_err(Error::IOError)?;
 
-        let instant = Self::get_current_time(out, TimePrecision::Minute)?;
+        let instant = Self::get_current_time(out, TimePrecisionV1::Minute)?;
         let date_time = UtcDateTime::from_instant(&instant).unwrap();
         writeln!(
             out,
@@ -127,12 +120,14 @@ impl ShowLedger {
 
     pub fn get_current_time<O: std::io::Write>(
         out: &mut O,
-        precision: TimePrecision,
+        precision: TimePrecisionV1,
     ) -> Result<Instant, Error> {
         let instructions = vec![InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInput { precision }),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInputV1 {
+                precision
+            }),
         }];
         let blobs = vec![];
         let initial_proofs = btreeset![];

@@ -8,6 +8,8 @@ use crate::vm::wasm::traits::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::sync::{Arc, Mutex};
+#[cfg(feature = "radix_engine_tests")]
+use wasmer::ImportObject;
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,
@@ -695,6 +697,55 @@ impl WasmerModule {
             runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
         }
 
+        pub fn bls12381_v1_aggregate_verify(
+            env: &WasmerInstanceEnv,
+            pub_keys_and_msgs_ptr: u32,
+            pub_keys_and_msgs_len: u32,
+            signature_ptr: u32,
+            signature_len: u32,
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let pub_keys_and_msgs =
+                read_memory(&instance, pub_keys_and_msgs_ptr, pub_keys_and_msgs_len)?;
+            let signature = read_memory(instance, signature_ptr, signature_len)?;
+
+            runtime.crypto_utils_bls12381_v1_aggregate_verify(pub_keys_and_msgs, signature)
+        }
+
+        pub fn bls12381_v1_fast_aggregate_verify(
+            env: &WasmerInstanceEnv,
+            message_ptr: u32,
+            message_len: u32,
+            public_keys_ptr: u32,
+            public_keys_len: u32,
+            signature_ptr: u32,
+            signature_len: u32,
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let message = read_memory(&instance, message_ptr, message_len)?;
+
+            let public_keys = read_memory(&instance, public_keys_ptr, public_keys_len)?;
+            let signature = read_memory(instance, signature_ptr, signature_len)?;
+
+            runtime.crypto_utils_bls12381_v1_fast_aggregate_verify(message, public_keys, signature)
+        }
+
+        pub fn bls12381_g2_signature_aggregate(
+            env: &WasmerInstanceEnv,
+            signatures_ptr: u32,
+            signatures_len: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let signatures = read_memory(instance, signatures_ptr, signatures_len)?;
+
+            runtime
+                .crypto_utils_bls12381_g2_signature_aggregate(signatures)
+                .map(|buffer| buffer.0)
+        }
+
         pub fn keccak256_hash(
             env: &WasmerInstanceEnv,
             data_ptr: u32,
@@ -813,15 +864,38 @@ impl WasmerModule {
                 SYS_GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_generate_ruid),
                 BUFFER_CONSUME_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), buffer_consume),
                 CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_verify),
+                CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_aggregate_verify),
+                CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_fast_aggregate_verify),
+                CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_g2_signature_aggregate),
                 CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), keccak256_hash),
-
-                #[cfg(feature = "radix_engine_tests")]
-                "test_host_read_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_read_memory),
-                #[cfg(feature = "radix_engine_tests")]
-                "test_host_write_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_write_memory),
-                #[cfg(feature = "radix_engine_tests")]
-                "test_host_check_memory_is_clean" => Function::new_native_with_env(self.module.store(), env.clone(), host_check_memory_is_clean),
             }
+        };
+
+        #[cfg(feature = "radix_engine_tests")]
+        let import_object = {
+            let mut exports = import_object
+                .get_namespace_exports(MODULE_ENV_NAME)
+                .unwrap();
+
+            exports.insert(
+                "test_host_read_memory",
+                Function::new_native_with_env(self.module.store(), env.clone(), host_read_memory),
+            );
+            exports.insert(
+                "test_host_write_memory",
+                Function::new_native_with_env(self.module.store(), env.clone(), host_write_memory),
+            );
+            exports.insert(
+                "test_host_check_memory_is_clean",
+                Function::new_native_with_env(
+                    self.module.store(),
+                    env.clone(),
+                    host_check_memory_is_clean,
+                ),
+            );
+            let mut import_object = ImportObject::new();
+            import_object.register(MODULE_ENV_NAME, exports);
+            import_object
         };
 
         // instantiate
