@@ -316,13 +316,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         self,
         snapshot: TestRunnerSnapshot,
     ) -> TestRunner<E, InMemorySubstateDatabase> {
-        //---------- Override configs for resource tracker ---------------
-        #[cfg(not(feature = "resource_tracker"))]
-        let with_kernel_trace = self.with_kernel_trace;
-        #[cfg(feature = "resource_tracker")]
-        let with_kernel_trace = false;
-        //----------------------------------------------------------------
-
         TestRunner {
             scrypto_vm: ScryptoVm::default(),
             native_vm: NativeVm::new_with_extension(self.custom_extension),
@@ -331,7 +324,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             next_transaction_nonce: snapshot.next_transaction_nonce,
             collected_events: snapshot.collected_events,
             xrd_free_credits_used: snapshot.xrd_free_credits_used,
-            with_kernel_trace,
+            with_kernel_trace: snapshot.with_kernel_trace,
             with_receipt_substate_check: snapshot.with_receipt_substate_check,
         }
     }
@@ -485,6 +478,7 @@ pub struct TestRunnerSnapshot {
     next_transaction_nonce: u32,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
     xrd_free_credits_used: bool,
+    with_kernel_trace: bool,
     with_receipt_substate_check: bool,
 }
 
@@ -496,6 +490,7 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
             next_transaction_nonce: self.next_transaction_nonce,
             collected_events: self.collected_events.clone(),
             xrd_free_credits_used: self.xrd_free_credits_used,
+            with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
     }
@@ -506,6 +501,7 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
         self.collected_events = snapshot.collected_events;
         self.xrd_free_credits_used = snapshot.xrd_free_credits_used;
+        self.with_kernel_trace = snapshot.with_kernel_trace;
         self.with_receipt_substate_check = snapshot.with_receipt_substate_check;
     }
 }
