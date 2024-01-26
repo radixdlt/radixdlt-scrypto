@@ -207,7 +207,6 @@ pub struct TestRunnerBuilder<E, D> {
     // General options
     with_kernel_trace: bool,
     with_receipt_substate_check: bool,
-    with_custom_execution_cost_unit_limit: Option<u32>,
 
     // The following are protocol updates on mainnet
     with_seconds_precision_update: bool,
@@ -224,7 +223,6 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             with_kernel_trace: true,
             with_receipt_substate_check: true,
-            with_custom_execution_cost_unit_limit: None,
             with_seconds_precision_update: true,
             with_crypto_utils_update: true,
             with_validator_fee_update: true,
@@ -241,7 +239,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
-            with_custom_execution_cost_unit_limit: self.with_custom_execution_cost_unit_limit,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_validator_fee_update: self.with_validator_fee_update,
@@ -274,16 +271,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         self
     }
 
-    pub fn with_custom_execution_cost_unit_limit(mut self, limit: u32) -> Self {
-        self.with_custom_execution_cost_unit_limit = Some(limit);
-        self
-    }
-
-    pub fn without_custom_cost_unit_limit(mut self) -> Self {
-        self.with_custom_execution_cost_unit_limit = None;
-        self
-    }
-
     pub fn with_custom_extension<NE: NativeVmExtension>(
         self,
         extension: NE,
@@ -294,7 +281,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: self.custom_database,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
-            with_custom_execution_cost_unit_limit: self.with_custom_execution_cost_unit_limit,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_validator_fee_update: self.with_validator_fee_update,
@@ -309,7 +295,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: database,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
-            with_custom_execution_cost_unit_limit: self.with_custom_execution_cost_unit_limit,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_validator_fee_update: self.with_validator_fee_update,
@@ -351,7 +336,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             xrd_free_credits_used: snapshot.xrd_free_credits_used,
             with_kernel_trace: snapshot.with_kernel_trace,
             with_receipt_substate_check: snapshot.with_receipt_substate_check,
-            with_custom_execution_cost_unit_limit: snapshot.with_custom_execution_cost_unit_limit,
         }
     }
 
@@ -457,7 +441,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             xrd_free_credits_used: false,
             with_kernel_trace: with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
-            with_custom_execution_cost_unit_limit: self.with_custom_execution_cost_unit_limit,
         };
 
         let next_epoch = wrap_up_receipt
@@ -489,9 +472,6 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     with_kernel_trace: bool,
     /// Whether to enable receipt substate type checking
     with_receipt_substate_check: bool,
-    /// The default execution cost unit limit to use for transaction execution.
-    /// When unspecified, the protocol defined value is used.
-    with_custom_execution_cost_unit_limit: Option<u32>,
 }
 
 #[cfg(feature = "post_run_db_check")]
@@ -510,7 +490,6 @@ pub struct TestRunnerSnapshot {
     xrd_free_credits_used: bool,
     with_kernel_trace: bool,
     with_receipt_substate_check: bool,
-    with_custom_execution_cost_unit_limit: Option<u32>,
 }
 
 impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
@@ -523,7 +502,6 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
             xrd_free_credits_used: self.xrd_free_credits_used,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
-            with_custom_execution_cost_unit_limit: self.with_custom_execution_cost_unit_limit,
         }
     }
 
@@ -535,7 +513,6 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
         self.xrd_free_credits_used = snapshot.xrd_free_credits_used;
         self.with_kernel_trace = snapshot.with_kernel_trace;
         self.with_receipt_substate_check = snapshot.with_receipt_substate_check;
-        self.with_custom_execution_cost_unit_limit = snapshot.with_custom_execution_cost_unit_limit;
     }
 }
 

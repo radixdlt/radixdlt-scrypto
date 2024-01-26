@@ -88,8 +88,13 @@ impl Default for CostingParameters {
 }
 
 impl CostingParameters {
-    pub fn with_execution_cost_unit_limit(mut self, execution_cost_unit_limit: u32) -> Self {
-        self.execution_cost_unit_limit = execution_cost_unit_limit;
+    pub fn with_execution_cost_unit_limit(mut self, limit: u32) -> Self {
+        self.execution_cost_unit_limit = limit;
+        self
+    }
+
+    pub fn with_finalization_cost_unit_limit(mut self, limit: u32) -> Self {
+        self.finalization_cost_unit_limit = limit;
         self
     }
 }
