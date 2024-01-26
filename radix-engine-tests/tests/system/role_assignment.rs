@@ -351,7 +351,6 @@ fn setting_a_role_with_a_long_name_before_attachment_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -386,7 +385,6 @@ fn setting_a_reserved_role_before_attachment_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -421,7 +419,6 @@ fn setting_any_role_in_reserved_space_before_attachment_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -456,7 +453,6 @@ fn setting_a_reserved_role_in_reserved_space_before_attachment_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -495,7 +491,6 @@ fn creation_of_module_with_reserved_roles_before_attachment_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -534,7 +529,6 @@ fn creation_of_module_with_role_names_exceeding_maximum_length_before_attachment
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -566,7 +560,6 @@ fn updating_a_reserved_role_fails() {
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -583,7 +576,6 @@ fn updating_a_reserved_role_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .set_role(
             component_address,
             ModuleId::Main,
@@ -615,7 +607,6 @@ fn updating_any_role_on_reserved_space_fails() {
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -632,7 +623,6 @@ fn updating_any_role_on_reserved_space_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .set_role(
             component_address,
             ModuleId::RoleAssignment,
@@ -673,7 +663,6 @@ fn updating_a_role_not_in_the_package_definition_fails() {
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -690,7 +679,6 @@ fn updating_a_role_not_in_the_package_definition_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .set_role(
             component_address,
             ModuleId::Main,
@@ -726,7 +714,6 @@ fn updating_a_role_on_package_with_allow_all_method_accessibility_fails() {
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -743,7 +730,6 @@ fn updating_a_role_on_package_with_allow_all_method_accessibility_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .set_role(
             component_address,
             ModuleId::Main,
@@ -778,7 +764,6 @@ fn setting_a_role_with_invalid_utf8_characters_before_attachment_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",
@@ -817,7 +802,6 @@ fn creation_with_a_role_with_invalid_utf8_characters_before_attachment_fails() {
 
     // Act
     let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
-        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "RoleAssignmentEdgeCases",

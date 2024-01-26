@@ -695,9 +695,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
         for uuid in 0u64..num_txns {
             // Build new transaction
-            let mut builder = ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .lock_fee_from_faucet();
+            let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
             let mut trivial = false;
             let fuzz_txn_intent = T::next_txn_intent(&mut self.fuzzer);
             for fuzz_action in &fuzz_txn_intent {
