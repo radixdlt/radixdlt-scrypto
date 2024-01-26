@@ -1980,7 +1980,7 @@ impl AccessControllerTestRunner {
     }
 
     fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
-        self.test_runner.execute_manifest_ignoring_fee(
+        self.test_runner.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&self.account.1)],
         )
@@ -1992,7 +1992,8 @@ impl AccessControllerTestRunner {
             Role::Recovery => self.recovery_role_badge,
             Role::Confirmation => self.confirmation_role_badge,
         };
-        ManifestBuilder::new().create_proof_from_account_of_amount(
+        ManifestBuilder::new()
+        .lock_fee_from_faucet().create_proof_from_account_of_amount(
             self.account.0,
             resource_address,
             dec!(1),

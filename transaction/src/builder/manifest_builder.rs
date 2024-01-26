@@ -105,6 +105,11 @@ impl ManifestBuilder {
         }
     }
 
+    pub fn with_lock_fee_from_faucet() -> Self {
+        let builder = Self::new();
+        builder.lock_fee_from_faucet()
+    }
+
     pub fn name_lookup(&self) -> ManifestNameLookup {
         self.registrar.name_lookup()
     }

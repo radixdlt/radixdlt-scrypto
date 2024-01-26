@@ -24,11 +24,11 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
 
     // Instantiate component
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
+        let receipt = test_runner.execute_manifest (
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -39,7 +39,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
 
     // Call method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -76,11 +76,11 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
 
     // Instantiate component
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
+        let receipt = test_runner.execute_manifest (
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -91,7 +91,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
 
     // Call method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -128,11 +128,11 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
 
     // Instantiate component
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
+        let receipt = test_runner.execute_manifest (
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -143,7 +143,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
 
     // Call method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -175,7 +175,7 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
 
     // Instantiate component
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .withdraw_from_account(account, resource, dec!(1))
             .take_all_from_worktop(resource, "bucket")
             .call_function_with_name_lookup(
@@ -186,7 +186,7 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
             )
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
+        let receipt = test_runner.execute_manifest (
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -203,7 +203,7 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
 
     // Call function
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -235,7 +235,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
 
     // Instantiate component
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .withdraw_from_account(account, resource, dec!(1))
             .take_all_from_worktop(resource, "bucket")
             .call_function_with_name_lookup(
@@ -246,7 +246,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
             )
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
+        let receipt = test_runner.execute_manifest (
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -263,7 +263,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
 
     // Call function
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -295,7 +295,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
 
     // Instantiate component
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .withdraw_from_account(account, resource, dec!(1))
             .take_all_from_worktop(resource, "bucket")
             .call_function_with_name_lookup(
@@ -306,7 +306,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
             )
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
+        let receipt = test_runner.execute_manifest (
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -323,7 +323,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
 
     // Call function
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -353,7 +353,7 @@ fn test_create_global_node_with_local_ref() {
 
     // Call function
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,
@@ -385,11 +385,11 @@ fn test_add_local_ref_to_stored_substate() {
 
     // Instantiate component
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
+        let receipt = test_runner.execute_manifest (
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -400,7 +400,7 @@ fn test_add_local_ref_to_stored_substate() {
 
     // Call method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -434,7 +434,7 @@ fn test_internal_typed_reference() {
 
     // Act
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,

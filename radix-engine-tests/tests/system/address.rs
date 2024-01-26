@@ -430,6 +430,7 @@ fn can_instantiate_with_preallocated_address() {
     let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
     // Act + Assert
     let manifest = ManifestBuilder::new()
+    .lock_fee_from_faucet()
         .call_function(
             package_address,
             "PreallocationComponent",
@@ -437,7 +438,7 @@ fn can_instantiate_with_preallocated_address() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 }
 
@@ -448,8 +449,9 @@ fn errors_if_unused_preallocated_address() {
     let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
 
     // Act + Assert 1
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
+        .lock_fee_from_faucet()
             .call_function(
                 package_address,
                 "PreallocationComponent",
@@ -462,8 +464,9 @@ fn errors_if_unused_preallocated_address() {
     receipt.expect_commit_failure();
 
     // Act + Assert 2
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
+        .lock_fee_from_faucet()
             .call_function(
                 package_address,
                 "PreallocationComponent",
@@ -483,8 +486,9 @@ fn errors_if_assigns_same_address_to_two_components() {
     let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
 
     // Act + Assert
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
+        .lock_fee_from_faucet()
             .call_function(
                 package_address,
                 "PreallocationComponent",

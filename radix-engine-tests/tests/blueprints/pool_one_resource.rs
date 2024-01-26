@@ -43,12 +43,12 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
     } else {
         vec![]
     };
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
         .set_metadata(global_address, key, MetadataValue::Bool(false))
         .build();
     let receipt = test_runner
         .test_runner
-        .execute_manifest_ignoring_fee(manifest, initial_proofs);
+        .execute_manifest(manifest, initial_proofs);
 
     // Assert
     result(receipt);
@@ -447,7 +447,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
         .call_function(
             POOL_PACKAGE,
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -460,7 +460,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt
@@ -729,7 +729,7 @@ impl TestEnvironment {
         );
 
         let (pool_component, pool_unit_resource) = {
-            let manifest = ManifestBuilder::new()
+            let manifest = ManifestBuilder::new().lock_fee_from_faucet()
                 .call_function(
                     POOL_PACKAGE,
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -742,7 +742,7 @@ impl TestEnvironment {
                     },
                 )
                 .build();
-            let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+            let receipt = test_runner.execute_manifest(manifest, vec![]);
             let commit_result = receipt.expect_commit_success();
 
             (
@@ -762,7 +762,7 @@ impl TestEnvironment {
     }
 
     fn contribute<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "contribution")
             .with_name_lookup(|builder, lookup| {
@@ -780,7 +780,7 @@ impl TestEnvironment {
     }
 
     fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
             .withdraw_from_account(
                 self.account_component_address,
                 self.pool_unit_resource_address,
@@ -802,7 +802,7 @@ impl TestEnvironment {
     }
 
     fn protected_deposit<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "to_deposit")
             .with_name_lookup(|builder, lookup| {
@@ -824,7 +824,7 @@ impl TestEnvironment {
         withdraw_strategy: WithdrawStrategy,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
@@ -852,7 +852,7 @@ impl TestEnvironment {
         amount_of_pool_units: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
@@ -865,7 +865,7 @@ impl TestEnvironment {
     }
 
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
@@ -882,7 +882,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         self.test_runner
-            .execute_manifest_ignoring_fee(manifest, self.initial_proofs(sign))
+            .execute_manifest(manifest, self.initial_proofs(sign))
     }
 
     fn virtual_signature_badge(&self) -> NonFungibleGlobalId {

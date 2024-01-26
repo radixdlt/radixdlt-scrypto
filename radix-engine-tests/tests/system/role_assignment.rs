@@ -65,7 +65,7 @@ fn can_call_protected_function_with_auth() {
     let (key, _priv, account) = test_runner.new_account(true);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .call_function(
             package_address,
@@ -75,7 +75,7 @@ fn can_call_protected_function_with_auth() {
         )
         .build();
     let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
+        .execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -194,18 +194,18 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
+        let receipt = test_runner.execute_manifest(manifest, []);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
     };
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .call_method(
             component_address,
             "assert_access_rule",
@@ -213,7 +213,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
+    let receipt = test_runner.execute_manifest(manifest, []);
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
@@ -232,11 +232,11 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
+        let receipt = test_runner.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -245,7 +245,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
         receipt.expect_commit(true).new_component_addresses()[0]
     };
 
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .call_method(
             component_address,
@@ -255,7 +255,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         manifest,
         [NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -350,7 +350,7 @@ fn setting_a_role_with_a_long_name_before_attachment_fails() {
     };
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -385,7 +385,7 @@ fn setting_a_reserved_role_before_attachment_fails() {
     };
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -420,7 +420,7 @@ fn setting_any_role_in_reserved_space_before_attachment_fails() {
     };
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -455,7 +455,7 @@ fn setting_a_reserved_role_in_reserved_space_before_attachment_fails() {
     };
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -494,7 +494,7 @@ fn creation_of_module_with_reserved_roles_before_attachment_fails() {
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -533,7 +533,7 @@ fn creation_of_module_with_role_names_exceeding_maximum_length_before_attachment
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -565,7 +565,7 @@ fn updating_a_reserved_role_fails() {
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -582,7 +582,7 @@ fn updating_a_reserved_role_fails() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .set_role(
             component_address,
@@ -614,7 +614,7 @@ fn updating_any_role_on_reserved_space_fails() {
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -631,7 +631,7 @@ fn updating_any_role_on_reserved_space_fails() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .set_role(
             component_address,
@@ -672,7 +672,7 @@ fn updating_a_role_not_in_the_package_definition_fails() {
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -689,7 +689,7 @@ fn updating_a_role_not_in_the_package_definition_fails() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .set_role(
             component_address,
@@ -725,7 +725,7 @@ fn updating_a_role_on_package_with_allow_all_method_accessibility_fails() {
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -742,7 +742,7 @@ fn updating_a_role_on_package_with_allow_all_method_accessibility_fails() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .set_role(
             component_address,
@@ -777,7 +777,7 @@ fn setting_a_role_with_invalid_utf8_characters_before_attachment_fails() {
     };
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -816,7 +816,7 @@ fn creation_with_a_role_with_invalid_utf8_characters_before_attachment_fails() {
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -858,7 +858,7 @@ impl MutableRolesTestRunner {
         let package_address =
             test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .call_function(
                 package_address,
                 Self::BLUEPRINT_NAME,
@@ -866,7 +866,7 @@ impl MutableRolesTestRunner {
                 manifest_args!(roles),
             )
             .build();
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+        test_runner.execute_manifest(manifest, vec![])
     }
 
     pub fn create_component_with_owner(
@@ -876,7 +876,7 @@ impl MutableRolesTestRunner {
         let package_address =
             test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
-        let manifest = ManifestBuilder::new()
+        let manifest =  ManifestBuilder::new().lock_fee_from_faucet()
             .call_function(
                 package_address,
                 Self::BLUEPRINT_NAME,
@@ -884,7 +884,7 @@ impl MutableRolesTestRunner {
                 manifest_args!(owner_role),
             )
             .build();
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+        test_runner.execute_manifest(manifest, vec![])
     }
 
     pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
@@ -968,11 +968,11 @@ impl MutableRolesTestRunner {
     }
 
     pub fn manifest_builder() -> ManifestBuilder {
-        ManifestBuilder::new()
+         ManifestBuilder::new().lock_fee_from_faucet()
     }
 
     pub fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
         self.test_runner
-            .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
+            .execute_manifest(manifest, self.initial_proofs.clone())
     }
 }

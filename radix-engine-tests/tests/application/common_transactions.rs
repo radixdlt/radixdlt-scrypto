@@ -380,6 +380,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
             )
             .build(),
         ResourceType::NonFungible { id_type } => ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 id_type,
@@ -396,7 +397,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
             )
             .build(),
     };
-    let result = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let result = test_runner.execute_manifest(manifest, vec![]);
     let mintable_non_fungible_resource_address =
         result.expect_commit(true).new_resource_addresses()[0].clone();
 

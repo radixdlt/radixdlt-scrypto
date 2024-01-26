@@ -670,7 +670,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -681,13 +681,13 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
             )
             .build();
         test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![])
+            .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
     };
 
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -706,14 +706,14 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
             })
             .build();
         test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![])
+            .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
         .call_method(
             component_address,
             "take_ids",
@@ -721,7 +721,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -735,10 +735,10 @@ fn get_vault_id(
     test_runner: &mut DefaultTestRunner,
     component_address: ComponentAddress,
 ) -> NodeId {
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success().output(1)
 }
 

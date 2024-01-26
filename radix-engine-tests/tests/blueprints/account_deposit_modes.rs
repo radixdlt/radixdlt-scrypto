@@ -101,8 +101,9 @@ fn account_try_deposit_batch_or_refund_method_is_callable_with_array_of_resource
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account_address) = test_runner.new_account(true);
 
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "xrd_1a")
             .take_all_from_worktop(XRD, "xrd_1b")
@@ -609,7 +610,7 @@ impl AccountDepositModesTestRunner {
         manifest: TransactionManifestV1,
         sign: bool,
     ) -> TransactionReceipt {
-        self.test_runner.execute_manifest_ignoring_fee(
+        self.test_runner.execute_manifest(
             manifest,
             if sign {
                 vec![self.virtual_signature_badge()]

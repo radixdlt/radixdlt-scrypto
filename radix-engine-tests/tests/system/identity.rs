@@ -255,7 +255,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let identity = {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
             .call_function(
                 IDENTITY_PACKAGE,
                 IDENTITY_BLUEPRINT,
@@ -266,7 +266,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
             )
             .build();
         test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![])
+            .execute_manifest (manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };

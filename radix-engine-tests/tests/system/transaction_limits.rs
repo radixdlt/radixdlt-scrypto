@@ -272,7 +272,7 @@ fn verify_log_size_limit() {
     let package_address =
         test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -280,7 +280,7 @@ fn verify_log_size_limit() {
             manifest_args!(MAX_LOG_SIZE + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -298,7 +298,7 @@ fn verify_event_size_limit() {
     let package_address =
         test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -306,7 +306,7 @@ fn verify_event_size_limit() {
             manifest_args!(MAX_EVENT_SIZE + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -324,7 +324,7 @@ fn verify_panic_size_limit() {
     let package_address =
         test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -332,7 +332,7 @@ fn verify_panic_size_limit() {
             manifest_args!(MAX_PANIC_MESSAGE_SIZE + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     receipt.expect_specific_failure(|e| {
         matches!(

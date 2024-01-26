@@ -227,8 +227,8 @@ fn account_to_bucket_to_virtual_account() {
 #[test]
 fn create_account_and_bucket_fail() {
     let mut test_runner = TestRunnerBuilder::new().build();
-    let manifest = ManifestBuilder::new().new_account().build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let manifest = ManifestBuilder::new().lock_fee_from_faucet().new_account().build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
