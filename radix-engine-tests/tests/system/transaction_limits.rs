@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::{
     errors::{RuntimeError, SystemModuleError, VmError},
     system::system_modules::limits::TransactionLimitsError,
@@ -6,8 +5,8 @@ use radix_engine::{
     types::*,
     vm::wasm::WasmRuntimeError,
 };
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
@@ -272,7 +271,8 @@ fn verify_log_size_limit() {
     let package_address =
         test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -298,7 +298,8 @@ fn verify_event_size_limit() {
     let package_address =
         test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -324,7 +325,8 @@ fn verify_panic_size_limit() {
     let package_address =
         test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "TransactionLimitTest",

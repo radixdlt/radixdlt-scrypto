@@ -1,11 +1,10 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{KernelError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn get_global_address_in_local_in_function_should_fail() {
@@ -430,7 +429,7 @@ fn can_instantiate_with_preallocated_address() {
     let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
     // Act + Assert
     let manifest = ManifestBuilder::new()
-    .lock_fee_from_faucet()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "PreallocationComponent",
@@ -451,7 +450,7 @@ fn errors_if_unused_preallocated_address() {
     // Act + Assert 1
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-        .lock_fee_from_faucet()
+            .lock_fee_from_faucet()
             .call_function(
                 package_address,
                 "PreallocationComponent",
@@ -466,7 +465,7 @@ fn errors_if_unused_preallocated_address() {
     // Act + Assert 2
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-        .lock_fee_from_faucet()
+            .lock_fee_from_faucet()
             .call_function(
                 package_address,
                 "PreallocationComponent",
@@ -488,7 +487,7 @@ fn errors_if_assigns_same_address_to_two_components() {
     // Act + Assert
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-        .lock_fee_from_faucet()
+            .lock_fee_from_faucet()
             .call_function(
                 package_address,
                 "PreallocationComponent",

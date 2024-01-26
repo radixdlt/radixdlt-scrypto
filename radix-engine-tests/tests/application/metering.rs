@@ -13,7 +13,6 @@ use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
 use scrypto_test::prelude::*;
 
-
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 
 #[cfg(not(feature = "alloc"))]

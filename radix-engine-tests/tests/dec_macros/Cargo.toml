@@ -28,4 +28,3 @@ path = "src/dec_err_expr_not_supported.rs"
 default = ["std"]
 std = ["radix-engine-interface/std"]
 alloc = ["radix-engine-interface/alloc"]
-

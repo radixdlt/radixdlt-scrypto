@@ -10,7 +10,6 @@ use radix_engine_interface::blueprints::pool::*;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::*;
 
-
 #[test]
 fn one_resource_pool_can_be_instantiated() {
     TestEnvironment::new(18);
@@ -43,7 +42,8 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
     } else {
         vec![]
     };
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .set_metadata(global_address, key, MetadataValue::Bool(false))
         .build();
     let receipt = test_runner
@@ -447,7 +447,8 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             POOL_PACKAGE,
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -729,7 +730,8 @@ impl TestEnvironment {
         );
 
         let (pool_component, pool_unit_resource) = {
-            let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+            let manifest = ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_function(
                     POOL_PACKAGE,
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -762,7 +764,8 @@ impl TestEnvironment {
     }
 
     fn contribute<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "contribution")
             .with_name_lookup(|builder, lookup| {
@@ -780,7 +783,8 @@ impl TestEnvironment {
     }
 
     fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .withdraw_from_account(
                 self.account_component_address,
                 self.pool_unit_resource_address,
@@ -802,7 +806,8 @@ impl TestEnvironment {
     }
 
     fn protected_deposit<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "to_deposit")
             .with_name_lookup(|builder, lookup| {
@@ -824,7 +829,8 @@ impl TestEnvironment {
         withdraw_strategy: WithdrawStrategy,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
@@ -852,7 +858,8 @@ impl TestEnvironment {
         amount_of_pool_units: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
@@ -865,7 +872,8 @@ impl TestEnvironment {
     }
 
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,

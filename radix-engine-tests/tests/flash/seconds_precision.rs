@@ -6,7 +6,9 @@ use radix_engine_common::constants::CONSENSUS_MANAGER;
 use radix_engine_common::prelude::{manifest_args, Round};
 use radix_engine_common::types::Epoch;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::consensus_manager::{CONSENSUS_MANAGER_NEXT_ROUND_IDENT, ConsensusManagerNextRoundInput};
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
 use radix_engine_tests::common::PackageLoader;
@@ -71,7 +73,9 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::SystemError(SystemError::TypeCheckError(TypeCheckError::BlueprintPayloadValidationError(..)))
+                RuntimeError::SystemError(SystemError::TypeCheckError(
+                    TypeCheckError::BlueprintPayloadValidationError(..)
+                ))
             )
         });
     }

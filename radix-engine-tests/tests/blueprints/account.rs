@@ -8,7 +8,6 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_test::prelude::*;
 
-
 #[test]
 fn can_securify_virtual_account() {
     securify_account(true, true, true);
@@ -227,7 +226,10 @@ fn account_to_bucket_to_virtual_account() {
 #[test]
 fn create_account_and_bucket_fail() {
     let mut test_runner = TestRunnerBuilder::new().build();
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet().new_account().build();
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .new_account()
+        .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|e| {
         matches!(

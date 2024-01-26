@@ -70,8 +70,11 @@ fn test_loop_out_of_cost_unit() {
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
-    let receipt =
-        test_runner.execute_manifest_with_costing_params(manifest, vec![],  CostingParameters::default().with_execution_cost_unit_limit(15_000_000),);
+    let receipt = test_runner.execute_manifest_with_costing_params(
+        manifest,
+        vec![],
+        CostingParameters::default().with_execution_cost_unit_limit(15_000_000),
+    );
 
     // Assert
     receipt.expect_specific_failure(is_costing_error)

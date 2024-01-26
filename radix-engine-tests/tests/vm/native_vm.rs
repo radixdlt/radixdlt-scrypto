@@ -26,7 +26,8 @@ fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
 
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             TEST_UTILS_PACKAGE,
             TEST_UTILS_BLUEPRINT,

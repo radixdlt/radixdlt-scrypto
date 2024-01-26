@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{CallFrameError, KernelError};
 use radix_engine::kernel::call_frame::{
     CloseSubstateError, CreateNodeError, ProcessSubstateError, TakeNodeError,
@@ -8,9 +7,9 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_test::prelude::{OpenSubstateError, ProcessSubstateKeyError};
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
+use scrypto_test::prelude::{OpenSubstateError, ProcessSubstateKeyError};
 
 #[derive(ScryptoSbor, PartialEq, Eq, Debug)]
 struct Compo {

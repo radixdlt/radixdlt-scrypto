@@ -5,7 +5,6 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_test::prelude::*;
 
-
 pub enum TestResourceAction {
     Mint,
     Burn,
@@ -73,8 +72,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-
-        .lock_fee_from_faucet()
+                .lock_fee_from_faucet()
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
@@ -103,7 +101,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-            .lock_fee_from_faucet()
+                .lock_fee_from_faucet()
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
@@ -132,7 +130,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
         test_runner
             .execute_manifest(
                 ManifestBuilder::new()
-                .lock_fee_from_faucet()
+                    .lock_fee_from_faucet()
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         admin_auth,
@@ -150,7 +148,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-            .lock_fee_from_faucet()
+                .lock_fee_from_faucet()
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,
@@ -171,7 +169,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-            .lock_fee_from_faucet()
+                .lock_fee_from_faucet()
                 .create_proof_from_account_of_non_fungibles(
                     account,
                     admin_auth,

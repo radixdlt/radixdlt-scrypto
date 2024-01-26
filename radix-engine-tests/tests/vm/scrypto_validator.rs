@@ -1,7 +1,6 @@
-use radix_engine_tests::common::*;
 use radix_engine::types::*;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn can_call_accepts_delegated_stake_in_scrypto() {

@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
 use radix_engine::transaction::CostingParameters;
@@ -7,6 +6,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::wasm_runtime::NoOpWasmRuntime;
 use radix_engine_common::crypto::Hash;
 use radix_engine_interface::blueprints::package::CodeHash;
+use radix_engine_tests::common::*;
 use transaction::model::TransactionCostingParameters;
 use wabt::wat2wasm;
 

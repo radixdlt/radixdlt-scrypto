@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
@@ -11,10 +10,10 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::package::KeyOrValue;
 use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_tests::common::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn test_deposit_event_when_creating_vault_with_bucket() {
@@ -670,7 +669,8 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -687,7 +687,8 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     };
 
     let component_address = {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -713,7 +714,8 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "take_ids",
@@ -735,7 +737,8 @@ fn get_vault_id(
     test_runner: &mut DefaultTestRunner,
     component_address: ComponentAddress,
 ) -> NodeId {
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

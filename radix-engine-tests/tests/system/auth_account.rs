@@ -1,11 +1,10 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::rule;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 fn test_auth_rule(
     test_runner: &mut DefaultTestRunner,

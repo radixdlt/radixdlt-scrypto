@@ -25,7 +25,7 @@ fn cannot_store_reference_in_non_transient_blueprint() {
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
-            _vm_api: & V,
+            _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,

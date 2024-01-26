@@ -5,7 +5,6 @@ use radix_engine::{
 };
 use scrypto_test::prelude::*;
 
-
 fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
     wat2wasm(
         r##"

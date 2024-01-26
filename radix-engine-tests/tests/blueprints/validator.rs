@@ -10,7 +10,6 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_test::prelude::*;
 
-
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)
 where
     F: Fn(TransactionReceipt) -> (),

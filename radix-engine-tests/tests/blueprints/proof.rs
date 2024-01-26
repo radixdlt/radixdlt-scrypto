@@ -1,11 +1,10 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_tests::common::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
@@ -369,7 +368,8 @@ fn can_move_restricted_proofs_internally() {
     let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let (public_key, _, account) = test_runner.new_allocated_account();
     let component_address = {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(package_address, "Outer", "instantiate", manifest_args!())
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -378,7 +378,7 @@ fn can_move_restricted_proofs_internally() {
 
     // Act
     let manifest = ManifestBuilder::new()
-    .lock_fee_from_faucet()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .create_proof_from_auth_zone_of_all(XRD, "proof")
         .with_name_lookup(|builder, lookup| {

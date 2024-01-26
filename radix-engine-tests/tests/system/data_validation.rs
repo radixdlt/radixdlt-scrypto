@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError, SystemError},
@@ -6,8 +5,8 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_interface::blueprints::package::KeyOrValue;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 fn setup_component(test_runner: &mut DefaultTestRunner) -> ComponentAddress {
     let package_address = test_runner.publish_package_simple(PackageLoader::get("data_validation"));

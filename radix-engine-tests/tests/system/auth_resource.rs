@@ -5,7 +5,6 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_test::prelude::*;
 
-
 enum Action {
     Mint,
     Burn,

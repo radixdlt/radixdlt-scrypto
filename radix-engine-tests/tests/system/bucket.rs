@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::resource::{
     FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError, VaultError,
 };
@@ -10,8 +9,8 @@ use radix_engine::{
     kernel::call_frame::DropNodeError,
     types::*,
 };
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: bool) {
     // Arrange

@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
@@ -21,11 +20,11 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
+use radix_engine_tests::common::*;
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
 use scrypto_test::prelude::*;
 use transaction::model::InstructionV1;
-
 
 #[test]
 fn test_events_of_commit_failure() {
@@ -212,7 +211,8 @@ fn scrypto_cant_emit_unregistered_event() {
     let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("events"));
 
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ScryptoEvents",
@@ -222,7 +222,7 @@ fn scrypto_cant_emit_unregistered_event() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest (manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -1816,10 +1816,11 @@ fn create_account_events_can_be_looked_up() {
     let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     // Act
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None)
         .build();
-    let receipt = test_runner.execute_manifest (manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     {
@@ -1847,7 +1848,8 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
 }
 
 fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceAddress {
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_fungible_resource(
             OwnerRole::Fixed(AccessRule::AllowAll),
             false,
@@ -1871,7 +1873,7 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
             None,
         )
         .build();
-    let receipt = test_runner.execute_manifest (manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit(true).new_resource_addresses()[0]
 }
 

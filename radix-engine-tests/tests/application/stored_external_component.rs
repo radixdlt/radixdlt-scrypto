@@ -1,8 +1,7 @@
-use radix_engine_tests::common::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn stored_component_addresses_in_non_globalized_component_are_invocable() {

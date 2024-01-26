@@ -1,3 +1,6 @@
+use radix_engine::blueprints::pool::v1::constants::*;
+use radix_engine::blueprints::pool::v1::errors::multi_resource_pool::Error as MultiResourcePoolError;
+use radix_engine::blueprints::pool::v1::events::multi_resource_pool::*;
 use radix_engine::errors::{SystemError, SystemModuleError};
 use radix_engine::{
     errors::{ApplicationError, RuntimeError},
@@ -10,9 +13,6 @@ use radix_engine_interface::blueprints::pool::*;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
-use radix_engine::blueprints::pool::v1::constants::*;
-use radix_engine::blueprints::pool::v1::errors::multi_resource_pool::Error as MultiResourcePoolError;
-use radix_engine::blueprints::pool::v1::events::multi_resource_pool::*;
 
 #[test]
 fn multi_resource_pool_can_be_instantiated() {
@@ -46,7 +46,8 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
     } else {
         vec![]
     };
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .set_metadata(global_address, key, MetadataValue::Bool(false))
         .build();
     let receipt = test_runner
@@ -412,7 +413,8 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             POOL_PACKAGE,
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -843,7 +845,8 @@ impl<const N: usize> TestEnvironment<N> {
         });
 
         let (pool_component, pool_unit_resource) = {
-            let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+            let manifest = ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_function(
                     POOL_PACKAGE,
                     MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -896,7 +899,8 @@ impl<const N: usize> TestEnvironment<N> {
     }
 
     fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .withdraw_from_account(
                 self.account_component_address,
                 self.pool_unit_resource_address,
@@ -923,7 +927,8 @@ impl<const N: usize> TestEnvironment<N> {
         amount: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_fungible(resource_address, amount.into())
             .take_all_from_worktop(resource_address, "to_deposit")
             .with_name_lookup(|builder, lookup| {
@@ -945,7 +950,8 @@ impl<const N: usize> TestEnvironment<N> {
         withdraw_strategy: WithdrawStrategy,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
@@ -982,7 +988,8 @@ impl<const N: usize> TestEnvironment<N> {
     }
 
     fn get_vault_amounts(&mut self, sign: bool) -> MultiResourcePoolGetVaultAmountsOutput {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
@@ -1007,7 +1014,8 @@ impl<const N: usize> TestEnvironment<N> {
         amount_of_pool_units: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new().lock_fee_from_faucet()
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,

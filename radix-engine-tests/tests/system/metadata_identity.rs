@@ -4,7 +4,6 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use scrypto_test::prelude::*;
 
-
 fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

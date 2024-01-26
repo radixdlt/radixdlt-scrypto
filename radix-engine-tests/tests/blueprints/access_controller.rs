@@ -10,7 +10,6 @@ use radix_engine_interface::blueprints::access_controller::*;
 use scrypto_test::prelude::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 
-
 #[test]
 pub fn creating_an_access_controller_succeeds() {
     AccessControllerTestRunner::new(Some(10));
@@ -1993,11 +1992,8 @@ impl AccessControllerTestRunner {
             Role::Confirmation => self.confirmation_role_badge,
         };
         ManifestBuilder::new()
-        .lock_fee_from_faucet().create_proof_from_account_of_amount(
-            self.account.0,
-            resource_address,
-            dec!(1),
-        )
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(self.account.0, resource_address, dec!(1))
     }
 
     fn set_current_minute(&mut self, minutes: i64) {
