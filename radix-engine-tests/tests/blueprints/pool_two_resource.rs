@@ -9,8 +9,8 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_queries::typed_substate_layout::FungibleResourceManagerError;
 use scrypto::prelude::Pow;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 pub fn two_resource_pool_can_be_instantiated() {

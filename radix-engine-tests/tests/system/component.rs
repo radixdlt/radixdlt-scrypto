@@ -2,8 +2,8 @@ use radix_engine_tests::common::*;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::DropNodeError;
 use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn test_component() {

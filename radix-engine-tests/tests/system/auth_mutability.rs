@@ -3,8 +3,8 @@ extern crate core;
 use radix_engine::types::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 pub enum TestResourceAction {
     Mint,

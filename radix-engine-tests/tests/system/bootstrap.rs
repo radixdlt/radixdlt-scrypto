@@ -15,7 +15,7 @@ use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_test::prelude::KeyValueEntrySubstate;
-use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
+use scrypto_test::prelude::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
 use transaction::prelude::*;
 
 #[test]

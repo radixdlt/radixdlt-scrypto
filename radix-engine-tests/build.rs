@@ -39,7 +39,7 @@ fn main() {
             continue;
         };
 
-        let (code, definition) = scrypto_unit::Compile::compile_with_env_vars(
+        let (code, definition) = scrypto_test::prelude::Compile::compile_with_env_vars(
             path.parent().unwrap(),
             btreemap! {
                 "RUSTFLAGS".to_owned() => "".to_owned(),

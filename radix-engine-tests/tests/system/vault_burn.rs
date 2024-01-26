@@ -5,8 +5,8 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto::NonFungibleData;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn package_burn_is_only_callable_within_resource_package() {

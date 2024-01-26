@@ -9,8 +9,8 @@ use radix_engine::{
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_test::prelude::{OpenSubstateError, ProcessSubstateKeyError};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[derive(ScryptoSbor, PartialEq, Eq, Debug)]
 struct Compo {

@@ -1,7 +1,7 @@
 use radix_engine_common::prelude::*;
 use radix_engine_store_interface::{interface::*, db_key_mapper::{SpreadPrefixKeyMapper, DatabaseKeyMapper}};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn test_stake_reconciliation() {

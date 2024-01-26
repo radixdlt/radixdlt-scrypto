@@ -57,8 +57,8 @@ jobs:
       - name: Run bench
         run: cargo bench -p sbor-tests
 
-  scrypto-unit-tests:
-    name: Run Scrypto unit tests
+  scrypto-tests:
+    name: Run Scrypto tests
     runs-on: ubuntu-latest
     steps:
       - uses: RDXWorks-actions/checkout@main
@@ -73,8 +73,8 @@ jobs:
       - name: Run derive tests
         run: cargo nextest run -p scrypto-derive
 
-  scrypto-integration-tests:
-    name: Run Scrypto integration tests
+  scrypto-derive-tests:
+    name: Run Scrypto derive tests
     runs-on: ubuntu-latest
     steps:
       - uses: RDXWorks-actions/checkout@main

@@ -8,8 +8,8 @@ use radix_engine_interface::blueprints::consensus_manager::{
     VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)
 where

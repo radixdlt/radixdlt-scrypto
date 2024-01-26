@@ -3,8 +3,8 @@ use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::types::*;
 use radix_engine_interface::rule;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::{TransactionValidator, ValidationConfig};
 

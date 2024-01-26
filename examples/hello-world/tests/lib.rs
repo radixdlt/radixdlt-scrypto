@@ -1,5 +1,5 @@
 use scrypto::prelude::*;
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]

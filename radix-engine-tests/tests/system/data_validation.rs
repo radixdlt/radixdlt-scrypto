@@ -6,8 +6,8 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_interface::blueprints::package::KeyOrValue;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 fn setup_component(test_runner: &mut DefaultTestRunner) -> ComponentAddress {
     let package_address = test_runner.publish_package_simple(PackageLoader::get("data_validation"));

@@ -11,8 +11,8 @@ use radix_engine_tests::common::*;
 use scrypto::api::node_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 

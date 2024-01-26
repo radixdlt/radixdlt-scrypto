@@ -6,8 +6,8 @@ use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use scrypto::prelude::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct ManifestTransactionProcessorRunInput {

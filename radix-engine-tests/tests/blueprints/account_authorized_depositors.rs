@@ -3,8 +3,9 @@ use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::*;
-use scrypto_unit::TestRunnerBuilder;
+use scrypto_test::prelude::TestRunnerBuilder;
 use transaction::prelude::*;
+
 
 #[test]
 fn account_add_authorized_depositor_without_owner_auth_fails() {

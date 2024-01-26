@@ -7,8 +7,8 @@ use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentitySecurifyToSingleBadgeInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_SECURIFY_IDENT,
 };
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn cannot_securify_in_advanced_mode() {

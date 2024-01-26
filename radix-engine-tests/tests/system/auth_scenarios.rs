@@ -8,9 +8,8 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::InjectSystemCostingError;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::InjectSystemCostingError;
+use scrypto_test::prelude::*;
 
 pub struct AuthScenariosEnv {
     acco: ComponentAddress,

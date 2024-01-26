@@ -11,8 +11,8 @@ use radix_engine_interface::rule;
 use radix_engine_queries::typed_substate_layout::*;
 use scrypto::prelude::FallToOwner;
 use scrypto_test::prelude::InvalidNameError;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn can_call_public_function() {

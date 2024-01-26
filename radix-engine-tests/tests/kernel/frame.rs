@@ -3,8 +3,8 @@ use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine_common::constants::MAX_CALL_DEPTH;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn test_max_call_depth_success() {

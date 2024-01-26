@@ -7,7 +7,7 @@ use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction::builder::ManifestBuilder;
 
 const BLUEPRINT_NAME: &str = "MyBlueprint";

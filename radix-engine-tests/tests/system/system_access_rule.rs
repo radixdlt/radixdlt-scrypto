@@ -9,7 +9,7 @@ use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_queries::typed_substate_layout::{FunctionAuth, PackageError};
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]

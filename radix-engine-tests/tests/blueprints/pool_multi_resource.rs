@@ -8,9 +8,8 @@ use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto::prelude::Pow;
-use scrypto_unit::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
+use scrypto_test::prelude::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
-
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::blueprints::pool::v1::errors::multi_resource_pool::Error as MultiResourcePoolError;
 use radix_engine::blueprints::pool::v1::events::multi_resource_pool::*;

@@ -256,7 +256,7 @@ where
     cargo.push("Cargo.toml");
     if cargo.exists() {
         let features = if coverage {
-            vec!["--features", "scrypto-unit/coverage"]
+            vec!["--features", "scrypto-test/coverage"]
         } else {
             vec![]
         };

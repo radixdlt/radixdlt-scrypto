@@ -4,8 +4,8 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::attached_modules::royalty::ComponentRoyaltyError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn test_component_royalty() {
