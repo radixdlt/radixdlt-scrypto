@@ -2909,7 +2909,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
         )
             .into(),
     );
-    let receipt = test_runner.execute_system_transaction_with_preallocation(
+    let receipt = test_runner.execute_system_transaction(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
@@ -2962,7 +2962,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
         )
             .into(),
     );
-    let receipt = test_runner.execute_system_transaction_with_preallocation(
+    let receipt = test_runner.execute_system_transaction(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),

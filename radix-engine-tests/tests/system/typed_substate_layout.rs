@@ -172,7 +172,7 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
-                    let receipt = test_runner.execute_raw_transaction(&next.raw_transaction);
+                    let receipt = test_runner.execute_notarized_transaction(&next.raw_transaction);
                     match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_substate_changes_can_be_typed(commit_result);
@@ -208,7 +208,7 @@ fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
-                    let receipt = test_runner.execute_raw_transaction(&next.raw_transaction);
+                    let receipt = test_runner.execute_notarized_transaction(&next.raw_transaction);
                     match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_events_can_be_typed(commit_result);

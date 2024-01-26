@@ -9,6 +9,7 @@ use radix_engine::system::attached_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::blueprints::account::ResourcePreference;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ModuleId;
@@ -974,15 +975,19 @@ fn consensus_manager_round_update_emits_correct_event() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
-        address: CONSENSUS_MANAGER.into(),
-        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-            Round::of(1),
-            0,
-            180000i64,
-        )),
-    }]);
+    let receipt = test_runner.execute_system_transaction(
+        vec![InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
+                Round::of(1),
+                0,
+                180000i64,
+            )),
+        }],
+        btreeset![AuthAddresses::validator_role()],
+        vec![],
+    );
 
     // Assert
     {
@@ -1031,15 +1036,19 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
     test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
 
     // Act: perform the most usual successful next round
-    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
-        address: CONSENSUS_MANAGER.into(),
-        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-            Round::of(rounds_per_epoch),
-            0,
-            180000i64,
-        )),
-    }]);
+    let receipt = test_runner.execute_system_transaction(
+        vec![InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
+                Round::of(rounds_per_epoch),
+                0,
+                180000i64,
+            )),
+        }],
+        btreeset![AuthAddresses::validator_role()],
+        vec![],
+    );
 
     // Assert
     {
@@ -1079,15 +1088,19 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
-        address: CONSENSUS_MANAGER.into(),
-        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-            Round::of(1),
-            0,
-            180000i64,
-        )),
-    }]);
+    let receipt = test_runner.execute_system_transaction(
+        vec![InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
+                Round::of(1),
+                0,
+                180000i64,
+            )),
+        }],
+        btreeset![AuthAddresses::validator_role()],
+        vec![],
+    );
 
     // Assert
     let result = receipt.expect_commit_success();

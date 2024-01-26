@@ -1167,6 +1167,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 }),
             }],
             btreeset!(AuthAddresses::system_role()),
+            vec![],
         );
         let package_address: PackageAddress = receipt.expect_commit(true).output(0);
         package_address
@@ -1363,7 +1364,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         )
     }
 
-    pub fn execute_raw_transaction(
+    pub fn execute_notarized_transaction(
         &mut self,
         raw_transaction: &RawNotarizedTransaction,
     ) -> TransactionReceipt {
@@ -1376,6 +1377,29 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             validated.get_executable(),
             CostingParameters::default(),
             ExecutionConfig::for_notarized_transaction(network.clone()),
+        )
+    }
+
+    pub fn execute_system_transaction(
+        &mut self,
+        instructions: Vec<InstructionV1>,
+        proofs: BTreeSet<NonFungibleGlobalId>,
+        pre_allocated_addresses: Vec<PreAllocatedAddress>,
+    ) -> TransactionReceipt {
+        let nonce = self.next_transaction_nonce();
+
+        self.execute_transaction(
+            SystemTransactionV1 {
+                instructions: InstructionsV1(instructions),
+                blobs: BlobsV1 { blobs: vec![] },
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_addresses,
+            }
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
+            CostingParameters::default(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -2088,83 +2112,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentEpochInput),
             }],
             btreeset![AuthAddresses::validator_role()],
+            vec![],
         );
         receipt.expect_commit(true).output(0)
-    }
-
-    pub fn execute_system_transaction_with_preallocation(
-        &mut self,
-        instructions: Vec<InstructionV1>,
-        proofs: BTreeSet<NonFungibleGlobalId>,
-        pre_allocated_addresses: Vec<PreAllocatedAddress>,
-    ) -> TransactionReceipt {
-        let nonce = self.next_transaction_nonce();
-
-        self.execute_transaction(
-            SystemTransactionV1 {
-                instructions: InstructionsV1(instructions),
-                blobs: BlobsV1 { blobs: vec![] },
-                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_addresses,
-            }
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(proofs),
-            CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
-        )
-    }
-
-    pub fn execute_validator_transaction(
-        &mut self,
-        instructions: Vec<InstructionV1>,
-    ) -> TransactionReceipt {
-        self.execute_system_transaction(instructions, btreeset![AuthAddresses::validator_role()])
-    }
-
-    pub fn execute_system_transaction_with_preallocated_addresses(
-        &mut self,
-        instructions: Vec<InstructionV1>,
-        pre_allocated_addresses: Vec<PreAllocatedAddress>,
-        mut proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> TransactionReceipt {
-        let nonce = self.next_transaction_nonce();
-        proofs.insert(AuthAddresses::system_role());
-        self.execute_transaction(
-            SystemTransactionV1 {
-                instructions: InstructionsV1(instructions),
-                blobs: BlobsV1 { blobs: vec![] },
-                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_addresses,
-            }
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(proofs),
-            CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
-        )
-    }
-
-    pub fn execute_system_transaction(
-        &mut self,
-        instructions: Vec<InstructionV1>,
-        proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> TransactionReceipt {
-        let nonce = self.next_transaction_nonce();
-
-        self.execute_transaction(
-            SystemTransactionV1 {
-                instructions: InstructionsV1(instructions),
-                blobs: BlobsV1 { blobs: vec![] },
-                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_addresses: vec![],
-            }
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(proofs),
-            CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
-        )
     }
 
     /// Executes a "start round number `round` at timestamp `timestamp_ms`" system transaction, as
@@ -2193,6 +2143,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 }),
             }],
             btreeset![AuthAddresses::validator_role()],
+            vec![],
         )
     }
 
@@ -2239,6 +2190,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 }),
             }],
             btreeset![AuthAddresses::validator_role()],
+            vec![],
         );
         receipt.expect_commit(true).output(0)
     }

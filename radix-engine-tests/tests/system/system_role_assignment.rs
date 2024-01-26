@@ -64,6 +64,7 @@ fn cannot_define_more_than_50_roles() {
             }),
         }],
         btreeset!(AuthAddresses::system_role()),
+        vec![],
     );
 
     // Assert
@@ -126,6 +127,7 @@ fn cannot_define_role_name_larger_than_max() {
             }),
         }],
         btreeset!(AuthAddresses::system_role()),
+        vec![],
     );
 
     // Assert
