@@ -37,7 +37,7 @@ fn bench_radiswap(c: &mut Criterion) {
         .with_custom_database(RocksDBWithMerkleTreeSubstateStore::clear(PathBuf::from(
             "/tmp/radiswap",
         )))
-        .without_trace()
+        .without_kernel_trace()
         .build();
     #[cfg(not(feature = "rocksdb"))]
     let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();

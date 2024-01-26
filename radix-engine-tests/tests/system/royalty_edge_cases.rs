@@ -649,7 +649,7 @@ macro_rules! component_instantiation_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
                 let package_address =
                     test_runner.publish_package_simple(CODE_AND_DEF.clone());
 
@@ -695,7 +695,7 @@ macro_rules! component_interaction_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
                 let package_address =
                     test_runner.publish_package_simple(CODE_AND_DEF.clone());
 
@@ -755,7 +755,7 @@ macro_rules! package_publishing_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
                 let (code, mut definition) = CODE_AND_DEF.clone();
 
                 update_package_royalties(&mut definition, royalty_amount);
@@ -803,7 +803,7 @@ macro_rules! package_interactions_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
                 let (code, mut definition) = CODE_AND_DEF.clone();
 
                 update_package_royalties(&mut definition, royalty_amount);
