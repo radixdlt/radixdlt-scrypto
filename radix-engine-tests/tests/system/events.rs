@@ -209,7 +209,7 @@ fn create_proof_emits_correct_events() {
 #[test]
 fn scrypto_cant_emit_unregistered_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
@@ -289,7 +289,7 @@ fn scrypto_can_emit_registered_events() {
 #[test]
 fn cant_publish_a_package_with_non_struct_or_enum_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     let (code, definition) = PackageLoader::get("events_invalid");
     let manifest = ManifestBuilder::new()
@@ -314,7 +314,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
 #[test]
 fn local_type_id_with_misleading_name_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     let (code, mut definition) = PackageLoader::get("events");
     let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
@@ -355,7 +355,7 @@ fn local_type_id_with_misleading_name_fails() {
 #[test]
 fn locking_fee_against_a_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     let manifest = ManifestBuilder::new().lock_fee(FAUCET, 500).build();
 
@@ -388,7 +388,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
 #[test]
 fn vault_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let recallable_resource_address = test_runner.create_recallable_token(account);
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
@@ -448,7 +448,7 @@ fn vault_fungible_recall_emits_correct_events() {
 #[test]
 fn vault_non_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let (recallable_resource_address, non_fungible_local_id) = {
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
@@ -543,7 +543,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
 #[test]
 fn resource_manager_new_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
@@ -620,7 +620,7 @@ fn resource_manager_new_vault_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -710,7 +710,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -803,7 +803,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 #[test]
 fn vault_take_non_fungibles_by_amount_emits_correct_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -1765,7 +1765,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 #[test]
 fn setting_metadata_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let resource_address = create_all_allowed_resource(&mut test_runner);
 
     let manifest = ManifestBuilder::new()
@@ -1813,7 +1813,7 @@ fn setting_metadata_emits_correct_events() {
 #[test]
 fn create_account_events_can_be_looked_up() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1877,7 +1877,7 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (pk, _, account) = test_runner.new_allocated_account();
 
     // Create
@@ -1973,7 +1973,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (pk, _, account) = test_runner.new_allocated_account();
 
     // Create

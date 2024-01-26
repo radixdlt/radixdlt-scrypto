@@ -1651,7 +1651,7 @@ struct AccessControllerTestRunner {
 impl AccessControllerTestRunner {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
         let mut test_runner = TestRunnerBuilder::new()
-            .without_trace()
+            .without_kernel_trace()
             .with_custom_genesis(CustomGenesis::default(
                 Epoch::of(1),
                 CustomGenesis::default_consensus_manager_config(),

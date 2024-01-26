@@ -433,7 +433,7 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
 #[test]
 fn create_validator_twice() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -3176,7 +3176,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
     );
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_genesis(genesis)
-        .without_trace()
+        .without_kernel_trace()
         .build();
 
     let validators_addresses: Vec<ComponentAddress> = validators_keys

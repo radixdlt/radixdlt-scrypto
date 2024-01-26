@@ -467,7 +467,7 @@ struct AccountDepositModesTestRunner {
 
 impl AccountDepositModesTestRunner {
     pub fn new(virtual_account: bool) -> Self {
-        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
         let (public_key, _, component_address) = test_runner.new_account(virtual_account);
 
         Self {

@@ -670,7 +670,7 @@ fn run_mint_large_size_nfts_from_manifest(mode: Mode) {
 
 fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_allocated_account();
 
     // Act

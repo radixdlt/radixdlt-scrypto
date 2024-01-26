@@ -348,7 +348,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     ) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
@@ -424,7 +424,7 @@ where
     F: Fn(&ComponentAddress, &[ComponentAddress], &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);

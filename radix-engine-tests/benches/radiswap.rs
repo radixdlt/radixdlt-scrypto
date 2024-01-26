@@ -40,7 +40,7 @@ fn bench_radiswap(c: &mut Criterion) {
         .without_trace()
         .build();
     #[cfg(not(feature = "rocksdb"))]
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     // Create account and publish package
     let (pk, _, account) = test_runner.new_allocated_account();

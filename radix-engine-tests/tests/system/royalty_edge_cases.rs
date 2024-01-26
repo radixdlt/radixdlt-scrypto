@@ -448,7 +448,7 @@ package_interactions_tests! {
 #[test]
 fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (code, mut definition) = CODE_AND_DEF.clone();
 
     for blueprint_definition in definition.blueprints.values_mut() {
@@ -482,7 +482,7 @@ fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
 #[test]
 fn component_and_package_royalties_are_both_applied() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (code, mut definition) = CODE_AND_DEF.clone();
     let royalty_amount = RoyaltyAmount::Xrd(10.into());
     update_package_royalties(&mut definition, royalty_amount);
@@ -527,7 +527,7 @@ fn component_and_package_royalties_are_both_applied() {
 #[test]
 fn test_component_with_missing_method_royalty() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let package_address = test_runner.publish_package_simple(CODE_AND_DEF.clone());
 
     let manifest = ManifestBuilder::new()

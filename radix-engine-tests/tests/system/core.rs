@@ -327,7 +327,7 @@ fn cant_store_role_assignment() {
 
 #[test]
 fn test_globalize_with_very_deep_own() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()

@@ -203,8 +203,10 @@ pub struct TestRunnerBuilder<E, D> {
     custom_genesis: Option<CustomGenesis>,
     custom_extension: E,
     custom_database: D,
-    trace: bool,
-    skip_receipt_check: bool,
+
+    // General options
+    with_kernel_trace: bool,
+    with_receipt_substate_check: bool,
 
     // The following are protocol updates on mainnet
     with_seconds_precision_update: bool,
@@ -218,8 +220,8 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_genesis: None,
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
-            trace: true,
-            skip_receipt_check: false,
+            with_kernel_trace: true,
+            with_receipt_substate_check: false,
             with_seconds_precision_update: true,
             with_crypto_utils_update: true,
             with_pools_v1_1: true,
@@ -228,18 +230,13 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
 }
 
 impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
-    pub fn without_trace(mut self) -> Self {
-        self.trace = false;
-        self
-    }
-
     pub fn with_state_hashing(self) -> TestRunnerBuilder<E, HashTreeUpdatingDatabase<D>> {
         TestRunnerBuilder {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
-            trace: self.trace,
-            skip_receipt_check: false,
+            with_kernel_trace: self.with_kernel_trace,
+            with_receipt_substate_check: self.with_receipt_substate_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_pools_v1_1: self.with_pools_v1_1,
@@ -251,8 +248,23 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         self
     }
 
-    pub fn skip_receipt_check(mut self) -> Self {
-        self.skip_receipt_check = true;
+    pub fn with_kernel_trace(mut self) -> Self {
+        self.with_kernel_trace = true;
+        self
+    }
+
+    pub fn without_kernel_trace(mut self) -> Self {
+        self.with_kernel_trace = false;
+        self
+    }
+
+    pub fn with_receipt_substate_check(mut self) -> Self {
+        self.with_receipt_substate_check = true;
+        self
+    }
+
+    pub fn without_receipt_substate_check(mut self) -> Self {
+        self.with_receipt_substate_check = false;
         self
     }
 
@@ -264,8 +276,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: extension,
             custom_database: self.custom_database,
-            trace: self.trace,
-            skip_receipt_check: self.skip_receipt_check,
+            with_kernel_trace: self.with_kernel_trace,
+            with_receipt_substate_check: self.with_receipt_substate_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_pools_v1_1: self.with_pools_v1_1,
@@ -277,8 +289,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: database,
-            trace: self.trace,
-            skip_receipt_check: self.skip_receipt_check,
+            with_kernel_trace: self.with_kernel_trace,
+            with_receipt_substate_check: self.with_receipt_substate_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_pools_v1_1: self.with_pools_v1_1,
@@ -306,9 +318,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
     ) -> TestRunner<E, InMemorySubstateDatabase> {
         //---------- Override configs for resource tracker ---------------
         #[cfg(not(feature = "resource_tracker"))]
-        let trace = self.trace;
+        let with_kernel_trace = self.with_kernel_trace;
         #[cfg(feature = "resource_tracker")]
-        let trace = false;
+        let with_kernel_trace = false;
         //----------------------------------------------------------------
 
         TestRunner {
@@ -317,10 +329,10 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             database: snapshot.database,
             next_private_key: snapshot.next_private_key,
             next_transaction_nonce: snapshot.next_transaction_nonce,
-            trace,
             collected_events: snapshot.collected_events,
             xrd_free_credits_used: snapshot.xrd_free_credits_used,
-            skip_receipt_check: snapshot.skip_receipt_check,
+            with_kernel_trace,
+            with_receipt_substate_check: snapshot.with_receipt_substate_check,
         }
     }
 
@@ -329,9 +341,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let bootstrap_trace = false;
 
         #[cfg(not(feature = "resource_tracker"))]
-        let trace = self.trace;
+        let with_kernel_trace = self.with_kernel_trace;
         #[cfg(feature = "resource_tracker")]
-        let trace = false;
+        let with_kernel_trace = false;
         //----------------------------------------------------------------
 
         let scrypto_vm = ScryptoVm {
@@ -408,12 +420,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
                 let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 substate_db.commit(&db_updates);
             }
-        }
 
-        if self.with_pools_v1_1 {
-            let state_updates = generate_pools_v1_1_state_updates(&substate_db);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            substate_db.commit(&db_updates);
+            if self.with_pools_v1_1 {
+                let state_updates = generate_pools_v1_1_state_updates(&substate_db);
+                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                substate_db.commit(&db_updates);
+            }
         }
 
         let runner = TestRunner {
@@ -422,10 +434,10 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             database: substate_db,
             next_private_key,
             next_transaction_nonce,
-            trace,
             collected_events: events,
             xrd_free_credits_used: false,
-            skip_receipt_check: self.skip_receipt_check,
+            with_kernel_trace: with_kernel_trace,
+            with_receipt_substate_check: self.with_receipt_substate_check,
         };
 
         let next_epoch = wrap_up_receipt
@@ -444,12 +456,19 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
     native_vm: NativeVm<E>,
     database: D,
+
     next_private_key: u64,
     next_transaction_nonce: u32,
-    trace: bool,
+
+    /// Events collected from all the committed transactions
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    /// Track whether any of the committed transaction has used free credit
     xrd_free_credits_used: bool,
-    skip_receipt_check: bool,
+
+    /// Whether to enable kernel tracing
+    with_kernel_trace: bool,
+    /// Whether to enable receipt substate type checking
+    with_receipt_substate_check: bool,
 }
 
 #[cfg(feature = "post_run_db_check")]
@@ -466,7 +485,7 @@ pub struct TestRunnerSnapshot {
     next_transaction_nonce: u32,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
     xrd_free_credits_used: bool,
-    skip_receipt_check: bool,
+    with_receipt_substate_check: bool,
 }
 
 impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
@@ -477,7 +496,7 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
             next_transaction_nonce: self.next_transaction_nonce,
             collected_events: self.collected_events.clone(),
             xrd_free_credits_used: self.xrd_free_credits_used,
-            skip_receipt_check: self.skip_receipt_check,
+            with_receipt_substate_check: self.with_receipt_substate_check,
         }
     }
 
@@ -487,7 +506,7 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
         self.collected_events = snapshot.collected_events;
         self.xrd_free_credits_used = snapshot.xrd_free_credits_used;
-        self.skip_receipt_check = snapshot.skip_receipt_check;
+        self.with_receipt_substate_check = snapshot.with_receipt_substate_check;
     }
 }
 
@@ -1503,7 +1522,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         init: T::Init,
     ) -> TransactionReceipt {
         // Override the kernel trace config
-        execution_config = execution_config.with_kernel_trace(self.trace);
+        execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
         if executable
             .costing_parameters()
@@ -1534,7 +1553,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             self.collected_events
                 .push(commit.application_events.clone());
 
-            if !self.skip_receipt_check {
+            if self.with_receipt_substate_check {
                 assert_receipt_substate_changes_can_be_typed(commit);
             }
         }
@@ -1551,7 +1570,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             native_vm: self.native_vm.clone(),
         };
 
-        execute_preview(&self.database, vm, network, preview_intent, self.trace)
+        execute_preview(
+            &self.database,
+            vm,
+            network,
+            preview_intent,
+            self.with_kernel_trace,
+        )
     }
 
     pub fn preview_manifest(
@@ -1590,7 +1615,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 signer_public_keys,
                 flags,
             },
-            self.trace,
+            self.with_kernel_trace,
         )
         .unwrap()
     }
