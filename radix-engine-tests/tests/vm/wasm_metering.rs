@@ -4,8 +4,8 @@ use radix_engine::{
     types::*,
     vm::wasm::WasmRuntimeError,
 };
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn test_loop() {

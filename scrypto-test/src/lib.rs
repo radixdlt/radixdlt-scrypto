@@ -8,7 +8,7 @@
 //!
 //! # Why
 //!
-//! We already have a way to test Scrypto blueprints in the from of the scrypto_unit::TestRunner
+//! We already have a way to test Scrypto blueprints in the from of the scrypto_test::prelude::TestRunner
 //! which is essentially an in-memory ledger that we can run transactions against, get back
 //! transaction receipts, and determine-based on the TransactionReceipt-if the behavior of the
 //! blueprint or component is as we expect or not. This approach is tried and tested and has been

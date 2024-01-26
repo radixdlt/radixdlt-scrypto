@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
     PACKAGE_PUBLISH_NATIVE_IDENT,
 };
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{DynamicPackageAddress, InstructionV1};
 

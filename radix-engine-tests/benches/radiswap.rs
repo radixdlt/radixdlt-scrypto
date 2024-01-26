@@ -6,7 +6,7 @@ use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 #[cfg(feature = "rocksdb")]
 use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use radix_engine_tests::common::*;
-use scrypto_unit::{TestRunner, TestRunnerBuilder};
+use scrypto_test::prelude::{TestRunner, TestRunnerBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
 use transaction::prelude::*;

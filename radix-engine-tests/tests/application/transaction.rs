@@ -6,7 +6,6 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
 use scrypto_test::prelude::*;
-use scrypto_unit::*;
 use transaction::validation::*;
 
 #[test]

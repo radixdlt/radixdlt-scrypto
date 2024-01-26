@@ -42,7 +42,6 @@ simulator/tests/blueprints/Cargo.lock
 radix-engine/Cargo.lock
 radix-engine-stores/Cargo.lock
 scrypto/Cargo.lock
-scrypto-unit/Cargo.lock
 scrypto-derive/Cargo.lock
 scrypto-schema/Cargo.lock
 scrypto-derive-tests/Cargo.lock

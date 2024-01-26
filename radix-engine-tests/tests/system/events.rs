@@ -23,9 +23,9 @@ use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction::model::InstructionV1;
-use transaction::prelude::*;
+
 
 #[test]
 fn test_events_of_commit_failure() {

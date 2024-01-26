@@ -7,8 +7,8 @@ use radix_engine::{
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::prelude::{require, require_amount};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn drop_auth_zone_proofs_should_not_drop_named_proofs() {

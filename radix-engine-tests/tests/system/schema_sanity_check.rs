@@ -10,7 +10,6 @@ use radix_engine_queries::typed_substate_layout::{AccountNativePackage, Blueprin
 use radix_engine_tests::common::*;
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;
-use scrypto_unit::*;
 
 #[test]
 fn check_native_function_base_costs() {

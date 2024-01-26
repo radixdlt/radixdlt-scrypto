@@ -338,7 +338,7 @@ dependencies = [
  "radix-engine",
  "sbor",
  "scrypto",
- "scrypto-unit",
+ "scrypto-test",
  "transaction",
 ]
 
@@ -355,7 +355,7 @@ dependencies = [
  "radix-engine",
  "sbor",
  "scrypto",
- "scrypto-unit",
+ "scrypto-test",
  "transaction",
 ]
 
@@ -377,7 +377,7 @@ dependencies = [
  "radix-engine",
  "sbor",
  "scrypto",
- "scrypto-unit",
+ "scrypto-test",
  "transaction",
 ]
 
@@ -422,7 +422,7 @@ dependencies = [
  "radix-engine",
  "sbor",
  "scrypto",
- "scrypto-unit",
+ "scrypto-test",
  "transaction",
 ]
 
@@ -542,7 +542,7 @@ dependencies = [
  "radix-engine",
  "sbor",
  "scrypto",
- "scrypto-unit",
+ "scrypto-test",
  "transaction",
 ]
 
@@ -593,7 +593,7 @@ dependencies = [
  "radix-engine",
  "sbor",
  "scrypto",
- "scrypto-unit",
+ "scrypto-test",
  "transaction",
 ]
 
@@ -620,7 +620,7 @@ dependencies = [
  "radix-engine",
  "sbor",
  "scrypto",
- "scrypto-unit",
+ "scrypto-test",
  "transaction",
 ]
 
@@ -831,7 +831,6 @@ dependencies = [
  "sbor",
  "scrypto",
  "scrypto-test",
- "scrypto-unit",
  "transaction",
 ]
 
@@ -1169,7 +1168,6 @@ dependencies = [
  "sbor",
  "scrypto-derive",
  "scrypto-schema",
- "serde",
  "strum",
  "utils",
 ]
@@ -1209,28 +1207,13 @@ dependencies = [
  "radix-engine",
  "radix-engine-common",
  "radix-engine-interface",
- "radix-engine-store-interface",
- "radix-engine-stores",
- "sbor",
- "serde_json",
- "transaction",
-]
-
-[[package]]
-name = "scrypto-unit"
-version = "1.1.0-dev"
-dependencies = [
- "radix-engine",
- "radix-engine-interface",
  "radix-engine-queries",
  "radix-engine-store-interface",
  "radix-engine-stores",
  "sbor",
  "scrypto",
- "serde",
  "serde_json",
  "transaction",
- "utils",
  "wabt",
 ]
 
@@ -1440,7 +1423,7 @@ dependencies = [
  "radix-engine",
  "sbor",
  "scrypto",
- "scrypto-unit",
+ "scrypto-test",
  "transaction",
 ]
 

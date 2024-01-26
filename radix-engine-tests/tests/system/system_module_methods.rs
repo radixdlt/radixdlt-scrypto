@@ -12,7 +12,7 @@ use radix_engine_interface::api::{
     AttachedModuleId, ClientApi, FieldValue, LockFlags, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction::builder::ManifestBuilder;
 
 fn should_not_be_able_to_call_royalty_methods(resource: bool) {

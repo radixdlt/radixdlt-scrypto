@@ -8,8 +8,8 @@ use radix_engine::vm::wasm::*;
 use radix_engine_common::constants::MAX_NUMBER_OF_BLUEPRINT_FIELDS;
 use radix_engine_interface::*;
 use sbor::basic_well_known_types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 
 #[test]

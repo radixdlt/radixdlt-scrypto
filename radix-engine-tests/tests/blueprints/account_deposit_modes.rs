@@ -4,8 +4,9 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_queries::typed_substate_layout::AccountError;
-use scrypto_unit::{DefaultTestRunner, TestRunnerBuilder};
+use scrypto_test::prelude::{DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
+
 
 #[test]
 fn account_deposit_method_is_callable_with_owner_signature() {

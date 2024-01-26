@@ -1,7 +1,7 @@
 use radix_engine_tests::common::*;
 use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn test_kv_store_with_many_large_keys() {

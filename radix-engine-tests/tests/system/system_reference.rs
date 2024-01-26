@@ -9,7 +9,7 @@ use radix_engine_interface::api::{
     ClientApi, FieldValue, LockFlags, ACTOR_REF_AUTH_ZONE, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::{KeyOrValue, PackageDefinition};
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]

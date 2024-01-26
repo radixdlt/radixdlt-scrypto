@@ -21,8 +21,8 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use scrypto::api::node_modules::*;
 use scrypto_test::prelude::AuthError;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {

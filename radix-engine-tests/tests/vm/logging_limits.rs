@@ -3,8 +3,8 @@ use radix_engine::{
     system::system_modules::limits::TransactionLimitsError,
     types::*,
 };
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
     wat2wasm(

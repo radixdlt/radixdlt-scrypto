@@ -4,13 +4,13 @@ use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::utils::generate_seconds_precision_state_updates;
 use radix_engine_common::constants::CONSENSUS_MANAGER;
 use radix_engine_common::prelude::{manifest_args, Round};
-use radix_engine_common::prelude::{Epoch};
+use radix_engine_common::types::Epoch;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::{CONSENSUS_MANAGER_NEXT_ROUND_IDENT, ConsensusManagerNextRoundInput};
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine_store_interface::interface::{CommittableSubstateDatabase};
+use radix_engine_store_interface::interface::CommittableSubstateDatabase;
 use radix_engine_tests::common::PackageLoader;
-use scrypto_unit::{CustomGenesis, TestRunnerBuilder};
+use scrypto_test::prelude::{CustomGenesis, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 
 #[test]

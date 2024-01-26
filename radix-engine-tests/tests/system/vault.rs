@@ -13,8 +13,8 @@ use radix_engine_interface::blueprints::package::KeyOrValue;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn test_deposit_event_when_creating_vault_with_bucket() {

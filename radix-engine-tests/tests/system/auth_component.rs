@@ -2,8 +2,8 @@ use radix_engine_tests::common::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::rule;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 fn create_secured_component(
     test_runner: &mut DefaultTestRunner,

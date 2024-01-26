@@ -1,5 +1,5 @@
 use radix_engine::types::*;
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 

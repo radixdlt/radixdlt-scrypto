@@ -39,6 +39,11 @@ alloc = ["lru", "sbor/alloc", "scrypto/alloc", "native-sdk/alloc", "transaction/
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]
 
+resource_tracker = []
+
+rocksdb = ["radix-engine-stores/rocksdb"]
+post_run_db_check = []
+
 [lib]
 doctest = false
 bench = false

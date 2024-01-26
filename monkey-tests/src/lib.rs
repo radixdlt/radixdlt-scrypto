@@ -35,8 +35,8 @@ use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use scrypto::prelude::Zero;
-use scrypto_unit::InjectSystemCostingError;
-use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
+use scrypto_test::prelude::InjectSystemCostingError;
+use scrypto_test::prelude::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
 

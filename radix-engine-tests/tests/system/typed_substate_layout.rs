@@ -10,7 +10,7 @@ use radix_engine::vm::*;
 use radix_engine_queries::typed_native_events::TypedNativeEvent;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use sbor::rust::ops::Deref;
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 

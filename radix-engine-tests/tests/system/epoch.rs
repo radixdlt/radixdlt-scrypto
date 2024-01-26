@@ -1,5 +1,5 @@
 use radix_engine_common::types::Epoch;
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn setting_single_epoch_succeeds() {

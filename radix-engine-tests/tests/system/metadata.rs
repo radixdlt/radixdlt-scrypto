@@ -5,8 +5,8 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataConversionError::UnexpectedType, MetadataValue,
 };
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 #[test]
 fn can_get_from_scrypto() {

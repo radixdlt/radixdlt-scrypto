@@ -5,8 +5,8 @@ use radix_engine::errors::{
 };
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+
 
 fn create_payload_of_depth(n: usize) -> Vec<u8> {
     assert!(n >= 1);

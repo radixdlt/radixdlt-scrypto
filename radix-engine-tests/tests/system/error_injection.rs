@@ -1,7 +1,7 @@
 use radix_engine::vm::NoExtension;
 use radix_engine_interface::dec;
 use radix_engine_interface::prelude::{FromPublicKey, NonFungibleGlobalId};
-use scrypto_unit::{InjectSystemCostingError, TestRunnerBuilder};
+use scrypto_test::prelude::{InjectSystemCostingError, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 
 #[test]

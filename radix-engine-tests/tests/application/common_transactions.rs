@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init, mint_roles};
 use scrypto::prelude::Pow;
 use scrypto::NonFungibleData;
-use scrypto_unit::TestRunnerBuilder;
+use scrypto_test::prelude::TestRunnerBuilder;
 use transaction::manifest::{compile, BlobProvider};
 use transaction::prelude::*;
 use utils::ContextualDisplay;

@@ -9,10 +9,9 @@ sbor = ${sbor}
 scrypto = ${scrypto}
 
 [dev-dependencies]
+scrypto-test = ${scrypto-test}
 transaction = ${transaction}
 radix-engine = ${radix-engine}
-scrypto-unit = ${scrypto-unit}
-scrypto-test = ${scrypto-test}
 radix-engine-interface = ${radix-engine-interface}
 ${package_name} = { path = ".", features = ["test"] }
 

@@ -4,7 +4,6 @@ use radix_engine::blueprints::pool::v1::errors::{
     two_resource_pool::Error as TwoResourcePoolError,
 };
 use scrypto_test::prelude::*;
-use scrypto_unit::*;
 
 #[test]
 fn database_is_consistent_before_and_after_protocol_update() {
