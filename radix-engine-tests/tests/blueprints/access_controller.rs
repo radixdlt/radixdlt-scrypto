@@ -210,6 +210,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(
             test_runner.access_controller_address,
             "stop_timed_recovery",
@@ -1761,7 +1762,7 @@ impl AccessControllerTestRunner {
         let manifest_builder = if create_proof {
             self.manifest_builder(as_role)
         } else {
-            ManifestBuilder::new()
+            ManifestBuilder::new().lock_fee_from_faucet()
         };
 
         let manifest = manifest_builder

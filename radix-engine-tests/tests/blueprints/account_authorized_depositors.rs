@@ -819,7 +819,6 @@ fn authorized_depositor_badge_is_ignored_when_deposit_batch_is_permitted_without
     ] {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .lock_fee(FAUCET, 10)
             .call_method(FAUCET, "free", ())
             .call_method(
                 account,
@@ -851,7 +850,6 @@ fn authorized_depositor_badge_is_ignored_when_deposit_is_permitted_without_it() 
     ] {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .lock_fee(FAUCET, 10)
             .call_method(FAUCET, "free", ())
             .take_all_from_worktop(XRD, "bucket")
             .with_bucket("bucket", |builder, bucket| {
@@ -886,7 +884,6 @@ fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
     ] {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .lock_fee(FAUCET, 10)
             .call_method(
                 account,
                 ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -928,7 +925,6 @@ fn authorized_depositor_badge_permits_caller_to_deposit() {
     ] {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .lock_fee(FAUCET, 10)
             .call_method(
                 account,
                 ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,

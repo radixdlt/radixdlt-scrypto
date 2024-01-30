@@ -377,6 +377,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,
                 false,

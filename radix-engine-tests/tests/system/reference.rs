@@ -40,7 +40,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
     // Call method
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee_from_faucet()
+             
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -94,7 +94,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
     // Call method
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee_from_faucet()
+             
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -148,7 +148,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
     // Call method
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee_from_faucet()
+             
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -210,7 +210,7 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
     // Call function
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee_from_faucet()
+             
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -272,7 +272,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
     // Call function
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee_from_faucet()
+             
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -334,7 +334,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
     // Call function
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee_from_faucet()
+             
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -365,7 +365,7 @@ fn test_create_global_node_with_local_ref() {
     // Call function
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee_from_faucet()
+             
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,
@@ -414,7 +414,7 @@ fn test_add_local_ref_to_stored_substate() {
     // Call method
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee_from_faucet()
+             
             .lock_standard_test_fee(account)
             .call_method(
                 component_address,
@@ -449,7 +449,7 @@ fn test_internal_typed_reference() {
     // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee_from_faucet()
+             
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,

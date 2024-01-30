@@ -484,6 +484,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_fungible(resource_address, 1)
             .take_all_from_worktop(resource_address, "bucket")
             .with_bucket("bucket", |builder, bucket| {
@@ -499,6 +500,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_tokens")
             .with_bucket("free_tokens", |builder, bucket| {
@@ -514,6 +516,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.component_address,
                 ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -530,6 +533,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.component_address,
                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
@@ -548,6 +552,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.component_address,
                 ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT,
@@ -596,6 +601,7 @@ impl AccountDepositModesTestRunner {
             .test_runner
             .get_component_balance(self.component_address, resource_address);
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .withdraw_from_account(self.component_address, resource_address, balance)
             .try_deposit_entire_worktop_or_refund(virtual_account, None)
             .build();
