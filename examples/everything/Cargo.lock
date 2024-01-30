@@ -327,7 +327,7 @@ dependencies = [
 
 [[package]]
 name = "everything"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "native-sdk",
  "radix-engine",
@@ -581,7 +581,7 @@ dependencies = [
 
 [[package]]
 name = "native-sdk"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "radix-engine-common",
  "radix-engine-derive",
@@ -756,7 +756,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "bitflags 1.3.2",
  "colored",
@@ -785,7 +785,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-common"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "bech32",
  "blake2",
@@ -809,7 +809,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-derive"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -819,7 +819,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "bitflags 1.3.2",
  "const-sha1",
@@ -840,7 +840,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-macros"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -851,14 +851,14 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-profiling"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "fixedstr",
 ]
 
 [[package]]
 name = "radix-engine-queries"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "hex",
  "itertools",
@@ -873,7 +873,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-store-interface"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "hex",
  "itertools",
@@ -886,7 +886,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-stores"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "hex",
  "itertools",
@@ -974,7 +974,7 @@ checksum = "dbb5fb1acd8a1a18b3dd5be62d25485eb770e05afb408a9627d14d451bae12da"
 
 [[package]]
 name = "resources-tracker-macro"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1027,7 +1027,7 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1040,7 +1040,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1048,7 +1048,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -1074,7 +1074,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scrypto"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "bech32",
  "const-sha1",
@@ -1094,7 +1094,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1109,7 +1109,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-schema"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "bitflags 1.3.2",
  "radix-engine-common",
@@ -1119,7 +1119,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-test"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "native-sdk",
  "ouroboros",
@@ -1367,7 +1367,7 @@ dependencies = [
 
 [[package]]
 name = "transaction"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "bech32",
  "hex",
@@ -1414,7 +1414,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "utils"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",
