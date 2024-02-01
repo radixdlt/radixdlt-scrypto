@@ -1,5 +1,6 @@
 use crate::internal_prelude::*;
 
+#[cfg(feature = "secp256k1_sign_and_validate")]
 pub fn recover_secp256k1(
     signed_hash: &Hash,
     signature: &Secp256k1Signature,
@@ -20,6 +21,7 @@ pub fn recover_secp256k1(
     None
 }
 
+#[cfg(feature = "secp256k1_sign_and_validate")]
 pub fn verify_secp256k1(
     signed_hash: &Hash,
     public_key: &Secp256k1PublicKey,
