@@ -88,4 +88,6 @@ jobs:
             radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }}
       - name: Check WASM size
         run:
-          bash ./assert_file_size.sh ./test_package/target/wasm32-unknown-unknown/release/everything.wasm 163840
+          # Expected WASM size, when building with scrypto-builder = ~150kB
+          # + 1kB tolerance = 151 kB (154624 B)
+          bash ./assert_file_size.sh ./test_package/target/wasm32-unknown-unknown/release/everything.wasm 154624
