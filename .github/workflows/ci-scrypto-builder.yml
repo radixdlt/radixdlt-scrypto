@@ -20,6 +20,11 @@ jobs:
       - id: setup_tags
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
   build-amd:
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+      pull-requests: write
     needs: tags
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
