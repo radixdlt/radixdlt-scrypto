@@ -6,6 +6,7 @@ on:
       - develop
       - main
       - release\/*
+  pull_request:
 
 jobs:
   tags:
@@ -38,4 +39,45 @@ jobs:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+  build-scrypto:
+    permissions:
+      contents: read
+      id-token: write
+    needs: [tags, build-amd]
+    runs-on: ubuntu-latest
+    steps:
+      ## Login to Docker Hub taken from: https://github.com/radixdlt/public-iac-resuable-artifacts/blob/main/.github/workflows/docker-build.yml#L243
+      ## Private Repo credentials
+      # This is version v2.2.0
+      # https://github.com/aws-actions/configure-aws-credentials/releases/tag/v2.2.0
+      - name: "Configure AWS credentials (Private)"
+        uses: RDXWorks-actions/configure-aws-credentials@main
+        with:
+          role-to-assume: arn:aws:iam::308190735829:role/gh-common-secrets-read-access
+          aws-region: eu-west-2
+      # This is version v1.0.4
+      # https://github.com/aws-actions/configure-aws-credentials/releases/tag/v1.0.4
+      - name: Read secrets from AWS Secrets Manager into environment variables (Private)
+        uses: RDXWorks-actions/aws-secretsmanager-get-secrets@main
+        with:
+          secret-ids: |
+            DOCKERHUB_PRIVATE, github-actions/common/dockerhub-credentials
+          parse-json-secrets: true
+      - name: Login to Docker Hub (Private)
+        uses: RDXWorks-actions/login-action@master
+        with:
+          username: ${{env.DOCKERHUB_PRIVATE_USERNAME}}
+          password: ${{env.DOCKERHUB_PRIVATE_TOKEN}}
 
+      - uses: RDXWorks-actions/checkout@main
+      - name: Pull scrypto-builder docker image
+        run:
+          DOCKER_DEFAULT_PLATFORM=linux/amd64 docker pull radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }}
+      - name: Build scrypto example using scrypto-builder
+        run: |
+          cp -r examples/everything test_package
+          rev=$(/usr/bin/git log -1 --format='%H')
+          sed -e "s/<replace-it-with-proper-revision>/$rev/g" test_package/Cargo.toml_for_scrypto_builder > test_package/Cargo.toml
+          docker run \
+            -v $(pwd)/test_package:/src \
+            radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }}
