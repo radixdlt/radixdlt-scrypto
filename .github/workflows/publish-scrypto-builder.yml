@@ -6,8 +6,12 @@ on:
       image-label:
         description: "Docker image label to be published"
 
-jobs:
+permissions:
+  packages: write
+  pull-requests: write
+  id-token: write
 
+jobs:
   build-amd:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
