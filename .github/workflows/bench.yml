@@ -41,11 +41,11 @@ jobs:
         uses: RDXWorks-actions/checkout@main
         with:
           ref: ${{ github.base_ref }}
-          path: "original/"
+          path: "original"
           sparse-checkout: |
             .github
       - name: Setup environment
-        uses: original/.github/actions/setup-env
+        uses: 'original/.github/actions/setup-env'
       - uses: radixdlt/criterion-compare-action@update-same-commit
         with:
           branchName: ${{ github.base_ref }}
