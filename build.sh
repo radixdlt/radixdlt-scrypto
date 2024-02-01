@@ -50,3 +50,4 @@ echo "Building assets and examples..."
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -I '{}' bash -c "set -x; cd '{}'; $scrypto build" 
 )
+
