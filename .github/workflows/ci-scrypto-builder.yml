@@ -81,4 +81,4 @@ jobs:
           docker run \
             -v $(pwd)/test_package:/src \
             radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }}
-          bash ./assert_file_size.sh ./test_package/target/wasm32-unknown-unknown/release/everything.wasm 100
+          bash ./assert_file_size.sh ./test_package/target/wasm32-unknown-unknown/release/everything.wasm 163840
