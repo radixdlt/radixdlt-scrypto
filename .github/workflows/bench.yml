@@ -13,6 +13,8 @@ jobs:
   benchmark:
     if: ${{ github.event_name == 'pull_request' }}
     name: Run bench
+    permissions:
+      pull-requests: write
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: RDXWorks-actions/checkout@main
@@ -23,12 +25,12 @@ jobs:
           branchName: ${{ github.base_ref }}
 
   benchmark_fork:
-    permissions:
-      pull-requests: write
     if: ${{ github.event_name == 'pull_request_target' }}
     environment: "benchmark-prs-forked"
     name: Run bench forked
-    runs-on: ubuntu-latest-16-cores
+    permissions:
+      pull-requests: write
+    runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
