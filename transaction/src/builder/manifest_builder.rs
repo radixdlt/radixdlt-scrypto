@@ -240,7 +240,7 @@ impl ManifestBuilder {
             | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
             | InstructionV1::CreateProofFromBucketOfAll { .. }
             | InstructionV1::CloneProof { .. } => {
-                let proof_name = registrar.new_collision_free_bucket_name("proof");
+                let proof_name = registrar.new_collision_free_proof_name("proof");
                 registrar.register_proof(registrar.new_proof(&proof_name));
                 new_proof = Some(lookup.proof(proof_name));
             }
@@ -665,7 +665,8 @@ impl ManifestBuilder {
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
                         owner_role,
@@ -1298,7 +1299,7 @@ impl ManifestBuilder {
                 code: code_blob_ref,
                 definition,
                 metadata: metadata_init!(),
-                owner_role: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
+                owner_role: OwnerRole::Fixed(rule!(require(owner_badge))),
             }),
         })
     }
@@ -1917,9 +1918,7 @@ impl ManifestBuilder {
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.resolve(&self.registrar);
-
-        self.registrar.consume_all_buckets();
+        let batch = batch.consume_and_resolve(&self.registrar);
 
         self.call_method(
             address,
@@ -1968,9 +1967,7 @@ impl ManifestBuilder {
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.resolve(&self.registrar);
-
-        self.registrar.consume_all_buckets();
+        let batch = batch.consume_and_resolve(&self.registrar);
 
         self.call_method(
             address,
@@ -2045,5 +2042,101 @@ impl ManifestBuilder {
 impl Default for ManifestBuilder {
     fn default() -> Self {
         ManifestBuilder::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn get_builder_and_bucket_and_proof() -> (ManifestBuilder, ManifestBucket, ManifestProof) {
+        let builder = ManifestBuilder::new()
+            .take_from_worktop(XRD, dec!(100), "bucket")
+            .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof");
+        let lookup = builder.name_lookup();
+        let proof_id = lookup.proof("proof");
+        let bucket_id = lookup.bucket("bucket");
+        (builder, bucket_id, proof_id)
+    }
+
+    #[test]
+    fn test_manifest_builder_add_instruction_advanced_proof() {
+        let (builder, _, proof_id) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CloneProof { proof_id });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::PopFromAuthZone);
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromAuthZoneOfAmount {
+            resource_address: XRD,
+            amount: dec!(1),
+        });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
+            resource_address: XRD,
+            ids: vec![],
+        });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromAuthZoneOfAll {
+            resource_address: XRD,
+        });
+
+        let (builder, bucket_id, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromBucketOfAmount {
+            bucket_id,
+            amount: dec!(1),
+        });
+
+        let (builder, bucket_id, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromBucketOfNonFungibles {
+            bucket_id,
+            ids: vec![],
+        });
+
+        let (builder, bucket_id, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::CreateProofFromBucketOfAll { bucket_id });
+    }
+
+    #[test]
+    fn test_manifest_builder_add_instruction_advanced_worktop() {
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::TakeFromWorktop {
+            resource_address: XRD,
+            amount: dec!(1),
+        });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::TakeAllFromWorktop {
+            resource_address: XRD,
+        });
+
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::TakeNonFungiblesFromWorktop {
+            resource_address: XRD,
+            ids: vec![],
+        });
+    }
+
+    #[test]
+    fn test_manifest_builder_add_instruction_advanced_global_address() {
+        let (builder, _, _) = get_builder_and_bucket_and_proof();
+        builder.add_instruction_advanced(InstructionV1::AllocateGlobalAddress {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+        });
+    }
+
+    #[test]
+    fn test_manifest_builder_complex_deposit_batch_build_process_works() {
+        let account = GENESIS_HELPER; // Not actually an account, but not relevant for this test
+        ManifestBuilder::new()
+            .get_free_xrd_from_faucet()
+            .take_from_worktop(XRD, dec!(1000), "bucket_1")
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .try_deposit_batch_or_abort(account, ["bucket_1"], None)
+            .build();
     }
 }

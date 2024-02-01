@@ -1,6 +1,6 @@
 [package]
 name = "scrypto"
-version = "1.0.1"
+version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
@@ -19,6 +19,7 @@ paste = { version = "1.0.13" }
 serde = { version = "1.0.144", default-features = false, optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+minicov = { version = "0.3", optional = true }
 
 [features]
 # You should enable either `std` or `alloc`
@@ -37,6 +38,9 @@ log-warn = []
 log-info = []
 log-debug = []
 log-trace = []
+
+# Feature to generate code coverage for WASM
+coverage = ["minicov"]
 
 [lib]
 doctest = false

@@ -18,6 +18,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// Scrypto component abstraction.
 pub mod component;
+/// Scrypto crypto utilities abstraction.
+pub mod crypto_utils;
 /// Scrypto engine abstraction.
 pub mod engine;
 /// Scrypto module abstraction.
@@ -31,10 +33,10 @@ pub mod runtime;
 
 // Export macros
 mod macros;
-pub use macros::*;
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
+
 pub use scrypto_derive::{blueprint, NonFungibleData};
 
 // Re-export Radix Engine Interface modules.
@@ -77,4 +79,12 @@ pub fn set_up_panic_hook() {
 
         crate::runtime::Runtime::panic(message);
     }));
+}
+
+#[cfg(all(feature = "coverage"))]
+#[no_mangle]
+pub unsafe extern "C" fn dump_coverage() -> types::Slice {
+    let mut coverage = vec![];
+    minicov::capture_coverage(&mut coverage).unwrap();
+    engine::wasm_api::forget_vec(coverage)
 }

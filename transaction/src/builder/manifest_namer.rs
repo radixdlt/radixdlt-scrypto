@@ -647,34 +647,45 @@ pub struct NamedManifestAddress {
 //=================================================
 
 pub trait ResolvableBucketBatch {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue;
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue;
 }
 
 impl<B: ExistingManifestBucket> ResolvableBucketBatch for BTreeSet<B> {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
-        let buckets: Vec<_> = self.into_iter().map(|b| b.resolve(registrar)).collect();
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self
+            .into_iter()
+            .map(|b| b.mark_consumed(registrar))
+            .collect();
         manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
     }
 }
 
 impl<B: ExistingManifestBucket, const N: usize> ResolvableBucketBatch for [B; N] {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
-        let buckets: Vec<_> = self.into_iter().map(|b| b.resolve(registrar)).collect();
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self
+            .into_iter()
+            .map(|b| b.mark_consumed(registrar))
+            .collect();
         manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
     }
 }
 
 impl<B: ExistingManifestBucket> ResolvableBucketBatch for Vec<B> {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
-        let buckets: Vec<_> = self.into_iter().map(|b| b.resolve(registrar)).collect();
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self
+            .into_iter()
+            .map(|b| b.mark_consumed(registrar))
+            .collect();
         manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
     }
 }
 
 impl ResolvableBucketBatch for ManifestExpression {
-    fn resolve(self, _: &ManifestNameRegistrar) -> ManifestValue {
+    fn consume_and_resolve(self, _: &ManifestNameRegistrar) -> ManifestValue {
         match &self {
             ManifestExpression::EntireWorktop => {
+                // No named buckets are consumed - instead EntireWorktop refers only to the
+                // unnamed buckets on the worktop part of the transaction processor
                 manifest_decode(&manifest_encode(&self).unwrap()).unwrap()
             }
             ManifestExpression::EntireAuthZone => {

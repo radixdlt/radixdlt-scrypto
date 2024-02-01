@@ -160,8 +160,6 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for usize {
     }
 }
 
-pub use schema::*;
-
 mod schema {
     use super::*;
 

@@ -24,7 +24,6 @@ members = [
     "scrypto",
     "scrypto-test",
     "scrypto-derive-tests",
-    "scrypto-unit",
     "transaction",
     "transaction-scenarios",
     "native-sdk",

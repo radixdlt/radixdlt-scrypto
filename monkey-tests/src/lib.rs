@@ -16,8 +16,7 @@ use crate::resource::{
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
-use radix_engine::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
-use radix_engine::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
+use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
 use radix_engine::prelude::node_modules::ModuleConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
@@ -28,7 +27,6 @@ use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
-use radix_engine_interface::prelude::node_modules::auth::RoleDefinition;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
@@ -36,9 +34,9 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use scrypto::prelude::{ToRoleEntry, Zero};
-use scrypto_unit::InjectSystemCostingError;
-use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
+use scrypto::prelude::Zero;
+use scrypto_test::prelude::InjectSystemCostingError;
+use scrypto_test::prelude::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
 

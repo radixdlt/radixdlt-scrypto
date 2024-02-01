@@ -15,19 +15,6 @@ pub struct AuthZone {
     pub parent: Option<Reference>,
 }
 
-impl Clone for AuthZone {
-    fn clone(&self) -> Self {
-        Self {
-            proofs: self.proofs.iter().map(|p| Proof(p.0)).collect(),
-            virtual_resources: self.virtual_resources.clone(),
-            virtual_non_fungibles: self.virtual_non_fungibles.clone(),
-            local_caller_package_address: self.local_caller_package_address.clone(),
-            global_caller: self.global_caller.clone(),
-            parent: self.parent.clone(),
-        }
-    }
-}
-
 impl AuthZone {
     pub fn new(
         proofs: Vec<Proof>,

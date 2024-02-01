@@ -1,6 +1,6 @@
 [package]
 name = "faucet"
-version = "1.0.1"
+version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
@@ -10,7 +10,7 @@ scrypto = { path = "../../../scrypto" }
 [dev-dependencies]
 transaction = { path = "../../../transaction" }
 radix-engine = { path = "../../../radix-engine" }
-scrypto-unit = { path = "../../../scrypto-unit" }
+scrypto-test = { path = "../../../scrypto-test" }
 
 [lib]
 doctest = false

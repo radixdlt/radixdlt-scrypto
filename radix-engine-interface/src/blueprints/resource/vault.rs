@@ -18,14 +18,6 @@ pub struct VaultPutInput {
 
 pub type VaultPutOutput = ();
 
-impl Clone for VaultPutInput {
-    fn clone(&self) -> Self {
-        Self {
-            bucket: Bucket(self.bucket.0),
-        }
-    }
-}
-
 pub const VAULT_TAKE_IDENT: &str = "take";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

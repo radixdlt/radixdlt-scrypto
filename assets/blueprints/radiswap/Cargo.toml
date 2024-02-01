@@ -1,6 +1,6 @@
 [package]
 name = "radiswap"
-version = "1.0.1"
+version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
@@ -12,7 +12,6 @@ radiswap = { path = ".", features = ["test"] }
 native-sdk = { path = "../../../native-sdk" }
 transaction = { path = "../../../transaction" }
 radix-engine = { path = "../../../radix-engine" }
-scrypto-unit = { path = "../../../scrypto-unit" }
 scrypto-test = { path = "../../../scrypto-test" }
 
 [features]

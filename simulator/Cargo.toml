@@ -3,7 +3,7 @@
 
 [package]
 name = "simulator"
-version = "1.0.1"
+version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
@@ -13,6 +13,7 @@ radix-engine-store-interface = { path = "../radix-engine-store-interface" }
 radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] }
 radix-engine-queries = { path = "../radix-engine-queries" }
 radix-engine-interface = { path = "../radix-engine-interface" }
+radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
 transaction = { path = "../transaction" }
 flate2 = { version = "1.0.27" }
 tar = { version = "0.4.40" }
@@ -35,6 +36,7 @@ proc-macro2 = { version = "1.0.38" }
 heck = "0.4.1"
 tempfile = "3.8.0"
 flume = { version = "0.11.0" }
+walkdir = "2.3.3"
 
 [[bin]]
 name = "resim"

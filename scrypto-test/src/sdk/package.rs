@@ -7,12 +7,15 @@ use crate::prelude::*;
 pub struct Package;
 
 impl Package {
-    pub fn publish(
+    pub fn publish<D>(
         code: Vec<u8>,
         package_definition: PackageDefinition,
         metadata: MetadataInit,
-        env: &mut TestEnvironment,
-    ) -> Result<(PackageAddress, Bucket), RuntimeError> {
+        env: &mut TestEnvironment<D>,
+    ) -> Result<(PackageAddress, Bucket), RuntimeError>
+    where
+        D: SubstateDatabase + CommittableSubstateDatabase + 'static,
+    {
         env.with_auth_module_disabled(|env| {
             env.call_function_typed::<PackagePublishWasmInput, PackagePublishWasmOutput>(
                 PACKAGE_PACKAGE,
@@ -27,14 +30,17 @@ impl Package {
         })
     }
 
-    pub fn publish_advanced(
+    pub fn publish_advanced<D>(
         owner_role: OwnerRole,
         definition: PackageDefinition,
         code: Vec<u8>,
         metadata: MetadataInit,
         package_address: Option<GlobalAddressReservation>,
-        env: &mut TestEnvironment,
-    ) -> Result<PackageAddress, RuntimeError> {
+        env: &mut TestEnvironment<D>,
+    ) -> Result<PackageAddress, RuntimeError>
+    where
+        D: SubstateDatabase + CommittableSubstateDatabase + 'static,
+    {
         env.with_auth_module_disabled(|env| {
             env.call_function_typed::<PackagePublishWasmAdvancedInput, PackagePublishWasmAdvancedOutput>(
                 PACKAGE_PACKAGE,
@@ -51,12 +57,13 @@ impl Package {
         })
     }
 
-    pub fn compile_and_publish<P>(
+    pub fn compile_and_publish<P, D>(
         path: P,
-        env: &mut TestEnvironment,
+        env: &mut TestEnvironment<D>,
     ) -> Result<PackageAddress, RuntimeError>
     where
         P: AsRef<Path>,
+        D: SubstateDatabase + CommittableSubstateDatabase + 'static,
     {
         let (wasm, package_definition) = Self::compile(path);
         Self::publish_advanced(
@@ -101,7 +108,7 @@ impl Compile {
                 std::fs::read_to_string(&cargo).expect("Failed to read the Cargo.toml file");
             Self::extract_crate_name(&content)
                 .expect("Failed to extract crate name from the Cargo.toml file")
-                .replace("-", "_")
+                .replace('-', "_")
         } else {
             // file name
             package_dir
@@ -111,7 +118,7 @@ impl Compile {
                 .to_str()
                 .unwrap()
                 .to_owned()
-                .replace("-", "_")
+                .replace('-', "_")
         };
         let mut path = PathBuf::from_str(&Self::get_cargo_target_directory(&cargo)).unwrap(); // Infallible;
         path.push("wasm32-unknown-unknown");

@@ -312,9 +312,6 @@ impl ValidatableCustomExtension<()> for NoCustomExtension {
 }
 
 #[cfg(feature = "serde")]
-pub use self::serde_serialization::*;
-
-#[cfg(feature = "serde")]
 mod serde_serialization {
     use super::*;
 

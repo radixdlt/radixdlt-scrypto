@@ -87,8 +87,6 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X>, const N
     }
 }
 
-pub use schema::*;
-
 mod schema {
     use super::*;
 

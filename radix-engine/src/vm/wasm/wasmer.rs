@@ -1,11 +1,15 @@
 use crate::errors::InvokeError;
 use crate::types::*;
+#[cfg(feature = "coverage")]
+use crate::utils::save_coverage_data;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::sync::{Arc, Mutex};
+#[cfg(feature = "radix_engine_tests")]
+use wasmer::ImportObject;
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,
@@ -674,6 +678,88 @@ impl WasmerModule {
             runtime.sys_generate_ruid().map(|buffer| buffer.0)
         }
 
+        pub fn bls12381_v1_verify(
+            env: &WasmerInstanceEnv,
+            message_ptr: u32,
+            message_len: u32,
+            public_key_ptr: u32,
+            public_key_len: u32,
+            signature_ptr: u32,
+            signature_len: u32,
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let message = read_memory(&instance, message_ptr, message_len)?;
+
+            let public_key = read_memory(&instance, public_key_ptr, public_key_len)?;
+            let signature = read_memory(instance, signature_ptr, signature_len)?;
+
+            runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
+        }
+
+        pub fn bls12381_v1_aggregate_verify(
+            env: &WasmerInstanceEnv,
+            pub_keys_and_msgs_ptr: u32,
+            pub_keys_and_msgs_len: u32,
+            signature_ptr: u32,
+            signature_len: u32,
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let pub_keys_and_msgs =
+                read_memory(&instance, pub_keys_and_msgs_ptr, pub_keys_and_msgs_len)?;
+            let signature = read_memory(instance, signature_ptr, signature_len)?;
+
+            runtime.crypto_utils_bls12381_v1_aggregate_verify(pub_keys_and_msgs, signature)
+        }
+
+        pub fn bls12381_v1_fast_aggregate_verify(
+            env: &WasmerInstanceEnv,
+            message_ptr: u32,
+            message_len: u32,
+            public_keys_ptr: u32,
+            public_keys_len: u32,
+            signature_ptr: u32,
+            signature_len: u32,
+        ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let message = read_memory(&instance, message_ptr, message_len)?;
+
+            let public_keys = read_memory(&instance, public_keys_ptr, public_keys_len)?;
+            let signature = read_memory(instance, signature_ptr, signature_len)?;
+
+            runtime.crypto_utils_bls12381_v1_fast_aggregate_verify(message, public_keys, signature)
+        }
+
+        pub fn bls12381_g2_signature_aggregate(
+            env: &WasmerInstanceEnv,
+            signatures_ptr: u32,
+            signatures_len: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let signatures = read_memory(instance, signatures_ptr, signatures_len)?;
+
+            runtime
+                .crypto_utils_bls12381_g2_signature_aggregate(signatures)
+                .map(|buffer| buffer.0)
+        }
+
+        pub fn keccak256_hash(
+            env: &WasmerInstanceEnv,
+            data_ptr: u32,
+            data_len: u32,
+        ) -> Result<u64, InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let data = read_memory(instance, data_ptr, data_len)?;
+
+            runtime
+                .crypto_utils_keccak256_hash(data)
+                .map(|buffer| buffer.0)
+        }
+
         #[cfg(feature = "radix_engine_tests")]
         pub fn host_read_memory(
             env: &WasmerInstanceEnv,
@@ -777,13 +863,39 @@ impl WasmerModule {
                 SYS_GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_get_transaction_hash),
                 SYS_GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), sys_generate_ruid),
                 BUFFER_CONSUME_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), buffer_consume),
-                #[cfg(feature = "radix_engine_tests")]
-                "test_host_read_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_read_memory),
-                #[cfg(feature = "radix_engine_tests")]
-                "test_host_write_memory" => Function::new_native_with_env(self.module.store(), env.clone(), host_write_memory),
-                #[cfg(feature = "radix_engine_tests")]
-                "test_host_check_memory_is_clean" => Function::new_native_with_env(self.module.store(), env.clone(), host_check_memory_is_clean),
+                CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_verify),
+                CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_aggregate_verify),
+                CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_v1_fast_aggregate_verify),
+                CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), bls12381_g2_signature_aggregate),
+                CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), keccak256_hash),
             }
+        };
+
+        #[cfg(feature = "radix_engine_tests")]
+        let import_object = {
+            let mut exports = import_object
+                .get_namespace_exports(MODULE_ENV_NAME)
+                .unwrap();
+
+            exports.insert(
+                "test_host_read_memory",
+                Function::new_native_with_env(self.module.store(), env.clone(), host_read_memory),
+            );
+            exports.insert(
+                "test_host_write_memory",
+                Function::new_native_with_env(self.module.store(), env.clone(), host_write_memory),
+            );
+            exports.insert(
+                "test_host_check_memory_is_clean",
+                Function::new_native_with_env(
+                    self.module.store(),
+                    env.clone(),
+                    host_check_memory_is_clean,
+                ),
+            );
+            let mut import_object = ImportObject::new();
+            import_object.register(MODULE_ENV_NAME, exports);
+            import_object
         };
 
         // instantiate
@@ -835,13 +947,40 @@ impl WasmInstance for WasmerInstance {
             .map_err(|e| {
                 let err: InvokeError<WasmRuntimeError> = e.into();
                 err
-            })?;
+            });
 
-        if let Some(v) = return_data.as_ref().get(0).and_then(|x| x.i64()) {
-            read_slice(&self.instance, Slice::transmute_i64(v)).map_err(InvokeError::SelfError)
-        } else {
-            Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer))
+        let result = match return_data {
+            Ok(data) => {
+                if let Some(v) = data.as_ref().get(0).and_then(|x| x.i64()) {
+                    read_slice(&self.instance, Slice::transmute_i64(v))
+                        .map_err(InvokeError::SelfError)
+                } else {
+                    Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer))
+                }
+            }
+            Err(err) => Err(err),
+        };
+
+        #[cfg(feature = "coverage")]
+        if let Ok(dump_coverage) = self.instance.exports.get_function("dump_coverage") {
+            if let Ok(blueprint_buffer) = runtime.actor_get_blueprint_name() {
+                let blueprint_name =
+                    String::from_utf8(runtime.buffer_consume(blueprint_buffer.id()).unwrap())
+                        .unwrap();
+
+                let mut ret = dump_coverage
+                    .call(&[])
+                    .unwrap()
+                    .as_ref()
+                    .get(0)
+                    .and_then(|x| x.i64())
+                    .unwrap();
+                let coverage_data = read_slice(&self.instance, Slice::transmute_i64(ret)).unwrap();
+                save_coverage_data(&blueprint_name, &coverage_data);
+            }
         }
+
+        result
     }
 }
 

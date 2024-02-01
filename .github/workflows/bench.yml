@@ -13,14 +13,11 @@ jobs:
   benchmark:
     if: ${{ github.event_name == 'pull_request' }}
     name: Run bench
-    runs-on: ubuntu-latest-16-cores
+    runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Add wasm target
-        run: rustup target add wasm32-unknown-unknown
+      - uses: RDXWorks-actions/checkout@main
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - uses: radixdlt/criterion-compare-action@update-same-commit
         with:
           branchName: ${{ github.base_ref }}

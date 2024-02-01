@@ -10,7 +10,7 @@ fn main() {
     use scrypto::prelude::*;
 
     let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let blueprints_dir = manifest_dir.join("tests").join("blueprints");
+    let blueprints_dir = manifest_dir.join("assets").join("blueprints");
     println!("cargo:rerun-if-changed=\"{:?}\"", blueprints_dir);
 
     let mut packages = HashMap::new();
@@ -39,7 +39,7 @@ fn main() {
             continue;
         };
 
-        let (code, definition) = scrypto_unit::Compile::compile_with_env_vars(
+        let (code, definition) = scrypto_test::prelude::Compile::compile_with_env_vars(
             path.parent().unwrap(),
             btreemap! {
                 "RUSTFLAGS".to_owned() => "".to_owned(),

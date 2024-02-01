@@ -731,7 +731,7 @@ mod helper_macros {
             pub type $alias = $content;
         };
         (Field, type $alias:ident = WRAPPED $content:ty$(,)?) => {
-            pub type $alias = FieldSubstate<$content>;
+            pub type $alias = $crate::system::system_substates::FieldSubstate<$content>;
         };
         (KeyValue, type $alias:ident = WRAPPED $content:ty$(,)?) => {
             pub type $alias = KeyValueEntrySubstate<$content>;

@@ -8,9 +8,6 @@ pub use radix_engine::blueprints::identity::*;
 pub use radix_engine::blueprints::models::*;
 pub use radix_engine::blueprints::native_schema::*;
 pub use radix_engine::blueprints::package::*;
-pub use radix_engine::blueprints::pool::multi_resource_pool::*;
-pub use radix_engine::blueprints::pool::one_resource_pool::*;
-pub use radix_engine::blueprints::pool::two_resource_pool::*;
 pub use radix_engine::blueprints::pool::*;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_processor::*;
@@ -91,4 +88,5 @@ pub use transaction::prelude::*;
 
 /* This Crate */
 pub use crate::environment::*;
+pub use crate::runner::*;
 pub use crate::sdk::*;

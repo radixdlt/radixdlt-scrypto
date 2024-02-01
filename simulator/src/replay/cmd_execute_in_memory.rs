@@ -34,6 +34,10 @@ pub struct TxnExecuteInMemory {
     /// State hash breakpoints, in format of comma separated `<version>:<hash>`
     #[clap(short, long)]
     pub breakpoints: Option<String>,
+
+    /// Trace transaction execution
+    #[clap(long)]
+    pub trace: bool,
 }
 
 impl TxnExecuteInMemory {
@@ -81,12 +85,18 @@ impl TxnExecuteInMemory {
         // txn executor
         let substate_database = InMemorySubstateDatabase::standard();
         let mut database = HashTreeUpdatingDatabase::new(substate_database);
+        let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
             for tx_payload in iter {
-                let state_updates =
-                    execute_ledger_transaction(&database, &scrypto_vm, &network, &tx_payload);
+                let state_updates = execute_ledger_transaction(
+                    &database,
+                    &scrypto_vm,
+                    &network,
+                    &tx_payload,
+                    trace,
+                );
                 let database_updates =
                     state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 database.commit(&database_updates);

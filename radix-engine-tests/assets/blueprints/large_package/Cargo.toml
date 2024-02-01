@@ -1,0 +1,25 @@
+[package]
+name = "large_package"
+version = "1.2.0-dev"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../../../../sbor" }
+scrypto = { path = "../../../../scrypto" }
+
+non_fungible = { path = "../non_fungible" }
+fake_bucket = { path = "../fake_bucket" }
+fee_reserve_states = { path = "../fee_reserve_states" }
+bucket = { path = "../bucket" }
+address = { path = "../address" }
+allocated_address = { path = "../allocated_address" }
+package = { path = "../package" }
+auth_scenarios = { path = "../auth_scenarios" }
+proof = { path = "../proof" }
+
+[dev-dependencies]
+radix-engine = { path = "../../../../radix-engine" }
+
+[lib]
+doctest = false
+crate-type = ["cdylib", "lib"]

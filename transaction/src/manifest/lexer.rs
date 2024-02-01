@@ -267,11 +267,14 @@ impl Lexer {
                     't' => s.push('\t'),
                     'u' => {
                         let mut unicode = self.read_utf16_unit()?;
-                        if unicode >= 0xD800 && unicode <= 0xDFFF {
+                        // Check unicode surrogate pair
+                        // (see https://unicodebook.readthedocs.io/unicode_encodings.html#surrogates)
+                        if (0xD800..=0xDFFF).contains(&unicode) {
                             if self.advance()? == '\\' && self.advance()? == 'u' {
                                 unicode = 0x10000
                                     + ((unicode - 0xD800) << 10)
-                                    + (self.read_utf16_unit()? - 0xDC00);
+                                    + self.read_utf16_unit()?
+                                    - 0xDC00;
                             } else {
                                 return Err(self.unexpected_char());
                             }
@@ -361,7 +364,7 @@ impl Lexer {
     }
 
     fn unexpected_char(&self) -> LexerError {
-        LexerError::UnexpectedChar(self.text[self.current.full_index], self.current)
+        LexerError::UnexpectedChar(self.text[self.current.full_index - 1], self.current)
     }
 }
 
@@ -395,7 +398,7 @@ mod tests {
                     }
                     Err(e) => {
                         assert_eq!(e, $expected);
-                        return;
+                        break;
                     }
                 }
             }
@@ -524,6 +527,71 @@ mod tests {
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
             ]
+        );
+    }
+
+    #[test]
+    fn test_unexpected_char() {
+        lex_error!(
+            "1u8 +2u32",
+            LexerError::UnexpectedChar(
+                '+',
+                Position {
+                    full_index: 4,
+                    line_number: 1,
+                    line_char_index: 4
+                }
+            )
+        );
+
+        lex_error!(
+            "x=7",
+            LexerError::UnexpectedChar(
+                '7',
+                Position {
+                    full_index: 3,
+                    line_number: 1,
+                    line_char_index: 3
+                }
+            )
+        );
+        lex_error!(
+            "1i128\n 1u64 \n 1i37",
+            LexerError::UnexpectedChar(
+                '7',
+                Position {
+                    full_index: 18,
+                    line_number: 3,
+                    line_char_index: 5
+                }
+            )
+        );
+    }
+
+    #[test]
+    fn test_unicode() {
+        lex_ok!(
+            r#""\u2764""#,
+            vec![TokenKind::StringLiteral("❤".to_string())]
+        );
+        lex_ok!(
+            r#""\uFA84""#,
+            vec![TokenKind::StringLiteral("彩".to_string())]
+        );
+        lex_ok!(
+            r#""\uD83D\uDC69""#,
+            vec![TokenKind::StringLiteral("👩".to_string())]
+        );
+        lex_error!(
+            r#""\uDCAC\u1234""#,
+            LexerError::InvalidUnicode(
+                1238580,
+                Position {
+                    full_index: 13,
+                    line_number: 1,
+                    line_char_index: 13
+                }
+            )
         );
     }
 }

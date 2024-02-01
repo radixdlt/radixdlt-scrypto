@@ -66,6 +66,9 @@ package=`$resim publish ../examples/hello-world --owner-badge $owner_badge | awk
 component=`$resim call-function $package Hello instantiate_hello | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token
 
+# Test - publish wasm file
+$resim publish ../examples/hello-world/target/wasm32-unknown-unknown/release/hello_world.wasm
+
 # Test - export package definition
 $resim export-package-definition $package target/temp.rpd
 

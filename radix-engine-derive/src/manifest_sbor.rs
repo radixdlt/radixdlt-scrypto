@@ -23,10 +23,8 @@ pub fn handle_manifest_sbor(input: TokenStream) -> Result<TokenStream> {
         input.clone(),
         context_custom_value_kind.clone(),
     )?;
-    let decode = sbor_derive_common::decode::handle_decode(
-        input.clone(),
-        context_custom_value_kind.clone(),
-    )?;
+    let decode =
+        sbor_derive_common::decode::handle_decode(input, context_custom_value_kind.clone())?;
 
     let output = quote! {
         #categorize

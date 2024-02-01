@@ -212,7 +212,7 @@ pub fn get_variant_discriminator_mapping(
     }
 
     let use_repr_discriminators =
-        get_sbor_attribute_boolean_value(enum_attributes, "use_repr_discriminators")?;
+        get_sbor_attribute_bool_value(enum_attributes, "use_repr_discriminators")?;
     let mut variant_ids: BTreeMap<usize, VariantValue> = BTreeMap::new();
 
     for (i, variant) in variants.iter().enumerate() {
@@ -300,19 +300,18 @@ fn parse_u8_from_literal(literal: &Lit) -> Option<u8> {
     }
 }
 
-fn get_sbor_attribute_string_value(
+pub fn get_sbor_attribute_string_value(
     attributes: &[Attribute],
-    field_name: &str,
+    attribute_name: &str,
 ) -> Result<Option<String>> {
-    extract_sbor_typed_attributes(attributes)?.get_string_value(&field_name)
+    extract_sbor_typed_attributes(attributes)?.get_string_value(attribute_name)
 }
 
-fn get_sbor_attribute_boolean_value(attributes: &[Attribute], field_name: &str) -> Result<bool> {
-    extract_sbor_typed_attributes(attributes)?.get_bool_value(&field_name)
-}
-
-pub fn get_sbor_bool_value(attributes: &[Attribute], attribute_name: &str) -> Result<bool> {
-    extract_sbor_typed_attributes(&attributes)?.get_bool_value(attribute_name)
+pub fn get_sbor_attribute_bool_value(
+    attributes: &[Attribute],
+    attribute_name: &str,
+) -> Result<bool> {
+    extract_sbor_typed_attributes(attributes)?.get_bool_value(attribute_name)
 }
 
 pub fn is_categorize_skipped(f: &Field) -> Result<bool> {

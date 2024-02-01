@@ -240,8 +240,6 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for RefCel
     }
 }
 
-pub use schema::*;
-
 mod schema {
     use super::*;
 

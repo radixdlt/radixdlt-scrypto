@@ -122,7 +122,7 @@ mod tests {
 
     use super::*;
     use crate::builder::*;
-    use crate::signing::secp256k1::Secp256k1PrivateKey;
+    use crate::internal_prelude::Secp256k1PrivateKey;
 
     #[test]
     fn notary_as_signatory() {

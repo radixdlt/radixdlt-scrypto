@@ -44,16 +44,56 @@ macro_rules! implement_client_api {
         ),* $(,)*
     ) => {
         $(
-            impl $trait<RuntimeError> for TestEnvironment {
+            impl<D> $trait<RuntimeError> for TestEnvironment<D>
+            where
+                D: SubstateDatabase + CommittableSubstateDatabase + 'static
+            {
                 $(
                     #[inline]
                     fn $func_ident(&mut self, $($input_ident: $input_type),*) -> $outputs {
-                        self.0.with_kernel_mut(|kernel| {
+                        let logs_before = self.0.with_kernel_mut(|kernel| {
+                            kernel
+                                .kernel_get_system_state()
+                                .system
+                                .modules
+                                .transaction_runtime()
+                                .map(|runtime| runtime.logs.len())
+                                .unwrap_or(0)
+                        });
+
+                        let rtn = self.0.with_kernel_mut(|kernel| {
                             SystemService {
                                 api: kernel,
                                 phantom: PhantomData,
                             }.$func_ident( $($input_ident),* )
-                        })
+                        });
+
+                        self.0.with_kernel_mut(|kernel| {
+                            let logs_after = kernel
+                                .kernel_get_system_state()
+                                .system
+                                .modules
+                                .transaction_runtime()
+                                .map(|runtime| runtime.logs.len())
+                                .unwrap_or(0);
+
+                            if logs_before != logs_after {
+                                for (level, message) in kernel
+                                    .kernel_get_system_state()
+                                    .system
+                                    .modules
+                                    .transaction_runtime()
+                                    .map(|module| module.logs.iter())
+                                    .unwrap_or_default()
+                                    .into_iter()
+                                    .skip(logs_before)
+                                {
+                                    println!("[{}]: {}", level, message)
+                                }
+                            }
+                        });
+
+                        rtn
                     }
                 )*
             }
@@ -274,5 +314,32 @@ implement_client_api! {
         max_per_function_royalty_in_xrd: (&mut self) -> Result<Decimal, RuntimeError>,
         tip_percentage: (&mut self) -> Result<u32, RuntimeError>,
         fee_balance: (&mut self) -> Result<Decimal, RuntimeError>,
-    }
+    },
+    ClientCryptoUtilsApi: {
+        bls12381_v1_verify: (
+            &mut self,
+            message: &[u8],
+            public_key: &Bls12381G1PublicKey,
+            signature: &Bls12381G2Signature
+        ) -> Result<u32, RuntimeError>,
+        bls12381_v1_aggregate_verify: (
+            &mut self,
+            pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
+            signature: &Bls12381G2Signature
+        ) -> Result<u32, RuntimeError>,
+        bls12381_v1_fast_aggregate_verify: (
+            &mut self,
+            message: &[u8],
+            public_keys: &[Bls12381G1PublicKey],
+            signature: &Bls12381G2Signature
+        ) -> Result<u32, RuntimeError>,
+        bls12381_g2_signature_aggregate: (
+            &mut self,
+            signatures: &[Bls12381G2Signature]
+        ) -> Result<Bls12381G2Signature, RuntimeError>,
+        keccak256_hash: (
+            &mut self,
+            data: &[u8]
+        ) -> Result<Hash, RuntimeError>,
+    },
 }

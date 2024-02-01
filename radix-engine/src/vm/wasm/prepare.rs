@@ -11,6 +11,9 @@ use wasm_instrument::{
 use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType, WasmFeatures};
 
 use super::WasmiModule;
+
+pub const SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION: u64 = 1u64;
+
 #[derive(Debug)]
 pub struct WasmModule {
     module: ModuleInfo,
@@ -59,7 +62,7 @@ impl WasmModule {
         }
     }
 
-    pub fn enforce_import_limit(self) -> Result<Self, PrepareError> {
+    pub fn enforce_import_constraints(self, minor_version: u64) -> Result<Self, PrepareError> {
         // Only allow `env::radix_engine` import
         for entry in self
             .module
@@ -733,6 +736,125 @@ impl WasmModule {
                             ));
                         }
                     }
+                    CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => {
+                        if minor_version < SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
+                                vec![ValType::I32],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => {
+                        if minor_version < 1 {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![ValType::I32],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME => {
+                        if minor_version < SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
+                                vec![ValType::I32],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME => {
+                        if minor_version < SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => {
+                        if minor_version < SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                            ));
+                        }
+
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
                     _ => {}
                 };
             }
@@ -983,15 +1105,18 @@ impl WasmModule {
         mut self,
         rules: &R,
     ) -> Result<Self, PrepareError> {
-        let backend = gas_metering::host_function::Injector::new(
-            MODULE_ENV_NAME,
-            COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
-        );
-        gas_metering::inject(&mut self.module, backend, rules).map_err(|err| {
-            PrepareError::RejectedByInstructionMetering {
-                reason: err.to_string(),
-            }
-        })?;
+        #[cfg(not(feature = "coverage"))]
+        {
+            let backend = gas_metering::host_function::Injector::new(
+                MODULE_ENV_NAME,
+                COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
+            );
+            gas_metering::inject(&mut self.module, backend, rules).map_err(|err| {
+                PrepareError::RejectedByInstructionMetering {
+                    reason: err.to_string(),
+                }
+            })?;
+        }
 
         Ok(self)
     }
@@ -1237,7 +1362,7 @@ mod tests {
             PrepareError::InvalidImport(InvalidImport::ImportNotAllowed(
                 "name_to_replace".to_string()
             )),
-            WasmModule::enforce_import_limit
+            |s| WasmModule::enforce_import_constraints(s, 0u64)
         );
 
         for name in [
@@ -1284,7 +1409,7 @@ mod tests {
             assert_invalid_wasm!(
                 wat.replace("name_to_replace", name),
                 PrepareError::InvalidImport(InvalidImport::InvalidFunctionType(name.to_string())),
-                WasmModule::enforce_import_limit
+                |w| WasmModule::enforce_import_constraints(w, 0u64)
             );
         }
     }
