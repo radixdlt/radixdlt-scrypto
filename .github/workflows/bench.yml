@@ -32,12 +32,20 @@ jobs:
       pull-requests: write
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
     steps:
-      - uses: RDXWorks-actions/checkout@main
+      - name: Clone forked repo
+        uses: RDXWorks-actions/checkout@main
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
+      - name: Clone radixdlt-scrypto
+        uses: RDXWorks-actions/checkout@main
+        with:
+          ref: ${{ github.base_ref }}
+          path: "original/"
+          sparse-checkout: |
+            .github
       - name: Setup environment
-        uses: ./.github/actions/setup-env
+        uses: "original/.github/actions/setup-env"
       - uses: radixdlt/criterion-compare-action@update-same-commit
         with:
           branchName: ${{ github.base_ref }}
