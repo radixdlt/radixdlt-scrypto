@@ -73,9 +73,11 @@ jobs:
       - name: Pull scrypto-builder docker image
         run:
           DOCKER_DEFAULT_PLATFORM=linux/amd64 docker pull radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }}
-      - name: Build scrypto examples
+      - name: Build scrypto example using scrypto-builder
         run: |
-          docker run --entrypoint "scrypto" \
-            -v $(pwd):/radixdlt-scrypto \
-            radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }} \
-            build --path /radixdlt-scrypto/examples/everything
+          cp -r examples/everything test_package
+          rev=$(/usr/bin/git log -1 --format='%H')
+          sed -e "s/<replace-it-with-proper-revision>/$rev/g" test_package/Cargo.toml_for_scrypto_builder > test_package/Cargo.toml
+          docker run \
+            -v $(pwd)/test_package:/src \
+            radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }}
