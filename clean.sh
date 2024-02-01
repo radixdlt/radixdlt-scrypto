@@ -28,4 +28,3 @@ cargo clean
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -I '{}' bash -c "echo cleaning '{}'; cd '{}'; cargo clean"
 )
-
