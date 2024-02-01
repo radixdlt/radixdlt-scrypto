@@ -47,3 +47,4 @@ test_benchmark  \
 ./check_stack_usage.sh
 
 echo "Congrats! All tests passed."
+
