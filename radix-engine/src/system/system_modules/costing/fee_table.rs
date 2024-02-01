@@ -139,10 +139,12 @@ impl FeeTable {
                     .get(package_address)
                     .and_then(|x| x.get(export_name))
                     .and_then(|value| Some(add(value.1, mul(value.0, cast(*input_size)))))
-                    .expect(&format!(
-                        "Native function not found: {:?}::{}. ",
-                        package_address, export_name
-                    ))
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "Native function not found: {:?}::{}. ",
+                            package_address, export_name
+                        )
+                    })
             });
 
         native_execution_units / CPU_INSTRUCTIONS_TO_COST_UNIT
@@ -379,6 +381,130 @@ impl FeeTable {
         500 + Self::data_processing_cost(size)
     }
 
+    #[inline]
+    pub fn bls12381_v1_verify_cost(&self, size: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_verify_bls12381_v1_costing`
+        // - For sizes less than 1024, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   instructions_cnt = 35.83223 * size + 15563087.39
+        //   Lets round:
+        //    35.83223       -> 36
+        //    15563087.39    -> 15650000 (increased slightly to get the positive difference between
+        //             calculated and measured number of instructions)
+        let size = if size < 1024 { 1024 } else { cast(size) };
+        let instructions_cnt = add(mul(size, 36), 15650000);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn bls12381_v1_aggregate_verify_cost(&self, sizes: &[usize]) -> u32 {
+        // Observed that aggregated verify might be broken down into:
+        // - steps depending on message size
+        //   - aggregation of pairings of each corresponding key and message pair
+        //   - commit each above aggregation
+        // - steps that do not depend on message size
+        //   - read signature from bytes: 281125 instructions
+        //   - signature validation: 583573 instructions
+        //   - aggregated pairing of signature to verify and initialization point: 3027639 instructions
+        //   - final verification: 4280077 instructions
+        //
+        // more details and data in https://docs.google.com/spreadsheets/d/1rV0KyB7UQrg2tOenbh2MQ1fo9MXwrwPFW4l0_CVO-6o/edit?usp=sharing
+
+        // Pairing aggregate
+        // Following linerar equation might be applied:
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   instructions_cnt = 34.42199 * size + 2620295.64271
+        //   Lets round:
+        //    34.42199      -> 35
+        //    2620295.64271 -> 2620296
+        //
+        // Also observed that additional 16850000 instructions are performed
+        // every multiple of 8
+        let mut instructions_cnt = 0u32;
+
+        for s in sizes {
+            instructions_cnt = add(add(instructions_cnt, mul(35, cast(*s))), 2620296);
+        }
+        let multiplier = cast(sizes.len() / 8);
+        instructions_cnt = add(instructions_cnt, mul(multiplier, 16850000));
+
+        // Pairing commit
+        // Observed that number commit instructions repeats every multiple of 8
+        instructions_cnt = add(
+            instructions_cnt,
+            match sizes.len() % 8 {
+                0 => 0,
+                1 => 3051556,
+                2 => 5020768,
+                3 => 6990111,
+                4 => 8959454,
+                5 => 10928798,
+                6 => 12898141,
+                7 => 14867484,
+                _ => unreachable!(),
+            },
+        );
+
+        // Instructions that do not depend on size
+        instructions_cnt = add(instructions_cnt, 281125 + 583573 + 3027639 + 4280077);
+
+        // Observed that threaded takes ~1.21 more instructions than no threaded
+        instructions_cnt = mul(instructions_cnt / 100, 121);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn bls12381_v1_fast_aggregate_verify_cost(&self, size: usize, keys_cnt: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing`
+        // - For sizes less than 1024, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 35.008 * size + 626055.4801 * keys_cnt + 15125588.5419
+        //   (used: https://www.socscistatistics.com/tests/multipleregression/default.aspx)
+        //   Lets round:
+        //    35.008        -> 36
+        //    626055.4801   -> 626056
+        //    15125588.5419 -> 15200000  (increased slightly to get the positive difference between
+        //             calculated and measured number of instructions)
+        let size = if size < 1024 { 1024 } else { cast(size) };
+        let instructions_cnt = add(add(mul(size, 36), mul(cast(keys_cnt), 626056)), 15200000);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn bls12381_g2_signature_aggregate_cost(&self, signatures_cnt: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_bls12381_g2_signature_aggregate_costing`
+        // Following linear equation might be applied:
+        //   instructions_cnt = 879553.91557 * signatures_cnt - 567872.58948
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   Lets round:
+        //    879553.91557 -> 879554
+        //    567872.5895  -> 500000 (decreased to get more accurate difference between calculated
+        //           and measured instructions)
+        let instructions_cnt = sub(mul(cast(signatures_cnt), 879554), 500000);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn keccak256_hash_cost(&self, size: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_keccak256_costing`
+        // - For sizes less than 100, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 46.41919 * size + 2641.66077
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   Lets round:
+        //     46.41919  -> 47
+        //     2641.66077 -> 2642
+        let size = if size < 100 { 100 } else { cast(size) };
+        let instructions_cnt = add(mul(size, 47), 2642);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
     //======================
     // Finalization costs
     // This is primarily to account for the additional work on the Node side
@@ -423,6 +549,11 @@ fn cast(a: usize) -> u32 {
 #[inline]
 fn add(a: u32, b: u32) -> u32 {
     a.checked_add(b).unwrap_or(u32::MAX)
+}
+
+#[inline]
+fn sub(a: u32, b: u32) -> u32 {
+    a.checked_sub(b).unwrap_or(u32::MAX)
 }
 
 #[inline]

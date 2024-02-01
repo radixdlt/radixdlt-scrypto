@@ -62,19 +62,20 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => {
-                let input: ConsensusManagerGetCurrentTimeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = ConsensusManagerBlueprint::get_current_time(input.precision, api)?;
+                let input: ConsensusManagerGetCurrentTimeInputV1 =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = ConsensusManagerBlueprint::get_current_time_v1(input.precision, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
-                let input: ConsensusManagerCompareCurrentTimeInput =
+                let input: ConsensusManagerCompareCurrentTimeInputV1 =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = ConsensusManagerBlueprint::compare_current_time(
+                let rtn = ConsensusManagerBlueprint::compare_current_time_v1(
                     input.instant,
                     input.precision,
                     input.operator,
@@ -266,6 +267,48 @@ impl ConsensusManagerNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::apply_reward(input.xrd_bucket, input.epoch, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
+            )),
+        }
+    }
+}
+
+pub struct ConsensusManagerSecondsPrecisionNativeCode;
+
+impl ConsensusManagerSecondsPrecisionNativeCode {
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        match export_name {
+            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => {
+                let input: ConsensusManagerGetCurrentTimeInputV2 =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = ConsensusManagerBlueprint::get_current_time_v2(input.precision, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
+                let input: ConsensusManagerCompareCurrentTimeInputV2 =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = ConsensusManagerBlueprint::compare_current_time_v2(
+                    input.instant,
+                    input.precision,
+                    input.operator,
+                    api,
+                )?;
+
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::ApplicationError(

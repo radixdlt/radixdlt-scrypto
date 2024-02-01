@@ -1,3 +1,4 @@
+use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::io;
@@ -60,6 +61,7 @@ fn run_cargo_build(
     trace: bool,
     no_schema: bool,
     log_level: Level,
+    coverage: bool,
 ) -> Result<(), BuildError> {
     let mut features = String::new();
     if trace {
@@ -83,6 +85,15 @@ fn run_cargo_build(
     if Level::Trace <= log_level {
         features.push_str(",scrypto/log-trace");
     }
+    if coverage {
+        features.push_str(",scrypto/coverage");
+    }
+
+    let rustflags = if coverage {
+        "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir".to_owned()
+    } else {
+        env::var("CARGO_ENCODED_RUSTFLAGS").unwrap_or_default()
+    };
 
     let status = Command::new("cargo")
         .arg("build")
@@ -98,6 +109,7 @@ fn run_cargo_build(
         } else {
             vec!["--features", &features[1..]]
         })
+        .env("CARGO_ENCODED_RUSTFLAGS", rustflags)
         .status()
         .map_err(BuildError::IOError)?;
     if status.success() {
@@ -142,6 +154,7 @@ pub fn build_package<P: AsRef<Path>>(
     force_local_target: bool,
     disable_wasm_opt: bool,
     log_level: Level,
+    coverage: bool,
 ) -> Result<(PathBuf, PathBuf), BuildError> {
     let base_path = base_path.as_ref().to_owned();
 
@@ -154,21 +167,26 @@ pub fn build_package<P: AsRef<Path>>(
 
     // Use the scrypto directory as a target, even if the scrypto crate is part of a workspace
     // This allows us to find where the WASM and SCHEMA ends up deterministically.
-    let target_path = if force_local_target {
+    let mut target_path = if force_local_target {
         let mut target_path = base_path.clone();
         target_path.push("target");
         target_path
     } else {
         PathBuf::from_str(&get_default_target_directory(&manifest_path)?).unwrap()
-        // Infallible
     };
+
+    // If coverage is enabled we change target directory to coverage directory
+    if coverage {
+        target_path.pop();
+        target_path.push("coverage");
+    }
 
     let mut out_path = target_path.clone();
     out_path.push("wasm32-unknown-unknown");
     out_path.push("release");
 
     // Build with SCHEMA
-    run_cargo_build(&manifest_path, &target_path, trace, false, log_level)?;
+    run_cargo_build(&manifest_path, &target_path, trace, false, log_level, false)?;
 
     // Find the binary paths
     let manifest = Manifest::from_path(&manifest_path)
@@ -199,7 +217,14 @@ pub fn build_package<P: AsRef<Path>>(
     .map_err(|err| BuildError::IOErrorAtPath(err, definition_path.clone()))?;
 
     // Build without SCHEMA
-    run_cargo_build(&manifest_path, &target_path, trace, true, log_level)?;
+    run_cargo_build(
+        &manifest_path,
+        &target_path,
+        trace,
+        true,
+        log_level,
+        coverage,
+    )?;
 
     // Optimizes the built wasm using Binaryen's wasm-opt tool. The code that follows is equivalent
     // to running the following commands in the CLI:
@@ -217,21 +242,30 @@ pub fn build_package<P: AsRef<Path>>(
 }
 
 /// Runs tests within a package.
-pub fn test_package<P: AsRef<Path>, I, S>(path: P, args: I) -> Result<(), TestError>
+pub fn test_package<P: AsRef<Path>, I, S>(path: P, args: I, coverage: bool) -> Result<(), TestError>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    build_package(&path, false, false, false, Level::Trace).map_err(TestError::BuildError)?;
+    if !coverage {
+        build_package(&path, false, false, false, Level::Trace, false)
+            .map_err(TestError::BuildError)?;
+    }
 
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");
     if cargo.exists() {
+        let features = if coverage {
+            vec!["--features", "scrypto-unit/coverage"]
+        } else {
+            vec![]
+        };
         let status = Command::new("cargo")
             .arg("test")
             .arg("--release")
             .arg("--manifest-path")
             .arg(cargo.to_str().unwrap())
+            .args(features)
             .arg("--")
             .args(args)
             .status()

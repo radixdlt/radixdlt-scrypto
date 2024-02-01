@@ -22,6 +22,7 @@ use sbor::LocalTypeId;
 use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
+use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};
 use crate::system::payload_validation::{SchemaOrigin, TypeInfoForValidation, ValidationContext};
 use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
@@ -53,6 +54,7 @@ pub enum ObjectPartitionDescriptor {
 
 #[derive(Clone, Debug)]
 pub enum SystemPartitionDescriptor {
+    BootLoader,
     TypeInfo,
     Schema,
     KeyValueStore,
@@ -275,12 +277,12 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok(substate.into_payload())
     }
 
-    pub fn read_object_collection_entry<K: ScryptoEncode, V: ScryptoDecode>(
+    pub fn get_partition_of_collection(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        collection_key: ObjectCollectionKey<K>,
-    ) -> Result<Option<V>, SystemReaderError> {
+        collection_index: CollectionIndex,
+    ) -> Result<PartitionNumber, SystemReaderError> {
         let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
         let definition = self.get_blueprint_definition(&blueprint_id)?;
 
@@ -288,21 +290,30 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             .interface
             .state
             .collections
-            .get(collection_key.collection_index() as usize)
+            .get(collection_index as usize)
             .ok_or_else(|| SystemReaderError::CollectionDoesNotExist)?;
 
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {
-                let base_partition = match module_id {
-                    ModuleId::Main => MAIN_BASE_PARTITION,
-                    ModuleId::Metadata => METADATA_BASE_PARTITION,
-                    ModuleId::Royalty => ROYALTY_BASE_PARTITION,
-                    ModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
-                };
-                base_partition.at_offset(*offset).unwrap()
+                module_id.base_partition_num().at_offset(*offset).unwrap()
             }
             PartitionDescription::Physical(partition_number) => *partition_number,
         };
+
+        Ok(partition_number)
+    }
+
+    pub fn read_object_collection_entry<K: ScryptoEncode, V: ScryptoDecode>(
+        &self,
+        node_id: &NodeId,
+        module_id: ModuleId,
+        collection_key: ObjectCollectionKey<K>,
+    ) -> Result<Option<V>, SystemReaderError> {
+        let partition_number = self.get_partition_of_collection(
+            node_id,
+            module_id,
+            collection_key.collection_index(),
+        )?;
 
         let entry = match collection_key {
             ObjectCollectionKey::KeyValue(_, key) => self
@@ -312,22 +323,23 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     partition_number,
                     &SubstateKey::Map(scrypto_encode(key).unwrap()),
                 )
-                .map(|value| value.into_value())
-                .unwrap_or(None),
-            ObjectCollectionKey::Index(_, key) => {
-                self.substate_db.get_mapped::<SpreadPrefixKeyMapper, V>(
+                .and_then(|value| value.into_value()),
+            ObjectCollectionKey::Index(_, key) => self
+                .substate_db
+                .get_mapped::<SpreadPrefixKeyMapper, IndexEntrySubstate<V>>(
                     node_id,
                     partition_number,
                     &SubstateKey::Map(scrypto_encode(key).unwrap()),
                 )
-            }
-            ObjectCollectionKey::SortedIndex(_, sort, key) => {
-                self.substate_db.get_mapped::<SpreadPrefixKeyMapper, V>(
+                .map(|value| value.into_value()),
+            ObjectCollectionKey::SortedIndex(_, sort, key) => self
+                .substate_db
+                .get_mapped::<SpreadPrefixKeyMapper, SortedIndexEntrySubstate<V>>(
                     node_id,
                     partition_number,
                     &SubstateKey::Sorted((sort.to_be_bytes(), scrypto_encode(key).unwrap())),
                 )
-            }
+                .map(|value| value.into_value()),
         };
 
         Ok(entry)
@@ -336,7 +348,8 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     pub fn key_value_store_iter(
         &self,
         node_id: &NodeId,
-    ) -> Result<Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>, SystemReaderError> {
+        from_key: Option<&MapKey>,
+    ) -> Result<Box<dyn Iterator<Item = (MapKey, Vec<u8>)> + '_>, SystemReaderError> {
         if self.tracked.is_some() {
             panic!("substates_iter with overlay not supported.");
         }
@@ -348,9 +361,11 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
         let partition_key =
             SpreadPrefixKeyMapper::to_db_partition_key(node_id, MAIN_BASE_PARTITION);
+
+        let from_key = from_key.map(|from_key| SpreadPrefixKeyMapper::map_to_db_sort_key(from_key));
         let iter = self
             .substate_db
-            .list_entries(&partition_key)
+            .list_entries_from(&partition_key, from_key.as_ref())
             .filter_map(move |entry| {
                 let substate_key = SpreadPrefixKeyMapper::from_db_sort_key::<MapKey>(&entry.0);
                 let key = match substate_key {
@@ -373,7 +388,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         module_id: ModuleId,
         collection_index: CollectionIndex,
     ) -> Result<Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>, SystemReaderError> {
-        self.collection_iter_advanced(node_id, module_id, collection_index)
+        self.collection_iter_advanced(node_id, module_id, collection_index, None)
             .map(|x| x.0)
     }
 
@@ -382,6 +397,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         node_id: &NodeId,
         module_id: ModuleId,
         collection_index: CollectionIndex,
+        from_substate_key: Option<&SubstateKey>,
     ) -> Result<
         (
             Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_>,
@@ -412,9 +428,11 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         };
 
         let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_number);
+        let from_sort_key = from_substate_key
+            .map(|substate_key| SpreadPrefixKeyMapper::to_db_sort_key(substate_key));
         let iter = self
             .substate_db
-            .list_entries(&partition_key)
+            .list_entries_from(&partition_key, from_sort_key.as_ref())
             .filter_map(move |entry| {
                 let key = match schema {
                     BlueprintCollectionSchema::KeyValueStore(..)
@@ -930,6 +948,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         partition_num: &PartitionNumber,
     ) -> Result<Vec<SystemPartitionDescriptor>, SystemReaderError> {
         let mut descriptors = Vec::new();
+
+        if partition_num.eq(&BOOT_LOADER_PARTITION) {
+            descriptors.push(SystemPartitionDescriptor::BootLoader);
+        }
 
         if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
             descriptors.push(SystemPartitionDescriptor::TypeInfo);

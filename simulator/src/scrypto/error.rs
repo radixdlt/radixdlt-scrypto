@@ -13,4 +13,6 @@ pub enum Error {
     FormatError(FormatError),
 
     PackageAlreadyExists,
+
+    CoverageError(CoverageError),
 }

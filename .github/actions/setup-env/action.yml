@@ -4,16 +4,24 @@ description: 'Common GH action to setup job environment'
 runs:
   using: "composite"
   steps:
-    # - name: Install Rust toolchain
-    #   uses: actions-rs/toolchain@v1
-    #   with:
-    #     toolchain: stable
-    #     default: true
-    #     target: wasm32-unknown-unknown
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        default: true
+        target: wasm32-unknown-unknown
 
-    # - name: Install nextest
-    #   uses: taiki-e/install-action@nextest
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
+    - name: Install Rust toolchain
+      uses: RDXWorks-actions/toolchain@master
+      with:
+        toolchain: stable
+        default: true
+        target: wasm32-unknown-unknown
 
+    - name: Install nextest
+      uses: RDXWorks-actions/install-action@nextest
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
       if: runner.os == 'Windows'
       run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
@@ -21,5 +29,20 @@ runs:
     - name: Install dependencies
       if: runner.os == 'Windows'
       run: choco install llvm -y
+      shell: bash
+    - name: Setup cmake
+      if: runner.os == 'Linux'
+      uses: RDXWorks-actions/actions-setup-cmake@master
+      with:
+        cmake-version: '3.27.9'
+    - name: Install libclang-dev
+      if: runner.os == 'Linux'
+      run: sudo apt-get -y update && sudo apt-get install clang libclang-dev -y -f
+      shell: bash
+    - name: Setup LLVM
+      if: runner.os == 'macOS'
+      # Switch to more recent LLVM/Clang 15.0.7
+      # see: https://github.com/actions/runner-images/blob/macOS-12/20240105.3/images/macos/macos-12-Readme.md
+      run: echo "$(brew --prefix llvm@15)/bin" >> $GITHUB_PATH
       shell: bash
 

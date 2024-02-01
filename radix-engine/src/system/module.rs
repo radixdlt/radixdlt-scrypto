@@ -10,15 +10,17 @@ use crate::kernel::kernel_callback_api::{
 use crate::system::actor::Actor;
 use crate::types::*;
 
-pub trait SystemModule<M: KernelCallbackObject> {
+pub trait InitSystemModule {
     //======================
     // System module setup
     //======================
     #[inline(always)]
-    fn on_init<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init(&mut self) -> Result<(), RuntimeError> {
         Ok(())
     }
+}
 
+pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
     #[inline(always)]
     fn on_teardown<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())

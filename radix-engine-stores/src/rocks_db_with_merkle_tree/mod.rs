@@ -2,6 +2,7 @@ use crate::hash_tree::tree_store::{
     encode_key, NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, TreeNodeV1, VersionedTreeNode,
 };
 use itertools::Itertools;
+use radix_engine_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_common::prelude::Hash;
 use radix_engine_derive::ScryptoSbor;
@@ -16,7 +17,7 @@ use std::path::PathBuf;
 
 mod state_tree;
 use crate::rocks_db::{decode_from_rocksdb_bytes, encode_to_rocksdb_bytes};
-use state_tree::*;
+pub use state_tree::*;
 
 const META_CF: &str = "meta";
 const SUBSTATES_CF: &str = "substates";
@@ -107,12 +108,15 @@ impl SubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             .expect("IO Error")
     }
 
-    fn list_entries(
+    fn list_entries_from(
         &self,
         partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         let partition_key = partition_key.clone();
-        let start_key_bytes = encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![]));
+        let empty_sort_key = DbSortKey(vec![]);
+        let from_sort_key = from_sort_key.unwrap_or(&empty_sort_key);
+        let start_key_bytes = encode_to_rocksdb_bytes(&partition_key, from_sort_key);
         let iter = self
             .db
             .iterator_cf(
@@ -181,7 +185,10 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
                             .delete_range_cf(
                                 self.cf(SUBSTATES_CF),
                                 encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
-                                encode_to_rocksdb_bytes(&partition_key.next(), &DbSortKey(vec![])),
+                                encode_to_rocksdb_bytes(
+                                    &partition_key,
+                                    &DbSortKey(vec![u8::MAX; 2 * MAX_SUBSTATE_KEY_SIZE]),
+                                ),
                             )
                             .expect("IO error");
                         for (sort_key, value_bytes) in new_substate_values {
@@ -198,7 +205,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         // derive and put new JMT nodes (also record references to stale parts, for later amortized background GC [not implemented here!])
         let (state_hash_tree_update, new_root_hash) =
             compute_state_tree_update(self, parent_state_version, database_updates);
-        for (key, node) in state_hash_tree_update.new_nodes {
+        for (key, node) in state_hash_tree_update.new_nodes.take() {
             batch.put_cf(
                 self.cf(MERKLE_NODES_CF),
                 encode_key(&key),
@@ -229,7 +236,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         self.db.write(batch).unwrap();
 
         if self.pruning_enabled {
-            for part in state_hash_tree_update.stale_tree_parts {
+            for part in state_hash_tree_update.stale_tree_parts.take() {
                 match part {
                     StaleTreePart::Node(node_key) => {
                         self.db
@@ -277,7 +284,7 @@ impl ListableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
         Box::new(
             self.db
-                .iterator(IteratorMode::Start)
+                .iterator_cf(self.cf(SUBSTATES_CF), IteratorMode::Start)
                 .map(|kv| {
                     let (iter_key_bytes, _) = kv.as_ref().unwrap();
                     let (iter_key, _) = decode_from_rocksdb_bytes(iter_key_bytes);
@@ -304,4 +311,60 @@ impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
 struct Metadata {
     current_state_version: u64,
     current_state_root_hash: Hash,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use radix_engine_store_interface::interface::{
+        CommittableSubstateDatabase, DatabaseUpdates, DbSortKey, NodeDatabaseUpdates,
+        PartitionDatabaseUpdates,
+    };
+
+    #[cfg(not(feature = "alloc"))]
+    #[test]
+    fn test_partition_deletion() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let mut db = RocksDBWithMerkleTreeSubstateStore::standard(temp_dir.into_path());
+
+        let node_updates = NodeDatabaseUpdates {
+            partition_updates: indexmap! {
+                0 => PartitionDatabaseUpdates::Reset {
+                    new_substate_values: indexmap! {
+                        DbSortKey(vec![5]) => vec![6]
+                    }
+                },
+                1 => PartitionDatabaseUpdates::Reset {
+                    new_substate_values: indexmap! {
+                        DbSortKey(vec![7]) => vec![8]
+                    }
+                },
+                255 => PartitionDatabaseUpdates::Reset {
+                    new_substate_values: indexmap! {
+                        DbSortKey(vec![9]) => vec![10]
+                    }
+                }
+            },
+        };
+        let updates = DatabaseUpdates {
+            node_updates: indexmap! {
+                vec![0] => node_updates.clone(),
+                vec![1] => node_updates.clone(),
+                vec![255] => node_updates.clone(),
+            },
+        };
+        db.commit(&updates);
+
+        assert_eq!(db.list_partition_keys().count(), 9);
+        db.commit(&DatabaseUpdates {
+            node_updates: indexmap! {
+                vec![0] => NodeDatabaseUpdates {
+                    partition_updates: indexmap!{
+                        255 => PartitionDatabaseUpdates::Reset { new_substate_values: indexmap!{} }
+                    }
+                }
+            },
+        });
+        assert_eq!(db.list_partition_keys().count(), 8);
+    }
 }

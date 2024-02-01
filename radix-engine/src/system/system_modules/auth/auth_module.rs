@@ -7,7 +7,7 @@ use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::actor::Actor;
 use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::module::SystemModule;
+use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::node_init::type_info_partition;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -538,4 +538,5 @@ impl AuthModule {
     }
 }
 
+impl InitSystemModule for AuthModule {}
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {}

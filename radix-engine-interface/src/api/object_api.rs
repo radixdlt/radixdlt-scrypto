@@ -109,7 +109,10 @@ impl ModuleId {
 }
 
 #[repr(u8)]
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "radix_engine_fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(
     Debug,
     Clone,

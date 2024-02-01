@@ -11,6 +11,8 @@ use utils::ContextualDisplay;
 // Please update REP-60 after updating types/configs defined in this file!
 //=========================================================================
 
+pub const BOOT_LOADER_RESERVED_NODE_ID_FIRST_BYTE: u8 = 0u8;
+
 /// The unique identifier of a (stored) node.
 #[cfg_attr(
     feature = "radix_engine_fuzzing",

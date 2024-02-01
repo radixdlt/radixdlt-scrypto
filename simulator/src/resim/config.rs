@@ -2,9 +2,76 @@ use std::fs;
 use std::path::PathBuf;
 
 use radix_engine::types::*;
+use radix_engine::utils::*;
+use radix_engine_store_interface::db_key_mapper::*;
+use radix_engine_store_interface::interface::*;
 
 use crate::resim::*;
 use std::env;
+
+/// The environment that the simulator runs in.
+pub struct SimulatorEnvironment {
+    // Db
+    pub db: RocksdbSubstateStore,
+    // VMs
+    pub scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    pub native_vm: DefaultNativeVm,
+}
+
+impl SimulatorEnvironment {
+    pub fn new() -> Result<Self, Error> {
+        // Create the database
+        let db = RocksdbSubstateStore::standard(get_data_dir()?);
+
+        // Create the VMs
+        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+        let native_vm = DefaultNativeVm::new();
+
+        let mut env = Self {
+            db,
+            scrypto_vm,
+            native_vm,
+        };
+        env.bootstrap();
+
+        Ok(env)
+    }
+
+    pub fn reset(self) -> Result<Self, Error> {
+        drop(self);
+
+        let dir = get_data_dir()?;
+        std::fs::remove_dir_all(dir).map_err(Error::IOError)?;
+
+        Self::new()
+    }
+
+    fn bootstrap(&mut self) {
+        let vm = Vm::new(&self.scrypto_vm, self.native_vm.clone());
+
+        // Bootstrap
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut self.db, vm, false)
+            .bootstrap_test_default();
+
+        // Run the protocol updates - unlike the test runner, the user has no way in whether they
+        // get these protocol updates or not.
+        {
+            let state_updates = generate_seconds_precision_state_updates(&self.db);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            self.db.commit(&db_updates);
+        }
+        {
+            let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            self.db.commit(&db_updates);
+        }
+        {
+            let state_updates = generate_pools_v1_1_state_updates(&self.db);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            self.db.commit(&db_updates);
+        }
+    }
+}
 
 /// Simulator configurations.
 #[derive(Debug, Clone, Default, ScryptoSbor)]
@@ -15,7 +82,7 @@ pub struct Configs {
     pub nonce: u32,
 }
 
-pub fn get_data_dir() -> Result<PathBuf, Error> {
+fn get_data_dir() -> Result<PathBuf, Error> {
     let path = match env::var(ENV_DATA_DIR) {
         Ok(value) => std::path::PathBuf::from(value),
         Err(..) => {

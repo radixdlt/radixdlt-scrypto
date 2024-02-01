@@ -18,6 +18,7 @@ pub enum TransactionDiscriminator {
     V1RoundUpdate = V1_ROUND_UPDATE_TRANSACTION,
     V1Preview = V1_PREVIEW_TRANSACTION,
     V1Ledger = V1_LEDGER_TRANSACTION,
+    V1Flash = V1_FLASH_TRANSACTION,
 }
 
 const V1_INTENT: u8 = 1;
@@ -27,6 +28,7 @@ const V1_SYSTEM_TRANSACTION: u8 = 4;
 const V1_ROUND_UPDATE_TRANSACTION: u8 = 5;
 const V1_PREVIEW_TRANSACTION: u8 = 6;
 const V1_LEDGER_TRANSACTION: u8 = 7;
+const V1_FLASH_TRANSACTION: u8 = 8;
 
 // TODO - change this to use #[flatten] when REP-84 is out
 /// An enum of a variety of different transaction payload types
@@ -67,7 +69,6 @@ mod tests {
     use super::*;
     use crate::manifest::e2e::tests::print_blob;
     use crate::model::*;
-    use crate::{signing::ed25519::Ed25519PrivateKey, signing::secp256k1::Secp256k1PrivateKey};
 
     fn hash_manifest_encoded_without_prefix_byte<T: ManifestEncode>(value: T) -> Hash {
         hash(&manifest_encode(&value).unwrap()[1..])
@@ -153,10 +154,10 @@ mod tests {
         assert_eq!(
             intent_as_versioned,
             VersionedTransactionPayload::IntentV1 {
-                header: header_v1.clone(),
-                instructions: instructions_v1.clone(),
-                blobs: blobs_v1.clone(),
-                message: message_v1.clone(),
+                header: header_v1,
+                instructions: instructions_v1,
+                blobs: blobs_v1,
+                message: message_v1,
             }
         );
 
@@ -272,8 +273,8 @@ mod tests {
         assert_eq!(
             notarized_transaction_as_versioned,
             VersionedTransactionPayload::NotarizedTransactionV1 {
-                signed_intent: signed_intent_v1.clone(),
-                notary_signature: notary_signature_v1.clone(),
+                signed_intent: signed_intent_v1,
+                notary_signature: notary_signature_v1,
             }
         );
 

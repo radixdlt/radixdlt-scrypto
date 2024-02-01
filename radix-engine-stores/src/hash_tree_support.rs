@@ -55,11 +55,13 @@ impl<D: SubstateDatabase> SubstateDatabase for HashTreeUpdatingDatabase<D> {
         self.underlying.get_substate(partition_key, sort_key)
     }
 
-    fn list_entries(
+    fn list_entries_from(
         &self,
         partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        self.underlying.list_entries(partition_key)
+        self.underlying
+            .list_entries_from(partition_key, from_sort_key)
     }
 }
 

@@ -6,16 +6,16 @@ pub use radix_engine::blueprints::account::{AccountBlueprint, AccountError, Acco
 use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSubstateValue};
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
-pub use radix_engine::blueprints::pool::multi_resource_pool;
-use radix_engine::blueprints::pool::multi_resource_pool::{
+pub use radix_engine::blueprints::pool::v1::substates::multi_resource_pool;
+use radix_engine::blueprints::pool::v1::substates::multi_resource_pool::{
     MultiResourcePoolTypedSubstateKey, MultiResourcePoolTypedSubstateValue,
 };
-pub use radix_engine::blueprints::pool::one_resource_pool;
-use radix_engine::blueprints::pool::one_resource_pool::{
+pub use radix_engine::blueprints::pool::v1::substates::one_resource_pool;
+use radix_engine::blueprints::pool::v1::substates::one_resource_pool::{
     OneResourcePoolTypedSubstateKey, OneResourcePoolTypedSubstateValue,
 };
-pub use radix_engine::blueprints::pool::two_resource_pool;
-use radix_engine::blueprints::pool::two_resource_pool::{
+pub use radix_engine::blueprints::pool::v1::substates::two_resource_pool;
+use radix_engine::blueprints::pool::v1::substates::two_resource_pool::{
     TwoResourcePoolTypedSubstateKey, TwoResourcePoolTypedSubstateValue,
 };
 pub use radix_engine::blueprints::resource::*;
@@ -26,6 +26,7 @@ pub use radix_engine::system::attached_modules::royalty::*;
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
+use radix_engine::vm::VmBoot;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 use transaction::prelude::IntentHash;
 
@@ -77,6 +78,7 @@ use transaction::prelude::IntentHash;
 
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
+    BootLoader(TypedBootLoaderSubstateKey),
     TypeInfo(TypedTypeInfoSubstateKey),
     Schema(TypedSchemaSubstateKey),
     RoleAssignmentModule(TypedRoleAssignmentSubstateKey),
@@ -100,6 +102,11 @@ impl TypedSubstateKey {
             _ => true,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedBootLoaderSubstateKey {
+    BootLoaderField(BootLoaderField),
 }
 
 #[derive(Debug, Clone)]
@@ -164,6 +171,11 @@ pub fn to_typed_substate_key(
     substate_key: &SubstateKey,
 ) -> Result<TypedSubstateKey, String> {
     let substate_type = match partition_num {
+        BOOT_LOADER_PARTITION => {
+            TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
+                BootLoaderField::try_from(substate_key).map_err(|_| error("BootLoaderField"))?,
+            ))
+        }
         TYPE_INFO_FIELD_PARTITION => {
             TypedSubstateKey::TypeInfo(TypedTypeInfoSubstateKey::TypeInfoField(
                 TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
@@ -356,12 +368,18 @@ fn to_typed_object_substate_key_internal(
 
 #[derive(Debug)]
 pub enum TypedSubstateValue {
+    BootLoader(BootLoaderSubstateValue),
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
     Schema(KeyValueEntrySubstate<VersionedScryptoSchema>),
     RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
     RoyaltyModule(TypedRoyaltyModuleSubstateValue),
     MetadataModule(TypedMetadataModuleSubstateValue),
     MainModule(TypedMainModuleSubstateValue),
+}
+
+#[derive(Debug)]
+pub enum BootLoaderSubstateValue {
+    Vm(VmBoot),
 }
 
 #[derive(Debug)]
@@ -436,6 +454,13 @@ fn to_typed_substate_value_internal(
     data: &[u8],
 ) -> Result<TypedSubstateValue, DecodeError> {
     let substate_value = match substate_key {
+        TypedSubstateKey::BootLoader(boot_loader_key) => {
+            TypedSubstateValue::BootLoader(match boot_loader_key {
+                TypedBootLoaderSubstateKey::BootLoaderField(BootLoaderField::Vm) => {
+                    BootLoaderSubstateValue::Vm(scrypto_decode(data)?)
+                }
+            })
+        }
         TypedSubstateKey::TypeInfo(type_info_key) => {
             TypedSubstateValue::TypeInfoModule(match type_info_key {
                 TypedTypeInfoSubstateKey::TypeInfoField(TypeInfoField::TypeInfo) => {

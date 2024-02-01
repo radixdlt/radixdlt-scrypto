@@ -26,15 +26,12 @@ pub struct AccessControllerCreateInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-impl Clone for AccessControllerCreateInput {
-    fn clone(&self) -> Self {
-        Self {
-            controlled_asset: Bucket(self.controlled_asset.0),
-            rule_set: self.rule_set.clone(),
-            timed_recovery_delay_in_minutes: self.timed_recovery_delay_in_minutes.clone(),
-            address_reservation: self.address_reservation.clone(),
-        }
-    }
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccessControllerCreateManifestInput {
+    pub controlled_asset: ManifestBucket,
+    pub rule_set: RuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+    pub address_reservation: Option<ManifestAddressReservation>,
 }
 
 pub type AccessControllerCreateGlobalOutput = Global<AccessControllerObjectTypeInfo>;

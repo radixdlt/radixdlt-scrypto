@@ -26,10 +26,16 @@ pub const MAX_TRACK_SUBSTATE_TOTAL_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_SUBSTATE_KEY_SIZE: usize = 1024;
 
 /// The maximum substate read and write size.
+#[cfg(not(feature = "coverage"))]
 pub const MAX_SUBSTATE_VALUE_SIZE: usize = 2 * 1024 * 1024;
+#[cfg(feature = "coverage")]
+pub const MAX_SUBSTATE_VALUE_SIZE: usize = 64 * 1024 * 1024;
 
 /// The maximum invoke payload size.
+#[cfg(not(feature = "coverage"))]
 pub const MAX_INVOKE_PAYLOAD_SIZE: usize = 1 * 1024 * 1024;
+#[cfg(feature = "coverage")]
+pub const MAX_INVOKE_PAYLOAD_SIZE: usize = 32 * 1024 * 1024;
 
 /// The proposer's share of tips
 pub const TIPS_PROPOSER_SHARE_PERCENTAGE: u8 = 100;

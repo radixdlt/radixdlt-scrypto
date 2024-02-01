@@ -11,7 +11,6 @@ use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::model::TestTransaction;
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
@@ -50,7 +49,7 @@ fn bench_transfer(c: &mut Criterion) {
                 vm.clone(),
                 &CostingParameters::default(),
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
-                &TestTransaction::new_from_nonce(manifest.clone(), 1)
+                &TestTransaction::new_from_nonce(manifest, 1)
                     .prepare()
                     .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),

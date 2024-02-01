@@ -1,5 +1,8 @@
 /// The maximum memory size (per call frame): 64 * 64KiB = 4MiB
+#[cfg(not(feature = "coverage"))]
 pub const MAX_MEMORY_SIZE_IN_PAGES: u32 = 64;
+#[cfg(feature = "coverage")]
+pub const MAX_MEMORY_SIZE_IN_PAGES: u32 = 512;
 
 /// The maximum initial table size
 pub const MAX_INITIAL_TABLE_SIZE: u32 = 1024;

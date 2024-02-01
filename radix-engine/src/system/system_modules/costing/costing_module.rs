@@ -9,7 +9,7 @@ use crate::kernel::kernel_callback_api::{
 };
 use crate::system::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::system::attached_modules::royalty::ComponentRoyaltyBlueprint;
-use crate::system::module::SystemModule;
+use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
@@ -257,22 +257,22 @@ pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
         })
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
-    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let costing = &mut api.kernel_get_system().modules.costing;
-
-        costing.apply_deferred_execution_cost(ExecutionCostingEntry::ValidateTxPayload {
-            size: costing.tx_payload_len,
+impl InitSystemModule for CostingModule {
+    fn on_init(&mut self) -> Result<(), RuntimeError> {
+        self.apply_deferred_execution_cost(ExecutionCostingEntry::ValidateTxPayload {
+            size: self.tx_payload_len,
         })?;
-        costing.apply_deferred_execution_cost(ExecutionCostingEntry::VerifyTxSignatures {
-            num_signatures: costing.tx_num_of_signature_validations,
+        self.apply_deferred_execution_cost(ExecutionCostingEntry::VerifyTxSignatures {
+            num_signatures: self.tx_num_of_signature_validations,
         })?;
 
-        costing.apply_deferred_storage_cost(StorageType::Archive, costing.tx_payload_len)?;
+        self.apply_deferred_storage_cost(StorageType::Archive, self.tx_payload_len)?;
 
         Ok(())
     }
+}
 
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,

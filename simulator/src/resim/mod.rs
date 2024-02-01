@@ -29,7 +29,6 @@ pub use cmd_call_function::*;
 pub use cmd_call_method::*;
 pub use cmd_export_package_definition::*;
 pub use cmd_generate_key_pair::*;
-pub use cmd_mint::*;
 pub use cmd_new_account::*;
 pub use cmd_new_badge_fixed::*;
 pub use cmd_new_badge_mutable::*;
@@ -77,7 +76,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_interface::crypto::hash;
+use radix_engine_interface::crypto::{hash, Secp256k1PrivateKey};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
@@ -90,7 +89,6 @@ use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
 use transaction::model::{SystemTransactionV1, TransactionPayload};
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
@@ -170,17 +168,12 @@ pub fn handle_system_transaction<O: std::io::Write>(
     print_receipt: bool,
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
+    let SimulatorEnvironment {
+        mut db,
+        scrypto_vm,
+        native_vm,
+    } = SimulatorEnvironment::new()?;
     let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        vm.clone(),
-        false,
-    )
-    .bootstrap_test_default();
 
     let nonce = get_nonce()?;
     let transaction = SystemTransactionV1 {
@@ -193,7 +186,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     };
 
     let receipt = execute_and_commit_transaction(
-        &mut substate_db,
+        &mut db,
         vm,
         &CostingParameters::default(),
         &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
@@ -209,12 +202,12 @@ pub fn handle_system_transaction<O: std::io::Write>(
         let display_context = TransactionReceiptDisplayContextBuilder::new()
             .encoder(&encoder)
             .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                get_event_schema(&substate_db, event_type_identifier)
+                get_event_schema(&db, event_type_identifier)
             })
             .build();
         writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
     }
-    drop(substate_db);
+    drop(db);
 
     process_receipt(receipt)
 }
@@ -251,17 +244,12 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-            let native_vm = DefaultNativeVm::new();
+            let SimulatorEnvironment {
+                mut db,
+                scrypto_vm,
+                native_vm,
+            } = SimulatorEnvironment::new()?;
             let vm = Vm::new(&scrypto_vm, native_vm);
-            let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(
-                NetworkDefinition::simulator(),
-                &mut substate_db,
-                vm.clone(),
-                false,
-            )
-            .bootstrap_test_default();
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -272,7 +260,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let transaction = TestTransaction::new_from_nonce(manifest, nonce);
 
             let receipt = execute_and_commit_transaction(
-                &mut substate_db,
+                &mut db,
                 vm,
                 &CostingParameters::default(),
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
@@ -287,12 +275,12 @@ pub fn handle_manifest<O: std::io::Write>(
                 let display_context = TransactionReceiptDisplayContextBuilder::new()
                     .encoder(&encoder)
                     .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                        get_event_schema(&substate_db, event_type_identifier)
+                        get_event_schema(&db, event_type_identifier)
                     })
                     .build();
                 writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
             }
-            drop(substate_db);
+            drop(db);
 
             process_receipt(receipt).map(Option::Some)
         }
@@ -345,27 +333,17 @@ pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<Secp256k1Pr
 pub fn export_package_schema(
     package_address: PackageAddress,
 ) -> Result<BTreeMap<BlueprintVersionKey, BlueprintDefinition>, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
-    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let system_reader = SystemDatabaseReader::new(&db);
     let package_definition = system_reader.get_package_definition(package_address);
     Ok(package_definition)
 }
 
 pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectInfo, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
-    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let system_reader = SystemDatabaseReader::new(&db);
     system_reader
         .get_object_info(component_address)
         .map_err(|_| Error::ComponentNotFound(component_address))
@@ -375,14 +353,9 @@ pub fn export_schema(
     node_id: &NodeId,
     schema_hash: SchemaHash,
 ) -> Result<VersionedScryptoSchema, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
-    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let system_reader = SystemDatabaseReader::new(&db);
     let schema = system_reader
         .get_schema(node_id, &schema_hash)
         .map_err(|_| Error::SchemaNotFound(*node_id, schema_hash))?;
@@ -406,14 +379,9 @@ pub fn export_blueprint_interface(
 }
 
 pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
-    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let system_reader = SystemDatabaseReader::new(&db);
     let object_info = system_reader
         .get_object_info(component_address)
         .expect("Unexpected");
@@ -421,10 +389,10 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
 }
 
 pub fn get_event_schema<S: SubstateDatabase>(
-    substate_db: &S,
+    db: &S,
     event_type_identifier: &EventTypeIdentifier,
 ) -> Option<(LocalTypeId, VersionedScryptoSchema)> {
-    let system_reader = SystemDatabaseReader::new(substate_db);
+    let system_reader = SystemDatabaseReader::new(db);
 
     let (blueprint_id, event_name) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
@@ -478,14 +446,9 @@ pub fn db_upsert_timestamps(
     milli_timestamp: ProposerMilliTimestampSubstate,
     minute_timestamp: ProposerMinuteTimestampSubstate,
 ) -> Result<(), Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { mut db, .. } = SimulatorEnvironment::new()?;
 
-    let mut writer = SystemDatabaseWriter::new(&mut substate_db);
+    let mut writer = SystemDatabaseWriter::new(&mut db);
 
     writer
         .write_typed_object_field(
@@ -513,14 +476,9 @@ pub fn db_upsert_timestamps(
 }
 
 pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { mut db, .. } = SimulatorEnvironment::new()?;
 
-    let reader = SystemDatabaseReader::new(&substate_db);
+    let reader = SystemDatabaseReader::new(&db);
 
     let mut consensus_mgr_state = reader
         .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
@@ -542,7 +500,7 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
 
     consensus_mgr_state.epoch = epoch;
 
-    let mut writer = SystemDatabaseWriter::new(&mut substate_db);
+    let mut writer = SystemDatabaseWriter::new(&mut db);
 
     writer
         .write_typed_object_field(
@@ -562,7 +520,8 @@ mod tests {
 
     fn test_no_value() {
         let mut out = std::io::stdout();
-        assert!(Reset {}.run(&mut out).is_ok());
+        let rtn = Reset {}.run(&mut out);
+        assert!(rtn.is_ok(), "Reset failed with: {:?}", rtn);
         let new_account = NewAccount {
             network: None,
             manifest: None,

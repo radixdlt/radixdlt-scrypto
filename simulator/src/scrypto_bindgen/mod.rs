@@ -1,20 +1,17 @@
-mod ast;
-mod schema;
-mod translation;
+pub mod ast;
+pub mod macros;
+pub mod schema;
+pub mod translation;
 
 use clap::Parser;
-use radix_engine::system::{bootstrap::*, system_db_reader::SystemDatabaseReader};
+use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::types::*;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
-use radix_engine_stores::rocks_db::*;
 use std::io::Write;
 
 use crate::resim::*;
 
 use self::schema::*;
-use self::translation::blueprint_schema_interface_to_ast_interface;
 
 /// Generates interfaces for Scrypto packages to ease the use of external packages.
 #[derive(Parser, Debug)]
@@ -44,28 +41,11 @@ pub fn run() -> Result<(), Error> {
     // Everything will be written to the std-out
     let mut out = std::io::stdout();
 
-    // Create the substate database
-    let ledger_path = get_data_dir().map_err(Error::ResimError)?;
-    let mut substate_db = RocksdbSubstateStore::standard(ledger_path);
-
-    // Reset the ledger if required to.
+    let mut env = SimulatorEnvironment::new().map_err(Error::ResimError)?;
     if args.reset_ledger {
-        let mut buffer = Vec::new();
-        crate::resim::Reset {}
-            .run(&mut buffer)
-            .map_err(Error::ResimError)?;
-
-        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-        let native_vm = DefaultNativeVm::new();
-        let vm = Vm::new(&scrypto_vm, native_vm);
-        Bootstrapper::new(
-            NetworkDefinition::simulator(),
-            &mut substate_db,
-            vm.clone(),
-            false,
-        )
-        .bootstrap_test_default();
+        env = env.reset().map_err(Error::ResimError)?;
     }
+    let db = env.db;
 
     // Decode the package address without network context.
     let package_address = {
@@ -77,29 +57,32 @@ pub fn run() -> Result<(), Error> {
 
     // Generating the bindings
     let bindings = {
-        let reader = SystemDatabaseReader::new(&substate_db);
+        let reader = SystemDatabaseReader::new(&db);
         let definition = reader.get_package_definition(package_address);
+        let schema_resolver = SchemaResolver::new(package_address, &db);
 
-        let schema_resolver = SchemaResolver::new(package_address, reader);
-        derive_blueprint_interfaces(definition, &schema_resolver)
-            .map_err(Error::SchemaError)?
-            .into_iter()
-            .map(|blueprint_interface| {
-                blueprint_schema_interface_to_ast_interface(blueprint_interface, &schema_resolver)
-                    .map(|blueprint_interface| blueprint_interface.to_token_stream(package_address))
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(Error::SchemaError)?
+        let package_interface =
+            schema::package_interface_from_package_definition(definition, &schema_resolver)
+                .map_err(Error::SchemaError)?;
+        let mut ast_package_interface = translation::package_schema_interface_to_ast_interface(
+            package_interface,
+            package_address,
+            &schema_resolver,
+        )
+        .map_err(Error::SchemaError)?;
+
+        // Scrypto-bindgen does not generate the aux-types. Only ledger-tools does.
+        ast_package_interface.auxiliary_types = Default::default();
+
+        ast_package_interface
     };
 
-    for binding in bindings {
-        writeln!(&mut out, "{}", binding).map_err(Error::IOError)?
-    }
+    writeln!(&mut out, "{}", quote::quote!(#bindings)).map_err(Error::IOError)?;
 
     Ok(())
 }
 
-struct SchemaResolver<'s, S>(PackageAddress, SystemDatabaseReader<'s, S>)
+pub struct SchemaResolver<'s, S>(PackageAddress, SystemDatabaseReader<'s, S>)
 where
     S: SubstateDatabase;
 
@@ -107,7 +90,8 @@ impl<'s, S> SchemaResolver<'s, S>
 where
     S: SubstateDatabase,
 {
-    pub fn new(node_id: PackageAddress, reader: SystemDatabaseReader<'s, S>) -> Self {
+    pub fn new(node_id: PackageAddress, substate_database: &'s S) -> Self {
+        let reader = SystemDatabaseReader::new(substate_database);
         Self(node_id, reader)
     }
 }
@@ -116,11 +100,8 @@ impl<'s, S> PackageSchemaResolver for SchemaResolver<'s, S>
 where
     S: SubstateDatabase,
 {
-    fn lookup_schema(&self, schema_hash: &SchemaHash) -> Option<VersionedScryptoSchema> {
-        self.1
-            .get_schema(self.0.as_node_id(), schema_hash)
-            .ok()
-            .map(|x| x.as_ref().clone())
+    fn lookup_schema(&self, schema_hash: &SchemaHash) -> Option<Rc<VersionedScryptoSchema>> {
+        self.1.get_schema(self.0.as_node_id(), schema_hash).ok()
     }
 
     fn resolve_type_kind(
@@ -128,10 +109,13 @@ where
         type_identifier: &ScopedTypeId,
     ) -> Result<SchemaTypeKind<ScryptoCustomSchema>, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
-            .ok_or(SchemaError::FailedToGetSchemaFromSchemaHash)?
-            .into_latest()
+            .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
+            .as_latest_ref()
+            .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
             .resolve_type_kind(type_identifier.1)
-            .ok_or(SchemaError::NonExistentLocalTypeIndex(type_identifier.1))
+            .ok_or(schema::SchemaError::NonExistentLocalTypeIndex(
+                type_identifier.1,
+            ))
             .cloned()
     }
 
@@ -140,10 +124,13 @@ where
         type_identifier: &ScopedTypeId,
     ) -> Result<TypeMetadata, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
-            .ok_or(SchemaError::FailedToGetSchemaFromSchemaHash)?
-            .into_latest()
+            .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
+            .as_latest_ref()
+            .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
             .resolve_type_metadata(type_identifier.1)
-            .ok_or(SchemaError::NonExistentLocalTypeIndex(type_identifier.1))
+            .ok_or(schema::SchemaError::NonExistentLocalTypeIndex(
+                type_identifier.1,
+            ))
             .cloned()
     }
 
@@ -152,10 +139,13 @@ where
         type_identifier: &ScopedTypeId,
     ) -> Result<TypeValidation<ScryptoCustomTypeValidation>, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
-            .ok_or(SchemaError::FailedToGetSchemaFromSchemaHash)?
-            .into_latest()
+            .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
+            .as_latest_ref()
+            .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
             .resolve_type_validation(type_identifier.1)
-            .ok_or(SchemaError::NonExistentLocalTypeIndex(type_identifier.1))
+            .ok_or(schema::SchemaError::NonExistentLocalTypeIndex(
+                type_identifier.1,
+            ))
             .cloned()
     }
 
