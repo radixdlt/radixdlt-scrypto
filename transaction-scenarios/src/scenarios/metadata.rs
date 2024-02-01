@@ -1,6 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataValue, SingleMetadataVal, UncheckedOrigin, UncheckedUrl,
 };
@@ -389,9 +387,7 @@ fn create_metadata() -> BTreeMap<String, MetadataValue> {
         &mut metadata,
         "non_fungible_local_id",
         &[
-            NonFungibleLocalId::String(
-                StringNonFungibleLocalId::new("Hello_world".to_owned()).unwrap(),
-            ),
+            NonFungibleLocalId::String(StringNonFungibleLocalId::new("Hello_world").unwrap()),
             NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(42)),
             NonFungibleLocalId::Bytes(BytesNonFungibleLocalId::new(vec![1u8]).unwrap()),
             NonFungibleLocalId::RUID(RUIDNonFungibleLocalId::new([1; 32])),
@@ -407,12 +403,12 @@ fn create_metadata() -> BTreeMap<String, MetadataValue> {
     add(
         &mut metadata,
         "url",
-        &[UncheckedUrl::of("https://www.radixdlt.com".to_owned())],
+        &[UncheckedUrl::of("https://www.radixdlt.com")],
     );
     add(
         &mut metadata,
         "origin",
-        &[UncheckedOrigin::of("https://www.radixdlt.com".to_owned())],
+        &[UncheckedOrigin::of("https://www.radixdlt.com")],
     );
     add(
         &mut metadata,

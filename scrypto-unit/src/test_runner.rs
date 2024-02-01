@@ -5,7 +5,7 @@ use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
-use radix_engine::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
+use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::checkers::*;
@@ -24,15 +24,14 @@ use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
-    ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
-    LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    ConsensusManagerGetCurrentTimeInputV2, ConsensusManagerNextRoundInput, EpochChangeCondition,
+    LeaderProposalHistory, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
     VALIDATOR_STAKE_AS_OWNER_IDENT,
 };
@@ -57,7 +56,6 @@ use radix_engine_stores::hash_tree_support::HashTreeUpdatingDatabase;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto::prelude::*;
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
@@ -79,17 +77,85 @@ impl Compile {
         package_dir: P,
         env_vars: sbor::rust::collections::BTreeMap<String, String>,
     ) -> (Vec<u8>, PackageDefinition) {
+        // Find wasm name
+        let mut cargo = package_dir.as_ref().to_owned();
+        cargo.push("Cargo.toml");
+        let wasm_name = if cargo.exists() {
+            let content = fs::read_to_string(&cargo).expect("Failed to read the Cargo.toml file");
+            Self::extract_crate_name(&content)
+                .expect("Failed to extract crate name from the Cargo.toml file")
+                .replace('-', "_")
+        } else {
+            // file name
+            package_dir
+                .as_ref()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned()
+                .replace('-', "_")
+        };
+
+        let mut path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap();
+        path.push("wasm32-unknown-unknown");
+        path.push("release");
+        path.push(&wasm_name);
+        path.set_extension("wasm");
+
+        #[cfg(feature = "coverage")]
+        // Check if binary exists in coverage directory, if it doesn't only then build it
+        {
+            let mut coverage_path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap();
+            coverage_path.pop();
+            coverage_path.push("coverage");
+            coverage_path.push("wasm32-unknown-unknown");
+            coverage_path.push("release");
+            coverage_path.push(wasm_name);
+            coverage_path.set_extension("wasm");
+            if coverage_path.is_file() {
+                let code = fs::read(&coverage_path).unwrap_or_else(|err| {
+                    panic!(
+                        "Failed to read built WASM from path {:?} - {:?}",
+                        &path, err
+                    )
+                });
+                coverage_path.set_extension("rpd");
+                let definition = fs::read(&coverage_path).unwrap_or_else(|err| {
+                    panic!(
+                        "Failed to read package definition from path {:?} - {:?}",
+                        &coverage_path, err
+                    )
+                });
+                let definition = manifest_decode(&definition).unwrap_or_else(|err| {
+                    panic!(
+                        "Failed to parse package definition from path {:?} - {:?}",
+                        &coverage_path, err
+                    )
+                });
+                return (code, definition);
+            }
+        };
+
         // Build
+        let features = vec![
+            "scrypto/log-error",
+            "scrypto/log-warn",
+            "scrypto/log-info",
+            "scrypto/log-debug",
+            "scrypto/log-trace",
+        ];
+
         let status = Command::new("cargo")
             .envs(env_vars)
             .current_dir(package_dir.as_ref())
             .args([
-                "build", 
+                "build",
                 "--target",
                 "wasm32-unknown-unknown",
                 "--release",
-                "--features", 
-                "scrypto/log-error,scrypto/log-warn,scrypto/log-info,scrypto/log-debug,scrypto/log-trace"
+                "--features",
+                &features.join(","),
             ])
             .status()
             .unwrap_or_else(|error| {
@@ -102,31 +168,6 @@ impl Compile {
         if !status.success() {
             panic!("Failed to compile package: {:?}", package_dir.as_ref());
         }
-
-        // Find wasm path
-        let mut cargo = package_dir.as_ref().to_owned();
-        cargo.push("Cargo.toml");
-        let wasm_name = if cargo.exists() {
-            let content = fs::read_to_string(&cargo).expect("Failed to read the Cargo.toml file");
-            Self::extract_crate_name(&content)
-                .expect("Failed to extract crate name from the Cargo.toml file")
-                .replace("-", "_")
-        } else {
-            // file name
-            package_dir
-                .as_ref()
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_owned()
-                .replace("-", "_")
-        };
-        let mut path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap(); // Infallible;
-        path.push("wasm32-unknown-unknown");
-        path.push("release");
-        path.push(wasm_name);
-        path.set_extension("wasm");
 
         // Extract schema
         let code = fs::read(&path).unwrap_or_else(|err| {
@@ -305,6 +346,11 @@ pub struct TestRunnerBuilder<E, D> {
     custom_database: D,
     trace: bool,
     skip_receipt_check: bool,
+
+    // The following are protocol updates on mainnet
+    with_seconds_precision_update: bool,
+    with_crypto_utils_update: bool,
+    with_pools_v1_1: bool,
 }
 
 impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -315,6 +361,9 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
             skip_receipt_check: false,
+            with_seconds_precision_update: true,
+            with_crypto_utils_update: true,
+            with_pools_v1_1: true,
         }
     }
 }
@@ -332,6 +381,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
             trace: self.trace,
             skip_receipt_check: false,
+            with_seconds_precision_update: self.with_seconds_precision_update,
+            with_crypto_utils_update: self.with_crypto_utils_update,
+            with_pools_v1_1: self.with_pools_v1_1,
         }
     }
 
@@ -355,6 +407,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: self.custom_database,
             trace: self.trace,
             skip_receipt_check: self.skip_receipt_check,
+            with_seconds_precision_update: self.with_seconds_precision_update,
+            with_crypto_utils_update: self.with_crypto_utils_update,
+            with_pools_v1_1: self.with_pools_v1_1,
         }
     }
 
@@ -365,7 +420,25 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_database: database,
             trace: self.trace,
             skip_receipt_check: self.skip_receipt_check,
+            with_seconds_precision_update: self.with_seconds_precision_update,
+            with_crypto_utils_update: self.with_crypto_utils_update,
+            with_pools_v1_1: self.with_pools_v1_1,
         }
+    }
+
+    pub fn without_seconds_precision_update(mut self) -> Self {
+        self.with_seconds_precision_update = false;
+        self
+    }
+
+    pub fn without_crypto_utils_update(mut self) -> Self {
+        self.with_crypto_utils_update = false;
+        self
+    }
+
+    pub fn without_pools_v1_1(mut self) -> Self {
+        self.with_pools_v1_1 = false;
+        self
     }
 
     pub fn build_from_snapshot(
@@ -456,6 +529,33 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
+
+        // Protocol Updates
+        {
+            if self.with_seconds_precision_update {
+                let state_updates = generate_seconds_precision_state_updates(&substate_db);
+                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                substate_db.commit(&db_updates);
+            };
+
+            if self.with_crypto_utils_update {
+                let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
+                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                substate_db.commit(&db_updates);
+            }
+
+            {
+                let state_updates = generate_validator_fee_fix_state_updates(&substate_db);
+                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                substate_db.commit(&db_updates);
+            }
+        }
+
+        if self.with_pools_v1_1 {
+            let state_updates = generate_pools_v1_1_state_updates(&substate_db);
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            substate_db.commit(&db_updates);
+        }
 
         let runner = TestRunner {
             scrypto_vm,
@@ -1242,6 +1342,20 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_package_addresses()[0]
+    }
+
+    pub fn try_publish_package<P: Into<PackagePublishingSource>>(
+        &mut self,
+        source: P,
+    ) -> TransactionReceipt {
+        let (code, definition) = source.into().code_and_definition();
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt
     }
 
     pub fn publish_package_simple<P: Into<PackagePublishingSource>>(
@@ -2353,7 +2467,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInput {
+                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInputV2 {
                     precision
                 }),
             }],

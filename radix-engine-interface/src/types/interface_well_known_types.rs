@@ -19,7 +19,7 @@ mod tests {
 
         // ROLE ASSIGNMENT
         let resource_or_non_fungible_1 = ResourceOrNonFungible::Resource(XRD);
-        let resource_or_non_fungible_2 = ResourceOrNonFungible::NonFungible(nf_global_id.clone());
+        let resource_or_non_fungible_2 = ResourceOrNonFungible::NonFungible(nf_global_id);
         let resource_or_non_fungible_list = vec![
             resource_or_non_fungible_1.clone(),
             resource_or_non_fungible_2.clone(),

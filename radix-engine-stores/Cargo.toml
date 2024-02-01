@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-stores"
-version = "1.0.1"
+version = "1.1.1"
 edition = "2021"
 
 [dependencies]
@@ -12,6 +12,9 @@ radix-engine-store-interface = { path = "../radix-engine-store-interface", defau
 rocksdb = { version = "0.21.0", optional = true }
 itertools = { version = "0.10.3", default-features = false }
 hex = { version = "0.4.3", default-features = false }
+
+[dev-dependencies]
+tempfile = "3.8.0"
 
 [features]
 default = ["std"]

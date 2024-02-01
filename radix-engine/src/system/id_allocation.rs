@@ -1,6 +1,4 @@
-use crate::blueprints::pool::multi_resource_pool::MULTI_RESOURCE_POOL_BLUEPRINT_IDENT;
-use crate::blueprints::pool::one_resource_pool::ONE_RESOURCE_POOL_BLUEPRINT_IDENT;
-use crate::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
+use crate::blueprints::pool::v1::constants::*;
 use radix_engine_common::types::EntityType;
 use radix_engine_common::{constants::*, ScryptoSbor};
 use radix_engine_interface::blueprints::access_controller::*;

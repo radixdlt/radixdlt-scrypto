@@ -49,14 +49,6 @@ pub struct WorktopPutInput {
 
 pub type WorktopPutOutput = ();
 
-impl Clone for WorktopPutInput {
-    fn clone(&self) -> Self {
-        Self {
-            bucket: Bucket(self.bucket.0),
-        }
-    }
-}
-
 pub const WORKTOP_TAKE_IDENT: &str = "Worktop_take";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

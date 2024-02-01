@@ -28,7 +28,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         .filter(|s| s.ends_with("_schema"));
 
     // Validate WASM
-    let validator = WasmValidator::default();
+    let validator = ScryptoV1WasmValidator::new(SCRYPTO_V1_LATEST_MINOR_VERSION);
     let code_hash = CodeHash(Hash([0u8; 32]));
     let instrumented_code = validator
         .validate(&code, iter::empty())

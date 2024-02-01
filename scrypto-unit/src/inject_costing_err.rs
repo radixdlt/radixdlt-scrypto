@@ -13,7 +13,7 @@ use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use radix_engine::track::NodeSubstates;
+use radix_engine::track::{BootStore, NodeSubstates};
 use radix_engine::transaction::WrappedSystem;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -97,13 +97,10 @@ macro_rules! wrapped_internal_api {
 impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingError<K> {
     type LockData = K::LockData;
     type CallFrameData = K::CallFrameData;
+    type CallbackState = K::CallbackState;
 
-    fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        let mut api = wrapped_api!(api);
-        K::on_init(&mut api)
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError> {
+        self.callback_object.init(store)
     }
 
     fn start<Y>(
@@ -521,6 +518,7 @@ impl<'a, M: KernelCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInt
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
+            system_2: &state.system_2,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
@@ -564,6 +562,7 @@ impl<'a, M: KernelCallbackObject, K: KernelInternalApi<InjectCostingError<M>>> K
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
+            system_2: &state.system_2,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }

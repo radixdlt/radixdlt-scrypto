@@ -4,11 +4,14 @@ use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstate
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::KeyValueEntrySubstate;
+use crate::track::BootStore;
 use crate::types::*;
-use crate::vm::wasm::{WasmEngine, WasmValidator};
+use crate::vm::wasm::{ScryptoV1WasmValidator, WasmEngine};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
+
+pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 
 pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
@@ -33,7 +36,56 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
     }
 }
 
+/// Api provided to clients of the VM layer
+pub trait VmApi {
+    /// Retrieve the current minor version of the Scrypto VM
+    fn get_scrypto_minor_version(&self) -> u64;
+}
+
+/// Simple implementation of the VmAPI
+#[derive(Debug, Clone, Copy, Default)]
+pub struct VmVersion {
+    scrypto_v1_minor_version: u64,
+}
+
+impl VmApi for VmVersion {
+    fn get_scrypto_minor_version(&self) -> u64 {
+        self.scrypto_v1_minor_version
+    }
+}
+
+/// Boot Loader state for the VM Layer
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum VmBoot {
+    V1 { scrypto_v1_minor_version: u64 },
+}
+
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
+    type CallbackState = VmVersion;
+
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError> {
+        let vm_boot = store
+            .read_substate(
+                TRANSACTION_TRACKER.as_node_id(),
+                BOOT_LOADER_PARTITION,
+                &SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY),
+            )
+            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .unwrap_or(VmBoot::V1 {
+                scrypto_v1_minor_version: 0u64,
+            });
+
+        let vm_version = match vm_boot {
+            VmBoot::V1 {
+                scrypto_v1_minor_version,
+            } => VmVersion {
+                scrypto_v1_minor_version,
+            },
+        };
+
+        Ok(vm_version)
+    }
+
     fn invoke<Y>(
         address: &PackageAddress,
         export: PackageExport,
@@ -66,8 +118,10 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             api.kernel_close_substate(handle)?;
             vm_type
                 .into_value()
-                .expect(&format!("Vm type not found: {:?}", export))
+                .unwrap_or_else(|| panic!("Vm type not found: {:?}", export))
         };
+
+        let vm_api = api.kernel_get_system_state().system_2.clone();
 
         let output = match vm_type.into_latest().vm_type {
             VmType::Native => {
@@ -91,7 +145,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     api.kernel_close_substate(handle)?;
                     original_code
                         .into_value()
-                        .expect(&format!("Original code not found: {:?}", export))
+                        .unwrap_or_else(|| panic!("Original code not found: {:?}", export))
                 };
 
                 let mut vm_instance = api
@@ -99,7 +153,8 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     .callback_obj
                     .native_vm
                     .create_instance(address, &original_code.into_latest().code)?;
-                let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
+                let output =
+                    { vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)? };
 
                 output
             }
@@ -124,7 +179,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     api.kernel_close_substate(handle)?;
                     instrumented_code
                         .into_value()
-                        .expect(&format!("Instrumented code not found: {:?}", export))
+                        .unwrap_or_else(|| panic!("Instrumented code not found: {:?}", export))
                         .into_latest()
                 };
 
@@ -143,8 +198,9 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     size: instrumented_code.instrumented_code.len(),
                 })?;
 
-                let output =
-                    { scrypto_vm_instance.invoke(export.export_name.as_str(), input, api)? };
+                let output = {
+                    scrypto_vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)?
+                };
 
                 output
             }
@@ -155,30 +211,35 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 }
 
 pub trait VmInvoke {
-    // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api
-    fn invoke<Y>(
+    // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api, unify with VmApi
+    fn invoke<Y, V>(
         &mut self,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
+        vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>;
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi;
 }
 
 pub struct VmPackageValidation;
 
 impl VmPackageValidation {
-    pub fn validate(
+    pub fn validate<V: VmApi>(
         definition: &PackageDefinition,
         vm_type: VmType,
         code: &[u8],
+        vm_api: &V,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         match vm_type {
             VmType::Native => Ok(None),
             VmType::ScryptoV1 => {
+                let minor_version = vm_api.get_scrypto_minor_version();
+
                 // Validate WASM
-                let instrumented_code = WasmValidator::default()
+                let instrumented_code = ScryptoV1WasmValidator::new(minor_version)
                     .validate(&code, definition.blueprints.values())
                     .map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::PackageError(

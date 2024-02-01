@@ -22,7 +22,7 @@ pub struct SimpleStruct {
 pub fn get_simple_dataset(repeat: usize) -> SimpleStruct {
     let mut data = SimpleStruct {
         number: 12345678901234567890,
-        string: "dummy".repeat(repeat).to_owned(),
+        string: "dummy".repeat(repeat),
         bytes: vec![123u8; repeat],
         vector: vec![12345u16; repeat],
         enumeration: vec![

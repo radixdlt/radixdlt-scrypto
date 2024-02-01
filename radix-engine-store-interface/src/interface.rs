@@ -1,6 +1,5 @@
 use radix_engine_common::Sbor;
 use utils::prelude::index_map_new;
-use utils::prelude::vec;
 use utils::rust::boxed::Box;
 use utils::rust::collections::IndexMap;
 use utils::rust::vec::Vec;
@@ -17,24 +16,6 @@ pub type DbPartitionNum = u8;
 pub struct DbPartitionKey {
     pub node_key: DbNodeKey,
     pub partition_num: DbPartitionNum,
-}
-
-impl DbPartitionKey {
-    /// Calculates a hypothetical "next partition" key in the database.
-    /// This method is suitable for constructing an open right bound of a database key range; the
-    /// partition of the returned key may in practice not even exist in the database.
-    pub fn next(&self) -> Self {
-        self.partition_num
-            .checked_add(1)
-            .map(|next_partition_num| DbPartitionKey {
-                node_key: self.node_key.clone(),
-                partition_num: next_partition_num,
-            })
-            .unwrap_or_else(|| DbPartitionKey {
-                node_key: [self.node_key.clone(), vec![0]].concat(),
-                partition_num: 0,
-            })
-    }
 }
 
 /// A database-level key of a substate within a known partition.
@@ -140,12 +121,26 @@ pub trait SubstateDatabase {
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue>;
 
+    /// Iterates over all entries of the given partition (starting either from the beginning, or
+    /// from the given [`DbSortKey`]), in a lexicographical order (ascending) of the [`DbSortKey`]s.
+    /// Note: If the exact given starting key does not exist, the iteration starts with its
+    /// immediate successor.
+    fn list_entries_from(
+        &self,
+        partition_key: &DbPartitionKey,
+        from_sort_key: Option<&DbSortKey>,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_>;
+
     /// Iterates over all entries of the given partition, in a lexicographical order (ascending)
     /// of the [`DbSortKey`]s.
+    /// This is a convenience method, equivalent to [`Self::list_entries_from()`] with the starting
+    /// key set to [`None`].
     fn list_entries(
         &self,
         partition_key: &DbPartitionKey,
-    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_>;
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        self.list_entries_from(partition_key, None)
+    }
 }
 
 /// A write interface between Track and a database vendor.

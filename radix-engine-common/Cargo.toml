@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-common"
-version = "1.0.1"
+version = "1.1.1"
 edition = "2021"
 
 [dependencies]
@@ -25,6 +25,11 @@ arbitrary = { version = "1.3.0", features = ["derive"], optional = true }
 rug = { version = "1.18", optional = true }
 ethnum = {version = "1.3.2", default-features = false, optional = true }
 
+ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
+secp256k1 = { version = "0.24.0", default-features = false, features = ["recovery"], optional = true }
+blst = { version = "0.3.11", default-features = false, optional = false }
+sha3 = { version = "0.10.8", default-features = false, optional = false }
+
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
 criterion = { version = "0.3", features = ["html_reports"] }
@@ -41,8 +46,12 @@ harness = false
 # You should enable either `std` or `alloc`
 default = ["std"]
 serde = ["dep:serde", "utils/serde", "sbor/serde", "hex/serde"]
-std = ["hex/std", "sbor/std", "utils/std", "radix-engine-derive/std", "serde_json/std", "blake2/std"]
-alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "lazy_static/spin_no_std"]
+std = ["hex/std", "sbor/std", "utils/std", "radix-engine-derive/std", "serde_json/std", "ed25519-dalek/std", "secp256k1?/std", "blake2/std", "sha3/std" ]
+alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "ed25519-dalek/alloc", "secp256k1?/alloc", "lazy_static/spin_no_std", "blst/no-threads" ]
+
+# By default, secp256k1 signing and validation is not enabled to mimimize code size
+# If your project requires these functionalities, enable this feature 
+secp256k1_sign_and_validate = ["secp256k1"]
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
@@ -50,6 +59,8 @@ radix_engine_fuzzing = ["arbitrary", "serde", "bnum/arbitrary", "bnum/serde", "s
 
 resource_tracker=[]
 full_math_benches = [ "dep:rug", "dep:ethnum"]
+
+coverage = []
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

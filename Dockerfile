@@ -1,4 +1,4 @@
-FROM rust:slim-bullseye as builder
+FROM rust:slim-bullseye as base-image
 
 RUN apt update && apt install -y \
     cmake=3.18.4-2+deb11u1 \
@@ -6,6 +6,7 @@ RUN apt update && apt install -y \
     build-essential=12.9 \
     llvm=1:11.0-51+nmu5
 
+FROM base-image as builder
 ADD simulator /app/simulator
 ADD radix-engine /app/radix-engine
 ADD radix-engine-interface /app/radix-engine-interface
@@ -29,7 +30,7 @@ WORKDIR /app
 
 RUN cargo install --path ./simulator
 
-FROM rust:slim-bullseye
+FROM base-image
 COPY --from=builder /app/simulator/target/release/scrypto /usr/local/bin/scrypto
 RUN rustup target add wasm32-unknown-unknown
 WORKDIR /src

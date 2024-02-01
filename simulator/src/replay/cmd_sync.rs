@@ -33,6 +33,10 @@ pub struct TxnSync {
     /// The max version to execute
     #[clap(short, long)]
     pub max_version: Option<u64>,
+
+    /// Trace transaction execution
+    #[clap(long)]
+    pub trace: bool,
 }
 
 impl TxnSync {
@@ -62,25 +66,37 @@ impl TxnSync {
 
         // txn executor
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
+        let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
             let iter = rx.iter();
             for (tx_payload, expected_state_root_hash) in iter {
-                let state_updates =
-                    execute_ledger_transaction(&database, &scrypto_vm, &network, &tx_payload);
+                let state_updates = execute_ledger_transaction(
+                    &database,
+                    &scrypto_vm,
+                    &network,
+                    &tx_payload,
+                    trace,
+                );
                 let database_updates =
                     state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-                database.commit(&database_updates);
 
-                let new_state_root_hash = database.get_current_root_hash();
-                let new_version = database.get_current_version();
-
+                let current_version = database.get_current_version();
+                let new_version = current_version + 1;
+                // TODO: avoid redundant computation?
+                let (_, new_state_root_hash) =
+                    radix_engine_stores::rocks_db_with_merkle_tree::compute_state_tree_update(
+                        &database,
+                        current_version,
+                        &database_updates,
+                    );
                 if new_state_root_hash != expected_state_root_hash {
                     panic!(
                         "State hash mismatch at version {}. Expected {} Actual {}",
                         new_version, expected_state_root_hash, new_state_root_hash
                     );
                 }
+                database.commit(&database_updates);
 
                 // print progress
                 if new_version < 1000 || new_version % 1000 == 0 {

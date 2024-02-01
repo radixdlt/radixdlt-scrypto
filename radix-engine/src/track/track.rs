@@ -4,6 +4,7 @@ use crate::track::interface::{
 };
 use crate::track::state_updates::*;
 use crate::track::utils::OverlayingResultIterator;
+use crate::track::BootStore;
 use crate::types::*;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
@@ -313,6 +314,22 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         }
 
         Ok(&mut partition.get_mut(&db_sort_key).unwrap().substate_value)
+    }
+}
+
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Track<'s, S, M> {
+    fn read_substate(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
+        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
+        let db_sort_key = M::to_db_sort_key(&substate_key);
+
+        self.substate_db
+            .get_substate(&db_partition_key, &db_sort_key)
+            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
     }
 }
 

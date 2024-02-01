@@ -68,7 +68,7 @@ impl Runtime {
         let rtn = api.call_method(
             CONSENSUS_MANAGER.as_node_id(),
             CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
-            scrypto_encode(&ConsensusManagerGetCurrentTimeInput { precision }).unwrap(),
+            scrypto_encode(&ConsensusManagerGetCurrentTimeInputV2 { precision }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -87,7 +87,7 @@ impl Runtime {
         let rtn = api.call_method(
             CONSENSUS_MANAGER.as_node_id(),
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
-            scrypto_encode(&ConsensusManagerCompareCurrentTimeInput {
+            scrypto_encode(&ConsensusManagerCompareCurrentTimeInputV2 {
                 precision,
                 instant,
                 operator,

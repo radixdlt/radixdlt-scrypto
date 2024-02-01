@@ -453,8 +453,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     import_blueprint.blueprint
                 };
 
-                let owned_typed_name = format!("Owned{}", blueprint.to_string());
-                let global_typed_name = format!("Global{}", blueprint.to_string());
+                let owned_typed_name = format!("Owned{}", blueprint);
+                let global_typed_name = format!("Global{}", blueprint);
                 let blueprint_functions_ident = format_ident!("{}Functions", blueprint);
 
                 let mut methods = Vec::new();
@@ -1371,7 +1371,7 @@ fn create_argument_ident(argument: &Pat, index: usize) -> Result<Ident> {
     Ok(match argument {
         // If we have a standard parameter name - use that
         Pat::Ident(ident_pattern) => {
-            let ident = if ident_pattern.ident.to_string().starts_with("_") {
+            let ident = if ident_pattern.ident.to_string().starts_with('_') {
                 // Handle parameters starting with `_` - strip them to pass validation
                 Ident::new(
                     ident_pattern.ident.to_string().trim_start_matches('_'),
@@ -1795,7 +1795,7 @@ fn type_replacement(ty: &Type, bp_name: Option<&str>) -> Type {
     let global_pattern = Regex::new(r"Global<.+?>").unwrap();
     let owned_pattern = Regex::new(r"Owned<.+?>").unwrap();
 
-    let mut str = ty.to_token_stream().to_string().replace(" ", "");
+    let mut str = ty.to_token_stream().to_string().replace(' ', "");
     if let Some(bp_name) = bp_name {
         str = str.replace(format!("Owned<{}>", bp_name).as_str(), "Self");
         str = str.replace(format!("Global<{}>", bp_name).as_str(), "Self");

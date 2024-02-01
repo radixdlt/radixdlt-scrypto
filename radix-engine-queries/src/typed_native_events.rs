@@ -5,6 +5,7 @@
 use crate::typed_substate_layout::*;
 use radix_engine::blueprints::account;
 use radix_engine::blueprints::native_schema::*;
+use radix_engine::blueprints::pool::v1::events as pool_events;
 use radix_engine::types::*;
 
 /// Given an [`EventTypeIdentifier`] and the raw event data, this function attempts to convert the
@@ -74,7 +75,7 @@ fn resolve_typed_event_key_from_event_type_identifier(
             )
             .map(TypedNativeEventKey::from),
             POOL_PACKAGE => TypedPoolPackageEventKey::new(
-                &POOL_PACKAGE_DEFINITION,
+                &POOL_PACKAGE_DEFINITION_V1_0,
                 &blueprint_id.blueprint_name,
                 &event_name,
             )
@@ -301,20 +302,20 @@ define_structure! {
 }
 
 // Type aliases for events with the same name in order not to cause use collision issues.
-type OneResourcePoolContributionEvent = one_resource_pool::ContributionEvent;
-type OneResourcePoolRedemptionEvent = one_resource_pool::RedemptionEvent;
-type OneResourcePoolWithdrawEvent = one_resource_pool::WithdrawEvent;
-type OneResourcePoolDepositEvent = one_resource_pool::DepositEvent;
+type OneResourcePoolContributionEvent = pool_events::one_resource_pool::ContributionEvent;
+type OneResourcePoolRedemptionEvent = pool_events::one_resource_pool::RedemptionEvent;
+type OneResourcePoolWithdrawEvent = pool_events::one_resource_pool::WithdrawEvent;
+type OneResourcePoolDepositEvent = pool_events::one_resource_pool::DepositEvent;
 
-type TwoResourcePoolContributionEvent = two_resource_pool::ContributionEvent;
-type TwoResourcePoolRedemptionEvent = two_resource_pool::RedemptionEvent;
-type TwoResourcePoolWithdrawEvent = two_resource_pool::WithdrawEvent;
-type TwoResourcePoolDepositEvent = two_resource_pool::DepositEvent;
+type TwoResourcePoolContributionEvent = pool_events::two_resource_pool::ContributionEvent;
+type TwoResourcePoolRedemptionEvent = pool_events::two_resource_pool::RedemptionEvent;
+type TwoResourcePoolWithdrawEvent = pool_events::two_resource_pool::WithdrawEvent;
+type TwoResourcePoolDepositEvent = pool_events::two_resource_pool::DepositEvent;
 
-type MultiResourcePoolContributionEvent = multi_resource_pool::ContributionEvent;
-type MultiResourcePoolRedemptionEvent = multi_resource_pool::RedemptionEvent;
-type MultiResourcePoolWithdrawEvent = multi_resource_pool::WithdrawEvent;
-type MultiResourcePoolDepositEvent = multi_resource_pool::DepositEvent;
+type MultiResourcePoolContributionEvent = pool_events::multi_resource_pool::ContributionEvent;
+type MultiResourcePoolRedemptionEvent = pool_events::multi_resource_pool::RedemptionEvent;
+type MultiResourcePoolWithdrawEvent = pool_events::multi_resource_pool::WithdrawEvent;
+type MultiResourcePoolDepositEvent = pool_events::multi_resource_pool::DepositEvent;
 
 type FungibleVaultLockFeeEvent = fungible_vault::LockFeeEvent;
 type FungibleVaultPayFeeEvent = fungible_vault::PayFeeEvent;

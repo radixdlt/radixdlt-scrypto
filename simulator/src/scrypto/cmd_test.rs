@@ -21,6 +21,7 @@ impl Test {
         test_package(
             self.path.clone().unwrap_or(current_dir().unwrap()),
             self.arguments.clone(),
+            false,
         )
         .map(|_| ())
         .map_err(Error::TestError)

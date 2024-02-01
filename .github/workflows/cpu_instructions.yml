@@ -12,7 +12,7 @@ jobs:
     name: Build radix engine tests
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Build radix-engine-tests
@@ -35,12 +35,12 @@ jobs:
              cd ..
              mv deps deps_2
       - name: Cache build results 1
-        uses: actions/cache/save@v3
+        uses: RDXWorks-actions/cache/save@main
         with:
           path: ./target/release/deps_1
           key: ${{ runner.os }}-build-cache-1-radix-engine-tests-${{ github.run_id }}
       - name: Cache build results 2
-        uses: actions/cache/save@v3
+        uses: RDXWorks-actions/cache/save@main
         with:
           path: ./target/release/deps_2
           key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}
@@ -49,7 +49,7 @@ jobs:
     name: Build other tests
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Build tests
@@ -70,12 +70,12 @@ jobs:
              cd ..
              mv deps deps_4
       - name: Cache build results 1
-        uses: actions/cache/save@v3
+        uses: RDXWorks-actions/cache/save@main
         with:
           path: ./target/release/deps_3
           key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}
       - name: Cache build results 2
-        uses: actions/cache/save@v3
+        uses: RDXWorks-actions/cache/save@main
         with:
           path: ./target/release/deps_4
           key: ${{ runner.os }}-build-cache-4-radix-engine-tests-${{ github.run_id }}
@@ -84,7 +84,7 @@ jobs:
     name: QEMU build
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Setup dependencies
@@ -106,12 +106,12 @@ jobs:
              sed -i 's/^qemu_source_dir.*/qemu_source_dir=\x27\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/\x27/' ./meson.build
              bash ./build.sh
       - name: Cache QEMU binary
-        uses: actions/cache/save@v3
+        uses: RDXWorks-actions/cache/save@main
         with:
           path: /home/runner/work/radixdlt-scrypto/qemu-8.0.3/build/qemu-x86_64
           key: ${{ runner.os }}-cache-qemu-bin-${{ github.run_id }}
       - name: Cache QEMU plugin
-        uses: actions/cache/save@v3
+        uses: RDXWorks-actions/cache/save@main
         with:
           path: ./radix-engine-profiling/qemu-plugin/build
           key: ${{ runner.os }}-cache-qemu-plugin-${{ github.run_id }}
@@ -124,17 +124,17 @@ jobs:
       matrix:
         bin-cache: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Read cache QEMU binary
-        uses: actions/cache/restore@v3
+        uses: RDXWorks-actions/cache/restore@main
         with:
           path: /home/runner/work/radixdlt-scrypto/qemu-8.0.3/build/qemu-x86_64
           key: ${{ runner.os }}-cache-qemu-bin-${{ github.run_id }}
           fail-on-cache-miss: true
       - name: Read cache QEMU plugin
-        uses: actions/cache/restore@v3
+        uses: RDXWorks-actions/cache/restore@main
         with:
           path: ./radix-engine-profiling/qemu-plugin/build
           key: ${{ runner.os }}-cache-qemu-plugin-${{ github.run_id }}
@@ -145,7 +145,7 @@ jobs:
              sed -i 's/^qemu_app.*/qemu_app=\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/build\/qemu-x86_64/' ./run_tests.sh
              sed -i 's/^qemu_plugin.*/qemu_plugin=\/home\/runner\/work\/radixdlt-scrypto\/radixdlt-scrypto\/radix-engine-profiling\/qemu-plugin\/build\/libscrypto-qemu-plugin.so/' ./run_tests.sh
       - name: Read cache build results
-        uses: actions/cache/restore@v3
+        uses: RDXWorks-actions/cache/restore@main
         with:
           path: ${{ format('./target/release/deps_{0}', matrix.bin-cache) }}
           key: ${{ format('{0}-build-cache-{1}-radix-engine-tests-{2}', runner.os, matrix.bin-cache, github.run_id) }}
@@ -156,7 +156,7 @@ jobs:
              cd radix-engine-tests
              bash ../radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ${{ format('../target/release/deps_{0}', matrix.bin-cache) }}
       - name: Cache QEMU run results
-        uses: actions/cache/save@v3
+        uses: RDXWorks-actions/cache/save@main
         with:
           path: /tmp/scrypto-resources-usage
           key: ${{ format('{0}-build-cache-{1}-radix-engine-tests-{2}-qemu-results', runner.os, matrix.bin-cache, github.run_id) }}
@@ -166,42 +166,42 @@ jobs:
     runs-on: ubuntu-22.04
     needs: qemu-costing-evaluation-run
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup dependencies
         run: pip3 install lxml tabulate numpy scikit-learn statsmodels
       - name: Read cache QEMU run 1 results
-        uses: actions/cache/restore@v3
+        uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage
           key: ${{ runner.os }}-build-cache-1-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Read cache QEMU run 2 results
-        uses: actions/cache/restore@v3
+        uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage
           key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Read cache QEMU run 3 results
-        uses: actions/cache/restore@v3
+        uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage
           key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Read cache QEMU run 4 results
-        uses: actions/cache/restore@v3
+        uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage
           key: ${{ runner.os }}-build-cache-4-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Upload xml files
-        uses: actions/upload-artifact@v3
+        uses: RDXWorks-actions/upload-artifact@main
         with:
           name: QEMU generated XML files
           path: /tmp/scrypto-resources-usage
       - name: Generate results
         run: python3 ./radix-engine-profiling/resources-tracker-macro/scripts/convert.py /tmp/scrypto-resources-usage
       - name: Upload results
-        uses: actions/upload-artifact@v3
+        uses: RDXWorks-actions/upload-artifact@main
         with:
           name: Results
           path: |

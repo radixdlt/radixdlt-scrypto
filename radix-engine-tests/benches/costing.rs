@@ -7,22 +7,22 @@ use radix_engine::{
     utils::ExtractSchemaError,
     vm::{
         wasm::{
-            DefaultWasmEngine, WasmEngine, WasmInstance, WasmModule, WasmRuntime, WasmValidator,
+            DefaultWasmEngine, ScryptoV1WasmValidator, WasmEngine, WasmInstance, WasmModule,
+            WasmRuntime,
         },
         wasm_runtime::NoOpWasmRuntime,
     },
 };
+use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
 use radix_engine_queries::typed_substate_layout::{CodeHash, PackageDefinition};
+use radix_engine_tests::common::*;
 use sbor::rust::iter;
 use scrypto_unit::TestRunnerBuilder;
-use transaction::{
-    prelude::{Secp256k1PrivateKey, TransactionCostingParameters},
-    validation::{recover_secp256k1, verify_secp256k1},
-};
+use transaction::prelude::TransactionCostingParameters;
 use wabt::wat2wasm;
 
 fn bench_decode_sbor(c: &mut Criterion) {
-    let payload = include_bytes!("../../assets/radiswap.rpd");
+    let payload = include_workspace_asset_bytes!("radiswap.rpd");
     println!("Payload size: {}", payload.len());
     c.bench_function("costing::decode_sbor", |b| {
         b.iter(|| manifest_decode::<ManifestValue>(payload))
@@ -30,7 +30,7 @@ fn bench_decode_sbor(c: &mut Criterion) {
 }
 
 fn bench_decode_sbor_bytes(c: &mut Criterion) {
-    let payload = manifest_encode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+    let payload = manifest_encode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
     println!("Payload size: {}", payload.len());
     c.bench_function("costing::decode_sbor_bytes", |b| {
         b.iter(|| manifest_decode::<ManifestValue>(&payload))
@@ -39,7 +39,8 @@ fn bench_decode_sbor_bytes(c: &mut Criterion) {
 
 fn bench_validate_sbor_payload(c: &mut Criterion) {
     let package_definition =
-        manifest_decode::<PackageDefinition>(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+        manifest_decode::<PackageDefinition>(include_workspace_asset_bytes!("radiswap.rpd"))
+            .unwrap();
     let payload = scrypto_encode(&package_definition).unwrap();
     println!("Payload size: {}", payload.len());
     let (index, schema) =
@@ -59,7 +60,7 @@ fn bench_validate_sbor_payload(c: &mut Criterion) {
 }
 
 fn bench_validate_sbor_payload_bytes(c: &mut Criterion) {
-    let payload = scrypto_encode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+    let payload = scrypto_encode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
     println!("Payload size: {}", payload.len());
     let (index, schema) = generate_full_schema_from_single_type::<Vec<u8>, ScryptoCustomSchema>();
 
@@ -92,10 +93,10 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 
 fn bench_spin_loop(c: &mut Criterion) {
     // Prepare code
-    let code = wat2wasm(&include_str!("../tests/wasm/loop.wat").replace("${n}", "100000")).unwrap();
+    let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "100000")).unwrap();
 
     // Instrument
-    let validator = WasmValidator::default();
+    let validator = ScryptoV1WasmValidator::new(0u64);
     let instrumented_code = validator
         .validate(&code, iter::empty())
         .map_err(|e| ExtractSchemaError::InvalidWasm(e))
@@ -140,10 +141,10 @@ macro_rules! bench_instantiate {
         paste! {
         fn [< bench_instantiate_ $what >] (c: &mut Criterion) {
             // Prepare code
-            let code = include_bytes!(concat!("../../assets/", $what, ".wasm"));
+            let code = include_workspace_asset_bytes!(concat!($what, ".wasm"));
 
             // Instrument
-            let validator = WasmValidator::default();
+            let validator = ScryptoV1WasmValidator::new(0u64);
             let instrumented_code = validator
                 .validate(code, iter::empty())
                 .map_err(|e| ExtractSchemaError::InvalidWasm(e))
@@ -167,13 +168,13 @@ bench_instantiate!("radiswap");
 bench_instantiate!("flash_loan");
 
 fn bench_validate_wasm(c: &mut Criterion) {
-    let code = include_bytes!("../../assets/radiswap.wasm");
+    let code = include_workspace_asset_bytes!("radiswap.wasm");
     let definition: PackageDefinition =
-        manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+        manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
 
     c.bench_function("costing::validate_wasm", |b| {
         b.iter(|| {
-            WasmValidator::default()
+            ScryptoV1WasmValidator::new(0u64)
                 .validate(code, definition.blueprints.values())
                 .unwrap()
         })
@@ -183,7 +184,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
 }
 
 fn bench_deserialize_wasm(c: &mut Criterion) {
-    let code = include_bytes!("../../assets/radiswap.wasm");
+    let code = include_workspace_asset_bytes!("radiswap.wasm");
 
     c.bench_function("costing::deserialize_wasm", |b| {
         b.iter(|| WasmModule::init(code).unwrap())
@@ -192,9 +193,9 @@ fn bench_deserialize_wasm(c: &mut Criterion) {
 
 fn bench_prepare_wasm(c: &mut Criterion) {
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let code = include_bytes!("../../assets/radiswap.wasm").to_vec();
+    let code = include_workspace_asset_bytes!("radiswap.wasm").to_vec();
     let package_definition: PackageDefinition =
-        manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+        manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
 
     c.bench_function("costing::bench_prepare_wasm", |b| {
         b.iter(|| {

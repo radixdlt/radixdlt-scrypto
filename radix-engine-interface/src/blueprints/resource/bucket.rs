@@ -38,14 +38,6 @@ pub struct BucketPutInput {
 
 pub type BucketPutOutput = ();
 
-impl Clone for BucketPutInput {
-    fn clone(&self) -> Self {
-        Self {
-            bucket: Bucket(self.bucket.0),
-        }
-    }
-}
-
 pub const BUCKET_GET_AMOUNT_IDENT: &str = "get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

@@ -11,6 +11,8 @@ use wasmi::*;
 
 use crate::errors::InvokeError;
 use crate::types::*;
+#[cfg(feature = "coverage")]
+use crate::utils::save_coverage_data;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
@@ -661,6 +663,120 @@ fn panic(
     runtime.sys_panic(message)
 }
 
+fn bls12381_v1_verify(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+    public_key_ptr: u32,
+    public_key_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+    let public_key = read_memory(
+        caller.as_context_mut(),
+        memory,
+        public_key_ptr,
+        public_key_len,
+    )?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime.crypto_utils_bls12381_v1_verify(message, public_key, signature)
+}
+
+fn bls12381_v1_aggregate_verify(
+    mut caller: Caller<'_, HostState>,
+    pub_keys_and_msgs_ptr: u32,
+    pub_keys_and_msgs_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let pub_keys_and_msgs = read_memory(
+        caller.as_context_mut(),
+        memory,
+        pub_keys_and_msgs_ptr,
+        pub_keys_and_msgs_len,
+    )?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime.crypto_utils_bls12381_v1_aggregate_verify(pub_keys_and_msgs, signature)
+}
+
+fn bls12381_v1_fast_aggregate_verify(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+    public_keys_ptr: u32,
+    public_keys_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+    let public_keys = read_memory(
+        caller.as_context_mut(),
+        memory,
+        public_keys_ptr,
+        public_keys_len,
+    )?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime.crypto_utils_bls12381_v1_fast_aggregate_verify(message, public_keys, signature)
+}
+
+fn bls12381_g2_signature_aggregate(
+    mut caller: Caller<'_, HostState>,
+    signatures_ptr: u32,
+    signatures_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let signatures = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signatures_ptr,
+        signatures_len,
+    )?;
+
+    runtime
+        .crypto_utils_bls12381_g2_signature_aggregate(signatures)
+        .map(|buffer| buffer.0)
+}
+
+fn keccak256_hash(
+    mut caller: Caller<'_, HostState>,
+    data_ptr: u32,
+    data_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
+
+    runtime
+        .crypto_utils_keccak256_hash(data)
+        .map(|buffer| buffer.0)
+}
+
 #[cfg(feature = "radix_engine_tests")]
 fn test_host_read_memory(
     mut caller: Caller<'_, HostState>,
@@ -1224,6 +1340,89 @@ impl WasmiModule {
             },
         );
 
+        let host_bls12381_v1_verify = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32,
+             public_key_ptr: u32,
+             public_key_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u32, Trap> {
+                bls12381_v1_verify(
+                    caller,
+                    message_ptr,
+                    message_len,
+                    public_key_ptr,
+                    public_key_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_bls12381_v1_aggregate_verify = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             pub_keys_and_msgs_ptr: u32,
+             pub_keys_and_msgs_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u32, Trap> {
+                bls12381_v1_aggregate_verify(
+                    caller,
+                    pub_keys_and_msgs_ptr,
+                    pub_keys_and_msgs_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_bls12381_v1_fast_aggregate_verify = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32,
+             public_keys_ptr: u32,
+             public_keys_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u32, Trap> {
+                bls12381_v1_fast_aggregate_verify(
+                    caller,
+                    message_ptr,
+                    message_len,
+                    public_keys_ptr,
+                    public_keys_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
+        let host_bls12381_g2_signature_aggregate = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             signatures_ptr: u32,
+             signatures_len: u32|
+             -> Result<u64, Trap> {
+                bls12381_g2_signature_aggregate(caller, signatures_ptr, signatures_len)
+                    .map_err(|e| e.into())
+            },
+        );
+
+        let host_keccak256_hash = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, data_ptr: u32, data_len: u32| -> Result<u64, Trap> {
+                keccak256_hash(caller, data_ptr, data_len).map_err(|e| e.into())
+            },
+        );
+
         let mut linker = <Linker<HostState>>::new();
 
         linker_define!(linker, BUFFER_CONSUME_FUNCTION_NAME, host_consume_buffer);
@@ -1380,8 +1579,33 @@ impl WasmiModule {
             SYS_BECH32_ENCODE_ADDRESS_FUNCTION_NAME,
             host_bech32_encode_address
         );
-
         linker_define!(linker, SYS_GENERATE_RUID_FUNCTION_NAME, host_generate_ruid);
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME,
+            host_bls12381_v1_verify
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME,
+            host_bls12381_v1_aggregate_verify
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME,
+            host_bls12381_v1_fast_aggregate_verify
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME,
+            host_bls12381_g2_signature_aggregate
+        );
+
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME,
+            host_keccak256_hash
+        );
 
         #[cfg(feature = "radix_engine_tests")]
         {
@@ -1537,21 +1761,47 @@ impl WasmInstance for WasmiInstance {
             .collect();
         let mut ret = [Value::I64(0)];
 
-        let _result = func
+        let call_result = func
             .call(self.store.as_context_mut(), &input, &mut ret)
             .map_err(|e| {
                 let err: InvokeError<WasmRuntimeError> = e.into();
                 err
-            })?;
+            });
 
-        match i64::try_from(ret[0]) {
-            Ok(ret) => read_slice(
-                self.store.as_context_mut(),
-                self.memory,
-                Slice::transmute_i64(ret),
-            ),
-            _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer)),
+        let result = match call_result {
+            Ok(_) => match i64::try_from(ret[0]) {
+                Ok(ret) => read_slice(
+                    self.store.as_context_mut(),
+                    self.memory,
+                    Slice::transmute_i64(ret),
+                ),
+                _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer)),
+            },
+            Err(err) => Err(err),
+        };
+
+        #[cfg(feature = "coverage")]
+        if let Ok(dump_coverage) = self.get_export_func("dump_coverage") {
+            if let Ok(blueprint_buffer) = runtime.actor_get_blueprint_name() {
+                let blueprint_name =
+                    String::from_utf8(runtime.buffer_consume(blueprint_buffer.id()).unwrap())
+                        .unwrap();
+
+                let mut ret = [Value::I64(0)];
+                dump_coverage
+                    .call(self.store.as_context_mut(), &[], &mut ret)
+                    .unwrap();
+                let coverage_data = read_slice(
+                    self.store.as_context_mut(),
+                    self.memory,
+                    Slice::transmute_i64(i64::try_from(ret[0]).unwrap()),
+                )
+                .unwrap();
+                save_coverage_data(&blueprint_name, &coverage_data);
+            }
         }
+
+        result
     }
 }
 
