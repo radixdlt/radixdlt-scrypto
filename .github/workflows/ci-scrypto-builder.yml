@@ -69,6 +69,7 @@ jobs:
           username: ${{env.DOCKERHUB_PRIVATE_USERNAME}}
           password: ${{env.DOCKERHUB_PRIVATE_TOKEN}}
 
+      - uses: RDXWorks-actions/checkout@main
       - name: Pull scrypto-builder docker image
         run:
           DOCKER_DEFAULT_PLATFORM=linux/amd64 docker pull radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }}
