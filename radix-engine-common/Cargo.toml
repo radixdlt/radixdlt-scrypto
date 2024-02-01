@@ -62,3 +62,4 @@ coverage = []
 [lib]
 doctest = false
 bench = false
+
