@@ -20,9 +20,20 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
-      - uses: radixdlt/criterion-compare-action@update-same-commit
+      - name: Clone radixdlt-scrypto
+        uses: RDXWorks-actions/checkout@main
         with:
-          branchName: ${{ github.base_ref }}
+          ref: main
+          repository: duje-begonja-rdx/radixdlt-scrypto
+          path: "original"
+          sparse-checkout: |
+            .github
+      - run: |
+          ls -lh
+          ls -lh */*
+      # - uses: radixdlt/criterion-compare-action@update-same-commit
+      #   with:
+      #     branchName: ${{ github.base_ref }}
 
   benchmark_fork:
     if: ${{ github.event_name == 'pull_request_target' }}
