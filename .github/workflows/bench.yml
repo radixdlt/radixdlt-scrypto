@@ -29,10 +29,10 @@ jobs:
           # sparse-checkout: |
           #   .github
       - run: |
-          ls -lah
-          ls -lah */*
+          # ls -lah
+          # ls -lah */*
           ls -lah original
-          ls -lah original/*
+          # ls -lah original/*
       # - uses: radixdlt/criterion-compare-action@update-same-commit
       #   with:
       #     branchName: ${{ github.base_ref }}
