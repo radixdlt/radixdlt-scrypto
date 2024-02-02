@@ -26,8 +26,8 @@ jobs:
           ref: main
           repository: duje-begonja-rdx/radixdlt-scrypto
           path: "original"
-          sparse-checkout: |
-            .github
+          # sparse-checkout: |
+          #   .github
       - run: |
           ls -lah
           ls -lah */*
