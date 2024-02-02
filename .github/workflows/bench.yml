@@ -23,7 +23,7 @@ jobs:
       - name: Clone radixdlt-scrypto
         uses: RDXWorks-actions/checkout@main
         with:
-          ref: main
+          ref: DO-000-test-forked-workflows
           repository: duje-begonja-rdx/radixdlt-scrypto
           path: "original"
           # sparse-checkout: |
