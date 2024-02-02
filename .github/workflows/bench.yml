@@ -29,8 +29,8 @@ jobs:
           sparse-checkout: |
             .github
       - run: |
-          ls -lh
-          ls -lh */*
+          ls -lah
+          ls -lah */*
       # - uses: radixdlt/criterion-compare-action@update-same-commit
       #   with:
       #     branchName: ${{ github.base_ref }}
@@ -56,8 +56,8 @@ jobs:
           sparse-checkout: |
             .github
       - run: |
-          ls -lh
-          ls -lh */*
+          ls -lah
+          ls -lah */*
       # - name: Setup environment
       #   uses: 'original/.github/actions/setup-env'
       - uses: radixdlt/criterion-compare-action@update-same-commit
