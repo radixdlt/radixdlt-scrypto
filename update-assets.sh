@@ -58,8 +58,8 @@ elif [[ "$BUILD_TYPE" == "--local" ]]; then
   cd "$(dirname "$0")/assets/blueprints"
 
   # See `publish_package_1mib` for how to produce the right sized wasm
-  $scrypto build --disable-wasm-opt --path ../../radix-engine-tests/tests/blueprints/large_package
-  cp ../../radix-engine-tests/tests/blueprints/target/wasm32-unknown-unknown/release/large_package.{wasm,rpd} ..
+  $scrypto build --disable-wasm-opt --path ../../radix-engine-tests/assets/blueprints/large_package
+  cp ../../radix-engine-tests/assets/blueprints/target/wasm32-unknown-unknown/release/large_package.{wasm,rpd} ..
   ls -al ../large_package.*
 
   for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store" "max_transaction"
