@@ -277,13 +277,11 @@ jobs:
         working-directory: simulator
       - name: Run tests
         run: |
-          bash -c env
-          bash -c ./tests/resim.sh
+          bash ./tests/resim.sh
         working-directory: simulator
       - name: Run tests
         run: |
-          bash -c env
-          bash -c ./tests/manifest.sh
+          bash ./tests/manifest.sh
         working-directory: simulator
 
   cli-scrypto:
@@ -304,8 +302,7 @@ jobs:
           workspaces: simulator
       - name: Run tests
         run: |
-          bash -c env
-          bash -c ./tests/scrypto.sh
+          bash ./tests/scrypto.sh
         working-directory: simulator
 
   cargo-check:
