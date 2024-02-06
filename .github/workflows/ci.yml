@@ -276,12 +276,10 @@ jobs:
         run: cargo nextest run
         working-directory: simulator
       - name: Run tests
-        run: |
-          bash ./tests/resim.sh
+        run: bash ./tests/resim.sh
         working-directory: simulator
       - name: Run tests
-        run: |
-          bash ./tests/manifest.sh
+        run: bash ./tests/manifest.sh
         working-directory: simulator
 
   cli-scrypto:
@@ -301,8 +299,7 @@ jobs:
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: simulator
       - name: Run tests
-        run: |
-          bash ./tests/scrypto.sh
+        run: bash ./tests/scrypto.sh
         working-directory: simulator
 
   cargo-check:
