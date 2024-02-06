@@ -665,7 +665,8 @@ impl ManifestBuilder {
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
                         owner_role,
@@ -1917,9 +1918,7 @@ impl ManifestBuilder {
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.resolve(&self.registrar);
-
-        self.registrar.consume_all_buckets();
+        let batch = batch.consume_and_resolve(&self.registrar);
 
         self.call_method(
             address,
@@ -1968,9 +1967,7 @@ impl ManifestBuilder {
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.resolve(&self.registrar);
-
-        self.registrar.consume_all_buckets();
+        let batch = batch.consume_and_resolve(&self.registrar);
 
         self.call_method(
             address,
@@ -2130,5 +2127,16 @@ mod tests {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
         });
+    }
+
+    #[test]
+    fn test_manifest_builder_complex_deposit_batch_build_process_works() {
+        let account = GENESIS_HELPER; // Not actually an account, but not relevant for this test
+        ManifestBuilder::new()
+            .get_free_xrd_from_faucet()
+            .take_from_worktop(XRD, dec!(1000), "bucket_1")
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .try_deposit_batch_or_abort(account, ["bucket_1"], None)
+            .build();
     }
 }
