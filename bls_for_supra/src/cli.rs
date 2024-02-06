@@ -23,7 +23,7 @@ const CRYPTO_SCRYPTO_BLUEPRINT_NAME: &str = "CryptoScrypto";
 // This is the package address of the published CryptoScrypto blueprint.
 // If you publish it by yourself you can use the new adress as well.
 const CRYPTO_SCRYPTO_PACKAGE_ADDRESS: &str =
-    "package_tdx_21_1p5hg2nmhxthzz8hdhqaclx376pq77yv8zfagq6h9hxk6tw5sdmx090";
+    "package_tdx_21_1p5ff8djshk7gcq5j5hyj6de2zvfpl9w567gsfd4drjjyg8mrrv3tyn";
 
 const TEST_MSG1: &str = "Hello World!";
 const TEST_MSG2: &str = "Goodbye World!";

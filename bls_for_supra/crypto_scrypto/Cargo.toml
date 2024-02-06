@@ -17,6 +17,16 @@ scrypto = { path = "../../scrypto" }
 
 [dev-dependencies]
 radix-engine = { path = "../../radix-engine" }
+scrypto-test = { path = "../../scrypto-test" }
+scrypto-unit = { path = "../../scrypto-unit" }
+
+[profile.release]
+opt-level = 'z'        # Optimize for size.
+lto = true             # Enable Link Time Optimization.
+codegen-units = 1      # Reduce number of codegen units to increase optimizations.
+panic = 'abort'        # Abort on panic.
+strip = true           # Strip the symbols.
+overflow-checks = true # Panic in the case of an overflow.
 
 [lib]
 doctest = false
