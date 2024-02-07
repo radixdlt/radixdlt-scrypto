@@ -11,7 +11,7 @@ use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 
-use super::wasm::SCRYPTO_V1_LATEST_MINOR_VERSION;
+use crate::vm::SCRYPTO_V1_LATEST_MINOR_VERSION;
 
 pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 

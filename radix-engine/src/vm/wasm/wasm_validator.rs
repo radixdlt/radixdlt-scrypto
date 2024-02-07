@@ -1,8 +1,7 @@
 use crate::types::*;
 use crate::vm::wasm::*;
+use crate::vm::SCRYPTO_V1_LATEST_MINOR_VERSION;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
-
-pub const SCRYPTO_V1_LATEST_MINOR_VERSION: u64 = 1u64;
 
 pub struct ScryptoV1WasmValidator {
     pub max_memory_size_in_pages: u32,

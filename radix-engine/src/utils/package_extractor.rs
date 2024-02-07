@@ -2,6 +2,7 @@ use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::types::*;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::NoOpWasmRuntime;
+use crate::vm::SCRYPTO_V1_LATEST_MINOR_VERSION;
 use crate::{errors::InvokeError, transaction::CostingParameters};
 use radix_engine_interface::blueprints::package::*;
 use sbor::rust::iter;

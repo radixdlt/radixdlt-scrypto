@@ -11,8 +11,7 @@ use wasm_instrument::{
 use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType, WasmFeatures};
 
 use super::WasmiModule;
-
-pub const SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION: u64 = 1u64;
+use crate::vm::SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION;
 
 #[derive(Debug)]
 pub struct WasmModule {
