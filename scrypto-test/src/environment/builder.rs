@@ -8,6 +8,7 @@ use radix_engine::system::actor::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
+use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::auth::*;
 use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::*;
@@ -289,6 +290,8 @@ where
                 ),
             },
             |system_config, track, id_allocator| {
+                // Get version from the boot store
+                let vm_version = system_config.callback_obj.init(track).unwrap();
                 Kernel::kernel_create_kernel_for_testing(
                     SubstateIO {
                         heap: Heap::new(),
@@ -304,7 +307,7 @@ where
                     CallFrame::new_root(Actor::Root),
                     vec![],
                     system_config,
-                    VmVersion::latest(),
+                    vm_version,
                 )
             },
         ));
