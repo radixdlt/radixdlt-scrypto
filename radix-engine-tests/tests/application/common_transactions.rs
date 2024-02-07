@@ -1,9 +1,9 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init, mint_roles};
+use radix_engine_tests::common::*;
 use scrypto::prelude::Pow;
 use scrypto::NonFungibleData;
 use scrypto_test::prelude::TestRunnerBuilder;
@@ -61,7 +61,9 @@ fn multi_account_fund_transfer_succeeds() {
         3,
         |this_account_address, other_accounts, address_bech32_encoder| {
             let manifest = replace_variables!(
-                include_workspace_transaction_examples_str!("account/multi_account_resource_transfer.rtm"),
+                include_workspace_transaction_examples_str!(
+                    "account/multi_account_resource_transfer.rtm"
+                ),
                 xrd_resource_address = XRD.display(address_bech32_encoder),
                 this_account_address = address_bech32_encoder
                     .encode(this_account_address.as_ref())
@@ -80,7 +82,9 @@ fn multi_account_fund_transfer_succeeds() {
 fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
     run_manifest(|account_address, address_bech32_encoder| {
         let manifest = replace_variables!(
-            include_workspace_transaction_examples_str!("resources/creation/fungible/no_initial_supply.rtm"),
+            include_workspace_transaction_examples_str!(
+                "resources/creation/fungible/no_initial_supply.rtm"
+            ),
             account_address = account_address.display(address_bech32_encoder)
         );
         (manifest, Vec::new())
@@ -95,7 +99,9 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
         let initial_supply = dec!("10000000");
 
         let manifest = replace_variables!(
-            include_workspace_transaction_examples_str!("resources/creation/fungible/with_initial_supply.rtm"),
+            include_workspace_transaction_examples_str!(
+                "resources/creation/fungible/with_initial_supply.rtm"
+            ),
             initial_supply = initial_supply,
             account_address = account_address.display(address_bech32_encoder)
         );
@@ -111,7 +117,9 @@ fn creating_a_fungible_resource_with_max_initial_supply_succeeds() {
         let initial_supply = Decimal(I192::from(2).pow(152));
 
         let manifest = replace_variables!(
-            include_workspace_transaction_examples_str!("resources/creation/fungible/with_initial_supply.rtm"),
+            include_workspace_transaction_examples_str!(
+                "resources/creation/fungible/with_initial_supply.rtm"
+            ),
             initial_supply = initial_supply,
             account_address = account_address.display(address_bech32_encoder)
         );
@@ -127,7 +135,9 @@ fn creating_a_fungible_resource_with_exceeded_initial_supply_fails() {
         let initial_supply = Decimal(I192::from(2).pow(152) + I192::ONE);
 
         let manifest = replace_variables!(
-            include_workspace_transaction_examples_str!("resources/creation/fungible/with_initial_supply.rtm"),
+            include_workspace_transaction_examples_str!(
+                "resources/creation/fungible/with_initial_supply.rtm"
+            ),
             initial_supply = initial_supply,
             account_address = account_address.display(address_bech32_encoder)
         );
@@ -141,7 +151,9 @@ fn creating_a_fungible_resource_with_exceeded_initial_supply_fails() {
 fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
     run_manifest(|account_address, address_bech32_encoder| {
         let manifest = replace_variables!(
-            include_workspace_transaction_examples_str!("resources/creation/non_fungible/no_initial_supply.rtm"),
+            include_workspace_transaction_examples_str!(
+                "resources/creation/non_fungible/no_initial_supply.rtm"
+            ),
             account_address = account_address.display(address_bech32_encoder)
         );
         (manifest, Vec::new())
@@ -154,10 +166,11 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
 fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
     run_manifest(|account_address, address_bech32_encoder| {
         let manifest = replace_variables!(
-            include_workspace_transaction_examples_str!("resources/creation/non_fungible/with_initial_supply.rtm"),
-            account_address =
-                account_address.display(address_bech32_encoder),
-                non_fungible_local_id = "#1#"
+            include_workspace_transaction_examples_str!(
+                "resources/creation/non_fungible/with_initial_supply.rtm"
+            ),
+            account_address = account_address.display(address_bech32_encoder),
+            non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     })
@@ -348,7 +361,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     ) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
@@ -364,6 +377,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,
                 false,
@@ -380,6 +394,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
             )
             .build(),
         ResourceType::NonFungible { id_type } => ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 id_type,
@@ -396,7 +411,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
             )
             .build(),
     };
-    let result = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let result = test_runner.execute_manifest(manifest, vec![]);
     let mintable_non_fungible_resource_address =
         result.expect_commit(true).new_resource_addresses()[0].clone();
 
@@ -424,7 +439,7 @@ where
     F: Fn(&ComponentAddress, &[ComponentAddress], &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);

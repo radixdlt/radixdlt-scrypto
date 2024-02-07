@@ -1,12 +1,12 @@
+use radix_engine::blueprints::package::PackageError;
+use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
+use radix_engine::types::*;
+use radix_engine::utils::generate_vm_boot_scrypto_minor_version_state_updates;
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
 use radix_engine_tests::common::PackageLoader;
 use scrypto_test::prelude::{CustomGenesis, TestRunnerBuilder};
-use radix_engine::utils::generate_vm_boot_scrypto_minor_version_state_updates;
-use radix_engine::types::*;
-use radix_engine::errors::ApplicationError;
-use radix_engine::blueprints::package::PackageError;
 
 #[test]
 fn publishing_crypto_utils_without_state_flash_should_fail() {
@@ -43,7 +43,9 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::InvalidWasm(..)))
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidWasm(..)
+                ))
             )
         });
     }

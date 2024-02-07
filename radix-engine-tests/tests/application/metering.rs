@@ -13,7 +13,6 @@ use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
 use scrypto_test::prelude::*;
 
-
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 
 #[cfg(not(feature = "alloc"))]
@@ -670,7 +669,7 @@ fn run_mint_large_size_nfts_from_manifest(mode: Mode) {
 
 fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_allocated_account();
 
     // Act

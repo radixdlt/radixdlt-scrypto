@@ -1,12 +1,11 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::attached_modules::metadata::MetadataError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataConversionError::UnexpectedType, MetadataValue,
 };
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn can_get_from_scrypto() {

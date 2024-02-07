@@ -1,8 +1,7 @@
-use radix_engine_tests::common::*;
 use radix_engine::types::*;
+use radix_engine_tests::common::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn test_simple_deterministic_execution() {

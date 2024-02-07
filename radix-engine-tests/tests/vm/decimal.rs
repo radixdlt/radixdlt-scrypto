@@ -1,6 +1,6 @@
-use radix_engine_tests::common::*;
 use radix_engine_common::math::*;
 use radix_engine_interface::{dec, pdec};
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 use std::env;
 

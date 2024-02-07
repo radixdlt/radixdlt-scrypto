@@ -1,11 +1,10 @@
-use radix_engine_tests::common::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn sdk_clock_reads_timestamp_set_by_validator_next_round() {

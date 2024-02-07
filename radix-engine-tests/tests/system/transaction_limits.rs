@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::{
     errors::{RuntimeError, SystemModuleError, VmError},
     system::system_modules::limits::TransactionLimitsError,
@@ -6,8 +5,8 @@ use radix_engine::{
     types::*,
     vm::wasm::WasmRuntimeError,
 };
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
@@ -273,6 +272,7 @@ fn verify_log_size_limit() {
         test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -280,7 +280,7 @@ fn verify_log_size_limit() {
             manifest_args!(MAX_LOG_SIZE + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -299,6 +299,7 @@ fn verify_event_size_limit() {
         test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -306,7 +307,7 @@ fn verify_event_size_limit() {
             manifest_args!(MAX_EVENT_SIZE + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -325,6 +326,7 @@ fn verify_panic_size_limit() {
         test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -332,7 +334,7 @@ fn verify_panic_size_limit() {
             manifest_args!(MAX_PANIC_MESSAGE_SIZE + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     receipt.expect_specific_failure(|e| {
         matches!(

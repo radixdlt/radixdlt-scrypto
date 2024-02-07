@@ -1,13 +1,12 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{
     CallFrameError, KernelError, RejectionReason, RuntimeError, SystemModuleError,
 };
 use radix_engine::kernel::call_frame::{CreateFrameError, PassMessageError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
+use radix_engine_tests::common::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn non_existing_vault_should_cause_error() {

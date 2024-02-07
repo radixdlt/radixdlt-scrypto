@@ -19,7 +19,7 @@ cd "$(dirname "$0")"
     | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
 )
 (
-    find "radix-engine-tests/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "radix-engine-tests/assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
 )
 (

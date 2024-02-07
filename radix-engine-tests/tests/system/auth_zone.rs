@@ -8,7 +8,6 @@ use radix_engine_interface::api::{ClientApi, ACTOR_REF_AUTH_ZONE};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_test::prelude::*;
 
-
 #[test]
 fn should_not_be_able_to_move_auth_zone() {
     // Arrange

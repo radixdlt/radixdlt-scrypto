@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{CallFrameError, KernelError};
 use radix_engine::kernel::call_frame::{
     CloseSubstateError, CreateNodeError, ProcessSubstateError, TakeNodeError,
@@ -8,9 +7,9 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_test::prelude::{OpenSubstateError, ProcessSubstateKeyError};
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
+use scrypto_test::prelude::{OpenSubstateError, ProcessSubstateKeyError};
 
 #[derive(ScryptoSbor, PartialEq, Eq, Debug)]
 struct Compo {
@@ -327,7 +326,7 @@ fn cant_store_role_assignment() {
 
 #[test]
 fn test_globalize_with_very_deep_own() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()

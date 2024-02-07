@@ -5,7 +5,6 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_queries::typed_substate_layout::VaultError;
 use scrypto_test::prelude::*;
 
-
 #[test]
 fn test_lock_fee_and_then_withdraw_failure() {
     // Arrange

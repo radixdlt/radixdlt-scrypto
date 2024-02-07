@@ -203,12 +203,15 @@ pub struct TestRunnerBuilder<E, D> {
     custom_genesis: Option<CustomGenesis>,
     custom_extension: E,
     custom_database: D,
-    trace: bool,
-    skip_receipt_check: bool,
+
+    // General options
+    with_kernel_trace: bool,
+    with_receipt_substate_check: bool,
 
     // The following are protocol updates on mainnet
     with_seconds_precision_update: bool,
     with_crypto_utils_update: bool,
+    with_validator_fee_update: bool,
     with_pools_v1_1: bool,
 }
 
@@ -218,30 +221,27 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_genesis: None,
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
-            trace: true,
-            skip_receipt_check: false,
+            with_kernel_trace: true,
+            with_receipt_substate_check: true,
             with_seconds_precision_update: true,
             with_crypto_utils_update: true,
+            with_validator_fee_update: true,
             with_pools_v1_1: true,
         }
     }
 }
 
 impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
-    pub fn without_trace(mut self) -> Self {
-        self.trace = false;
-        self
-    }
-
     pub fn with_state_hashing(self) -> TestRunnerBuilder<E, HashTreeUpdatingDatabase<D>> {
         TestRunnerBuilder {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
-            trace: self.trace,
-            skip_receipt_check: false,
+            with_kernel_trace: self.with_kernel_trace,
+            with_receipt_substate_check: self.with_receipt_substate_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
+            with_validator_fee_update: self.with_validator_fee_update,
             with_pools_v1_1: self.with_pools_v1_1,
         }
     }
@@ -251,8 +251,23 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         self
     }
 
-    pub fn skip_receipt_check(mut self) -> Self {
-        self.skip_receipt_check = true;
+    pub fn with_kernel_trace(mut self) -> Self {
+        self.with_kernel_trace = true;
+        self
+    }
+
+    pub fn without_kernel_trace(mut self) -> Self {
+        self.with_kernel_trace = false;
+        self
+    }
+
+    pub fn with_receipt_substate_check(mut self) -> Self {
+        self.with_receipt_substate_check = true;
+        self
+    }
+
+    pub fn without_receipt_substate_check(mut self) -> Self {
+        self.with_receipt_substate_check = false;
         self
     }
 
@@ -264,10 +279,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: extension,
             custom_database: self.custom_database,
-            trace: self.trace,
-            skip_receipt_check: self.skip_receipt_check,
+            with_kernel_trace: self.with_kernel_trace,
+            with_receipt_substate_check: self.with_receipt_substate_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
+            with_validator_fee_update: self.with_validator_fee_update,
             with_pools_v1_1: self.with_pools_v1_1,
         }
     }
@@ -277,10 +293,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: database,
-            trace: self.trace,
-            skip_receipt_check: self.skip_receipt_check,
+            with_kernel_trace: self.with_kernel_trace,
+            with_receipt_substate_check: self.with_receipt_substate_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
             with_crypto_utils_update: self.with_crypto_utils_update,
+            with_validator_fee_update: self.with_validator_fee_update,
             with_pools_v1_1: self.with_pools_v1_1,
         }
     }
@@ -295,6 +312,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         self
     }
 
+    pub fn without_validator_fee_update(mut self) -> Self {
+        self.with_validator_fee_update = false;
+        self
+    }
+
     pub fn without_pools_v1_1(mut self) -> Self {
         self.with_pools_v1_1 = false;
         self
@@ -304,23 +326,16 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         self,
         snapshot: TestRunnerSnapshot,
     ) -> TestRunner<E, InMemorySubstateDatabase> {
-        //---------- Override configs for resource tracker ---------------
-        #[cfg(not(feature = "resource_tracker"))]
-        let trace = self.trace;
-        #[cfg(feature = "resource_tracker")]
-        let trace = false;
-        //----------------------------------------------------------------
-
         TestRunner {
             scrypto_vm: ScryptoVm::default(),
             native_vm: NativeVm::new_with_extension(self.custom_extension),
             database: snapshot.database,
             next_private_key: snapshot.next_private_key,
             next_transaction_nonce: snapshot.next_transaction_nonce,
-            trace,
             collected_events: snapshot.collected_events,
             xrd_free_credits_used: snapshot.xrd_free_credits_used,
-            skip_receipt_check: snapshot.skip_receipt_check,
+            with_kernel_trace: snapshot.with_kernel_trace,
+            with_receipt_substate_check: snapshot.with_receipt_substate_check,
         }
     }
 
@@ -329,9 +344,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let bootstrap_trace = false;
 
         #[cfg(not(feature = "resource_tracker"))]
-        let trace = self.trace;
+        let with_kernel_trace = self.with_kernel_trace;
         #[cfg(feature = "resource_tracker")]
-        let trace = false;
+        let with_kernel_trace = false;
         //----------------------------------------------------------------
 
         let scrypto_vm = ScryptoVm {
@@ -403,17 +418,17 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
                 substate_db.commit(&db_updates);
             }
 
-            {
+            if self.with_validator_fee_update {
                 let state_updates = generate_validator_fee_fix_state_updates(&substate_db);
                 let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 substate_db.commit(&db_updates);
             }
-        }
 
-        if self.with_pools_v1_1 {
-            let state_updates = generate_pools_v1_1_state_updates(&substate_db);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            substate_db.commit(&db_updates);
+            if self.with_pools_v1_1 {
+                let state_updates = generate_pools_v1_1_state_updates(&substate_db);
+                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                substate_db.commit(&db_updates);
+            }
         }
 
         let runner = TestRunner {
@@ -422,10 +437,10 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             database: substate_db,
             next_private_key,
             next_transaction_nonce,
-            trace,
             collected_events: events,
             xrd_free_credits_used: false,
-            skip_receipt_check: self.skip_receipt_check,
+            with_kernel_trace: with_kernel_trace,
+            with_receipt_substate_check: self.with_receipt_substate_check,
         };
 
         let next_epoch = wrap_up_receipt
@@ -444,12 +459,19 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
     native_vm: NativeVm<E>,
     database: D,
+
     next_private_key: u64,
     next_transaction_nonce: u32,
-    trace: bool,
+
+    /// Events collected from all the committed transactions
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    /// Track whether any of the committed transaction has used free credit
     xrd_free_credits_used: bool,
-    skip_receipt_check: bool,
+
+    /// Whether to enable kernel tracing
+    with_kernel_trace: bool,
+    /// Whether to enable receipt substate type checking
+    with_receipt_substate_check: bool,
 }
 
 #[cfg(feature = "post_run_db_check")]
@@ -466,7 +488,8 @@ pub struct TestRunnerSnapshot {
     next_transaction_nonce: u32,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
     xrd_free_credits_used: bool,
-    skip_receipt_check: bool,
+    with_kernel_trace: bool,
+    with_receipt_substate_check: bool,
 }
 
 impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
@@ -477,7 +500,8 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
             next_transaction_nonce: self.next_transaction_nonce,
             collected_events: self.collected_events.clone(),
             xrd_free_credits_used: self.xrd_free_credits_used,
-            skip_receipt_check: self.skip_receipt_check,
+            with_kernel_trace: self.with_kernel_trace,
+            with_receipt_substate_check: self.with_receipt_substate_check,
         }
     }
 
@@ -487,7 +511,8 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
         self.collected_events = snapshot.collected_events;
         self.xrd_free_credits_used = snapshot.xrd_free_credits_used;
-        self.skip_receipt_check = snapshot.skip_receipt_check;
+        self.with_kernel_trace = snapshot.with_kernel_trace;
+        self.with_receipt_substate_check = snapshot.with_receipt_substate_check;
     }
 }
 
@@ -861,18 +886,20 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
     pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .new_account_advanced(owner_role, None)
             .build();
-        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
 
         let account = receipt.expect_commit(true).new_component_addresses()[0];
 
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
-        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
 
         account
@@ -1140,6 +1167,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 }),
             }],
             btreeset!(AuthAddresses::system_role()),
+            vec![],
         );
         let package_address: PackageAddress = receipt.expect_commit(true).output(0);
         package_address
@@ -1280,131 +1308,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         self.publish_package_with_owner(package_dir.as_ref(), owner_badge)
     }
 
-    pub fn execute_unsigned_built_manifest_with_faucet_lock_fee(
-        &mut self,
-        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
-    ) -> TransactionReceipt {
-        self.execute_manifest(
-            ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .then(create_manifest)
-                .build(),
-            [],
-        )
-    }
-
-    pub fn execute_unsigned_built_manifest(
-        &mut self,
-        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
-    ) -> TransactionReceipt {
-        self.execute_manifest(ManifestBuilder::new().then(create_manifest).build(), [])
-    }
-
-    pub fn execute_built_manifest_with_faucet_lock_fee(
-        &mut self,
-        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
-        signatures: impl ResolvableTransactionSignatures,
-    ) -> TransactionReceipt {
-        self.execute_manifest(
-            ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .then(create_manifest)
-                .build(),
-            signatures.resolve(),
-        )
-    }
-
-    pub fn execute_built_manifest(
-        &mut self,
-        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
-        signatures: impl ResolvableTransactionSignatures,
-    ) -> TransactionReceipt {
-        self.execute_manifest(
-            ManifestBuilder::new().then(create_manifest).build(),
-            signatures.resolve(),
-        )
-    }
-
-    pub fn execute_manifest_with_fee_from_faucet<T>(
-        &mut self,
-        mut manifest: TransactionManifestV1,
-        amount: Decimal,
-        initial_proofs: T,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        manifest.instructions.insert(
-            0,
-            transaction::model::InstructionV1::CallMethod {
-                address: self.faucet_component().into(),
-                method_name: "lock_fee".to_string(),
-                args: manifest_args!(amount).into(),
-            },
-        );
-        self.execute_manifest(manifest, initial_proofs)
-    }
-
-    pub fn execute_manifest_with_fee_from_faucet_with_system<
-        'a,
-        T,
-        R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>,
-    >(
-        &'a mut self,
-        mut manifest: TransactionManifestV1,
-        amount: Decimal,
-        initial_proofs: T,
-        init: R::Init,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        manifest.instructions.insert(
-            0,
-            transaction::model::InstructionV1::CallMethod {
-                address: self.faucet_component().into(),
-                method_name: "lock_fee".to_string(),
-                args: manifest_args!(amount).into(),
-            },
-        );
-        self.execute_manifest_with_system::<'a, T, R>(manifest, initial_proofs, init)
-    }
-
-    pub fn execute_manifest_ignoring_fee<T>(
-        &mut self,
-        mut manifest: TransactionManifestV1,
-        initial_proofs: T,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        manifest.instructions.insert(
-            0,
-            transaction::model::InstructionV1::CallMethod {
-                address: self.faucet_component().into(),
-                method_name: "lock_fee".to_string(),
-                args: manifest_args!(dec!("500")).into(),
-            },
-        );
-        self.execute_manifest(manifest, initial_proofs)
-    }
-
-    pub fn execute_raw_transaction(
-        &mut self,
-        network: &NetworkDefinition,
-        raw_transaction: &RawNotarizedTransaction,
-    ) -> TransactionReceipt {
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
-        let validated = validator
-            .validate_from_raw(&raw_transaction)
-            .expect("Expected raw transaction to be valid");
-        self.execute_transaction(
-            validated.get_executable(),
-            CostingParameters::default(),
-            ExecutionConfig::for_notarized_transaction(network.clone()),
-        )
-    }
-
     pub fn execute_manifest<T>(
         &mut self,
         manifest: TransactionManifestV1,
@@ -1417,6 +1320,26 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             manifest,
             initial_proofs,
             CostingParameters::default(),
+        )
+    }
+
+    pub fn execute_manifest_with_costing_params<T>(
+        &mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+        costing_parameters: CostingParameters,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            costing_parameters,
+            ExecutionConfig::for_test_transaction(),
         )
     }
 
@@ -1441,43 +1364,42 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         )
     }
 
-    pub fn execute_manifest_with_costing_params<T>(
+    pub fn execute_notarized_transaction(
         &mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
-        costing_parameters: CostingParameters,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        let nonce = self.next_transaction_nonce();
+        raw_transaction: &RawNotarizedTransaction,
+    ) -> TransactionReceipt {
+        let network = NetworkDefinition::simulator();
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
+        let validated = validator
+            .validate_from_raw(&raw_transaction)
+            .expect("Expected raw transaction to be valid");
         self.execute_transaction(
-            TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(initial_proofs.into_iter().collect()),
-            costing_parameters,
-            ExecutionConfig::for_test_transaction(),
+            validated.get_executable(),
+            CostingParameters::default(),
+            ExecutionConfig::for_notarized_transaction(network.clone()),
         )
     }
 
-    pub fn execute_manifest_with_execution_cost_unit_limit<T>(
+    pub fn execute_system_transaction(
         &mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
-        execution_cost_unit_limit: u32,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
+        instructions: Vec<InstructionV1>,
+        proofs: BTreeSet<NonFungibleGlobalId>,
+        pre_allocated_addresses: Vec<PreAllocatedAddress>,
+    ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
+
         self.execute_transaction(
-            TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(initial_proofs.into_iter().collect()),
-            CostingParameters::default().with_execution_cost_unit_limit(execution_cost_unit_limit),
-            ExecutionConfig::for_test_transaction(),
+            SystemTransactionV1 {
+                instructions: InstructionsV1(instructions),
+                blobs: BlobsV1 { blobs: vec![] },
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_addresses,
+            }
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
+            CostingParameters::default(),
+            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -1503,7 +1425,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         init: T::Init,
     ) -> TransactionReceipt {
         // Override the kernel trace config
-        execution_config = execution_config.with_kernel_trace(self.trace);
+        execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
         if executable
             .costing_parameters()
@@ -1534,7 +1456,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             self.collected_events
                 .push(commit.application_events.clone());
 
-            if !self.skip_receipt_check {
+            if self.with_receipt_substate_check {
                 assert_receipt_substate_changes_can_be_typed(commit);
             }
         }
@@ -1551,7 +1473,13 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             native_vm: self.native_vm.clone(),
         };
 
-        execute_preview(&self.database, vm, network, preview_intent, self.trace)
+        execute_preview(
+            &self.database,
+            vm,
+            network,
+            preview_intent,
+            self.with_kernel_trace,
+        )
     }
 
     pub fn preview_manifest(
@@ -1590,7 +1518,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 signer_public_keys,
                 flags,
             },
-            self.trace,
+            self.with_kernel_trace,
         )
         .unwrap()
     }
@@ -1615,8 +1543,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         function_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> TransactionReceipt {
-        self.execute_manifest_ignoring_fee(
+        self.execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_function(package_address, blueprint_name, function_name, arguments)
                 .build(),
             vec![],
@@ -1667,8 +1596,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         method_name: impl Into<String>,
         args: impl ResolvableArguments,
     ) -> TransactionReceipt {
-        self.execute_manifest_ignoring_fee(
+        self.execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(address, method_name, args)
                 .build(),
             vec![],
@@ -1765,8 +1695,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         &mut self,
         owner_role: OwnerRole,
     ) -> ResourceAddress {
-        let receipt = self.execute_manifest_ignoring_fee(
+        let receipt = self.execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .create_non_fungible_resource::<Vec<_>, ()>(
                     owner_role,
                     NonFungibleIdType::Integer,
@@ -2110,6 +2041,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         pool_manager_rule: AccessRule,
     ) -> (ComponentAddress, ResourceAddress) {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(
                 POOL_PACKAGE,
                 ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -2122,7 +2054,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 },
             )
             .build();
-        let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
+        let receipt = self.execute_manifest(manifest, vec![]);
         let commit_result = receipt.expect_commit_success();
 
         (
@@ -2180,83 +2112,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentEpochInput),
             }],
             btreeset![AuthAddresses::validator_role()],
+            vec![],
         );
         receipt.expect_commit(true).output(0)
-    }
-
-    pub fn execute_system_transaction_with_preallocation(
-        &mut self,
-        instructions: Vec<InstructionV1>,
-        proofs: BTreeSet<NonFungibleGlobalId>,
-        pre_allocated_addresses: Vec<PreAllocatedAddress>,
-    ) -> TransactionReceipt {
-        let nonce = self.next_transaction_nonce();
-
-        self.execute_transaction(
-            SystemTransactionV1 {
-                instructions: InstructionsV1(instructions),
-                blobs: BlobsV1 { blobs: vec![] },
-                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_addresses,
-            }
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(proofs),
-            CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
-        )
-    }
-
-    pub fn execute_validator_transaction(
-        &mut self,
-        instructions: Vec<InstructionV1>,
-    ) -> TransactionReceipt {
-        self.execute_system_transaction(instructions, btreeset![AuthAddresses::validator_role()])
-    }
-
-    pub fn execute_system_transaction_with_preallocated_addresses(
-        &mut self,
-        instructions: Vec<InstructionV1>,
-        pre_allocated_addresses: Vec<PreAllocatedAddress>,
-        mut proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> TransactionReceipt {
-        let nonce = self.next_transaction_nonce();
-        proofs.insert(AuthAddresses::system_role());
-        self.execute_transaction(
-            SystemTransactionV1 {
-                instructions: InstructionsV1(instructions),
-                blobs: BlobsV1 { blobs: vec![] },
-                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_addresses,
-            }
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(proofs),
-            CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
-        )
-    }
-
-    pub fn execute_system_transaction(
-        &mut self,
-        instructions: Vec<InstructionV1>,
-        proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> TransactionReceipt {
-        let nonce = self.next_transaction_nonce();
-
-        self.execute_transaction(
-            SystemTransactionV1 {
-                instructions: InstructionsV1(instructions),
-                blobs: BlobsV1 { blobs: vec![] },
-                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_addresses: vec![],
-            }
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(proofs),
-            CostingParameters::default(),
-            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
-        )
     }
 
     /// Executes a "start round number `round` at timestamp `timestamp_ms`" system transaction, as
@@ -2285,6 +2143,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 }),
             }],
             btreeset![AuthAddresses::validator_role()],
+            vec![],
         )
     }
 
@@ -2331,6 +2190,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 }),
             }],
             btreeset![AuthAddresses::validator_role()],
+            vec![],
         );
         receipt.expect_commit(true).output(0)
     }
