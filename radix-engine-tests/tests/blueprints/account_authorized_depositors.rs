@@ -6,7 +6,6 @@ use radix_engine_interface::blueprints::account::*;
 use scrypto_test::prelude::TestRunnerBuilder;
 use transaction::prelude::*;
 
-
 #[test]
 fn account_add_authorized_depositor_without_owner_auth_fails() {
     test_depositors_operation_method_auth(
@@ -64,8 +63,9 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -85,6 +85,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
@@ -100,8 +101,8 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -117,8 +118,9 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -140,6 +142,7 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
@@ -153,8 +156,8 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -170,8 +173,9 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -193,6 +197,7 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account2, XRD, 1)
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
@@ -207,8 +212,8 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -223,8 +228,9 @@ fn authorized_depositor_can_be_removed_later() {
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -246,6 +252,7 @@ fn authorized_depositor_can_be_removed_later() {
 
     // Act 1
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account2, XRD, 1)
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
@@ -260,14 +267,15 @@ fn authorized_depositor_can_be_removed_later() {
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert 1
     receipt.expect_commit_success();
 
     // Act 2
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(
             account1,
             ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR,
@@ -277,10 +285,11 @@ fn authorized_depositor_can_be_removed_later() {
         )
         .build();
     test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk1)])
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk1)])
         .expect_commit_success();
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account2, XRD, 1)
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
@@ -295,8 +304,8 @@ fn authorized_depositor_can_be_removed_later() {
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert 2
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -311,8 +320,9 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -332,6 +342,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
@@ -347,8 +358,8 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -364,8 +375,9 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -387,6 +399,7 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
@@ -400,8 +413,8 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -417,8 +430,9 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -440,6 +454,7 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account2, XRD, 1)
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
@@ -454,8 +469,8 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -470,8 +485,9 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -491,6 +507,7 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
@@ -506,8 +523,8 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -523,8 +540,9 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -546,6 +564,7 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
@@ -559,8 +578,8 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -576,8 +595,9 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -599,6 +619,7 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account2, XRD, 1)
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
@@ -613,8 +634,8 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -629,8 +650,9 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -650,6 +672,7 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
@@ -665,8 +688,8 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -682,8 +705,9 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -705,6 +729,7 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
@@ -718,8 +743,8 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -735,8 +760,9 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
 
     let badge = ResourceOrNonFungible::Resource(XRD);
     test_runner
-        .execute_manifest_ignoring_fee(
+        .execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_method(
                     account1,
                     ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -758,6 +784,7 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account2, XRD, 1)
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
@@ -772,8 +799,8 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
             )
         })
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -791,7 +818,7 @@ fn authorized_depositor_badge_is_ignored_when_deposit_batch_is_permitted_without
         ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
     ] {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 10)
+            .lock_fee_from_faucet()
             .call_method(FAUCET, "free", ())
             .call_method(
                 account,
@@ -822,7 +849,7 @@ fn authorized_depositor_badge_is_ignored_when_deposit_is_permitted_without_it() 
         ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
     ] {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 10)
+            .lock_fee_from_faucet()
             .call_method(FAUCET, "free", ())
             .take_all_from_worktop(XRD, "bucket")
             .with_bucket("bucket", |builder, bucket| {
@@ -856,7 +883,7 @@ fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
         ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
     ] {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 10)
+            .lock_fee_from_faucet()
             .call_method(
                 account,
                 ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -897,7 +924,7 @@ fn authorized_depositor_badge_permits_caller_to_deposit() {
         ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
     ] {
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 10)
+            .lock_fee_from_faucet()
             .call_method(
                 account,
                 ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -960,7 +987,7 @@ fn test_depositors_operation_method_auth(
 
     // Act
     let manifest = {
-        let mut builder = ManifestBuilder::new();
+        let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
         builder = match operation {
             DepositorsOperation::Add { badge } => builder.call_method(
                 account,
@@ -975,7 +1002,7 @@ fn test_depositors_operation_method_auth(
         };
         builder.build()
     };
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, initial_proofs);
+    let receipt = test_runner.execute_manifest(manifest, initial_proofs);
 
     // Assert
     assertion(&receipt)

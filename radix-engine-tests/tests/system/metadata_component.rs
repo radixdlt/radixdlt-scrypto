@@ -1,9 +1,8 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_queries::typed_substate_layout::{MetadataError, MetadataValidationError};
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn cannot_create_metadata_with_invalid_value() {

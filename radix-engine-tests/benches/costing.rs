@@ -192,7 +192,7 @@ fn bench_deserialize_wasm(c: &mut Criterion) {
 }
 
 fn bench_prepare_wasm(c: &mut Criterion) {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let code = include_workspace_asset_bytes!("radiswap.wasm").to_vec();
     let package_definition: PackageDefinition =
         manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();

@@ -4,7 +4,6 @@ use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_test::prelude::*;
 
-
 #[test]
 fn cannot_burn_frozen_burn_fungible_vault() {
     // Arrange

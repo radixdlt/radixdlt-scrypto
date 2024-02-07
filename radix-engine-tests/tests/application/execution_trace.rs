@@ -1,11 +1,10 @@
-use radix_engine_tests::common::*;
 use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, ResourceSpecifier, TraceOrigin, WorktopChange,
 };
 use radix_engine::types::*;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 use transaction::model::PreviewFlags;
-
 
 #[test]
 fn test_trace_resource_transfers() {

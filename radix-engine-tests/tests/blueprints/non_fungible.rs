@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::resource::{
     InvalidNonFungibleSchema, NonFungibleResourceManagerError,
 };
@@ -9,9 +8,9 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_tests::common::*;
 use scrypto::NonFungibleData;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn create_non_fungible_resource_with_supply_and_ruid_should_fail() {

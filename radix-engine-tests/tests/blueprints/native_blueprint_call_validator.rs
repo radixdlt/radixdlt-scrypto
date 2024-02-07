@@ -1,15 +1,14 @@
-use radix_engine_tests::common::*;
 use radix_engine::utils::{
     validate_call_arguments_to_native_components, InstructionSchemaValidationError,
     LocatedInstructionSchemaValidationError,
 };
 use radix_engine_common::prelude::NetworkDefinition;
+use radix_engine_tests::common::*;
 use scrypto::prelude::*;
+use transaction::manifest::e2e::apply_address_replacements;
 use transaction::manifest::{compile, MockBlobProvider};
 use transaction::prelude::*;
 use walkdir::WalkDir;
-use transaction::manifest::e2e::apply_address_replacements;
-
 
 #[test]
 fn validator_sees_valid_transfer_manifest_as_valid() {

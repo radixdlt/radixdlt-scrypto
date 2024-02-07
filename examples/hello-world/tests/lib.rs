@@ -15,6 +15,7 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "Hello",
@@ -22,7 +23,7 @@ fn test_hello() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -31,6 +32,7 @@ fn test_hello() {
 
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(component, "free_token", manifest_args!())
         .call_method(
             account,
@@ -38,7 +40,7 @@ fn test_hello() {
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

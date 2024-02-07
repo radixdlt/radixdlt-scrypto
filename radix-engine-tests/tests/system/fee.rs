@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
@@ -6,6 +5,7 @@ use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 use transaction::prelude::PreviewFlags;
 

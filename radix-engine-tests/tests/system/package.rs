@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::package::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
@@ -7,10 +6,9 @@ use radix_engine::vm::wasm::PrepareError;
 use radix_engine::vm::wasm::*;
 use radix_engine_common::constants::MAX_NUMBER_OF_BLUEPRINT_FIELDS;
 use radix_engine_interface::*;
+use radix_engine_tests::common::*;
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;
-
-
 
 #[test]
 fn missing_memory_should_cause_error() {

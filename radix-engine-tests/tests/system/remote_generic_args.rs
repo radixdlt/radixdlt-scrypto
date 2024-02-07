@@ -1,7 +1,6 @@
-use radix_engine_tests::common::*;
 use radix_engine::types::*;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn test_same_package_remote_generic_arg_for_non_fungible_data() {

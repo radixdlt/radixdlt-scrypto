@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::consensus_manager::UnstakeData;
 use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
@@ -14,6 +13,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_queries::typed_substate_layout::{
     ConsensusManagerError, ValidatorRewardAppliedEvent,
 };
+use radix_engine_tests::common::*;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand_chacha;
@@ -22,7 +22,6 @@ use rand_chacha::ChaCha8Rng;
 use scrypto::api::node_modules::*;
 use scrypto_test::prelude::AuthError;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -433,7 +432,7 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
 #[test]
 fn create_validator_twice() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -2910,7 +2909,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
         )
             .into(),
     );
-    let receipt = test_runner.execute_system_transaction_with_preallocation(
+    let receipt = test_runner.execute_system_transaction(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
@@ -2963,7 +2962,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
         )
             .into(),
     );
-    let receipt = test_runner.execute_system_transaction_with_preallocation(
+    let receipt = test_runner.execute_system_transaction(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
@@ -3020,8 +3019,11 @@ fn test_tips_and_fee_distribution_single_validator() {
         .build();
 
     // Do some transaction
-    let receipt1 = test_runner.execute_manifest_ignoring_fee(
-        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+    let receipt1 = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .drop_auth_zone_proofs()
+            .build(),
         vec![],
     );
     receipt1.expect_commit_success();
@@ -3084,8 +3086,11 @@ fn test_tips_and_fee_distribution_two_validators() {
         .build();
 
     // Do some transaction
-    let receipt1 = test_runner.execute_manifest_ignoring_fee(
-        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+    let receipt1 = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .drop_auth_zone_proofs()
+            .build(),
         vec![],
     );
     let result1 = receipt1.expect_commit_success();
@@ -3176,7 +3181,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
     );
     let mut test_runner = TestRunnerBuilder::new()
         .with_custom_genesis(genesis)
-        .without_trace()
+        .without_kernel_trace()
         .build();
 
     let validators_addresses: Vec<ComponentAddress> = validators_keys
@@ -3611,8 +3616,11 @@ fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
         .build();
 
     // Do some transaction
-    let receipt1 = test_runner.execute_manifest_ignoring_fee(
-        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+    let receipt1 = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .drop_auth_zone_proofs()
+            .build(),
         vec![],
     );
     let result1 = receipt1.expect_commit_success();

@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
@@ -11,10 +10,10 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::package::KeyOrValue;
 use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_tests::common::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn test_deposit_event_when_creating_vault_with_bucket() {
@@ -671,6 +670,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -681,13 +681,14 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
             )
             .build();
         test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![])
+            .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
     };
 
     let component_address = {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -706,7 +707,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
             })
             .build();
         test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![])
+            .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
@@ -714,6 +715,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "take_ids",
@@ -721,7 +723,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -736,9 +738,10 @@ fn get_vault_id(
     component_address: ComponentAddress,
 ) -> NodeId {
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success().output(1)
 }
 

@@ -36,10 +36,7 @@ fn lock_fee_from_faucet_twice_error_injection() {
 
     // TODO: Use state from InjectSystemCostingError to tell when we haven't progressed
     for _ in 0..600 {
-        let manifest = ManifestBuilder::new()
-            .lock_fee_from_faucet()
-            .lock_fee_from_faucet()
-            .build();
+        let manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
         let receipt = test_runner
             .execute_manifest_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
                 manifest,
@@ -65,7 +62,6 @@ fn lock_fee_from_faucet_and_account_error_injection() {
 
     loop {
         let manifest = ManifestBuilder::new()
-            .lock_fee_from_faucet()
             .lock_fee(account, dec!("500"))
             .build();
         let receipt = test_runner

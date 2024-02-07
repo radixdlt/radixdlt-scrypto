@@ -1,8 +1,7 @@
-use radix_engine_tests::common::*;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 #[ignore = "TODO: investigate how the compiled wasm is producing unreachable"]

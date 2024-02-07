@@ -1,9 +1,8 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{MovePartitionError, PersistNodeError};
 use radix_engine::types::*;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-
 
 #[test]
 fn stored_bucket_in_committed_component_should_fail() {
