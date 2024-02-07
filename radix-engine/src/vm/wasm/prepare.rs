@@ -739,7 +739,11 @@ impl WasmModule {
                     CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => {
                         if minor_version < SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION {
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                                InvalidImport::ProtocolVersionMismatch {
+                                    name: entry.name.to_string(),
+                                    current_version: minor_version,
+                                    expected_version: SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                },
                             ));
                         }
 
@@ -765,9 +769,13 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => {
-                        if minor_version < 1 {
+                        if minor_version < SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION {
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                                InvalidImport::ProtocolVersionMismatch {
+                                    name: entry.name.to_string(),
+                                    current_version: minor_version,
+                                    expected_version: SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                },
                             ));
                         }
 
@@ -788,7 +796,11 @@ impl WasmModule {
                     CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME => {
                         if minor_version < SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION {
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                                InvalidImport::ProtocolVersionMismatch {
+                                    name: entry.name.to_string(),
+                                    current_version: minor_version,
+                                    expected_version: SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                },
                             ));
                         }
 
@@ -816,7 +828,11 @@ impl WasmModule {
                     CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME => {
                         if minor_version < SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION {
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                                InvalidImport::ProtocolVersionMismatch {
+                                    name: entry.name.to_string(),
+                                    current_version: minor_version,
+                                    expected_version: SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                },
                             ));
                         }
 
@@ -837,7 +853,11 @@ impl WasmModule {
                     CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => {
                         if minor_version < SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION {
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::ImportNotAllowed(entry.name.to_string()),
+                                InvalidImport::ProtocolVersionMismatch {
+                                    name: entry.name.to_string(),
+                                    current_version: minor_version,
+                                    expected_version: SCRPYTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                },
                             ));
                         }
 
