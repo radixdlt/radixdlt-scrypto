@@ -30,7 +30,9 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
         ))
         .build();
     if flash_substates {
-        let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
+        let state_updates = generate_vm_boot_scrypto_minor_version_state_updates(
+            SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+        );
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         test_runner.substate_db_mut().commit(&db_updates);
     }

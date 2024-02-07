@@ -21,9 +21,9 @@ use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
 use utils::indexmap;
 
-pub fn generate_vm_boot_scrypto_minor_version_state_updates() -> StateUpdates {
+pub fn generate_vm_boot_scrypto_minor_version_state_updates(version: u64) -> StateUpdates {
     let substate = scrypto_encode(&VmBoot::V1 {
-        scrypto_v1_minor_version: 1u64,
+        scrypto_v1_minor_version: version,
     })
     .unwrap();
 
