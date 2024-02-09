@@ -272,6 +272,9 @@ jobs:
           shared-key: simulator-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: simulator
+      - name: Run tests
+        run: $Env:Path
+        working-directory: simulator
       - name: Run Unit tests
         run: cargo nextest run
         working-directory: simulator
@@ -298,6 +301,9 @@ jobs:
           shared-key: simulator-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: simulator
+      - name: Run tests
+        run: env
+        working-directory: simulator
       - name: Run tests
         run: bash ./tests/scrypto.sh
         working-directory: simulator
