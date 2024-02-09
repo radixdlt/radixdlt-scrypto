@@ -80,8 +80,8 @@ mod tests {
     use utils::ContextualDisplay;
 
     use super::*;
-    use crate::address::test_addresses::*;
-    use crate::address::AddressBech32Encoder;
+    use crate::bech32::test_addresses::*;
+    use crate::bech32::AddressBech32Encoder;
 
     #[test]
     fn test_rustlike_string_format_with_network() {

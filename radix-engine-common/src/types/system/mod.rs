@@ -1,0 +1,31 @@
+mod blueprint_id;
+mod costing_reason;
+mod event_id;
+mod fn_id;
+mod global_address_reservation;
+mod kv_store_info;
+mod kv_store_init;
+mod log_level;
+mod object_info;
+mod package_code;
+mod type_id;
+mod wasm;
+
+pub use blueprint_id::*;
+pub use costing_reason::*;
+pub use event_id::*;
+pub use fn_id::*;
+pub use global_address_reservation::*;
+pub use kv_store_info::*;
+pub use kv_store_init::*;
+pub use log_level::*;
+pub use object_info::*;
+pub use package_code::*;
+pub use type_id::*;
+pub use wasm::*;
+
+pub type SubstateHandle = u32;
+pub type ActorStateHandle = u32;
+pub type ActorRefHandle = u32;
+pub type FieldIndex = u8;
+pub type CollectionIndex = u8;

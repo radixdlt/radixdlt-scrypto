@@ -91,8 +91,8 @@ impl SerializableCustomExtension for ManifestCustomExtension {
 #[cfg(feature = "serde")] // Ensures that VS Code runs this module with the features serde tag!
 mod tests {
     use super::*;
-    use crate::address::test_addresses::*;
-    use crate::address::AddressBech32Encoder;
+    use crate::bech32::test_addresses::*;
+    use crate::bech32::AddressBech32Encoder;
     use crate::types::*;
     use sbor::rust::vec;
     use serde::Serialize;

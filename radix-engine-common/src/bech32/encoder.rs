@@ -1,5 +1,5 @@
 use super::hrpset::HrpSet;
-use crate::address::errors::AddressBech32EncodeError;
+use crate::bech32::errors::AddressBech32EncodeError;
 use crate::network::NetworkDefinition;
 use crate::types::EntityType;
 use bech32::{self, ToBase32, Variant, WriteBase32};

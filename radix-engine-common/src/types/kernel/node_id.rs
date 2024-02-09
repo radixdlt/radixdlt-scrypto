@@ -1,4 +1,4 @@
-use crate::address::{AddressBech32EncodeError, AddressDisplayContext};
+use crate::bech32::{AddressBech32EncodeError, AddressDisplayContext};
 use crate::data::scrypto::model::*;
 use crate::types::*;
 use crate::*;
@@ -6,10 +6,6 @@ use crate::*;
 use arbitrary::Arbitrary;
 use sbor::rust::prelude::*;
 use utils::ContextualDisplay;
-
-//=========================================================================
-// Please update REP-60 after updating types/configs defined in this file!
-//=========================================================================
 
 pub const BOOT_LOADER_RESERVED_NODE_ID_FIRST_BYTE: u8 = 0u8;
 
@@ -214,62 +210,3 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
         write!(f, "NodeId({})", hex::encode(&self.0)).map_err(AddressBech32EncodeError::FormatError)
     }
 }
-
-/// The unique identifier of a node module.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
-#[sbor(transparent)]
-pub struct PartitionNumber(pub u8);
-
-impl PartitionNumber {
-    pub const fn at_offset(self, offset: PartitionOffset) -> Option<Self> {
-        match self.0.checked_add(offset.0) {
-            Some(n) => Some(Self(n)),
-            None => None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
-pub struct PartitionOffset(pub u8);
-
-/// The unique identifier of a substate within a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
-pub enum SubstateKey {
-    Field(FieldKey),
-    Map(MapKey),
-    Sorted(SortedKey),
-}
-
-impl SubstateKey {
-    pub fn for_field(&self) -> Option<&FieldKey> {
-        match self {
-            SubstateKey::Field(key) => Some(key),
-            _ => None,
-        }
-    }
-
-    pub fn for_map(&self) -> Option<&MapKey> {
-        match self {
-            SubstateKey::Map(key) => Some(key),
-            _ => None,
-        }
-    }
-
-    pub fn into_map(self) -> MapKey {
-        match self {
-            SubstateKey::Map(key) => key,
-            _ => panic!("Not a Map Key"),
-        }
-    }
-
-    pub fn for_sorted(&self) -> Option<&SortedKey> {
-        match self {
-            SubstateKey::Sorted(key) => Some(key),
-            _ => None,
-        }
-    }
-}
-
-pub type FieldKey = u8;
-pub type MapKey = Vec<u8>;
-pub type SortedKey = ([u8; 2], Vec<u8>);

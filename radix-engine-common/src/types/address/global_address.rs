@@ -1,5 +1,5 @@
-use crate::address::AddressBech32Decoder;
-use crate::address::{AddressBech32EncodeError, AddressDisplayContext, NO_NETWORK};
+use crate::bech32::AddressBech32Decoder;
+use crate::bech32::{AddressBech32EncodeError, AddressDisplayContext, NO_NETWORK};
 use crate::data::manifest::model::ManifestAddress;
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::Reference;

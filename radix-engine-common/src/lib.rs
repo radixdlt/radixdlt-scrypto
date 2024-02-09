@@ -7,7 +7,7 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// RE bech32 address library.
-pub mod address;
+pub mod bech32;
 /// RE protocol constants
 pub mod constants;
 /// RE crypto library
@@ -20,7 +20,9 @@ pub mod math;
 pub mod network;
 /// RE time library.
 pub mod time;
-/// RE types.
+/// RE traits used universally
+pub mod traits;
+/// RE types used universally
 pub mod types;
 
 mod macros;
@@ -56,7 +58,7 @@ pub mod prelude {
     pub use sbor::*;
 
     // Exports from this crate
-    pub use super::address::*;
+    pub use super::bech32::*;
     pub use super::constants::*;
     pub use super::crypto::*;
     pub use super::data::manifest::prelude::*;

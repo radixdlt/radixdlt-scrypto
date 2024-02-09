@@ -67,8 +67,8 @@ impl FormattableCustomExtension for ScryptoCustomExtension {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::address::test_addresses::*;
-    use crate::address::AddressBech32Encoder;
+    use crate::bech32::test_addresses::*;
+    use crate::bech32::AddressBech32Encoder;
     use crate::data::scrypto::model::*;
 
     #[test]

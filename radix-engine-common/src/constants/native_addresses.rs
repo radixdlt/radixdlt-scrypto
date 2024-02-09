@@ -235,7 +235,7 @@ pub const TRANSACTION_TRACKER: ComponentAddress = ComponentAddress::new_or_panic
 #[cfg(test)]
 mod tests {
     use super::*;
-    use radix_engine_common::{address::AddressBech32Encoder, network::NetworkDefinition};
+    use radix_engine_common::{bech32::AddressBech32Encoder, network::NetworkDefinition};
 
     #[test]
     fn test_mainnet_vanity_addresses() {

@@ -68,3 +68,10 @@ pub struct BlueprintTypeIdentifier {
     pub blueprint_name: String,
     pub type_name: String,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct KeyValueStoreGenericSubstitutions {
+    pub key_generic_substitution: GenericSubstitution,
+    pub value_generic_substitution: GenericSubstitution,
+    pub allow_ownership: bool, // TODO: Can this be integrated with ScryptoSchema?
+}

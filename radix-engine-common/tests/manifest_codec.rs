@@ -1,4 +1,4 @@
-use radix_engine_common::address::test_addresses::*;
+use radix_engine_common::bech32::test_addresses::*;
 use radix_engine_common::data::manifest::model::*;
 use radix_engine_common::prelude::*;
 

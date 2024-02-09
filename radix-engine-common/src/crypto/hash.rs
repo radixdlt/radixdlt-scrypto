@@ -149,7 +149,7 @@ macro_rules! define_wrapped_hash {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
         #[sbor(transparent)]
         $(#[$docs])*
-        pub struct $name(pub Hash);
+        pub struct $name(pub $crate::crypto::Hash);
 
         impl AsRef<[u8]> for $name {
             fn as_ref(&self) -> &[u8] {
@@ -157,25 +157,25 @@ macro_rules! define_wrapped_hash {
             }
         }
 
-        impl AsRef<Hash> for $name {
-            fn as_ref(&self) -> &Hash {
+        impl AsRef<$crate::crypto::Hash> for $name {
+            fn as_ref(&self) -> &$crate::crypto::Hash {
                 &self.0
             }
         }
 
-        impl From<Hash> for $name {
-            fn from(value: Hash) -> Self {
+        impl From<$crate::crypto::Hash> for $name {
+            fn from(value: $crate::crypto::Hash) -> Self {
                 Self(value)
             }
         }
 
-        impl From<$name> for Hash {
+        impl From<$name> for $crate::crypto::Hash {
             fn from(value: $name) -> Self {
                 value.0
             }
         }
 
-        impl IsHash for $name {}
+        impl $crate::crypto::IsHash for $name {}
     };
 }
 

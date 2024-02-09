@@ -1,5 +1,5 @@
-use crate::address::AddressBech32Decoder;
-use crate::address::{AddressBech32EncodeError, AddressDisplayContext, NO_NETWORK};
+use crate::bech32::AddressBech32Decoder;
+use crate::bech32::{AddressBech32EncodeError, AddressDisplayContext, NO_NETWORK};
 use crate::data::manifest::model::ManifestAddress;
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::Reference;
@@ -13,18 +13,14 @@ use sbor::rust::prelude::*;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
-/// Address to a global resource
+/// Address to a local entity
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(serde::Serialize, serde::Deserialize)
-)]
-pub struct ResourceAddress(NodeId); // private to ensure entity type check
+pub struct InternalAddress(NodeId); // private to ensure entity type check
 
-impl ResourceAddress {
+impl InternalAddress {
     pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
         let node_id = NodeId(raw);
-        assert!(node_id.is_global_resource_manager());
+        assert!(node_id.is_internal());
         Self(node_id)
     }
 
@@ -61,25 +57,23 @@ impl ResourceAddress {
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }
-
-    pub fn is_fungible(&self) -> bool {
-        self.0.is_global_fungible_resource_manager()
-    }
 }
 
 #[cfg(feature = "radix_engine_fuzzing")]
-// Implementing arbitrary by hand to make sure that resource entity type marker is present.
+// Implementing arbitrary by hand to make sure that EntityType::Internal.. marker is present.
 // Otherwise 'InvalidCustomValue' error is returned
-impl<'a> Arbitrary<'a> for ResourceAddress {
+impl<'a> Arbitrary<'a> for InternalAddress {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
         use core::cmp::min;
-        let resource_entities: [u8; 2] = [
-            EntityType::GlobalFungibleResourceManager as u8,
-            EntityType::GlobalNonFungibleResourceManager as u8,
+        let internal_entities: [u8; 4] = [
+            EntityType::InternalFungibleVault as u8,
+            EntityType::InternalNonFungibleVault as u8,
+            EntityType::InternalGenericComponent as u8,
+            EntityType::InternalKeyValueStore as u8,
         ];
 
         let mut node_id = [0u8; NodeId::LENGTH];
-        node_id[0] = *u.choose(&resource_entities[..]).unwrap();
+        node_id[0] = *u.choose(&internal_entities[..]).unwrap();
         // fill NodeId with available random bytes (fill the rest with zeros if data exhausted)
         let len = min(NodeId::LENGTH - 1, u.len());
         let (_left, right) = node_id.split_at_mut(NodeId::LENGTH - len);
@@ -89,71 +83,57 @@ impl<'a> Arbitrary<'a> for ResourceAddress {
     }
 }
 
-impl AsRef<[u8]> for ResourceAddress {
+impl AsRef<[u8]> for InternalAddress {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl TryFrom<[u8; NodeId::LENGTH]> for ResourceAddress {
-    type Error = ParseResourceAddressError;
+impl TryFrom<[u8; NodeId::LENGTH]> for InternalAddress {
+    type Error = ParseInternalAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
         Self::try_from(NodeId(value))
     }
 }
 
-impl TryFrom<NodeId> for ResourceAddress {
-    type Error = ParseResourceAddressError;
+impl TryFrom<NodeId> for InternalAddress {
+    type Error = ParseInternalAddressError;
 
     fn try_from(node_id: NodeId) -> Result<Self, Self::Error> {
-        if node_id.is_global_resource_manager() {
+        if node_id.is_internal() {
             Ok(Self(node_id))
         } else {
-            Err(ParseResourceAddressError::InvalidEntityTypeId(node_id.0[0]))
+            Err(ParseInternalAddressError::InvalidEntityTypeId(node_id.0[0]))
         }
     }
 }
 
-impl TryFrom<&[u8]> for ResourceAddress {
-    type Error = ParseResourceAddressError;
+impl TryFrom<&[u8]> for InternalAddress {
+    type Error = ParseInternalAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NodeId::LENGTH => ResourceAddress::try_from(copy_u8_array(slice)),
-            _ => Err(ParseResourceAddressError::InvalidLength(slice.len())),
+            NodeId::LENGTH => InternalAddress::try_from(copy_u8_array(slice)),
+            _ => Err(ParseInternalAddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl TryFrom<GlobalAddress> for ResourceAddress {
-    type Error = ParseResourceAddressError;
-
-    fn try_from(address: GlobalAddress) -> Result<Self, Self::Error> {
-        ResourceAddress::try_from(Into::<[u8; NodeId::LENGTH]>::into(address))
-    }
-}
-
-impl Into<[u8; NodeId::LENGTH]> for ResourceAddress {
+impl Into<[u8; NodeId::LENGTH]> for InternalAddress {
     fn into(self) -> [u8; NodeId::LENGTH] {
         self.0.into()
     }
 }
 
-impl From<ResourceAddress> for super::GlobalAddress {
-    fn from(value: ResourceAddress) -> Self {
-        Self::new_or_panic(value.into())
-    }
-}
-
-impl From<ResourceAddress> for Reference {
-    fn from(value: ResourceAddress) -> Self {
+impl From<InternalAddress> for Reference {
+    fn from(value: InternalAddress) -> Self {
         Self(value.into())
     }
 }
 
-impl From<ResourceAddress> for ManifestAddress {
-    fn from(value: ResourceAddress) -> Self {
+impl From<InternalAddress> for ManifestAddress {
+    fn from(value: InternalAddress) -> Self {
         Self::Static(value.into())
     }
 }
@@ -163,16 +143,16 @@ impl From<ResourceAddress> for ManifestAddress {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseResourceAddressError {
+pub enum ParseInternalAddressError {
     InvalidLength(usize),
     InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseResourceAddressError {}
+impl std::error::Error for ParseInternalAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseResourceAddressError {
+impl fmt::Display for ParseInternalAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -183,22 +163,22 @@ impl fmt::Display for ParseResourceAddressError {
 //========
 
 well_known_scrypto_custom_type!(
-    ResourceAddress,
+    InternalAddress,
     ScryptoCustomValueKind::Reference,
-    Type::ResourceAddress,
+    Type::Address,
     NodeId::LENGTH,
-    RESOURCE_ADDRESS_TYPE,
-    resource_address_type_data
+    INTERNAL_ADDRESS_TYPE,
+    internal_address_type_data
 );
 
-impl Categorize<ManifestCustomValueKind> for ResourceAddress {
+impl Categorize<ManifestCustomValueKind> for InternalAddress {
     #[inline]
     fn value_kind() -> ValueKind<ManifestCustomValueKind> {
         ValueKind::Custom(ManifestCustomValueKind::Address)
     }
 }
 
-impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for ResourceAddress {
+impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for InternalAddress {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_value_kind(Self::value_kind())
@@ -212,7 +192,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for
     }
 }
 
-impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for ResourceAddress {
+impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for InternalAddress {
     fn decode_body_with_value_kind(
         decoder: &mut D,
         value_kind: ValueKind<ManifestCustomValueKind>,
@@ -228,17 +208,17 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for
     }
 }
 
-//========
+//======
 // text
-//========
+//======
 
-impl fmt::Debug for ResourceAddress {
+impl fmt::Debug for InternalAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
-impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for InternalAddress {
     type Error = AddressBech32EncodeError;
 
     fn contextual_format<F: fmt::Write>(
@@ -251,8 +231,8 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        write!(f, "ResourceAddress({})", hex::encode(&self.0))
-            .map_err(|err| AddressBech32EncodeError::FormatError(err))
+        write!(f, "Address({})", hex::encode(&self.0))
+            .map_err(AddressBech32EncodeError::FormatError)
     }
 }
 
@@ -261,32 +241,50 @@ mod tests {
     use super::*;
 
     #[test]
-    fn resource_address_initialization() {
+    fn internal_address_initialization() {
         let node_id = [0; NodeId::LENGTH];
-        let addr = unsafe { ResourceAddress::new_unchecked(node_id) };
+        let addr = unsafe { InternalAddress::new_unchecked(node_id) };
         assert_eq!(node_id, addr.as_node_id().as_bytes());
+        assert_eq!(node_id, addr.to_vec().as_slice());
 
-        let addr = ResourceAddress::new_or_panic(
-            [EntityType::GlobalNonFungibleResourceManager as u8; NodeId::LENGTH],
+        let addr = InternalAddress::new_or_panic(
+            [EntityType::InternalGenericComponent as u8; NodeId::LENGTH],
         );
         // validate conversions
-        ResourceAddress::try_from_hex(&addr.to_hex()).unwrap();
+        InternalAddress::try_from_hex(&addr.to_hex()).unwrap();
+        Reference::try_from(addr).unwrap();
         let _ = ManifestAddress::try_from(addr).unwrap();
+        let _: [u8; NodeId::LENGTH] = addr.try_into().unwrap();
+
+        #[cfg(not(feature = "alloc"))]
+        println!("Address: {:?}", addr);
+
+        // pass empty string to fail conversion
+        assert!(
+            InternalAddress::try_from_bech32(&AddressBech32Decoder::for_simulator(), "").is_none()
+        );
 
         // pass wrong length array to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH + 1]);
-        let addr2 = ResourceAddress::try_from(v.as_slice());
+        let addr2 = InternalAddress::try_from(v.as_slice());
         assert!(matches!(
             addr2,
-            Err(ParseResourceAddressError::InvalidLength(..))
+            Err(ParseInternalAddressError::InvalidLength(..))
         ));
 
+        // pass wrong node id (bad entity type) to generate an error
+        let v = Vec::from([0u8; NodeId::LENGTH]);
+        let addr3 = InternalAddress::try_from(v.as_slice());
+        assert!(matches!(
+            addr3,
+            Err(ParseInternalAddressError::InvalidEntityTypeId(..))
+        ));
         #[cfg(not(feature = "alloc"))]
-        println!("Error: {}", addr2.unwrap_err());
+        println!("Decode error: {}", addr3.unwrap_err());
     }
 
     #[test]
-    fn resource_address_decode_discriminator_fail() {
+    fn internal_address_decode_discriminator_fail() {
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);
         // use invalid discriminator value
@@ -294,7 +292,7 @@ mod tests {
 
         let mut decoder = VecDecoder::<ManifestCustomValueKind>::new(&buf, 1);
         let addr_output = decoder
-            .decode_deeper_body_with_value_kind::<ResourceAddress>(ResourceAddress::value_kind());
+            .decode_deeper_body_with_value_kind::<InternalAddress>(InternalAddress::value_kind());
 
         assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
     }

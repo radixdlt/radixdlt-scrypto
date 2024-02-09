@@ -1,5 +1,5 @@
 use super::model::*;
-use crate::address::AddressBech32Encoder;
+use crate::bech32::AddressBech32Encoder;
 use sbor::rust::prelude::*;
 
 /// Note - this is quite similar to ManifestDecompilationDisplayContext

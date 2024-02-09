@@ -44,8 +44,8 @@ impl SerializableCustomExtension for ScryptoCustomExtension {
 #[cfg(feature = "serde")] // Ensures that VS Code runs this module with the features serde tag!
 mod tests {
     use super::*;
-    use crate::address::test_addresses::*;
-    use crate::address::AddressBech32Encoder;
+    use crate::bech32::test_addresses::*;
+    use crate::bech32::AddressBech32Encoder;
     use crate::data::scrypto::model::*;
     use crate::data::scrypto::{scrypto_encode, ScryptoValue};
     use crate::math::*;

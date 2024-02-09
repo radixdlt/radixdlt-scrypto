@@ -30,6 +30,8 @@ secp256k1 = { version = "0.24.0", default-features = false, features = ["recover
 blst = { version = "0.3.11", default-features = false, optional = false }
 sha3 = { version = "0.10.8", default-features = false, optional = false }
 
+regex = { version = "=1.9.3", default-features = false }
+
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
 criterion = { version = "0.3", features = ["html_reports"] }
