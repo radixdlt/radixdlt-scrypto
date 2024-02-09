@@ -1,13 +1,9 @@
-use radix_engine_common::prelude::{
-    replace_self_package_address, ScryptoCustomTypeKind, ScryptoDescribe, VersionedScryptoSchema,
-};
-use radix_engine_common::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
-use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
-use radix_engine_interface::api::LockFlags;
-use sbor::rust::prelude::*;
 use sbor::LocalTypeId;
 use sbor::{generate_full_schema, TypeAggregator};
+
+use super::{KeyValueEntryHandle, LockFlags};
 
 pub const KV_STORE_DATA_SCHEMA_VARIANT_LOCAL: u8 = 0;
 pub const KV_STORE_DATA_SCHEMA_VARIANT_REMOTE: u8 = 1;

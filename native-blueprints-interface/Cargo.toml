@@ -1,0 +1,42 @@
+[package]
+name = "native-blueprints-interface"
+description = "Defines the interface of native blueprints"
+version = "1.2.0-dev"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../sbor", default-features = false }
+radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
+radix-engine-common = { path = "../radix-engine-common", default-features = false }
+radix-engine-macros = { path = "../radix-engine-macros", default-features = false }
+scrypto-schema = { path = "../scrypto-schema", default-features = false }
+utils = { path = "../utils", default-features = false }
+
+hex = { version = "0.4.3", default-features = false }
+strum = { version = "0.24", default-features = false, features = ["derive"] }
+bitflags = { version = "1.3" }
+serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
+serde_json = { version = "1.0", default-features = false }
+lazy_static = "1.4.0"
+const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+arbitrary = { version = "1.3.0", features = ["derive"], optional = true }
+paste = { version = "1.0.13" }
+regex = { version = "=1.9.3", default-features = false }
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["hex/std", "serde_json/std", "sbor/std", "scrypto-schema/std", "radix-engine-derive/std", "radix-engine-common/std", "radix-engine-macros/std", "strum/std", "utils/std", "serde?/std"]
+alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "scrypto-schema/alloc", "radix-engine-derive/alloc", "radix-engine-common/alloc", "radix-engine-macros/alloc", "utils/alloc", "serde?/alloc"]
+
+# Turn on this feature to enable tracing.
+trace = ["radix-engine-derive/trace"]
+
+# This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
+# to let fuzzing work
+radix_engine_fuzzing = ["arbitrary", "sbor/radix_engine_fuzzing", "radix-engine-common/radix_engine_fuzzing", "utils/radix_engine_fuzzing", "dep:serde"]
+
+# Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+[lib]
+doctest = false
+bench = false

@@ -1,9 +1,7 @@
-use crate::api::ActorStateHandle;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_interface::api::CollectionIndex;
-use sbor::rust::prelude::*;
+use radix_engine_common::prelude::*;
 use sbor::rust::vec::Vec;
 
 /// Api to manage an iterable index

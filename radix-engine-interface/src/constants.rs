@@ -1,9 +1,16 @@
-use crate::*;
 use lazy_static::lazy_static;
+pub use radix_engine_common::constants::*;
+use radix_engine_common::types::ActorStateHandle;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 
-pub use radix_engine_common::constants::*;
+pub const ACTOR_STATE_SELF: ActorStateHandle = 0u32;
+pub const ACTOR_STATE_OUTER_OBJECT: ActorStateHandle = 1u32;
+
+pub const ACTOR_REF_SELF: ActorRefHandle = 0u32;
+pub const ACTOR_REF_OUTER: ActorRefHandle = 1u32;
+pub const ACTOR_REF_GLOBAL: ActorRefHandle = 2u32;
+pub const ACTOR_REF_AUTH_ZONE: ActorRefHandle = 8u32;
 
 // Currently, functions and methods can reference these well-known nodes without declaring
 // the dependency in the package info.

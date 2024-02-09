@@ -1,8 +1,9 @@
 use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
-use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
-use radix_engine_interface::api::{ActorStateHandle, CollectionIndex, LockFlags};
+use radix_engine_common::prelude::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
+
+use super::{KeyValueEntryHandle, LockFlags};
 
 pub trait ClientActorKeyValueEntryApi<E: Debug> {
     /// If the key value entry doesn't exist, it uses the default "Option::None"
