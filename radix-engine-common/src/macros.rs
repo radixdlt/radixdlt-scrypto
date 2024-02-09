@@ -1,3 +1,21 @@
+#[macro_export]
+macro_rules! define_type_info_marker {
+    ($package_address: expr, $blueprint_name: ident) => {
+        paste::paste! {
+            pub struct [< $blueprint_name ObjectTypeInfo >];
+
+            impl $crate::traits::TypeInfoMarker
+                for [< $blueprint_name ObjectTypeInfo >]
+            {
+                const PACKAGE_ADDRESS: Option<PackageAddress> = $package_address;
+                const BLUEPRINT_NAME: &'static str = stringify!($blueprint_name);
+                const OWNED_TYPE_NAME: &'static str = stringify!([< Owned $blueprint_name >]);
+                const GLOBAL_TYPE_NAME: &'static str = stringify!([< Global $blueprint_name >]);
+            }
+        }
+    };
+}
+
 /// Creates a safe integer from literals.
 /// You must specify the type of the
 /// integer you want to create.
@@ -196,4 +214,121 @@ macro_rules! to_manifest_value_and_unwrap {
     ( $value:expr ) => {{
         $crate::data::manifest::to_manifest_value($value).unwrap()
     }};
+}
+
+// TODO: Move this logic into procedural macro.
+#[macro_export]
+macro_rules! access_and_or {
+    (|| $tt:tt) => {{
+        let next = $crate::access_rule_node!($tt);
+        move |e: AccessRuleNode| e.or(next)
+    }};
+    (|| $right1:ident $right2:tt) => {{
+        let next = $crate::access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| e.or(next)
+    }};
+    (|| $right:tt && $($rest:tt)+) => {{
+        let f = $crate::access_and_or!(&& $($rest)+);
+        let next = $crate::access_rule_node!($right);
+        move |e: AccessRuleNode| e.or(f(next))
+    }};
+    (|| $right:tt || $($rest:tt)+) => {{
+        let f = $crate::access_and_or!(|| $($rest)+);
+        let next = $crate::access_rule_node!($right);
+        move |e: AccessRuleNode| f(e.or(next))
+    }};
+    (|| $right1:ident $right2:tt && $($rest:tt)+) => {{
+        let f = $crate::access_and_or!(&& $($rest)+);
+        let next = $crate::access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| e.or(f(next))
+    }};
+    (|| $right1:ident $right2:tt || $($rest:tt)+) => {{
+        let f = $crate::access_and_or!(|| $($rest)+);
+        let next = $crate::access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| f(e.or(next))
+    }};
+
+    (&& $tt:tt) => {{
+        let next = $crate::access_rule_node!($tt);
+        move |e: AccessRuleNode| e.and(next)
+    }};
+    (&& $right1:ident $right2:tt) => {{
+        let next = $crate::access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| e.and(next)
+    }};
+    (&& $right:tt && $($rest:tt)+) => {{
+        let f = $crate::access_and_or!(&& $($rest)+);
+        let next = $crate::access_rule_node!($right);
+        move |e: AccessRuleNode| f(e.and(next))
+    }};
+    (&& $right:tt || $($rest:tt)+) => {{
+        let f = $crate::access_and_or!(|| $($rest)+);
+        let next = $crate::access_rule_node!($right);
+        move |e: AccessRuleNode| f(e.and(next))
+    }};
+    (&& $right1:ident $right2:tt && $($rest:tt)+) => {{
+        let f = $crate::access_and_or!(&& $($rest)+);
+        let next = $crate::access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| f(e.and(next))
+    }};
+    (&& $right1:ident $right2:tt || $($rest:tt)+) => {{
+        let f = $crate::access_and_or!(|| $($rest)+);
+        let next = $crate::access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| f(e.and(next))
+    }};
+}
+
+#[macro_export]
+macro_rules! access_rule_node {
+    // Handle leaves
+    ($rule:ident $args:tt) => {{
+        $rule $args
+    }};
+
+    // Handle group
+    (($($tt:tt)+)) => {{ $crate::access_rule_node!($($tt)+) }};
+
+    // Handle and/or logic
+    ($left1:ident $left2:tt $($right:tt)+) => {{
+        let f = $crate::access_and_or!($($right)+);
+        f($crate::access_rule_node!($left1 $left2))
+    }};
+    ($left:tt $($right:tt)+) => {{
+        let f = $crate::access_and_or!($($right)+);
+        f($crate::access_rule_node!($left))
+    }};
+}
+
+#[macro_export]
+macro_rules! rule {
+    (allow_all) => {{
+        $crate::types::AccessRule::AllowAll
+    }};
+    (deny_all) => {{
+        $crate::types::AccessRule::DenyAll
+    }};
+    ($($tt:tt)+) => {{
+        $crate::types::AccessRule::Protected($crate::access_rule_node!($($tt)+))
+    }};
+}
+
+#[macro_export]
+macro_rules! role_entry {
+    ($roles: expr, $role: expr, $rule:expr) => {{
+        $roles.define_role($role, $rule);
+    }};
+}
+
+#[macro_export]
+macro_rules! roles2 {
+    ( ) => ({
+        $crate::blueprints::resource::RoleAssignmentInit::new()
+    });
+    ( $($role:expr => $rule:expr $(, $updatable:ident)?;)* ) => ({
+        let mut roles = $crate::blueprints::resource::RoleAssignmentInit::new();
+        $(
+            role_entry!(roles, $role, $rule);
+        )*
+        roles
+    })
 }

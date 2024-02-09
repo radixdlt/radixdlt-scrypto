@@ -26,6 +26,7 @@ pub mod traits;
 pub mod types;
 
 mod macros;
+pub use macros::*;
 
 // Re-export SBOR derive.
 extern crate sbor;
@@ -66,6 +67,7 @@ pub mod prelude {
     pub use super::math::*;
     pub use super::network::*;
     pub use super::time::*;
+    pub use super::traits::*;
     pub use super::types::*;
     pub use crate::{
         define_wrapped_hash, i, manifest_args, scrypto_args, to_manifest_value_and_unwrap,

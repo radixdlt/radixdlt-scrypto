@@ -31,6 +31,7 @@ blst = { version = "0.3.11", default-features = false, optional = false }
 sha3 = { version = "0.10.8", default-features = false, optional = false }
 
 regex = { version = "=1.9.3", default-features = false }
+const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
