@@ -265,7 +265,8 @@ jobs:
     steps:
       - name: Export ENV
         run: $Env:Path
-        working-directory: simulator
+        # working-directory: simulator
+        # shell: bash
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
@@ -294,7 +295,7 @@ jobs:
     steps:
       - name: Export env
         run: env
-        working-directory: simulator
+        # shell: bash
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
