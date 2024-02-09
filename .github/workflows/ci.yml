@@ -263,6 +263,9 @@ jobs:
       matrix:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores, gh-ephemeral-windows-runner]
     steps:
+      - name: Export ENV
+        run: $Env:Path
+        working-directory: simulator
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
@@ -272,9 +275,6 @@ jobs:
           shared-key: simulator-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: simulator
-      - name: Run tests
-        run: $Env:Path
-        working-directory: simulator
       - name: Run Unit tests
         run: cargo nextest run
         working-directory: simulator
@@ -292,6 +292,9 @@ jobs:
       matrix:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores, gh-ephemeral-windows-runner, macos-latest]
     steps:
+      - name: Export env
+        run: env
+        working-directory: simulator
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
@@ -301,9 +304,6 @@ jobs:
           shared-key: simulator-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: simulator
-      - name: Run tests
-        run: env
-        working-directory: simulator
       - name: Run tests
         run: bash ./tests/scrypto.sh
         working-directory: simulator
