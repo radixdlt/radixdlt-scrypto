@@ -7,6 +7,8 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 // TODO: this isn't part of this interface between system and language (native-sdk, scrypto)
-pub mod api;
 pub mod blueprint_hooks;
+
+pub mod system_api;
+
 pub mod constants;
