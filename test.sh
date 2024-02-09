@@ -19,7 +19,7 @@ test_crates_features \
     scrypto-derive-tests \
     radix-engine-derive \
     radix-engine-common \
-    radix-engine-interface \
+    radix-engine-system-api \
     radix-engine \
     radix-engine-tests \
     transaction-scenarios \

@@ -9,7 +9,6 @@ mod royalty;
 mod system;
 
 pub use address::*;
-pub use address::*;
 pub use auth::*;
 pub use entity_type::*;
 pub use epoch_and_round::*;

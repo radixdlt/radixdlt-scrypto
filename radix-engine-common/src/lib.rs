@@ -14,6 +14,8 @@ pub mod constants;
 pub mod crypto;
 /// RE scrypto data model.
 pub mod data;
+/// RE macros
+pub mod macros;
 /// RE math library.
 pub mod math;
 /// RE network identifier model.
@@ -24,9 +26,6 @@ pub mod time;
 pub mod traits;
 /// RE types used universally
 pub mod types;
-
-mod macros;
-pub use macros::*;
 
 // Re-export SBOR derive.
 extern crate sbor;

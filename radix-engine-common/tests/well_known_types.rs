@@ -5,7 +5,7 @@ use sbor::validate_payload_against_schema;
 fn test_custom_type_values_are_valid() {
     // These tests continue tests from the definition of scrypto's well-known types in `custom_well_known_types.rs`
     // in the `radix-engine-common` crate.
-    // In particular, we only test types here which are only actually fully defined in `radix-engine-interface`.
+    // In particular, we only test types here which are only actually fully defined in `radix-engine-system-api`.
 
     // MISC
     let nf_global_id = NonFungibleGlobalId::from_public_key(&PublicKey::Ed25519(Ed25519PublicKey(
