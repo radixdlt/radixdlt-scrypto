@@ -1,7 +1,7 @@
 use crate::ast;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
-use radix_engine_common::address::AddressBech32Decoder;
+use radix_engine_common::bech32::AddressBech32Decoder;
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::str::FromStr;
