@@ -11,7 +11,7 @@ use wasm_instrument::{
 use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType, WasmFeatures};
 
 use super::WasmiModule;
-use crate::vm::SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION;
+use crate::vm::ScryptoVmVersion;
 
 #[derive(Debug)]
 pub struct WasmModule {
@@ -61,7 +61,10 @@ impl WasmModule {
         }
     }
 
-    pub fn enforce_import_constraints(self, minor_version: u64) -> Result<Self, PrepareError> {
+    pub fn enforce_import_constraints(
+        self,
+        version: ScryptoVmVersion,
+    ) -> Result<Self, PrepareError> {
         // Only allow `env::radix_engine` import
         for entry in self
             .module
@@ -736,12 +739,12 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => {
-                        if minor_version < SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION {
+                        if version < ScryptoVmVersion::crypto_utils_added() {
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::ProtocolVersionMismatch {
                                     name: entry.name.to_string(),
-                                    current_version: minor_version,
-                                    expected_version: SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                    current_version: version.into(),
+                                    expected_version: ScryptoVmVersion::crypto_utils_added().into(),
                                 },
                             ));
                         }
@@ -768,12 +771,12 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => {
-                        if minor_version < SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION {
+                        if version < ScryptoVmVersion::crypto_utils_added() {
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::ProtocolVersionMismatch {
                                     name: entry.name.to_string(),
-                                    current_version: minor_version,
-                                    expected_version: SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                    current_version: version.into(),
+                                    expected_version: ScryptoVmVersion::crypto_utils_added().into(),
                                 },
                             ));
                         }
@@ -793,12 +796,12 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME => {
-                        if minor_version < SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION {
+                        if version < ScryptoVmVersion::crypto_utils_added() {
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::ProtocolVersionMismatch {
                                     name: entry.name.to_string(),
-                                    current_version: minor_version,
-                                    expected_version: SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                    current_version: version.into(),
+                                    expected_version: ScryptoVmVersion::crypto_utils_added().into(),
                                 },
                             ));
                         }
@@ -825,12 +828,12 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME => {
-                        if minor_version < SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION {
+                        if version < ScryptoVmVersion::crypto_utils_added() {
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::ProtocolVersionMismatch {
                                     name: entry.name.to_string(),
-                                    current_version: minor_version,
-                                    expected_version: SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                    current_version: version.into(),
+                                    expected_version: ScryptoVmVersion::crypto_utils_added().into(),
                                 },
                             ));
                         }
@@ -850,12 +853,12 @@ impl WasmModule {
                         }
                     }
                     CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME => {
-                        if minor_version < SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION {
+                        if version < ScryptoVmVersion::crypto_utils_added() {
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::ProtocolVersionMismatch {
                                     name: entry.name.to_string(),
-                                    current_version: minor_version,
-                                    expected_version: SCRYPTO_VM_CRYPTO_UTILS_MINOR_VERSION,
+                                    current_version: version.into(),
+                                    expected_version: ScryptoVmVersion::crypto_utils_added().into(),
                                 },
                             ));
                         }
@@ -1381,7 +1384,7 @@ mod tests {
             PrepareError::InvalidImport(InvalidImport::ImportNotAllowed(
                 "name_to_replace".to_string()
             )),
-            |s| WasmModule::enforce_import_constraints(s, 0u64)
+            |s| WasmModule::enforce_import_constraints(s, ScryptoVmVersion::V1_0)
         );
 
         for name in [
@@ -1428,7 +1431,7 @@ mod tests {
             assert_invalid_wasm!(
                 wat.replace("name_to_replace", name),
                 PrepareError::InvalidImport(InvalidImport::InvalidFunctionType(name.to_string())),
-                |w| WasmModule::enforce_import_constraints(w, 0u64)
+                |w| WasmModule::enforce_import_constraints(w, ScryptoVmVersion::V1_0)
             );
         }
     }

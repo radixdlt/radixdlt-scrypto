@@ -11,6 +11,7 @@ use radix_engine::{
             WasmRuntime,
         },
         wasm_runtime::NoOpWasmRuntime,
+        ScryptoVmVersion,
     },
 };
 use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
@@ -96,7 +97,7 @@ fn bench_spin_loop(c: &mut Criterion) {
     let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "100000")).unwrap();
 
     // Instrument
-    let validator = ScryptoV1WasmValidator::new(0u64);
+    let validator = ScryptoV1WasmValidator::default();
     let instrumented_code = validator
         .validate(&code, iter::empty())
         .map_err(|e| ExtractSchemaError::InvalidWasm(e))
@@ -144,7 +145,7 @@ macro_rules! bench_instantiate {
             let code = include_workspace_asset_bytes!(concat!($what, ".wasm"));
 
             // Instrument
-            let validator = ScryptoV1WasmValidator::new(0u64);
+            let validator = ScryptoV1WasmValidator::default();
             let instrumented_code = validator
                 .validate(code, iter::empty())
                 .map_err(|e| ExtractSchemaError::InvalidWasm(e))
@@ -174,7 +175,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
 
     c.bench_function("costing::validate_wasm", |b| {
         b.iter(|| {
-            ScryptoV1WasmValidator::new(0u64)
+            ScryptoV1WasmValidator::default()
                 .validate(code, definition.blueprints.values())
                 .unwrap()
         })

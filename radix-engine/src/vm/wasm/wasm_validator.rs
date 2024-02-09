@@ -1,6 +1,6 @@
 use crate::types::*;
 use crate::vm::wasm::*;
-use crate::vm::SCRYPTO_V1_LATEST_MINOR_VERSION;
+use crate::vm::ScryptoVmVersion;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 
 pub struct ScryptoV1WasmValidator {
@@ -12,13 +12,13 @@ pub struct ScryptoV1WasmValidator {
     pub max_number_of_function_locals: u32,
     pub max_number_of_globals: u32,
     pub instrumenter_config: WasmValidatorConfigV1,
-    pub minor_version: u64,
+    pub version: ScryptoVmVersion,
 }
 
 impl ScryptoV1WasmValidator {
-    pub fn new(minor_version: u64) -> Self {
-        if minor_version > SCRYPTO_V1_LATEST_MINOR_VERSION {
-            panic!("Invalid minor version: {}", minor_version);
+    pub fn new(version: ScryptoVmVersion) -> Self {
+        if version > ScryptoVmVersion::latest() {
+            panic!("Invalid minor version: {:?}", version);
         }
 
         Self {
@@ -30,7 +30,7 @@ impl ScryptoV1WasmValidator {
             max_number_of_function_locals: MAX_NUMBER_OF_FUNCTION_LOCALS,
             max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
             instrumenter_config: WasmValidatorConfigV1::new(),
-            minor_version,
+            version,
         }
     }
 }
@@ -46,7 +46,7 @@ impl Default for ScryptoV1WasmValidator {
             max_number_of_function_locals: MAX_NUMBER_OF_FUNCTION_LOCALS,
             max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
             instrumenter_config: WasmValidatorConfigV1::new(),
-            minor_version: SCRYPTO_V1_LATEST_MINOR_VERSION,
+            version: ScryptoVmVersion::latest(),
         }
     }
 }
@@ -59,7 +59,7 @@ impl ScryptoV1WasmValidator {
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         WasmModule::init(code)?
             .enforce_no_start_function()?
-            .enforce_import_constraints(self.minor_version)?
+            .enforce_import_constraints(self.version)?
             .enforce_export_names()?
             .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?
             .enforce_table_limit(self.max_initial_table_size)?
@@ -122,7 +122,7 @@ mod tests {
         .unwrap();
 
         let instrumented_code = wasm2wat(
-            ScryptoV1WasmValidator::new(0u64)
+            ScryptoV1WasmValidator::default()
                 .validate(
                     &code,
                     PackageDefinition::new_single_function_test_definition("Test", "f")
