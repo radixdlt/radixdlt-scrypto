@@ -263,10 +263,6 @@ jobs:
       matrix:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores, gh-ephemeral-windows-runner]
     steps:
-      - name: Export ENV
-        run: Get-Item Env:PATH
-        # working-directory: simulator
-        # shell: bash
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
@@ -293,9 +289,6 @@ jobs:
       matrix:
         os: [gh-runner-scrypto-ubuntu-jammy-16-cores, gh-ephemeral-windows-runner, macos-latest]
     steps:
-      - name: Export env
-        run: env
-        shell: bash
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
