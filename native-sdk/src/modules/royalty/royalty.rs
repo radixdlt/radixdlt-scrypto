@@ -1,11 +1,8 @@
-use radix_engine_common::types::*;
-use radix_engine_interface::api::*;
-use radix_engine_interface::constants::*;
-use radix_engine_interface::data::scrypto::model::Own;
-use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::prelude::node_modules::royalty::*;
-use radix_engine_interface::types::*;
-use sbor::rust::prelude::*;
+use module_blueprints_interface::royalty::*;
+use radix_engine_common::data::scrypto::model::Own;
+use radix_engine_common::data::scrypto::*;
+use radix_engine_common::prelude::*;
+use radix_engine_system_api::*;
 
 pub struct ComponentRoyalty(pub Own);
 

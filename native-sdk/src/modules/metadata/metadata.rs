@@ -1,12 +1,12 @@
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataCreateInput, MetadataCreateWithDataInput, MetadataInit, MetadataSetInput, MetadataVal,
-    METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_CREATE_WITH_DATA_IDENT, METADATA_SET_IDENT,
+use module_blueprints_interface::metadata::{
+    MetadataCreateInput, MetadataCreateWithDataInput, MetadataSetInput, METADATA_CREATE_IDENT,
+    METADATA_CREATE_WITH_DATA_IDENT, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
-use radix_engine_interface::data::scrypto::model::Own;
-use radix_engine_interface::data::scrypto::*;
-use sbor::rust::prelude::*;
+use radix_engine_common::constants::METADATA_MODULE_PACKAGE;
+use radix_engine_common::data::scrypto::model::Own;
+use radix_engine_common::data::scrypto::*;
+use radix_engine_common::prelude::*;
+use radix_engine_system_api::ClientApi;
 
 pub struct Metadata(pub Own);
 

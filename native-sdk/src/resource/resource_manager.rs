@@ -1,17 +1,12 @@
-use radix_engine_derive::ScryptoSbor;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_PACKAGE;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::{
+use native_blueprints_interface::resource::*;
+use radix_engine_common::constants::RESOURCE_PACKAGE;
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::NonFungibleData;
-use radix_engine_interface::types::*;
-use sbor::rust::prelude::*;
+use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::*;
+use radix_engine_system_api::{ClientBlueprintApi, ClientObjectApi};
 
 /// Represents a resource manager.
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]

@@ -1,20 +1,10 @@
 use crate::modules::metadata::Metadata;
 use crate::modules::role_assignment::RoleAssignment;
-use radix_engine_common::prelude::ScryptoEncode;
-use radix_engine_common::types::GlobalAddress;
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataSetInput, MetadataVal, METADATA_SET_IDENT,
-};
-use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldIndex, ModuleId};
-use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
-use radix_engine_interface::prelude::node_modules::ModuleConfig;
-use radix_engine_interface::prelude::GlobalAddressReservation;
-use radix_engine_interface::prelude::OwnerRole;
-use radix_engine_interface::prelude::RoleAssignmentInit;
-use radix_engine_interface::prelude::{FieldValue, MetadataInit};
-use radix_engine_interface::types::NodeId;
-use sbor::rust::prelude::*;
-use sbor::rust::prelude::{Debug, ToOwned};
+use module_blueprints_interface::metadata::*;
+use radix_engine_common::data::scrypto::{scrypto_encode, ScryptoDecode};
+use radix_engine_common::prelude::*;
+use radix_engine_system_api::ClientApi;
+use radix_engine_system_api::FieldValue;
 use utils::indexmap;
 
 #[derive(Debug)]
