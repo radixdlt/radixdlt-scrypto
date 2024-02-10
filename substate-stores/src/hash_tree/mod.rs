@@ -2,10 +2,7 @@ use crate::hash_tree::tree_store::StaleTreePart;
 use crate::hash_tree::types::{LeafKey, LeafNode, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_common::crypto::{hash, Hash};
-use radix_engine_store_interface::interface::{
-    DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
-    DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
-};
+use substate_stores_interface::*;
 use tree_store::{ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
 use utils::copy_u8_array;

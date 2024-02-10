@@ -4,7 +4,7 @@ use colored::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::time::UtcDateTime;
-use radix_engine_store_interface::{
+use substate_stores_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::ListableSubstateDatabase,
 };

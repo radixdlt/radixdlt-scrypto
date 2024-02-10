@@ -1718,7 +1718,6 @@ dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
- "radix-engine-derive",
  "rocksdb",
  "sbor",
  "substate-stores-interface",
@@ -1732,8 +1731,6 @@ dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
- "radix-engine-derive",
- "radix-engine-system-api",
  "sbor",
  "utils",
 ]

@@ -4,16 +4,14 @@ use crate::hash_tree::tree_store::{
 use itertools::Itertools;
 use radix_engine_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_common::prelude::Hash;
-use radix_engine_derive::ScryptoSbor;
-use radix_engine_store_interface::interface::*;
+use radix_engine_common::prelude::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Direction, IteratorMode,
     SingleThreaded, WriteBatch, DB,
 };
-use sbor::prelude::*;
 use std::path::PathBuf;
+use substate_stores_interface::*;
 
 mod state_tree;
 use crate::rocks_db::{decode_from_rocksdb_bytes, encode_to_rocksdb_bytes};
@@ -316,7 +314,7 @@ struct Metadata {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use radix_engine_store_interface::interface::{
+    use substate_stores_interface::interface::{
         CommittableSubstateDatabase, DatabaseUpdates, DbSortKey, NodeDatabaseUpdates,
         PartitionDatabaseUpdates,
     };

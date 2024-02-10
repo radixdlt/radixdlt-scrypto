@@ -79,7 +79,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::{hash, Secp256k1PrivateKey};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::interface::SubstateDatabase;
+use substate_stores_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;

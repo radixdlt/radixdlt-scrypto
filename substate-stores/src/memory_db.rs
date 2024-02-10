@@ -1,5 +1,5 @@
-use radix_engine_store_interface::interface::*;
 use sbor::rust::prelude::*;
+use substate_stores_interface::*;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct InMemorySubstateDatabase {

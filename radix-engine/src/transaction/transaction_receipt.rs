@@ -11,8 +11,8 @@ use crate::track::StateUpdates;
 use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_store_interface::interface::DatabaseUpdate;
 use sbor::representations::*;
+use substate_stores_interface::interface::DatabaseUpdate;
 use transaction::prelude::TransactionCostingParameters;
 
 define_single_versioned! {

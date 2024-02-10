@@ -18,10 +18,10 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine_store_interface::interface::*;
 use radix_engine_stores::memory_db::*;
+use substate_stores_interface::db_key_mapper::DatabaseKeyMapper;
+use substate_stores_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use substate_stores_interface::interface::*;
 use transaction::model::*;
 
 use crate::sdk::Package;

@@ -8,9 +8,9 @@ use radix_engine::{
         ScryptoVm,
     },
 };
-use radix_engine_store_interface::interface::*;
 use radix_engine_stores::hash_tree_support::HashTreeUpdatingDatabase;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use substate_stores_interface::interface::*;
 use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
 
 pub struct RunnerContext {

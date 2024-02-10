@@ -42,8 +42,8 @@ pub use radix_engine::vm::*;
 pub use radix_engine_stores::memory_db::*;
 
 /* Radix Engine Store Interface */
-pub use radix_engine_store_interface::db_key_mapper::*;
-pub use radix_engine_store_interface::interface::*;
+pub use substate_stores_interface::db_key_mapper::*;
+pub use substate_stores_interface::interface::*;
 
 /* Radix Engine Interface */
 pub use radix_engine_interface::api::actor_api::*;

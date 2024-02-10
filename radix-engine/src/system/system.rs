@@ -43,10 +43,10 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{Condition, KeyValueStoreGenericSubstitutions};
 #[cfg(not(feature = "alloc"))]
 use radix_engine_macros::*;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use substate_stores_interface::db_key_mapper::SubstateKeyContent;
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {

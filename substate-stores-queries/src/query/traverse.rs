@@ -15,7 +15,7 @@ use radix_engine_interface::types::{
     BlueprintId, IndexedScryptoValue, ObjectType, ResourceAddress,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
-use radix_engine_store_interface::interface::SubstateDatabase;
+use substate_stores_interface::interface::SubstateDatabase;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> {
     system_db_reader: SystemDatabaseReader<'s, S>,

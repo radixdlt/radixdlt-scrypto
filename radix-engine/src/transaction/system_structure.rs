@@ -7,7 +7,7 @@ use crate::track::{
 };
 use crate::types::*;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_store_interface::interface::SubstateDatabase;
+use substate_stores_interface::interface::SubstateDatabase;
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SubstateSystemStructure {

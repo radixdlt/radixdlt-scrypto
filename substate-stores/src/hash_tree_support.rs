@@ -1,10 +1,7 @@
 use crate::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use crate::hash_tree::{list_substate_hashes_at_version, put_at_next_version};
 use radix_engine_common::prelude::*;
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
-    ListableSubstateDatabase, PartitionEntry, SubstateDatabase,
-};
+use substate_stores_interface::*;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct HashTreeUpdatingDatabase<D> {

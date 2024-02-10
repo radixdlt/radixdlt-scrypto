@@ -1,14 +1,14 @@
 use radix_engine_interface::prelude::*;
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
-    DbSubstateValue, PartitionDatabaseUpdates, PartitionEntry, SubstateDatabase,
-};
 use radix_engine_stores::{
     memory_db::InMemorySubstateDatabase,
     rocks_db::RocksdbSubstateStore,
     rocks_db_with_merkle_tree::{BlockBasedOptions, Options, RocksDBWithMerkleTreeSubstateStore},
 };
 use std::{cell::RefCell, collections::BTreeMap, path::PathBuf, time::Duration};
+use substate_stores_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,
+    DbSubstateValue, PartitionDatabaseUpdates, PartitionEntry, SubstateDatabase,
+};
 
 #[cfg(test)]
 mod tests;

@@ -16,7 +16,7 @@ use radix_engine_interface::api::LockFlags;
 use radix_engine_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
 };
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use substate_stores_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::prelude::*;
 

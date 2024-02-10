@@ -7,8 +7,8 @@ use radix_engine_interface::blueprints::package::{
     IndexedStateSchema, PackageExport, VmType, *,
 };
 use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::interface::DatabaseUpdates;
-use radix_engine_store_interface::{
+use substate_stores_interface::interface::DatabaseUpdates;
+use substate_stores_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
 };

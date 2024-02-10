@@ -1,5 +1,5 @@
 use radix_engine_common::prelude::*;
-use radix_engine_store_interface::{
+use substate_stores_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::*,
 };

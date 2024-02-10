@@ -17,7 +17,7 @@ use radix_engine::kernel::kernel_callback_api::{
 };
 use radix_engine::track::{BootStore, Track};
 use radix_engine::types::*;
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use substate_stores_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::model::PreAllocatedAddress;
 

@@ -3,8 +3,8 @@ use crate::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, WriteableTreeStore,
 };
 use radix_engine_common::prelude::Hash;
-use radix_engine_store_interface::interface::DatabaseUpdates;
 use std::cell::RefCell;
+use substate_stores_interface::*;
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
