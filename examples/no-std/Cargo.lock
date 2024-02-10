@@ -431,7 +431,7 @@ dependencies = [
  "radix-engine-macros",
  "regex",
  "sbor",
- "scrypto-schema",
+ "blueprint-schema",
  "serde",
  "serde_json",
  "strum",
@@ -569,7 +569,7 @@ dependencies = [
  "radix-engine-system-api",
  "sbor",
  "scrypto-derive",
- "scrypto-schema",
+ "blueprint-schema",
  "strum",
  "utils",
 ]
@@ -583,14 +583,14 @@ dependencies = [
  "radix-engine-common",
  "regex",
  "sbor",
- "scrypto-schema",
+ "blueprint-schema",
  "serde",
  "serde_json",
  "syn 1.0.93",
 ]
 
 [[package]]
-name = "scrypto-schema"
+name = "blueprint-schema"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags",

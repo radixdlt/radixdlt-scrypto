@@ -43,7 +43,7 @@ radix-engine/Cargo.lock
 substate-stores/Cargo.lock
 scrypto/Cargo.lock
 scrypto-derive/Cargo.lock
-scrypto-schema/Cargo.lock
+blueprint-schema/Cargo.lock
 scrypto-derive-tests/Cargo.lock
 transaction/Cargo.lock
 sbor/Cargo.lock

@@ -3,12 +3,12 @@ use radix_engine_common::{define_wrapped_hash, types::PartitionOffset};
 use sbor::basic_well_known_types::ANY_TYPE;
 use sbor::LocalTypeId;
 use sbor::Sbor;
-use scrypto_schema::BlueprintHook;
-use scrypto_schema::GenericBound;
-use scrypto_schema::TypeRef;
-use scrypto_schema::{BlueprintCollectionSchema, BlueprintKeyValueSchema, FunctionSchemaInit};
-use scrypto_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
-use scrypto_schema::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
+use blueprint_schema::BlueprintHook;
+use blueprint_schema::GenericBound;
+use blueprint_schema::TypeRef;
+use blueprint_schema::{BlueprintCollectionSchema, BlueprintKeyValueSchema, FunctionSchemaInit};
+use blueprint_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
+use blueprint_schema::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 
 define_wrapped_hash!(
     /// Represents a particular instance of code under a package
