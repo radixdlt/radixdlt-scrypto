@@ -40,7 +40,7 @@ pub struct TransactionLimitsConfig {
     pub max_number_of_events: usize,
 }
 
-/// Tracks and verifies transaction limits during transactino execution,
+/// Tracks and verifies transaction limits during transaction execution,
 /// if exceeded breaks execution with appropriate error.
 /// Default limits values are defined in radix-engine-common/constants.
 /// Stores boundary values of the limits and returns them in transaction receipt.
