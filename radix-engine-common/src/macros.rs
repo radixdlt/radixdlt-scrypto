@@ -205,7 +205,7 @@ macro_rules! manifest_args {
             encoder.encode(&arg).unwrap();
         )*
         let value = $crate::data::manifest::manifest_decode(&buf).unwrap();
-        ManifestArgs::new_from_tuple_or_panic(value)
+        $crate::data::manifest::ManifestArgs::new_from_tuple_or_panic(value)
     }};
 }
 

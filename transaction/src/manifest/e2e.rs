@@ -6,10 +6,10 @@ pub mod tests {
     use super::*;
     use crate::internal_prelude::*;
     use crate::manifest::*;
-    use radix_engine_system_interface::api::node_modules::ModuleConfig;
-    use radix_engine_system_interface::blueprints::resource::RoleAssignmentInit;
-    use radix_engine_system_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
-    use radix_engine_system_interface::{metadata, metadata_init};
+    use native_blueprints_interface::resource::NonFungibleResourceRoles;
+    use radix_engine_common::types::*;
+    use radix_engine_common::types::{OwnerRole, RoleAssignmentInit};
+    use radix_engine_common::{metadata, metadata_init};
     use scrypto_derive::NonFungibleData;
 
     #[test]
@@ -1659,9 +1659,9 @@ pub fn apply_address_replacements(input: impl ToString) -> String {
     // For other addresses, uncomment the below:;
     // {
     //     // Generate addresses
-    //     use radix_engine_common::address::{AddressBech32Decoder, AddressBech32Encoder};
+    //     use radix_engine_common::bech32::{AddressBech32Decoder, AddressBech32Encoder};
     //     use radix_engine_common::types::EntityType;
-    //     use radix_engine_system_interface::constants::*;
+    //     use radix_engine_common::constants::*;
 
     //     // Random address from resim new-account
     //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";

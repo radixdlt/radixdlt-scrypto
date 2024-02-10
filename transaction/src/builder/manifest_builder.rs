@@ -1,17 +1,19 @@
 use crate::internal_prelude::*;
 use crate::manifest::decompiler::decompile_with_known_naming;
 use crate::manifest::decompiler::ManifestObjectNames;
-use radix_engine_system_interface::api::node_modules::auth::*;
-use radix_engine_system_interface::api::node_modules::metadata::*;
-use radix_engine_system_interface::api::node_modules::royalty::*;
-use radix_engine_system_interface::api::node_modules::ModuleConfig;
-use radix_engine_system_interface::api::ModuleId;
-use radix_engine_system_interface::blueprints::access_controller::*;
-use radix_engine_system_interface::blueprints::account::*;
-use radix_engine_system_interface::blueprints::consensus_manager::*;
-use radix_engine_system_interface::blueprints::identity::*;
-use radix_engine_system_interface::blueprints::package::*;
-use radix_engine_system_interface::blueprints::resource::*;
+use module_blueprints_interface::auth::*;
+use module_blueprints_interface::metadata::*;
+use module_blueprints_interface::royalty::*;
+use native_blueprints_interface::access_controller::*;
+use native_blueprints_interface::account::*;
+use native_blueprints_interface::consensus_manager::*;
+use native_blueprints_interface::identity::*;
+use native_blueprints_interface::package::*;
+use native_blueprints_interface::resource::*;
+use native_blueprints_interface::*;
+use radix_engine_common::prelude::FallToOwner::OWNER;
+use radix_engine_common::prelude::*;
+use radix_engine_common::*;
 
 /// A manifest builder for use in tests.
 ///
@@ -30,8 +32,8 @@ use radix_engine_system_interface::blueprints::resource::*;
 /// # );
 /// let manifest = ManifestBuilder::new()
 ///     .lock_fee_from_faucet()
-///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-///     .take_from_worktop(XRD, dec!(1), "xrd")
+///     .withdraw_from_account(from_account_address, XRD, Decimal::from(1))
+///     .take_from_worktop(XRD, Decimal::from(1), "xrd")
 ///     .try_deposit_or_abort(to_account_address, None, "xrd")
 ///     .build();
 /// ```
@@ -48,8 +50,8 @@ use radix_engine_system_interface::blueprints::resource::*;
 /// # );
 /// let manifest = ManifestBuilder::new()
 ///     .lock_fee_from_faucet()
-///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-///     .take_from_worktop(XRD, dec!(1), "xrd")
+///     .withdraw_from_account(from_account_address, XRD, Decimal::from(1))
+///     .take_from_worktop(XRD, Decimal::from(1), "xrd")
 ///     .call_function_with_name_lookup(
 ///         package_address,
 ///         "SomeBlueprint",
@@ -191,7 +193,7 @@ impl ManifestBuilder {
     /// # let package_address = FAUCET_PACKAGE; // Just so it compiles
     ///
     /// let manifest = ManifestBuilder::new()
-    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+    ///     .withdraw_from_account(from_account_address, XRD, Decimal::from(1))
     ///     // ...
     ///     .then(|mut builder| {
     ///         let code_blob_ref = builder.add_blob(vec![]);
@@ -873,8 +875,8 @@ impl ManifestBuilder {
     /// # );
     /// let manifest = ManifestBuilder::new()
     ///     .lock_fee_from_faucet()
-    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .withdraw_from_account(from_account_address, XRD, Decimal::from(1))
+    ///     .take_from_worktop(XRD, Decimal::from(1), "xrd_bucket")
     ///     .call_function_with_name_lookup(
     ///         package_address,
     ///         "SomeBlueprint",
@@ -882,7 +884,7 @@ impl ManifestBuilder {
     ///         |lookup| (
     ///             "argument1",
     ///             lookup.bucket("xrd_bucket"),
-    ///             dec!("1.3")
+    ///             Decimal::from("1.3")
     ///         ),
     ///     )
     ///     .build();
@@ -1104,15 +1106,15 @@ impl ManifestBuilder {
     /// # );
     /// let manifest = ManifestBuilder::new()
     ///     .lock_fee_from_faucet()
-    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .withdraw_from_account(from_account_address, XRD, Decimal::from(1))
+    ///     .take_from_worktop(XRD, Decimal::from(1), "xrd_bucket")
     ///     .call_method_with_name_lookup(
     ///         component_address,
     ///         "some_function",
     ///         |lookup| (
     ///             "argument1",
     ///             lookup.bucket("xrd_bucket"),
-    ///             dec!("1.3")
+    ///             Decimal::from("1.3")
     ///         ),
     ///     )
     ///     .build();
@@ -2056,8 +2058,8 @@ mod tests {
 
     fn get_builder_and_bucket_and_proof() -> (ManifestBuilder, ManifestBucket, ManifestProof) {
         let builder = ManifestBuilder::new()
-            .take_from_worktop(XRD, dec!(100), "bucket")
-            .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof");
+            .take_from_worktop(XRD, Decimal::from(100), "bucket")
+            .create_proof_from_bucket_of_amount("bucket", Decimal::from(5), "proof");
         let lookup = builder.name_lookup();
         let proof_id = lookup.proof("proof");
         let bucket_id = lookup.bucket("bucket");
@@ -2075,7 +2077,7 @@ mod tests {
         let (builder, _, _) = get_builder_and_bucket_and_proof();
         builder.add_instruction_advanced(InstructionV1::CreateProofFromAuthZoneOfAmount {
             resource_address: XRD,
-            amount: dec!(1),
+            amount: Decimal::from(1),
         });
 
         let (builder, _, _) = get_builder_and_bucket_and_proof();
@@ -2092,7 +2094,7 @@ mod tests {
         let (builder, bucket_id, _) = get_builder_and_bucket_and_proof();
         builder.add_instruction_advanced(InstructionV1::CreateProofFromBucketOfAmount {
             bucket_id,
-            amount: dec!(1),
+            amount: Decimal::from(1),
         });
 
         let (builder, bucket_id, _) = get_builder_and_bucket_and_proof();
@@ -2110,7 +2112,7 @@ mod tests {
         let (builder, _, _) = get_builder_and_bucket_and_proof();
         builder.add_instruction_advanced(InstructionV1::TakeFromWorktop {
             resource_address: XRD,
-            amount: dec!(1),
+            amount: Decimal::from(1),
         });
 
         let (builder, _, _) = get_builder_and_bucket_and_proof();
@@ -2139,7 +2141,7 @@ mod tests {
         let account = GENESIS_HELPER; // Not actually an account, but not relevant for this test
         ManifestBuilder::new()
             .get_free_xrd_from_faucet()
-            .take_from_worktop(XRD, dec!(1000), "bucket_1")
+            .take_from_worktop(XRD, Decimal::from(1000), "bucket_1")
             .try_deposit_entire_worktop_or_abort(account, None)
             .try_deposit_batch_or_abort(account, ["bucket_1"], None)
             .build();

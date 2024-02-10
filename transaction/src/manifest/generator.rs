@@ -5,63 +5,58 @@ use crate::internal_prelude::TransactionManifestV1;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_common::constants::PACKAGE_PACKAGE;
-use radix_engine_common::prelude::CONSENSUS_MANAGER;
-use radix_engine_common::types::NodeId;
-use radix_engine_common::types::PackageAddress;
-use radix_engine_system_interface::address::AddressBech32Decoder;
-use radix_engine_system_interface::api::node_modules::auth::{
+use module_blueprints_interface::auth::{
     ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
-use radix_engine_system_interface::api::node_modules::metadata::METADATA_SET_IDENT;
-use radix_engine_system_interface::api::node_modules::metadata::{
-    METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
-};
-use radix_engine_system_interface::api::node_modules::royalty::{
+use module_blueprints_interface::metadata::METADATA_SET_IDENT;
+use module_blueprints_interface::metadata::{METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT};
+use module_blueprints_interface::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_system_interface::blueprints::access_controller::{
+use native_blueprints_interface::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
 };
-use radix_engine_system_interface::blueprints::account::{
+use native_blueprints_interface::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
 };
-use radix_engine_system_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT;
-use radix_engine_system_interface::blueprints::identity::{
+use native_blueprints_interface::consensus_manager::CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT;
+use native_blueprints_interface::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
-use radix_engine_system_interface::blueprints::package::PACKAGE_BLUEPRINT;
-use radix_engine_system_interface::blueprints::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
-use radix_engine_system_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
-use radix_engine_system_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
-use radix_engine_system_interface::blueprints::resource::*;
-use radix_engine_system_interface::blueprints::resource::{
-    NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-};
-use radix_engine_system_interface::blueprints::resource::{
+use native_blueprints_interface::package::PACKAGE_BLUEPRINT;
+use native_blueprints_interface::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
+use native_blueprints_interface::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
+use native_blueprints_interface::package::PACKAGE_PUBLISH_WASM_IDENT;
+use native_blueprints_interface::resource::NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
+use native_blueprints_interface::resource::*;
+use native_blueprints_interface::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
-use radix_engine_system_interface::constants::{
+use radix_engine_common::bech32::AddressBech32Decoder;
+use radix_engine_common::constants::PACKAGE_PACKAGE;
+use radix_engine_common::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
-use radix_engine_system_interface::crypto::Hash;
-use radix_engine_system_interface::data::manifest::model::*;
-use radix_engine_system_interface::data::manifest::*;
-use radix_engine_system_interface::data::scrypto::model::*;
-use radix_engine_system_interface::math::{Decimal, PreciseDecimal};
-use radix_engine_system_interface::types::GlobalAddress;
-use radix_engine_system_interface::types::InternalAddress;
-use radix_engine_system_interface::types::ResourceAddress;
-use radix_engine_system_interface::*;
+use radix_engine_common::crypto::Hash;
+use radix_engine_common::data::manifest::model::*;
+use radix_engine_common::data::manifest::*;
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::math::{Decimal, PreciseDecimal};
+use radix_engine_common::prelude::*;
+use radix_engine_common::types::GlobalAddress;
+use radix_engine_common::types::InternalAddress;
+use radix_engine_common::types::NodeId;
+use radix_engine_common::types::PackageAddress;
+use radix_engine_common::types::ResourceAddress;
+use radix_engine_common::*;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::IndexMap;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
-use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -1486,22 +1481,20 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
-    use radix_engine_common::constants::CONSENSUS_MANAGER;
-    use radix_engine_common::manifest_args;
-    use radix_engine_common::types::{ComponentAddress, PackageAddress};
-    use radix_engine_system_interface::address::AddressBech32Decoder;
-    use radix_engine_system_interface::api::node_modules::metadata::MetadataValue;
-    use radix_engine_system_interface::api::node_modules::ModuleConfig;
-    use radix_engine_system_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
-    use radix_engine_system_interface::blueprints::resource::{
+    use blueprint_schema::BlueprintStateSchemaInit;
+    use native_blueprints_interface::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
+    use native_blueprints_interface::resource::{
         NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintRuidManifestInput,
     };
-    use radix_engine_system_interface::crypto::Secp256k1PrivateKey;
-    use radix_engine_system_interface::network::NetworkDefinition;
-    use radix_engine_system_interface::schema::BlueprintStateSchemaInit;
-    use radix_engine_system_interface::types::{NonFungibleData, PackageRoyaltyConfig};
-    use radix_engine_system_interface::{dec, pdec, ScryptoSbor};
+    use radix_engine_common::bech32::AddressBech32Decoder;
+    use radix_engine_common::constants::CONSENSUS_MANAGER;
+    use radix_engine_common::crypto::Secp256k1PrivateKey;
+    use radix_engine_common::manifest_args;
+    use radix_engine_common::network::NetworkDefinition;
+    use radix_engine_common::types::PackageRoyaltyConfig;
+    use radix_engine_common::types::{ComponentAddress, PackageAddress};
+    use radix_engine_common::ScryptoSbor;
     use utils::prelude::IndexMap;
 
     #[macro_export]
@@ -1699,7 +1692,7 @@ mod tests {
                 package_address: package_address.into(),
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
-                args: manifest_args!(500u32, pdec!("120")).into()
+                args: manifest_args!(500u32, PreciseDecimal::from(120)).into()
             },
         );
         generate_instruction_ok!(
@@ -1715,7 +1708,7 @@ mod tests {
             InstructionV1::CallMethod {
                 address: resource_address.into(),
                 method_name: "mint".to_string(),
-                args: manifest_args!(dec!("100")).into()
+                args: manifest_args!(Decimal::from(100)).into()
             },
         );
     }
@@ -1918,7 +1911,7 @@ mod tests {
                             NonFungibleLocalId::integer(1),
                             (to_manifest_value_and_unwrap!(&(
                                 String::from("Hello World"),
-                                dec!("12")
+                                Decimal::from(12)
                             )),),
                         )]),
                         address_reservation: None,
@@ -2042,7 +2035,7 @@ mod tests {
                         NonFungibleLocalId::integer(1),
                         (to_manifest_value_and_unwrap!(&(
                             String::from("Hello World"),
-                            dec!("12")
+                            Decimal::from(12)
                         )),)
                     )])
                 })
@@ -2074,7 +2067,7 @@ mod tests {
                     &NonFungibleResourceManagerMintRuidManifestInput {
                         entries: Vec::from([(to_manifest_value_and_unwrap!(&(
                             String::from("Hello World"),
-                            dec!("12")
+                            Decimal::from(12)
                         )),),])
                     }
                 ),

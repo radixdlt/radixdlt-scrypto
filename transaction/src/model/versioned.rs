@@ -64,7 +64,7 @@ pub enum VersionedTransactionPayload {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_system_interface::blueprints::resource::FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
+    use native_blueprints_interface::resource::FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 
     use super::*;
     use crate::manifest::e2e::tests::print_blob;

@@ -1,9 +1,8 @@
-use crate::internal_prelude::*;
 use crate::model::*;
-use radix_engine_system_interface::blueprints::resource::NonFungibleGlobalId;
-use radix_engine_system_interface::crypto::hash;
-use radix_engine_system_interface::data::manifest::*;
-use radix_engine_system_interface::*;
+use radix_engine_common::crypto::hash;
+use radix_engine_common::data::manifest::*;
+use radix_engine_common::prelude::*;
+use radix_engine_common::*;
 use std::collections::BTreeSet;
 
 #[derive(ManifestSbor)]

@@ -1,8 +1,8 @@
-use radix_engine_system_interface::data::manifest::model::{
+use radix_engine_common::data::manifest::model::{
     ManifestDecimal, ManifestNonFungibleLocalId, ManifestPreciseDecimal,
 };
-use radix_engine_system_interface::data::scrypto::model::*;
-use radix_engine_system_interface::math::*;
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::math::*;
 
 /* Utils for conversion between "trusted" manifest value and rust value */
 

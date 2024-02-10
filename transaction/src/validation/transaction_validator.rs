@@ -436,7 +436,7 @@ impl NotarizedTransactionValidator {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_system_interface::network::NetworkDefinition;
+    use radix_engine_common::network::NetworkDefinition;
 
     use super::*;
     use crate::{builder::ManifestBuilder, builder::TransactionBuilder};
@@ -806,8 +806,8 @@ mod tests {
             vec![55],
             66,
             ManifestBuilder::new()
-                .take_from_worktop(XRD, dec!(100), "bucket")
-                .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof1")
+                .take_from_worktop(XRD, Decimal::from(100), "bucket")
+                .create_proof_from_bucket_of_amount("bucket", Decimal::from(5), "proof1")
                 .return_to_worktop("bucket")
                 .drop_proof("proof1")
                 .build(),
@@ -830,8 +830,8 @@ mod tests {
             vec![55],
             66,
             ManifestBuilder::new()
-                .take_from_worktop(XRD, dec!(100), "bucket")
-                .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof1")
+                .take_from_worktop(XRD, Decimal::from(100), "bucket")
+                .create_proof_from_bucket_of_amount("bucket", Decimal::from(5), "proof1")
                 .then(|builder| {
                     let lookup = builder.name_lookup();
                     let proof_id = lookup.proof("proof1");
@@ -861,7 +861,7 @@ mod tests {
             vec![55],
             66,
             ManifestBuilder::new()
-                .take_from_worktop(XRD, dec!(100), "bucket")
+                .take_from_worktop(XRD, Decimal::from(100), "bucket")
                 .then(|builder| {
                     let lookup = builder.name_lookup();
                     builder

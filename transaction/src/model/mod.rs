@@ -228,7 +228,7 @@ Enum<3u8>(
                     },
                     costing_parameters: TransactionCostingParameters {
                         tip_percentage: 4,
-                        free_credit_in_xrd: dec!(0)
+                        free_credit_in_xrd: Decimal::from(0)
                     }
                 }
             }

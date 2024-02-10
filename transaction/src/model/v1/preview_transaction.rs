@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use radix_engine_system_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_common::constants::*;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Default)]
 pub struct PreviewFlags {

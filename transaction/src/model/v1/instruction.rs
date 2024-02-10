@@ -1,9 +1,9 @@
 use crate::prelude::*;
+use radix_engine_common::data::manifest::{model::*, ManifestValue};
 use radix_engine_common::data::scrypto::model::*;
-use radix_engine_system_interface::data::manifest::{model::*, ManifestValue};
-use radix_engine_system_interface::math::Decimal;
-use radix_engine_system_interface::types::*;
-use radix_engine_system_interface::*;
+use radix_engine_common::math::Decimal;
+use radix_engine_common::types::*;
+use radix_engine_common::*;
 use sbor::{Decoder, Encoder};
 
 /*

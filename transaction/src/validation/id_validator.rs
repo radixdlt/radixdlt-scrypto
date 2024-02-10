@@ -2,12 +2,12 @@ use crate::data::transform;
 use crate::data::TransformHandler;
 use crate::errors::*;
 use crate::validation::*;
+use radix_engine_common::data::manifest::model::*;
+use radix_engine_common::data::manifest::*;
+use radix_engine_common::data::scrypto::model::Own;
 use radix_engine_common::prelude::Reference;
-use radix_engine_system_interface::data::manifest::model::*;
-use radix_engine_system_interface::data::manifest::*;
-use radix_engine_system_interface::data::scrypto::model::Own;
-use radix_engine_system_interface::types::NodeId;
-use radix_engine_system_interface::*;
+use radix_engine_common::types::NodeId;
+use radix_engine_common::*;
 use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
