@@ -9,11 +9,11 @@ sbor = { path = "../sbor", default-features = false }
 native-sdk = { path = "../native-sdk", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests", "db_checker"] }
-radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
+substate-stores = { path = "../substate-stores", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
 radix-engine-system-api = { path = "../radix-engine-system-api", default-features = false }
-radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
-radix-engine-queries = { path = "../radix-engine-queries", default-features = false }
+substate-stores-interface = { path = "../substate-stores-interface", default-features = false }
+substate-stores-queries = { path = "../substate-stores-queries", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
 wabt = { version = "0.10.0" }
 
@@ -33,15 +33,15 @@ tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], 
 [features]
 default = ["std"]
 
-std = ["moka", "sbor/std", "scrypto/std", "native-sdk/std", "transaction/std", "radix-engine/std", "radix-engine-queries/std", "radix-engine-stores/std", "radix-engine-common/std", "radix-engine-system-api/std", "radix-engine-store-interface/std", "tuple-return/std"]
-alloc = ["lru", "sbor/alloc", "scrypto/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-queries/alloc", "radix-engine-stores/alloc", "radix-engine-common/alloc", "radix-engine-system-api/alloc", "radix-engine-store-interface/alloc", "tuple-return/alloc"]
+std = ["moka", "sbor/std", "scrypto/std", "native-sdk/std", "transaction/std", "radix-engine/std", "substate-stores-queries/std", "substate-stores/std", "radix-engine-common/std", "radix-engine-system-api/std", "substate-stores-interface/std", "tuple-return/std"]
+alloc = ["lru", "sbor/alloc", "scrypto/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "substate-stores-queries/alloc", "substate-stores/alloc", "radix-engine-common/alloc", "radix-engine-system-api/alloc", "substate-stores-interface/alloc", "tuple-return/alloc"]
 
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]
 
 resource_tracker = []
 
-rocksdb = ["radix-engine-stores/rocksdb"]
+rocksdb = ["substate-stores/rocksdb"]
 post_run_db_check = []
 
 [lib]

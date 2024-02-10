@@ -1,6 +1,6 @@
 [package]
 name = "module-blueprints-interface"
-description = "Defines the interface of global object modules"
+description = "Defines the interface of global object modules (to be generated from RPD in future)"
 version = "1.2.0-dev"
 edition = "2021"
 

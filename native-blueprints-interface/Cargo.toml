@@ -1,6 +1,6 @@
 [package]
 name = "native-blueprints-interface"
-description = "Defines the interface of native blueprints"
+description = "Defines the interface of native blueprints (to be generated from RPD in future)"
 version = "1.2.0-dev"
 edition = "2021"
 

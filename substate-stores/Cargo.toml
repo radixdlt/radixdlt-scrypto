@@ -1,5 +1,5 @@
 [package]
-name = "radix-engine-store-interface"
+name = "substate-stores"
 version = "1.2.0-dev"
 edition = "2021"
 
@@ -8,15 +8,20 @@ sbor = { path = "../sbor", default-features = false }
 utils = { path = "../utils", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
 radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
-radix-engine-system-api = { path = "../radix-engine-system-api", default-features = false }
+substate-stores-interface = { path = "../substate-stores-interface", default-features = false }
+rocksdb = { version = "0.21.0", optional = true }
 itertools = { version = "0.10.3", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 
+[dev-dependencies]
+tempfile = "3.8.0"
+
 [features]
 default = ["std"]
-std = ["hex/std", "utils/std", "sbor/std", "radix-engine-derive/std", "radix-engine-common/std", "radix-engine-system-api/std", "itertools/use_std"]
-alloc = ["hex/alloc", "utils/alloc", "sbor/alloc", "radix-engine-derive/alloc", "radix-engine-common/alloc", "radix-engine-system-api/alloc", "itertools/use_alloc"]
+std = ["hex/std", "sbor/std", "utils/std", "radix-engine-common/std", "radix-engine-derive/std", "substate-stores-interface/std", "itertools/use_std"]
+alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-common/alloc", "radix-engine-derive/alloc", "substate-stores-interface/alloc", "itertools/use_alloc"]
 
+rocksdb = ["dep:rocksdb"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

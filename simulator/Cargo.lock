@@ -1175,12 +1175,12 @@ dependencies = [
  "paste",
  "radix-engine-common",
  "radix-engine-macros",
- "radix-engine-store-interface",
  "radix-engine-system-api",
  "resources-tracker-macro",
  "sbor",
  "serde_json",
  "strum",
+ "substate-stores-interface",
  "syn 1.0.93",
  "transaction",
  "utils",
@@ -1240,48 +1240,6 @@ name = "radix-engine-profiling"
 version = "1.2.0-dev"
 dependencies = [
  "fixedstr",
-]
-
-[[package]]
-name = "radix-engine-queries"
-version = "1.2.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "paste",
- "radix-engine",
- "radix-engine-store-interface",
- "radix-engine-system-api",
- "sbor",
- "transaction",
- "utils",
-]
-
-[[package]]
-name = "radix-engine-store-interface"
-version = "1.2.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "radix-engine-common",
- "radix-engine-derive",
- "radix-engine-system-api",
- "sbor",
- "utils",
-]
-
-[[package]]
-name = "radix-engine-stores"
-version = "1.2.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "radix-engine-common",
- "radix-engine-derive",
- "radix-engine-store-interface",
- "rocksdb",
- "sbor",
- "utils",
 ]
 
 [[package]]
@@ -1675,9 +1633,6 @@ dependencies = [
  "quote",
  "radix-engine",
  "radix-engine-profiling",
- "radix-engine-queries",
- "radix-engine-store-interface",
- "radix-engine-stores",
  "radix-engine-system-api",
  "rand 0.8.5",
  "regex",
@@ -1685,6 +1640,9 @@ dependencies = [
  "sbor",
  "serde",
  "serde_json",
+ "substate-stores",
+ "substate-stores-interface",
+ "substate-stores-queries",
  "syn 1.0.93",
  "tar",
  "temp-env",
@@ -1751,6 +1709,48 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "substate-stores"
+version = "1.2.0-dev"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine-common",
+ "radix-engine-derive",
+ "rocksdb",
+ "sbor",
+ "substate-stores-interface",
+ "utils",
+]
+
+[[package]]
+name = "substate-stores-interface"
+version = "1.2.0-dev"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine-common",
+ "radix-engine-derive",
+ "radix-engine-system-api",
+ "sbor",
+ "utils",
+]
+
+[[package]]
+name = "substate-stores-queries"
+version = "1.2.0-dev"
+dependencies = [
+ "hex",
+ "itertools",
+ "paste",
+ "radix-engine",
+ "radix-engine-system-api",
+ "sbor",
+ "substate-stores-interface",
+ "transaction",
+ "utils",
 ]
 
 [[package]]

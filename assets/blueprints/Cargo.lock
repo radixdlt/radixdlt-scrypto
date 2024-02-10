@@ -850,7 +850,7 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-system-api",
  "radix-engine-macros",
- "radix-engine-store-interface",
+ "substate-stores-interface",
  "resources-tracker-macro",
  "sbor",
  "serde_json",
@@ -937,7 +937,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-queries"
+name = "substate-stores-queries"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
@@ -945,14 +945,14 @@ dependencies = [
  "paste",
  "radix-engine",
  "radix-engine-system-api",
- "radix-engine-store-interface",
+ "substate-stores-interface",
  "sbor",
  "transaction",
  "utils",
 ]
 
 [[package]]
-name = "radix-engine-store-interface"
+name = "substate-stores-interface"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
@@ -965,14 +965,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-stores"
+name = "substate-stores"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
  "radix-engine-derive",
- "radix-engine-store-interface",
+ "substate-stores-interface",
  "sbor",
  "utils",
 ]
@@ -1207,9 +1207,9 @@ dependencies = [
  "radix-engine",
  "radix-engine-common",
  "radix-engine-system-api",
- "radix-engine-queries",
- "radix-engine-store-interface",
- "radix-engine-stores",
+ "substate-stores-queries",
+ "substate-stores-interface",
+ "substate-stores",
  "sbor",
  "scrypto",
  "serde_json",

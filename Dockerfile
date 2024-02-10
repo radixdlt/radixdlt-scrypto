@@ -20,10 +20,10 @@ ADD radix-engine-derive /app/radix-engine-derive
 ADD native-sdk /app/native-sdk
 ADD radix-engine-macros /app/radix-engine-macros
 ADD radix-engine-profiling /app/radix-engine-profiling
-ADD radix-engine-store-interface /app/radix-engine-store-interface
-ADD radix-engine-stores /app/radix-engine-stores
+ADD substate-stores-interface /app/substate-stores-interface
+ADD substate-stores /app/substate-stores
 ADD transaction /app/transaction
-ADD radix-engine-queries /app/radix-engine-queries
+ADD substate-stores-queries /app/substate-stores-queries
 ADD assets /app/assets
 
 WORKDIR /app

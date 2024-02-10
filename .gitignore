@@ -40,7 +40,7 @@ simulator/tests/blueprints/Cargo.lock
 # - Old cargo locks of crates now part of central workspace. These will be ignored by cargo now.
 #   Keep these git'ignored so that they don't cause confusion on developers' computers
 radix-engine/Cargo.lock
-radix-engine-stores/Cargo.lock
+substate-stores/Cargo.lock
 scrypto/Cargo.lock
 scrypto-derive/Cargo.lock
 scrypto-schema/Cargo.lock

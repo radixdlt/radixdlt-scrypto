@@ -9,9 +9,9 @@ sbor = { path = "../sbor", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests"] }
 radix-engine-system-api = { path = "../radix-engine-system-api", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
-radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
-radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
-radix-engine-queries = { path = "../radix-engine-queries", default-features = false }
+substate-stores-interface = { path = "../substate-stores-interface", default-features = false }
+substate-stores = { path = "../substate-stores", default-features = false }
+substate-stores-queries = { path = "../substate-stores-queries", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 transaction-scenarios = { path = "../transaction-scenarios", default-features = false }
 utils = { path = "../utils", default-features = false }
@@ -33,8 +33,8 @@ paste = { version = "1.0.13" }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "transaction/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-system-api/std", "radix-engine-stores/std", "radix-engine-store-interface/std", "radix-engine-queries/std", "utils/std", "scrypto/std", "scrypto-test/std"]
-alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-system-api/alloc", "radix-engine-stores/alloc", "radix-engine-store-interface/alloc", "radix-engine-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-test/alloc"]
+std = ["sbor/std", "transaction/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-system-api/std", "substate-stores/std", "substate-stores-interface/std", "substate-stores-queries/std", "utils/std", "scrypto/std", "scrypto-test/std"]
+alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-system-api/alloc", "substate-stores/alloc", "substate-stores-interface/alloc", "substate-stores-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-test/alloc"]
 rocksdb = ["scrypto-test/rocksdb"]
 post_run_db_check = ["scrypto-test/post_run_db_check"]
 resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker", "radix-engine-common/resource_tracker", "scrypto-test/resource_tracker"]
