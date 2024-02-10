@@ -1742,11 +1742,9 @@ dependencies = [
  "hex",
  "itertools",
  "paste",
- "radix-engine",
- "radix-engine-system-api",
+ "radix-engine-common",
  "sbor",
  "substate-stores-interface",
- "transaction",
  "utils",
 ]
 
