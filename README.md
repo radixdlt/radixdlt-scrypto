@@ -149,7 +149,7 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
 - `scrypto-derive`: Derives for defining and importing Scrypto blueprints.
 - `radix-engine`: The Scrypto execution engine.
 - `simulator`: A simulator that run Scrypto code on a filesystem based ledger.
-- `transaction`: Radix transaction manifest compiler, transaction models, signing and validationg logic.
+- `transaction`: Radix transaction manifest compiler, transaction models, signing and validating logic.
 
 ## LFS
 
