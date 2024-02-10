@@ -5,16 +5,16 @@ use radix_engine::system::attached_modules::royalty::{
 };
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::system::type_info::TypeInfoSubstate;
-use radix_engine_interface::api::{AttachedModuleId, ModuleId};
-use radix_engine_interface::blueprints::resource::{
+use radix_engine_system_interface::api::{AttachedModuleId, ModuleId};
+use radix_engine_system_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
-use radix_engine_interface::constants::RESOURCE_PACKAGE;
-use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_interface::types::{
+use radix_engine_system_interface::constants::RESOURCE_PACKAGE;
+use radix_engine_system_interface::data::scrypto::model::NonFungibleLocalId;
+use radix_engine_system_interface::types::{
     BlueprintId, IndexedScryptoValue, ObjectType, ResourceAddress,
 };
-use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
+use radix_engine_system_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use substate_stores_interface::interface::SubstateDatabase;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> {

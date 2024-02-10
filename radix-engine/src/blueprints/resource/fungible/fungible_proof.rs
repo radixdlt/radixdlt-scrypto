@@ -1,9 +1,9 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::{ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
+use radix_engine_system_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FungibleProofSubstate {

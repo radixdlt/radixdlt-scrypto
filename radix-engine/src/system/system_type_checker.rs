@@ -7,10 +7,10 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, LockStatus};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{CollectionIndex, FieldValue, KVEntry};
-use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::schema::KeyValueStoreGenericSubstitutions;
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::{CollectionIndex, FieldValue, KVEntry};
+use radix_engine_system_interface::blueprints::package::*;
+use radix_engine_system_interface::schema::KeyValueStoreGenericSubstitutions;
 use sbor::rust::vec::Vec;
 
 /// Metadata for schema validation to help with location of certain schemas

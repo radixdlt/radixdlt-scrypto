@@ -1,5 +1,5 @@
 use super::{StateTreeTraverser, StateTreeVisitor};
-use radix_engine_interface::{
+use radix_engine_system_interface::{
     blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleVault},
     data::scrypto::model::NonFungibleLocalId,
     math::{traits::*, Decimal},

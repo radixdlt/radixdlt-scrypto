@@ -10,7 +10,7 @@ use radix_engine::track::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_common::types::*;
-use radix_engine_interface::prelude::*;
+use radix_engine_system_interface::prelude::*;
 use substate_stores_interface::db_key_mapper::*;
 
 #[cfg(feature = "std")]

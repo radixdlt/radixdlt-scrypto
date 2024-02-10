@@ -1,4 +1,4 @@
-use radix_engine_interface::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
+use radix_engine_system_interface::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
 use strum::{EnumCount, EnumDiscriminants, FromRepr};
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumDiscriminants, EnumCount)]

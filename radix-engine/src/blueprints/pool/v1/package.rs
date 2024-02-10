@@ -8,9 +8,9 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::*;
 use crate::system::system_callback::*;
 use crate::*;
-use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::pool::*;
-use radix_engine_interface::prelude::*;
+use radix_engine_system_interface::blueprints::package::*;
+use radix_engine_system_interface::blueprints::pool::*;
+use radix_engine_system_interface::prelude::*;
 
 /// The minor version of the Pool V1 package
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Sbor)]

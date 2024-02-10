@@ -1,4 +1,4 @@
-use radix_engine_interface::prelude::*;
+use radix_engine_system_interface::prelude::*;
 use scrypto::this_package;
 use scrypto_test::prelude::*;
 

@@ -1,13 +1,7 @@
 use core::marker::PhantomData;
-
 use radix_engine_common::prelude::*;
 
-pub trait TypeInfoMarker {
-    const PACKAGE_ADDRESS: Option<PackageAddress>;
-    const BLUEPRINT_NAME: &'static str;
-    const OWNED_TYPE_NAME: &'static str;
-    const GLOBAL_TYPE_NAME: &'static str;
-}
+// TODO: There are duplicated definitions of `Owned` and `Global`. Clean up!
 
 pub struct Global<T>(pub ComponentAddress, PhantomData<T>)
 where

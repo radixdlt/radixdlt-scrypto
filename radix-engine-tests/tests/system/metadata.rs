@@ -1,7 +1,7 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::attached_modules::metadata::MetadataError;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{
+use radix_engine_system_interface::api::node_modules::metadata::{
     MetadataConversionError::UnexpectedType, MetadataValue,
 };
 use radix_engine_tests::common::*;

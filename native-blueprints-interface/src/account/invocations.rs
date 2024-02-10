@@ -4,6 +4,7 @@ use crate::resource::*;
 use arbitrary::Arbitrary;
 use radix_engine_common::define_type_info_marker;
 use radix_engine_common::prelude::*;
+use radix_engine_common::markers::*;
 use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 

@@ -1,5 +1,5 @@
-use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::blueprints::package::CodeHash;
+use radix_engine_system_interface::api::actor_api::EventFlags;
+use radix_engine_system_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
 #[cfg(not(feature = "radix_engine_fuzzing"))]

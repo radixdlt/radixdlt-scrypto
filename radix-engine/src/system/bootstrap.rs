@@ -33,17 +33,17 @@ use crate::vm::VmVersion;
 use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::consensus_manager::{
+use radix_engine_system_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_system_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
+use radix_engine_system_interface::api::node_modules::ModuleConfig;
+use radix_engine_system_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
     CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::math::traits::*;
-use radix_engine_interface::{
+use radix_engine_system_interface::blueprints::package::*;
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::math::traits::*;
+use radix_engine_system_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
 use substate_stores_interface::interface::{

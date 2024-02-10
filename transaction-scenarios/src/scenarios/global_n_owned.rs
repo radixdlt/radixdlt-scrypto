@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::{PackageDefinition, PACKAGE_BLUEPRINT};
-use radix_engine_interface::*;
+use radix_engine_system_interface::blueprints::package::{PackageDefinition, PACKAGE_BLUEPRINT};
+use radix_engine_system_interface::*;
 
 #[derive(Default)]
 pub struct GlobalNOwnedScenarioState(Option<(PackageAddress, ComponentAddress)>);

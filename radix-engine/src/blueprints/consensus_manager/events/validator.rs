@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::math::Decimal;
+use radix_engine_system_interface::math::Decimal;
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct RegisterValidatorEvent;

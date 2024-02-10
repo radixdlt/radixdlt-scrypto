@@ -26,8 +26,8 @@ use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
 use paste::paste;
-use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::crypto::Hash;
+use radix_engine_system_interface::api::ModuleId;
+use radix_engine_system_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
 

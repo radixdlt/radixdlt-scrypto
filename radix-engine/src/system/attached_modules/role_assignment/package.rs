@@ -12,20 +12,20 @@ use crate::{errors::*, event_schema};
 
 use crate::system::system_substates::FieldSubstate;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::{
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::node_modules::auth::*;
+use radix_engine_system_interface::api::{
     ClientApi, FieldValue, GenericArgs, KVEntry, ModuleId, ACTOR_STATE_SELF,
 };
-use radix_engine_interface::blueprints::package::{
+use radix_engine_system_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, BlueprintVersionKey, FunctionAuth,
     MethodAuthTemplate, PackageDefinition, RoleSpecification,
 };
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::schema::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
 };
-use radix_engine_interface::types::*;
+use radix_engine_system_interface::types::*;
 
 use super::*;
 

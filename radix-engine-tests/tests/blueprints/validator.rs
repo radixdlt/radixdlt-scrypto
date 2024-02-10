@@ -3,11 +3,11 @@ use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::blueprints::transaction_processor::InstructionOutput;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::consensus_manager::{
+use radix_engine_system_interface::blueprints::consensus_manager::{
     ValidatorAcceptsDelegatedStakeInput, VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
     VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
 };
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_system_interface::blueprints::resource::FromPublicKey;
 use scrypto_test::prelude::*;
 
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)

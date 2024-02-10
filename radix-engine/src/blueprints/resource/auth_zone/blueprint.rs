@@ -7,9 +7,9 @@ use crate::system::system_modules::auth::{Authorization, AuthorizationCheckResul
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::NativeProof;
-use radix_engine_interface::api::{ClientApi, LockFlags, ACTOR_REF_SELF, ACTOR_STATE_SELF};
-use radix_engine_interface::blueprints::package::BlueprintVersion;
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_system_interface::api::{ClientApi, LockFlags, ACTOR_REF_SELF, ACTOR_STATE_SELF};
+use radix_engine_system_interface::blueprints::package::BlueprintVersion;
+use radix_engine_system_interface::blueprints::resource::*;
 
 use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProofError};
 

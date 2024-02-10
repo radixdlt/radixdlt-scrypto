@@ -5,7 +5,7 @@ use radix_engine::{
     },
     types::*,
 };
-use radix_engine_interface::schema::TypeRef;
+use radix_engine_system_interface::schema::TypeRef;
 use radix_engine_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
 use radix_engine_tests::common::*;
 use sbor::basic_well_known_types::*;

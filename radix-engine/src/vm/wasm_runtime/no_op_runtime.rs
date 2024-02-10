@@ -2,7 +2,7 @@ use crate::errors::InvokeError;
 use crate::system::system_modules::costing::*;
 use crate::types::*;
 use crate::vm::wasm::*;
-use radix_engine_interface::api::actor_api::EventFlags;
+use radix_engine_system_interface::api::actor_api::EventFlags;
 use sbor::rust::vec::Vec;
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.

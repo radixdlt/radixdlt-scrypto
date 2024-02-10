@@ -1,11 +1,11 @@
-use radix_engine_interface::blueprints::consensus_manager::{
+use native_blueprints_interface::consensus_manager::{
     ConsensusManagerCompareCurrentTimeInputV2, ConsensusManagerGetCurrentTimeInputV2,
     TimePrecision, CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
 };
-use radix_engine_interface::constants::CONSENSUS_MANAGER;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::time::*;
+use radix_engine_common::constants::CONSENSUS_MANAGER;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_common::time::*;
 use sbor::rust::fmt::Debug;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 

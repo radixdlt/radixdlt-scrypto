@@ -3,7 +3,7 @@ use crate::types::*;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::NoOpWasmRuntime;
 use crate::{errors::InvokeError, transaction::CostingParameters};
-use radix_engine_interface::blueprints::package::*;
+use radix_engine_system_interface::blueprints::package::*;
 use sbor::rust::iter;
 use transaction::prelude::TransactionCostingParameters;
 

@@ -12,14 +12,14 @@ use crate::system::checkers::ApplicationChecker;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
 use radix_engine_common::types::{NodeId, ResourceAddress};
-use radix_engine_interface::api::FieldIndex;
-use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::{
+use radix_engine_system_interface::api::FieldIndex;
+use radix_engine_system_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_BLUEPRINT;
+use radix_engine_system_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
-use radix_engine_interface::prelude::{BlueprintInfo, CollectionIndex};
-use radix_engine_interface::prelude::{CheckedAdd, ModuleId};
+use radix_engine_system_interface::prelude::{BlueprintInfo, CollectionIndex};
+use radix_engine_system_interface::prelude::{CheckedAdd, ModuleId};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 use sbor::HasLatestVersion;

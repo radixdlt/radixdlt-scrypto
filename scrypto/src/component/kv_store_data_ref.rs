@@ -1,7 +1,7 @@
 use crate::engine::scrypto_env::ScryptoVmV1Api;
-use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
-use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::SubstateHandle;
+use radix_engine_common::data::scrypto::*;
+use radix_engine_common::types::SubstateHandle;
+use radix_engine_system_interface::key_value_entry_api::KeyValueEntryHandle;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};

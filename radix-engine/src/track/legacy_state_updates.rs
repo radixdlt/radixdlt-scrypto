@@ -2,7 +2,7 @@ use crate::track::{
     BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
 };
 use radix_engine_common::types::{NodeId, PartitionNumber, SubstateKey};
-use radix_engine_interface::ScryptoSbor;
+use radix_engine_system_interface::ScryptoSbor;
 use substate_stores_interface::interface::DatabaseUpdate;
 use utils::prelude::{index_map_new, index_set_new, IndexMap, IndexSet};
 

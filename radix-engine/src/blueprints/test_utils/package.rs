@@ -1,9 +1,9 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::blueprints::test_utils::invocations::*;
+use radix_engine_system_interface::api::ClientApi;
+use radix_engine_system_interface::blueprints::package::PackageDefinition;
+use radix_engine_system_interface::blueprints::test_utils::invocations::*;
 
 use super::TestUtilsBlueprint;
 

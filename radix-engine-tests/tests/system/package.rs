@@ -5,7 +5,7 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::PrepareError;
 use radix_engine::vm::wasm::*;
 use radix_engine_common::constants::MAX_NUMBER_OF_BLUEPRINT_FIELDS;
-use radix_engine_interface::*;
+use radix_engine_system_interface::*;
 use radix_engine_tests::common::*;
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;

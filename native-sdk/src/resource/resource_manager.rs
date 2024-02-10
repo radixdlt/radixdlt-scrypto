@@ -6,7 +6,7 @@ use radix_engine_common::data::scrypto::{
 };
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::*;
-use radix_engine_system_api::{ClientBlueprintApi, ClientObjectApi};
+use radix_engine_system_interface::{ClientBlueprintApi, ClientObjectApi};
 
 /// Represents a resource manager.
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]

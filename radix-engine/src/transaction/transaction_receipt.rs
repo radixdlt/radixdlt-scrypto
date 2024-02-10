@@ -10,7 +10,7 @@ use crate::track::PartitionStateUpdates;
 use crate::track::StateUpdates;
 use crate::transaction::SystemStructure;
 use colored::*;
-use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_system_interface::blueprints::transaction_processor::InstructionOutput;
 use sbor::representations::*;
 use substate_stores_interface::interface::DatabaseUpdate;
 use transaction::prelude::TransactionCostingParameters;

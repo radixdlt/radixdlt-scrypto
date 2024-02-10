@@ -3,14 +3,14 @@ use radix_engine::types::FromRepr;
 use radix_engine_common::constants::XRD;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{ComponentAddress, NonFungibleLocalId, VALIDATOR_OWNER_BADGE};
-use radix_engine_interface::blueprints::consensus_manager::{
+use radix_engine_system_interface::blueprints::consensus_manager::{
     ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_XRD_IDENT,
     VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
     VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT,
     VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_UNSTAKE_IDENT,
     VALIDATOR_UPDATE_FEE_IDENT,
 };
-use radix_engine_interface::data::manifest::ManifestArgs;
+use radix_engine_system_interface::data::manifest::ManifestArgs;
 use transaction::builder::ManifestBuilder;
 use utils::btreeset;
 

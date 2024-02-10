@@ -4,7 +4,7 @@ use radix_engine::{
     kernel::call_frame::PassMessageError,
     types::*,
 };
-use radix_engine_interface::blueprints::package::KeyOrValue;
+use radix_engine_system_interface::blueprints::package::KeyOrValue;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

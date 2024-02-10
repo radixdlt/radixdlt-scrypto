@@ -1,5 +1,5 @@
 use clap::Parser;
-use radix_engine_interface::types::Level;
+use radix_engine_common::types::Level;
 use regex::Regex;
 use std::env;
 use std::env::current_dir;

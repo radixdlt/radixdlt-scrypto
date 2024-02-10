@@ -418,7 +418,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-system-api"
+name = "radix-engine-system-interface"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags",
@@ -566,7 +566,7 @@ dependencies = [
  "paste",
  "radix-engine-common",
  "radix-engine-derive",
- "radix-engine-system-api",
+ "radix-engine-system-interface",
  "sbor",
  "scrypto-derive",
  "blueprint-schema",

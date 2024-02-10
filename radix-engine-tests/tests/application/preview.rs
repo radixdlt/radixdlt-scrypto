@@ -2,7 +2,7 @@ use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::types::*;
-use radix_engine_interface::rule;
+use radix_engine_system_interface::rule;
 use scrypto_test::prelude::*;
 
 use transaction::validation::NotarizedTransactionValidator;

@@ -9,18 +9,18 @@ use radix_engine::system::attached_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::blueprints::account::ResourcePreference;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::{
+use radix_engine_system_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_system_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_system_interface::api::node_modules::ModuleConfig;
+use radix_engine_system_interface::api::ModuleId;
+use radix_engine_system_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
+use radix_engine_system_interface::blueprints::account::*;
+use radix_engine_system_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
-use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
-use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
+use radix_engine_system_interface::blueprints::package::BlueprintPayloadIdentifier;
+use radix_engine_system_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
 use radix_engine_tests::common::*;
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;

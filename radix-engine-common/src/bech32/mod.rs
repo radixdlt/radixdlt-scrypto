@@ -13,7 +13,7 @@ pub use hrpset::*;
 pub mod test_addresses {
     use crate::types::{NodeId, ResourceAddress};
 
-    // The system addresses are defined in `radix-engine-system-api`, but some
+    // The system addresses are defined in `radix-engine-system-interface`, but some
     // tests have a need for some placeholder addresses - so define them here so
     // we only need to update one place if they change in future.
 

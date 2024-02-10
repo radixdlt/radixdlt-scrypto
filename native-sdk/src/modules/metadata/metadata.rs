@@ -6,7 +6,7 @@ use radix_engine_common::constants::METADATA_MODULE_PACKAGE;
 use radix_engine_common::data::scrypto::model::Own;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::prelude::*;
-use radix_engine_system_api::ClientApi;
+use radix_engine_system_interface::ClientApi;
 
 pub struct Metadata(pub Own);
 

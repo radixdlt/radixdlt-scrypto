@@ -5,7 +5,7 @@ use radix_engine::{
     errors::{ApplicationError, RuntimeError},
     types::*,
 };
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_system_interface::blueprints::resource::FromPublicKey;
 use scrypto::prelude::{require, require_amount};
 use scrypto_test::prelude::*;
 

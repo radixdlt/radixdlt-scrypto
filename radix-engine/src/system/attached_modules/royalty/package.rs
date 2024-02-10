@@ -2,10 +2,10 @@ use crate::errors::*;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::types::*;
 use native_sdk::resource::NativeVault;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_STATE_SELF};
-use radix_engine_interface::schema::{
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::node_modules::royalty::*;
+use radix_engine_system_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_STATE_SELF};
+use radix_engine_system_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     FunctionSchemaInit, TypeRef,
 };
@@ -19,7 +19,7 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
-use radix_engine_interface::blueprints::package::{
+use radix_engine_system_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };

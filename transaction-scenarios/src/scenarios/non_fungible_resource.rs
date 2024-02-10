@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::*;
+use radix_engine_system_interface::api::node_modules::ModuleConfig;
+use radix_engine_system_interface::*;
 use scrypto::NonFungibleData;
 
 pub struct NonFungibleResourceScenarioConfig {

@@ -1,8 +1,8 @@
 use crate::resim::*;
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
-use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_system_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
+use radix_engine_system_interface::api::node_modules::ModuleConfig;
 
 /// Create a fungible token with mutable supply
 #[derive(Parser, Debug)]

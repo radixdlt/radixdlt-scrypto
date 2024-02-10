@@ -1,7 +1,7 @@
 use crate::types::*;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::{ScryptoEvent, ScryptoSbor};
-use radix_engine_interface::blueprints::account::*;
+use radix_engine_system_interface::blueprints::account::*;
 use sbor::rust::prelude::*;
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]

@@ -8,7 +8,7 @@ use flume;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
-use radix_engine_interface::prelude::NetworkDefinition;
+use radix_engine_system_interface::prelude::NetworkDefinition;
 use radix_engine_profiling::info_alloc::*;
 use substate_stores_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use substate_stores_interface::interface::CommittableSubstateDatabase;

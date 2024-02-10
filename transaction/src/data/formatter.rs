@@ -1,9 +1,9 @@
 use crate::data::{to_decimal, to_non_fungible_local_id, to_precise_decimal};
-use radix_engine_interface::data::manifest::{
+use radix_engine_system_interface::data::manifest::{
     model::*, ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };
-use radix_engine_interface::types::ResourceAddress;
-use radix_engine_interface::{
+use radix_engine_system_interface::types::ResourceAddress;
+use radix_engine_system_interface::{
     address::AddressBech32Encoder, blueprints::resource::NonFungibleGlobalId,
 };
 use sbor::rust::collections::NonIterMap;

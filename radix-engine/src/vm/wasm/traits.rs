@@ -1,9 +1,9 @@
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::errors::*;
-use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::api::ActorRefHandle;
-use radix_engine_interface::blueprints::package::CodeHash;
+use radix_engine_system_interface::api::actor_api::EventFlags;
+use radix_engine_system_interface::api::ActorRefHandle;
+use radix_engine_system_interface::blueprints::package::CodeHash;
 use sbor::rust::boxed::Box;
 use sbor::rust::vec::Vec;
 

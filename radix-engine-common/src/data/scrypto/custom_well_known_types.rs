@@ -586,8 +586,8 @@ mod tests {
 
     #[test]
     fn test_custom_type_values_are_valid() {
-        // NOTE: Some of these types are actually defined in the `radix-engine-system-api` - so for those,
-        // I've instead added tests for them in `interface_well_known_types.rs` in the `radix-engine-system-api` crate.
+        // NOTE: Some of these types are actually defined in the `radix-engine-system-interface` - so for those,
+        // I've instead added tests for them in `interface_well_known_types.rs` in the `radix-engine-system-interface` crate.
         // But I've kept them in the list below for completeness, in order with the types above - as a comment.
 
         // MISC TYPES

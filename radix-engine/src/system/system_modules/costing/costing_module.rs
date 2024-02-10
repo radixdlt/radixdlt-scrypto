@@ -17,10 +17,10 @@ use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
 };
-use radix_engine_interface::api::AttachedModuleId;
-use radix_engine_interface::blueprints::package::BlueprintVersionKey;
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::{types::NodeId, *};
+use radix_engine_system_interface::api::AttachedModuleId;
+use radix_engine_system_interface::blueprints::package::BlueprintVersionKey;
+use radix_engine_system_interface::blueprints::resource::LiquidFungibleResource;
+use radix_engine_system_interface::{types::NodeId, *};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {

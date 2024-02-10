@@ -1,6 +1,6 @@
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::consensus_manager::{
+use radix_engine_system_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_system_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_tests::common::*;

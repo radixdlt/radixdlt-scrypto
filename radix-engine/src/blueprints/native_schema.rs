@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use radix_engine_interface::blueprints::package::*;
+use radix_engine_system_interface::blueprints::package::*;
 
 use crate::blueprints::access_controller::*;
 use crate::blueprints::account::*;

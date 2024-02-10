@@ -1,7 +1,7 @@
 use crate::types::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 use num_traits::CheckedAdd;
-use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
+use radix_engine_system_interface::blueprints::package::BlueprintDefinitionInit;
 use syn::Ident;
 use wasm_instrument::{
     gas_metering::{self, Rules},
@@ -1250,8 +1250,8 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::blueprints::package::BlueprintType;
-    use radix_engine_interface::schema::{
+    use radix_engine_system_interface::blueprints::package::BlueprintType;
+    use radix_engine_system_interface::schema::{
         BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
         FunctionSchemaInit, TypeRef,
     };

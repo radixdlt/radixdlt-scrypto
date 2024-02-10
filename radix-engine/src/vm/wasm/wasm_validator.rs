@@ -1,6 +1,6 @@
 use crate::types::*;
 use crate::vm::wasm::*;
-use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
+use radix_engine_system_interface::blueprints::package::BlueprintDefinitionInit;
 
 pub const SCRYPTO_V1_LATEST_MINOR_VERSION: u64 = 1u64;
 
@@ -82,7 +82,7 @@ impl ScryptoV1WasmValidator {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_interface::blueprints::package::PackageDefinition;
+    use radix_engine_system_interface::blueprints::package::PackageDefinition;
     use wabt::{wasm2wat, wat2wasm};
 
     use super::ScryptoV1WasmValidator;

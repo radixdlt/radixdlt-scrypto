@@ -5,9 +5,9 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_substates::FieldSubstate;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_system_interface::api::ClientApi;
+use radix_engine_system_interface::api::LockFlags;
+use radix_engine_system_interface::blueprints::resource::*;
 
 use super::AuthZoneError;
 

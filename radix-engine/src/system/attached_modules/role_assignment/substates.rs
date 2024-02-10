@@ -1,8 +1,8 @@
 use crate::internal_prelude::*;
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::*;
-use radix_engine_interface::types::*;
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::schema::*;
+use radix_engine_system_interface::types::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 #[sbor(transparent)]

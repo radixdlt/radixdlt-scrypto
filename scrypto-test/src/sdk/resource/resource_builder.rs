@@ -1,13 +1,13 @@
 // TODO: Need to deduplicate this code.
 
 use crate::prelude::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::prelude::ClientApi;
-use radix_engine_interface::types::NonFungibleData;
-use radix_engine_interface::*;
+use radix_engine_system_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_system_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_system_interface::api::node_modules::ModuleConfig;
+use radix_engine_system_interface::math::Decimal;
+use radix_engine_system_interface::prelude::ClientApi;
+use radix_engine_system_interface::types::NonFungibleData;
+use radix_engine_system_interface::*;
 use sbor::rust::marker::PhantomData;
 use std::fmt::Debug;
 
@@ -168,7 +168,7 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::mint_roles;
+    /// use radix_engine_system_interface::mint_roles;
     /// use scrypto_test::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -198,7 +198,7 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::burn_roles;
+    /// use radix_engine_system_interface::burn_roles;
     /// use scrypto_test::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -257,7 +257,7 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::freeze_roles;
+    /// use radix_engine_system_interface::freeze_roles;
     /// use scrypto_test::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -287,7 +287,7 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::withdraw_roles;
+    /// use radix_engine_system_interface::withdraw_roles;
     /// use scrypto_test::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -417,7 +417,7 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData>
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::non_fungible_data_update_roles;
+    /// use radix_engine_system_interface::non_fungible_data_update_roles;
     /// use scrypto_test::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -571,7 +571,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
         mut self,
         amount: T,
         env: &mut Y,
-    ) -> Result<radix_engine_interface::blueprints::resource::Bucket, E>
+    ) -> Result<radix_engine_system_interface::blueprints::resource::Bucket, E>
     where
         T: Into<Decimal>,
         Y: ClientApi<E>,
@@ -600,7 +600,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
 
         Ok(scrypto_decode::<(
             ResourceAddress,
-            radix_engine_interface::blueprints::resource::Bucket,
+            radix_engine_system_interface::blueprints::resource::Bucket,
         )>(&bytes)
         .unwrap()
         .1)
@@ -939,7 +939,7 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
+    use radix_engine_system_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;

@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use radix_engine::types::blueprints::account::*;
 use radix_engine::types::*;
-use radix_engine_interface::*;
+use radix_engine_system_interface::*;
 
 pub struct AccountAuthorizedDepositorsScenarioConfig {
     pub source_account: VirtualAccount,

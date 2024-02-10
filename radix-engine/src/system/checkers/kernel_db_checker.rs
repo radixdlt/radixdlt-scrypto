@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
+use radix_engine_system_interface::types::*;
+use radix_engine_system_interface::*;
 use substate_stores_interface::db_key_mapper::DatabaseKeyMapper;
 use substate_stores_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use substate_stores_interface::interface::ListableSubstateDatabase;

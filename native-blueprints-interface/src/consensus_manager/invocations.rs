@@ -5,6 +5,7 @@ use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::define_type_info_marker;
 use radix_engine_common::prelude::ManifestBucket;
 use radix_engine_common::prelude::CONSENSUS_MANAGER_PACKAGE;
+use radix_engine_common::markers::*;
 use radix_engine_common::prelude::*;
 use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use sbor::rust::fmt::Debug;

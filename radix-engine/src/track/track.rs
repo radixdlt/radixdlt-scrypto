@@ -6,7 +6,7 @@ use crate::track::state_updates::*;
 use crate::track::utils::OverlayingResultIterator;
 use crate::track::BootStore;
 use crate::types::*;
-use radix_engine_interface::types::*;
+use radix_engine_system_interface::types::*;
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;

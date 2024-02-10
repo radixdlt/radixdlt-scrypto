@@ -1,11 +1,11 @@
-pub use radix_engine_interface::address::{
+pub use radix_engine_system_interface::address::{
     AddressBech32DecodeError, AddressBech32Decoder, AddressBech32EncodeError, AddressBech32Encoder,
 };
-pub use radix_engine_interface::blueprints::resource::*;
-pub use radix_engine_interface::constants::*;
-pub use radix_engine_interface::prelude::*;
+pub use radix_engine_system_interface::blueprints::resource::*;
+pub use radix_engine_system_interface::constants::*;
+pub use radix_engine_system_interface::prelude::*;
 pub mod blueprints {
-    pub use radix_engine_interface::blueprints::*;
+    pub use radix_engine_system_interface::blueprints::*;
 }
 pub use sbor::rust::num::NonZeroU32;
 pub use sbor::rust::num::NonZeroUsize;

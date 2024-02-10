@@ -6,9 +6,9 @@ use radix_engine::transaction::{CostingParameters, ExecutionConfig, ResourcesUsa
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmValidatorConfig};
 use radix_engine_common::constants::EXECUTION_COST_UNIT_LIMIT;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::dec;
-use radix_engine_interface::rule;
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::dec;
+use radix_engine_system_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 

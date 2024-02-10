@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_system_interface::blueprints::resource::AccessRule;
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug)]
 pub struct SetRoleEvent {

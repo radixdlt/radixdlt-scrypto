@@ -1,6 +1,6 @@
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::*;
+use native_blueprints_interface::access_controller::*;
+use native_blueprints_interface::account::*;
+use native_blueprints_interface::consensus_manager::*;
 
 use crate::prelude::*;
 

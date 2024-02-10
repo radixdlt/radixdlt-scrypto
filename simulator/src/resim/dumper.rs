@@ -4,8 +4,8 @@ use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::types::*;
-use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_system_interface::api::ModuleId;
+use radix_engine_system_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
 use radix_engine_queries::typed_substate_layout::*;
 use substate_stores_interface::{

@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_system_interface::blueprints::resource::*;
 
 #[derive(Debug, ScryptoSbor, Default)]
 pub struct AuthZone {

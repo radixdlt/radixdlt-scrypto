@@ -1,28 +1,26 @@
 use crate::component::ObjectStubHandle;
+use crate::component::*;
 use crate::engine::wasm_api::{addr, copy_buffer};
-use crate::prelude::{AnyComponent, Global};
-use radix_engine_common::math::Decimal;
-use radix_engine_common::prelude::RESOURCE_PACKAGE;
-use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::consensus_manager::{
+use crate::prelude::AnyComponent;
+use native_blueprints_interface::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthZoneAssertAccessRuleInput, NonFungibleGlobalId,
-    AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+use native_blueprints_interface::resource::*;
+use native_blueprints_interface::resource::{
+    AuthZoneAssertAccessRuleInput, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
 };
-use radix_engine_interface::constants::CONSENSUS_MANAGER;
-use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::{
+use radix_engine_common::constants::CONSENSUS_MANAGER;
+use radix_engine_common::crypto::Hash;
+use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDescribe, ScryptoEncode,
 };
-use radix_engine_interface::prelude::NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
-use radix_engine_interface::traits::ScryptoEvent;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
-use sbor::rust::prelude::*;
+use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::*;
+use radix_engine_common::traits::ScryptoEvent;
+use radix_engine_common::types::GlobalAddressReservation;
+use radix_engine_common::*;
+use radix_engine_system_interface::actor_api::EventFlags;
+use radix_engine_system_interface::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 /// The transaction runtime.

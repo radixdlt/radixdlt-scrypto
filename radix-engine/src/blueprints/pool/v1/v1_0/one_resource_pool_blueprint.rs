@@ -9,10 +9,10 @@ use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
 use native_sdk::runtime::*;
-use radix_engine_interface::blueprints::component::*;
-use radix_engine_interface::blueprints::pool::*;
-use radix_engine_interface::prelude::*;
-use radix_engine_interface::*;
+use radix_engine_system_interface::blueprints::component::*;
+use radix_engine_system_interface::blueprints::pool::*;
+use radix_engine_system_interface::prelude::*;
+use radix_engine_system_interface::*;
 
 pub struct OneResourcePoolBlueprint;
 impl OneResourcePoolBlueprint {

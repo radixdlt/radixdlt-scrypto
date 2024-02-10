@@ -6,7 +6,7 @@ use radix_engine_common::data::scrypto::{
 };
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::*;
-use radix_engine_system_api::ClientApi;
+use radix_engine_system_interface::ClientApi;
 use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;

@@ -8,8 +8,8 @@ use crate::track::BootStore;
 use crate::types::*;
 use crate::vm::wasm::{ScryptoV1WasmValidator, WasmEngine};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::ClientApi;
 
 use super::wasm::SCRYPTO_V1_LATEST_MINOR_VERSION;
 

@@ -2,12 +2,12 @@ use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::types::*;
 use crate::vm::wasm::*;
-use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
-use radix_engine_interface::api::{ActorRefHandle, AttachedModuleId, ClientApi, FieldValue};
-use radix_engine_interface::types::ClientCostingEntry;
-use radix_engine_interface::types::Level;
+use radix_engine_system_interface::api::actor_api::EventFlags;
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::key_value_store_api::KeyValueStoreDataSchema;
+use radix_engine_system_interface::api::{ActorRefHandle, AttachedModuleId, ClientApi, FieldValue};
+use radix_engine_system_interface::types::ClientCostingEntry;
+use radix_engine_system_interface::types::Level;
 use sbor::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.

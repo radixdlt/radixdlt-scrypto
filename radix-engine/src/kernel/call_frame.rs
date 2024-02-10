@@ -5,8 +5,8 @@ use crate::kernel::substate_io::{
 };
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
 use crate::types::*;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::types::{NodeId, SubstateHandle, SubstateKey};
 use substate_stores_interface::db_key_mapper::SubstateKeyContent;
 
 use super::heap::{Heap, HeapRemovePartitionError};

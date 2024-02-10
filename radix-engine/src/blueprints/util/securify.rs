@@ -4,8 +4,8 @@ use native_sdk::modules::role_assignment::{
     AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
 };
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::{ClientApi, ModuleId};
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_system_interface::api::{ClientApi, ModuleId};
+use radix_engine_system_interface::blueprints::resource::*;
 
 pub trait SecurifiedRoleAssignment {
     const OWNER_BADGE: ResourceAddress;

@@ -11,7 +11,7 @@ transaction = { path = "../transaction", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests", "db_checker"] }
 substate-stores = { path = "../substate-stores", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
-radix-engine-system-api = { path = "../radix-engine-system-api", default-features = false }
+radix-engine-system-interface = { path = "../radix-engine-system-interface", default-features = false }
 substate-stores-interface = { path = "../substate-stores-interface", default-features = false }
 substate-stores-queries = { path = "../substate-stores-queries", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
@@ -33,8 +33,8 @@ tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], 
 [features]
 default = ["std"]
 
-std = ["moka", "sbor/std", "scrypto/std", "native-sdk/std", "transaction/std", "radix-engine/std", "substate-stores-queries/std", "substate-stores/std", "radix-engine-common/std", "radix-engine-system-api/std", "substate-stores-interface/std", "tuple-return/std"]
-alloc = ["lru", "sbor/alloc", "scrypto/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "substate-stores-queries/alloc", "substate-stores/alloc", "radix-engine-common/alloc", "radix-engine-system-api/alloc", "substate-stores-interface/alloc", "tuple-return/alloc"]
+std = ["moka", "sbor/std", "scrypto/std", "native-sdk/std", "transaction/std", "radix-engine/std", "substate-stores-queries/std", "substate-stores/std", "radix-engine-common/std", "radix-engine-system-interface/std", "substate-stores-interface/std", "tuple-return/std"]
+alloc = ["lru", "sbor/alloc", "scrypto/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "substate-stores-queries/alloc", "substate-stores/alloc", "radix-engine-common/alloc", "radix-engine-system-interface/alloc", "substate-stores-interface/alloc", "tuple-return/alloc"]
 
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]

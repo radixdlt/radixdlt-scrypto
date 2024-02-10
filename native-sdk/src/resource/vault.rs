@@ -3,7 +3,7 @@ use radix_engine_common::data::scrypto::model::*;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::*;
-use radix_engine_system_api::ClientApi;
+use radix_engine_system_interface::ClientApi;
 use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 

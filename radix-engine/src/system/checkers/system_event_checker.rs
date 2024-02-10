@@ -1,9 +1,9 @@
 use crate::system::system_db_reader::{SystemDatabaseReader, SystemReaderError};
 use crate::system::system_type_checker::{BlueprintTypeTarget, SchemaValidationMeta};
 use radix_engine_common::constants::BLUEPRINT_PAYLOAD_MAX_DEPTH;
-use radix_engine_interface::blueprints::package::{BlueprintPayloadIdentifier, BlueprintVersion};
-use radix_engine_interface::prelude::*;
-use radix_engine_interface::types::Emitter;
+use radix_engine_system_interface::blueprints::package::{BlueprintPayloadIdentifier, BlueprintVersion};
+use radix_engine_system_interface::prelude::*;
+use radix_engine_system_interface::types::Emitter;
 use substate_stores_interface::interface::SubstateDatabase;
 
 pub trait ApplicationEventChecker: Default {

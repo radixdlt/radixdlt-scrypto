@@ -3,13 +3,13 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::{
+use radix_engine_system_interface::api::ClientApi;
+use radix_engine_system_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
-use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_engine_interface::schema::{
+use radix_engine_system_interface::blueprints::transaction_processor::*;
+use radix_engine_system_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FunctionSchemaInit, TypeRef,
 };

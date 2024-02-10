@@ -10,18 +10,18 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::UncheckedUrl;
-use radix_engine_interface::api::{
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::node_modules::metadata::UncheckedUrl;
+use radix_engine_system_interface::api::{
     AttachedModuleId, ClientApi, FieldValue, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT,
     ACTOR_STATE_SELF,
 };
-use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::package::{
+use radix_engine_system_interface::blueprints::consensus_manager::*;
+use radix_engine_system_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
 };
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{burn_roles, metadata_init, mint_roles, rule};
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::{burn_roles, metadata_init, mint_roles, rule};
 use sbor::rust::mem;
 
 use super::{

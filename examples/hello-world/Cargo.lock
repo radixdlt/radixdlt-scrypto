@@ -584,7 +584,7 @@ version = "1.2.0-dev"
 dependencies = [
  "radix-engine-common",
  "radix-engine-derive",
- "radix-engine-system-api",
+ "radix-engine-system-interface",
  "sbor",
  "utils",
 ]
@@ -767,7 +767,7 @@ dependencies = [
  "num-traits",
  "paste",
  "radix-engine-common",
- "radix-engine-system-api",
+ "radix-engine-system-interface",
  "radix-engine-macros",
  "substate-stores-interface",
  "resources-tracker-macro",
@@ -817,7 +817,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-system-api"
+name = "radix-engine-system-interface"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags 1.3.2",
@@ -863,7 +863,7 @@ dependencies = [
  "itertools",
  "paste",
  "radix-engine",
- "radix-engine-system-api",
+ "radix-engine-system-interface",
  "substate-stores-interface",
  "sbor",
  "transaction",
@@ -878,7 +878,7 @@ dependencies = [
  "itertools",
  "radix-engine-common",
  "radix-engine-derive",
- "radix-engine-system-api",
+ "radix-engine-system-interface",
  "sbor",
  "utils",
 ]
@@ -1083,7 +1083,7 @@ dependencies = [
  "paste",
  "radix-engine-common",
  "radix-engine-derive",
- "radix-engine-system-api",
+ "radix-engine-system-interface",
  "sbor",
  "scrypto-derive",
  "blueprint-schema",
@@ -1125,7 +1125,7 @@ dependencies = [
  "paste",
  "radix-engine",
  "radix-engine-common",
- "radix-engine-system-api",
+ "radix-engine-system-interface",
  "substate-stores-queries",
  "substate-stores-interface",
  "substate-stores",
@@ -1372,7 +1372,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "radix-engine-common",
- "radix-engine-system-api",
+ "radix-engine-system-interface",
  "sbor",
  "strum",
  "utils",

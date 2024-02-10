@@ -9,7 +9,7 @@ RUN apt update && apt install -y \
 FROM base-image as builder
 ADD simulator /app/simulator
 ADD radix-engine /app/radix-engine
-ADD radix-engine-system-api /app/radix-engine-system-api
+ADD radix-engine-system-interface /app/radix-engine-system-interface
 ADD sbor /app/sbor
 ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common

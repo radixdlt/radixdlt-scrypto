@@ -71,13 +71,13 @@ use radix_engine::transaction::{execute_and_commit_transaction, CostingParameter
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
-use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::blueprints::package::{
+use radix_engine_system_interface::api::ModuleId;
+use radix_engine_system_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
 };
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_interface::crypto::{hash, Secp256k1PrivateKey};
-use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_system_interface::blueprints::resource::FromPublicKey;
+use radix_engine_system_interface::crypto::{hash, Secp256k1PrivateKey};
+use radix_engine_system_interface::network::NetworkDefinition;
 use radix_engine_queries::typed_substate_layout::*;
 use substate_stores_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;

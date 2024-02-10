@@ -27,7 +27,7 @@ use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
 use radix_engine::vm::VmBoot;
-pub use radix_engine_interface::api::node_modules::royalty::*;
+pub use radix_engine_system_interface::api::node_modules::royalty::*;
 use transaction::prelude::IntentHash;
 
 //=========================================================================

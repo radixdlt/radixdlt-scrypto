@@ -3,10 +3,10 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::*;
+use radix_engine_system_interface::api::*;
+use radix_engine_system_interface::blueprints::access_controller::*;
+use radix_engine_system_interface::blueprints::package::PackageDefinition;
+use radix_engine_system_interface::*;
 use sbor::rust::prelude::*;
 
 pub struct AccessControllerNativePackage;

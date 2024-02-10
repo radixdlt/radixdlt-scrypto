@@ -1,4 +1,4 @@
-use radix_engine_interface::{
+use radix_engine_system_interface::{
     data::manifest::model::{ManifestBucket, ManifestProof},
     prelude::ManifestAddressReservation,
 };

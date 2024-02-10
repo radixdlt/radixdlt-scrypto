@@ -6,8 +6,8 @@ mod multi_threaded_test {
     use radix_engine::transaction::{CostingParameters, ExecutionConfig};
     use radix_engine::types::*;
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-    use radix_engine_interface::dec;
-    use radix_engine_interface::rule;
+    use radix_engine_system_interface::dec;
+    use radix_engine_system_interface::rule;
     use radix_engine_stores::memory_db::InMemorySubstateDatabase;
     use transaction::model::TestTransaction;
     use transaction::prelude::*;

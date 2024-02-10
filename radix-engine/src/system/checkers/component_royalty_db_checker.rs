@@ -1,7 +1,7 @@
 use super::*;
 use crate::system::attached_modules::royalty::*;
 
-use radix_engine_interface::prelude::*;
+use radix_engine_system_interface::prelude::*;
 
 /// Checks the state invariants of the component royalty module. Currently, the only invariant that
 /// this checks is that the royalty amount is within the allowed limits. This does not check

@@ -6,21 +6,21 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::{AttachedModuleId, ClientApi};
-use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::package::{
+use radix_engine_system_interface::api::node_modules::metadata::*;
+use radix_engine_system_interface::api::{AttachedModuleId, ClientApi};
+use radix_engine_system_interface::blueprints::identity::*;
+use radix_engine_system_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::hooks::{OnVirtualizeInput, OnVirtualizeOutput};
-use radix_engine_interface::metadata_init;
-use radix_engine_interface::schema::{
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::hooks::{OnVirtualizeInput, OnVirtualizeOutput};
+use radix_engine_system_interface::metadata_init;
+use radix_engine_system_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
     TypeRef,
 };
-use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
+use radix_engine_system_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 
 pub const IDENTITY_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 

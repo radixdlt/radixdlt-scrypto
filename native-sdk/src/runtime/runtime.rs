@@ -8,8 +8,8 @@ use radix_engine_common::prelude::*;
 use radix_engine_common::traits::ScryptoEvent;
 use radix_engine_common::types::Epoch;
 use radix_engine_common::types::{NodeId, PackageAddress};
-use radix_engine_system_api::actor_api::EventFlags;
-use radix_engine_system_api::*;
+use radix_engine_system_interface::actor_api::EventFlags;
+use radix_engine_system_interface::*;
 
 #[derive(Debug)]
 pub struct Runtime {}

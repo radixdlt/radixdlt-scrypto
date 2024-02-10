@@ -8,7 +8,7 @@ use crate::system::actor::Actor;
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::track::interface::StoreCommit;
 use crate::types::*;
-use radix_engine_interface::*;
+use radix_engine_system_interface::*;
 
 #[derive(Debug, IntoStaticStr)]
 pub enum ExecutionCostingEntry<'a> {

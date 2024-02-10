@@ -34,7 +34,7 @@ members = [
     "radix-engine",
     "radix-engine-macros",
     "radix-engine-common",
-    "radix-engine-system-api",
+    "radix-engine-system-interface",
     "radix-engine-derive",
     "substate-stores-interface",
     "substate-stores",

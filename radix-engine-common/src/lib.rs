@@ -26,6 +26,7 @@ pub mod time;
 pub mod traits;
 /// RE types used universally
 pub mod types;
+pub mod markers;
 
 // Re-export SBOR derive.
 extern crate sbor;

@@ -1,17 +1,17 @@
 use crate::engine::wasm_api::*;
+use radix_engine_common::crypto::Hash;
+use radix_engine_common::data::scrypto::*;
 use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::*;
 use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
-use radix_engine_interface::api::{ActorRefHandle, FieldValue};
-use radix_engine_interface::api::{AttachedModuleId, FieldIndex, LockFlags};
-use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::PackageAddress;
-use radix_engine_interface::types::{BlueprintId, GlobalAddress};
-use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
-use radix_engine_interface::*;
-use sbor::rust::prelude::*;
+use radix_engine_common::types::PackageAddress;
+use radix_engine_common::types::{BlueprintId, GlobalAddress};
+use radix_engine_common::types::{Level, NodeId, SubstateHandle};
+use radix_engine_common::*;
+use radix_engine_system_interface::actor_api::EventFlags;
+use radix_engine_system_interface::key_value_entry_api::KeyValueEntryHandle;
+use radix_engine_system_interface::FieldValue;
+use radix_engine_system_interface::LockFlags;
 
 pub struct ScryptoVmV1Api;
 

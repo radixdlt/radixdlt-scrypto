@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::blueprints::access_controller::{Proposer, RecoveryProposal};
+use radix_engine_system_interface::blueprints::access_controller::{Proposer, RecoveryProposal};
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug)]
 pub struct InitiateRecoveryEvent {

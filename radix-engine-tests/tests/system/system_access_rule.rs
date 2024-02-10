@@ -5,8 +5,8 @@ use radix_engine::system::attached_modules::role_assignment::RoleAssignmentError
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ModuleId};
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_system_interface::api::{ClientApi, ModuleId};
+use radix_engine_system_interface::blueprints::package::PackageDefinition;
 use radix_engine_queries::typed_substate_layout::{FunctionAuth, PackageError};
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;

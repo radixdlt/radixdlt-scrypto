@@ -1,6 +1,6 @@
 use super::StateTreeVisitor;
-use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault;
-use radix_engine_interface::{
+use radix_engine_system_interface::blueprints::resource::LiquidNonFungibleVault;
+use radix_engine_system_interface::{
     blueprints::resource::LiquidFungibleResource,
     types::{NodeId, ResourceAddress},
 };

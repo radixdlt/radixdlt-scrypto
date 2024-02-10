@@ -8,12 +8,12 @@ use crate::types::Condition;
 use radix_engine_common::prelude::{
     scrypto_decode, scrypto_encode, Hash, ScryptoValue, VersionedScryptoSchema,
 };
-use radix_engine_interface::api::{FieldIndex, ModuleId};
-use radix_engine_interface::blueprints::package::{
+use radix_engine_system_interface::api::{FieldIndex, ModuleId};
+use radix_engine_system_interface::blueprints::package::{
     BlueprintDefinition, BlueprintPayloadIdentifier, BlueprintType, KeyOrValue,
 };
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
+use radix_engine_system_interface::types::*;
+use radix_engine_system_interface::*;
 use substate_stores_interface::interface::ListableSubstateDatabase;
 use substate_stores_interface::interface::SubstateDatabase;
 

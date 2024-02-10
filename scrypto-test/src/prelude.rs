@@ -46,28 +46,28 @@ pub use substate_stores_interface::db_key_mapper::*;
 pub use substate_stores_interface::interface::*;
 
 /* Radix Engine Interface */
-pub use radix_engine_interface::api::actor_api::*;
-pub use radix_engine_interface::api::actor_index_api::*;
-pub use radix_engine_interface::api::actor_key_value_entry_api::*;
-pub use radix_engine_interface::api::actor_sorted_index_api::*;
-pub use radix_engine_interface::api::blueprint_api::*;
-pub use radix_engine_interface::api::field_api::*;
-pub use radix_engine_interface::api::key_value_entry_api::*;
-pub use radix_engine_interface::api::key_value_store_api::*;
-pub use radix_engine_interface::api::node_modules::*;
-pub use radix_engine_interface::api::object_api::*;
-pub use radix_engine_interface::api::system_modules::transaction_runtime_api::*;
-pub use radix_engine_interface::api::system_modules::*;
-pub use radix_engine_interface::api::*;
-pub use radix_engine_interface::blueprints::access_controller::*;
-pub use radix_engine_interface::blueprints::account::*;
-pub use radix_engine_interface::blueprints::consensus_manager::*;
-pub use radix_engine_interface::blueprints::identity::*;
-pub use radix_engine_interface::blueprints::macros::*;
-pub use radix_engine_interface::blueprints::package::*;
-pub use radix_engine_interface::blueprints::pool::*;
-pub use radix_engine_interface::blueprints::resource::*;
-pub use radix_engine_interface::blueprints::transaction_processor::*;
+pub use radix_engine_system_interface::api::actor_api::*;
+pub use radix_engine_system_interface::api::actor_index_api::*;
+pub use radix_engine_system_interface::api::actor_key_value_entry_api::*;
+pub use radix_engine_system_interface::api::actor_sorted_index_api::*;
+pub use radix_engine_system_interface::api::blueprint_api::*;
+pub use radix_engine_system_interface::api::field_api::*;
+pub use radix_engine_system_interface::api::key_value_entry_api::*;
+pub use radix_engine_system_interface::api::key_value_store_api::*;
+pub use radix_engine_system_interface::api::node_modules::*;
+pub use radix_engine_system_interface::api::object_api::*;
+pub use radix_engine_system_interface::api::system_modules::transaction_runtime_api::*;
+pub use radix_engine_system_interface::api::system_modules::*;
+pub use radix_engine_system_interface::api::*;
+pub use radix_engine_system_interface::blueprints::access_controller::*;
+pub use radix_engine_system_interface::blueprints::account::*;
+pub use radix_engine_system_interface::blueprints::consensus_manager::*;
+pub use radix_engine_system_interface::blueprints::identity::*;
+pub use radix_engine_system_interface::blueprints::macros::*;
+pub use radix_engine_system_interface::blueprints::package::*;
+pub use radix_engine_system_interface::blueprints::pool::*;
+pub use radix_engine_system_interface::blueprints::resource::*;
+pub use radix_engine_system_interface::blueprints::transaction_processor::*;
 
 /* Native SDK */
 pub use native_sdk::account::*;
@@ -83,7 +83,7 @@ pub use sbor::*;
 
 /* Types */
 pub use radix_engine_common::prelude::*;
-pub use radix_engine_interface::prelude::*;
+pub use radix_engine_system_interface::prelude::*;
 pub use transaction::prelude::*;
 
 /* This Crate */

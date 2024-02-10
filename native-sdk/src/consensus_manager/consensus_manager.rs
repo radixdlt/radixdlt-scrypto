@@ -7,7 +7,7 @@ use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::ComponentAddress;
-use radix_engine_system_api::ClientObjectApi;
+use radix_engine_system_interface::ClientObjectApi;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug)]

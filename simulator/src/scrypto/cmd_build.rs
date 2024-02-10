@@ -1,7 +1,7 @@
 use crate::scrypto::*;
 use crate::utils::*;
 use clap::Parser;
-use radix_engine_interface::prelude::Level;
+use radix_engine_common::prelude::Level;
 use std::env::current_dir;
 use std::path::PathBuf;
 

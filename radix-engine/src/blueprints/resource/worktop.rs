@@ -5,9 +5,9 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_substates::FieldSubstate;
 use crate::types::*;
 use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManager};
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, ACTOR_STATE_SELF};
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::{ClientApi, ACTOR_STATE_SELF};
+use radix_engine_system_interface::blueprints::resource::*;
 
 #[derive(Debug, ScryptoSbor)]
 pub struct WorktopSubstate {

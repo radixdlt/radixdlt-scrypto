@@ -1,7 +1,7 @@
 use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
+use radix_engine_system_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use scrypto_test::prelude::*;
 
 // We run tests in this file to produce common manifest transformation costs for Core Apps, such as

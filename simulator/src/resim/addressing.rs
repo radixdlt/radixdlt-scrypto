@@ -2,7 +2,7 @@ use radix_engine::types::{
     AddressBech32Decoder, AddressBech32Encoder, ComponentAddress, NonFungibleGlobalId,
     PackageAddress, ResourceAddress,
 };
-use radix_engine_interface::{
+use radix_engine_system_interface::{
     blueprints::resource::{require, AccessRule, ParseNonFungibleGlobalIdError},
     rule,
 };

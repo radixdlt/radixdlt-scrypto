@@ -1,9 +1,6 @@
 use crate::prelude::ResourceManager;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::types::NonFungibleData;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
+use radix_engine_common::prelude::*;
+use radix_engine_common::*;
 use sbor::rust::marker::PhantomData;
 
 /// Represents a non-fungible unit.

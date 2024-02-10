@@ -22,8 +22,8 @@ use radix_engine::prelude::node_modules::ModuleConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
 use radix_engine::types::*;
 use radix_engine::vm::OverridePackageCode;
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::blueprints::pool::{
+use radix_engine_system_interface::blueprints::package::PackageDefinition;
+use radix_engine_system_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
 };

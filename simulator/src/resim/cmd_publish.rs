@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::blueprints::models::*;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::{
+use radix_engine_system_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, BlueprintPayloadDef, FunctionSchema,
     IndexedStateSchema, PackageExport, VmType, *,
 };

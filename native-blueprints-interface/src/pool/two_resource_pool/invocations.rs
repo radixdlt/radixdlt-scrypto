@@ -3,6 +3,7 @@ use crate::resource::*;
 use radix_engine_common::data::manifest::model::*;
 use radix_engine_common::define_type_info_marker;
 use radix_engine_common::math::*;
+use radix_engine_common::markers::*;
 use radix_engine_common::prelude::*;
 use radix_engine_common::*;
 

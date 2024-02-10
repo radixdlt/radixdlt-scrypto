@@ -1,4 +1,4 @@
-use radix_engine_interface::{prelude::PublicKey, types::ComponentAddress};
+use radix_engine_system_interface::{prelude::PublicKey, types::ComponentAddress};
 use transaction::prelude::*;
 
 use crate::internal_prelude::ScenarioCore;

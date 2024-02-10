@@ -5,11 +5,11 @@ use crate::internal_prelude::*;
 use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::{
+use radix_engine_system_interface::api::{
     ClientApi, FieldValue, LockFlags, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::types::*;
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NonFungibleVaultError {

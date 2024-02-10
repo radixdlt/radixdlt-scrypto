@@ -8,8 +8,8 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
-use radix_engine_interface::prelude::node_modules::auth::AuthAddresses;
-use radix_engine_interface::prelude::NetworkDefinition;
+use radix_engine_system_interface::prelude::node_modules::auth::AuthAddresses;
+use radix_engine_system_interface::prelude::NetworkDefinition;
 use substate_stores_interface::interface::SubstateDatabase;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,

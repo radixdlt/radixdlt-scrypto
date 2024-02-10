@@ -12,8 +12,8 @@ use crate::track::interface::{
 use radix_engine_common::prelude::{NodeId, PartitionNumber};
 use radix_engine_common::types::{SortedKey, SubstateKey};
 use radix_engine_common::ScryptoSbor;
-use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::types::IndexedScryptoValue;
+use radix_engine_system_interface::api::LockFlags;
+use radix_engine_system_interface::types::IndexedScryptoValue;
 use sbor::prelude::Vec;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::LinkedList;

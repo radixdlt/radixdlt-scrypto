@@ -3,7 +3,7 @@ use crate::resource::*;
 use arbitrary::Arbitrary;
 use radix_engine_common::define_type_info_marker;
 use radix_engine_common::prelude::*;
-use sbor::rust::fmt::Debug;
+use radix_engine_common::markers::*;
 
 pub const IDENTITY_BLUEPRINT: &str = "Identity";
 

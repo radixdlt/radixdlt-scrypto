@@ -2,14 +2,14 @@ use crate::internal_prelude::*;
 use crate::types::*;
 use crate::{errors::*, event_schema, roles_template};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_STATE_SELF};
-use radix_engine_interface::blueprints::package::{
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::node_modules::metadata::*;
+use radix_engine_system_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_STATE_SELF};
+use radix_engine_system_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
-use radix_engine_interface::schema::{
+use radix_engine_system_interface::schema::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
 };
 

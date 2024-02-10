@@ -1,13 +1,13 @@
 use crate::blueprints::pool::v1::constants::*;
 use radix_engine_common::types::EntityType;
 use radix_engine_common::{constants::*, ScryptoSbor};
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::types::BlueprintId;
+use radix_engine_system_interface::blueprints::access_controller::*;
+use radix_engine_system_interface::blueprints::account::*;
+use radix_engine_system_interface::blueprints::consensus_manager::*;
+use radix_engine_system_interface::blueprints::identity::*;
+use radix_engine_system_interface::blueprints::package::*;
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::types::BlueprintId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IDAllocation {

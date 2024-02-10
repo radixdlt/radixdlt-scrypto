@@ -6,8 +6,8 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags};
-use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_system_interface::api::{AttachedModuleId, ClientApi, LockFlags};
+use radix_engine_system_interface::blueprints::package::PackageDefinition;
 use scrypto_test::prelude::*;
 use transaction::builder::ManifestBuilder;
 

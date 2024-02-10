@@ -21,24 +21,22 @@ pub use crate::{
 // Radix Engine Interface
 //=========================
 
+pub use module_blueprints_interface::auth::*;
+pub use module_blueprints_interface::metadata::*;
+pub use module_blueprints_interface::*;
+pub use native_blueprints_interface::consensus_manager::TimePrecision;
+pub use native_blueprints_interface::resource::*;
 pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
     sign::Signed,
 };
-pub use radix_engine_interface::api::node_modules::auth::*;
-pub use radix_engine_interface::api::node_modules::metadata::*;
-pub use radix_engine_interface::api::node_modules::*;
-pub use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
-pub use radix_engine_interface::blueprints::resource::*;
-pub use radix_engine_interface::crypto::*;
-pub use radix_engine_interface::math::*;
-pub use radix_engine_interface::prelude::*;
-pub use radix_engine_interface::{
-    access_and_or, access_rule_node, burn_roles, dec, deposit_roles, freeze_roles, i,
-    internal_roles, manifest_args, metadata, metadata_init, metadata_init_set_entry,
-    metadata_roles, mint_roles, non_fungible_data_update_roles, pdec, recall_roles, role_entry,
-    roles2, rule, scrypto_args, withdraw_roles, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
-    ScryptoEvent, ScryptoSbor,
+pub use radix_engine_common::crypto::*;
+pub use radix_engine_common::math::*;
+pub use radix_engine_common::prelude::*;
+pub use radix_engine_common::{
+    access_and_or, access_rule_node, i, internal_roles, manifest_args, metadata, metadata_init,
+    metadata_init_set_entry, role_entry, roles2, rule, scrypto_args, ScryptoCategorize,
+    ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
 };
 
 //=======
@@ -48,7 +46,7 @@ pub use radix_engine_interface::{
 pub use sbor::{Categorize, Decode, DecodeError, Encode, Sbor};
 
 // Needed for macros
-pub use radix_engine_interface::radix_engine_common;
+pub use radix_engine_common::radix_engine_common;
 
 /// We should always `UncheckedUrl` in Scrypto, as the validation logic is heavy.
 /// Thus, this type alias is added.

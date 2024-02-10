@@ -25,22 +25,22 @@ use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
 use crate::types::*;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::{ClientBlueprintApi, CollectionIndex};
-use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
-use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::transaction_processor::{
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::ClientObjectApi;
+use radix_engine_system_interface::api::{ClientBlueprintApi, CollectionIndex};
+use radix_engine_system_interface::blueprints::account::ACCOUNT_BLUEPRINT;
+use radix_engine_system_interface::blueprints::identity::IDENTITY_BLUEPRINT;
+use radix_engine_system_interface::blueprints::package::*;
+use radix_engine_system_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use radix_engine_interface::hooks::OnDropInput;
-use radix_engine_interface::hooks::OnDropOutput;
-use radix_engine_interface::hooks::OnMoveInput;
-use radix_engine_interface::hooks::OnMoveOutput;
-use radix_engine_interface::hooks::OnVirtualizeInput;
-use radix_engine_interface::hooks::OnVirtualizeOutput;
-use radix_engine_interface::schema::RefTypes;
+use radix_engine_system_interface::hooks::OnDropInput;
+use radix_engine_system_interface::hooks::OnDropOutput;
+use radix_engine_system_interface::hooks::OnMoveInput;
+use radix_engine_system_interface::hooks::OnMoveOutput;
+use radix_engine_system_interface::hooks::OnVirtualizeInput;
+use radix_engine_system_interface::hooks::OnVirtualizeOutput;
+use radix_engine_system_interface::schema::RefTypes;
 use transaction::model::PreAllocatedAddress;
 
 #[derive(Clone)]

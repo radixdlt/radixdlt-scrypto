@@ -6,7 +6,8 @@ edition = "2021"
 [dependencies]
 substate-stores-interface = { path = "../substate-stores-interface", default-features = false, optional = true }
 substate-stores = { path = "../substate-stores", default-features = false, optional = true }
-radix-engine-system-api = { path = "../radix-engine-system-api", default-features = false, optional = true }
+radix-engine-system-interface = { path = "../radix-engine-system-interface", default-features = false, optional = true }
+
 fixedstr = "0.2.9"
 shared_memory = { version = "0.12.4", optional = true }
 plotters = { version = "0.3.4", optional = true }
@@ -22,5 +23,5 @@ bench = false
 default = []
 resource_tracker = ["dep:shared_memory"]
 rocksdb = ["dep:plotters", "dep:linreg", "dep:blake2", "dep:rand", "substate-stores/std", 
-           "substate-stores-interface/std", "radix-engine-system-api/std"]
+           "substate-stores-interface/std", "radix-engine-system-interface/std"]
 ram_metrics = []

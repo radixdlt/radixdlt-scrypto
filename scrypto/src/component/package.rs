@@ -1,13 +1,12 @@
 use super::HasTypeInfo;
 use crate::prelude::{Global, HasStub, ObjectStub, ObjectStubHandle};
-use radix_engine_common::prelude::PACKAGE_PACKAGE;
-use radix_engine_interface::blueprints::package::{
+use native_blueprints_interface::package::{
     PackageClaimRoyaltiesInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
 };
-use radix_engine_interface::blueprints::resource::Bucket;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
-use sbor::rust::prelude::*;
+use native_blueprints_interface::resource::Bucket;
+use radix_engine_common::prelude::PACKAGE_PACKAGE;
+use radix_engine_common::prelude::*;
+use radix_engine_common::*;
 
 pub type Package = Global<PackageStub>;
 

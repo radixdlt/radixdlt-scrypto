@@ -1,6 +1,6 @@
 use super::RoyaltyRecipient;
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_engine_system_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::*;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]

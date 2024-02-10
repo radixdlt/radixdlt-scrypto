@@ -12,8 +12,8 @@ use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use num_traits::Zero;
-use radix_engine_interface::api::{ClientObjectApi, LockFlags, ModuleId};
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_system_interface::api::{ClientObjectApi, LockFlags, ModuleId};
+use radix_engine_system_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
 pub struct Authorization;

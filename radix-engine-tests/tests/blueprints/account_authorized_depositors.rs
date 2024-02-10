@@ -2,7 +2,7 @@ use radix_engine::blueprints::account::AccountError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::account::*;
+use radix_engine_system_interface::blueprints::account::*;
 use scrypto_test::prelude::TestRunnerBuilder;
 use transaction::prelude::*;
 

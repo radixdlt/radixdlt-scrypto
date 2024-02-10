@@ -1,22 +1,15 @@
+use crate::component::*;
 use crate::modules::HasRoleAssignment;
-use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
+use crate::prelude::{ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
 use core::ops::Deref;
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
-};
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::RESOURCE_ADDRESS_TYPE;
-use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
-use sbor::rust::prelude::*;
-use sbor::*;
-use scrypto::component::HasStub;
+use module_blueprints_interface::metadata::{METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE};
+use native_blueprints_interface::resource::*;
+use radix_engine_common::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;
+use radix_engine_common::data::scrypto::well_known_scrypto_custom_types::RESOURCE_ADDRESS_TYPE;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::*;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]

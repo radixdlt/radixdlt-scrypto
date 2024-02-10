@@ -4,19 +4,20 @@ version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
+utils = { path = "../utils", default-features = false }
+sbor = { path = "../sbor", default-features = false }
+radix-engine-common = { path = "../radix-engine-common", default-features = false }
+blueprint-schema = { path = "../blueprint-schema", default-features = false }
+native-blueprints-interface = { path = "../native-blueprints-interface", default-features = false }
+module-blueprints-interface = { path = "../module-blueprints-interface", default-features = false }
+radix-engine-system-interface = { path = "../radix-engine-system-interface", default-features = false }
+scrypto-derive = { path = "../scrypto-derive", default-features = false }
+
+# External dependencies
 hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 num-bigint = { version = "0.4.3", default-features = false }
 bech32 = { version = "0.9.0", default-features = false }
-radix-engine-common = { path = "../radix-engine-common", default-features = false }
-radix-engine-system-api = { path = "../radix-engine-system-api", default-features = false }
-radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
-sbor = { path = "../sbor", default-features = false }
-blueprint-schema = { path = "../blueprint-schema", default-features = false }
-scrypto-derive = { path = "../scrypto-derive", default-features = false }
-
-# External dependencies
-utils = { path = "../utils", default-features = false }
 paste = { version = "1.0.13" }
 serde = { version = "1.0.144", default-features = false, optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
@@ -26,8 +27,8 @@ minicov = { version = "0.3", optional = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "blueprint-schema/std", "scrypto-derive/std", "strum/std", "radix-engine-system-api/std", "radix-engine-derive/std", "utils/std"]
-alloc = ["hex/alloc", "sbor/alloc", "blueprint-schema/alloc", "scrypto-derive/alloc", "radix-engine-system-api/alloc", "radix-engine-derive/alloc", "utils/alloc"]
+std = ["hex/std", "sbor/std", "blueprint-schema/std", "scrypto-derive/std", "radix-engine-system-interface/std",  "native-blueprints-interface/std",  "module-blueprints-interface/std", "strum/std", "utils/std"]
+alloc = ["hex/alloc", "sbor/alloc", "blueprint-schema/alloc", "scrypto-derive/alloc", "radix-engine-system-interface/alloc", "native-blueprints-interface/alloc", "module-blueprints-interface/alloc", "utils/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]

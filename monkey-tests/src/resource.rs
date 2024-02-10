@@ -13,16 +13,16 @@ use radix_engine_common::prelude::{
     NonFungibleLocalId, ScryptoValue,
 };
 use radix_engine_common::types::{ComponentAddress, ResourceAddress};
-use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_SELF};
-use radix_engine_interface::data::manifest::ManifestArgs;
-use radix_engine_interface::prelude::{
+use radix_engine_system_interface::api::{AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_SELF};
+use radix_engine_system_interface::data::manifest::ManifestArgs;
+use radix_engine_system_interface::prelude::{
     Bucket, FieldValue, FungibleResourceManagerMintInput,
     NonFungibleResourceManagerMintManifestInput, OwnerRole, Vault,
     FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
     NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT, VAULT_PUT_IDENT, VAULT_TAKE_ADVANCED_IDENT,
     VAULT_TAKE_IDENT,
 };
-use radix_engine_interface::types::IndexedScryptoValue;
+use radix_engine_system_interface::types::IndexedScryptoValue;
 use scrypto::prelude::indexmap::IndexMap;
 use transaction::builder::ManifestBuilder;
 use utils::indexmap;

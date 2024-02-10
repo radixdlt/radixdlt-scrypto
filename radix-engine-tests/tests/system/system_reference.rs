@@ -4,11 +4,11 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
-use radix_engine_interface::api::{
+use radix_engine_system_interface::api::key_value_store_api::KeyValueStoreDataSchema;
+use radix_engine_system_interface::api::{
     ClientApi, FieldValue, LockFlags, ACTOR_REF_AUTH_ZONE, ACTOR_STATE_SELF,
 };
-use radix_engine_interface::blueprints::package::{KeyOrValue, PackageDefinition};
+use radix_engine_system_interface::blueprints::package::{KeyOrValue, PackageDefinition};
 use scrypto_test::prelude::*;
 use transaction::builder::ManifestBuilder;
 

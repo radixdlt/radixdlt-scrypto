@@ -1,6 +1,6 @@
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::types::*;
-use radix_engine_interface::api::{AttachedModuleId, ModuleId};
+use radix_engine_system_interface::api::{AttachedModuleId, ModuleId};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstanceContext {

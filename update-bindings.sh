@@ -7,9 +7,9 @@ resim="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin resim $@ --"
 scrypto_bindgen="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin scrypto-bindgen $@ --"
 
 file_contents="
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_engine_system_interface::blueprints::access_controller::*;
+use radix_engine_system_interface::blueprints::account::*;
+use radix_engine_system_interface::blueprints::consensus_manager::*;
 
 use crate::prelude::*;
 

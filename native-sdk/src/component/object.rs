@@ -3,8 +3,8 @@ use crate::modules::role_assignment::RoleAssignment;
 use module_blueprints_interface::metadata::*;
 use radix_engine_common::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_engine_common::prelude::*;
-use radix_engine_system_api::ClientApi;
-use radix_engine_system_api::FieldValue;
+use radix_engine_system_interface::ClientApi;
+use radix_engine_system_interface::FieldValue;
 use utils::indexmap;
 
 #[derive(Debug)]

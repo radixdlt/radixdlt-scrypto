@@ -2,14 +2,11 @@ use super::ScryptoUncheckedProof;
 use crate::prelude::ResourceManager;
 use crate::resource::NonFungible;
 use crate::runtime::LocalAuthZone;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::NonFungibleData;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
-use sbor::rust::prelude::*;
+use native_blueprints_interface::resource::*;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::*;
+use radix_engine_common::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 //=============

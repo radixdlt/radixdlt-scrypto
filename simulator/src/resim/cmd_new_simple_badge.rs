@@ -1,10 +1,10 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{
+use radix_engine_system_interface::api::node_modules::metadata::{
     MetadataInit, MetadataValue, UncheckedUrl,
 };
-use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_system_interface::api::node_modules::ModuleConfig;
 
 use crate::resim::*;
 

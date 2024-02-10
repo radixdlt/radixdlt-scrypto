@@ -12,7 +12,7 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
-use radix_engine_interface::api::LockFlags;
+use radix_engine_system_interface::api::LockFlags;
 use radix_engine_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
 };

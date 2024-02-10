@@ -32,7 +32,7 @@ impl NewPackage {
             scrypto,
             transaction,
             radix_engine,
-            radix_engine_interface,
+            radix_engine_common,
             scrypto_test,
             optional_scrypto_test,
         ) = if self.local {
@@ -46,7 +46,7 @@ impl NewPackage {
                 format!("{{ path = \"{}/scrypto\" }}", scrypto_dir),
                 format!("{{ path = \"{}/transaction\" }}", scrypto_dir),
                 format!("{{ path = \"{}/radix-engine\" }}", scrypto_dir),
-                format!("{{ path = \"{}/radix-engine-system-api\" }}", scrypto_dir),
+                format!("{{ path = \"{}/radix-engine-system-interface\" }}", scrypto_dir),
                 format!("{{ path = \"{}/scrypto-test\" }}", scrypto_dir),
                 format!(
                     "{{ path = \"{}/scrypto-test\", optional = true }}",
@@ -78,7 +78,7 @@ impl NewPackage {
                     .replace("${scrypto}", &scrypto)
                     .replace("${transaction}", &transaction)
                     .replace("${radix-engine}", &radix_engine)
-                    .replace("${radix-engine-system-api}", &radix_engine_interface)
+                    .replace("${radix-engine-system-interface}", &radix_engine_common)
                     .replace("${scrypto-test}", &scrypto_test)
                     .replace("${optional-scrypto-test}", &optional_scrypto_test),
             )

@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoVmV1Api;
-use radix_engine_interface::types::Level;
+use radix_engine_common::types::Level;
 use sbor::rust::string::String;
 
 /// A utility for logging messages.

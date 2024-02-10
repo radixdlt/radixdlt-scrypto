@@ -3,7 +3,7 @@ use crate::resource::*;
 use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_common::define_type_info_marker;
 use radix_engine_common::prelude::*;
-use radix_engine_common::traits::Global;
+use radix_engine_common::markers::*;
 use radix_engine_common::types::GlobalAddressReservation;
 use sbor::rust::fmt::Debug;
 use utils::rust::prelude::IndexSet;

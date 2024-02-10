@@ -4,7 +4,7 @@ use crate::kernel::kernel_callback_api::*;
 use crate::system::system_modules::execution_trace::*;
 use crate::track::interface::*;
 use crate::types::*;
-use radix_engine_interface::api::field_api::*;
+use radix_engine_system_interface::api::field_api::*;
 use substate_stores_interface::db_key_mapper::*;
 
 pub struct DroppedNode {

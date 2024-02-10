@@ -1,6 +1,6 @@
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
-use radix_engine_interface::rule;
+use radix_engine_system_interface::blueprints::resource::{require, FromPublicKey};
+use radix_engine_system_interface::rule;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

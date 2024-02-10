@@ -11,7 +11,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
-use radix_engine_interface::types::SubstateKey;
+use radix_engine_system_interface::types::SubstateKey;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]

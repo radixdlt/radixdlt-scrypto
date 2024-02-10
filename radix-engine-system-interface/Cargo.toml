@@ -1,5 +1,5 @@
 [package]
-name = "radix-engine-system-api"
+name = "radix-engine-system-interface"
 version = "1.2.0-dev"
 edition = "2021"
 

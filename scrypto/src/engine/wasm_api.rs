@@ -1,6 +1,5 @@
 // Re-export
-pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
-
+pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 use sbor::rust::vec::Vec;
 
 pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
@@ -28,7 +27,7 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
 
 /// Api make blueprint function calls
 pub mod blueprint {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         /// Invokes a blueprint function
@@ -47,7 +46,7 @@ pub mod blueprint {
 
 /// API to allocate/reserve global address
 pub mod addr {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         /// Reserves a global address for a given blueprint
@@ -68,7 +67,7 @@ pub mod addr {
 
 /// API to manipulate or get information about visible objects
 pub mod object {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         /// Creates a new object of a given blueprint defined in the same
@@ -144,9 +143,8 @@ pub mod object {
 
 /// API to manipulate or get information about the current actor
 pub mod actor {
-    use radix_engine_interface::api::field_api::FieldHandle;
-    use radix_engine_interface::api::{ActorRefHandle, ActorStateHandle};
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::*;
+    use radix_engine_system_interface::FieldHandle;
 
     super::wasm_extern_c! {
         /// Get the package address of the current actor
@@ -177,7 +175,7 @@ pub mod actor {
 }
 
 pub mod kv_store {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         /// Creates a new key value store
@@ -204,7 +202,7 @@ pub mod kv_store {
 
 /// API to manipulate or get information about an open Key Value Entry
 pub mod kv_entry {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         /// Reads the value in a Key Value entry
@@ -223,7 +221,7 @@ pub mod kv_entry {
 
 /// API to manipulate or get information about an open Field Entry
 pub mod field_entry {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         /// Reads the value in a field
@@ -238,7 +236,7 @@ pub mod field_entry {
 }
 
 pub mod costing {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         pub fn costing_get_execution_cost_unit_limit() -> u32;
@@ -259,7 +257,7 @@ pub mod costing {
 
 /// Various environment-based API calls
 pub mod system {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         /// Logs a string message
@@ -286,7 +284,7 @@ pub mod system {
 
 /// Various environment-based API calls
 pub mod crypto_utils {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         pub fn crypto_utils_bls12381_v1_verify(
@@ -322,7 +320,7 @@ pub mod crypto_utils {
 }
 
 pub mod buffer {
-    pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
+    pub use radix_engine_common::types::{Buffer, BufferId, Slice};
 
     super::wasm_extern_c! {
         /// Consumes a buffer by copying the contents into the specified destination.

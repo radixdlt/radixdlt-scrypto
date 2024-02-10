@@ -4,7 +4,7 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
-use radix_engine_interface::math::ParseDecimalError;
+use radix_engine_system_interface::math::ParseDecimalError;
 
 #[derive(Debug)]
 pub enum ParseResourceSpecifierError {

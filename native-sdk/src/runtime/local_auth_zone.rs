@@ -4,7 +4,7 @@ use radix_engine_common::data::scrypto::model::*;
 use radix_engine_common::data::scrypto::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::*;
-use radix_engine_system_api::{ClientApi, ACTOR_REF_AUTH_ZONE};
+use radix_engine_system_interface::{ClientApi, ACTOR_REF_AUTH_ZONE};
 use sbor::rust::prelude::*;
 
 pub struct LocalAuthZone {}

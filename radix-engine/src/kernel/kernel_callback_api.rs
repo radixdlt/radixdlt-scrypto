@@ -6,7 +6,7 @@ use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
 use crate::track::BootStore;
 use crate::types::*;
-use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::field_api::LockFlags;
 use transaction::prelude::PreAllocatedAddress;
 
 pub trait CallFrameReferences {

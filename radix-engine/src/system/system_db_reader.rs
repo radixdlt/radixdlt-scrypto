@@ -3,10 +3,10 @@ use radix_engine_common::prelude::{
     scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoEncode, ScryptoValue,
     VersionedScryptoSchema,
 };
-use radix_engine_interface::api::{AttachedModuleId, CollectionIndex, ModuleId};
-use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
+use radix_engine_system_interface::api::{AttachedModuleId, CollectionIndex, ModuleId};
+use radix_engine_system_interface::blueprints::package::*;
+use radix_engine_system_interface::types::*;
+use radix_engine_system_interface::*;
 use sbor::rust::prelude::*;
 use sbor::LocalTypeId;
 use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};

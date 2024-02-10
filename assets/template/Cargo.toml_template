@@ -12,7 +12,7 @@ scrypto = ${scrypto}
 scrypto-test = ${scrypto-test}
 transaction = ${transaction}
 radix-engine = ${radix-engine}
-radix-engine-system-api = ${radix-engine-system-api}
+radix-engine-system-interface = ${radix-engine-system-interface}
 ${package_name} = { path = ".", features = ["test"] }
 
 [profile.release]

@@ -1,7 +1,7 @@
 use crate::{SystemTestFuzzer, TwoPoolMeta};
 use radix_engine::types::FromRepr;
 use radix_engine_common::prelude::ComponentAddress;
-use radix_engine_interface::blueprints::pool::{
+use radix_engine_system_interface::blueprints::pool::{
     TwoResourcePoolContributeManifestInput, TwoResourcePoolProtectedDepositManifestInput,
     TwoResourcePoolProtectedWithdrawManifestInput, TwoResourcePoolRedeemManifestInput,
     TWO_RESOURCE_POOL_CONTRIBUTE_IDENT, TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,

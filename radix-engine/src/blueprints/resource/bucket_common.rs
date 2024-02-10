@@ -1,8 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_system_interface::api::ClientApi;
+use radix_engine_system_interface::blueprints::resource::*;
 
 #[derive(Debug)]
 pub struct DroppedFungibleBucket {

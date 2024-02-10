@@ -2,7 +2,7 @@ use super::*;
 use crate::blueprints::util::*;
 use crate::system::attached_modules::role_assignment::*;
 
-use radix_engine_interface::prelude::*;
+use radix_engine_system_interface::prelude::*;
 
 #[derive(Debug, Clone, Default)]
 pub struct RoleAssignmentDatabaseChecker {

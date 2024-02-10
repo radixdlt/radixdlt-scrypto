@@ -3,7 +3,7 @@ use radix_engine::{
     transaction::TransactionReceipt,
     types::*,
 };
-use radix_engine_interface::types::Level;
+use radix_engine_system_interface::types::Level;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

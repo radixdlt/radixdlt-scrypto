@@ -1,8 +1,8 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine::utils::validate_call_arguments_to_native_components;
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::manifest::manifest_decode;
+use radix_engine_system_interface::crypto::hash;
+use radix_engine_system_interface::data::manifest::manifest_decode;
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::decompile;

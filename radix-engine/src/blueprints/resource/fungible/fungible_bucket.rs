@@ -3,10 +3,10 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::{
+use radix_engine_system_interface::api::{
     ClientApi, FieldValue, LockFlags, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_system_interface::blueprints::resource::*;
 
 pub struct FungibleBucket;
 

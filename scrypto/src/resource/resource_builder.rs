@@ -1,21 +1,12 @@
 use self::private::NoNonFungibleDataSchema;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
-use radix_engine_common::prelude::ScryptoCategorize;
-use radix_engine_common::prelude::ScryptoDecode;
-use radix_engine_common::prelude::ScryptoEncode;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_PACKAGE;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::NonFungibleData;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
-use sbor::rust::prelude::*;
+use native_blueprints_interface::resource::*;
+use radix_engine_common::constants::RESOURCE_PACKAGE;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_common::math::Decimal;
+use radix_engine_common::prelude::*;
+use radix_engine_common::*;
 use sbor::FixedEnumVariant;
 use scrypto::resource::ResourceManager;
 
@@ -234,7 +225,7 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::mint_roles;
+    /// use radix_engine_common::mint_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -263,7 +254,7 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::burn_roles;
+    /// use radix_engine_common::burn_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -320,7 +311,7 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::freeze_roles;
+    /// use radix_engine_common::freeze_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -349,7 +340,7 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::withdraw_roles;
+    /// use radix_engine_common::withdraw_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -482,7 +473,7 @@ impl<
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::non_fungible_data_update_roles;
+    /// use radix_engine_common::non_fungible_data_update_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = XRD;
@@ -961,7 +952,7 @@ impl<
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
+    use native_blueprints_interface::resource::ResourceFeature;
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;

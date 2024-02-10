@@ -8,13 +8,13 @@ use lazy_static::lazy_static;
 use native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
 use native_sdk::runtime::Runtime;
 use num_traits::pow::Pow;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, ACTOR_STATE_SELF};
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::*;
+use radix_engine_system_interface::api::field_api::LockFlags;
+use radix_engine_system_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_system_interface::api::node_modules::ModuleConfig;
+use radix_engine_system_interface::api::{ClientApi, FieldValue, GenericArgs, ACTOR_STATE_SELF};
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::math::Decimal;
+use radix_engine_system_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 

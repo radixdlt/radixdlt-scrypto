@@ -1,9 +1,9 @@
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::types::*;
-use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::crypto::Hash;
+use radix_engine_system_interface::api::actor_api::EventFlags;
+use radix_engine_system_interface::api::ModuleId;
+use radix_engine_system_interface::crypto::Hash;
 
 #[derive(Debug, Clone)]
 pub struct Event {

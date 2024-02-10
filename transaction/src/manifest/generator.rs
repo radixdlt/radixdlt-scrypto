@@ -9,54 +9,54 @@ use radix_engine_common::constants::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
-use radix_engine_interface::address::AddressBech32Decoder;
-use radix_engine_interface::api::node_modules::auth::{
+use radix_engine_system_interface::address::AddressBech32Decoder;
+use radix_engine_system_interface::api::node_modules::auth::{
     ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
-use radix_engine_interface::api::node_modules::metadata::{
+use radix_engine_system_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_system_interface::api::node_modules::metadata::{
     METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
 };
-use radix_engine_interface::api::node_modules::royalty::{
+use radix_engine_system_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::blueprints::access_controller::{
+use radix_engine_system_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::account::{
+use radix_engine_system_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT;
-use radix_engine_interface::blueprints::identity::{
+use radix_engine_system_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT;
+use radix_engine_system_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
-use radix_engine_interface::blueprints::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
-use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
-use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::resource::{
+use radix_engine_system_interface::blueprints::package::PACKAGE_BLUEPRINT;
+use radix_engine_system_interface::blueprints::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
+use radix_engine_system_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
+use radix_engine_system_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
+use radix_engine_system_interface::blueprints::resource::*;
+use radix_engine_system_interface::blueprints::resource::{
     NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
-use radix_engine_interface::blueprints::resource::{
+use radix_engine_system_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
-use radix_engine_interface::constants::{
+use radix_engine_system_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
-use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::manifest::model::*;
-use radix_engine_interface::data::manifest::*;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::math::{Decimal, PreciseDecimal};
-use radix_engine_interface::types::GlobalAddress;
-use radix_engine_interface::types::InternalAddress;
-use radix_engine_interface::types::ResourceAddress;
-use radix_engine_interface::*;
+use radix_engine_system_interface::crypto::Hash;
+use radix_engine_system_interface::data::manifest::model::*;
+use radix_engine_system_interface::data::manifest::*;
+use radix_engine_system_interface::data::scrypto::model::*;
+use radix_engine_system_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_system_interface::types::GlobalAddress;
+use radix_engine_system_interface::types::InternalAddress;
+use radix_engine_system_interface::types::ResourceAddress;
+use radix_engine_system_interface::*;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::IndexMap;
 use sbor::rust::str::FromStr;
@@ -1489,19 +1489,19 @@ mod tests {
     use radix_engine_common::constants::CONSENSUS_MANAGER;
     use radix_engine_common::manifest_args;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
-    use radix_engine_interface::address::AddressBech32Decoder;
-    use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-    use radix_engine_interface::api::node_modules::ModuleConfig;
-    use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
-    use radix_engine_interface::blueprints::resource::{
+    use radix_engine_system_interface::address::AddressBech32Decoder;
+    use radix_engine_system_interface::api::node_modules::metadata::MetadataValue;
+    use radix_engine_system_interface::api::node_modules::ModuleConfig;
+    use radix_engine_system_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
+    use radix_engine_system_interface::blueprints::resource::{
         NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintRuidManifestInput,
     };
-    use radix_engine_interface::crypto::Secp256k1PrivateKey;
-    use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::schema::BlueprintStateSchemaInit;
-    use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
-    use radix_engine_interface::{dec, pdec, ScryptoSbor};
+    use radix_engine_system_interface::crypto::Secp256k1PrivateKey;
+    use radix_engine_system_interface::network::NetworkDefinition;
+    use radix_engine_system_interface::schema::BlueprintStateSchemaInit;
+    use radix_engine_system_interface::types::{NonFungibleData, PackageRoyaltyConfig};
+    use radix_engine_system_interface::{dec, pdec, ScryptoSbor};
     use utils::prelude::IndexMap;
 
     #[macro_export]

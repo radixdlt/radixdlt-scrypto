@@ -124,7 +124,7 @@ macro_rules! declare_native_blueprint_state {
                 use $crate::track::interface::*;
                 use $crate::errors::*;
                 use $crate::system::system::*;
-                use radix_engine_interface::api::*;
+                use radix_engine_system_interface::api::*;
                 //--------------------------------------------------------
                 // MODELS
                 //--------------------------------------------------------
@@ -967,7 +967,7 @@ mod tests {
     #[derive(Debug, PartialEq, Eq, Sbor)]
     pub struct TestBlueprintMyCoolSortedIndexV1;
 
-    use radix_engine_interface::blueprints::package::*;
+    use radix_engine_system_interface::blueprints::package::*;
 
     #[allow(dead_code)]
     pub enum TestBlueprintPartitionOffset {

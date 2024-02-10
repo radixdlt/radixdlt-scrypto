@@ -4,7 +4,7 @@ use crate::{
     transaction::{AbortReason, CostingParameters},
     types::*,
 };
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_engine_system_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::cmp::min;
 use transaction::prelude::TransactionCostingParameters;
 

@@ -1,22 +1,21 @@
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::modules::ModuleHandle;
-use crate::runtime::*;
 use crate::*;
-use radix_engine_common::types::RoyaltyAmount;
-use radix_engine_interface::api::node_modules::royalty::{
+use module_blueprints_interface::royalty::{
     ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentRoyaltyLockInput,
-    ComponentRoyaltySetInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,
+    ComponentRoyaltySetInput, COMPONENT_ROYALTY_CLAIMER_ROLE,
     COMPONENT_ROYALTY_CLAIMER_UPDATER_ROLE, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
     COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_LOCKER_ROLE,
     COMPONENT_ROYALTY_LOCKER_UPDATER_ROLE, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SETTER_ROLE, COMPONENT_ROYALTY_SETTER_UPDATER_ROLE,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::api::AttachedModuleId;
-use radix_engine_interface::blueprints::resource::Bucket;
-use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::types::ComponentRoyaltyConfig;
+use native_blueprints_interface::resource::Bucket;
+use radix_engine_common::constants::ROYALTY_MODULE_PACKAGE;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_common::prelude::*;
+use radix_engine_common::types::ComponentRoyaltyConfig;
+use radix_engine_common::types::RoyaltyAmount;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;

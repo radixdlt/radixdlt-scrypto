@@ -6,7 +6,7 @@ use radix_engine::{
     errors::{RuntimeError, SystemError},
     types::*,
 };
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_system_interface::blueprints::resource::FromPublicKey;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 use scrypto_test::prelude::{OpenSubstateError, ProcessSubstateKeyError};

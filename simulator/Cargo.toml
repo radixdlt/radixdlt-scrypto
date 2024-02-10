@@ -12,7 +12,7 @@ radix-engine = { path = "../radix-engine" }
 substate-stores-interface = { path = "../substate-stores-interface" }
 substate-stores = { path = "../substate-stores", features = ["rocksdb"] }
 substate-stores-queries = { path = "../substate-stores-queries" }
-radix-engine-system-api = { path = "../radix-engine-system-api" }
+radix-engine-system-interface = { path = "../radix-engine-system-interface" }
 radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
 transaction = { path = "../transaction" }
 flate2 = { version = "1.0.27" }

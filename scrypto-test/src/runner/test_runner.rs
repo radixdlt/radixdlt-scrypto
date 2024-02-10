@@ -17,24 +17,24 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
-use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
-use radix_engine_interface::blueprints::consensus_manager::{
+use radix_engine_system_interface::api::node_modules::auth::*;
+use radix_engine_system_interface::api::ModuleId;
+use radix_engine_system_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
+use radix_engine_system_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
     ConsensusManagerGetCurrentTimeInputV2, ConsensusManagerNextRoundInput, EpochChangeCondition,
     LeaderProposalHistory, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
     VALIDATOR_STAKE_AS_OWNER_IDENT,
 };
-use radix_engine_interface::blueprints::pool::{
+use radix_engine_system_interface::blueprints::pool::{
     OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
-use radix_engine_interface::constants::CONSENSUS_MANAGER;
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::time::Instant;
-use radix_engine_interface::{dec, freeze_roles, rule};
+use radix_engine_system_interface::constants::CONSENSUS_MANAGER;
+use radix_engine_system_interface::math::Decimal;
+use radix_engine_system_interface::network::NetworkDefinition;
+use radix_engine_system_interface::time::Instant;
+use radix_engine_system_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_native_events::to_typed_native_event;
 use radix_engine_queries::typed_substate_layout::*;
