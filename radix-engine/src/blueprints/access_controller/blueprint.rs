@@ -15,14 +15,14 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::object_modules::metadata::*;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};

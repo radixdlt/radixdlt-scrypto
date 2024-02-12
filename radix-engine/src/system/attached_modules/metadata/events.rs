@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::object_modules::metadata::MetadataValue;
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]
 pub struct SetMetadataEvent {

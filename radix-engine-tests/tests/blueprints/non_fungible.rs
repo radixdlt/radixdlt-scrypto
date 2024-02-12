@@ -5,7 +5,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::FromPublicKey; 
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_tests::common::*;

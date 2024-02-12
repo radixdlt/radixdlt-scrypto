@@ -16,7 +16,6 @@ use blueprint_schema_init::{
 };
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, GenericArgs, KVEntry, ModuleId, ACTOR_STATE_SELF,
 };
@@ -25,6 +24,7 @@ use radix_engine_interface::blueprints::package::{
     MethodAuthTemplate, PackageDefinition, RoleSpecification,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::object_modules::auth::*;
 use radix_engine_interface::types::*;
 
 use super::*;

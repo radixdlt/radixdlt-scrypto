@@ -393,10 +393,10 @@ macro_rules! metadata_init_set_entry {
 #[macro_export]
 macro_rules! metadata_init {
     () => ({
-        $crate::api::node_modules::metadata::MetadataInit::new()
+        $crate::object_modules::metadata::MetadataInit::new()
     });
     ( $($key:expr => $value:expr, $lock:ident;)* ) => ({
-        let mut metadata_init = $crate::api::node_modules::metadata::MetadataInit::new();
+        let mut metadata_init = $crate::object_modules::metadata::MetadataInit::new();
         $(
             $crate::metadata_init_set_entry!(metadata_init, $key, $value, $lock);
         )*

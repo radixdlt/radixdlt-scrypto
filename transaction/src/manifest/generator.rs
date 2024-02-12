@@ -11,14 +11,14 @@ use radix_engine_common::types::NodeId;
 use radix_engine_common::types::NonFungibleGlobalId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::AddressBech32Decoder;
-use radix_engine_interface::api::node_modules::auth::{
+use radix_engine_interface::object_modules::auth::{
     ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
-use radix_engine_interface::api::node_modules::metadata::{
+use radix_engine_interface::object_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::object_modules::metadata::{
     METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
 };
-use radix_engine_interface::api::node_modules::royalty::{
+use radix_engine_interface::object_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
@@ -1489,8 +1489,8 @@ mod tests {
     use radix_engine_common::manifest_args;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::AddressBech32Decoder;
-    use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-    use radix_engine_interface::api::node_modules::ModuleConfig;
+    use radix_engine_interface::object_modules::metadata::MetadataValue;
+    use radix_engine_interface::object_modules::ModuleConfig;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
         NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,

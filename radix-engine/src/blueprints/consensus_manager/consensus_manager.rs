@@ -11,8 +11,6 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::UncheckedUrl;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{
     AttachedModuleId, ClientApi, CollectionIndex, FieldValue, ACTOR_STATE_SELF,
@@ -20,6 +18,8 @@ use radix_engine_interface::api::{
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::object_modules::auth::AuthAddresses;
+use radix_engine_interface::object_modules::metadata::UncheckedUrl;
 use radix_engine_interface::{metadata_init, mint_roles, rule};
 
 const MILLIS_IN_SECOND: i64 = 1000;

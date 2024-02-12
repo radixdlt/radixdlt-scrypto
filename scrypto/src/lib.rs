@@ -42,7 +42,7 @@ pub use scrypto_derive::{blueprint, NonFungibleData};
 // Re-export Radix Engine Interface modules.
 extern crate radix_engine_interface;
 pub use radix_engine_interface::{
-    address, api, blueprints, constants, crypto, data, math, network, time, types,
+    address, api, blueprints, constants, crypto, data, math, network, object_modules, time, types,
 };
 
 // Re-export blueprint schema init, for use in `#[blueprint]` macro

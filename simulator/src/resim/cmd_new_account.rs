@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::require;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::types::FromPublicKey;

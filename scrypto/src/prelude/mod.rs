@@ -25,12 +25,12 @@ pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
     sign::Signed,
 };
-pub use radix_engine_interface::api::node_modules::metadata::*;
-pub use radix_engine_interface::api::node_modules::*;
 pub use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
 pub use radix_engine_interface::blueprints::resource::*;
 pub use radix_engine_interface::crypto::*;
 pub use radix_engine_interface::math::*;
+pub use radix_engine_interface::object_modules::metadata::*;
+pub use radix_engine_interface::object_modules::*;
 pub use radix_engine_interface::prelude::*;
 pub use radix_engine_interface::{
     access_and_or, access_rule_node, burn_roles, dec, deposit_roles, freeze_roles, i,

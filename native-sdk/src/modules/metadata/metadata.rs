@@ -1,11 +1,11 @@
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataCreateInput, MetadataCreateWithDataInput, MetadataInit, MetadataSetInput, MetadataVal,
-    METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_CREATE_WITH_DATA_IDENT, METADATA_SET_IDENT,
-};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::object_modules::metadata::{
+    MetadataCreateInput, MetadataCreateWithDataInput, MetadataInit, MetadataSetInput, MetadataVal,
+    METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_CREATE_WITH_DATA_IDENT, METADATA_SET_IDENT,
+};
 use sbor::rust::prelude::*;
 
 pub struct Metadata(pub Own);

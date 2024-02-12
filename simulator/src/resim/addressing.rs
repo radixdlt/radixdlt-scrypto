@@ -4,7 +4,7 @@ use radix_engine::types::{
 };
 use radix_engine_interface::types::ParseNonFungibleGlobalIdError;
 use radix_engine_interface::{
-    blueprints::resource::{require, AccessRule,  },
+    blueprints::resource::{require, AccessRule},
     rule,
 };
 use sbor::rust::fmt;

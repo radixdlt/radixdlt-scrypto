@@ -9,7 +9,7 @@ use blueprint_schema_init::{BlueprintFunctionsSchemaInit, ReceiverInfo};
 use blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::object_modules::metadata::MetadataInit;
 use sbor::basic_well_known_types::ANY_TYPE;
 use sbor::rust::prelude::*;
 use sbor::LocalTypeId;

@@ -10,11 +10,6 @@ use radix_engine_common::prelude::{
     scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
 use radix_engine_common::ScryptoSbor;
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataConversionError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
-    METADATA_SET_IDENT,
-};
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{AttachedModuleId, FieldValue};
 use radix_engine_interface::blueprints::resource::{
@@ -23,6 +18,11 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
+use radix_engine_interface::object_modules::metadata::{
+    MetadataConversionError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
+    METADATA_SET_IDENT,
+};
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Deref;
 use sbor::rust::ops::DerefMut;

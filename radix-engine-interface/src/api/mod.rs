@@ -9,7 +9,6 @@ pub mod execution_trace_api;
 pub mod field_api;
 pub mod key_value_entry_api;
 pub mod key_value_store_api;
-pub mod node_modules;
 pub mod object_api;
 pub mod transaction_runtime_api;
 

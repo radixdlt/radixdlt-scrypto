@@ -26,7 +26,7 @@ use sbor::Sbor;
 pub use vault::*;
 pub use worktop::*;
 
-use crate::api::node_modules::auth::RoleDefinition;
+use crate::object_modules::auth::RoleDefinition;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_common::math::*;
@@ -60,7 +60,7 @@ macro_rules! resource_roles {
             pub $updater_field: T,
         }
 
-        impl $roles_struct<$crate::api::node_modules::auth::RoleDefinition> {
+        impl $roles_struct<$crate::object_modules::auth::RoleDefinition> {
             pub fn to_role_init(self) -> $crate::blueprints::resource::RoleAssignmentInit {
                 let mut roles = $crate::blueprints::resource::RoleAssignmentInit::new();
                 roles.define_role($actor_field_name, self.$actor_field);
@@ -69,7 +69,7 @@ macro_rules! resource_roles {
             }
         }
 
-        impl Default for $roles_struct<$crate::api::node_modules::auth::RoleDefinition> {
+        impl Default for $roles_struct<$crate::object_modules::auth::RoleDefinition> {
             fn default() -> Self {
                 Self {
                     $actor_field: Some($default_rule),

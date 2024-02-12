@@ -7,7 +7,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemMo
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::object_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::types::FromPublicKey; 
 use substate_store_queries::typed_substate_layout::{
@@ -19,7 +19,7 @@ use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use scrypto::api::node_modules::*;
+use scrypto::object_modules::*;
 use scrypto_test::prelude::AuthError;
 use scrypto_test::prelude::*;
 

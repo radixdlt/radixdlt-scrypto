@@ -133,7 +133,7 @@ macro_rules! internal_roles {
 #[macro_export]
 macro_rules! internal_roles_struct {
     ($role_struct:ident, $($role:ident => $rule:expr;)* ) => ({
-        $role_struct::<$crate::api::node_modules::auth::RoleDefinition> {
+        $role_struct::<$crate::object_modules::auth::RoleDefinition> {
             $(
                 $role: {
                     $crate::role_definition_entry!($rule)
@@ -146,7 +146,7 @@ macro_rules! internal_roles_struct {
 #[macro_export]
 macro_rules! role_definition_entry {
     ($rule:expr) => {{
-        $crate::api::node_modules::auth::ToRoleEntry::to_role_entry($rule)
+        $crate::object_modules::auth::ToRoleEntry::to_role_entry($rule)
     }};
 }
 

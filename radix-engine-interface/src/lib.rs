@@ -10,6 +10,7 @@ pub mod api;
 pub mod blueprints;
 pub mod constants;
 pub mod hooks;
+pub mod object_modules;
 pub mod traits;
 pub mod types;
 
@@ -44,9 +45,9 @@ pub mod prelude {
 
     // Exports from this crate
     pub use crate::api::field_api::*;
-    pub use crate::api::node_modules::metadata::*;
     pub use crate::api::*;
     pub use crate::blueprints::resource::*;
+    pub use crate::object_modules::metadata::*;
     pub use crate::traits::*;
     pub use crate::types::*;
     pub use crate::{

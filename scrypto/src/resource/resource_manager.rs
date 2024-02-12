@@ -2,9 +2,6 @@ use crate::modules::HasRoleAssignment;
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
 use core::ops::Deref;
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
-};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;
@@ -12,6 +9,9 @@ use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::RESO
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::object_modules::metadata::{
+    METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
+};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;

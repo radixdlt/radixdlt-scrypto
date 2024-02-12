@@ -5,7 +5,7 @@ use radix_engine::utils::generate_seconds_precision_state_updates;
 use radix_engine_common::constants::CONSENSUS_MANAGER;
 use radix_engine_common::prelude::{manifest_args, Round};
 use radix_engine_common::types::Epoch;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::object_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };

@@ -8,7 +8,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
-use scrypto::api::node_modules::ModuleConfig;
+use scrypto::object_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
 use scrypto_test::prelude::*;

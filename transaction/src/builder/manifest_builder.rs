@@ -1,10 +1,10 @@
 use crate::internal_prelude::*;
 use crate::manifest::decompiler::decompile_with_known_naming;
 use crate::manifest::decompiler::ManifestObjectNames;
-use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::object_modules::auth::*;
+use radix_engine_interface::object_modules::metadata::*;
+use radix_engine_interface::object_modules::royalty::*;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;

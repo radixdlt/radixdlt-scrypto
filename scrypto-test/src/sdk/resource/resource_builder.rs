@@ -1,9 +1,9 @@
 // TODO: Need to deduplicate this code.
 
 use crate::prelude::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::object_modules::auth::RoleDefinition;
+use radix_engine_interface::object_modules::metadata::MetadataInit;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::prelude::ClientApi;
 use radix_engine_interface::types::NonFungibleData;

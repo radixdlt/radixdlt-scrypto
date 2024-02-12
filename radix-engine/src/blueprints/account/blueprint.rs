@@ -12,7 +12,6 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::FieldValue;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, GenericArgs, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::account::*;
@@ -20,6 +19,7 @@ use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::metadata_init;
+use radix_engine_interface::object_modules::metadata::*;
 
 // =================================================================================================
 // Notes:
