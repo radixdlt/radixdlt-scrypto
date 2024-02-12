@@ -1,6 +1,6 @@
 use crate::prelude::ResourceManager;
+use radix_engine_common::traits::NonFungibleData;
 use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::marker::PhantomData;

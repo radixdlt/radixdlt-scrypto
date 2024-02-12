@@ -1,4 +1,4 @@
-use radix_engine_common::data::scrypto::{ScryptoDecode, ScryptoDescribe, ScryptoEncode};
+use crate::data::scrypto::{ScryptoDecode, ScryptoDescribe, ScryptoEncode};
 
 pub trait ScryptoEvent
 where

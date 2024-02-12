@@ -11,7 +11,6 @@ pub mod blueprints;
 pub mod constants;
 pub mod hooks;
 pub mod object_modules;
-pub mod traits;
 pub mod types;
 
 mod macros;

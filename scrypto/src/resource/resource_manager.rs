@@ -2,6 +2,7 @@ use crate::modules::HasRoleAssignment;
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
 use core::ops::Deref;
+use radix_engine_common::traits::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;

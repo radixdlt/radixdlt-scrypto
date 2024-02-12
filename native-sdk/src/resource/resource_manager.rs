@@ -1,3 +1,4 @@
+use radix_engine_common::traits::NonFungibleData;
 use radix_engine_common::ScryptoSbor;
 use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
@@ -9,7 +10,6 @@ use radix_engine_interface::data::scrypto::{
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 

@@ -1,4 +1,4 @@
-use radix_engine_common::data::scrypto::ScryptoSbor;
+use crate::data::scrypto::ScryptoSbor;
 
 /// Represents the data structure of a non-fungible.
 pub trait NonFungibleData: ScryptoSbor {

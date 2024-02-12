@@ -1487,6 +1487,7 @@ mod tests {
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
     use radix_engine_common::constants::CONSENSUS_MANAGER;
     use radix_engine_common::manifest_args;
+    use radix_engine_common::traits::NonFungibleData;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::AddressBech32Decoder;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
@@ -1498,7 +1499,7 @@ mod tests {
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::object_modules::metadata::MetadataValue;
     use radix_engine_interface::object_modules::ModuleConfig;
-    use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
+    use radix_engine_interface::types::PackageRoyaltyConfig;
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
     use scrypto::blueprint_schema_init::BlueprintStateSchemaInit;
     use utils::prelude::IndexMap;

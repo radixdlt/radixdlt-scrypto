@@ -1,5 +1,6 @@
 use crate::resource::*;
 use crate::*;
+use radix_engine_common::traits::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};

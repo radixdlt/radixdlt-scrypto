@@ -1,12 +1,12 @@
 use crate::resource::*;
 use crate::runtime::Runtime;
 use crate::*;
+use radix_engine_common::traits::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use runtime::LocalAuthZone;
