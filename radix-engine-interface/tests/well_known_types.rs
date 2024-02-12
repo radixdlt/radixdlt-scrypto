@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::internal_prelude::*;
+    use radix_engine_common::prelude::*;
+    use radix_engine_interface::prelude::*;
     use sbor::validate_payload_against_schema;
 
     #[test]

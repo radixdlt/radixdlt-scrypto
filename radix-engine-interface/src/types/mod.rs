@@ -1,7 +1,6 @@
 mod costing_reason;
 mod event_id;
 mod indexed_value;
-mod interface_well_known_types;
 mod invocation;
 mod kv_store_init;
 mod level;
