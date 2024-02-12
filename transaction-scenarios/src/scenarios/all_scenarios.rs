@@ -45,6 +45,9 @@ impl Iterator for AllScenariosIterator {
             10 => Some(Box::new(|core| {
                 max_transaction::MaxTransactionScenarioCreator::create(core)
             })),
+            11 => Some(Box::new(|core| {
+                royalties::RoyaltiesScenarioCreator::create(core)
+            })),
             _ => None,
         }
     }
