@@ -1,5 +1,5 @@
 use crate::blueprints::package::*;
-use crate::errors::{ApplicationError, RuntimeError};
+use crate::errors::{ApplicationError, RuntimeError, VmError};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -41,7 +41,7 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
 /// Api provided to clients of the VM layer
 pub trait VmApi {
     /// Retrieve the current minor version of the Scrypto VM
-    fn get_scrypto_version(&self) -> ScryptoVmVersion;
+    fn get_scrypto_version(&self) -> Result<ScryptoVmVersion, RuntimeError>;
 }
 
 /// Simple implementation of the VmAPI
@@ -59,12 +59,14 @@ impl VmVersion {
 }
 
 impl VmApi for VmVersion {
-    fn get_scrypto_version(&self) -> ScryptoVmVersion {
-        self.scrypto_version.into()
+    fn get_scrypto_version(&self) -> Result<ScryptoVmVersion, RuntimeError> {
+        self.scrypto_version
+            .try_into()
+            .map_err(|e| RuntimeError::VmError(VmError::ScryptoVmVersion(e)))
     }
 }
 
-/// Boot Loader state for the VM Layer
+/// Boot Loader state for the VM Laye
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmBoot {
     V1 { scrypto_version: u64 },
@@ -242,7 +244,7 @@ impl VmPackageValidation {
         match vm_type {
             VmType::Native => Ok(None),
             VmType::ScryptoV1 => {
-                let version = vm_api.get_scrypto_version();
+                let version = vm_api.get_scrypto_version()?;
 
                 // Validate WASM
                 let instrumented_code = ScryptoV1WasmValidator::new(version)

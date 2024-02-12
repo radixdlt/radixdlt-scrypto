@@ -1,3 +1,5 @@
+use crate::types::ScryptoSbor;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(u8)]
 pub enum ScryptoVmVersion {
@@ -21,14 +23,21 @@ impl From<ScryptoVmVersion> for u64 {
     }
 }
 
-impl From<u64> for ScryptoVmVersion {
-    fn from(version: u64) -> Self {
+impl TryFrom<u64> for ScryptoVmVersion {
+    type Error = ScryptoVmVersionError;
+
+    fn try_from(version: u64) -> Result<Self, Self::Error> {
         match version {
-            0 => Self::V1_0,
-            1 => Self::V1_1,
-            v => panic!("ScryptoVmVersion {:?} not supported", v),
+            0 => Ok(Self::V1_0),
+            1 => Ok(Self::V1_1),
+            v => Err(Self::Error::FromIntError(v)),
         }
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub enum ScryptoVmVersionError {
+    FromIntError(u64),
 }
 
 #[cfg(test)]
@@ -39,19 +48,28 @@ mod test {
     fn test_scrypto_vm_version() {
         let v = ScryptoVmVersion::latest();
         assert_eq!(v, ScryptoVmVersion::V1_1);
-
-        let v: u64 = v.into();
-        assert_eq!(v, 1);
-
         assert_eq!(
             ScryptoVmVersion::crypto_utils_added(),
             ScryptoVmVersion::V1_1
         );
+    }
 
-        assert!(ScryptoVmVersion::crypto_utils_added() > ScryptoVmVersion::V1_0);
+    #[test]
+    fn test_scrypto_vm_version_conversions() {
+        let v: u64 = ScryptoVmVersion::V1_1.into();
+        assert_eq!(v, 1);
+
+        let v: ScryptoVmVersion = 1u64.try_into().unwrap();
+        assert_eq!(v, ScryptoVmVersion::V1_1);
+
+        let e = ScryptoVmVersion::try_from(2u64).unwrap_err();
+
+        assert_eq!(e, ScryptoVmVersionError::FromIntError(2u64));
+    }
+
+    #[test]
+    fn test_scrypto_vm_version_ordering() {
         assert!(ScryptoVmVersion::crypto_utils_added() == ScryptoVmVersion::V1_1);
-
-        let v: ScryptoVmVersion = 1u64.into();
-        assert_eq!(v, ScryptoVmVersion::V1_1)
+        assert!(ScryptoVmVersion::crypto_utils_added() > ScryptoVmVersion::V1_0);
     }
 }
