@@ -1,5 +1,5 @@
 use radix_engine_common::prelude::*;
-use radix_engine_interface::types::FromPublicKey; 
+use radix_engine_interface::types::FromPublicKey;
 use scrypto::prelude::{WORKTOP_BLUEPRINT, WORKTOP_DROP_IDENT};
 use scrypto_test::prelude::*;
 

@@ -7,8 +7,8 @@ use radix_engine::kernel::call_frame::{
 };
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine_common::prelude::*;
-use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::blueprints::package::KeyOrValue;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use radix_engine_tests::common::*;
 use scrypto::prelude::FromPublicKey;

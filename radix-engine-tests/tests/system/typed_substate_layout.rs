@@ -4,13 +4,13 @@ use radix_engine::system::bootstrap::{
     GenesisStakeAllocation,
 };
 use radix_engine::transaction::TransactionResult;
-use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use substate_store_queries::typed_native_events::TypedNativeEvent;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_engine_common::prelude::*;
 use sbor::rust::ops::Deref;
 use scrypto_test::prelude::*;
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use substate_store_queries::typed_native_events::TypedNativeEvent;
 use transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 

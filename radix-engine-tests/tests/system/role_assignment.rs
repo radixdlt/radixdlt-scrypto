@@ -1,10 +1,10 @@
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine_common::constants::AuthAddresses;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_common::constants::AuthAddresses;
 use radix_engine_interface::object_modules::role_assignment::FallToOwner;
 use radix_engine_interface::rule;
 use radix_engine_interface::types::FromPublicKey;

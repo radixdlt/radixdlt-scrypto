@@ -1,13 +1,13 @@
 use radix_engine::blueprints::consensus_manager::ValidatorError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ValidatorAcceptsDelegatedStakeInput, VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
     VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
 };
-use radix_engine_interface::types::FromPublicKey; 
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::types::FromPublicKey;
 use scrypto_test::prelude::*;
 
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)

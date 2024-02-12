@@ -4,7 +4,6 @@ use radix_engine::{
     system::system_modules::costing::{
         NATIVE_FUNCTION_BASE_COSTS, NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT,
     },
-     
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;

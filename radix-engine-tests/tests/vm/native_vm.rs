@@ -16,9 +16,9 @@ use radix_engine::vm::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
-use substate_store_interface::db_key_mapper::*;
-use substate_store_impls::memory_db::*;
 use scrypto_test::prelude::TestRunnerBuilder;
+use substate_store_impls::memory_db::*;
+use substate_store_interface::db_key_mapper::*;
 use transaction::prelude::*;
 
 #[test]

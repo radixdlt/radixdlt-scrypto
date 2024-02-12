@@ -6,13 +6,10 @@ use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::CostingParameters;
-use radix_engine_common::prelude::*;
 use radix_engine_common::constants::AuthAddresses;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::types::FromPublicKey; 
-use substate_store_queries::typed_substate_layout::{
-    ConsensusManagerError, ValidatorRewardAppliedEvent,
-};
+use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use rand::prelude::SliceRandom;
 use rand::Rng;
@@ -22,6 +19,9 @@ use rand_chacha::ChaCha8Rng;
 use scrypto::object_modules::*;
 use scrypto_test::prelude::AuthError;
 use scrypto_test::prelude::*;
+use substate_store_queries::typed_substate_layout::{
+    ConsensusManagerError, ValidatorRewardAppliedEvent,
+};
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {

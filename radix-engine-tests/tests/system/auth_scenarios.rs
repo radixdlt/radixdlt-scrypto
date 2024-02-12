@@ -1,15 +1,15 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine_common::prelude::*;
 use radix_engine::vm::NoExtension;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::object_modules::role_assignment::{
     RoleAssignmentSetInput, ROLE_ASSIGNMENT_SET_IDENT,
 };
 use radix_engine_interface::rule;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::*;
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
 
 pub struct AuthScenariosEnv {
     acco: ComponentAddress,

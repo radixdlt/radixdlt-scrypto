@@ -1165,7 +1165,6 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-interface",
  "sbor",
- "scrypto",
  "serde_json",
  "substate-store-impls",
  "substate-store-interface",

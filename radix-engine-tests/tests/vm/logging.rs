@@ -1,7 +1,6 @@
 use radix_engine::{
     errors::{ApplicationError, RuntimeError},
     transaction::TransactionReceipt,
-     
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::Level;

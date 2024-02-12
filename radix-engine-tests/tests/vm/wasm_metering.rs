@@ -1,6 +1,5 @@
 use radix_engine::{
     errors::{RuntimeError, VmError},
-   
     vm::wasm::WasmRuntimeError,
 };
 use radix_engine_interface::prelude::*;

@@ -3,10 +3,9 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::{
     blueprints::transaction_processor::TransactionProcessorError,
     errors::{ApplicationError, RuntimeError},
-     
 };
 use radix_engine_interface::prelude::*;
-use radix_engine_interface::types::FromPublicKey; 
+use radix_engine_interface::types::FromPublicKey;
 use scrypto::prelude::{require, require_amount};
 use scrypto_test::prelude::*;
 

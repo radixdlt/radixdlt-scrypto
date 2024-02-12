@@ -7,7 +7,6 @@ use radix_engine::{
     blueprints::resource::BucketError,
     errors::{ApplicationError, CallFrameError, KernelError, RuntimeError},
     kernel::call_frame::DropNodeError,
-    
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
