@@ -9,8 +9,7 @@ mod royalties {
         call_usd_package_royalty => Usd(1.into());
     }
 
-    pub struct RoyaltiesBp {
-    }
+    pub struct RoyaltiesBp {}
 
     impl RoyaltiesBp {
         pub fn new() -> Global<RoyaltiesBp> {
@@ -37,13 +36,10 @@ mod royalties {
                 .globalize()
         }
 
-        pub fn call_no_package_royalty(&self) {
-        }
+        pub fn call_no_package_royalty(&self) {}
 
-        pub fn call_xrd_package_royalty(&self) {
-        }
+        pub fn call_xrd_package_royalty(&self) {}
 
-        pub fn call_usd_package_royalty(&self) {
-        }
+        pub fn call_usd_package_royalty(&self) {}
     }
 }

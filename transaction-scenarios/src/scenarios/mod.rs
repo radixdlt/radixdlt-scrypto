@@ -10,7 +10,7 @@ pub mod metadata;
 pub mod non_fungible_resource;
 pub mod non_fungible_resource_with_remote_type;
 pub mod radiswap;
-pub mod transfer_xrd;
 pub mod royalties;
+pub mod transfer_xrd;
 
 pub use all_scenarios::*;
