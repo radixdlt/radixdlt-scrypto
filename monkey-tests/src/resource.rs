@@ -8,6 +8,7 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::FromRepr;
 use radix_engine::vm::{VmApi, VmInvoke};
 use radix_engine_common::manifest_args;
+use radix_engine_common::prelude::IndexMap;
 use radix_engine_common::prelude::{
     manifest_decode, manifest_encode, scrypto_decode, scrypto_encode, ManifestValue,
     NonFungibleLocalId, ScryptoValue,
@@ -23,7 +24,6 @@ use radix_engine_interface::prelude::{
     VAULT_TAKE_IDENT,
 };
 use radix_engine_interface::types::IndexedScryptoValue;
-use scrypto::prelude::indexmap::IndexMap;
 use transaction::builder::ManifestBuilder;
 use utils::indexmap;
 

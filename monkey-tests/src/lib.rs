@@ -33,7 +33,6 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use scrypto::prelude::Zero;
 use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -593,7 +592,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
             let manifest = {
                 let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
-                if !amount.is_zero() {
+                if amount != 0 {
                     builder = builder.withdraw_from_account(account, resource_address, amount);
                 }
                 builder

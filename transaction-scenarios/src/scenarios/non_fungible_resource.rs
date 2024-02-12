@@ -2,7 +2,6 @@ use crate::internal_prelude::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::*;
-use scrypto::NonFungibleData;
 
 pub struct NonFungibleResourceScenarioConfig {
     pub main_account: VirtualAccount,
@@ -601,7 +600,7 @@ impl NonFungibleData for NestedFungibleData {
     const MUTABLE_FIELDS: &'static [&'static str] = &["a", "c"];
 }
 
-#[derive(ScryptoSbor, ManifestSbor, NonFungibleData)]
+#[derive(ScryptoSbor, ManifestSbor)]
 pub struct MetadataStandardNonFungibleData {
     pub name: String,
     pub description: String,
@@ -610,16 +609,22 @@ pub struct MetadataStandardNonFungibleData {
     pub arbitrary_coolness_rating: u64,
 }
 
-#[derive(ScryptoSbor, ManifestSbor, NonFungibleData)]
+impl NonFungibleData for MetadataStandardNonFungibleData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
+}
+
+#[derive(ScryptoSbor, ManifestSbor)]
 pub struct ComplexNonFungibleData {
     pub fixed_number: u64,
     pub fixed_non_fungible_global_id: NonFungibleGlobalId,
-    #[mutable]
     pub mutable_long_name_for_data_to_try_and_stretch_the_bounds_of_what_is_possible_in_user_interfaces:
         String,
     pub inner_struct: InnerStruct,
-    #[mutable]
     pub mutable_inner_enum: InnerEnum,
+}
+
+impl NonFungibleData for ComplexNonFungibleData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &["mutable_long_name_for_data_to_try_and_stretch_the_bounds_of_what_is_possible_in_user_interfaces", "mutable_inner_enum"];
 }
 
 #[derive(ScryptoSbor, ManifestSbor)]

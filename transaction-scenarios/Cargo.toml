@@ -10,9 +10,9 @@ substate-store-impls = { path = "../substate-store-impls", default-features = fa
 substate-store-interface = { path = "../substate-store-interface", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 blueprint-schema-init = { path = "../blueprint-schema-init", default-features = false }
-scrypto = { path = "../scrypto", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false }
+
 itertools = { version = "0.10.3", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 walkdir = "2.3.3"
@@ -20,8 +20,8 @@ walkdir = "2.3.3"
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "scrypto/std", "blueprint-schema-init/std", "transaction/std", "radix-engine/std", "radix-engine/moka", "substate-store-impls/std", "radix-engine-interface/std", "substate-store-interface/std", "utils/std"]
-alloc = ["hex/alloc", "sbor/alloc", "scrypto/alloc", "blueprint-schema-init/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine/lru", "substate-store-impls/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "utils/alloc"]
+std = ["hex/std", "sbor/std", "blueprint-schema-init/std", "transaction/std", "radix-engine/std", "radix-engine/moka", "substate-store-impls/std", "radix-engine-interface/std", "substate-store-interface/std", "utils/std"]
+alloc = ["hex/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine/lru", "substate-store-impls/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "utils/alloc"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

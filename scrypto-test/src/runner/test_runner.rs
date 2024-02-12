@@ -35,7 +35,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, freeze_roles, rule};
-use scrypto::prelude::*;
 use std::path::{Path, PathBuf};
 use substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -2460,8 +2459,12 @@ pub fn single_function_package_definition(
     PackageDefinition::new_single_function_test_definition(blueprint_name, function_name)
 }
 
-#[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
+#[derive(ScryptoSbor, ManifestSbor)]
 pub struct EmptyNonFungibleData {}
+
+impl NonFungibleData for EmptyNonFungibleData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
+}
 
 pub struct TransactionParams {
     pub start_epoch_inclusive: Epoch,
