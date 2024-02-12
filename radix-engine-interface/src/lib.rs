@@ -6,9 +6,10 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
+// TODO: eventually only `api` (System API) should stay in this crate.
+
 pub mod api;
 pub mod blueprints;
-pub mod constants;
 pub mod hooks;
 pub mod object_modules;
 pub mod types;
