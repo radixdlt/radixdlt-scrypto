@@ -942,7 +942,6 @@ name = "native-sdk"
 version = "1.2.0-dev"
 dependencies = [
  "radix-engine-common",
- "radix-engine-derive",
  "radix-engine-interface",
  "sbor",
  "utils",
@@ -1199,7 +1198,6 @@ dependencies = [
  "lazy_static",
  "paste",
  "radix-engine-common",
- "radix-engine-derive",
  "radix-engine-macros",
  "regex",
  "sbor",
@@ -1672,7 +1670,6 @@ dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
- "radix-engine-derive",
  "rocksdb",
  "sbor",
  "substate-store-interface",
@@ -1686,7 +1683,6 @@ dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
- "radix-engine-derive",
  "radix-engine-interface",
  "sbor",
  "utils",

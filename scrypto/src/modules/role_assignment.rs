@@ -2,7 +2,7 @@ use crate::engine::scrypto_env::ScryptoVmV1Api;
 
 use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;
-use radix_engine_derive::*;
+use radix_engine_common::*;
 use radix_engine_interface::api::node_modules::auth::{
     RoleAssignmentCreateInput, RoleAssignmentGetInput, RoleAssignmentLockOwnerInput,
     RoleAssignmentSetInput, RoleAssignmentSetOwnerInput, ROLE_ASSIGNMENT_BLUEPRINT,

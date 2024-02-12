@@ -5,7 +5,7 @@ use itertools::Itertools;
 use radix_engine_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_common::prelude::Hash;
-use radix_engine_derive::ScryptoSbor;
+use radix_engine_common::ScryptoSbor;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Direction, IteratorMode,

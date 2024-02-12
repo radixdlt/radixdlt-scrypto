@@ -6,7 +6,7 @@ use core::fmt::Formatter;
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::PackageAddress;
 use radix_engine_common::types::{GenericSubstitution, GlobalAddress};
-use radix_engine_derive::ManifestSbor;
+use radix_engine_common::ManifestSbor;
 use radix_engine_interface::api::AttachedModuleId;
 use sbor::rust::prelude::*;
 use utils::ContextualDisplay;
