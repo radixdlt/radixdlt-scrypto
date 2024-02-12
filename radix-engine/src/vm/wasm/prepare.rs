@@ -1251,8 +1251,8 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use blueprint_schema_init::{
-        BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-        FunctionSchemaInit, TypeRef,
+        BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintSchemaInit,
+        BlueprintStateSchemaInit, BlueprintTypeSchemaInit, FieldSchema, FunctionSchemaInit,
     };
     use radix_engine_interface::blueprints::package::BlueprintType;
     use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
@@ -1596,8 +1596,8 @@ mod tests {
                         functions: indexmap!(
                             "f".to_string() => FunctionSchemaInit {
                                 receiver: Option::None,
-                                input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
-                                output: TypeRef::Static(LocalTypeId::WellKnown(UNIT_TYPE)),
+                                input: blueprint_schema_init::TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                                output: blueprint_schema_init::TypeRef::Static(LocalTypeId::WellKnown(UNIT_TYPE)),
                                 export: "Test_f".to_string(),
                             }
                         ),
