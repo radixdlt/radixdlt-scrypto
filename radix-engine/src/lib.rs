@@ -46,7 +46,6 @@ pub(crate) mod internal_prelude {
     pub mod blueprints {
         pub use radix_engine_interface::blueprints::*;
     }
-    pub use super::prelude::*;
     pub use crate::blueprints::internal_prelude::*;
     pub use crate::errors::*;
     pub use crate::system::system_substates::*;

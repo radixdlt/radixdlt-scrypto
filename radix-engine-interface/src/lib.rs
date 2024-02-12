@@ -48,7 +48,6 @@ pub mod prelude {
     pub use crate::api::*;
     pub use crate::blueprints::resource::*;
     pub use crate::object_modules::metadata::*;
-    pub use crate::traits::*;
     pub use crate::types::*;
     pub use crate::{
         access_and_or, access_rule_node, burn_roles, dec, deposit_roles, freeze_roles,
