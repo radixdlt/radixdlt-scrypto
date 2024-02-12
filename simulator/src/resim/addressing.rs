@@ -2,8 +2,9 @@ use radix_engine::types::{
     AddressBech32Decoder, AddressBech32Encoder, ComponentAddress, NonFungibleGlobalId,
     PackageAddress, ResourceAddress,
 };
+use radix_engine_interface::types::ParseNonFungibleGlobalIdError;
 use radix_engine_interface::{
-    blueprints::resource::{require, AccessRule, ParseNonFungibleGlobalIdError},
+    blueprints::resource::{require, AccessRule,  },
     rule,
 };
 use sbor::rust::fmt;

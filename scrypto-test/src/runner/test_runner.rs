@@ -17,7 +17,8 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
-use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_common::constants::AuthAddresses;
+use radix_engine_common::types::NonFungibleGlobalId;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{

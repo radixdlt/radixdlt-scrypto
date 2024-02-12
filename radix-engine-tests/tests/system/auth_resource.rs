@@ -2,7 +2,8 @@ extern crate core;
 
 use radix_engine::types::*;
 use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
+use radix_engine_interface::blueprints::resource::require;
+use radix_engine_interface::types::FromPublicKey; 
 use scrypto_test::prelude::*;
 
 enum Action {

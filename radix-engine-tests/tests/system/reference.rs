@@ -1,7 +1,7 @@
 use radix_engine::errors::SystemError;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::{errors::RuntimeError, types::*};
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::types::FromPublicKey; 
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

@@ -939,7 +939,7 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
+    use radix_engine_common::types::NonFungibleGlobalId;
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;

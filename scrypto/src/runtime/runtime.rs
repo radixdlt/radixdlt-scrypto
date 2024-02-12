@@ -4,14 +4,14 @@ use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::RESOURCE_PACKAGE;
 use radix_engine_common::types::GlobalAddressReservation;
+use radix_engine_common::types::NonFungibleGlobalId;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthZoneAssertAccessRuleInput, NonFungibleGlobalId,
-    AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+    AccessRule, AuthZoneAssertAccessRuleInput, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::crypto::Hash;

@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
 use crate::model::*;
-use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
+use radix_engine_common::types::NonFungibleGlobalId;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::*;

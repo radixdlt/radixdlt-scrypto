@@ -8,6 +8,7 @@ use crate::validation::*;
 use radix_engine_common::constants::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_common::types::NodeId;
+use radix_engine_common::types::NonFungibleGlobalId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::AddressBech32Decoder;
 use radix_engine_interface::api::node_modules::auth::{
@@ -35,10 +36,8 @@ use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
 use radix_engine_interface::blueprints::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
+use radix_engine_interface::blueprints::resource::NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::resource::{
-    NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-};
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,

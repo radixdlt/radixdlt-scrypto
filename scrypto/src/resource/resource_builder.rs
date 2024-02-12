@@ -4,6 +4,7 @@ use crate::runtime::Runtime;
 use radix_engine_common::prelude::ScryptoCategorize;
 use radix_engine_common::prelude::ScryptoDecode;
 use radix_engine_common::prelude::ScryptoEncode;
+use radix_engine_common::types::NonFungibleGlobalId;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -961,7 +962,8 @@ impl<
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
+    use radix_engine_common::types::NonFungibleGlobalId;
+    use radix_engine_interface::blueprints::resource::ResourceFeature;
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;

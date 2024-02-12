@@ -25,7 +25,6 @@ pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
     sign::Signed,
 };
-pub use radix_engine_interface::api::node_modules::auth::*;
 pub use radix_engine_interface::api::node_modules::metadata::*;
 pub use radix_engine_interface::api::node_modules::*;
 pub use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
