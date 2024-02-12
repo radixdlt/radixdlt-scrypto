@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
     RoleAssignmentSetInput, ROLE_ASSIGNMENT_SET_IDENT,
 };
 use radix_engine_interface::rule;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::*;

@@ -8,7 +8,7 @@ mod multi_threaded_test {
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;
-    use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+    use substate_store_impls::memory_db::InMemorySubstateDatabase;
     use transaction::model::TestTransaction;
     use transaction::prelude::*;
     // using crossbeam for its scoped thread feature, which allows non-static lifetimes for data being

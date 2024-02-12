@@ -7,7 +7,7 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::rule;
-use radix_engine_queries::typed_substate_layout::*;
+use substate_store_queries::typed_substate_layout::*;
 use radix_engine_tests::common::*;
 use scrypto::prelude::FallToOwner;
 use scrypto_test::prelude::InvalidNameError;

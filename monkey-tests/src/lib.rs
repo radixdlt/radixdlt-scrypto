@@ -27,7 +27,6 @@ use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
@@ -37,6 +36,7 @@ use rayon::iter::ParallelIterator;
 use scrypto::prelude::Zero;
 use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::{CustomGenesis, TestRunner, TestRunnerBuilder};
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::builder::ManifestBuilder;
 use transaction::prelude::Secp256k1PrivateKey;
 

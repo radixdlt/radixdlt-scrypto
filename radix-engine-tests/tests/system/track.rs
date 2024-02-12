@@ -2,7 +2,7 @@ use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_queries::typed_substate_layout::VaultError;
+use substate_store_queries::typed_substate_layout::VaultError;
 use scrypto_test::prelude::*;
 
 #[test]

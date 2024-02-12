@@ -35,18 +35,18 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, freeze_roles, rule};
-use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
-use radix_engine_queries::typed_native_events::to_typed_native_event;
-use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase, SubstateDatabase,
-};
-use radix_engine_stores::hash_tree_support::HashTreeUpdatingDatabase;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto::prelude::*;
 use std::path::{Path, PathBuf};
+use substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use substate_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
+use substate_store_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase, SubstateDatabase,
+};
+use substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
+use substate_store_queries::typed_native_events::to_typed_native_event;
+use substate_store_queries::typed_substate_layout::*;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };

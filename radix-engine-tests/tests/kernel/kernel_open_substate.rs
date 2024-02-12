@@ -13,11 +13,11 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::LockFlags;
-use radix_engine_queries::typed_substate_layout::{
+use substate_store_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
 };
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::prelude::*;
 
 #[test]

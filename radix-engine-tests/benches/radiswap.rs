@@ -1,14 +1,14 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
-#[cfg(not(feature = "rocksdb"))]
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-#[cfg(feature = "rocksdb")]
-use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::{TestRunner, TestRunnerBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
+#[cfg(not(feature = "rocksdb"))]
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
+#[cfg(feature = "rocksdb")]
+use substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use transaction::prelude::*;
 
 /// Number of prefilled accounts in the substate store

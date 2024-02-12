@@ -1,7 +1,7 @@
 #![allow(clippy::type_complexity)]
 
 use native_sdk::resource::*;
-use radix_engine_queries::typed_substate_layout::two_resource_pool::*;
+use substate_store_queries::typed_substate_layout::two_resource_pool::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

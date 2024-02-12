@@ -1132,7 +1132,7 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-interface",
  "radix-engine-macros",
- "radix-engine-store-interface",
+ "substate-store-interface",
  "resources-tracker-macro",
  "sbor",
  "serde_json",
@@ -1218,7 +1218,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-queries"
+name = "substate-store-queries"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
@@ -1226,14 +1226,14 @@ dependencies = [
  "paste",
  "radix-engine",
  "radix-engine-interface",
- "radix-engine-store-interface",
+ "substate-store-interface",
  "sbor",
  "transaction",
  "utils",
 ]
 
 [[package]]
-name = "radix-engine-store-interface"
+name = "substate-store-interface"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
@@ -1246,14 +1246,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-stores"
+name = "substate-store-impls"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
  "radix-engine-derive",
- "radix-engine-store-interface",
+ "substate-store-interface",
  "rocksdb",
  "sbor",
  "utils",
@@ -1630,9 +1630,9 @@ dependencies = [
  "radix-engine",
  "radix-engine-interface",
  "radix-engine-profiling",
- "radix-engine-queries",
- "radix-engine-store-interface",
- "radix-engine-stores",
+ "substate-store-queries",
+ "substate-store-interface",
+ "substate-store-impls",
  "rand 0.8.5",
  "regex",
  "rocksdb",
