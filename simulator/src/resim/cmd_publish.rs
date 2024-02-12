@@ -2,6 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::blueprints::models::*;
 use radix_engine::types::*;
+use radix_engine::vm::ScryptoVmVersion;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, BlueprintPayloadDef, FunctionSchema,
     IndexedStateSchema, PackageExport, VmType, *,
@@ -140,7 +141,7 @@ impl Publish {
             let mut vm_type_updates = index_map_new();
             let mut original_code_updates = index_map_new();
             let mut instrumented_code_updates = index_map_new();
-            let instrumented_code = ScryptoV1WasmValidator::new(0u64)
+            let instrumented_code = ScryptoV1WasmValidator::new(ScryptoVmVersion::V1_0)
                 .validate(&code, package_definition.blueprints.values())
                 .map_err(Error::InvalidPackage)?
                 .0;
