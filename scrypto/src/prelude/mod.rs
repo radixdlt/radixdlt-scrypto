@@ -30,6 +30,8 @@ pub use radix_engine_interface::blueprints::resource::*;
 pub use radix_engine_interface::crypto::*;
 pub use radix_engine_interface::math::*;
 pub use radix_engine_interface::object_modules::metadata::*;
+pub use radix_engine_interface::object_modules::role_assignment::*;
+pub use radix_engine_interface::object_modules::royalty::*;
 pub use radix_engine_interface::object_modules::*;
 pub use radix_engine_interface::prelude::*;
 pub use radix_engine_interface::{
