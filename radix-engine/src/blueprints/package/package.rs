@@ -7,7 +7,6 @@ use crate::system::node_init::type_info_partition;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::NodeSubstates;
-use crate::types::*;
 use crate::vm::wasm::PrepareError;
 use blueprint_schema_init::*;
 use native_sdk::modules::metadata::Metadata;

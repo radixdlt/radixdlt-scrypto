@@ -4,7 +4,7 @@ mod multi_threaded_test {
     use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{CostingParameters, ExecutionConfig};
-    use radix_engine::types::*;
+    use radix_engine_common::prelude::*;
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;

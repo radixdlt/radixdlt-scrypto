@@ -4,7 +4,7 @@ use super::Error;
 use clap::Parser;
 use flate2::read::GzDecoder;
 use flume;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::prelude::NetworkDefinition;

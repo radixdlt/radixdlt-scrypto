@@ -1,5 +1,5 @@
 use crate::errors::{RuntimeError, SystemUpstreamError};
-use crate::types::*;
+use crate::internal_prelude::*;
 use crate::vm::vm::VmInvoke;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::ScryptoRuntime;

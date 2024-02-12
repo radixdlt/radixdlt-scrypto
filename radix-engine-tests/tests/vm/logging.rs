@@ -1,8 +1,9 @@
 use radix_engine::{
     errors::{ApplicationError, RuntimeError},
     transaction::TransactionReceipt,
-    types::*,
+     
 };
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::Level;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;

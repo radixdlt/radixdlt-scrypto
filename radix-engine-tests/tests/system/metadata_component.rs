@@ -1,5 +1,5 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use substate_store_queries::typed_substate_layout::{MetadataError, MetadataValidationError};
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;

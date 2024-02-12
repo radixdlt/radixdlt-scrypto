@@ -4,8 +4,9 @@ use radix_engine::kernel::call_frame::{
 };
 use radix_engine::{
     errors::{RuntimeError, SystemError},
-    types::*,
+     
 };
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey; 
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;

@@ -2,7 +2,6 @@ use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignm
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
 use crate::roles_template;
-use crate::types::*;
 use blueprint_schema_init::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
     TypeRef,

@@ -26,7 +26,6 @@ use crate::system::system_type_checker::{
 };
 use crate::system::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::track::interface::NodeSubstates;
-use crate::types::*;
 use blueprint_schema_init::{Condition, KeyValueStoreGenericSubstitutions};
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;

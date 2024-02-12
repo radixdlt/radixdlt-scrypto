@@ -1,5 +1,6 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
@@ -8,7 +9,6 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
-use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;

@@ -4,7 +4,7 @@ use radix_engine::system::bootstrap::{
     GenesisStakeAllocation,
 };
 use radix_engine::transaction::TransactionResult;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use substate_store_queries::typed_native_events::TypedNativeEvent;

@@ -29,7 +29,6 @@ use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::limits::TransactionLimitsError;
 use crate::system::system_type_checker::TypeCheckError;
 use crate::transaction::AbortReason;
-use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{ActorStateHandle, AttachedModuleId};

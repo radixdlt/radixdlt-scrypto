@@ -1,5 +1,4 @@
 use crate::internal_prelude::*;
-use crate::types::*;
 use blueprint_schema_init::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;

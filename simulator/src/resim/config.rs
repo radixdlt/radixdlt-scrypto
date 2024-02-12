@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::utils::*;
 use substate_store_interface::db_key_mapper::*;
 use substate_store_interface::interface::*;

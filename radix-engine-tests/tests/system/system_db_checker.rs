@@ -2,13 +2,14 @@ use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::checkers::{
     SystemDatabaseCheckError, SystemDatabaseChecker, SystemNodeCheckError,
 };
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use substate_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey,
 };
+use radix_engine_interface::prelude::*;
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
 
 #[test]

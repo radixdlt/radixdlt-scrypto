@@ -2,7 +2,6 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::types::*;
 use core::ops::Neg;
 use native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
 use native_sdk::runtime::Runtime;

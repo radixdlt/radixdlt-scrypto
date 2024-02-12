@@ -9,7 +9,7 @@ use radix_engine::system::system_modules::costing::{FeeTable, SystemLoanFeeReser
 use radix_engine::system::system_modules::SystemModuleMixer;
 use radix_engine::track::Track;
 use radix_engine::transaction::ExecutionConfig;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::LockFlags;

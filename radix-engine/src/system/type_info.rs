@@ -1,6 +1,6 @@
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

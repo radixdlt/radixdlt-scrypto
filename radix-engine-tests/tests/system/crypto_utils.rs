@@ -1,5 +1,5 @@
 use radix_engine::transaction::TransactionReceiptV1;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::NoExtension;
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_engine_tests::common::*;

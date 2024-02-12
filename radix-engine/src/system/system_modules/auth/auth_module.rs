@@ -13,7 +13,6 @@ use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::types::*;
 use radix_engine_interface::api::{AttachedModuleId, ClientBlueprintApi, LockFlags, ModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,

@@ -1,5 +1,5 @@
 use crate::errors::{IdAllocationError, KernelError, RuntimeError};
-use crate::types::*;
+use crate::internal_prelude::*;
 
 /// An ID allocator defines how identities are generated.
 #[derive(Debug, Clone, PartialEq, Eq)]

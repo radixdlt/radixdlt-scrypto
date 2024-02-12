@@ -2,7 +2,6 @@ use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
-use crate::types::*;
 use crate::{event_schema, roles_template};
 use blueprint_schema_init::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, ReceiverInfo, TypeRef,

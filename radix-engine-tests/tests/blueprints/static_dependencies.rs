@@ -1,4 +1,4 @@
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::{metadata, metadata_init};

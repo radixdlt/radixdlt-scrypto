@@ -68,7 +68,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionReceiptDisplayContextBuilder;
 use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{execute_and_commit_transaction, CostingParameters};
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;

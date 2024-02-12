@@ -1,4 +1,4 @@
-use radix_engine::types::*;
+use radix_engine_interface::prelude::*;
 
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;

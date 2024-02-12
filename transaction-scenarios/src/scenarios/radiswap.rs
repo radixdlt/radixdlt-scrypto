@@ -1,4 +1,3 @@
-use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
@@ -206,7 +205,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                         "../../../assets/radiswap.rpd"
                     ))
                     .unwrap();
-                    let owner_role = radix_engine::types::OwnerRole::Fixed(rule!(require(
+                    let owner_role = radix_engine_interface::prelude::OwnerRole::Fixed(rule!(require(
                         state.owner_badge.get()?
                     )));
                     core.next_transaction_with_faucet_lock_fee_fallible(

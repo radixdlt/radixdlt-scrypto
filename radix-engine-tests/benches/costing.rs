@@ -3,7 +3,6 @@ use paste::paste;
 use radix_engine::{
     system::system_modules::costing::SystemLoanFeeReserve,
     transaction::CostingParameters,
-    types::*,
     utils::ExtractSchemaError,
     vm::{
         wasm::{
@@ -14,6 +13,7 @@ use radix_engine::{
     },
 };
 use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use sbor::rust::iter;
 use scrypto_test::prelude::TestRunnerBuilder;

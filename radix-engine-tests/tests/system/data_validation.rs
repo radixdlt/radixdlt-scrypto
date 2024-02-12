@@ -2,8 +2,9 @@ use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError, SystemError},
     kernel::call_frame::PassMessageError,
-    types::*,
+     
 };
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::blueprints::package::KeyOrValue;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;

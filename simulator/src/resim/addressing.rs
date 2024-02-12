@@ -1,4 +1,4 @@
-use radix_engine::types::{
+use radix_engine_common::prelude::{
     AddressBech32Decoder, AddressBech32Encoder, ComponentAddress, NonFungibleGlobalId,
     PackageAddress, ResourceAddress,
 };

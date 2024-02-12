@@ -1,7 +1,7 @@
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::utils::generate_vm_boot_scrypto_minor_version_state_updates;
 use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use substate_store_interface::interface::CommittableSubstateDatabase;

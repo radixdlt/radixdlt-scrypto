@@ -7,7 +7,6 @@ use crate::errors::SystemUpstreamError;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
-use crate::types::*;
 use blueprint_schema_init::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{

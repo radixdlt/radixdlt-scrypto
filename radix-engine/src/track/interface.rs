@@ -1,5 +1,5 @@
 use crate::errors::RuntimeError;
-use crate::types::*;
+use crate::internal_prelude::*;
 use radix_engine_interface::types::*;
 use substate_store_interface::db_key_mapper::SubstateKeyContent;
 

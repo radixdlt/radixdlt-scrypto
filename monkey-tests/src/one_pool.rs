@@ -1,5 +1,4 @@
 use crate::{OnePoolMeta, SystemTestFuzzer};
-use radix_engine::types::FromRepr;
 use radix_engine_common::prelude::ComponentAddress;
 use radix_engine_interface::blueprints::pool::{
     OneResourcePoolContributeManifestInput, OneResourcePoolGetRedemptionValueManifestInput,
@@ -8,6 +7,7 @@ use radix_engine_interface::blueprints::pool::{
     ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT, ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
     ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, ONE_RESOURCE_POOL_REDEEM_IDENT,
 };
+use radix_engine_interface::prelude::*;
 use transaction::builder::ManifestBuilder;
 
 #[repr(u8)]

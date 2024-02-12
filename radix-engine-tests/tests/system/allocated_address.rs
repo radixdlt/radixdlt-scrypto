@@ -1,7 +1,8 @@
 use radix_engine::{
     errors::{CannotGlobalizeError, KernelError, RuntimeError, SystemError},
-    types::*,
+    
 };
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

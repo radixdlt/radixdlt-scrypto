@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]

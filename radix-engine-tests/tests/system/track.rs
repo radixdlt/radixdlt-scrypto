@@ -1,6 +1,6 @@
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::types::FromPublicKey; 
 use substate_store_queries::typed_substate_layout::VaultError;
 use scrypto_test::prelude::*;

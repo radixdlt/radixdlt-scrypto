@@ -1,6 +1,6 @@
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
-use crate::types::*;
 use blueprint_schema_init::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     FunctionSchemaInit, TypeRef,
@@ -12,7 +12,6 @@ use radix_engine_interface::object_modules::royalty::*;
 
 // Re-export substates
 use crate::blueprints::package::PackageError;
-use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::roles_template;
 use crate::system::system_callback::{SystemConfig, SystemLockData};

@@ -2,7 +2,7 @@ use blueprint_schema_init::*;
 use radix_engine::blueprints::package::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::PrepareError;
 use radix_engine::vm::wasm::*;
 use radix_engine_common::constants::MAX_NUMBER_OF_BLUEPRINT_FIELDS;

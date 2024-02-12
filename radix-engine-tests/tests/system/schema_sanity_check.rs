@@ -4,8 +4,9 @@ use radix_engine::{
     system::system_modules::costing::{
         NATIVE_FUNCTION_BASE_COSTS, NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT,
     },
-    types::*,
+     
 };
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;

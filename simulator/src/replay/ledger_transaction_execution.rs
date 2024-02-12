@@ -5,7 +5,7 @@ use radix_engine::transaction::{
     execute_transaction, CostingParameters, ExecutionConfig, TransactionFeeSummary,
     TransactionReceipt,
 };
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_common::constants::AuthAddresses;

@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 use radix_engine_interface::math::Decimal;
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]

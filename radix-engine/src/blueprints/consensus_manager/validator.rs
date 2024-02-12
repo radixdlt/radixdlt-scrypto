@@ -3,7 +3,6 @@ use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::types::*;
 use crate::{event_schema, roles_template};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::resource::NativeVault;

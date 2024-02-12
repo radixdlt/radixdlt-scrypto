@@ -1,6 +1,6 @@
 use monkey_tests::resource::ResourceFuzzRandomAction;
 use monkey_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 
 #[test]
 fn fuzz_resource() {

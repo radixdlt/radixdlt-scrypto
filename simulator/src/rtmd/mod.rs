@@ -1,5 +1,5 @@
 use clap::Parser;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::utils::validate_call_arguments_to_native_components;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::manifest::manifest_decode;

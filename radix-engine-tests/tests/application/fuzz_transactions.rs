@@ -2,7 +2,7 @@ use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::{
     execute_and_commit_transaction, CostingParameters, ExecutionConfig,
 };
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::blueprints::resource::AccessRule;

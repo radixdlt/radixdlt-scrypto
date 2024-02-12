@@ -5,6 +5,8 @@ pub mod resource;
 pub mod two_pool;
 pub mod validator;
 
+use std::ops::AddAssign;
+
 use crate::consensus_manager::ConsensusManagerFuzzAction;
 use crate::multi_pool::MultiPoolFuzzAction;
 use crate::one_pool::OnePoolFuzzAction;
@@ -19,14 +21,15 @@ use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
-use radix_engine::types::*;
 use radix_engine::vm::OverridePackageCode;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
 use radix_engine_interface::object_modules::ModuleConfig;
+use radix_engine_interface::prelude::*;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};

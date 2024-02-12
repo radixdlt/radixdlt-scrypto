@@ -1,7 +1,7 @@
 use crate::blueprints::account::AccountBlueprint;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::types::*;
+use crate::internal_prelude::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
