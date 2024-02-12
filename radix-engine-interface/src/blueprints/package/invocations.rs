@@ -1,16 +1,18 @@
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
+use blueprint_schema_init::TypeRef;
+use blueprint_schema_init::{
+    BlueprintCollectionSchema, BlueprintKeyValueSchema, FunctionSchemaInit,
+};
+use blueprint_schema_init::{BlueprintFunctionsSchemaInit, ReceiverInfo};
+use blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use sbor::basic_well_known_types::ANY_TYPE;
 use sbor::rust::prelude::*;
 use sbor::LocalTypeId;
-use scrypto_schema::TypeRef;
-use scrypto_schema::{BlueprintCollectionSchema, BlueprintKeyValueSchema, FunctionSchemaInit};
-use scrypto_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
-use scrypto_schema::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 

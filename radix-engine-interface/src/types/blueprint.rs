@@ -1,5 +1,6 @@
 use crate::blueprints::package::BlueprintVersion;
 use crate::ScryptoSbor;
+use blueprint_schema_init::KeyValueStoreGenericSubstitutions;
 use core::fmt;
 use core::fmt::Formatter;
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
@@ -8,7 +9,6 @@ use radix_engine_common::types::{GenericSubstitution, GlobalAddress};
 use radix_engine_derive::ManifestSbor;
 use radix_engine_interface::api::AttachedModuleId;
 use sbor::rust::prelude::*;
-use scrypto_schema::KeyValueStoreGenericSubstitutions;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

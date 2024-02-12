@@ -19,7 +19,7 @@ members = [
     "sbor-derive-common",
     "sbor-derive",
     "sbor-tests",
-    "scrypto-schema",
+    "blueprint-schema-init",
     "scrypto-derive",
     "scrypto",
     "scrypto-test",

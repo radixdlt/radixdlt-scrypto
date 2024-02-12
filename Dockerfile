@@ -14,7 +14,7 @@ ADD sbor /app/sbor
 ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common
 ADD utils app/utils
-ADD scrypto-schema /app/scrypto-schema
+ADD blueprint-schema-init /app/blueprint-schema-init
 ADD radix-engine-common /app/radix-engine-common
 ADD radix-engine-derive /app/radix-engine-derive
 ADD native-sdk /app/native-sdk

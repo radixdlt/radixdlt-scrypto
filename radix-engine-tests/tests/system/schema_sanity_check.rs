@@ -95,7 +95,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
     for package_address in package_addresses {
         println!("\nChecking {}", package_address.to_string(&bech32));
 
-        let schemas_by_hash = test_runner.get_package_scrypto_schemas(&package_address);
+        let schemas_by_hash = test_runner.get_package_blueprint_schema_inits(&package_address);
         println!("Found {} schemas", schemas_by_hash.len());
 
         let blueprint_definitions = test_runner.get_package_blueprint_definitions(&package_address);

@@ -145,7 +145,7 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
 - `sbor`: The binary data format used by Scrypto.
 - `sbor-derive`: Derives for encoding and decoding Rust `struct` and `enum`.
 - `scrypto`: Scrypto standard library.
-- `scrypto-schema`: Scrypto package schema.
+- `blueprint-schema-init`: Scrypto package schema.
 - `scrypto-derive`: Derives for defining and importing Scrypto blueprints.
 - `radix-engine`: The Scrypto execution engine.
 - `simulator`: A simulator that run Scrypto code on a filesystem based ledger.

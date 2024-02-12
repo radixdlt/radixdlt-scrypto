@@ -688,7 +688,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         addresses
     }
 
-    pub fn get_package_scrypto_schemas(
+    pub fn get_package_blueprint_schema_inits(
         &self,
         package_address: &PackageAddress,
     ) -> IndexMap<SchemaHash, VersionedScryptoSchema> {

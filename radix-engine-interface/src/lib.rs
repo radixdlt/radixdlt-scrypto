@@ -18,7 +18,7 @@ pub use macros::*;
 
 // Re-export scrypto schema
 pub mod schema {
-    pub use scrypto_schema::*;
+    pub use blueprint_schema_init::*;
 }
 
 // Re-export radix engine common.
