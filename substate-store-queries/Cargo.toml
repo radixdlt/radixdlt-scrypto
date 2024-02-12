@@ -10,6 +10,7 @@ substate-store-interface = { path = "../substate-store-interface", default-featu
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false }
+
 itertools = { version = "0.10.3", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 paste = { version = "1.0.13" }

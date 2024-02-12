@@ -1685,7 +1685,6 @@ dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
- "radix-engine-interface",
  "sbor",
  "utils",
 ]
