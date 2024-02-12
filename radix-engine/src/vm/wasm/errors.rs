@@ -64,7 +64,7 @@ pub enum PrepareError {
 pub enum InvalidImport {
     /// The import is not allowed
     ImportNotAllowed(String),
-    /// The import is not allowed
+    /// Scrypto VM version protocol mismatch
     ProtocolVersionMismatch {
         name: String,
         current_version: u64,
