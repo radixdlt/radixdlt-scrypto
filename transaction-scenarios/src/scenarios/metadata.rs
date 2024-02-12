@@ -1,9 +1,9 @@
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::metadata::{
     MetadataValue, SingleMetadataVal, UncheckedOrigin, UncheckedUrl,
 };
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
 
 use crate::internal_prelude::*;

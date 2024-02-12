@@ -6,7 +6,7 @@ use radix_engine::system::attached_modules::role_assignment::RoleAssignmentError
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::object_modules::auth::AuthAddresses;
+use radix_engine_common::constants::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageDefinition, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,

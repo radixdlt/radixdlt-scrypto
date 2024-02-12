@@ -7,7 +7,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemMo
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::types::*;
-use radix_engine_interface::object_modules::auth::AuthAddresses;
+use radix_engine_common::constants::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::types::FromPublicKey; 
 use substate_store_queries::typed_substate_layout::{

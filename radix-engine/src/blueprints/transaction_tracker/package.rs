@@ -9,12 +9,12 @@ use blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::runtime::Runtime;
+use radix_engine_common::constants::AuthAddresses;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldValue};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
-use radix_engine_interface::object_modules::auth::AuthAddresses;
 
 pub const TRANSACTION_TRACKER_BLUEPRINT: &str = "TransactionTracker";
 

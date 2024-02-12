@@ -55,7 +55,6 @@ pub use radix_engine_interface::api::field_api::*;
 pub use radix_engine_interface::api::key_value_entry_api::*;
 pub use radix_engine_interface::api::key_value_store_api::*;
 pub use radix_engine_interface::api::object_api::*;
-pub use radix_engine_interface::object_modules::*;
 pub use radix_engine_interface::api::transaction_runtime_api::*;
 pub use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::access_controller::*;
@@ -67,6 +66,7 @@ pub use radix_engine_interface::blueprints::package::*;
 pub use radix_engine_interface::blueprints::pool::*;
 pub use radix_engine_interface::blueprints::resource::*;
 pub use radix_engine_interface::blueprints::transaction_processor::*;
+pub use radix_engine_interface::object_modules::*;
 
 /* Native SDK */
 pub use native_sdk::account::*;

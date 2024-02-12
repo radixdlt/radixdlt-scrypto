@@ -1,5 +1,5 @@
 use radix_engine::types::*;
-use radix_engine_interface::object_modules::auth::AuthAddresses;
+use radix_engine_common::constants::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };

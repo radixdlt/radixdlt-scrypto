@@ -9,7 +9,7 @@ use radix_engine::system::attached_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::types::blueprints::account::ResourcePreference;
 use radix_engine::types::*;
-use radix_engine_interface::object_modules::auth::AuthAddresses;
+use radix_engine_common::constants::AuthAddresses;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::api::ModuleId;

@@ -3,8 +3,8 @@ use arbitrary::Arbitrary;
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
 
-pub mod auth;
 pub mod metadata;
+pub mod role_assignment;
 pub mod royalty;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]

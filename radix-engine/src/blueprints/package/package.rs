@@ -17,8 +17,8 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::object_modules::auth::{AuthAddresses, ROLE_ASSIGNMENT_BLUEPRINT};
 use radix_engine_interface::object_modules::metadata::MetadataInit;
+use radix_engine_interface::object_modules::role_assignment::ROLE_ASSIGNMENT_BLUEPRINT;
 use sbor::LocalTypeId;
 
 // Import and re-export substate types

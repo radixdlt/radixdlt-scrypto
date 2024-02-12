@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::object_modules::auth::*;
+use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::types::NodeId;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;

@@ -6,9 +6,9 @@ pub mod tests {
     use super::*;
     use crate::internal_prelude::*;
     use crate::manifest::*;
-    use radix_engine_interface::object_modules::ModuleConfig;
     use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
     use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
+    use radix_engine_interface::object_modules::ModuleConfig;
     use radix_engine_interface::{metadata, metadata_init};
     use scrypto_derive::NonFungibleData;
 

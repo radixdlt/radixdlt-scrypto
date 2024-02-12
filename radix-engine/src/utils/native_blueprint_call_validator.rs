@@ -10,8 +10,8 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::object_modules::auth::*;
 use radix_engine_interface::object_modules::metadata::*;
+use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::object_modules::royalty::*;
 use transaction::prelude::*;
 

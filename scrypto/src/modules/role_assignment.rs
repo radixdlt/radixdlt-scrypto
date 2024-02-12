@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::object_modules::auth::{
+use radix_engine_interface::object_modules::role_assignment::{
     RoleAssignmentCreateInput, RoleAssignmentGetInput, RoleAssignmentLockOwnerInput,
     RoleAssignmentSetInput, RoleAssignmentSetOwnerInput, ROLE_ASSIGNMENT_BLUEPRINT,
     ROLE_ASSIGNMENT_CREATE_IDENT, ROLE_ASSIGNMENT_GET_IDENT, ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,

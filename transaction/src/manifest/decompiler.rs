@@ -4,17 +4,6 @@ use crate::validation::*;
 use radix_engine_common::constants::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::AddressBech32Encoder;
-use radix_engine_interface::object_modules::auth::{
-    ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
-};
-use radix_engine_interface::object_modules::metadata::METADATA_SET_IDENT;
-use radix_engine_interface::object_modules::metadata::{
-    METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
-};
-use radix_engine_interface::object_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
-    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
 };
@@ -45,6 +34,17 @@ use radix_engine_interface::constants::{
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_interface::object_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::object_modules::metadata::{
+    METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
+};
+use radix_engine_interface::object_modules::role_assignment::{
+    ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+};
+use radix_engine_interface::object_modules::royalty::{
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;

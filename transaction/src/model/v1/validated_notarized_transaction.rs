@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use radix_engine_interface::object_modules::auth::AuthAddresses;
+use radix_engine_common::constants::AuthAddresses;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ValidatedNotarizedTransactionV1 {
