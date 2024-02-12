@@ -16,11 +16,6 @@ pub mod types;
 mod macros;
 pub use macros::*;
 
-// Re-export scrypto schema
-pub mod schema {
-    pub use blueprint_schema_init::*;
-}
-
 // Re-export radix engine common.
 pub extern crate radix_engine_common;
 pub use radix_engine_common::*;
@@ -52,7 +47,6 @@ pub mod prelude {
     pub use crate::api::node_modules::metadata::*;
     pub use crate::api::*;
     pub use crate::blueprints::resource::*;
-    pub use crate::schema::*;
     pub use crate::traits::*;
     pub use crate::types::*;
     pub use crate::{

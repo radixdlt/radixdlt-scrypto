@@ -1,3 +1,4 @@
+use blueprint_schema_init::*;
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     system::system_modules::costing::{
@@ -5,11 +6,10 @@ use radix_engine::{
     },
     types::*,
 };
-use radix_engine_interface::schema::TypeRef;
-use substate_store_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
 use radix_engine_tests::common::*;
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;
+use substate_store_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
 
 #[test]
 fn check_native_function_base_costs() {

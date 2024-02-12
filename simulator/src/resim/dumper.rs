@@ -3,7 +3,7 @@ use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
-use radix_engine::types::*;
+use radix_engine::types::*;use blueprint_schema_init::BlueprintFeature;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::network::NetworkDefinition;
 use substate_store_interface::{

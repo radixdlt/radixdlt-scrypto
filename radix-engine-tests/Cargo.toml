@@ -15,6 +15,7 @@ substate-store-impls = { path = "../substate-store-impls", default-features = fa
 substate-store-queries = { path = "../substate-store-queries", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 transaction-scenarios = { path = "../transaction-scenarios", default-features = false }
+blueprint-schema-init = { path = "../blueprint-schema-init" }
 utils = { path = "../utils", default-features = false }
 radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"]}
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
@@ -26,7 +27,6 @@ transaction = { path = "../transaction", default-features = false }
 wabt = { version = "0.10.0" }
 criterion = { version = "0.3", features = ["html_reports"] }
 scrypto = { path = "../scrypto", default-features = false }
-sbor-derive = { path = "../sbor-derive", default-features = false }
 rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }
 rayon = "1.5.3"

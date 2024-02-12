@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::types::*;
 use radix_engine_interface::api::{AttachedModuleId, ModuleId};

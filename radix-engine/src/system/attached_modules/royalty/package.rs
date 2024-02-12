@@ -1,14 +1,14 @@
 use crate::errors::*;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::types::*;
+use blueprint_schema_init::{
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
+    FunctionSchemaInit, TypeRef,
+};
 use native_sdk::resource::NativeVault;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_STATE_SELF};
-use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
-    FunctionSchemaInit, TypeRef,
-};
 
 // Re-export substates
 use crate::blueprints::package::PackageError;

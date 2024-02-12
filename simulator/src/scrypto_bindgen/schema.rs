@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
-use std::fmt::{Debug, Display};
-
+use std::fmt::{Debug, Display};use blueprint_schema_init::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 

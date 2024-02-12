@@ -19,7 +19,6 @@ radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, 
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 wabt = { version = "0.10.0" }
 scrypto = { path = "../scrypto", default-features = false }
-sbor-derive = { path = "../sbor-derive", default-features = false }
 scrypto-test = { path = "../scrypto-test", default-features = false }
 rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }

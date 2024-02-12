@@ -1,6 +1,9 @@
 use crate::internal_prelude::*;
 use crate::types::*;
 use crate::{errors::*, event_schema, roles_template};
+use blueprint_schema_init::{
+    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
+};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -8,9 +11,6 @@ use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, A
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
-};
-use radix_engine_interface::schema::{
-    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
 };
 
 use super::{RemoveMetadataEvent, SetMetadataEvent};

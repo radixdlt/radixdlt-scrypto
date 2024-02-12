@@ -1250,11 +1250,11 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::blueprints::package::BlueprintType;
-    use radix_engine_interface::schema::{
+    use blueprint_schema_init::{
         BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
         FunctionSchemaInit, TypeRef,
     };
+    use radix_engine_interface::blueprints::package::BlueprintType;
     use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
     use wabt::{wat2wasm_with_features, Features};
 

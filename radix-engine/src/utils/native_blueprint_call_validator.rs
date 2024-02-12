@@ -1,6 +1,7 @@
 use crate::blueprints::native_schema::*;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
+use blueprint_schema_init::*;
 use radix_engine_common::data::manifest::*;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -12,7 +13,6 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::*;
 use transaction::prelude::*;
 
 pub fn validate_call_arguments_to_native_components(

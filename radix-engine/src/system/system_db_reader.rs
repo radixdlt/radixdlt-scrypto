@@ -33,7 +33,7 @@ use crate::track::TrackedNode;
 use crate::transaction::{
     ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,
 };
-use crate::types::BlueprintCollectionSchema;
+use blueprint_schema_init::BlueprintCollectionSchema;
 
 #[derive(Clone, Debug)]
 pub enum SystemPartitionDescription {

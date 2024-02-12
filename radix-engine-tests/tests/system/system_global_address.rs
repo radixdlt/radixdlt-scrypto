@@ -1,3 +1,4 @@
+use blueprint_schema_init::*;
 use radix_engine::blueprints::resource::ResourceNativePackage;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};

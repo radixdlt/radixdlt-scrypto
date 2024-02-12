@@ -14,6 +14,7 @@ substate-store-impls = { path = "../substate-store-impls", features = ["rocksdb"
 substate-store-queries = { path = "../substate-store-queries" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
+blueprint-schema-init = { path = "../blueprint-schema-init" }
 transaction = { path = "../transaction" }
 flate2 = { version = "1.0.27" }
 tar = { version = "0.4.40" }

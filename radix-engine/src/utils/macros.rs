@@ -9,7 +9,7 @@ macro_rules! event_schema {
                     TypeRef::Static($aggregator.add_child_type_and_descendents::<$event_type>()),
                 );
             )*
-            radix_engine_interface::schema::BlueprintEventSchemaInit {
+            blueprint_schema_init::BlueprintEventSchemaInit {
                 event_schema
             }
         }

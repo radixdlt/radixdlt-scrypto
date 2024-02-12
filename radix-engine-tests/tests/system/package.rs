@@ -1,3 +1,4 @@
+use blueprint_schema_init::*;
 use radix_engine::blueprints::package::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
