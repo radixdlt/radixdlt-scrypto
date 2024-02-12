@@ -9,7 +9,7 @@ radix-engine = { path = "../radix-engine", default-features = false }
 substate-store-impls = { path = "../substate-store-impls", default-features = false }
 substate-store-interface = { path = "../substate-store-interface", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-blueprint-schema-init = { path = "../blueprint-schema-init" }
+blueprint-schema-init = { path = "../blueprint-schema-init", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false }
