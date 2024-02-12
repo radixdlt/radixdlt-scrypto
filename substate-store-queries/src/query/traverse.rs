@@ -1,8 +1,8 @@
 use radix_engine::blueprints::resource::*;
-use radix_engine::prelude::*;
-use radix_engine::system::attached_modules::royalty::{
+use radix_engine::object_modules::royalty::{
     ComponentRoyaltyAccumulatorFieldPayload, ComponentRoyaltyField,
 };
+use radix_engine::prelude::*;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::{AttachedModuleId, ModuleId};

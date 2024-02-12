@@ -2,7 +2,7 @@ use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject}
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_engine::system::attached_modules::role_assignment::RoleAssignmentError;
+use radix_engine::object_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_common::constants::AuthAddresses;

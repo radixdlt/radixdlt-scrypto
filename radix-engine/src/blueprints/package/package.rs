@@ -2,7 +2,7 @@ use super::substates::*;
 use crate::blueprints::util::{check_name, InvalidNameError, SecurifiedRoleAssignment};
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
-use crate::system::attached_modules::metadata::MetadataNativePackage;
+use crate::object_modules::metadata::MetadataNativePackage;
 use crate::system::node_init::type_info_partition;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::system::type_info::TypeInfoSubstate;
@@ -21,9 +21,9 @@ use radix_engine_interface::object_modules::role_assignment::ROLE_ASSIGNMENT_BLU
 use sbor::LocalTypeId;
 
 // Import and re-export substate types
+use crate::object_modules::role_assignment::*;
+use crate::object_modules::royalty::RoyaltyUtil;
 use crate::roles_template;
-use crate::system::attached_modules::role_assignment::*;
-use crate::system::attached_modules::royalty::RoyaltyUtil;
 use crate::system::system::*;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;

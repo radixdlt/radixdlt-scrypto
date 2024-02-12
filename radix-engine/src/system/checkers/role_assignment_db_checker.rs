@@ -1,6 +1,6 @@
 use super::*;
 use crate::blueprints::util::*;
-use crate::system::attached_modules::role_assignment::*;
+use crate::object_modules::role_assignment::*;
 
 use radix_engine_interface::prelude::*;
 

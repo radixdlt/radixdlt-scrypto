@@ -21,6 +21,9 @@ pub mod transaction;
 /// Native blueprints (to be moved to individual crates)
 pub mod blueprints;
 
+/// Object module blueprints (to be moved to individual crates)
+pub mod object_modules;
+
 pub mod track;
 
 pub mod errors;

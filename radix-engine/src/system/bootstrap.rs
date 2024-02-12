@@ -14,9 +14,9 @@ use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
 };
 use crate::internal_prelude::*;
-use crate::system::attached_modules::metadata::MetadataNativePackage;
-use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::attached_modules::royalty::RoyaltyNativePackage;
+use crate::object_modules::metadata::MetadataNativePackage;
+use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;

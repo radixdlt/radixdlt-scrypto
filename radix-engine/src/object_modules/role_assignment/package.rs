@@ -3,7 +3,7 @@ use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::util::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
-use crate::system::attached_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
+use crate::object_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;

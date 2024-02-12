@@ -20,9 +20,9 @@ use radix_engine::blueprints::pool::v1::substates::two_resource_pool::{
 };
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_tracker::*;
-pub use radix_engine::system::attached_modules::metadata::*;
-pub use radix_engine::system::attached_modules::role_assignment::*;
-pub use radix_engine::system::attached_modules::royalty::*;
+pub use radix_engine::object_modules::metadata::*;
+pub use radix_engine::object_modules::role_assignment::*;
+pub use radix_engine::object_modules::royalty::*;
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
