@@ -22,7 +22,7 @@ walkdir = "2.3.3"
 # You should enable either `std` or `alloc`
 default = ["std"]
 std = ["hex/std", "sbor/std", "blueprint-schema-init/std", "transaction/std", "radix-engine/std", "radix-engine/moka", "substate-store-impls/std", "radix-engine-interface/std", "radix-engine-common/std", "substate-store-interface/std", "utils/std"]
-alloc = ["hex/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine/lru", "substate-store-impls/alloc", "radix-engine-interface/alloc", "radix-engine-common/std", "substate-store-interface/alloc", "utils/alloc"]
+alloc = ["hex/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine/lru", "substate-store-impls/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "substate-store-interface/alloc", "utils/alloc"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

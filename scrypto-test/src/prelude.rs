@@ -46,6 +46,7 @@ pub use substate_store_interface::db_key_mapper::*;
 pub use substate_store_interface::interface::*;
 
 /* Radix Engine Interface */
+pub extern crate radix_engine_common;
 pub use radix_engine_interface::api::actor_api::*;
 pub use radix_engine_interface::api::actor_index_api::*;
 pub use radix_engine_interface::api::actor_key_value_entry_api::*;

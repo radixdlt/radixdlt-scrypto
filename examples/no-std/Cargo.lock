@@ -71,6 +71,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "blueprint-schema-init"
+version = "1.2.0-dev"
+dependencies = [
+ "bitflags",
+ "radix-engine-common",
+ "sbor",
+ "serde",
+]
+
+[[package]]
 name = "bnum"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -422,16 +432,15 @@ name = "radix-engine-interface"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags",
+ "blueprint-schema-init",
  "const-sha1",
  "hex",
  "lazy_static",
  "paste",
  "radix-engine-common",
- "radix-engine-derive",
  "radix-engine-macros",
  "regex",
  "sbor",
- "blueprint-schema-init",
  "serde",
  "serde_json",
  "strum",
@@ -559,17 +568,16 @@ name = "scrypto"
 version = "1.2.0-dev"
 dependencies = [
  "bech32",
+ "blueprint-schema-init",
  "const-sha1",
  "hex",
  "num-bigint",
  "num-traits",
  "paste",
  "radix-engine-common",
- "radix-engine-derive",
  "radix-engine-interface",
  "sbor",
  "scrypto-derive",
- "blueprint-schema-init",
  "strum",
  "utils",
 ]
@@ -578,25 +586,15 @@ dependencies = [
 name = "scrypto-derive"
 version = "1.2.0-dev"
 dependencies = [
+ "blueprint-schema-init",
  "proc-macro2",
  "quote",
  "radix-engine-common",
  "regex",
  "sbor",
- "blueprint-schema-init",
  "serde",
  "serde_json",
  "syn 1.0.93",
-]
-
-[[package]]
-name = "blueprint-schema-init"
-version = "1.2.0-dev"
-dependencies = [
- "bitflags",
- "radix-engine-common",
- "sbor",
- "serde",
 ]
 
 [[package]]

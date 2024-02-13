@@ -31,8 +31,8 @@ regex = { version = "=1.9.3", default-features = false, features = [] }
 # - https://github.com/rust-lang/cargo/issues/7915
 #
 default = ["std"]
-std = ["serde/std", "serde_json/std", "blueprint-schema-init/std", "blueprint-schema-init/serde", "sbor/std"]
-alloc = ["serde/alloc", "serde_json/alloc", "blueprint-schema-init/alloc", "blueprint-schema-init/serde", "sbor/alloc"]
+std = ["serde/std", "serde_json/std", "blueprint-schema-init/std", "radix-engine-common/std", "blueprint-schema-init/serde", "sbor/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "blueprint-schema-init/alloc", "radix-engine-common/alloc", "blueprint-schema-init/serde", "sbor/alloc"]
 
 # Enable trace
 trace = []
