@@ -4,6 +4,7 @@
 //! builder that is being used.
 
 use radix_engine_common::prelude::*;
+use radix_engine_interface::prelude::*;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use transaction::prelude::*;
 

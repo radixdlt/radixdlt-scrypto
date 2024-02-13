@@ -5,9 +5,9 @@ use crate::blueprints::resource::{
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::transaction::{BalanceChange, StateUpdateSummary};
 use radix_engine_common::prelude::scrypto_decode;
+use radix_engine_common::traits::ScryptoEvent;
 use radix_engine_common::types::ResourceAddress;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
 use sbor::rust::ops::AddAssign;
 use sbor::rust::ops::Neg;

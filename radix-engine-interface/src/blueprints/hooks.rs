@@ -1,5 +1,5 @@
+use crate::internal_prelude::*;
 use crate::types::BlueprintId;
-use crate::ScryptoSbor;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_common::types::NodeId;
 

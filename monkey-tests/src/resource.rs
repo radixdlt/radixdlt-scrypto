@@ -6,6 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{VmApi, VmInvoke};
+use radix_engine_common::data::manifest::ManifestArgs;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::IndexMap;
 use radix_engine_common::prelude::{
@@ -14,7 +15,6 @@ use radix_engine_common::prelude::{
 };
 use radix_engine_common::types::{ComponentAddress, ResourceAddress};
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_SELF};
-use radix_engine_interface::data::manifest::ManifestArgs;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::prelude::{
     Bucket, FieldValue, FungibleResourceManagerMintInput,

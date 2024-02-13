@@ -1,4 +1,4 @@
-use crate::sbor::rust::prelude::*;
+use crate::internal_prelude::*;
 use crate::types::Level;
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::types::GlobalAddress;

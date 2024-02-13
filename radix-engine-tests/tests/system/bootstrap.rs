@@ -1,4 +1,5 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
+use radix_engine::object_modules::metadata::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::checkers::SystemDatabaseChecker;
 use radix_engine::system::checkers::{
@@ -11,6 +12,7 @@ use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
+use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::KeyValueEntrySubstate;
 use scrypto_test::prelude::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
 use substate_store_impls::memory_db::InMemorySubstateDatabase;

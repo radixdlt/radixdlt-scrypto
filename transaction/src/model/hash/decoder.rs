@@ -1,6 +1,6 @@
 use bech32::{FromBase32, Variant};
 
-use crate::prelude::*;
+use crate::internal_prelude::*;
 
 pub struct TransactionHashBech32Decoder {
     pub hrp_set: HrpSet,
@@ -57,7 +57,7 @@ impl TransactionHashBech32Decoder {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn intent_hash_is_decoded_as_expected() {

@@ -1,5 +1,5 @@
 use super::*;
-use crate::*;
+use crate::internal_prelude::*;
 use radix_engine_common::data::scrypto::model::Own;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;

@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
+use crate::internal_prelude::*;
 use crate::types::*;
-use crate::*;
 use blueprint_schema_init::TypeRef;
 use blueprint_schema_init::{
     BlueprintCollectionSchema, BlueprintKeyValueSchema, FunctionSchemaInit,

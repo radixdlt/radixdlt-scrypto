@@ -33,6 +33,7 @@ use crate::vm::VmVersion;
 use lazy_static::lazy_static;
 use radix_engine_common::constants::AuthAddresses;
 use radix_engine_common::crypto::Secp256k1PublicKey;
+use radix_engine_common::math::traits::*;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
@@ -40,7 +41,6 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::math::traits::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{

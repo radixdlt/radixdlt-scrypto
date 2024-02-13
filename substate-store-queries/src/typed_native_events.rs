@@ -6,6 +6,8 @@ use crate::typed_substate_layout::*;
 use radix_engine::blueprints::account;
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::blueprints::pool::v1::events as pool_events;
+use radix_engine::object_modules::metadata::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 
 /// Given an [`EventTypeIdentifier`] and the raw event data, this function attempts to convert the
@@ -422,7 +424,7 @@ macro_rules! define_structure {
                 }
 
                 $(
-                    #[derive(radix_engine_interface::prelude::ScryptoSbor)]
+                    #[derive(radix_engine_common::prelude::ScryptoSbor)]
                     pub enum [< Typed $blueprint_ident BlueprintEventKey >] {
                         $(
                             $event_ty,
@@ -435,7 +437,7 @@ macro_rules! define_structure {
                         fn from_str(s: &str) -> Result<Self, Self::Err> {
                             match s {
                                 $(
-                                    _ if <$event_ty as radix_engine_interface::prelude::ScryptoEvent>::EVENT_NAME == s => Ok(Self::$event_ty),
+                                    _ if <$event_ty as radix_engine_common::traits::ScryptoEvent>::EVENT_NAME == s => Ok(Self::$event_ty),
                                 )*
                                 _ => Err(Self::Err::BlueprintEventKeyParseError {
                                     blueprint_event_key: stringify!([< Typed $blueprint_ident BlueprintEventKey >]).to_string(),
@@ -468,7 +470,7 @@ macro_rules! define_structure {
                         pub fn registered_events() -> sbor::prelude::HashSet<String> {
                             let mut set = sbor::prelude::HashSet::default();
                             $(
-                                set.insert(<$event_ty as radix_engine_interface::prelude::ScryptoEvent>::EVENT_NAME.to_owned());
+                                set.insert(<$event_ty as radix_engine_common::traits::ScryptoEvent>::EVENT_NAME.to_owned());
                             )*
                             set
                         }
@@ -542,7 +544,7 @@ macro_rules! define_structure {
                                 ) => Ok(TypedNativeEvent::$package_ident(
                                     [< Typed $package_ident PackageEvent >]::$blueprint_ident(
                                         [< Typed $blueprint_ident BlueprintEvent >]::$event_ty(
-                                            radix_engine_interface::prelude::scrypto_decode(data)?
+                                            radix_engine_common::prelude::scrypto_decode(data)?
                                         )
                                     )
                                 )),

@@ -8,7 +8,6 @@ pub use origin::*;
 
 use crate::internal_prelude::*;
 use crate::types::KeyValueStoreInit;
-use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_common::crypto::PublicKey;

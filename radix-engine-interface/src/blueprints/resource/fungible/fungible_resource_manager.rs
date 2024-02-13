@@ -1,5 +1,5 @@
 use crate::blueprints::resource::*;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;

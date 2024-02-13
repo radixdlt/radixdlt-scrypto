@@ -9,8 +9,8 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
+use radix_engine_common::math::Decimal;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 

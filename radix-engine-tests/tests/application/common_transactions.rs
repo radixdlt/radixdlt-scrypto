@@ -2,6 +2,7 @@ use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::object_modules::ModuleConfig;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::{metadata, metadata_init, mint_roles};
 use radix_engine_tests::common::*;
 use scrypto::prelude::Pow;

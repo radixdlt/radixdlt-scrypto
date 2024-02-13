@@ -1,5 +1,5 @@
 use crate::blueprints::resource::Vault;
-use crate::*;
+use crate::internal_prelude::*;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]

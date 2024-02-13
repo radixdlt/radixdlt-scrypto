@@ -26,7 +26,6 @@ use sbor::Sbor;
 pub use vault::*;
 pub use worktop::*;
 
-use crate::object_modules::role_assignment::RoleDefinition;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_common::math::*;

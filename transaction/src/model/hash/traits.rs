@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::internal_prelude::*;
 use radix_engine_common::prelude::*;
 
 pub trait HashHasHrp

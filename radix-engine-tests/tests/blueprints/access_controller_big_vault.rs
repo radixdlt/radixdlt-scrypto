@@ -6,6 +6,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::{TestRunner, TestRunnerBuilder};
 use std::iter;
 use substate_store_impls::memory_db::InMemorySubstateDatabase;

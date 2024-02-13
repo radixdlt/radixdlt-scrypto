@@ -1,4 +1,5 @@
 use crate::{MultiPoolMeta, SystemTestFuzzer};
+use radix_engine_common::data::manifest::ManifestArgs;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{ComponentAddress, Decimal, ManifestExpression};
 use radix_engine_common::types::ResourceAddress;
@@ -10,7 +11,6 @@ use radix_engine_interface::blueprints::pool::{
     MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT, MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
     MULTI_RESOURCE_POOL_REDEEM_IDENT,
 };
-use radix_engine_interface::data::manifest::ManifestArgs;
 use radix_engine_interface::prelude::*;
 use transaction::builder::ManifestBuilder;
 

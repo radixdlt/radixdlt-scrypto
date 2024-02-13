@@ -6,6 +6,7 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, ScryptoVm, Vm};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_interface::prelude::*;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;

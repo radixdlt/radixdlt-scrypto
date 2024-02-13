@@ -13,6 +13,7 @@ use native_sdk::modules::role_assignment::{
 use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
+use radix_engine_common::time::Instant;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -22,7 +23,6 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::*;
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use sbor::rust::prelude::*;

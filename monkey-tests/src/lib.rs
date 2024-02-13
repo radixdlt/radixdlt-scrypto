@@ -40,7 +40,6 @@ use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::builder::ManifestBuilder;
-use transaction::prelude::Secp256k1PrivateKey;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,

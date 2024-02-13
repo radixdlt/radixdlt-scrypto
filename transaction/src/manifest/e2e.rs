@@ -1661,7 +1661,7 @@ pub fn apply_address_replacements(input: impl ToString) -> String {
     //     // Generate addresses
     //     use radix_engine_common::address::{AddressBech32Decoder, AddressBech32Encoder};
     //     use radix_engine_common::types::EntityType;
-    //     use radix_engine_interface::constants::*;
+    //     use radix_engine_common::constants::*;
 
     //     // Random address from resim new-account
     //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";

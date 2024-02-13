@@ -2,11 +2,11 @@ use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
+use radix_engine_common::constants::ROYALTY_MODULE_PACKAGE;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_common::types::RoyaltyAmount;
 use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::blueprints::resource::Bucket;
-use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::object_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentRoyaltyLockInput,
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,

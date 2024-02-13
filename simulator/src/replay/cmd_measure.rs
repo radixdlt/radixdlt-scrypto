@@ -8,7 +8,7 @@ use flume;
 use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
-use radix_engine_interface::prelude::NetworkDefinition;
+use radix_engine_common::prelude::NetworkDefinition;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::prelude::*;

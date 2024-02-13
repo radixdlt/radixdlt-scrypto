@@ -1,16 +1,24 @@
 use super::blob_provider::*;
 use crate::data::*;
 use crate::errors::*;
-use crate::internal_prelude::TransactionManifestV1;
+use crate::internal_prelude::*;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
+use radix_engine_common::address::AddressBech32Decoder;
 use radix_engine_common::constants::PACKAGE_PACKAGE;
+use radix_engine_common::constants::{
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
+};
+use radix_engine_common::crypto::Hash;
+use radix_engine_common::data::manifest::model::*;
+use radix_engine_common::data::manifest::*;
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::math::{Decimal, PreciseDecimal};
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_common::types::NodeId;
 use radix_engine_common::types::NonFungibleGlobalId;
 use radix_engine_common::types::PackageAddress;
-use radix_engine_interface::address::AddressBech32Decoder;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
 };
@@ -33,14 +41,6 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
-use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
-};
-use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::manifest::model::*;
-use radix_engine_interface::data::manifest::*;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::object_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::object_modules::metadata::{
     METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
@@ -1485,22 +1485,21 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
+    use radix_engine_common::address::AddressBech32Decoder;
     use radix_engine_common::constants::CONSENSUS_MANAGER;
+    use radix_engine_common::crypto::Secp256k1PrivateKey;
     use radix_engine_common::manifest_args;
+    use radix_engine_common::network::NetworkDefinition;
     use radix_engine_common::traits::NonFungibleData;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
-    use radix_engine_interface::address::AddressBech32Decoder;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
         NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintRuidManifestInput,
     };
-    use radix_engine_interface::crypto::Secp256k1PrivateKey;
-    use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::object_modules::metadata::MetadataValue;
     use radix_engine_interface::object_modules::ModuleConfig;
     use radix_engine_interface::types::PackageRoyaltyConfig;
-    use radix_engine_interface::{dec, pdec, ScryptoSbor};
     use scrypto::blueprint_schema_init::BlueprintStateSchemaInit;
     use utils::prelude::IndexMap;
 

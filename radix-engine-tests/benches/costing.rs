@@ -13,6 +13,7 @@ use radix_engine::{
     },
 };
 use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
+use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use sbor::rust::iter;

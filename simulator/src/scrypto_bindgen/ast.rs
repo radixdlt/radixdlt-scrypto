@@ -1,6 +1,6 @@
 use proc_macro2::*;
 use quote::*;
-use radix_engine_interface::prelude::*;
+use radix_engine_common::prelude::*;
 
 use crate::token_stream_from_str;
 

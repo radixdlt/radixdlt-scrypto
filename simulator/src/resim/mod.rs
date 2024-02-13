@@ -75,8 +75,9 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
 };
-use radix_engine_interface::crypto::{hash, Secp256k1PrivateKey};
-use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_common::crypto::{hash, Secp256k1PrivateKey};
+use radix_engine_common::network::NetworkDefinition;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use std::env;
 use std::fs;

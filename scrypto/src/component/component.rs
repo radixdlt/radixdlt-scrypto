@@ -3,6 +3,9 @@ use crate::modules::{Attachable, HasMetadata, RoleAssignment, Royalty};
 use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
+use radix_engine_common::data::scrypto::{
+    ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
+};
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
     component_address_type_data, own_type_data, COMPONENT_ADDRESS_TYPE, OWN_TYPE,
 };
@@ -14,9 +17,6 @@ use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{AttachedModuleId, FieldValue};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
-};
-use radix_engine_interface::data::scrypto::{
-    ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::object_modules::metadata::{
     MetadataConversionError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,

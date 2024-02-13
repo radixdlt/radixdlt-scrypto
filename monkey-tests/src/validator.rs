@@ -1,5 +1,6 @@
 use crate::{SystemTestFuzzer, ValidatorMeta};
 use radix_engine_common::constants::XRD;
+use radix_engine_common::data::manifest::ManifestArgs;
 use radix_engine_common::manifest_args;
 use radix_engine_common::prelude::{ComponentAddress, NonFungibleLocalId, VALIDATOR_OWNER_BADGE};
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -9,7 +10,6 @@ use radix_engine_interface::blueprints::consensus_manager::{
     VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_UNSTAKE_IDENT,
     VALIDATOR_UPDATE_FEE_IDENT,
 };
-use radix_engine_interface::data::manifest::ManifestArgs;
 use radix_engine_interface::prelude::*;
 use transaction::builder::ManifestBuilder;
 use utils::btreeset;

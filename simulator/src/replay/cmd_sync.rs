@@ -7,7 +7,7 @@ use flume::Sender;
 use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
-use radix_engine_interface::prelude::NetworkDefinition;
+use radix_engine_common::prelude::NetworkDefinition;
 use rocksdb::{Direction, IteratorMode, Options, DB};
 use std::path::PathBuf;
 use std::thread;

@@ -1,6 +1,6 @@
 use crate::blueprints::resource::Bucket;
+use crate::internal_prelude::*;
 use crate::types::*;
-use crate::*;
 use radix_engine_common::data::scrypto::model::Own;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;

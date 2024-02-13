@@ -1,5 +1,5 @@
 use crate::blueprints::package::BlueprintVersion;
-use crate::ScryptoSbor;
+use crate::internal_prelude::*;
 use blueprint_schema_init::KeyValueStoreGenericSubstitutions;
 use radix_engine_common::types::BlueprintId;
 use radix_engine_common::types::{GenericSubstitution, GlobalAddress};

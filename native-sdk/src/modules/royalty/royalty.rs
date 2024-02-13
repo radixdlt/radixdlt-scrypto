@@ -1,8 +1,8 @@
+use radix_engine_common::constants::*;
+use radix_engine_common::data::scrypto::model::Own;
+use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
 use radix_engine_interface::api::*;
-use radix_engine_interface::constants::*;
-use radix_engine_interface::data::scrypto::model::Own;
-use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::object_modules::royalty::*;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
