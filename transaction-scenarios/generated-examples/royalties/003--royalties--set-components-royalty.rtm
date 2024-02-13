@@ -1,0 +1,62 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1cqxgje242zjdumkfn4aqyy5cjv98vuh0lzr60cuw6lfm7n7xhjjgll")
+    "call_no_package_royalty"
+    Enum<0u8>()
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1cqxgje242zjdumkfn4aqyy5cjv98vuh0lzr60cuw6lfm7n7xhjjgll")
+    "call_xrd_package_royalty"
+    Enum<0u8>()
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1cqxgje242zjdumkfn4aqyy5cjv98vuh0lzr60cuw6lfm7n7xhjjgll")
+    "call_usd_package_royalty"
+    Enum<0u8>()
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1cpyum8736z0dnldm5vjl8kxtsck35kfnps9d6ttfuvw0d0ug8l549h")
+    "call_no_package_royalty"
+    Enum<1u8>(
+        Decimal("17")
+    )
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1cpyum8736z0dnldm5vjl8kxtsck35kfnps9d6ttfuvw0d0ug8l549h")
+    "call_xrd_package_royalty"
+    Enum<1u8>(
+        Decimal("18")
+    )
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1cpyum8736z0dnldm5vjl8kxtsck35kfnps9d6ttfuvw0d0ug8l549h")
+    "call_usd_package_royalty"
+    Enum<1u8>(
+        Decimal("19")
+    )
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1crh5ylxmeh80mpmh6vagta63k888ya509n7r582524um4fhr7f7jqp")
+    "call_no_package_royalty"
+    Enum<2u8>(
+        Decimal("2")
+    )
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1crh5ylxmeh80mpmh6vagta63k888ya509n7r582524um4fhr7f7jqp")
+    "call_xrd_package_royalty"
+    Enum<2u8>(
+        Decimal("3")
+    )
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1crh5ylxmeh80mpmh6vagta63k888ya509n7r582524um4fhr7f7jqp")
+    "call_usd_package_royalty"
+    Enum<2u8>(
+        Decimal("4")
+    )
+;

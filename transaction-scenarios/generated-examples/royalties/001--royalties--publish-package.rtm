@@ -13,7 +13,7 @@ PUBLISH_PACKAGE_ADVANCED
     Enum<0u8>()
     Tuple(
         Map<String, Tuple>(
-            "MaxTransaction" => Tuple(
+            "RoyaltiesBp" => Tuple(
                 Enum<0u8>(),
                 false,
                 Array<String>(),
@@ -24,53 +24,28 @@ PUBLISH_PACKAGE_ADVANCED
                         Tuple(
                             Array<Enum>(
                                 Enum<14u8>(
-                                    Array<Enum>(
-                                        Enum<0u8>(
-                                            170u8
-                                        )
-                                    )
+                                    Array<Enum>()
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>()
+                                ),
+                                Enum<17u8>(
+                                    Enum<0u8>()
                                 ),
                                 Enum<14u8>(
                                     Array<Enum>()
                                 ),
                                 Enum<14u8>(
-                                    Array<Enum>(
-                                        Enum<0u8>(
-                                            9u8
-                                        )
-                                    )
+                                    Array<Enum>()
                                 ),
                                 Enum<14u8>(
-                                    Array<Enum>(
-                                        Enum<0u8>(
-                                            9u8
-                                        )
-                                    )
-                                ),
-                                Enum<14u8>(
-                                    Array<Enum>(
-                                        Enum<0u8>(
-                                            65u8
-                                        )
-                                    )
+                                    Array<Enum>()
                                 )
                             ),
                             Array<Tuple>(
                                 Tuple(
                                     Enum<1u8>(
-                                        "MaxTransaction"
-                                    ),
-                                    Enum<1u8>(
-                                        Enum<0u8>(
-                                            Array<String>(
-                                                "kv_store"
-                                            )
-                                        )
-                                    )
-                                ),
-                                Tuple(
-                                    Enum<1u8>(
-                                        "MaxTransaction_new_Input"
+                                        "RoyaltiesBp"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
@@ -80,37 +55,47 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "MaxTransaction_max_events_Input"
+                                        "RoyaltiesBp_new_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
-                                            Array<String>(
-                                                "n"
-                                            )
+                                            Array<String>()
                                         )
                                     )
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "MaxTransaction_max_state_updates_Input"
+                                        "GlobalRoyaltiesBp"
+                                    ),
+                                    Enum<0u8>()
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "RoyaltiesBp_call_no_package_royalty_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
-                                            Array<String>(
-                                                "n"
-                                            )
+                                            Array<String>()
                                         )
                                     )
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "A"
+                                        "RoyaltiesBp_call_xrd_package_royalty_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
-                                            Array<String>(
-                                                "a"
-                                            )
+                                            Array<String>()
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "RoyaltiesBp_call_usd_package_royalty_Input"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>()
                                         )
                                     )
                                 )
@@ -118,6 +103,14 @@ PUBLISH_PACKAGE_ADVANCED
                             Array<Enum>(
                                 Enum<0u8>(),
                                 Enum<0u8>(),
+                                Enum<14u8>(
+                                    Enum<0u8>(
+                                        Enum<4u8>(
+                                            Enum<0u8>(),
+                                            "RoyaltiesBp"
+                                        )
+                                    )
+                                ),
                                 Enum<0u8>(),
                                 Enum<0u8>(),
                                 Enum<0u8>()
@@ -138,13 +131,7 @@ PUBLISH_PACKAGE_ADVANCED
                         ),
                         Array<Enum>()
                     ),
-                    Map<String, Enum>(
-                        "A" => Enum<0u8>(
-                            Enum<1u8>(
-                                4u64
-                            )
-                        )
-                    ),
+                    Map<String, Enum>(),
                     Map<String, Enum>(),
                     Tuple(
                         Map<String, Tuple>(
@@ -156,30 +143,16 @@ PUBLISH_PACKAGE_ADVANCED
                                     )
                                 ),
                                 Enum<0u8>(
-                                    Enum<0u8>(
-                                        66u8
-                                    )
-                                ),
-                                "MaxTransaction_new"
-                            ),
-                            "max_events" => Tuple(
-                                Enum<0u8>(),
-                                Enum<0u8>(
                                     Enum<1u8>(
                                         2u64
                                     )
                                 ),
-                                Enum<0u8>(
-                                    Enum<0u8>(
-                                        66u8
-                                    )
-                                ),
-                                "MaxTransaction_max_events"
+                                "RoyaltiesBp_new"
                             ),
-                            "max_state_updates" => Tuple(
+                            "call_no_package_royalty" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
-                                        Enum<1u8>(),
+                                        Enum<0u8>(),
                                         Tuple(
                                             1u32
                                         )
@@ -195,7 +168,49 @@ PUBLISH_PACKAGE_ADVANCED
                                         66u8
                                     )
                                 ),
-                                "MaxTransaction_max_state_updates"
+                                "RoyaltiesBp_call_no_package_royalty"
+                            ),
+                            "call_xrd_package_royalty" => Tuple(
+                                Enum<1u8>(
+                                    Tuple(
+                                        Enum<0u8>(),
+                                        Tuple(
+                                            1u32
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        4u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<0u8>(
+                                        66u8
+                                    )
+                                ),
+                                "RoyaltiesBp_call_xrd_package_royalty"
+                            ),
+                            "call_usd_package_royalty" => Tuple(
+                                Enum<1u8>(
+                                    Tuple(
+                                        Enum<0u8>(),
+                                        Tuple(
+                                            1u32
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        5u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<0u8>(
+                                        66u8
+                                    )
+                                ),
+                                "RoyaltiesBp_call_usd_package_royalty"
                             )
                         )
                     ),
@@ -203,7 +218,18 @@ PUBLISH_PACKAGE_ADVANCED
                         Map<Enum, String>()
                     )
                 ),
-                Enum<0u8>(),
+                Enum<1u8>(
+                    Map<String, Enum>(
+                        "new" => Enum<0u8>(),
+                        "call_no_package_royalty" => Enum<0u8>(),
+                        "call_xrd_package_royalty" => Enum<1u8>(
+                            Decimal("31")
+                        ),
+                        "call_usd_package_royalty" => Enum<2u8>(
+                            Decimal("1")
+                        )
+                    )
+                ),
                 Tuple(
                     Enum<0u8>(),
                     Enum<0u8>()
@@ -211,14 +237,9 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("5c655ec6a8a2bc817c04d2e7c78974ad9b55b710186aad5309c971216b6362a3")
+    Blob("bf4a339c737ed77c659bb9f1485583ecf0b3159cc7c1cfac77f52b520535eafe")
     Map<String, Tuple>()
     Enum<1u8>(
         AddressReservation("package_address_reservation")
     )
-;
-CALL_FUNCTION
-    NamedAddress("package_address")
-    "MaxTransaction"
-    "new"
 ;
