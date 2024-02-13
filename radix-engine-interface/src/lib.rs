@@ -10,7 +10,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 pub mod api;
 pub mod blueprints;
-pub mod hooks;
 pub mod object_modules;
 pub mod types;
 
