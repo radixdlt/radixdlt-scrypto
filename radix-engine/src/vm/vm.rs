@@ -1,5 +1,5 @@
 use crate::blueprints::package::*;
-use crate::errors::{ApplicationError, RuntimeError};
+use crate::errors::{ApplicationError, RuntimeError, VmError};
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -11,7 +11,7 @@ use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 
-use super::wasm::SCRYPTO_V1_LATEST_MINOR_VERSION;
+use crate::vm::ScryptoVmVersion;
 
 pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 
@@ -41,33 +41,35 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
 /// Api provided to clients of the VM layer
 pub trait VmApi {
     /// Retrieve the current minor version of the Scrypto VM
-    fn get_scrypto_minor_version(&self) -> u64;
+    fn get_scrypto_version(&self) -> Result<ScryptoVmVersion, RuntimeError>;
 }
 
 /// Simple implementation of the VmAPI
 #[derive(Debug, Clone, Copy, Default)]
 pub struct VmVersion {
-    scrypto_v1_minor_version: u64,
+    scrypto_version: u64,
 }
 
 impl VmVersion {
     pub fn latest() -> Self {
         Self {
-            scrypto_v1_minor_version: SCRYPTO_V1_LATEST_MINOR_VERSION,
+            scrypto_version: ScryptoVmVersion::latest().into(),
         }
     }
 }
 
 impl VmApi for VmVersion {
-    fn get_scrypto_minor_version(&self) -> u64 {
-        self.scrypto_v1_minor_version
+    fn get_scrypto_version(&self) -> Result<ScryptoVmVersion, RuntimeError> {
+        self.scrypto_version
+            .try_into()
+            .map_err(|e| RuntimeError::VmError(VmError::ScryptoVmVersion(e)))
     }
 }
 
-/// Boot Loader state for the VM Layer
+/// Boot Loader state for the VM Laye
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmBoot {
-    V1 { scrypto_v1_minor_version: u64 },
+    V1 { scrypto_version: u64 },
 }
 
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
@@ -82,15 +84,11 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
             .unwrap_or(VmBoot::V1 {
-                scrypto_v1_minor_version: 0u64,
+                scrypto_version: 0u64,
             });
 
         let vm_version = match vm_boot {
-            VmBoot::V1 {
-                scrypto_v1_minor_version,
-            } => VmVersion {
-                scrypto_v1_minor_version,
-            },
+            VmBoot::V1 { scrypto_version } => VmVersion { scrypto_version },
         };
 
         Ok(vm_version)
@@ -246,10 +244,10 @@ impl VmPackageValidation {
         match vm_type {
             VmType::Native => Ok(None),
             VmType::ScryptoV1 => {
-                let minor_version = vm_api.get_scrypto_minor_version();
+                let version = vm_api.get_scrypto_version()?;
 
                 // Validate WASM
-                let instrumented_code = ScryptoV1WasmValidator::new(minor_version)
+                let instrumented_code = ScryptoV1WasmValidator::new(version)
                     .validate(&code, definition.blueprints.values())
                     .map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::PackageError(

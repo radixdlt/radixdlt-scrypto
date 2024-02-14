@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::NoOpWasmRuntime;
+use crate::vm::ScryptoVmVersion;
 use crate::{errors::InvokeError, transaction::CostingParameters};
 use radix_engine_interface::blueprints::package::*;
 use sbor::rust::iter;
@@ -28,7 +29,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         .filter(|s| s.ends_with("_schema"));
 
     // Validate WASM
-    let validator = ScryptoV1WasmValidator::new(SCRYPTO_V1_LATEST_MINOR_VERSION);
+    let validator = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest());
     let code_hash = CodeHash(Hash([0u8; 32]));
     let instrumented_code = validator
         .validate(&code, iter::empty())

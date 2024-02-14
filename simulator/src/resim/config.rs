@@ -1,8 +1,9 @@
 use std::fs;
 use std::path::PathBuf;
 
-use radix_engine_common::prelude::*;
 use radix_engine::utils::*;
+use radix_engine::vm::ScryptoVmVersion;
+use radix_engine_common::prelude::*;
 use substate_store_interface::db_key_mapper::*;
 use substate_store_interface::interface::*;
 
@@ -61,7 +62,8 @@ impl SimulatorEnvironment {
             self.db.commit(&db_updates);
         }
         {
-            let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
+            let state_updates =
+                generate_vm_boot_scrypto_version_state_updates(ScryptoVmVersion::latest());
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.db.commit(&db_updates);
         }

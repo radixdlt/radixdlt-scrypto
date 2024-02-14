@@ -30,6 +30,7 @@ use crate::system::system_modules::limits::TransactionLimitsError;
 use crate::system::system_type_checker::TypeCheckError;
 use crate::transaction::AbortReason;
 use crate::vm::wasm::WasmRuntimeError;
+use crate::vm::ScryptoVmVersionError;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{ActorStateHandle, AttachedModuleId};
 use radix_engine_interface::blueprints::package::{BlueprintPartitionType, CanonicalBlueprintId};
@@ -292,6 +293,7 @@ pub enum SystemUpstreamError {
 pub enum VmError {
     Native(NativeRuntimeError),
     Wasm(WasmRuntimeError),
+    ScryptoVmVersion(ScryptoVmVersionError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
