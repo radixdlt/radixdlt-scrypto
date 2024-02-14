@@ -1,4 +1,3 @@
-use scrypto::*;
 use scrypto_test::prelude::*;
 use tuple_return::test_bindings::*;
 

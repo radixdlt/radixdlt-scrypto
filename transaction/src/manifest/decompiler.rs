@@ -1,20 +1,16 @@
 use crate::data::*;
+use crate::internal_prelude::*;
 use crate::model::*;
 use crate::validation::*;
+use radix_engine_common::address::AddressBech32Encoder;
 use radix_engine_common::constants::PACKAGE_PACKAGE;
+use radix_engine_common::constants::{
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
+};
+use radix_engine_common::data::manifest::model::*;
+use radix_engine_common::data::manifest::*;
+use radix_engine_common::network::NetworkDefinition;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
-use radix_engine_interface::address::AddressBech32Encoder;
-use radix_engine_interface::api::node_modules::auth::{
-    ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
-};
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
-};
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
-    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
 };
@@ -39,12 +35,17 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT, VAULT_FREEZE_IDENT, VAULT_RECALL_IDENT,
     VAULT_UNFREEZE_IDENT,
 };
-use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
+use radix_engine_interface::object_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::object_modules::metadata::{
+    METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
 };
-use radix_engine_interface::data::manifest::model::*;
-use radix_engine_interface::data::manifest::*;
-use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_interface::object_modules::role_assignment::{
+    ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+};
+use radix_engine_interface::object_modules::royalty::{
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;

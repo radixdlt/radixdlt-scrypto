@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 use radix_engine_interface::blueprints::access_controller::{Proposer, RecoveryProposal};
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug)]

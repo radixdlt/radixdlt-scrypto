@@ -15,13 +15,7 @@ pub use versioned::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        internal_prelude::{
-            NotarizedTransactionValidator, TransactionValidationError, TransactionValidator,
-            ValidationConfig,
-        },
-        prelude::*,
-    };
+    use crate::internal_prelude::*;
     use radix_engine_common::prelude::*;
     use sbor::representations::*;
 

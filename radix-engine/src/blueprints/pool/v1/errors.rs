@@ -1,5 +1,5 @@
 use crate::errors::*;
-use radix_engine_interface::prelude::*;
+use crate::internal_prelude::*;
 
 pub mod one_resource_pool {
     use super::*;

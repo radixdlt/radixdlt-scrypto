@@ -1,6 +1,5 @@
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::prelude::*;
 use sbor::FixedEnumVariant;
 use transaction::define_raw_transaction_payload;
 use transaction::prelude::*;

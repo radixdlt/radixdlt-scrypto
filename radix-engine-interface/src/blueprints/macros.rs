@@ -14,20 +14,20 @@ macro_rules! define_invocation {
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],
-                crate::ScryptoSbor,
+                radix_engine_common::ScryptoSbor,
                 $($input_ident: $input_type),*
             }
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Output >],
-                crate::ScryptoSbor,
+                radix_engine_common::ScryptoSbor,
                 $($output_ident: $output_type),*
             }
 
             $(
                 $crate::blueprints::macros::resolve_struct_definition! {
                     [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    crate::ManifestSbor,
+                    radix_engine_common::ManifestSbor,
                     $($manifest_input_ident: $manifest_input_type),*
                 }
             )?
@@ -45,7 +45,7 @@ macro_rules! define_invocation {
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],
-                crate::ScryptoSbor,
+                radix_engine_common::ScryptoSbor,
                 $($input_ident: $input_type),*
             }
 
@@ -57,7 +57,7 @@ macro_rules! define_invocation {
             $(
                 $crate::blueprints::macros::resolve_struct_definition! {
                     [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    crate::ManifestSbor,
+                    radix_engine_common::ManifestSbor,
                     $($manifest_input_ident: $manifest_input_type),*
                 }
             )?
@@ -80,14 +80,14 @@ macro_rules! define_invocation {
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Output >],
-                crate::ScryptoSbor,
+                radix_engine_common::ScryptoSbor,
                 $($output_ident: $output_type),*
             }
 
             $(
                 $crate::blueprints::macros::resolve_struct_definition! {
                     [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    crate::ManifestSbor,
+                    radix_engine_common::ManifestSbor,
                     $($manifest_input_ident: $manifest_input_type),*
                 }
             )?
@@ -116,7 +116,7 @@ macro_rules! define_invocation {
             $(
                 $crate::blueprints::macros::resolve_struct_definition! {
                     [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    crate::ManifestSbor,
+                    radix_engine_common::ManifestSbor,
                     $($manifest_input_ident: $manifest_input_type),*
                 }
             )?

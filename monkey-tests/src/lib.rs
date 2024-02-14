@@ -15,30 +15,30 @@ use crate::resource::{
 };
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
+use core::ops::AddAssign;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
-use radix_engine::prelude::node_modules::ModuleConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
-use radix_engine::types::*;
 use radix_engine::vm::OverridePackageCode;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
+use radix_engine_interface::object_modules::ModuleConfig;
+use radix_engine_interface::prelude::*;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use scrypto::prelude::Zero;
 use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::builder::ManifestBuilder;
-use transaction::prelude::Secp256k1PrivateKey;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
@@ -593,7 +593,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
             let manifest = {
                 let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
-                if !amount.is_zero() {
+                if amount != 0 {
                     builder = builder.withdraw_from_account(account, resource_address, amount);
                 }
                 builder

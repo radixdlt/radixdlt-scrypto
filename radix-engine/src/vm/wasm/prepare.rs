@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 use num_traits::CheckedAdd;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;

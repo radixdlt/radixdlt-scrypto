@@ -23,8 +23,8 @@ minicov = { version = "0.3", optional = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "blueprint-schema-init/std", "scrypto-derive/std", "strum/std", "radix-engine-interface/std", "utils/std"]
-alloc = ["hex/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "scrypto-derive/alloc", "radix-engine-interface/alloc", "utils/alloc"]
+std = ["hex/std", "sbor/std", "blueprint-schema-init/std", "scrypto-derive/std", "strum/std", "radix-engine-common/std", "radix-engine-interface/std", "utils/std"]
+alloc = ["hex/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "scrypto-derive/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "utils/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]

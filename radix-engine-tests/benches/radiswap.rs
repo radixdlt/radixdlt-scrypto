@@ -1,6 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::{TestRunner, TestRunnerBuilder};
 #[cfg(feature = "rocksdb")]

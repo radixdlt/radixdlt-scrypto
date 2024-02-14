@@ -1,7 +1,4 @@
-use radix_engine_interface::{
-    data::manifest::model::{ManifestBucket, ManifestProof},
-    prelude::ManifestAddressReservation,
-};
+use crate::internal_prelude::*;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct ManifestIdAllocator {

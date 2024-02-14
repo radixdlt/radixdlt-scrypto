@@ -1,7 +1,9 @@
 use crate::prelude::*;
+use core::ops::AddAssign;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::define_composite_checker;
+use radix_engine::object_modules::metadata::{MetadataCollection, MetadataEntryEntryPayload};
 use radix_engine::system::checkers::*;
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_db_reader::{
@@ -14,10 +16,8 @@ use radix_engine::transaction::{
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
     WrappedSystem,
 };
-use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
-use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -30,12 +30,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::blueprints::pool::{
     OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
-use radix_engine_interface::constants::CONSENSUS_MANAGER;
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::time::Instant;
-use radix_engine_interface::{dec, freeze_roles, rule};
-use scrypto::prelude::*;
+use radix_engine_interface::prelude::{dec, freeze_roles, rule};
 use std::path::{Path, PathBuf};
 use substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -2460,8 +2455,12 @@ pub fn single_function_package_definition(
     PackageDefinition::new_single_function_test_definition(blueprint_name, function_name)
 }
 
-#[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
+#[derive(ScryptoSbor, ManifestSbor)]
 pub struct EmptyNonFungibleData {}
+
+impl NonFungibleData for EmptyNonFungibleData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
+}
 
 pub struct TransactionParams {
     pub start_epoch_inclusive: Epoch,

@@ -1,5 +1,5 @@
-use crate::api::node_modules::auth::ToRoleEntry;
 use crate::internal_prelude::*;
+use crate::object_modules::role_assignment::ToRoleEntry;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 

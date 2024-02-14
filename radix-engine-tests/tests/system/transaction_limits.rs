@@ -2,9 +2,9 @@ use radix_engine::{
     errors::{RuntimeError, SystemModuleError, VmError},
     system::system_modules::limits::TransactionLimitsError,
     transaction::{CostingParameters, ExecutionConfig},
-    types::*,
     vm::wasm::WasmRuntimeError,
 };
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

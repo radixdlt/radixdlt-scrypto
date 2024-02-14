@@ -1,5 +1,5 @@
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::types::FromPublicKey;
 use scrypto_test::prelude::*;
 
 #[test]

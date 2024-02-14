@@ -1,17 +1,17 @@
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_common::constants::AuthAddresses;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::object_modules::role_assignment::FallToOwner;
 use radix_engine_interface::rule;
-use substate_store_queries::typed_substate_layout::*;
+use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
-use scrypto::prelude::FallToOwner;
 use scrypto_test::prelude::InvalidNameError;
 use scrypto_test::prelude::*;
+use substate_store_queries::typed_substate_layout::*;
 
 #[test]
 fn can_call_public_function() {

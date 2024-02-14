@@ -6,7 +6,6 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::track::BootStore;
-use crate::types::*;
 use crate::vm::wasm::{ScryptoV1WasmValidator, WasmEngine};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;

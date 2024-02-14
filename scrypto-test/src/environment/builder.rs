@@ -16,6 +16,7 @@ use radix_engine::transaction::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 use substate_store_impls::memory_db::*;

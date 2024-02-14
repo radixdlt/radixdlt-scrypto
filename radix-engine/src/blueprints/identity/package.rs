@@ -2,7 +2,6 @@ use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignm
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
 use crate::roles_template;
-use crate::types::*;
 use blueprint_schema_init::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
     TypeRef,
@@ -12,16 +11,16 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi};
+use radix_engine_interface::blueprints::hooks::{OnVirtualizeInput, OnVirtualizeOutput};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::hooks::{OnVirtualizeInput, OnVirtualizeOutput};
 use radix_engine_interface::metadata_init;
+use radix_engine_interface::object_modules::metadata::*;
 
 pub const IDENTITY_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 

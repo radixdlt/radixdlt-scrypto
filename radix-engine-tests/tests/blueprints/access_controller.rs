@@ -5,8 +5,9 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemModuleError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 

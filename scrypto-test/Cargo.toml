@@ -14,7 +14,6 @@ radix-engine-common = { path = "../radix-engine-common", default-features = fals
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 substate-store-interface = { path = "../substate-store-interface", default-features = false }
 substate-store-queries = { path = "../substate-store-queries", default-features = false }
-scrypto = { path = "../scrypto", default-features = false }
 wabt = { version = "0.10.0" }
 
 # A library used to allow for self-referencing structs in Rust. This is used in the TestRuntime's 
@@ -33,8 +32,8 @@ tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], 
 [features]
 default = ["std"]
 
-std = ["moka", "sbor/std", "scrypto/std", "native-sdk/std", "transaction/std", "radix-engine/std", "substate-store-queries/std", "substate-store-impls/std", "radix-engine-common/std", "radix-engine-interface/std", "substate-store-interface/std", "tuple-return/std"]
-alloc = ["lru", "sbor/alloc", "scrypto/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "substate-store-queries/alloc", "substate-store-impls/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "tuple-return/alloc"]
+std = ["moka", "sbor/std", "native-sdk/std", "transaction/std", "radix-engine/std", "substate-store-queries/std", "substate-store-impls/std", "radix-engine-common/std", "radix-engine-interface/std", "substate-store-interface/std", "tuple-return/std"]
+alloc = ["lru", "sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "substate-store-queries/alloc", "substate-store-impls/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "tuple-return/alloc"]
 
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]

@@ -68,16 +68,17 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionReceiptDisplayContextBuilder;
 use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{execute_and_commit_transaction, CostingParameters};
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
 };
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_interface::crypto::{hash, Secp256k1PrivateKey};
-use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_common::crypto::{hash, Secp256k1PrivateKey};
+use radix_engine_common::network::NetworkDefinition;
+use radix_engine_interface::prelude::*;
+use radix_engine_interface::types::FromPublicKey;
 use std::env;
 use std::fs;
 use std::path::PathBuf;

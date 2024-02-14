@@ -3,8 +3,8 @@ use native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::{
     AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_OUTER_OBJECT,
 };

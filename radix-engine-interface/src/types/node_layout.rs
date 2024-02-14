@@ -1,6 +1,6 @@
 use crate::api::*;
+use crate::internal_prelude::*;
 use crate::types::*;
-use crate::*;
 use sbor::rust::prelude::*;
 
 //=========================================================================
