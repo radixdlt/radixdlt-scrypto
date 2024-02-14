@@ -38,7 +38,7 @@ if [[ "$BUILD_TYPE" == "--docker" ]]; then
     echo "--reuse-image flag is set. Skipping build."
   fi
 
-  for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store" "max_transaction"
+  for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store" "max_transaction" "royalties"
   do
     echo "Building $crate_name..."
     docker run --entrypoint=scrypto -v $PWD:/src $IMAGE_NAME:$IMAGE_TAG build --path assets/blueprints/$crate_name
@@ -62,7 +62,7 @@ elif [[ "$BUILD_TYPE" == "--local" ]]; then
   cp ../../radix-engine-tests/assets/blueprints/target/wasm32-unknown-unknown/release/large_package.{wasm,rpd} ..
   ls -al ../large_package.*
 
-  for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store" "max_transaction"
+  for crate_name in "faucet" "radiswap" "flash_loan" "genesis_helper" "metadata" "test_environment" "global_n_owned" "kv_store" "max_transaction" "royalties"
   do
     echo "Building $crate_name..."
     (cd $crate_name; $scrypto build)
