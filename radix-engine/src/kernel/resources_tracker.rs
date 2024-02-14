@@ -1,8 +1,8 @@
-use crate::transaction::ResourcesUsage;
-use crate::types::{
+use crate::internal_prelude::{
     alloc::{GlobalAlloc, Layout, System},
     sync::atomic::{AtomicIsize, Ordering},
 };
+use crate::transaction::ResourcesUsage;
 use perfcnt::{
     linux::{HardwareEventType, PerfCounterBuilderLinux},
     AbstractPerfCounter, PerfCounter,

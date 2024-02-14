@@ -69,7 +69,7 @@ jobs:
       - name: Run tests (no_std)
         run: cargo nextest run -p scrypto --no-default-features --features alloc
       - name: Run abi tests
-        run: cargo nextest run -p scrypto-schema
+        run: cargo nextest run -p blueprint-schema-init
       - name: Run derive tests
         run: cargo nextest run -p scrypto-derive
 
@@ -137,7 +137,7 @@ jobs:
       - name: Build with resource tracking
         run: cargo build --features resource_tracker
       - name: Build with rocksdb
-        run: cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb --release --no-run -- --nocapture
+        run: cargo test -p radix-engine-profiling -p substate-store-impls --features rocksdb --release --no-run -- --nocapture
       - name: Build bench with rocksdb
         run: cargo bench --features rocksdb --no-run
 

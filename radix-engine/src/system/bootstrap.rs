@@ -14,9 +14,9 @@ use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
 };
 use crate::internal_prelude::*;
-use crate::system::attached_modules::metadata::MetadataNativePackage;
-use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::attached_modules::royalty::RoyaltyNativePackage;
+use crate::object_modules::metadata::MetadataNativePackage;
+use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
@@ -31,26 +31,26 @@ use crate::transaction::{
 };
 use crate::vm::VmVersion;
 use lazy_static::lazy_static;
+use radix_engine_common::constants::AuthAddresses;
 use radix_engine_common::crypto::Secp256k1PublicKey;
+use radix_engine_common::math::traits::*;
 use radix_engine_common::types::ComponentAddress;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
     CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::math::traits::*;
+use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
-use radix_engine_store_interface::interface::{
+use substate_store_interface::interface::{
     DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
     PartitionDatabaseUpdates, PartitionEntry,
 };
-use radix_engine_store_interface::{
+use substate_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},
 };

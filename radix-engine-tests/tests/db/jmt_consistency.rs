@@ -1,4 +1,4 @@
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use scrypto_test::prelude::*;
 use transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use transaction_scenarios::scenarios::get_builder_for_every_scenario;

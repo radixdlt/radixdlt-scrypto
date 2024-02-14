@@ -1,13 +1,13 @@
 use crate::modules::metadata::Metadata;
 use crate::modules::role_assignment::RoleAssignment;
+use radix_engine_common::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_engine_common::prelude::ScryptoEncode;
 use radix_engine_common::types::GlobalAddress;
-use radix_engine_interface::api::node_modules::metadata::{
+use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldIndex, ModuleId};
+use radix_engine_interface::object_modules::metadata::{
     MetadataSetInput, MetadataVal, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldIndex, ModuleId};
-use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
-use radix_engine_interface::prelude::node_modules::ModuleConfig;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::GlobalAddressReservation;
 use radix_engine_interface::prelude::OwnerRole;
 use radix_engine_interface::prelude::RoleAssignmentInit;

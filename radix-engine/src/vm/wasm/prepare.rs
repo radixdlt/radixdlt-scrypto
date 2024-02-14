@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 use num_traits::CheckedAdd;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
@@ -1272,11 +1272,11 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::blueprints::package::BlueprintType;
-    use radix_engine_interface::schema::{
-        BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-        FunctionSchemaInit, TypeRef,
+    use blueprint_schema_init::{
+        BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintSchemaInit,
+        BlueprintStateSchemaInit, BlueprintTypeSchemaInit, FieldSchema, FunctionSchemaInit,
     };
+    use radix_engine_interface::blueprints::package::BlueprintType;
     use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
     use wabt::{wat2wasm_with_features, Features};
 
@@ -1618,8 +1618,8 @@ mod tests {
                         functions: indexmap!(
                             "f".to_string() => FunctionSchemaInit {
                                 receiver: Option::None,
-                                input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
-                                output: TypeRef::Static(LocalTypeId::WellKnown(UNIT_TYPE)),
+                                input: blueprint_schema_init::TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                                output: blueprint_schema_init::TypeRef::Static(LocalTypeId::WellKnown(UNIT_TYPE)),
                                 export: "Test_f".to_string(),
                             }
                         ),

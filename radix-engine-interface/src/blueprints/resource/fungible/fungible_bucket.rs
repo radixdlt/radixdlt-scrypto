@@ -1,6 +1,6 @@
 use crate::blueprints::resource::Proof;
-use crate::math::*;
-use crate::*;
+use crate::internal_prelude::*;
+use radix_engine_common::math::*;
 use sbor::rust::prelude::*;
 
 pub const FUNGIBLE_BUCKET_BLUEPRINT: &str = "FungibleBucket";

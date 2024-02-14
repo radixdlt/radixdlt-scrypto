@@ -1,10 +1,10 @@
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::*;
-use crate::data::scrypto::ScryptoCustomTypeKind;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use bitflags::bitflags;
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::data::scrypto::ScryptoCustomTypeKind;
 use radix_engine_common::data::scrypto::*;
 use sbor::rust::prelude::*;
 use sbor::*;

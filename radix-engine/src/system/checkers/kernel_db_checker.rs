@@ -1,10 +1,10 @@
 use crate::internal_prelude::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine_store_interface::interface::ListableSubstateDatabase;
-use radix_engine_store_interface::interface::SubstateDatabase;
+use substate_store_interface::db_key_mapper::DatabaseKeyMapper;
+use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use substate_store_interface::interface::ListableSubstateDatabase;
+use substate_store_interface::interface::SubstateDatabase;
 
 #[derive(Debug)]
 pub enum KernelDatabaseCheckError {

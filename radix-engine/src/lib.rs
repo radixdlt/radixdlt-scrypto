@@ -21,27 +21,28 @@ pub mod transaction;
 /// Native blueprints (to be moved to individual crates)
 pub mod blueprints;
 
-pub mod track;
+/// Object module blueprints (to be moved to individual crates)
+pub mod object_modules;
 
-/// Scrypto/SBOR types required by Radix Engine.
-pub mod types;
+pub mod track;
 
 pub mod errors;
 
 pub mod utils;
 pub mod vm;
 
-pub mod prelude {
-    // Note - radix_engine::types was previously something like an internal/
-    // external prelude, but let's normalize radix-engine to have a prelude
-    // like everything else, and add to it where needed
-    pub use crate::types::*;
-}
-
 pub(crate) mod internal_prelude {
-    pub use super::prelude::*;
     pub use crate::blueprints::internal_prelude::*;
     pub use crate::errors::*;
     pub use crate::system::system_substates::*;
     pub use crate::{event_schema, method_auth_template, roles_template};
+    pub use blueprint_schema_init::*;
+    pub use radix_engine_common::prelude::*;
+    pub use radix_engine_interface::prelude::*;
+    pub use sbor::rust::num::NonZeroU32;
+    pub use sbor::rust::num::NonZeroUsize;
+    pub use sbor::rust::ops::AddAssign;
+    pub use sbor::rust::ops::SubAssign;
+    #[cfg(feature = "std")]
+    pub use std::alloc;
 }

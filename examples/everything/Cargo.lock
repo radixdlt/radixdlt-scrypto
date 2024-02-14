@@ -78,6 +78,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "blueprint-schema-init"
+version = "1.2.0-dev"
+dependencies = [
+ "bitflags 1.3.2",
+ "radix-engine-common",
+ "sbor",
+ "serde",
+]
+
+[[package]]
 name = "bnum"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -584,7 +594,6 @@ name = "native-sdk"
 version = "1.2.0-dev"
 dependencies = [
  "radix-engine-common",
- "radix-engine-derive",
  "radix-engine-interface",
  "sbor",
  "utils",
@@ -759,6 +768,7 @@ name = "radix-engine"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags 1.3.2",
+ "blueprint-schema-init",
  "colored",
  "const-sha1",
  "hex",
@@ -770,11 +780,11 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-interface",
  "radix-engine-macros",
- "radix-engine-store-interface",
  "resources-tracker-macro",
  "sbor",
  "serde_json",
  "strum",
+ "substate-store-interface",
  "syn 1.0.93",
  "transaction",
  "utils",
@@ -822,16 +832,15 @@ name = "radix-engine-interface"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags 1.3.2",
+ "blueprint-schema-init",
  "const-sha1",
  "hex",
  "lazy_static",
  "paste",
  "radix-engine-common",
- "radix-engine-derive",
  "radix-engine-macros",
  "regex",
  "sbor",
- "scrypto-schema",
  "serde",
  "serde_json",
  "strum",
@@ -854,47 +863,6 @@ name = "radix-engine-profiling"
 version = "1.2.0-dev"
 dependencies = [
  "fixedstr",
-]
-
-[[package]]
-name = "radix-engine-queries"
-version = "1.2.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "paste",
- "radix-engine",
- "radix-engine-interface",
- "radix-engine-store-interface",
- "sbor",
- "transaction",
- "utils",
-]
-
-[[package]]
-name = "radix-engine-store-interface"
-version = "1.2.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "radix-engine-common",
- "radix-engine-derive",
- "radix-engine-interface",
- "sbor",
- "utils",
-]
-
-[[package]]
-name = "radix-engine-stores"
-version = "1.2.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "radix-engine-common",
- "radix-engine-derive",
- "radix-engine-store-interface",
- "sbor",
- "utils",
 ]
 
 [[package]]
@@ -1077,17 +1045,16 @@ name = "scrypto"
 version = "1.2.0-dev"
 dependencies = [
  "bech32",
+ "blueprint-schema-init",
  "const-sha1",
  "hex",
  "num-bigint",
  "num-traits",
  "paste",
  "radix-engine-common",
- "radix-engine-derive",
  "radix-engine-interface",
  "sbor",
  "scrypto-derive",
- "scrypto-schema",
  "strum",
  "utils",
 ]
@@ -1096,25 +1063,15 @@ dependencies = [
 name = "scrypto-derive"
 version = "1.2.0-dev"
 dependencies = [
+ "blueprint-schema-init",
  "proc-macro2",
  "quote",
  "radix-engine-common",
  "regex",
  "sbor",
- "scrypto-schema",
  "serde",
  "serde_json",
  "syn 1.0.93",
-]
-
-[[package]]
-name = "scrypto-schema"
-version = "1.2.0-dev"
-dependencies = [
- "bitflags 1.3.2",
- "radix-engine-common",
- "sbor",
- "serde",
 ]
 
 [[package]]
@@ -1127,12 +1084,11 @@ dependencies = [
  "radix-engine",
  "radix-engine-common",
  "radix-engine-interface",
- "radix-engine-queries",
- "radix-engine-store-interface",
- "radix-engine-stores",
  "sbor",
- "scrypto",
  "serde_json",
+ "substate-store-impls",
+ "substate-store-interface",
+ "substate-store-queries",
  "transaction",
  "wabt",
 ]
@@ -1277,6 +1233,45 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "substate-store-impls"
+version = "1.2.0-dev"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine-common",
+ "sbor",
+ "substate-store-interface",
+ "utils",
+]
+
+[[package]]
+name = "substate-store-interface"
+version = "1.2.0-dev"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine-common",
+ "sbor",
+ "utils",
+]
+
+[[package]]
+name = "substate-store-queries"
+version = "1.2.0-dev"
+dependencies = [
+ "hex",
+ "itertools",
+ "paste",
+ "radix-engine",
+ "radix-engine-common",
+ "radix-engine-interface",
+ "sbor",
+ "substate-store-interface",
+ "transaction",
+ "utils",
 ]
 
 [[package]]

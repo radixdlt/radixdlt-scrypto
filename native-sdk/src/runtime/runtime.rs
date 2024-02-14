@@ -1,3 +1,7 @@
+use radix_engine_common::constants::CONSENSUS_MANAGER;
+use radix_engine_common::data::scrypto::*;
+use radix_engine_common::time::*;
+use radix_engine_common::traits::ScryptoEvent;
 use radix_engine_common::types::{NodeId, PackageAddress};
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::*;
@@ -5,10 +9,6 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AuthZoneAssertAccessRuleInput, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
 };
-use radix_engine_interface::constants::CONSENSUS_MANAGER;
-use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::time::*;
-use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::Epoch;
 use sbor::rust::prelude::*;
 

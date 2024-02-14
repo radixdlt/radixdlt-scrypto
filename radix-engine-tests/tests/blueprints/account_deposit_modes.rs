@@ -1,10 +1,11 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_queries::typed_substate_layout::AccountError;
+use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::{DefaultTestRunner, TestRunnerBuilder};
+use substate_store_queries::typed_substate_layout::AccountError;
 use transaction::prelude::*;
 
 #[test]

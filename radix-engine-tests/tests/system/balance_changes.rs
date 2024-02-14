@@ -1,5 +1,6 @@
-use radix_engine::{transaction::BalanceChange, types::*};
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine::transaction::BalanceChange;
+use radix_engine_interface::prelude::*;
+use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

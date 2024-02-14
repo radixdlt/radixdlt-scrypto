@@ -10,11 +10,12 @@ sbor = { path = "../sbor", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests"] }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
-radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
-radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
-radix-engine-queries = { path = "../radix-engine-queries", default-features = false }
+substate-store-interface = { path = "../substate-store-interface", default-features = false }
+substate-store-impls = { path = "../substate-store-impls", default-features = false }
+substate-store-queries = { path = "../substate-store-queries", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 transaction-scenarios = { path = "../transaction-scenarios", default-features = false }
+blueprint-schema-init = { path = "../blueprint-schema-init", default-features = false }
 utils = { path = "../utils", default-features = false }
 radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"]}
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
@@ -26,7 +27,6 @@ transaction = { path = "../transaction", default-features = false }
 wabt = { version = "0.10.0" }
 criterion = { version = "0.3", features = ["html_reports"] }
 scrypto = { path = "../scrypto", default-features = false }
-sbor-derive = { path = "../sbor-derive", default-features = false }
 rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }
 rayon = "1.5.3"
@@ -77,8 +77,8 @@ test = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "transaction/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-interface/std", "radix-engine-stores/std", "radix-engine-store-interface/std", "radix-engine-queries/std", "utils/std", "scrypto/std", "scrypto-test/std", "scrypto-test/std", "scrypto-test/moka"]
-alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-store-interface/alloc", "radix-engine-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-test/alloc", "scrypto-test/alloc", "scrypto-test/lru"]
+std = ["sbor/std", "transaction/std", "blueprint-schema-init/std", "radix-engine-common/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-interface/std", "substate-store-impls/std", "substate-store-interface/std", "substate-store-queries/std", "utils/std", "scrypto/std", "scrypto-test/std", "scrypto-test/std", "scrypto-test/moka"]
+alloc = ["sbor/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radix-engine-common/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "substate-store-impls/alloc", "substate-store-interface/alloc", "substate-store-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-test/alloc", "scrypto-test/alloc", "scrypto-test/lru"]
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []

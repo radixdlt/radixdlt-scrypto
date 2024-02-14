@@ -1,7 +1,7 @@
 use radix_engine::blueprints::transaction_processor::*;
 use radix_engine::errors::*;
 use radix_engine::transaction::*;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
 use radix_engine_tests::common::*;

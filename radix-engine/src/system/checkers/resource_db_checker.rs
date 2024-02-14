@@ -8,6 +8,7 @@ use crate::blueprints::resource::{
     NonFungibleResourceManagerTotalSupplyFieldPayload, NonFungibleVaultBalanceFieldPayload,
     NonFungibleVaultCollection, NonFungibleVaultField,
 };
+use crate::internal_prelude::*;
 use crate::system::checkers::ApplicationChecker;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
@@ -18,8 +19,6 @@ use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
-use radix_engine_interface::prelude::{BlueprintInfo, CollectionIndex};
-use radix_engine_interface::prelude::{CheckedAdd, ModuleId};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 use sbor::HasLatestVersion;

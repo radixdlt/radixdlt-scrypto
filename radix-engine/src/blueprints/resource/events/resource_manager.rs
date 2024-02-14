@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct VaultCreationEvent {

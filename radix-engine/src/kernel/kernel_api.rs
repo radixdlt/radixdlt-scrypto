@@ -1,11 +1,11 @@
 use super::call_frame::*;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::*;
 use crate::system::system_modules::execution_trace::*;
 use crate::track::interface::*;
-use crate::types::*;
 use radix_engine_interface::api::field_api::*;
-use radix_engine_store_interface::db_key_mapper::*;
+use substate_store_interface::db_key_mapper::*;
 
 pub struct DroppedNode {
     pub substates: NodeSubstates,

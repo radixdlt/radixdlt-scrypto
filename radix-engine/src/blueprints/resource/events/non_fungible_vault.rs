@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 
 macro_rules! define_events {
     ($($name: ident),* $(,)?) => {

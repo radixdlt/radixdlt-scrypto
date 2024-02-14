@@ -15,10 +15,11 @@ use radix_engine::system::system_modules::costing::{CostingError, FeeReserveErro
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use radix_engine::track::{BootStore, NodeSubstates};
 use radix_engine::transaction::WrappedSystem;
-use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::prelude::*;
+use substate_store_interface::db_key_mapper::SubstateKeyContent;
 use transaction::prelude::PreAllocatedAddress;
 
 pub type InjectSystemCostingError<'a, E> =

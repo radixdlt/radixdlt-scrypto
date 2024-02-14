@@ -5,11 +5,12 @@ use radix_engine::errors::{SystemError, SystemModuleError};
 use radix_engine::{
     errors::{ApplicationError, RuntimeError},
     transaction::{BalanceChange, TransactionReceipt},
-    types::*,
 };
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
+use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_engine_interface::prelude::*;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
