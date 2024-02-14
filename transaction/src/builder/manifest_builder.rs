@@ -85,7 +85,7 @@ pub struct ManifestBuilder {
     /// Instructions generated.
     instructions: Vec<InstructionV1>,
     /// Blobs
-    blobs: BTreeMap<Hash, Vec<u8>>,
+    blobs: IndexMap<Hash, Vec<u8>>,
 }
 
 pub struct NewSymbols {
@@ -101,7 +101,7 @@ impl ManifestBuilder {
         Self {
             registrar: ManifestNameRegistrar::new(),
             instructions: Vec::new(),
-            blobs: BTreeMap::default(),
+            blobs: IndexMap::default(),
         }
     }
 

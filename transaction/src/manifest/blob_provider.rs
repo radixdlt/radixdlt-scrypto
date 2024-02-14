@@ -13,7 +13,7 @@ pub trait IsBlobProvider {
 
     fn get_blob(&self, blob_reference: &BlobReference) -> Option<Blob>;
 
-    fn blobs(self) -> BTreeMap<BlobReference, Blob>;
+    fn blobs(self) -> IndexMap<BlobReference, Blob>;
 }
 
 //=======================
@@ -21,7 +21,7 @@ pub trait IsBlobProvider {
 //=======================
 
 #[derive(Default, Debug, Clone)]
-pub struct BlobProvider(BTreeMap<BlobReference, Blob>);
+pub struct BlobProvider(IndexMap<BlobReference, Blob>);
 
 impl BlobProvider {
     pub fn new() -> Self {
@@ -43,7 +43,7 @@ impl IsBlobProvider for BlobProvider {
         self.0.get(blob_reference).cloned()
     }
 
-    fn blobs(self) -> BTreeMap<BlobReference, Blob> {
+    fn blobs(self) -> IndexMap<BlobReference, Blob> {
         self.0
     }
 }
@@ -71,7 +71,7 @@ impl IsBlobProvider for MockBlobProvider {
         Some(vec![])
     }
 
-    fn blobs(self) -> BTreeMap<BlobReference, Blob> {
+    fn blobs(self) -> IndexMap<BlobReference, Blob> {
         Default::default()
     }
 }
