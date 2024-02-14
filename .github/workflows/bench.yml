@@ -12,6 +12,10 @@ jobs:
   benchmark:
     name: Run bench
     runs-on: gh-runner-scrypto-ubuntu-jammy-16-cores
+
+    permissions:
+      pull-requests: write
+
     steps:
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
