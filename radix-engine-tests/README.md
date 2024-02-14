@@ -23,6 +23,6 @@ To execute tests for a specific layer run command: `cargo nextest run --test LAY
 
 To execute tests from specific file run command: `cargo nextest run --test LAYER_NAME FILE_NAME`, example: `cargo nextest run --test kernel frame` (this will also run tests which include `frame` word). Alternatively name filtering can be used: `cargo test LAYER_NAME::FILE_NAME::`, example: `cargo nextest run kernel::frame::`.
 
-# Benches
+# Benchmarks
 
 `radix-engine-tests` project contains also some benches in `benches` subdirectory. They can be executed using command: `cargo bench`.
