@@ -5,8 +5,6 @@ pub mod resource;
 pub mod two_pool;
 pub mod validator;
 
-use std::ops::AddAssign;
-
 use crate::consensus_manager::ConsensusManagerFuzzAction;
 use crate::multi_pool::MultiPoolFuzzAction;
 use crate::one_pool::OnePoolFuzzAction;
@@ -17,6 +15,7 @@ use crate::resource::{
 };
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
+use core::ops::AddAssign;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
