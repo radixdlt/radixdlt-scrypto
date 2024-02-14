@@ -19,7 +19,7 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
      git config --system core.longpaths true
      ```
    - macOS:
-     - Make sure you have the xcode command line tools: `xcode-select --install`.
+     - Make sure you have the `xcode` command line tools: `xcode-select --install`.
      - Install cmake: `brew install cmake llvm`<br>
        Add LLVM to the system path by adding below line to the `~/.profile`
        ```
