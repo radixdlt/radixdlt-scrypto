@@ -1,6 +1,6 @@
 # Tests organization
 
-`test` subdirecotry containg integration tests is divided according to execution layers using following subfolders:
+`test` subdirectory containing integration tests is divided according to execution layers using following subfolders:
 
 - Application
 - Blueprints
