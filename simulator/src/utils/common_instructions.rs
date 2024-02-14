@@ -3,7 +3,8 @@
 //! parsing logic as well as the logic needed ot add these instructions to the original manifest
 //! builder that is being used.
 
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::prelude::*;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use transaction::prelude::*;
 

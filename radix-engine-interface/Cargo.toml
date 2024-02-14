@@ -5,10 +5,9 @@ edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
-radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
 radix-engine-macros = { path = "../radix-engine-macros", default-features = false }
-scrypto-schema = { path = "../scrypto-schema", default-features = false }
+blueprint-schema-init = { path = "../blueprint-schema-init", default-features = false }
 utils = { path = "../utils", default-features = false }
 
 hex = { version = "0.4.3", default-features = false }
@@ -25,11 +24,8 @@ regex = { version = "=1.9.3", default-features = false }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "serde_json/std", "sbor/std", "scrypto-schema/std", "radix-engine-derive/std", "radix-engine-common/std", "radix-engine-macros/std", "strum/std", "utils/std", "serde?/std"]
-alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "scrypto-schema/alloc", "radix-engine-derive/alloc", "radix-engine-common/alloc", "radix-engine-macros/alloc", "utils/alloc", "serde?/alloc"]
-
-# Turn on this feature to enable tracing.
-trace = ["radix-engine-derive/trace"]
+std = ["hex/std", "serde_json/std", "sbor/std", "blueprint-schema-init/std", "radix-engine-common/std", "radix-engine-macros/std", "strum/std", "utils/std", "serde?/std"]
+alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "radix-engine-common/alloc", "radix-engine-macros/alloc", "utils/alloc", "serde?/alloc"]
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work

@@ -12,6 +12,7 @@ use crate::blueprints::transaction_tracker::{
 };
 use crate::errors::*;
 use crate::internal_prelude::KeyValueEntrySubstateV1;
+use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
@@ -27,12 +28,11 @@ use crate::system::system_substates::{FieldSubstate, LockStatus};
 use crate::track::interface::CommitableSubstateStore;
 use crate::track::{to_state_updates, Track, TrackFinalizeError};
 use crate::transaction::*;
-use crate::types::*;
 use radix_engine_common::constants::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
+use substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
 
 /// Protocol-defined costing parameters

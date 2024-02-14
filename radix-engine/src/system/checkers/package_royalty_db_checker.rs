@@ -1,7 +1,6 @@
 use super::*;
 use crate::blueprints::package::*;
-
-use radix_engine_interface::prelude::*;
+use crate::internal_prelude::*;
 
 /// Checks the following invariants of the substates of the package royalties:
 /// 1. That the royalties are within their allowable limits.

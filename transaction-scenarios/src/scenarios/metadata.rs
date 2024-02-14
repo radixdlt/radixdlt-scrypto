@@ -1,9 +1,8 @@
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{
+use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::object_modules::metadata::{
     MetadataValue, SingleMetadataVal, UncheckedOrigin, UncheckedUrl,
 };
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 
 use crate::internal_prelude::*;
@@ -105,7 +104,7 @@ impl ScenarioInstance for MetadataScenario {
                                 code.to_vec(),
                                 schema,
                                 create_metadata(),
-                                radix_engine::types::OwnerRole::Fixed(rule!(require(
+                                radix_engine_interface::prelude::OwnerRole::Fixed(rule!(require(
                                     NonFungibleGlobalId::from_public_key(
                                         &user_account_1.public_key
                                     )
@@ -195,7 +194,7 @@ impl ScenarioInstance for MetadataScenario {
                         builder
                             .get_free_xrd_from_faucet()
                             .create_fungible_resource(
-                                radix_engine::types::OwnerRole::Fixed(rule!(require(
+                                radix_engine_interface::prelude::OwnerRole::Fixed(rule!(require(
                                     NonFungibleGlobalId::from_public_key(
                                         &user_account_1.public_key
                                     )

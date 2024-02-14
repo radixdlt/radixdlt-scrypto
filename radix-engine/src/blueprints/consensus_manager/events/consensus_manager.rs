@@ -1,5 +1,5 @@
 use crate::blueprints::consensus_manager::ActiveValidatorSet;
-use crate::types::*;
+use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
 pub struct RoundChangeEvent {

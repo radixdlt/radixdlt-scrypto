@@ -1,10 +1,8 @@
-use radix_engine::{
-    errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError},
-    types::*,
-};
-use radix_engine_queries::typed_substate_layout::{RoleAssignmentError, PACKAGE_BLUEPRINT};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
+use substate_store_queries::typed_substate_layout::{RoleAssignmentError, PACKAGE_BLUEPRINT};
 
 #[test]
 fn test_handle_mismatch() {

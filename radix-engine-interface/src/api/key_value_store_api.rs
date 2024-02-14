@@ -2,7 +2,7 @@ use radix_engine_common::prelude::{
     replace_self_package_address, ScryptoCustomTypeKind, ScryptoDescribe, VersionedScryptoSchema,
 };
 use radix_engine_common::types::*;
-use radix_engine_derive::{ManifestSbor, ScryptoSbor};
+use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::LockFlags;
 use sbor::rust::prelude::*;

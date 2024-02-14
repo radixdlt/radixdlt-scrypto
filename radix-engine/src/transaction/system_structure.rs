@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::system::system_db_reader::*;
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
@@ -5,9 +6,8 @@ use crate::track::{
     BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, ReadOnly, StateUpdates,
     TrackedNode, TrackedSubstateValue,
 };
-use crate::types::*;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_store_interface::interface::SubstateDatabase;
+use substate_store_interface::interface::SubstateDatabase;
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SubstateSystemStructure {

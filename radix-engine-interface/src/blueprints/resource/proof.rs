@@ -1,8 +1,8 @@
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::*;
-use crate::data::scrypto::ScryptoCustomTypeKind;
-use crate::data::scrypto::ScryptoCustomValueKind;
-use crate::*;
+use crate::internal_prelude::*;
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::data::scrypto::ScryptoCustomTypeKind;
+use radix_engine_common::data::scrypto::ScryptoCustomValueKind;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;

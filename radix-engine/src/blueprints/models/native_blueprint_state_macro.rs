@@ -120,7 +120,7 @@ macro_rules! declare_native_blueprint_state {
             mod [<$blueprint_property_name _models>] {
                 use super::*;
                 use sbor::*;
-                use $crate::types::*;
+                use $crate::internal_prelude::*;
                 use $crate::track::interface::*;
                 use $crate::errors::*;
                 use $crate::system::system::*;

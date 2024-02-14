@@ -6,6 +6,7 @@ use crate::system::checkers::ApplicationEventChecker;
 use radix_engine_common::constants::RESOURCE_PACKAGE;
 use radix_engine_common::math::{CheckedAdd, CheckedSub, Decimal};
 use radix_engine_common::prelude::{scrypto_decode, ResourceAddress};
+use radix_engine_common::traits::ScryptoEvent;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::{
@@ -13,7 +14,6 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::prelude::{BlueprintInfo, Emitter};
-use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::EventTypeIdentifier;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;

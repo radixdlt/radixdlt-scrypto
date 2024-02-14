@@ -1,9 +1,10 @@
+use blueprint_schema_init::*;
 use radix_engine::blueprints::resource::ResourceNativePackage;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::{ClientApi, ACTOR_REF_GLOBAL};
 use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
 use radix_engine_tests::common::*;

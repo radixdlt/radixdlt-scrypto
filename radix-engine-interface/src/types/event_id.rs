@@ -1,6 +1,6 @@
 use crate::api::ModuleId;
+use crate::internal_prelude::*;
 use crate::types::BlueprintId;
-use crate::ScryptoSbor;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
 use sbor::rust::fmt;

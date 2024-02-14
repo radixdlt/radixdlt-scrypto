@@ -1,7 +1,7 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

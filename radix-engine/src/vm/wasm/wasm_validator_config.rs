@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 use wasm_instrument::gas_metering::MemoryGrowCost;
 use wasm_instrument::gas_metering::Rules;
 use wasmparser::Operator::{self, *};

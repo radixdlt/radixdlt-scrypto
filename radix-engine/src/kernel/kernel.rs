@@ -22,12 +22,11 @@ use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
 use crate::track::BootStore;
-use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
+use substate_store_interface::db_key_mapper::SubstateKeyContent;
 use transaction::prelude::PreAllocatedAddress;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution

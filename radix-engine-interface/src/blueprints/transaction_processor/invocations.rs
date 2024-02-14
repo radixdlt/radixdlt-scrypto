@@ -1,4 +1,4 @@
-use crate::*;
+use crate::internal_prelude::*;
 use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use sbor::rust::prelude::*;
 

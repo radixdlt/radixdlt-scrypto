@@ -1,18 +1,18 @@
-use crate::api::node_modules::auth::ROLE_ASSIGNMENT_BLUEPRINT;
-use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
 use crate::api::CollectionIndex;
-use crate::constants::{
-    METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
-};
 use crate::internal_prelude::*;
+use crate::object_modules::metadata::METADATA_BLUEPRINT;
+use crate::object_modules::role_assignment::ROLE_ASSIGNMENT_BLUEPRINT;
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use radix_engine_common::constants::{
+    METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
+};
 use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, VersionedScryptoSchema};
 use radix_engine_common::types::*;
-use radix_engine_derive::{ManifestSbor, ScryptoSbor};
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::FieldIndex;
+use radix_engine_interface::object_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;

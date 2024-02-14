@@ -1,3 +1,5 @@
+use radix_engine_common::crypto::Secp256k1PublicKey;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_common::math::Decimal;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -5,8 +7,6 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT, CONSENSUS_MANAGER_START_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
-use radix_engine_interface::crypto::Secp256k1PublicKey;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_interface::types::ComponentAddress;
 use sbor::rust::fmt::Debug;
 

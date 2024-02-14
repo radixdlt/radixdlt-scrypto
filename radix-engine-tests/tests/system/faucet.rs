@@ -1,4 +1,4 @@
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use scrypto_test::prelude::*;
 
 #[test]

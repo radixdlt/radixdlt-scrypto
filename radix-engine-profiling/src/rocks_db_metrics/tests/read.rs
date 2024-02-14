@@ -1,11 +1,11 @@
 use super::super::*;
 use super::common::*;
-use radix_engine_store_interface::{
+use rand::{seq::SliceRandom, Rng};
+use std::{io::Write, path::PathBuf};
+use substate_store_interface::{
     db_key_mapper::*,
     interface::{CommittableSubstateDatabase, DbPartitionKey, DbSortKey, SubstateDatabase},
 };
-use rand::{seq::SliceRandom, Rng};
-use std::{io::Write, path::PathBuf};
 
 /// Substate size range start
 const MIN_SIZE: usize = 1;
@@ -31,9 +31,9 @@ const FILTER_SPIKES: f32 = 500f32;
 /// Outputs are generated in png files: /tmp/scrypto_read_rocksdb.png, /tmp/scrypto_read_inmem.png, /tmp/scrypto_read_diff.png
 /// point list is printed to stdout.
 /// To run the test case use command:
-///  cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_read --release -- --nocapture
+///  cargo test -p radix-engine-profiling -p substate-store-impls --features rocksdb test_read --release -- --nocapture
 /// or
-///  cargo nextest run -p radix-engine-profiling -p radix-engine-stores --no-capture --features rocksdb --release test_read
+///  cargo nextest run -p radix-engine-profiling -p substate-store-impls --no-capture --features rocksdb --release test_read
 /// from main radixdlt-scrypto folder.
 /// Test can be parametrized using environment variables: READ_NODES_REPEAT_COUNT, MIN_SIZE, MAX_SIZE, SIZE_COUNT,
 ///  WRITE_NODES_COUNT, FILTER_READ_MAX_SIZE, FILTER_SPIKES, READ_NOT_FOUND_SUBSTATES_COUNT

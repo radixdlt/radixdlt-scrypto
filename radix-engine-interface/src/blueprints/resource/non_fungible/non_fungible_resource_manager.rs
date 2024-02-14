@@ -1,5 +1,5 @@
 use crate::blueprints::resource::*;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
@@ -9,9 +9,9 @@ use radix_engine_common::data::scrypto::{
 };
 use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::prelude::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::types::NonFungibleData;
+use radix_engine_common::traits::NonFungibleData;
+use radix_engine_interface::object_modules::metadata::MetadataInit;
+use radix_engine_interface::object_modules::ModuleConfig;
 use sbor::rust::collections::{IndexMap, IndexSet};
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;

@@ -1,6 +1,6 @@
 use monkey_tests::resource::{NonFungibleResourceFuzzGetBucketAction, ResourceFuzzUseBucketAction};
 use monkey_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 
 #[test]
 fn fuzz_non_fungible_resource() {

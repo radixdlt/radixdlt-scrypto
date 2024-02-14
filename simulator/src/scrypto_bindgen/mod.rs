@@ -5,9 +5,9 @@ pub mod translation;
 
 use clap::Parser;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
-use radix_engine::types::*;
-use radix_engine_store_interface::interface::SubstateDatabase;
+use radix_engine_common::prelude::*;
 use std::io::Write;
+use substate_store_interface::interface::SubstateDatabase;
 
 use crate::resim::*;
 

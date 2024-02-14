@@ -1,5 +1,6 @@
 use clap::Parser;
-use radix_engine::{types::*, utils::*};
+use radix_engine::{  utils::*};
+use radix_engine_common::{data::manifest::manifest_encode, network::{NetworkDefinition, ParseNetworkError}};
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::{compile, BlobProvider};

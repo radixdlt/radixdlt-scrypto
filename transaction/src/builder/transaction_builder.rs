@@ -117,8 +117,8 @@ impl TransactionBuilder {
 
 #[cfg(test)]
 mod tests {
+    use radix_engine_common::network::NetworkDefinition;
     use radix_engine_common::types::Epoch;
-    use radix_engine_interface::network::NetworkDefinition;
 
     use super::*;
     use crate::builder::*;

@@ -1,9 +1,9 @@
+use crate::internal_prelude::*;
 use crate::track::{
     BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
 };
 use radix_engine_common::types::{NodeId, PartitionNumber, SubstateKey};
-use radix_engine_interface::ScryptoSbor;
-use radix_engine_store_interface::interface::DatabaseUpdate;
+use substate_store_interface::interface::DatabaseUpdate;
 use utils::prelude::{index_map_new, index_set_new, IndexMap, IndexSet};
 
 /// A legacy format capturing the same information as new [`StateUpdates`].

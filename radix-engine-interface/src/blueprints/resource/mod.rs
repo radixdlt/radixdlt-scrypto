@@ -2,7 +2,6 @@ mod auth_zone;
 mod bucket;
 mod fungible;
 mod non_fungible;
-mod non_fungible_global_id;
 mod proof;
 mod proof_rule;
 mod resource;
@@ -16,7 +15,6 @@ pub use auth_zone::*;
 pub use bucket::*;
 pub use fungible::*;
 pub use non_fungible::*;
-pub use non_fungible_global_id::*;
 pub use proof::*;
 pub use proof_rule::*;
 pub use resource::*;
@@ -28,7 +26,6 @@ use sbor::Sbor;
 pub use vault::*;
 pub use worktop::*;
 
-use crate::api::node_modules::auth::RoleDefinition;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_common::math::*;
@@ -62,7 +59,7 @@ macro_rules! resource_roles {
             pub $updater_field: T,
         }
 
-        impl $roles_struct<$crate::api::node_modules::auth::RoleDefinition> {
+        impl $roles_struct<$crate::object_modules::role_assignment::RoleDefinition> {
             pub fn to_role_init(self) -> $crate::blueprints::resource::RoleAssignmentInit {
                 let mut roles = $crate::blueprints::resource::RoleAssignmentInit::new();
                 roles.define_role($actor_field_name, self.$actor_field);
@@ -71,7 +68,7 @@ macro_rules! resource_roles {
             }
         }
 
-        impl Default for $roles_struct<$crate::api::node_modules::auth::RoleDefinition> {
+        impl Default for $roles_struct<$crate::object_modules::role_assignment::RoleDefinition> {
             fn default() -> Self {
                 Self {
                     $actor_field: Some($default_rule),

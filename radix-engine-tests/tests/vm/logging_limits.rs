@@ -1,8 +1,8 @@
 use radix_engine::{
     errors::{RuntimeError, SystemModuleError},
     system::system_modules::limits::TransactionLimitsError,
-    types::*,
 };
+use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::*;
 
 fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
