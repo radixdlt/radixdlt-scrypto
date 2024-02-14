@@ -19,7 +19,7 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
      git config --system core.longpaths true
      ```
    - macOS:
-     - Make sure you have the xcode command line tools: `xcode-select --install`.
+     - Make sure you have the `xcode` command line tools: `xcode-select --install`.
      - Install cmake: `brew install cmake llvm`<br>
        Add LLVM to the system path by adding below line to the `~/.profile`
        ```
@@ -30,7 +30,10 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
      ```
    - Linux:
-     - Make sure a C++ compiler, LLVM and cmake is installed (`sudo apt install build-essential llvm cmake`).
+     - Make sure a C++ compiler, LLVM and cmake is installed:
+     ```bash
+     sudo apt install build-essential llvm cmake
+     ```
      - Install the Rust compiler:
      ```bash
      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
