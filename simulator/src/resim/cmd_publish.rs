@@ -1,20 +1,21 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::blueprints::models::*;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, BlueprintPayloadDef, FunctionSchema,
     IndexedStateSchema, PackageExport, VmType, *,
 };
-use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::interface::DatabaseUpdates;
-use radix_engine_store_interface::{
-    db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
-    interface::{CommittableSubstateDatabase, DatabaseUpdate},
-};
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
+use substate_store_interface::interface::DatabaseUpdates;
+use substate_store_interface::{
+    db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
+    interface::{CommittableSubstateDatabase, DatabaseUpdate},
+};
+use substate_store_queries::typed_substate_layout::*;
 use utils::ContextualDisplay;
 
 use crate::resim::*;

@@ -1,5 +1,5 @@
-use crate::data::scrypto::model::*;
-use crate::*;
+use crate::internal_prelude::*;
+use radix_engine_common::data::scrypto::model::*;
 use radix_engine_common::math::Decimal;
 use sbor::*;
 

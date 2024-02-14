@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
@@ -6,13 +5,12 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::{account, resource::*};
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
-use radix_engine::system::attached_modules::metadata::SetMetadataEvent;
+use radix_engine::object_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine::types::blueprints::account::ResourcePreference;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_common::constants::AuthAddresses;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
+use radix_engine_interface::blueprints::account::ResourcePreference;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -20,12 +18,14 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
+use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
+use radix_engine_tests::common::*;
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction::model::InstructionV1;
-use transaction::prelude::*;
 
 #[test]
 fn test_events_of_commit_failure() {
@@ -209,10 +209,11 @@ fn create_proof_emits_correct_events() {
 #[test]
 fn scrypto_cant_emit_unregistered_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ScryptoEvents",
@@ -222,7 +223,7 @@ fn scrypto_cant_emit_unregistered_event() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -289,7 +290,7 @@ fn scrypto_can_emit_registered_events() {
 #[test]
 fn cant_publish_a_package_with_non_struct_or_enum_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     let (code, definition) = PackageLoader::get("events_invalid");
     let manifest = ManifestBuilder::new()
@@ -314,7 +315,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
 #[test]
 fn local_type_id_with_misleading_name_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     let (code, mut definition) = PackageLoader::get("events");
     let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
@@ -355,7 +356,7 @@ fn local_type_id_with_misleading_name_fails() {
 #[test]
 fn locking_fee_against_a_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     let manifest = ManifestBuilder::new().lock_fee(FAUCET, 500).build();
 
@@ -388,7 +389,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
 #[test]
 fn vault_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let recallable_resource_address = test_runner.create_recallable_token(account);
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
@@ -448,7 +449,7 @@ fn vault_fungible_recall_emits_correct_events() {
 #[test]
 fn vault_non_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let (recallable_resource_address, non_fungible_local_id) = {
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
@@ -543,7 +544,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
 #[test]
 fn resource_manager_new_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
@@ -620,7 +621,7 @@ fn resource_manager_new_vault_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -710,7 +711,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -803,7 +804,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 #[test]
 fn vault_take_non_fungibles_by_amount_emits_correct_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -974,15 +975,19 @@ fn consensus_manager_round_update_emits_correct_event() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
-        address: CONSENSUS_MANAGER.into(),
-        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-            Round::of(1),
-            0,
-            180000i64,
-        )),
-    }]);
+    let receipt = test_runner.execute_system_transaction(
+        vec![InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
+                Round::of(1),
+                0,
+                180000i64,
+            )),
+        }],
+        btreeset![AuthAddresses::validator_role()],
+        vec![],
+    );
 
     // Assert
     {
@@ -1031,15 +1036,19 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
     test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
 
     // Act: perform the most usual successful next round
-    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
-        address: CONSENSUS_MANAGER.into(),
-        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-            Round::of(rounds_per_epoch),
-            0,
-            180000i64,
-        )),
-    }]);
+    let receipt = test_runner.execute_system_transaction(
+        vec![InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
+                Round::of(rounds_per_epoch),
+                0,
+                180000i64,
+            )),
+        }],
+        btreeset![AuthAddresses::validator_role()],
+        vec![],
+    );
 
     // Assert
     {
@@ -1079,15 +1088,19 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
-        address: CONSENSUS_MANAGER.into(),
-        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-            Round::of(1),
-            0,
-            180000i64,
-        )),
-    }]);
+    let receipt = test_runner.execute_system_transaction(
+        vec![InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
+                Round::of(1),
+                0,
+                180000i64,
+            )),
+        }],
+        btreeset![AuthAddresses::validator_role()],
+        vec![],
+    );
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -1765,7 +1778,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 #[test]
 fn setting_metadata_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let resource_address = create_all_allowed_resource(&mut test_runner);
 
     let manifest = ManifestBuilder::new()
@@ -1813,13 +1826,14 @@ fn setting_metadata_emits_correct_events() {
 #[test]
 fn create_account_events_can_be_looked_up() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     {
@@ -1848,6 +1862,7 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
 
 fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceAddress {
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_fungible_resource(
             OwnerRole::Fixed(AccessRule::AllowAll),
             false,
@@ -1871,13 +1886,13 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
             None,
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit(true).new_resource_addresses()[0]
 }
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (pk, _, account) = test_runner.new_allocated_account();
 
     // Create
@@ -1973,7 +1988,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (pk, _, account) = test_runner.new_allocated_account();
 
     // Create

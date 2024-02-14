@@ -3,7 +3,6 @@ use paste::paste;
 use radix_engine::{
     system::system_modules::costing::SystemLoanFeeReserve,
     transaction::CostingParameters,
-    types::*,
     utils::ExtractSchemaError,
     vm::{
         wasm::{
@@ -14,10 +13,12 @@ use radix_engine::{
     },
 };
 use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
-use radix_engine_queries::typed_substate_layout::{CodeHash, PackageDefinition};
+use radix_engine_common::prelude::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use sbor::rust::iter;
-use scrypto_unit::TestRunnerBuilder;
+use scrypto_test::prelude::TestRunnerBuilder;
+use substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use transaction::prelude::TransactionCostingParameters;
 use wabt::wat2wasm;
 
@@ -192,7 +193,7 @@ fn bench_deserialize_wasm(c: &mut Criterion) {
 }
 
 fn bench_prepare_wasm(c: &mut Criterion) {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let code = include_workspace_asset_bytes!("radiswap.wasm").to_vec();
     let package_definition: PackageDefinition =
         manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();

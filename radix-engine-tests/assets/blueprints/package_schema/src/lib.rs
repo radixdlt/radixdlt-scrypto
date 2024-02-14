@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::blueprint_schema_init::*;
 use scrypto::prelude::*;
 
 #[blueprint]

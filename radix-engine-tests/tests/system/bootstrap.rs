@@ -1,4 +1,5 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
+use radix_engine::object_modules::metadata::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::checkers::SystemDatabaseChecker;
 use radix_engine::system::checkers::{
@@ -7,15 +8,16 @@ use radix_engine::system::checkers::{
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
-use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
-use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
+use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::KeyValueEntrySubstate;
-use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
+use scrypto_test::prelude::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use substate_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use substate_store_queries::typed_substate_layout::*;
 use transaction::prelude::*;
 
 #[test]
@@ -746,11 +748,12 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
 
     let reader = SystemDatabaseReader::new(&substate_db);
 
-    let validator_sort_key = reader.collection_iter(
-        CONSENSUS_MANAGER.as_node_id(),
-        ModuleId::Main,
-        0
-    ).expect("collection not found").map(|(key, _value)| key).next().expect("collection empty");
+    let validator_sort_key = reader
+        .collection_iter(CONSENSUS_MANAGER.as_node_id(), ModuleId::Main, 0)
+        .expect("collection not found")
+        .map(|(key, _value)| key)
+        .next()
+        .expect("collection empty");
 
     let SubstateKey::Sorted((sort_prefix, address)) = validator_sort_key else {
         panic!("collection not a sorted index");
@@ -758,16 +761,19 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
     let address: ComponentAddress = scrypto_decode(address.as_slice()).expect("not an address");
     let validator = reader
         .read_object_collection_entry::<_, VersionedConsensusManagerRegisteredValidatorByStake>(
-        CONSENSUS_MANAGER.as_node_id(),
-        ModuleId::Main,
-        ObjectCollectionKey::SortedIndex(0, u16::from_be_bytes(sort_prefix), &address)
+            CONSENSUS_MANAGER.as_node_id(),
+            ModuleId::Main,
+            ObjectCollectionKey::SortedIndex(0, u16::from_be_bytes(sort_prefix), &address),
         )
         .expect("validator cannot be read")
         .map(|versioned| versioned.into_latest())
         .expect("validator not found");
 
-    assert_eq!(validator, Validator {
-        key: validator_key,
-        stake: stake_xrd,
-    });
+    assert_eq!(
+        validator,
+        Validator {
+            key: validator_key,
+            stake: stake_xrd,
+        }
+    );
 }

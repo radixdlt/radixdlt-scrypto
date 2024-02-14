@@ -1,12 +1,12 @@
 use super::*;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::data::scrypto::well_known_scrypto_custom_types::{
     own_key_value_store_type_data, OWN_KEY_VALUE_STORE_TYPE,
 };
-use radix_engine_interface::data::scrypto::*;
+use radix_engine_common::data::scrypto::*;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::prelude::{
     LocalKeyValueStoreDataSchema, KV_STORE_DATA_SCHEMA_VARIANT_LOCAL,
 };

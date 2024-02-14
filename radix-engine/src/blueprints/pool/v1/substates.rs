@@ -1,4 +1,5 @@
 use crate::blueprints::models::*;
+use crate::internal_prelude::*;
 use native_sdk::resource::*;
 use radix_engine_interface::prelude::*;
 

@@ -1,5 +1,5 @@
 use super::*;
-use crate::prelude::*;
+use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]

@@ -4,7 +4,7 @@ use crate::system::system_db_reader::{
 };
 use crate::system::system_substates::FieldSubstate;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::types::Condition;
+use blueprint_schema_init::Condition;
 use radix_engine_common::prelude::{
     scrypto_decode, scrypto_encode, Hash, ScryptoValue, VersionedScryptoSchema,
 };
@@ -14,8 +14,8 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_store_interface::interface::ListableSubstateDatabase;
-use radix_engine_store_interface::interface::SubstateDatabase;
+use substate_store_interface::interface::ListableSubstateDatabase;
+use substate_store_interface::interface::SubstateDatabase;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SystemNodeCheckerState {

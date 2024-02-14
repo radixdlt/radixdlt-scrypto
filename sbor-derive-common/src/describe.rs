@@ -348,14 +348,14 @@ mod tests {
         let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(
             input,
-            Some("radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>"),
+            Some("radix_engine_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>"),
         )
         .unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId> >
+                impl ::sbor::Describe<radix_engine_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId> >
                     for Test
                 {
                     const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
@@ -365,7 +365,7 @@ mod tests {
                     );
                     fn type_data() ->
                         ::sbor::TypeData<
-                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>,
+                            radix_engine_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>,
                             ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
                             "Test",
@@ -373,19 +373,19 @@ mod tests {
                                 (
                                     "a",
                                     <u32 as ::sbor::Describe<
-                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
+                                        radix_engine_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
                                     >>::TYPE_ID
                                 ),
                                 (
                                     "b",
                                     <Vec<u8> as ::sbor::Describe<
-                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
+                                        radix_engine_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
                                     >>::TYPE_ID
                                 ),
                                 (
                                     "c",
                                     <u32 as ::sbor::Describe<
-                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
+                                        radix_engine_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
                                     >>::TYPE_ID
                                 ),
                             ],
@@ -393,7 +393,7 @@ mod tests {
                     }
                     fn add_all_dependencies(
                         aggregator: &mut ::sbor::TypeAggregator<
-                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
+                            radix_engine_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
                         >
                     ) {
                         aggregator.add_child_type_and_descendents::<u32>();

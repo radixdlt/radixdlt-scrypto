@@ -1,9 +1,8 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::*;
 use radix_engine::transaction::*;
-use radix_engine_queries::typed_substate_layout::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
+use substate_store_queries::typed_substate_layout::*;
 
 const DECIMAL_MIN: Decimal = Decimal::MIN;
 const DECIMAL_MAX: Decimal = Decimal::MAX;
@@ -448,7 +447,7 @@ package_interactions_tests! {
 #[test]
 fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (code, mut definition) = CODE_AND_DEF.clone();
 
     for blueprint_definition in definition.blueprints.values_mut() {
@@ -482,7 +481,7 @@ fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
 #[test]
 fn component_and_package_royalties_are_both_applied() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (code, mut definition) = CODE_AND_DEF.clone();
     let royalty_amount = RoyaltyAmount::Xrd(10.into());
     update_package_royalties(&mut definition, royalty_amount);
@@ -527,7 +526,7 @@ fn component_and_package_royalties_are_both_applied() {
 #[test]
 fn test_component_with_missing_method_royalty() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let package_address = test_runner.publish_package_simple(CODE_AND_DEF.clone());
 
     let manifest = ManifestBuilder::new()
@@ -649,7 +648,7 @@ macro_rules! component_instantiation_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
                 let package_address =
                     test_runner.publish_package_simple(CODE_AND_DEF.clone());
 
@@ -695,7 +694,7 @@ macro_rules! component_interaction_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
                 let package_address =
                     test_runner.publish_package_simple(CODE_AND_DEF.clone());
 
@@ -755,7 +754,7 @@ macro_rules! package_publishing_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
                 let (code, mut definition) = CODE_AND_DEF.clone();
 
                 update_package_royalties(&mut definition, royalty_amount);
@@ -803,7 +802,7 @@ macro_rules! package_interactions_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
                 let (code, mut definition) = CODE_AND_DEF.clone();
 
                 update_package_royalties(&mut definition, royalty_amount);

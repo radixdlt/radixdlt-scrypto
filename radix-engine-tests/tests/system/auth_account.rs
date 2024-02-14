@@ -1,11 +1,10 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{RuntimeError, SystemError};
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_common::constants::AuthAddresses;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::rule;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
 
 fn test_auth_rule(
     test_runner: &mut DefaultTestRunner,
@@ -345,7 +344,7 @@ fn cannot_set_royalty_on_accounts() {
 #[test]
 fn can_call_function_requiring_count_of_zero() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (pk, _, account) = test_runner.new_account(false);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("auth_scenarios"));
 

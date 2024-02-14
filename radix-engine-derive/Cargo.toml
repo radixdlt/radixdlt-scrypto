@@ -1,6 +1,7 @@
 [package]
 name = "radix-engine-derive"
-version = "1.1.1"
+description = "Implementation of ScryptoSBOR and ManifestSBOR procedural macros. Clients should use `radix-engine-common` for dependency."
+version = "1.2.0-dev"
 edition = "2021"
 
 [lib]

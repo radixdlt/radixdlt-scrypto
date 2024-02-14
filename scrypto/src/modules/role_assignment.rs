@@ -2,20 +2,20 @@ use crate::engine::scrypto_env::ScryptoVmV1Api;
 
 use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;
-use radix_engine_derive::*;
-use radix_engine_interface::api::node_modules::auth::{
+use radix_engine_common::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_common::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
+};
+use radix_engine_interface::object_modules::role_assignment::{
     RoleAssignmentCreateInput, RoleAssignmentGetInput, RoleAssignmentLockOwnerInput,
     RoleAssignmentSetInput, RoleAssignmentSetOwnerInput, ROLE_ASSIGNMENT_BLUEPRINT,
     ROLE_ASSIGNMENT_CREATE_IDENT, ROLE_ASSIGNMENT_GET_IDENT, ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,
     ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
-use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
-};
-use radix_engine_interface::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 

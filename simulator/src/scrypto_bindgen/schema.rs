@@ -1,8 +1,8 @@
+use blueprint_schema_init::*;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::blueprints::package::*;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display};
-
-use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::prelude::*;
 
 pub trait PackageSchemaResolver {
     fn lookup_schema(&self, schema_hash: &SchemaHash) -> Option<Rc<VersionedScryptoSchema>>;

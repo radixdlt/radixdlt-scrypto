@@ -1,16 +1,15 @@
+use blueprint_schema_init::*;
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     system::system_modules::costing::{
         NATIVE_FUNCTION_BASE_COSTS, NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT,
     },
-    types::*,
 };
-use radix_engine_interface::schema::TypeRef;
-use radix_engine_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;
-use scrypto_unit::*;
+use substate_store_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
 
 #[test]
 fn check_native_function_base_costs() {
@@ -96,7 +95,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
     for package_address in package_addresses {
         println!("\nChecking {}", package_address.to_string(&bech32));
 
-        let schemas_by_hash = test_runner.get_package_scrypto_schemas(&package_address);
+        let schemas_by_hash = test_runner.get_package_blueprint_schema_inits(&package_address);
         println!("Found {} schemas", schemas_by_hash.len());
 
         let blueprint_definitions = test_runner.get_package_blueprint_definitions(&package_address);

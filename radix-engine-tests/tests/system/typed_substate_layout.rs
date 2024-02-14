@@ -4,13 +4,13 @@ use radix_engine::system::bootstrap::{
     GenesisStakeAllocation,
 };
 use radix_engine::transaction::TransactionResult;
-use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_queries::typed_native_events::TypedNativeEvent;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use radix_engine_common::prelude::*;
 use sbor::rust::ops::Deref;
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use substate_store_queries::typed_native_events::TypedNativeEvent;
 use transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 
@@ -172,8 +172,7 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
-                    let receipt =
-                        test_runner.execute_raw_transaction(&network, &next.raw_transaction);
+                    let receipt = test_runner.execute_notarized_transaction(&next.raw_transaction);
                     match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_substate_changes_can_be_typed(commit_result);
@@ -209,8 +208,7 @@ fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
-                    let receipt =
-                        test_runner.execute_raw_transaction(&network, &next.raw_transaction);
+                    let receipt = test_runner.execute_notarized_transaction(&next.raw_transaction);
                     match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_events_can_be_typed(commit_result);

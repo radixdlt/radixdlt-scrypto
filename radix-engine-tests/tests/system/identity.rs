@@ -1,14 +1,13 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentitySecurifyToSingleBadgeInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_SECURIFY_IDENT,
 };
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_interface::object_modules::metadata::MetadataValue;
+use scrypto_test::prelude::*;
 
 #[test]
 fn cannot_securify_in_advanced_mode() {
@@ -256,6 +255,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let identity = {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(
                 IDENTITY_PACKAGE,
                 IDENTITY_BLUEPRINT,
@@ -266,7 +266,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
             )
             .build();
         test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![])
+            .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };

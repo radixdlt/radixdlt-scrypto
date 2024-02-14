@@ -5,9 +5,10 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemModuleError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
+use radix_engine_interface::prelude::*;
+use scrypto_test::prelude::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 
 #[test]
@@ -210,6 +211,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(
             test_runner.access_controller_address,
             "stop_timed_recovery",
@@ -1650,7 +1652,7 @@ struct AccessControllerTestRunner {
 impl AccessControllerTestRunner {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
         let mut test_runner = TestRunnerBuilder::new()
-            .without_trace()
+            .without_kernel_trace()
             .with_custom_genesis(CustomGenesis::default(
                 Epoch::of(1),
                 CustomGenesis::default_consensus_manager_config(),
@@ -1761,7 +1763,7 @@ impl AccessControllerTestRunner {
         let manifest_builder = if create_proof {
             self.manifest_builder(as_role)
         } else {
-            ManifestBuilder::new()
+            ManifestBuilder::new().lock_fee_from_faucet()
         };
 
         let manifest = manifest_builder
@@ -1979,7 +1981,7 @@ impl AccessControllerTestRunner {
     }
 
     fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
-        self.test_runner.execute_manifest_ignoring_fee(
+        self.test_runner.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&self.account.1)],
         )
@@ -1991,11 +1993,9 @@ impl AccessControllerTestRunner {
             Role::Recovery => self.recovery_role_badge,
             Role::Confirmation => self.confirmation_role_badge,
         };
-        ManifestBuilder::new().create_proof_from_account_of_amount(
-            self.account.0,
-            resource_address,
-            dec!(1),
-        )
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(self.account.0, resource_address, dec!(1))
     }
 
     fn set_current_minute(&mut self, minutes: i64) {

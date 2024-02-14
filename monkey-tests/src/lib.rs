@@ -15,30 +15,30 @@ use crate::resource::{
 };
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
+use core::ops::AddAssign;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
-use radix_engine::prelude::node_modules::ModuleConfig;
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
-use radix_engine::types::*;
 use radix_engine::vm::OverridePackageCode;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::pool::{
     MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use radix_engine_interface::object_modules::ModuleConfig;
+use radix_engine_interface::prelude::*;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use scrypto::prelude::Zero;
-use scrypto_unit::InjectSystemCostingError;
-use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
+use scrypto_test::prelude::InjectSystemCostingError;
+use scrypto_test::prelude::{CustomGenesis, TestRunner, TestRunnerBuilder};
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::builder::ManifestBuilder;
-use transaction::prelude::Secp256k1PrivateKey;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
@@ -403,6 +403,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
             let (pool_component, pool_unit_resource) = {
                 let manifest = ManifestBuilder::new()
+                    .lock_fee_from_faucet()
                     .call_function(
                         POOL_PACKAGE,
                         TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -415,7 +416,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         },
                     )
                     .build();
-                let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+                let receipt = test_runner.execute_manifest(manifest, vec![]);
                 let commit_result = receipt.expect_commit_success();
 
                 (
@@ -452,6 +453,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
             let (pool_component, pool_unit_resource) = {
                 let manifest = ManifestBuilder::new()
+                    .lock_fee_from_faucet()
                     .call_function(
                         POOL_PACKAGE,
                         MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -464,7 +466,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         },
                     )
                     .build();
-                let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+                let receipt = test_runner.execute_manifest(manifest, vec![]);
                 let commit_result = receipt.expect_commit_success();
 
                 (
@@ -494,8 +496,9 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         );
 
         let fungible_vault_component = {
-            let receipt = test_runner.execute_manifest_ignoring_fee(
+            let receipt = test_runner.execute_manifest(
                 ManifestBuilder::new()
+                    .lock_fee_from_faucet()
                     .create_fungible_resource(
                         OwnerRole::None,
                         true,
@@ -525,8 +528,9 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
             fuzzer.add_resource(resource_address);
 
-            let receipt = test_runner.execute_manifest_ignoring_fee(
+            let receipt = test_runner.execute_manifest(
                 ManifestBuilder::new()
+                    .lock_fee_from_faucet()
                     .call_function(
                         package_address,
                         BLUEPRINT_NAME,
@@ -554,8 +558,9 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 .map(|id| (id, ()))
                 .collect();
             let amount = ids.len();
-            let receipt = test_runner.execute_manifest_ignoring_fee(
+            let receipt = test_runner.execute_manifest(
                 ManifestBuilder::new()
+                    .lock_fee_from_faucet()
                     .create_non_fungible_resource(
                         OwnerRole::None,
                         NonFungibleIdType::Integer,
@@ -587,8 +592,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             fuzzer.add_resource(resource_address);
 
             let manifest = {
-                let mut builder = ManifestBuilder::new();
-                if !amount.is_zero() {
+                let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
+                if amount != 0 {
                     builder = builder.withdraw_from_account(account, resource_address, amount);
                 }
                 builder
@@ -604,8 +609,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .build()
             };
 
-            let receipt =
-                test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge]);
+            let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge]);
             let component_address = receipt.expect_commit_success().new_component_addresses()[0];
 
             let vault_id = test_runner.get_component_vaults(component_address, resource_address)[0];
@@ -691,7 +695,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
         for uuid in 0u64..num_txns {
             // Build new transaction
-            let mut builder = ManifestBuilder::new();
+            let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
             let mut trivial = false;
             let fuzz_txn_intent = T::next_txn_intent(&mut self.fuzzer);
             for fuzz_action in &fuzz_txn_intent {
@@ -719,18 +723,16 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .build();
 
                 let receipt = if let Some(error_after_count) = error_after_system_callback_count {
-                    self.test_runner.execute_manifest_with_fee_from_faucet_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
+                    self.test_runner.execute_manifest_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
                         manifest,
-                        self.fuzzer.next_fee(),
                         vec![NonFungibleGlobalId::from_public_key(
                             &self.account_public_key,
                         )],
                         error_after_count,
                     )
                 } else {
-                    self.test_runner.execute_manifest_with_fee_from_faucet(
+                    self.test_runner.execute_manifest(
                         manifest,
-                        self.fuzzer.next_fee(),
                         vec![NonFungibleGlobalId::from_public_key(
                             &self.account_public_key,
                         )],

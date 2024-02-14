@@ -1,11 +1,10 @@
-use radix_engine_tests::common::*;
 use radix_engine::{
     errors::{RuntimeError, VmError},
-    types::*,
     vm::wasm::WasmRuntimeError,
 };
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_interface::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_loop() {
@@ -23,8 +22,11 @@ fn test_loop() {
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
-    let receipt =
-        test_runner.execute_manifest_with_execution_cost_unit_limit(manifest, vec![], 15_000_000);
+    let receipt = test_runner.execute_manifest_with_costing_params(
+        manifest,
+        vec![],
+        CostingParameters::default().with_execution_cost_unit_limit(15_000_000),
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -68,8 +70,11 @@ fn test_loop_out_of_cost_unit() {
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
-    let receipt =
-        test_runner.execute_manifest_with_execution_cost_unit_limit(manifest, vec![], 15_000_000);
+    let receipt = test_runner.execute_manifest_with_costing_params(
+        manifest,
+        vec![],
+        CostingParameters::default().with_execution_cost_unit_limit(15_000_000),
+    );
 
     // Assert
     receipt.expect_specific_failure(is_costing_error)
@@ -130,7 +135,8 @@ fn test_grow_memory_within_limit() {
     let grow_value = MAX_MEMORY_SIZE_IN_PAGES - 1;
 
     // Act
-    let code = wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
+    let code =
+        wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -156,7 +162,8 @@ fn test_grow_memory_beyond_limit() {
     let grow_value = MAX_MEMORY_SIZE_IN_PAGES;
 
     // Act
-    let code = wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
+    let code =
+        wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -188,7 +195,8 @@ fn test_grow_memory_by_more_than_65536() {
     let grow_value = 0x10000;
 
     // Act
-    let code = wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
+    let code =
+        wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),

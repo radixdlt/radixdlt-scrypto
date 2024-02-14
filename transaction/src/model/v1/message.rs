@@ -1,5 +1,5 @@
 use super::*;
-use crate::prelude::*;
+use crate::internal_prelude::*;
 
 /// Transaction messages as per REP-70
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]

@@ -1,11 +1,10 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::types::FromPublicKey;
+use radix_engine_tests::common::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
@@ -370,14 +369,16 @@ fn can_move_restricted_proofs_internally() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let component_address = {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(package_address, "Outer", "instantiate", manifest_args!())
             .build();
-        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+        let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success().new_component_addresses()[0]
     };
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .create_proof_from_auth_zone_of_all(XRD, "proof")
         .with_name_lookup(|builder, lookup| {
@@ -388,7 +389,7 @@ fn can_move_restricted_proofs_internally() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

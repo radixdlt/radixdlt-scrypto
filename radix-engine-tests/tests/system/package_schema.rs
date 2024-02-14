@@ -1,8 +1,8 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{RuntimeError, SystemError};
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_common::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
+
 use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 
 enum ExpectedResult {

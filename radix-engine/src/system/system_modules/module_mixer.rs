@@ -1,6 +1,7 @@
 use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry, StorageType};
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
@@ -23,11 +24,10 @@ use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
 use crate::transaction::ExecutionConfig;
-use crate::types::*;
 use bitflags::bitflags;
 use paste::paste;
+use radix_engine_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
 
@@ -599,6 +599,17 @@ impl SystemModuleMixer {
     pub fn limits_mut(&mut self) -> Option<&mut LimitsModule> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
             Some(&mut self.limits)
+        } else {
+            None
+        }
+    }
+
+    pub fn transaction_runtime(&mut self) -> Option<&TransactionRuntimeModule> {
+        if self
+            .enabled_modules
+            .contains(EnabledModules::TRANSACTION_RUNTIME)
+        {
+            Some(&self.transaction_runtime)
         } else {
             None
         }

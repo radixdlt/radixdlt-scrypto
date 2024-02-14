@@ -3,12 +3,11 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::{
     blueprints::transaction_processor::TransactionProcessorError,
     errors::{ApplicationError, RuntimeError},
-    types::*,
 };
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::prelude::*;
+use radix_engine_interface::types::FromPublicKey;
 use scrypto::prelude::{require, require_amount};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn drop_auth_zone_proofs_should_not_drop_named_proofs() {

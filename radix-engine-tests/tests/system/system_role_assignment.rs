@@ -2,17 +2,17 @@ use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject}
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_engine::system::attached_modules::role_assignment::RoleAssignmentError;
+use radix_engine::object_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_common::constants::AuthAddresses;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageDefinition, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
     PACKAGE_PUBLISH_NATIVE_IDENT,
 };
-use scrypto_unit::*;
+use scrypto_test::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{DynamicPackageAddress, InstructionV1};
 
@@ -64,6 +64,7 @@ fn cannot_define_more_than_50_roles() {
             }),
         }],
         btreeset!(AuthAddresses::system_role()),
+        vec![],
     );
 
     // Assert
@@ -126,6 +127,7 @@ fn cannot_define_role_name_larger_than_max() {
             }),
         }],
         btreeset!(AuthAddresses::system_role()),
+        vec![],
     );
 
     // Assert

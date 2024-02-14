@@ -1,7 +1,6 @@
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::types::FromPublicKey;
+use scrypto_test::prelude::*;
 
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {

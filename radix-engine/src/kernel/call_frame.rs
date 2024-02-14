@@ -1,13 +1,13 @@
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::DroppedNode;
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::kernel::substate_io::{
     IOAccessHandler, SubstateDevice, SubstateIO, SubstateReadHandler,
 };
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
-use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use substate_store_interface::db_key_mapper::SubstateKeyContent;
 
 use super::heap::{Heap, HeapRemovePartitionError};
 

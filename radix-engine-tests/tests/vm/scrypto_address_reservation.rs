@@ -1,7 +1,6 @@
+use radix_engine_common::prelude::*;
 use radix_engine_tests::common::*;
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn should_be_able_to_get_address_of_an_address_reservation() {

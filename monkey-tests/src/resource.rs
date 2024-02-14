@@ -5,16 +5,17 @@ use native_sdk::resource::{NativeBucket, NativeVault};
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::FromRepr;
 use radix_engine::vm::{VmApi, VmInvoke};
+use radix_engine_common::data::manifest::ManifestArgs;
 use radix_engine_common::manifest_args;
+use radix_engine_common::prelude::IndexMap;
 use radix_engine_common::prelude::{
     manifest_decode, manifest_encode, scrypto_decode, scrypto_encode, ManifestValue,
     NonFungibleLocalId, ScryptoValue,
 };
 use radix_engine_common::types::{ComponentAddress, ResourceAddress};
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_SELF};
-use radix_engine_interface::data::manifest::ManifestArgs;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::prelude::{
     Bucket, FieldValue, FungibleResourceManagerMintInput,
     NonFungibleResourceManagerMintManifestInput, OwnerRole, Vault,
@@ -23,7 +24,6 @@ use radix_engine_interface::prelude::{
     VAULT_TAKE_IDENT,
 };
 use radix_engine_interface::types::IndexedScryptoValue;
-use scrypto::prelude::indexmap::IndexMap;
 use transaction::builder::ManifestBuilder;
 use utils::indexmap;
 

@@ -3,7 +3,7 @@ use arbitrary::Arbitrary;
 use radix_engine_common::types::RoyaltyAmount;
 use sbor::rust::prelude::*;
 
-use crate::*;
+use crate::internal_prelude::*;
 
 /// Royalty rules
 #[cfg_attr(

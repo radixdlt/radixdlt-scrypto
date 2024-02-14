@@ -7,6 +7,7 @@ version = "1.0.0-rc1"
 edition = "2021"
 
 [dependencies]
+radix-engine-common = { path = "../../../radix-engine-common", default-features = false }
 radix-engine-interface = { path = "../../../radix-engine-interface", default-features = false }
 
 # Stub lib to make 'trybuild' crate happy
@@ -26,6 +27,5 @@ path = "src/dec_err_expr_not_supported.rs"
 
 [features]
 default = ["std"]
-std = ["radix-engine-interface/std"]
-alloc = ["radix-engine-interface/alloc"]
-
+std = ["radix-engine-common/std", "radix-engine-interface/std"]
+alloc = ["radix-engine-common/alloc", "radix-engine-interface/alloc"]

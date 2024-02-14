@@ -1,13 +1,14 @@
 [package]
 name = "radix-engine"
-version = "1.1.1"
+version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false, features = ["secp256k1_sign_and_validate"]}
-radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
+substate-store-interface = { path = "../substate-store-interface", default-features = false }
+blueprint-schema-init = { path = "../blueprint-schema-init", default-features = false }
 native-sdk = { path = "../native-sdk", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 utils = { path = "../utils", default-features = false }
@@ -59,8 +60,8 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "radix-engine-macros/std", "utils/std", "serde_json?/std", "wasm-instrument/std" ]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "radix-engine-macros/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "blueprint-schema-init/std", "radix-engine-interface/std", "substate-store-interface/std", "radix-engine-macros/std", "utils/std", "serde_json?/std", "wasm-instrument/std" ]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "radix-engine-macros/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).

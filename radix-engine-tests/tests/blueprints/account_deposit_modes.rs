@@ -1,10 +1,11 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_queries::typed_substate_layout::AccountError;
-use scrypto_unit::{DefaultTestRunner, TestRunnerBuilder};
+use radix_engine_interface::prelude::*;
+use scrypto_test::prelude::{DefaultTestRunner, TestRunnerBuilder};
+use substate_store_queries::typed_substate_layout::AccountError;
 use transaction::prelude::*;
 
 #[test]
@@ -100,8 +101,9 @@ fn account_try_deposit_batch_or_refund_method_is_callable_with_array_of_resource
     let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account_address) = test_runner.new_account(true);
 
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "xrd_1a")
             .take_all_from_worktop(XRD, "xrd_1b")
@@ -466,7 +468,7 @@ struct AccountDepositModesTestRunner {
 
 impl AccountDepositModesTestRunner {
     pub fn new(virtual_account: bool) -> Self {
-        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
         let (public_key, _, component_address) = test_runner.new_account(virtual_account);
 
         Self {
@@ -483,6 +485,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_fungible(resource_address, 1)
             .take_all_from_worktop(resource_address, "bucket")
             .with_bucket("bucket", |builder, bucket| {
@@ -498,6 +501,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_tokens")
             .with_bucket("free_tokens", |builder, bucket| {
@@ -513,6 +517,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.component_address,
                 ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -529,6 +534,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.component_address,
                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
@@ -547,6 +553,7 @@ impl AccountDepositModesTestRunner {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.component_address,
                 ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT,
@@ -595,6 +602,7 @@ impl AccountDepositModesTestRunner {
             .test_runner
             .get_component_balance(self.component_address, resource_address);
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .withdraw_from_account(self.component_address, resource_address, balance)
             .try_deposit_entire_worktop_or_refund(virtual_account, None)
             .build();
@@ -608,7 +616,7 @@ impl AccountDepositModesTestRunner {
         manifest: TransactionManifestV1,
         sign: bool,
     ) -> TransactionReceipt {
-        self.test_runner.execute_manifest_ignoring_fee(
+        self.test_runner.execute_manifest(
             manifest,
             if sign {
                 vec![self.virtual_signature_badge()]

@@ -3,13 +3,12 @@ use radix_engine::blueprints::pool::v1::errors::one_resource_pool::Error as OneR
 use radix_engine::blueprints::pool::v1::events::one_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
+use radix_engine_interface::object_modules::metadata::MetadataValue;
 use scrypto::prelude::Pow;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn one_resource_pool_can_be_instantiated() {
@@ -44,11 +43,12 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
         vec![]
     };
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .set_metadata(global_address, key, MetadataValue::Bool(false))
         .build();
     let receipt = test_runner
         .test_runner
-        .execute_manifest_ignoring_fee(manifest, initial_proofs);
+        .execute_manifest(manifest, initial_proofs);
 
     // Assert
     result(receipt);
@@ -441,13 +441,14 @@ fn protected_deposit_into_the_pool_increases_how_much_resources_the_pool_units_a
 #[test]
 fn creating_a_pool_with_non_fungible_resources_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             POOL_PACKAGE,
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -460,7 +461,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt
@@ -717,7 +718,7 @@ impl TestEnvironment {
     }
 
     fn new_with_owner(divisibility: u8, owner_role: OwnerRole) -> Self {
-        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
@@ -730,6 +731,7 @@ impl TestEnvironment {
 
         let (pool_component, pool_unit_resource) = {
             let manifest = ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_function(
                     POOL_PACKAGE,
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -742,7 +744,7 @@ impl TestEnvironment {
                     },
                 )
                 .build();
-            let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+            let receipt = test_runner.execute_manifest(manifest, vec![]);
             let commit_result = receipt.expect_commit_success();
 
             (
@@ -763,6 +765,7 @@ impl TestEnvironment {
 
     fn contribute<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "contribution")
             .with_name_lookup(|builder, lookup| {
@@ -781,6 +784,7 @@ impl TestEnvironment {
 
     fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .withdraw_from_account(
                 self.account_component_address,
                 self.pool_unit_resource_address,
@@ -803,6 +807,7 @@ impl TestEnvironment {
 
     fn protected_deposit<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "to_deposit")
             .with_name_lookup(|builder, lookup| {
@@ -825,6 +830,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
@@ -853,6 +859,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
@@ -866,6 +873,7 @@ impl TestEnvironment {
 
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
@@ -882,7 +890,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         self.test_runner
-            .execute_manifest_ignoring_fee(manifest, self.initial_proofs(sign))
+            .execute_manifest(manifest, self.initial_proofs(sign))
     }
 
     fn virtual_signature_badge(&self) -> NonFungibleGlobalId {

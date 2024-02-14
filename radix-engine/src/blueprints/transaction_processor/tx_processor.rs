@@ -7,7 +7,6 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_init::type_info_partition;
 use crate::system::type_info::TypeInfoBlueprint;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::types::*;
 use native_sdk::resource::NativeFungibleBucket;
 use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};

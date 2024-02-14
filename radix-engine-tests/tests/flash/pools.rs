@@ -4,14 +4,13 @@ use radix_engine::blueprints::pool::v1::errors::{
     two_resource_pool::Error as TwoResourcePoolError,
 };
 use scrypto_test::prelude::*;
-use scrypto_unit::*;
 
 #[test]
 fn database_is_consistent_before_and_after_protocol_update() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new()
         .without_pools_v1_1()
-        .without_trace()
+        .without_kernel_trace()
         .build();
 
     let (pk, _, account) = test_runner.new_account(false);
@@ -81,7 +80,7 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
     // Arrange
     let mut test_runner = TestRunnerBuilder::new()
         .without_pools_v1_1()
-        .without_trace()
+        .without_kernel_trace()
         .build();
 
     let (pk, _, account) = test_runner.new_account(false);
@@ -244,7 +243,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
     // Arrange
     let mut test_runner = TestRunnerBuilder::new()
         .without_pools_v1_1()
-        .without_trace()
+        .without_kernel_trace()
         .build();
 
     let (pk, _, account) = test_runner.new_account(false);

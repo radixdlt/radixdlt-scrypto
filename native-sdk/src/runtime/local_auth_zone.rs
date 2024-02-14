@@ -1,9 +1,9 @@
 use crate::resource::NativeAuthZone;
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::data::scrypto::{ScryptoCategorize, ScryptoDecode};
+use radix_engine_common::math::Decimal;
 use radix_engine_interface::api::{ClientApi, ACTOR_REF_AUTH_ZONE};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::{ScryptoCategorize, ScryptoDecode};
-use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 

@@ -1,18 +1,17 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_common::constants::AuthAddresses;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::object_modules::role_assignment::FallToOwner;
 use radix_engine_interface::rule;
-use radix_engine_queries::typed_substate_layout::*;
-use scrypto::prelude::FallToOwner;
+use radix_engine_interface::types::FromPublicKey;
+use radix_engine_tests::common::*;
 use scrypto_test::prelude::InvalidNameError;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
+use substate_store_queries::typed_substate_layout::*;
 
 #[test]
 fn can_call_public_function() {
@@ -66,6 +65,7 @@ fn can_call_protected_function_with_auth() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .call_function(
             package_address,
@@ -74,8 +74,8 @@ fn can_call_protected_function_with_auth() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner
-        .execute_manifest_ignoring_fee(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -191,14 +191,15 @@ fn component_role_assignment_can_be_mutated_to_non_fungible_resource_through_man
 #[test]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
     let component_address = {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
+        let receipt = test_runner.execute_manifest(manifest, []);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -206,6 +207,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "assert_access_rule",
@@ -213,7 +215,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
+    let receipt = test_runner.execute_manifest(manifest, []);
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
@@ -227,16 +229,17 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 #[test]
 fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
     let component_address = {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest_ignoring_fee(
+        let receipt = test_runner.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -246,6 +249,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .call_method(
             component_address,
@@ -255,7 +259,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = test_runner.execute_manifest(
         manifest,
         [NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -859,6 +863,7 @@ impl MutableRolesTestRunner {
             test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(
                 package_address,
                 Self::BLUEPRINT_NAME,
@@ -866,7 +871,7 @@ impl MutableRolesTestRunner {
                 manifest_args!(roles),
             )
             .build();
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+        test_runner.execute_manifest(manifest, vec![])
     }
 
     pub fn create_component_with_owner(
@@ -877,6 +882,7 @@ impl MutableRolesTestRunner {
             test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
 
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(
                 package_address,
                 Self::BLUEPRINT_NAME,
@@ -884,7 +890,7 @@ impl MutableRolesTestRunner {
                 manifest_args!(owner_role),
             )
             .build();
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+        test_runner.execute_manifest(manifest, vec![])
     }
 
     pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
@@ -968,11 +974,11 @@ impl MutableRolesTestRunner {
     }
 
     pub fn manifest_builder() -> ManifestBuilder {
-        ManifestBuilder::new()
+        ManifestBuilder::new().lock_fee_from_faucet()
     }
 
     pub fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
         self.test_runner
-            .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
+            .execute_manifest(manifest, self.initial_proofs.clone())
     }
 }

@@ -1,7 +1,6 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::component::*;
 use crate::blueprints::resource::*;
-use crate::*;
 use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_common::prelude::*;
 use radix_engine_common::types::GlobalAddressReservation;

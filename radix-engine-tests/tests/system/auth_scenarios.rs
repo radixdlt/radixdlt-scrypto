@@ -1,16 +1,15 @@
-use radix_engine_tests::common::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
-use radix_engine_interface::api::node_modules::auth::{
-    RoleAssignmentSetInput, ROLE_ASSIGNMENT_SET_IDENT, 
+use radix_engine_common::prelude::*;
+use radix_engine_interface::object_modules::role_assignment::{
+    RoleAssignmentSetInput, ROLE_ASSIGNMENT_SET_IDENT,
 };
 use radix_engine_interface::rule;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::InjectSystemCostingError;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::InjectSystemCostingError;
+use scrypto_test::prelude::*;
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
 
 pub struct AuthScenariosEnv {
     acco: ComponentAddress,
@@ -65,8 +64,9 @@ impl AuthScenariosEnv {
             },
             acco,
         );
-        test_runner.execute_manifest_ignoring_fee(
+        test_runner.execute_manifest(
             ManifestBuilder::new()
+                .lock_fee_from_faucet()
                 .call_role_assignment_method(
                     cerb,
                     ROLE_ASSIGNMENT_SET_IDENT,
@@ -84,10 +84,11 @@ impl AuthScenariosEnv {
             test_runner.publish_package_simple(PackageLoader::get("auth_scenarios"));
 
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(package_address, "Swappy", "create", manifest_args!(cerb))
             .deposit_batch(acco)
             .build();
-        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![virtua_sig.clone()]);
+        let receipt = test_runner.execute_manifest(manifest, vec![virtua_sig.clone()]);
         let result = receipt.expect_commit_success();
         let swappy = result.new_component_addresses()[0];
         let swappy_resource = result.new_resource_addresses()[0];
@@ -95,6 +96,7 @@ impl AuthScenariosEnv {
             NonFungibleGlobalId::new(swappy_resource, NonFungibleLocalId::integer(0u64));
 
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(
                 package_address,
                 "BigFi",
@@ -103,7 +105,7 @@ impl AuthScenariosEnv {
             )
             .deposit_batch(acco)
             .build();
-        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![virtua_sig.clone()]);
+        let receipt = test_runner.execute_manifest(manifest, vec![virtua_sig.clone()]);
         let result = receipt.expect_commit_success();
         let big_fi = result.new_component_addresses()[0];
         let vault_id = test_runner.get_component_vaults(big_fi, cerb)[0];
@@ -130,10 +132,11 @@ fn scenario_1() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
         .call_method(env.swappy, "protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -148,11 +151,16 @@ fn scenario_1_with_injected_costing_error() {
 
     loop {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
             .call_method(env.swappy, "protected_method", manifest_args!())
             .build();
-        let receipt = test_runner.execute_manifest_with_fee_from_faucet_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
-            manifest, dec!("500"), vec![env.virtua_sig.clone()], inject_err_after_count);
+        let receipt = test_runner
+            .execute_manifest_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
+                manifest,
+                vec![env.virtua_sig.clone()],
+                inject_err_after_count,
+            );
         if receipt.is_commit_success() {
             break;
         }
@@ -171,10 +179,11 @@ fn scenario_2() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
         .call_method(env.big_fi, "call_swappy", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -195,6 +204,7 @@ fn scenario_3() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .withdraw_from_account(env.acco, env.cerb, 1)
         .take_all_from_worktop(env.cerb, "cerbs")
@@ -202,7 +212,7 @@ fn scenario_3() {
             builder.call_method(env.big_fi, "deposit_cerb", manifest_args!(bucket))
         })
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -216,6 +226,7 @@ fn scenario_4() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .withdraw_from_account(env.acco, env.cerb, 1)
         .take_all_from_worktop(env.cerb, "cerbs")
@@ -227,7 +238,7 @@ fn scenario_4() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -241,11 +252,12 @@ fn scenario_5() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .call_method(env.big_fi, "mint_cerb", manifest_args!())
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -266,11 +278,12 @@ fn scenario_6() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
         .pop_from_auth_zone("Arnold")
         .call_method(env.swappy, "protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -291,6 +304,7 @@ fn scenario_7() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
         .pop_from_auth_zone("Arnold")
         .with_name_lookup(|builder, lookup| {
@@ -298,7 +312,7 @@ fn scenario_7() {
             builder.call_method(env.swappy, "public_method", manifest_args!(proof))
         })
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -317,6 +331,7 @@ fn scenario_8() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
         .pop_from_auth_zone("Arnold")
         .with_name_lookup(|builder, lookup| {
@@ -324,7 +339,7 @@ fn scenario_8() {
             builder.call_method(env.swappy, "put_proof_in_auth_zone", manifest_args!(proof))
         })
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -343,11 +358,12 @@ fn scenario_9() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .create_proof_from_auth_zone_of_all(env.swappy_badge.resource_address(), "Bennet")
         .call_method(env.swappy, "protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -361,11 +377,12 @@ fn scenario_10() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .call_method(env.big_fi, "recall_cerb", manifest_args!(env.cerb_vault))
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -386,6 +403,7 @@ fn scenario_11() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_metadata_method(
             env.swappy,
@@ -396,7 +414,7 @@ fn scenario_11() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -410,10 +428,11 @@ fn scenario_12() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.big_fi, "set_swappy_metadata", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -434,10 +453,11 @@ fn scenario_13() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.swappy, "set_metadata", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -458,12 +478,13 @@ fn scenario_14() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.big_fi, "some_method", manifest_args!())
         .call_function(env.package, "BigFi", "some_function", manifest_args!())
         .call_method(env.swappy, "protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -477,6 +498,7 @@ fn scenario_15() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(env.acco, env.swappy_badge.resource_address(), 1)
         .take_all_from_worktop(env.swappy_badge.resource_address(), "bucket")
         .with_bucket("bucket", |builder, bucket| {
@@ -484,7 +506,7 @@ fn scenario_15() {
         })
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -498,10 +520,11 @@ fn scenario_16() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.swappy, "another_protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -515,10 +538,11 @@ fn scenario_17() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.swappy, "another_protected_method2", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -539,6 +563,7 @@ fn scenario_18() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_role_assignment_method(
             env.swappy,
@@ -550,7 +575,7 @@ fn scenario_18() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -564,10 +589,11 @@ fn scenario_19() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.big_fi, "update_swappy_metadata_rule", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -588,10 +614,11 @@ fn scenario_20() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.swappy, "update_metadata_rule", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -612,6 +639,7 @@ fn scenario_21() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge.clone())
         .call_role_assignment_method(
             env.cerb,
@@ -623,7 +651,7 @@ fn scenario_21() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -637,10 +665,11 @@ fn scenario_22() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.big_fi, "update_cerb_rule", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -661,6 +690,7 @@ fn scenario_23() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
         .call_function(
             env.package,
@@ -669,7 +699,7 @@ fn scenario_23() {
             manifest_args!(env.swappy),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -690,10 +720,11 @@ fn scenario_24() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(env.acco, XRD, 1)
         .call_method(env.big_fi, "call_swappy_function", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -714,6 +745,7 @@ fn scenario_25() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .withdraw_from_account(env.acco, env.cerb, 1)
         .take_all_from_worktop(env.cerb, "bucket")
@@ -721,7 +753,7 @@ fn scenario_25() {
             builder.call_method(env.big_fi, "burn_bucket", manifest_args!(bucket))
         })
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -742,6 +774,7 @@ fn scenario_26() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .withdraw_from_account(env.acco, env.cerb, 1)
         .take_all_from_worktop(env.cerb, "cerbs")
@@ -750,7 +783,7 @@ fn scenario_26() {
         })
         .call_method(env.big_fi, "burn_vault", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -764,6 +797,7 @@ fn scenario_27() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .withdraw_from_account(env.acco, env.cerb, 1)
         .withdraw_from_account(env.acco, env.swappy_badge.resource_address(), 1)
@@ -777,7 +811,7 @@ fn scenario_27() {
         })
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -796,6 +830,7 @@ fn scenario_28() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .withdraw_from_account(env.acco, env.cerb, 1)
         .withdraw_from_account(env.acco, env.swappy_badge.resource_address(), 1)
@@ -813,7 +848,7 @@ fn scenario_28() {
         })
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -827,6 +862,7 @@ fn scenario_29() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(
             env.acco,
             NonFungibleGlobalId::new(env.cerb, NonFungibleLocalId::integer(1)),
@@ -840,7 +876,7 @@ fn scenario_29() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -854,6 +890,7 @@ fn scenario_30() {
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .withdraw_from_account(env.acco, env.cerb, 3)
         .take_all_from_worktop(env.cerb, "cerbs")
@@ -862,7 +899,7 @@ fn scenario_30() {
         })
         .call_method(env.big_fi, "create_and_pass_proof", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![env.virtua_sig]);
+    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();

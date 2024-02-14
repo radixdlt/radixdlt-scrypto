@@ -1,5 +1,5 @@
 use crate::errors::InvokeError;
-use crate::types::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "coverage")]
 use crate::utils::save_coverage_data;
 use crate::vm::wasm::constants::*;

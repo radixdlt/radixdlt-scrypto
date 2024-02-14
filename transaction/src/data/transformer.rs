@@ -1,15 +1,15 @@
 use crate::data::*;
-use radix_engine_interface::data::manifest::model::{
+use crate::internal_prelude::*;
+use radix_engine_common::data::manifest::model::{
     ManifestBlobRef, ManifestBucket, ManifestExpression, ManifestProof,
 };
-use radix_engine_interface::data::manifest::{
+use radix_engine_common::data::manifest::{
     ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };
-use radix_engine_interface::data::scrypto::model::{Own, Reference};
-use radix_engine_interface::data::scrypto::{
+use radix_engine_common::data::scrypto::model::{Own, Reference};
+use radix_engine_common::data::scrypto::{
     ScryptoCustomValue, ScryptoCustomValueKind, ScryptoValue, ScryptoValueKind,
 };
-use radix_engine_interface::prelude::{ManifestAddress, ManifestAddressReservation};
 use sbor::rust::vec::Vec;
 
 pub trait TransformHandler<E> {
