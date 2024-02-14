@@ -71,7 +71,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "RoyaltiesBp_call_no_package_royalty_Input"
+                                        "RoyaltiesBp_method_with_no_package_royalty_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
@@ -81,7 +81,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "RoyaltiesBp_call_xrd_package_royalty_Input"
+                                        "RoyaltiesBp_method_with_xrd_package_royalty_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
@@ -91,7 +91,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "RoyaltiesBp_call_usd_package_royalty_Input"
+                                        "RoyaltiesBp_method_with_usd_package_royalty_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
@@ -149,7 +149,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 "RoyaltiesBp_new"
                             ),
-                            "call_no_package_royalty" => Tuple(
+                            "method_with_no_package_royalty" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
                                         Enum<0u8>(),
@@ -168,9 +168,9 @@ PUBLISH_PACKAGE_ADVANCED
                                         66u8
                                     )
                                 ),
-                                "RoyaltiesBp_call_no_package_royalty"
+                                "RoyaltiesBp_method_with_no_package_royalty"
                             ),
-                            "call_xrd_package_royalty" => Tuple(
+                            "method_with_xrd_package_royalty" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
                                         Enum<0u8>(),
@@ -189,9 +189,9 @@ PUBLISH_PACKAGE_ADVANCED
                                         66u8
                                     )
                                 ),
-                                "RoyaltiesBp_call_xrd_package_royalty"
+                                "RoyaltiesBp_method_with_xrd_package_royalty"
                             ),
-                            "call_usd_package_royalty" => Tuple(
+                            "method_with_usd_package_royalty" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
                                         Enum<0u8>(),
@@ -210,7 +210,7 @@ PUBLISH_PACKAGE_ADVANCED
                                         66u8
                                     )
                                 ),
-                                "RoyaltiesBp_call_usd_package_royalty"
+                                "RoyaltiesBp_method_with_usd_package_royalty"
                             )
                         )
                     ),
@@ -221,11 +221,11 @@ PUBLISH_PACKAGE_ADVANCED
                 Enum<1u8>(
                     Map<String, Enum>(
                         "new" => Enum<0u8>(),
-                        "call_no_package_royalty" => Enum<0u8>(),
-                        "call_xrd_package_royalty" => Enum<1u8>(
+                        "method_with_no_package_royalty" => Enum<0u8>(),
+                        "method_with_xrd_package_royalty" => Enum<1u8>(
                             Decimal("31")
                         ),
-                        "call_usd_package_royalty" => Enum<2u8>(
+                        "method_with_usd_package_royalty" => Enum<2u8>(
                             Decimal("1")
                         )
                     )
@@ -237,7 +237,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("bf4a339c737ed77c659bb9f1485583ecf0b3159cc7c1cfac77f52b520535eafe")
+    Blob("bdcb205bff57391fcc5568a8900b95123ae9e0a28203ec930a55559c69015a58")
     Map<String, Tuple>()
     Enum<1u8>(
         AddressReservation("package_address_reservation")

@@ -4,38 +4,38 @@ CALL_METHOD
     Decimal("5000")
 ;
 CALL_METHOD
-    Address("component_sim1cqxgje242zjdumkfn4aqyy5cjv98vuh0lzr60cuw6lfm7n7xhjjgll")
-    "call_no_package_royalty"
+    Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+    "method_with_no_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cqxgje242zjdumkfn4aqyy5cjv98vuh0lzr60cuw6lfm7n7xhjjgll")
-    "call_xrd_package_royalty"
+    Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+    "method_with_xrd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cqxgje242zjdumkfn4aqyy5cjv98vuh0lzr60cuw6lfm7n7xhjjgll")
-    "call_usd_package_royalty"
+    Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+    "method_with_usd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cpyum8736z0dnldm5vjl8kxtsck35kfnps9d6ttfuvw0d0ug8l549h")
-    "call_no_package_royalty"
+    Address("component_sim1cp82800wk54kypxhkmgsxxzjwxe4wn47zkwcp9myrrj7lkxf07qjm0")
+    "method_with_no_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cpyum8736z0dnldm5vjl8kxtsck35kfnps9d6ttfuvw0d0ug8l549h")
-    "call_xrd_package_royalty"
+    Address("component_sim1cp82800wk54kypxhkmgsxxzjwxe4wn47zkwcp9myrrj7lkxf07qjm0")
+    "method_with_xrd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cpyum8736z0dnldm5vjl8kxtsck35kfnps9d6ttfuvw0d0ug8l549h")
-    "call_usd_package_royalty"
+    Address("component_sim1cp82800wk54kypxhkmgsxxzjwxe4wn47zkwcp9myrrj7lkxf07qjm0")
+    "method_with_usd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1crh5ylxmeh80mpmh6vagta63k888ya509n7r582524um4fhr7f7jqp")
-    "call_no_package_royalty"
+    Address("component_sim1cr9nzgqn8v5gcmut8ayf4hvxzr58anlxnalr6vdw2gt44h7y8jnx64")
+    "method_with_no_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1crh5ylxmeh80mpmh6vagta63k888ya509n7r582524um4fhr7f7jqp")
-    "call_xrd_package_royalty"
+    Address("component_sim1cr9nzgqn8v5gcmut8ayf4hvxzr58anlxnalr6vdw2gt44h7y8jnx64")
+    "method_with_xrd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1crh5ylxmeh80mpmh6vagta63k888ya509n7r582524um4fhr7f7jqp")
-    "call_usd_package_royalty"
+    Address("component_sim1cr9nzgqn8v5gcmut8ayf4hvxzr58anlxnalr6vdw2gt44h7y8jnx64")
+    "method_with_usd_package_royalty"
 ;

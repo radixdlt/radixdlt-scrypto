@@ -4,9 +4,9 @@ use scrypto::prelude::*;
 mod royalties {
     enable_package_royalties! {
         new => Free;
-        call_no_package_royalty => Free;
-        call_xrd_package_royalty => Xrd(31.into());
-        call_usd_package_royalty => Usd(1.into());
+        method_with_no_package_royalty => Free;
+        method_with_xrd_package_royalty => Xrd(31.into());
+        method_with_usd_package_royalty => Usd(1.into());
     }
 
     pub struct RoyaltiesBp {}
@@ -28,18 +28,18 @@ mod royalties {
                     init {
                         // The values below are irrelevant (needed only to enable the component royalties).
                         // The `royalties` Scenario sets these amounts explicitly (so that all package+component combinations are covered).
-                        call_no_package_royalty => Usd(6.into()), updatable;
-                        call_xrd_package_royalty => Free, updatable;
-                        call_usd_package_royalty => Xrd(16.into()), updatable;
+                        method_with_no_package_royalty => Usd(6.into()), updatable;
+                        method_with_xrd_package_royalty => Free, updatable;
+                        method_with_usd_package_royalty => Xrd(16.into()), updatable;
                     }
                 })
                 .globalize()
         }
 
-        pub fn call_no_package_royalty(&self) {}
+        pub fn method_with_no_package_royalty(&self) {}
 
-        pub fn call_xrd_package_royalty(&self) {}
+        pub fn method_with_xrd_package_royalty(&self) {}
 
-        pub fn call_usd_package_royalty(&self) {}
+        pub fn method_with_usd_package_royalty(&self) {}
     }
 }

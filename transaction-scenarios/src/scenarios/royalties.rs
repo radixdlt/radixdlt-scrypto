@@ -92,51 +92,51 @@ impl ScenarioCreator for RoyaltiesScenarioCreator {
                         builder = builder
                             .set_component_royalty(
                                 without,
-                                "call_no_package_royalty",
+                                "method_with_no_package_royalty",
                                 RoyaltyAmount::Free,
                             )
                             .set_component_royalty(
                                 without,
-                                "call_xrd_package_royalty",
+                                "method_with_xrd_package_royalty",
                                 RoyaltyAmount::Free,
                             )
                             .set_component_royalty(
                                 without,
-                                "call_usd_package_royalty",
+                                "method_with_usd_package_royalty",
                                 RoyaltyAmount::Free,
                             );
                         let with_xrd = state.xrd_royalty_component_address.unwrap();
                         builder = builder
                             .set_component_royalty(
                                 with_xrd,
-                                "call_no_package_royalty",
+                                "method_with_no_package_royalty",
                                 RoyaltyAmount::Xrd(17.into()),
                             )
                             .set_component_royalty(
                                 with_xrd,
-                                "call_xrd_package_royalty",
+                                "method_with_xrd_package_royalty",
                                 RoyaltyAmount::Xrd(18.into()),
                             )
                             .set_component_royalty(
                                 with_xrd,
-                                "call_usd_package_royalty",
+                                "method_with_usd_package_royalty",
                                 RoyaltyAmount::Xrd(19.into()),
                             );
                         let with_usd = state.usd_royalty_component_address.unwrap();
                         builder
                             .set_component_royalty(
                                 with_usd,
-                                "call_no_package_royalty",
+                                "method_with_no_package_royalty",
                                 RoyaltyAmount::Usd(2.into()),
                             )
                             .set_component_royalty(
                                 with_usd,
-                                "call_xrd_package_royalty",
+                                "method_with_xrd_package_royalty",
                                 RoyaltyAmount::Usd(3.into()),
                             )
                             .set_component_royalty(
                                 with_usd,
-                                "call_usd_package_royalty",
+                                "method_with_usd_package_royalty",
                                 RoyaltyAmount::Usd(4.into()),
                             )
                     },
@@ -153,11 +153,19 @@ impl ScenarioCreator for RoyaltiesScenarioCreator {
                             state.usd_royalty_component_address.unwrap(),
                         ] {
                             builder = builder
-                                .call_method(instance, "call_no_package_royalty", manifest_args!())
-                                .call_method(instance, "call_xrd_package_royalty", manifest_args!())
                                 .call_method(
                                     instance,
-                                    "call_usd_package_royalty",
+                                    "method_with_no_package_royalty",
+                                    manifest_args!(),
+                                )
+                                .call_method(
+                                    instance,
+                                    "method_with_xrd_package_royalty",
+                                    manifest_args!(),
+                                )
+                                .call_method(
+                                    instance,
+                                    "method_with_usd_package_royalty",
                                     manifest_args!(),
                                 );
                         }
