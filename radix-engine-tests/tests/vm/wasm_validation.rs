@@ -20,7 +20,8 @@ fn test_large_data() {
 fn test_large_memory() {
     let code = wat2wasm(&include_local_wasm_str!("large_memory.wat"));
     let definition = single_function_package_definition("Test", "f");
-    let result = ScryptoV1WasmValidator::default().validate(&code, definition.blueprints.values());
+    let result = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
+        .validate(&code, definition.blueprints.values());
 
     assert_eq!(
         Err(PrepareError::InvalidMemory(
@@ -66,7 +67,7 @@ fn invalid_export_name_should_fail() {
             let code = wat2wasm(code_str.as_str());
 
             // Act
-            let result = ScryptoV1WasmValidator::default()
+            let result = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
                 .validate(&code, PackageDefinition::default().blueprints.values());
 
             // Assert

@@ -35,22 +35,6 @@ impl ScryptoV1WasmValidator {
     }
 }
 
-impl Default for ScryptoV1WasmValidator {
-    fn default() -> Self {
-        Self {
-            max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
-            max_initial_table_size: MAX_INITIAL_TABLE_SIZE,
-            max_number_of_br_table_targets: MAX_NUMBER_OF_BR_TABLE_TARGETS,
-            max_number_of_functions: MAX_NUMBER_OF_FUNCTIONS,
-            max_number_of_function_params: MAX_NUMBER_OF_FUNCTION_PARAMS,
-            max_number_of_function_locals: MAX_NUMBER_OF_FUNCTION_LOCALS,
-            max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
-            instrumenter_config: WasmValidatorConfigV1::new(),
-            version: ScryptoVmVersion::latest(),
-        }
-    }
-}
-
 impl ScryptoV1WasmValidator {
     pub fn validate<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
         &self,
@@ -85,6 +69,7 @@ mod tests {
     use wabt::{wasm2wat, wat2wasm};
 
     use super::ScryptoV1WasmValidator;
+    use super::ScryptoVmVersion;
 
     #[test]
     fn test_validate() {
@@ -122,7 +107,7 @@ mod tests {
         .unwrap();
 
         let instrumented_code = wasm2wat(
-            ScryptoV1WasmValidator::default()
+            ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
                 .validate(
                     &code,
                     PackageDefinition::new_single_function_test_definition("Test", "f")
