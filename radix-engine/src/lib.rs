@@ -44,4 +44,5 @@ pub(crate) mod internal_prelude {
     pub use crate::errors::*;
     pub use crate::system::system_substates::*;
     pub use crate::{event_schema, method_auth_template, roles_template};
+    pub use blueprint_schema_init::*;
 }

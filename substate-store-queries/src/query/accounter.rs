@@ -5,8 +5,8 @@ use radix_engine_interface::{
     math::{traits::*, Decimal},
     types::{NodeId, ResourceAddress},
 };
-use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::prelude::*;
+use substate_store_interface::interface::SubstateDatabase;
 
 pub struct ResourceAccounter<'s, S: SubstateDatabase> {
     substate_db: &'s S,

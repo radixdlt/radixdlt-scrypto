@@ -1,5 +1,6 @@
 use super::payload_validation::*;
 use crate::errors::{RuntimeError, SystemError};
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -7,10 +8,10 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, LockStatus};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
+use blueprint_schema_init::KeyValueStoreGenericSubstitutions;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{CollectionIndex, FieldValue, KVEntry};
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::schema::KeyValueStoreGenericSubstitutions;
 use sbor::rust::vec::Vec;
 
 /// Metadata for schema validation to help with location of certain schemas

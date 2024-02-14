@@ -8,7 +8,7 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::model::TestTransaction;
 use transaction::prelude::*;
 

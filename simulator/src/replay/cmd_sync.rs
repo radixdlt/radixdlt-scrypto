@@ -8,13 +8,13 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::prelude::NetworkDefinition;
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine_store_interface::interface::CommittableSubstateDatabase;
-use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use rocksdb::{Direction, IteratorMode, Options, DB};
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
+use substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
+use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use substate_store_interface::interface::CommittableSubstateDatabase;
 use transaction::prelude::{
     IntentHash, NotarizedTransactionHash, SignedIntentHash, SystemTransactionHash,
 };
@@ -85,7 +85,7 @@ impl TxnSync {
                 let new_version = current_version + 1;
                 // TODO: avoid redundant computation?
                 let (_, new_state_root_hash) =
-                    radix_engine_stores::rocks_db_with_merkle_tree::compute_state_tree_update(
+                    substate_store_impls::rocks_db_with_merkle_tree::compute_state_tree_update(
                         &database,
                         current_version,
                         &database_updates,

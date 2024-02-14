@@ -142,14 +142,23 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
 
 ## Project Layout
 
-- `sbor`: The binary data format used by Scrypto.
-- `sbor-derive`: Derives for encoding and decoding Rust `struct` and `enum`.
-- `scrypto`: Scrypto standard library.
-- `scrypto-schema`: Scrypto package schema.
-- `scrypto-derive`: Derives for defining and importing Scrypto blueprints.
-- `radix-engine`: The Scrypto execution engine.
-- `simulator`: A simulator that run Scrypto code on a filesystem based ledger.
-- `transaction`: Radix transaction manifest compiler, transaction models, signing and validationg logic.
+- `sbor`: A generic binary data format, upon which Scrypto SBOR and Manifest SBOR are built.
+- `sbor-derive`: Macros for encoding and decoding SBOR data.
+- `scrypto`: Scrypto language abstraction.
+- `scrypto-derive`: Macros for defining blueprints.
+- `scrypto-test`: Library for testing Scrypto blueprints.
+- `blueprint-schema-init`: Blueprint schema initialization structures, used by Radix Package Definition (RPD).
+- `native-sdk`: Library to assist native blueprint development.
+- `radix-engine-common`: Common libraries used by Radix Engine and Scrypto.
+- `radix-engine-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
+- `radix-engine-macros`: Macros for defining `Decimal` and `PreciseDecimal`.
+- `radix-engine`: The Radix Engine implementation.
+- `transaction`: Radix transaction manifest compiler, transaction models, signing and validating logic.
+- `transaction-scenarios`: Defines various transaction scenarios, for testing.
+- `substate-store-interface`: The interface of any substate store.
+- `substate-store-impls`: Various substate store implementations.
+- `substate-store-queries`: Interprets data in substate data by injecting high-level knowledge.
+- `simulator`: A ledger simulator that runs transactions on file system, primarily for local development.
 
 ## LFS
 

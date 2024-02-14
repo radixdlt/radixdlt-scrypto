@@ -1,3 +1,4 @@
+use blueprint_schema_init::*;
 use radix_engine::blueprints::package::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
@@ -206,7 +207,7 @@ fn test_basic_package_missing_export() {
 }
 
 #[test]
-fn bad_scrypto_schema_should_fail() {
+fn bad_blueprint_schema_init_should_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
 

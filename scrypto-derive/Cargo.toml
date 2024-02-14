@@ -15,13 +15,13 @@ syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = [
 quote = { version = "1.0.18" }
 serde = { version = "1.0.137", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
-scrypto-schema = { path = "../scrypto-schema", default-features = false }
+blueprint-schema-init = { path = "../blueprint-schema-init", default-features = false }
 sbor = { path = "../sbor", default-features = false }
 regex = { version = "=1.9.3", default-features = false, features = [] }
 
 [features]
 # Currently, dependencies of procedural macros are imported to host crates. This may accidentally 
-# enable unwanted features of host dependencies, i.e. `serde`, `serde_json`, `sbor` and `scrypto-schema`.
+# enable unwanted features of host dependencies, i.e. `serde`, `serde_json`, `sbor` and `blueprint-schema-init`.
 # 
 # To work around with it, we've added features `std` and `alloc` for `scrypto-derive`, even
 # though it only works under `std` environment.
@@ -31,8 +31,8 @@ regex = { version = "=1.9.3", default-features = false, features = [] }
 # - https://github.com/rust-lang/cargo/issues/7915
 #
 default = ["std"]
-std = ["serde/std", "serde_json/std", "scrypto-schema/std", "scrypto-schema/serde", "sbor/std"]
-alloc = ["serde/alloc", "serde_json/alloc", "scrypto-schema/alloc", "scrypto-schema/serde", "sbor/alloc"]
+std = ["serde/std", "serde_json/std", "blueprint-schema-init/std", "blueprint-schema-init/serde", "sbor/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "blueprint-schema-init/alloc", "blueprint-schema-init/serde", "sbor/alloc"]
 
 # Enable trace
 trace = []

@@ -1,4 +1,4 @@
-use radix_engine_derive::ScryptoSbor;
+use radix_engine_common::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};

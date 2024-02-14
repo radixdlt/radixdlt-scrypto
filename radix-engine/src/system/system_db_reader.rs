@@ -7,19 +7,17 @@ use radix_engine_interface::api::{AttachedModuleId, CollectionIndex, ModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_store_interface::db_key_mapper::{
-    MappedCommittableSubstateDatabase, SubstateKeyContent,
-};
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, ListableSubstateDatabase,
-};
-use radix_engine_store_interface::{
-    db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
-    interface::SubstateDatabase,
-};
 use sbor::rust::prelude::*;
 use sbor::LocalTypeId;
 use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
+use substate_store_interface::db_key_mapper::{
+    MappedCommittableSubstateDatabase, SubstateKeyContent,
+};
+use substate_store_interface::interface::{CommittableSubstateDatabase, ListableSubstateDatabase};
+use substate_store_interface::{
+    db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
+    interface::SubstateDatabase,
+};
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};
@@ -35,7 +33,7 @@ use crate::track::TrackedNode;
 use crate::transaction::{
     ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,
 };
-use crate::types::BlueprintCollectionSchema;
+use blueprint_schema_init::BlueprintCollectionSchema;
 
 #[derive(Clone, Debug)]
 pub enum SystemPartitionDescription {

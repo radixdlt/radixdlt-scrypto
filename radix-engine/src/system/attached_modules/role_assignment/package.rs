@@ -1,16 +1,19 @@
 use crate::blueprints::models::*;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::util::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::attached_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
+use crate::system::system_substates::FieldSubstate;
 use crate::types::*;
 use crate::{errors::*, event_schema};
-
-use crate::system::system_substates::FieldSubstate;
+use blueprint_schema_init::{
+    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
+};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -22,9 +25,6 @@ use radix_engine_interface::blueprints::package::{
     MethodAuthTemplate, PackageDefinition, RoleSpecification,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
-    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
-};
 use radix_engine_interface::types::*;
 
 use super::*;

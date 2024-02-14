@@ -4,6 +4,9 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
 use crate::types::*;
 use crate::{event_schema, roles_template};
+use blueprint_schema_init::{
+    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, ReceiverInfo, TypeRef,
+};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::{
     AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
@@ -20,9 +23,6 @@ use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
-    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, ReceiverInfo, TypeRef,
-};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};

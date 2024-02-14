@@ -7,10 +7,8 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_store_interface::{
-    db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
-};
 use sbor::rust::prelude::*;
+use substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase};
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {

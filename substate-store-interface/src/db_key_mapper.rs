@@ -2,12 +2,12 @@ use crate::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey,
     DbPartitionNum, DbSortKey, SubstateDatabase,
 };
+use radix_engine_common::crypto::hash;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_common::types::{FieldKey, MapKey, PartitionNumber, SortedKey};
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::types::{NodeId, SubstateKey};
+use radix_engine_common::types::{NodeId, SubstateKey};
 use sbor::rust::prelude::*;
 use utils::copy_u8_array;
 

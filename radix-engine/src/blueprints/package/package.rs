@@ -9,6 +9,7 @@ use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::PrepareError;
+use blueprint_schema_init::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::resource::NativeVault;
@@ -18,7 +19,6 @@ use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
-use radix_engine_interface::schema::*;
 use sbor::LocalTypeId;
 
 // Import and re-export substate types

@@ -7,7 +7,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
-use radix_engine_queries::typed_substate_layout::FungibleResourceManagerError;
+use substate_store_queries::typed_substate_layout::FungibleResourceManagerError;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::*;
 

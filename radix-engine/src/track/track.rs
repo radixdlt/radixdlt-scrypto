@@ -7,15 +7,15 @@ use crate::track::utils::OverlayingResultIterator;
 use crate::track::BootStore;
 use crate::types::*;
 use radix_engine_interface::types::*;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_engine_store_interface::interface::DbPartitionKey;
-use radix_engine_store_interface::{
-    db_key_mapper::DatabaseKeyMapper,
-    interface::{DbSortKey, PartitionEntry, SubstateDatabase},
-};
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
+use substate_store_interface::db_key_mapper::SubstateKeyContent;
+use substate_store_interface::interface::DbPartitionKey;
+use substate_store_interface::{
+    db_key_mapper::DatabaseKeyMapper,
+    interface::{DbSortKey, PartitionEntry, SubstateDatabase},
+};
 
 use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, StoreCommitInfo};
 

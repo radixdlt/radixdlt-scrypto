@@ -9,11 +9,11 @@ use crate::hash_tree::types::{LeafKey, NodeKey};
 use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_store_interface::interface::{
+use sbor::prelude::indexmap::indexmap;
+use substate_store_interface::interface::{
     DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
     DbSubstateKey, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
 };
-use sbor::prelude::indexmap::indexmap;
 use utils::prelude::{index_map_new, IndexMap};
 use utils::rust::collections::{hashmap, hashset, HashMap, HashSet};
 

@@ -9,7 +9,7 @@ use radix_engine_common::prelude::well_known_scrypto_custom_types::{
 use radix_engine_common::prelude::{
     scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
-use radix_engine_derive::ScryptoSbor;
+use radix_engine_common::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataConversionError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
     METADATA_SET_IDENT,

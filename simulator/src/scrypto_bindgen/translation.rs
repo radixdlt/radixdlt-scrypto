@@ -1,8 +1,7 @@
 //! This module converts the models from `schema.rs` to the `ast.rs` models which are eventually
 //! converted to a TokenStream.
 
-use radix_engine_interface::prelude::*;
-
+use radix_engine_interface::prelude::*;use blueprint_schema_init::*;
 use super::{ast, schema};
 use crate::{ident, token_stream_from_str};
 

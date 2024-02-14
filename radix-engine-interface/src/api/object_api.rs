@@ -10,7 +10,7 @@ use crate::types::*;
 use arbitrary::Arbitrary;
 use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, VersionedScryptoSchema};
 use radix_engine_common::types::*;
-use radix_engine_derive::{ManifestSbor, ScryptoSbor};
+use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::FieldIndex;
 use sbor::rust::collections::*;

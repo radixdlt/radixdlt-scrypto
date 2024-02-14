@@ -10,7 +10,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_queries::typed_substate_layout::{
+use substate_store_queries::typed_substate_layout::{
     ConsensusManagerError, ValidatorRewardAppliedEvent,
 };
 use radix_engine_tests::common::*;

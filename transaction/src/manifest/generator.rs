@@ -1499,9 +1499,9 @@ mod tests {
     };
     use radix_engine_interface::crypto::Secp256k1PrivateKey;
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
+    use scrypto::blueprint_schema_init::BlueprintStateSchemaInit;
     use utils::prelude::IndexMap;
 
     #[macro_export]

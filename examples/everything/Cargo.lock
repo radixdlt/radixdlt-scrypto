@@ -770,7 +770,7 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-interface",
  "radix-engine-macros",
- "radix-engine-store-interface",
+ "substate-store-interface",
  "resources-tracker-macro",
  "sbor",
  "serde_json",
@@ -831,7 +831,7 @@ dependencies = [
  "radix-engine-macros",
  "regex",
  "sbor",
- "scrypto-schema",
+ "blueprint-schema-init",
  "serde",
  "serde_json",
  "strum",
@@ -857,7 +857,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-queries"
+name = "substate-store-queries"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
@@ -865,14 +865,14 @@ dependencies = [
  "paste",
  "radix-engine",
  "radix-engine-interface",
- "radix-engine-store-interface",
+ "substate-store-interface",
  "sbor",
  "transaction",
  "utils",
 ]
 
 [[package]]
-name = "radix-engine-store-interface"
+name = "substate-store-interface"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
@@ -885,14 +885,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-stores"
+name = "substate-store-impls"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
  "radix-engine-derive",
- "radix-engine-store-interface",
+ "substate-store-interface",
  "sbor",
  "utils",
 ]
@@ -1087,7 +1087,7 @@ dependencies = [
  "radix-engine-interface",
  "sbor",
  "scrypto-derive",
- "scrypto-schema",
+ "blueprint-schema-init",
  "strum",
  "utils",
 ]
@@ -1101,14 +1101,14 @@ dependencies = [
  "radix-engine-common",
  "regex",
  "sbor",
- "scrypto-schema",
+ "blueprint-schema-init",
  "serde",
  "serde_json",
  "syn 1.0.93",
 ]
 
 [[package]]
-name = "scrypto-schema"
+name = "blueprint-schema-init"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags 1.3.2",
@@ -1127,9 +1127,9 @@ dependencies = [
  "radix-engine",
  "radix-engine-common",
  "radix-engine-interface",
- "radix-engine-queries",
- "radix-engine-store-interface",
- "radix-engine-stores",
+ "substate-store-queries",
+ "substate-store-interface",
+ "substate-store-impls",
  "sbor",
  "scrypto",
  "serde_json",

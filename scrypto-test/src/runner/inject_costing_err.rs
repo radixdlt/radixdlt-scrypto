@@ -18,7 +18,7 @@ use radix_engine::transaction::WrappedSystem;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use substate_store_interface::db_key_mapper::SubstateKeyContent;
 use transaction::prelude::PreAllocatedAddress;
 
 pub type InjectSystemCostingError<'a, E> =
