@@ -1,14 +1,3 @@
-use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::blueprints::package::CodeHash;
-use sbor::rust::mem::transmute;
-use sbor::rust::mem::MaybeUninit;
-#[cfg(not(feature = "radix_engine_fuzzing"))]
-use sbor::rust::sync::Arc;
-use wasmi::core::Value;
-use wasmi::core::{HostError, Trap};
-use wasmi::errors::InstantiationError;
-use wasmi::*;
-
 use crate::errors::InvokeError;
 use crate::internal_prelude::*;
 #[cfg(feature = "coverage")]
@@ -17,6 +6,18 @@ use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
 use crate::vm::wasm::WasmEngine;
+use radix_engine_interface::api::actor_api::EventFlags;
+use radix_engine_interface::blueprints::package::CodeHash;
+use sbor::rust::mem::transmute;
+use sbor::rust::mem::MaybeUninit;
+#[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
+use sbor::rust::num::NonZeroUsize;
+#[cfg(not(feature = "radix_engine_fuzzing"))]
+use sbor::rust::sync::Arc;
+use wasmi::core::Value;
+use wasmi::core::{HostError, Trap};
+use wasmi::errors::InstantiationError;
+use wasmi::*;
 
 type FakeHostState = FakeWasmiInstanceEnv;
 type HostState = WasmiInstanceEnv;
