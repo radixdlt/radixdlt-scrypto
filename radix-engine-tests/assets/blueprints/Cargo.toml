@@ -66,7 +66,10 @@ members = [
     "system_wasm_buffers",
     "event-replacement",
     "decimal",
-    "crypto_scrypto"
+    "crypto_scrypto",
+    "oracle_proxy",
+    "oracle_v1",
+  #"oracle_v2",
 ]
 
 [profile.release]

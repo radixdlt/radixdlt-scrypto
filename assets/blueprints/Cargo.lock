@@ -1357,6 +1357,7 @@ dependencies = [
  "itertools",
  "paste",
  "radix-engine",
+ "radix-engine-common",
  "radix-engine-interface",
  "sbor",
  "substate-store-interface",
