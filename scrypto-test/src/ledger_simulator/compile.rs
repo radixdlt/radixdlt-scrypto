@@ -90,7 +90,7 @@ impl Compile {
             "scrypto/log-trace",
         ];
 
-        let status = Command::new("cargo")
+        let output = Command::new("cargo")
             .envs(env_vars)
             .current_dir(package_dir.as_ref())
             .args([
@@ -101,7 +101,7 @@ impl Compile {
                 "--features",
                 &features.join(","),
             ])
-            .status()
+            .output()
             .unwrap_or_else(|error| {
                 panic!(
                     "Compiling \"{:?}\" failed with \"{:?}\"",
@@ -109,7 +109,11 @@ impl Compile {
                     error
                 )
             });
-        if !status.success() {
+        if !output.status.success() {
+            eprintln!(
+                "Package compilation error:\n{}",
+                std::str::from_utf8(&output.stderr).unwrap()
+            );
             panic!("Failed to compile package: {:?}", package_dir.as_ref());
         }
 
@@ -160,6 +164,11 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
             .expect("Failed to parse target_directory from cargo metadata");
         target_directory.to_owned()
     } else {
-        panic!("Cargo metadata call was not successful");
+        eprintln!(
+            "Cargo metadata error (manifest_path: {:?}):\n{}",
+            manifest_path.as_ref(),
+            std::str::from_utf8(&output.stderr).unwrap()
+        );
+        panic!("Cargo metadata call was not successful, see");
     }
 }
