@@ -69,7 +69,7 @@ members = [
     "crypto_scrypto",
     "oracle_proxy_basic",
     "oracle_v1",
-  #"oracle_v2",
+    "oracle_v2",
 ]
 
 [profile.release]
