@@ -1,6 +1,7 @@
 use radix_engine_common::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
+use scrypto_unit::*;
 
 fn initialize_package(
     test_runner: &mut DefaultTestRunner,
