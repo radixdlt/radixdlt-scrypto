@@ -2,12 +2,14 @@ use radix_engine_common::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
-fn instantiate_package(
+fn initialize_package(
     test_runner: &mut DefaultTestRunner,
-    package_address: PackageAddress,
+    package_name: &str,
     blueprint_name: &str,
     function_name: &str,
 ) -> ComponentAddress {
+    let package_address = test_runner.publish_package_simple(PackageLoader::get(package_name));
+
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -103,28 +105,23 @@ fn test_proxy_basic() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let resources = create_some_resources(&mut test_runner);
 
-    // Publish Oracle v1
-    let oracle_package_address =
-        test_runner.publish_package_simple(PackageLoader::get("oracle_v1"));
-
-    let proxy_package_address =
-        test_runner.publish_package_simple(PackageLoader::get("oracle_proxy_basic"));
-    // Instantiate Oracle Proxy
-    let proxy_component_address = instantiate_package(
+    // Publish and instantiate Oracle Proxy
+    let proxy_component_address = initialize_package(
         &mut test_runner,
-        proxy_package_address,
+        "oracle_proxy_basic",
         "OracleProxy",
         "instantiate_proxy",
     );
 
-    // Instantiate Oracle v1
-    let oracle_v1_component_address = instantiate_package(
+    // Publish and instantiate Oracle v1
+    let oracle_v1_component_address = initialize_package(
         &mut test_runner,
-        oracle_package_address,
+        "oracle_v1",
         "Oracle",
         "instantiate_global",
     );
 
+    // Perform some operations on Oracle v1
     act_on_oracle(
         &mut test_runner,
         &resources,
@@ -133,18 +130,15 @@ fn test_proxy_basic() {
         "Oracle v1",
     );
 
-    // Publish Oracle v2
-    let oracle_package_address =
-        test_runner.publish_package_simple(PackageLoader::get("oracle_v2"));
-
-    // Instantiate Oracle v2
-    let oracle_v2_component_address = instantiate_package(
+    // Publish and instantiate Oracle v2
+    let oracle_v2_component_address = initialize_package(
         &mut test_runner,
-        oracle_package_address,
+        "oracle_v2",
         "Oracle",
         "instantiate_global",
     );
 
+    // Perform some operations on Oracle v2
     act_on_oracle(
         &mut test_runner,
         &resources,
