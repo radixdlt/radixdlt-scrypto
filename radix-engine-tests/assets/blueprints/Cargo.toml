@@ -67,7 +67,7 @@ members = [
     "event-replacement",
     "decimal",
     "crypto_scrypto",
-    "oracle_proxy",
+    "oracle_proxy_basic",
     "oracle_v1",
   #"oracle_v2",
 ]

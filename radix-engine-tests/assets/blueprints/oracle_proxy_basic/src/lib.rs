@@ -17,14 +17,14 @@ mod proxy {
         }
     );
 
-    struct Proxy {
+    struct OracleProxy {
         // Define what resources and data will be managed by Proxy components
         component_address: Option<Global<Oracle>>,
     }
 
-    impl Proxy {
+    impl OracleProxy {
         // This is a function, and can be called directly on the blueprint once deployed
-        pub fn instantiate_proxy() -> Global<Proxy> {
+        pub fn instantiate_proxy() -> Global<OracleProxy> {
             // Instantiate a Proxy component
             Self {
                 component_address: None,

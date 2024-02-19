@@ -1,5 +1,5 @@
 [package]
-name = "oracle_proxy"
+name = "oracle_proxy_basic"
 version = "1.0.0"
 edition = "2021"
 resolver = "2"
