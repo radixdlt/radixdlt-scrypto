@@ -98,7 +98,7 @@ fn act_on_oracle(
 }
 
 #[test]
-fn test_proxy() {
+fn test_proxy_basic() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let resources = create_some_resources(&mut test_runner);
@@ -114,12 +114,12 @@ fn test_proxy() {
     test_runner.publish_package_at_address(PackageLoader::get("oracle_v1"), oracle_package_address);
 
     let proxy_package_address =
-        test_runner.publish_package_simple(PackageLoader::get("oracle_proxy"));
+        test_runner.publish_package_simple(PackageLoader::get("oracle_proxy_basic"));
     // Instantiate Oracle Proxy
     let proxy_component_address = instantiate_package(
         &mut test_runner,
         proxy_package_address,
-        "Proxy",
+        "OracleProxy",
         "instantiate_proxy",
     );
 
