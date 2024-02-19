@@ -108,7 +108,7 @@ fn test_proxy_basic() {
     ];
     let oracle_package_address = PackageAddress::new_or_panic(ORACLE_PACKAGE_ADDRESS);
 
-    // Instantiate Oracle v1 at predefined package address.
+    // Publish Oracle v1 at predefined package address.
     // Oracle package must be published before Proxy package is published, because the Oracle's
     // package address is validated during Proxy package publishing.
     test_runner.publish_package_at_address(PackageLoader::get("oracle_v1"), oracle_package_address);
@@ -137,5 +137,24 @@ fn test_proxy_basic() {
         proxy_component_address,
         oracle_v1_component_address,
         "Oracle v1",
+    );
+
+    // Publish Oracle v2 at predefined package address.
+    test_runner.publish_package_at_address(PackageLoader::get("oracle_v2"), oracle_package_address);
+
+    // Instantiate Oracle v2
+    let oracle_v2_component_address = instantiate_package(
+        &mut test_runner,
+        oracle_package_address,
+        "Oracle",
+        "instantiate_global",
+    );
+
+    act_on_oracle(
+        &mut test_runner,
+        &resources,
+        proxy_component_address,
+        oracle_v2_component_address,
+        "Oracle v2",
     );
 }
