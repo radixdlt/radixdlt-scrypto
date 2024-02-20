@@ -71,6 +71,7 @@ members = [
     "generic_proxy",
     "oracle_v1",
     "oracle_v2",
+    "oracle_v3",
 ]
 
 [profile.release]
