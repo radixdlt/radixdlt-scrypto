@@ -68,6 +68,7 @@ members = [
     "decimal",
     "crypto_scrypto",
     "oracle_proxy_basic",
+    "generic_proxy",
     "oracle_v1",
     "oracle_v2",
 ]
