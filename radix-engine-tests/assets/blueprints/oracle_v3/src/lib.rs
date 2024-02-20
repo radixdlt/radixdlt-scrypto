@@ -12,7 +12,6 @@ mod oracle {
     // which makes it incompatible with "oracle_proxy_basic"
     impl Oracle {
         pub fn instantiate_owned() -> Owned<Oracle> {
-            // Instantiate a Proxy component
             Self {
                 info: "Oracle v3".to_string(),
                 symbol_map: indexmap!(),

@@ -9,7 +9,6 @@ mod oracle {
 
     impl Oracle {
         pub fn instantiate_owned() -> Owned<Oracle> {
-            // Instantiate a Proxy component
             Self {
                 info: "Oracle v2".to_string(),
                 prices: KeyValueStore::new(),
