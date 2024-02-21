@@ -1,5 +1,4 @@
-use radix_engine_interface::prelude::*;
-use scrypto::this_package;
+use scrypto::prelude::*;
 use scrypto_test::prelude::*;
 
 use ${wasm_name}::test_bindings::*;
@@ -54,7 +53,7 @@ fn test_hello() {
 fn test_hello_with_test_environment() -> Result<(), RuntimeError> {
     // Arrange
     let mut env = TestEnvironment::new();
-    let package_address = Package::compile_and_publish(this_package!(), &mut env)?;
+    let package_address = PackageFactory::compile_and_publish(this_package!(), &mut env)?;
 
     let mut hello = Hello::instantiate_hello(package_address, &mut env)?;
 

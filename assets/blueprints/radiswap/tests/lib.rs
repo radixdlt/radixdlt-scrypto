@@ -6,7 +6,7 @@ use scrypto_test::prelude::*;
 fn simple_radiswap_test() -> Result<(), RuntimeError> {
     // Arrange
     let mut env = TestEnvironment::new();
-    let package_address = Package::compile_and_publish(this_package!(), &mut env)?;
+    let package_address = PackageFactory::compile_and_publish(this_package!(), &mut env)?;
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
         .divisibility(18)
@@ -38,7 +38,7 @@ fn simple_radiswap_test() -> Result<(), RuntimeError> {
 fn reading_and_asserting_against_radiswap_pool_state() -> Result<(), RuntimeError> {
     // Arrange
     let mut env = TestEnvironment::new();
-    let package_address = Package::compile_and_publish(this_package!(), &mut env)?;
+    let package_address = PackageFactory::compile_and_publish(this_package!(), &mut env)?;
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
         .divisibility(18)

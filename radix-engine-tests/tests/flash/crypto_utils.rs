@@ -77,7 +77,7 @@ fn run_flash_test_test_environment(flash_substates: bool, expect_success: bool) 
 
     // Act
     let result =
-        Package::compile_and_publish(path_local_blueprint!("crypto_scrypto"), &mut test_env);
+        PackageFactory::compile_and_publish(path_local_blueprint!("crypto_scrypto"), &mut test_env);
 
     // Assert
     if expect_success {

@@ -26,7 +26,7 @@ use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use substate_store_interface::interface::*;
 use transaction::model::*;
 
-use crate::sdk::Package;
+use crate::sdk::PackageFactory;
 
 use super::*;
 
@@ -338,7 +338,7 @@ where
             .expect("Must succeed");
 
             env.with_auth_module_disabled(|env| {
-                Package::publish_advanced(
+                PackageFactory::publish_advanced(
                     OwnerRole::None,
                     package_definition,
                     code.to_vec(),
