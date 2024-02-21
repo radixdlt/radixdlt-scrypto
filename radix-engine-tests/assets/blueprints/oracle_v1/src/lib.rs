@@ -2,6 +2,14 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod oracle {
+    enable_method_auth! {
+        methods {
+            set_price => restrict_to: [OWNER];
+            get_oracle_info => PUBLIC;
+            get_price => PUBLIC;
+        }
+    }
+
     struct Oracle {
         info: String,
         prices: KeyValueStore<(ResourceAddress, ResourceAddress), Decimal>,
@@ -16,9 +24,9 @@ mod oracle {
             .instantiate()
         }
 
-        pub fn instantiate_global() -> Global<Oracle> {
+        pub fn instantiate_global(owner_role: OwnerRole) -> Global<Oracle> {
             Self::instantiate_owned()
-                .prepare_to_globalize(OwnerRole::None)
+                .prepare_to_globalize(owner_role)
                 .globalize()
         }
 

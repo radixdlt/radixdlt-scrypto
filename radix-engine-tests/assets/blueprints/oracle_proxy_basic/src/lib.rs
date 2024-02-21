@@ -5,7 +5,6 @@ mod proxy {
     enable_method_auth! {
         methods {
             set_component_address => restrict_to: [OWNER];
-            proxy_set_price => restrict_to: [OWNER];
             proxy_get_oracle_info => PUBLIC;
             proxy_get_price => PUBLIC;
         }
@@ -15,6 +14,9 @@ mod proxy {
         component_address: Option<Global<AnyComponent>>,
     }
 
+    // This example assumes that:
+    // - called component are instantiated as global component
+    // - called methods of the component are not protected
     impl OracleProxy {
         pub fn instantiate_proxy(owner_role: OwnerRole) -> Global<OracleProxy> {
             Self {
@@ -41,21 +43,6 @@ mod proxy {
             );
 
             scrypto_decode(&result).unwrap()
-        }
-
-        pub fn proxy_set_price(
-            &self,
-            base: ResourceAddress,
-            quote: ResourceAddress,
-            price: Decimal,
-        ) {
-            let oracle_address = self.component_address.unwrap();
-
-            let _result = ScryptoVmV1Api::object_call(
-                oracle_address.address().as_node_id(),
-                "set_price",
-                scrypto_args!(base, quote, price),
-            );
         }
 
         pub fn proxy_get_price(

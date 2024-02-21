@@ -2,17 +2,27 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod proxy {
+    enable_method_auth! {
+        methods {
+            set_oracle_address => restrict_to: [OWNER];
+            proxy_call => PUBLIC;
+        }
+    }
+
     struct GenericProxy {
         component_address: Option<Global<AnyComponent>>,
     }
 
+    // This example assumes that:
+    // - called component are instantiated as global component
+    // - called methods of the component are not protected
     impl GenericProxy {
-        pub fn instantiate_proxy() -> Global<GenericProxy> {
+        pub fn instantiate_proxy(owner_role: OwnerRole) -> Global<GenericProxy> {
             Self {
                 component_address: None,
             }
             .instantiate()
-            .prepare_to_globalize(OwnerRole::None)
+            .prepare_to_globalize(owner_role)
             .globalize()
         }
 
