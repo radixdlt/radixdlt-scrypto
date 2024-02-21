@@ -36,7 +36,7 @@ use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use scrypto_test::prelude::InjectSystemCostingError;
-use scrypto_test::prelude::{CustomGenesis, TestRunner, TestRunnerBuilder};
+use scrypto_test::prelude::{CustomGenesis, LedgerSimulator, LedgerSimulatorBuilder};
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::builder::ManifestBuilder;
 
@@ -309,7 +309,7 @@ pub struct ResourceComponentMeta {
 }
 
 pub struct FuzzTest<T: TxnFuzzer> {
-    test_runner: TestRunner<OverridePackageCode<ResourceTestInvoke>, InMemorySubstateDatabase>,
+    ledger: LedgerSimulator<OverridePackageCode<ResourceTestInvoke>, InMemorySubstateDatabase>,
     fuzzer: SystemTestFuzzer,
     validators: Vec<ValidatorMeta>,
     one_resource_pool: OnePoolMeta,
@@ -333,7 +333,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             CustomGenesis::default_consensus_manager_config(),
         );
 
-        let (mut test_runner, validator_set) = TestRunnerBuilder::new()
+        let (mut ledger, validator_set) = LedgerSimulatorBuilder::new()
             .with_custom_genesis(genesis)
             .with_custom_extension(OverridePackageCode::new(
                 CUSTOM_PACKAGE_CODE_ID,
@@ -354,7 +354,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 .unwrap()
                 .0
                 .clone();
-            let validator_substate = test_runner.get_validator_info(validator_address);
+            let validator_substate = ledger.get_validator_info(validator_address);
             let stake_unit_resource = validator_substate.stake_unit_resource;
             let claim_resource = validator_substate.claim_nft;
 
@@ -367,7 +367,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         };
 
         let one_resource_pool = {
-            let one_pool_resource = test_runner
+            let one_pool_resource = ledger
                 .create_freely_mintable_and_burnable_fungible_resource(
                     OwnerRole::None,
                     None,
@@ -375,7 +375,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     account,
                 );
 
-            let (pool_address, pool_unit_resource_address) = test_runner.create_one_resource_pool(
+            let (pool_address, pool_unit_resource_address) = ledger.create_one_resource_pool(
                 one_pool_resource,
                 rule!(require(virtual_signature_badge.clone())),
             );
@@ -388,13 +388,13 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         };
 
         let two_resource_pool = {
-            let pool_resource1 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+            let pool_resource1 = ledger.create_freely_mintable_and_burnable_fungible_resource(
                 OwnerRole::None,
                 None,
                 fuzzer.next_valid_divisibility(),
                 account,
             );
-            let pool_resource2 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+            let pool_resource2 = ledger.create_freely_mintable_and_burnable_fungible_resource(
                 OwnerRole::None,
                 None,
                 fuzzer.next_valid_divisibility(),
@@ -416,7 +416,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         },
                     )
                     .build();
-                let receipt = test_runner.execute_manifest(manifest, vec![]);
+                let receipt = ledger.execute_manifest(manifest, vec![]);
                 let commit_result = receipt.expect_commit_success();
 
                 (
@@ -442,7 +442,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             let pool_resources: Vec<ResourceAddress> = divisibility
                 .into_iter()
                 .map(|divisibility| {
-                    test_runner.create_freely_mintable_and_burnable_fungible_resource(
+                    ledger.create_freely_mintable_and_burnable_fungible_resource(
                         OwnerRole::None,
                         None,
                         divisibility,
@@ -466,7 +466,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         },
                     )
                     .build();
-                let receipt = test_runner.execute_manifest(manifest, vec![]);
+                let receipt = ledger.execute_manifest(manifest, vec![]);
                 let commit_result = receipt.expect_commit_success();
 
                 (
@@ -482,7 +482,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             }
         };
 
-        let package_address = test_runner.publish_native_package(
+        let package_address = ledger.publish_native_package(
             CUSTOM_PACKAGE_CODE_ID,
             PackageDefinition::new_with_field_test_definition(
                 BLUEPRINT_NAME,
@@ -496,7 +496,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         );
 
         let fungible_vault_component = {
-            let receipt = test_runner.execute_manifest(
+            let receipt = ledger.execute_manifest(
                 ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .create_fungible_resource(
@@ -528,7 +528,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
             fuzzer.add_resource(resource_address);
 
-            let receipt = test_runner.execute_manifest(
+            let receipt = ledger.execute_manifest(
                 ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .call_function(
@@ -542,7 +542,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             );
             let component_address = receipt.expect_commit_success().new_component_addresses()[0];
 
-            let vault_id = test_runner.get_component_vaults(component_address, resource_address)[0];
+            let vault_id = ledger.get_component_vaults(component_address, resource_address)[0];
 
             ResourceComponentMeta {
                 component_address,
@@ -558,7 +558,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 .map(|id| (id, ()))
                 .collect();
             let amount = ids.len();
-            let receipt = test_runner.execute_manifest(
+            let receipt = ledger.execute_manifest(
                 ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .create_non_fungible_resource(
@@ -609,10 +609,10 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .build()
             };
 
-            let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge]);
+            let receipt = ledger.execute_manifest(manifest, vec![virtual_signature_badge]);
             let component_address = receipt.expect_commit_success().new_component_addresses()[0];
 
-            let vault_id = test_runner.get_component_vaults(component_address, resource_address)[0];
+            let vault_id = ledger.get_component_vaults(component_address, resource_address)[0];
 
             ResourceComponentMeta {
                 component_address,
@@ -623,7 +623,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
         Self {
             fuzzer,
-            test_runner,
+            ledger,
             validators: vec![validator_meta],
             one_resource_pool,
             two_resource_pool,
@@ -723,7 +723,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .build();
 
                 let receipt = if let Some(error_after_count) = error_after_system_callback_count {
-                    self.test_runner.execute_manifest_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
+                    self.ledger.execute_manifest_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
                         manifest,
                         vec![NonFungibleGlobalId::from_public_key(
                             &self.account_public_key,
@@ -731,7 +731,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         error_after_count,
                     )
                 } else {
-                    self.test_runner.execute_manifest(
+                    self.ledger.execute_manifest(
                         manifest,
                         vec![NonFungibleGlobalId::from_public_key(
                             &self.account_public_key,
@@ -748,7 +748,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                             .filter(|a| a.as_node_id().is_global_validator())
                             .for_each(|validator_address| {
                                 let validator_substate =
-                                    self.test_runner.get_validator_info(*validator_address);
+                                    self.ledger.get_validator_info(*validator_address);
                                 let stake_unit_resource = validator_substate.stake_unit_resource;
                                 let claim_resource = validator_substate.claim_nft;
 
@@ -793,13 +793,13 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
     fn consensus_round(&mut self, num_rounds: u64) {
         let receipt = self
-            .test_runner
+            .ledger
             .advance_to_round(Round::of(self.cur_round.number() + num_rounds));
         let result = receipt.expect_commit_success();
         let events = result.application_events.clone();
         let epoch_change_event = events
             .into_iter()
-            .filter(|(id, _data)| self.test_runner.is_event_name_equal::<EpochChangeEvent>(id))
+            .filter(|(id, _data)| self.ledger.is_event_name_equal::<EpochChangeEvent>(id))
             .map(|(_id, data)| scrypto_decode::<EpochChangeEvent>(&data).unwrap())
             .collect::<Vec<_>>()
             .into_iter()

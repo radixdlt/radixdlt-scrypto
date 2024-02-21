@@ -12,8 +12,8 @@ use scrypto_test::prelude::*;
 #[test]
 fn drop_auth_zone_proofs_should_not_drop_named_proofs() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -23,7 +23,7 @@ fn drop_auth_zone_proofs_should_not_drop_named_proofs() {
         .drop_auth_zone_proofs()
         .drop_proof("proof") // Proof should continue to work after DROP_AUTH_ZONE_PROOFS
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -39,8 +39,8 @@ fn drop_all_proofs_should_drop_named_proofs() {
     // refers to undefined proof ids.
 
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -54,7 +54,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
             builder.drop_all_proofs().drop_proof(proof) // Proof should fail after DROP_AUTH_ZONE_PROOFS
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -73,10 +73,10 @@ fn drop_all_proofs_should_drop_named_proofs() {
 #[test]
 fn drop_auth_zone_signature_proofs_should_invalid_public_key_proof() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let rule = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
-    let other_account = test_runner.new_account_advanced(OwnerRole::Updatable(rule));
+    let other_account = ledger.new_account_advanced(OwnerRole::Updatable(rule));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -85,7 +85,7 @@ fn drop_auth_zone_signature_proofs_should_invalid_public_key_proof() {
         .drop_auth_zone_signature_proofs()
         .create_proof_from_account_of_amount(other_account, XRD, dec!(1))
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -104,10 +104,10 @@ fn drop_auth_zone_signature_proofs_should_invalid_public_key_proof() {
 #[test]
 fn drop_auth_zone_signature_proofs_should_not_invalid_physical_proof() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let rule = rule!(require_amount(dec!(5), XRD));
-    let other_account = test_runner.new_account_advanced(OwnerRole::Updatable(rule));
+    let other_account = ledger.new_account_advanced(OwnerRole::Updatable(rule));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -116,7 +116,7 @@ fn drop_auth_zone_signature_proofs_should_not_invalid_physical_proof() {
         .drop_auth_zone_signature_proofs()
         .create_proof_from_account_of_amount(other_account, XRD, dec!(1))
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

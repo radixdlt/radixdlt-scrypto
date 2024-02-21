@@ -6,13 +6,13 @@ use substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKey
 fn test_stake_reconciliation() {
     // Arrange
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .without_seconds_precision_update()
         .without_crypto_utils_update()
         .build();
-    let (account_pk, _, account) = test_runner.new_account(false);
+    let (account_pk, _, account) = ledger.new_account(false);
 
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 100)
         .create_proof_from_account_of_non_fungibles(
@@ -22,7 +22,7 @@ fn test_stake_reconciliation() {
         )
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pk)],
     );
@@ -31,7 +31,7 @@ fn test_stake_reconciliation() {
     // Store current DB substate value hashes for comparision after staking execution
     let mut pre_transaction_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>> =
         HashMap::new();
-    let db = test_runner.substate_db();
+    let db = ledger.substate_db();
     let old_keys: Vec<DbPartitionKey> = db.list_partition_keys().collect();
     for key in old_keys {
         let entries = db.list_entries(&key);
@@ -53,7 +53,7 @@ fn test_stake_reconciliation() {
         .stake_validator_as_owner(validator_address, "stake")
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pk)],
     );
@@ -80,14 +80,14 @@ fn test_stake_reconciliation() {
     let commit_result = receipt.expect_commit(true).clone();
     let events = commit_result.application_events;
     for (idx, event) in events.iter().enumerate() {
-        let name = test_runner.event_name(&event.0);
+        let name = ledger.event_name(&event.0);
         println!("{:?} - {}", event.0, name);
         assert_eq!(name, expected_events[idx]);
     }
 
     println!("{:-^120}", "Application DB Partitions");
 
-    let db = test_runner.substate_db();
+    let db = ledger.substate_db();
     let post_transaction_partitions = db.list_partition_keys();
 
     let mut new_substates_count = 0;
@@ -248,7 +248,7 @@ fn test_stake_reconciliation() {
     }
 
     for key in post_transaction_partitions {
-        let partition_entries = test_runner.substate_db().list_entries(&key);
+        let partition_entries = ledger.substate_db().list_entries(&key);
         for (sort_key, current_value) in partition_entries {
             let full_key = (key.clone(), sort_key.clone());
             let address = AddressBech32Encoder::for_simulator()

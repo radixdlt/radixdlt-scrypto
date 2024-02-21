@@ -6,9 +6,9 @@ use scrypto_test::prelude::*;
 #[test]
 fn stored_component_addresses_in_non_globalized_component_are_invocable() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package =
-        test_runner.publish_package_simple(PackageLoader::get("stored_external_component"));
+        ledger.publish_package_simple(PackageLoader::get("stored_external_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -20,7 +20,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invocable() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     receipt.expect_commit_success();
 }
@@ -28,15 +28,15 @@ fn stored_component_addresses_in_non_globalized_component_are_invocable() {
 #[test]
 fn stored_component_addresses_are_invocable() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
     let package =
-        test_runner.publish_package_simple(PackageLoader::get("stored_external_component"));
+        ledger.publish_package_simple(PackageLoader::get("stored_external_component"));
     let manifest1 = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "ExternalComponent", "create", manifest_args!())
         .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
+    let receipt1 = ledger.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
     let component0 = receipt1.expect_commit(true).new_component_addresses()[0];
     let component1 = receipt1.expect_commit(true).new_component_addresses()[1];
@@ -46,7 +46,7 @@ fn stored_component_addresses_are_invocable() {
         .lock_fee_from_faucet()
         .call_method(component0, "func", manifest_args!())
         .build();
-    let receipt2 = test_runner.execute_manifest(
+    let receipt2 = ledger.execute_manifest(
         manifest2,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -59,7 +59,7 @@ fn stored_component_addresses_are_invocable() {
         .lock_fee_from_faucet()
         .call_method(component1, "func", manifest_args!())
         .build();
-    let receipt2 = test_runner.execute_manifest(
+    let receipt2 = ledger.execute_manifest(
         manifest2,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

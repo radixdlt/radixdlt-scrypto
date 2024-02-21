@@ -29,12 +29,12 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
         let rule = rule!(require(virtual_signature_badge.clone()));
         (OwnerRole::Fixed(rule), virtual_signature_badge)
     };
-    let mut test_runner = TestEnvironment::new_with_owner((18, 18), owner_role);
+    let mut ledger = TestEnvironment::new_with_owner((18, 18), owner_role);
 
     let global_address = if pool {
-        GlobalAddress::from(test_runner.pool_component_address)
+        GlobalAddress::from(ledger.pool_component_address)
     } else {
-        GlobalAddress::from(test_runner.pool_unit_resource_address)
+        GlobalAddress::from(ledger.pool_unit_resource_address)
     };
 
     // Act
@@ -47,8 +47,8 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
         .lock_fee_from_faucet()
         .set_metadata(global_address, key, MetadataValue::Bool(false))
         .build();
-    let receipt = test_runner
-        .test_runner
+    let receipt = ledger
+        .ledger
         .execute_manifest(manifest, initial_proofs);
 
     // Assert
@@ -144,32 +144,32 @@ pub fn cannot_set_pool_resource_pool_metadata_if_not_owner() {
 #[test]
 pub fn contribution_provides_expected_pool_unit_resources1() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
-    let contribution1 = (test_runner.pool_resource1, 100);
-    let contribution2 = (test_runner.pool_resource2, 100);
+    let contribution1 = (ledger.pool_resource1, 100);
+    let contribution2 = (ledger.pool_resource2, 100);
     let expected_pool_units = 100;
     let expected_change1 = 0;
     let expected_change2 = 0;
 
     // Act
-    let receipt = test_runner.contribute(contribution1, contribution2, true);
+    let receipt = ledger.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+    let account_balance_changes = ledger.ledger.sum_descendant_balance_changes(
         receipt.expect_commit_success(),
-        test_runner.account_component_address.as_node_id(),
+        ledger.account_component_address.as_node_id(),
     );
 
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_unit_resource_address)
+            .get(&ledger.pool_unit_resource_address)
             .cloned(),
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource1)
+            .get(&ledger.pool_resource1)
             .cloned(),
         if expected_change1 == 0 {
             None
@@ -179,7 +179,7 @@ pub fn contribution_provides_expected_pool_unit_resources1() {
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource2)
+            .get(&ledger.pool_resource2)
             .cloned(),
         if expected_change2 == 0 {
             None
@@ -192,42 +192,42 @@ pub fn contribution_provides_expected_pool_unit_resources1() {
 #[test]
 pub fn contribution_provides_expected_pool_unit_resources2() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
     {
-        let contribution1 = (test_runner.pool_resource1, 100);
-        let contribution2 = (test_runner.pool_resource2, 100);
+        let contribution1 = (ledger.pool_resource1, 100);
+        let contribution2 = (ledger.pool_resource2, 100);
 
-        test_runner
+        ledger
             .contribute(contribution1, contribution2, true)
             .expect_commit_success();
     }
 
     // Arrange
-    let contribution1 = (test_runner.pool_resource1, 100);
-    let contribution2 = (test_runner.pool_resource2, 100);
+    let contribution1 = (ledger.pool_resource1, 100);
+    let contribution2 = (ledger.pool_resource2, 100);
     let expected_pool_units = 100;
     let expected_change1 = 0;
     let expected_change2 = 0;
 
     // Act
-    let receipt = test_runner.contribute(contribution1, contribution2, true);
+    let receipt = ledger.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+    let account_balance_changes = ledger.ledger.sum_descendant_balance_changes(
         receipt.expect_commit_success(),
-        test_runner.account_component_address.as_node_id(),
+        ledger.account_component_address.as_node_id(),
     );
 
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_unit_resource_address)
+            .get(&ledger.pool_unit_resource_address)
             .cloned(),
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource1)
+            .get(&ledger.pool_resource1)
             .cloned(),
         if expected_change1 == 0 {
             None
@@ -237,7 +237,7 @@ pub fn contribution_provides_expected_pool_unit_resources2() {
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource2)
+            .get(&ledger.pool_resource2)
             .cloned(),
         if expected_change2 == 0 {
             None
@@ -250,41 +250,41 @@ pub fn contribution_provides_expected_pool_unit_resources2() {
 #[test]
 pub fn contribution_provides_expected_pool_unit_resources3() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
     {
-        let contribution1 = (test_runner.pool_resource1, 100);
-        let contribution2 = (test_runner.pool_resource2, 100);
+        let contribution1 = (ledger.pool_resource1, 100);
+        let contribution2 = (ledger.pool_resource2, 100);
 
-        test_runner
+        ledger
             .contribute(contribution1, contribution2, true)
             .expect_commit_success();
     }
 
-    let contribution1 = (test_runner.pool_resource1, 100);
-    let contribution2 = (test_runner.pool_resource2, 120);
+    let contribution1 = (ledger.pool_resource1, 100);
+    let contribution2 = (ledger.pool_resource2, 120);
     let expected_pool_units = 100;
     let expected_change1 = 0;
     let expected_change2 = 20;
 
     // Act
-    let receipt = test_runner.contribute(contribution1, contribution2, true);
+    let receipt = ledger.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+    let account_balance_changes = ledger.ledger.sum_descendant_balance_changes(
         receipt.expect_commit_success(),
-        test_runner.account_component_address.as_node_id(),
+        ledger.account_component_address.as_node_id(),
     );
 
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_unit_resource_address)
+            .get(&ledger.pool_unit_resource_address)
             .cloned(),
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource1)
+            .get(&ledger.pool_resource1)
             .cloned(),
         if expected_change1 == 0 {
             None
@@ -294,7 +294,7 @@ pub fn contribution_provides_expected_pool_unit_resources3() {
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource2)
+            .get(&ledger.pool_resource2)
             .cloned(),
         if expected_change2 == 0 {
             None
@@ -307,41 +307,41 @@ pub fn contribution_provides_expected_pool_unit_resources3() {
 #[test]
 pub fn contribution_provides_expected_pool_unit_resources4() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
     {
-        let contribution1 = (test_runner.pool_resource1, 1_000_000);
-        let contribution2 = (test_runner.pool_resource2, 81);
+        let contribution1 = (ledger.pool_resource1, 1_000_000);
+        let contribution2 = (ledger.pool_resource2, 81);
 
-        test_runner
+        ledger
             .contribute(contribution1, contribution2, true)
             .expect_commit_success();
     }
 
-    let contribution1 = (test_runner.pool_resource1, 400_000);
-    let contribution2 = (test_runner.pool_resource2, 40);
+    let contribution1 = (ledger.pool_resource1, 400_000);
+    let contribution2 = (ledger.pool_resource2, 40);
     let expected_pool_units = 3600;
     let expected_change1 = 0;
     let expected_change2 = dec!("7.6");
 
     // Act
-    let receipt = test_runner.contribute(contribution1, contribution2, true);
+    let receipt = ledger.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+    let account_balance_changes = ledger.ledger.sum_descendant_balance_changes(
         receipt.expect_commit_success(),
-        test_runner.account_component_address.as_node_id(),
+        ledger.account_component_address.as_node_id(),
     );
 
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_unit_resource_address)
+            .get(&ledger.pool_unit_resource_address)
             .cloned(),
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource1)
+            .get(&ledger.pool_resource1)
             .cloned(),
         if expected_change1 == 0 {
             None
@@ -351,7 +351,7 @@ pub fn contribution_provides_expected_pool_unit_resources4() {
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource2)
+            .get(&ledger.pool_resource2)
             .cloned(),
         if expected_change2 == Decimal::ZERO {
             None
@@ -364,44 +364,44 @@ pub fn contribution_provides_expected_pool_unit_resources4() {
 #[test]
 pub fn contribution_provides_expected_pool_unit_resources5() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
     {
-        let contribution1 = (test_runner.pool_resource1, 100);
-        let contribution2 = (test_runner.pool_resource2, 100);
+        let contribution1 = (ledger.pool_resource1, 100);
+        let contribution2 = (ledger.pool_resource2, 100);
 
-        test_runner
+        ledger
             .contribute(contribution1, contribution2, true)
             .expect_commit_success();
 
-        test_runner.redeem(100, true).expect_commit_success();
+        ledger.redeem(100, true).expect_commit_success();
     }
 
     // Arrange
-    let contribution1 = (test_runner.pool_resource1, 50);
-    let contribution2 = (test_runner.pool_resource2, 50);
+    let contribution1 = (ledger.pool_resource1, 50);
+    let contribution2 = (ledger.pool_resource2, 50);
     let expected_pool_units = 50;
     let expected_change1 = 0;
     let expected_change2 = 0;
 
     // Act
-    let receipt = test_runner.contribute(contribution1, contribution2, true);
+    let receipt = ledger.contribute(contribution1, contribution2, true);
 
     // Assert
-    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+    let account_balance_changes = ledger.ledger.sum_descendant_balance_changes(
         receipt.expect_commit_success(),
-        test_runner.account_component_address.as_node_id(),
+        ledger.account_component_address.as_node_id(),
     );
 
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_unit_resource_address)
+            .get(&ledger.pool_unit_resource_address)
             .cloned(),
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource1)
+            .get(&ledger.pool_resource1)
             .cloned(),
         if expected_change1 == 0 {
             None
@@ -411,7 +411,7 @@ pub fn contribution_provides_expected_pool_unit_resources5() {
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource2)
+            .get(&ledger.pool_resource2)
             .cloned(),
         if expected_change2 == 0 {
             None
@@ -424,21 +424,21 @@ pub fn contribution_provides_expected_pool_unit_resources5() {
 #[test]
 fn contributing_tokens_that_do_not_belong_to_the_pool_fails() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
-    let resource_address = test_runner
-        .test_runner
+    let mut ledger = TestEnvironment::new((18, 18));
+    let resource_address = ledger
+        .ledger
         .create_freely_mintable_and_burnable_fungible_resource(
             OwnerRole::None,
             None,
             18,
-            test_runner.account_component_address,
+            ledger.account_component_address,
         );
 
     let contribution1 = (resource_address, 1_000_000);
-    let contribution2 = (test_runner.pool_resource2, 81);
+    let contribution2 = (ledger.pool_resource2, 81);
 
     // Act
-    let receipt = test_runner.contribute(contribution1, contribution2, true);
+    let receipt = ledger.contribute(contribution1, contribution2, true);
 
     // Assert
     receipt
@@ -448,10 +448,10 @@ fn contributing_tokens_that_do_not_belong_to_the_pool_fails() {
 #[test]
 fn creating_a_pool_with_non_fungible_resources_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
-    let (_, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (_, _, account) = ledger.new_account(false);
 
-    let non_fungible_resource = test_runner.create_non_fungible_resource(account);
+    let non_fungible_resource = ledger.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -468,7 +468,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt
@@ -478,42 +478,42 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
 #[test]
 fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 2));
+    let mut ledger = TestEnvironment::new((18, 2));
 
-    let contribution1 = (test_runner.pool_resource1, 100);
-    let contribution2 = (test_runner.pool_resource2, 100);
-    test_runner
+    let contribution1 = (ledger.pool_resource1, 100);
+    let contribution2 = (ledger.pool_resource2, 100);
+    ledger
         .contribute(contribution1, contribution2, true)
         .expect_commit_success();
 
     // Act
-    let receipt = test_runner.get_redemption_value(dec!("1.11111111111111"), true);
+    let receipt = ledger.get_redemption_value(dec!("1.11111111111111"), true);
 
     // Assert
     assert_eq!(
-        receipt[&test_runner.pool_resource1],
+        receipt[&ledger.pool_resource1],
         dec!("1.11111111111111")
     );
-    assert_eq!(receipt[&test_runner.pool_resource2], dec!("1.11")); // rounded due to divisibility == 2
+    assert_eq!(receipt[&ledger.pool_resource2], dec!("1.11")); // rounded due to divisibility == 2
 
     // Act
-    let receipt = test_runner.redeem(dec!("1.11111111111111"), true);
+    let receipt = ledger.redeem(dec!("1.11111111111111"), true);
 
     // Assert
-    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+    let account_balance_changes = ledger.ledger.sum_descendant_balance_changes(
         receipt.expect_commit_success(),
-        test_runner.account_component_address.as_node_id(),
+        ledger.account_component_address.as_node_id(),
     );
 
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource1)
+            .get(&ledger.pool_resource1)
             .cloned(),
         Some(BalanceChange::Fungible(dec!("1.11111111111111")))
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource2)
+            .get(&ledger.pool_resource2)
             .cloned(),
         Some(BalanceChange::Fungible(dec!("1.11")))
     );
@@ -522,35 +522,35 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
 #[test]
 fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 2));
+    let mut ledger = TestEnvironment::new((18, 2));
 
-    let contribution1 = (test_runner.pool_resource1, 100);
-    let contribution2 = (test_runner.pool_resource2, 100);
-    test_runner
+    let contribution1 = (ledger.pool_resource1, 100);
+    let contribution2 = (ledger.pool_resource2, 100);
+    ledger
         .contribute(contribution1, contribution2, true)
         .expect_commit_success();
 
     // Act
-    let receipt = test_runner.contribute(
-        (test_runner.pool_resource1, dec!("1.1111111111111")),
-        (test_runner.pool_resource2, 500),
+    let receipt = ledger.contribute(
+        (ledger.pool_resource1, dec!("1.1111111111111")),
+        (ledger.pool_resource2, 500),
         true,
     );
 
     // Assert
-    let pool_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+    let pool_balance_changes = ledger.ledger.sum_descendant_balance_changes(
         receipt.expect_commit_success(),
-        test_runner.pool_component_address.as_node_id(),
+        ledger.pool_component_address.as_node_id(),
     );
     assert_eq!(
         pool_balance_changes
-            .get(&test_runner.pool_resource1)
+            .get(&ledger.pool_resource1)
             .cloned(),
         Some(BalanceChange::Fungible(dec!("1.1111111111111")))
     );
     assert_eq!(
         pool_balance_changes
-            .get(&test_runner.pool_resource2)
+            .get(&ledger.pool_resource2)
             .cloned(),
         Some(BalanceChange::Fungible(dec!("1.11")))
     );
@@ -559,12 +559,12 @@ fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
 #[test]
 fn contribution_emits_expected_event() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((2, 2));
+    let mut ledger = TestEnvironment::new((2, 2));
 
     // Act
-    let receipt = test_runner.contribute(
-        (test_runner.pool_resource1, dec!("2.22")),
-        (test_runner.pool_resource2, dec!("8.88")),
+    let receipt = ledger.contribute(
+        (ledger.pool_resource1, dec!("2.22")),
+        (ledger.pool_resource2, dec!("8.88")),
         true,
     );
 
@@ -577,7 +577,7 @@ fn contribution_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "ContributionEvent"
+            if ledger.ledger.event_name(event_type_identifier) == "ContributionEvent"
                 && is_pool_emitter(event_type_identifier)
             {
                 Some(scrypto_decode(event_data).unwrap())
@@ -589,8 +589,8 @@ fn contribution_emits_expected_event() {
     assert_eq!(
         contributed_resources,
         indexmap!(
-            test_runner.pool_resource1 => dec!("2.22"),
-            test_runner.pool_resource2 => dec!("8.88"),
+            ledger.pool_resource1 => dec!("2.22"),
+            ledger.pool_resource2 => dec!("8.88"),
         )
     );
     assert_eq!(pool_units_minted, dec!("4.44"));
@@ -599,17 +599,17 @@ fn contribution_emits_expected_event() {
 #[test]
 fn redemption_emits_expected_event() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((2, 2));
+    let mut ledger = TestEnvironment::new((2, 2));
 
     // Act
-    test_runner
+    ledger
         .contribute(
-            (test_runner.pool_resource1, dec!("2.22")),
-            (test_runner.pool_resource2, dec!("8.88")),
+            (ledger.pool_resource1, dec!("2.22")),
+            (ledger.pool_resource2, dec!("8.88")),
             true,
         )
         .expect_commit_success();
-    let receipt = test_runner.redeem(dec!("4.44"), true);
+    let receipt = ledger.redeem(dec!("4.44"), true);
 
     // Assert
     let RedemptionEvent {
@@ -620,7 +620,7 @@ fn redemption_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "RedemptionEvent"
+            if ledger.ledger.event_name(event_type_identifier) == "RedemptionEvent"
                 && is_pool_emitter(event_type_identifier)
             {
                 Some(scrypto_decode(event_data).unwrap())
@@ -633,8 +633,8 @@ fn redemption_emits_expected_event() {
     assert_eq!(
         redeemed_resources,
         indexmap!(
-            test_runner.pool_resource1 => dec!("2.22"),
-            test_runner.pool_resource2 => dec!("8.88"),
+            ledger.pool_resource1 => dec!("2.22"),
+            ledger.pool_resource2 => dec!("8.88"),
         )
     );
 }
@@ -642,10 +642,10 @@ fn redemption_emits_expected_event() {
 #[test]
 fn deposits_emits_expected_event() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((2, 2));
+    let mut ledger = TestEnvironment::new((2, 2));
 
     // Act
-    let receipt = test_runner.protected_deposit(test_runner.pool_resource1, dec!("2.22"), true);
+    let receipt = ledger.protected_deposit(ledger.pool_resource1, dec!("2.22"), true);
 
     // Assert
     let DepositEvent {
@@ -656,7 +656,7 @@ fn deposits_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "DepositEvent"
+            if ledger.ledger.event_name(event_type_identifier) == "DepositEvent"
                 && is_pool_emitter(event_type_identifier)
             {
                 Some(scrypto_decode(event_data).unwrap())
@@ -665,21 +665,21 @@ fn deposits_emits_expected_event() {
             }
         })
         .unwrap();
-    assert_eq!(resource_address, test_runner.pool_resource1);
+    assert_eq!(resource_address, ledger.pool_resource1);
     assert_eq!(amount, dec!("2.22"));
 }
 
 #[test]
 fn withdraw_emits_expected_event() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((2, 2));
+    let mut ledger = TestEnvironment::new((2, 2));
 
     // Act
-    test_runner
-        .protected_deposit(test_runner.pool_resource1, dec!("2.22"), true)
+    ledger
+        .protected_deposit(ledger.pool_resource1, dec!("2.22"), true)
         .expect_commit_success();
-    let receipt = test_runner.protected_withdraw(
-        test_runner.pool_resource1,
+    let receipt = ledger.protected_withdraw(
+        ledger.pool_resource1,
         dec!("2.22"),
         WithdrawStrategy::Exact,
         true,
@@ -694,7 +694,7 @@ fn withdraw_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent"
+            if ledger.ledger.event_name(event_type_identifier) == "WithdrawEvent"
                 && is_pool_emitter(event_type_identifier)
             {
                 Some(scrypto_decode(event_data).unwrap())
@@ -703,21 +703,21 @@ fn withdraw_emits_expected_event() {
             }
         })
         .unwrap();
-    assert_eq!(resource_address, test_runner.pool_resource1);
+    assert_eq!(resource_address, ledger.pool_resource1);
     assert_eq!(amount, dec!("2.22"));
 }
 
 #[test]
 fn withdraw_with_rounding_emits_expected_event() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((2, 2));
+    let mut ledger = TestEnvironment::new((2, 2));
 
     // Act
-    test_runner
-        .protected_deposit(test_runner.pool_resource1, dec!("2.22"), true)
+    ledger
+        .protected_deposit(ledger.pool_resource1, dec!("2.22"), true)
         .expect_commit_success();
-    let receipt = test_runner.protected_withdraw(
-        test_runner.pool_resource1,
+    let receipt = ledger.protected_withdraw(
+        ledger.pool_resource1,
         dec!("2.2211"),
         WithdrawStrategy::Rounded(RoundingMode::ToZero),
         true,
@@ -732,7 +732,7 @@ fn withdraw_with_rounding_emits_expected_event() {
         .application_events
         .iter()
         .find_map(|(event_type_identifier, event_data)| {
-            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent"
+            if ledger.ledger.event_name(event_type_identifier) == "WithdrawEvent"
                 && is_pool_emitter(event_type_identifier)
             {
                 Some(scrypto_decode(event_data).unwrap())
@@ -741,43 +741,43 @@ fn withdraw_with_rounding_emits_expected_event() {
             }
         })
         .unwrap();
-    assert_eq!(resource_address, test_runner.pool_resource1);
+    assert_eq!(resource_address, ledger.pool_resource1);
     assert_eq!(amount, dec!("2.22"));
 }
 
 #[test]
 fn redemption_after_protected_deposit_redeems_expected_amount() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 2));
+    let mut ledger = TestEnvironment::new((18, 2));
 
-    test_runner
+    ledger
         .contribute(
-            (test_runner.pool_resource1, 100),
-            (test_runner.pool_resource2, 100),
+            (ledger.pool_resource1, 100),
+            (ledger.pool_resource2, 100),
             true,
         )
         .expect_commit_success();
 
     // Act
-    test_runner
-        .protected_deposit(test_runner.pool_resource1, 500, true)
+    ledger
+        .protected_deposit(ledger.pool_resource1, 500, true)
         .expect_commit_success();
-    let receipt = test_runner.redeem(100, true);
+    let receipt = ledger.redeem(100, true);
 
     // Assert
-    let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+    let account_balance_changes = ledger.ledger.sum_descendant_balance_changes(
         receipt.expect_commit_success(),
-        test_runner.account_component_address.as_node_id(),
+        ledger.account_component_address.as_node_id(),
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource1)
+            .get(&ledger.pool_resource1)
             .cloned(),
         Some(BalanceChange::Fungible(600.into()))
     );
     assert_eq!(
         account_balance_changes
-            .get(&test_runner.pool_resource2)
+            .get(&ledger.pool_resource2)
             .cloned(),
         Some(BalanceChange::Fungible(100.into()))
     );
@@ -785,36 +785,36 @@ fn redemption_after_protected_deposit_redeems_expected_amount() {
 
 #[test]
 pub fn test_complete_interactions() {
-    let mut test_runner = TestEnvironment::new((18, 2));
+    let mut ledger = TestEnvironment::new((18, 2));
 
     {
         // Act
-        let receipt = test_runner.contribute(
-            (test_runner.pool_resource1, 500),
-            (test_runner.pool_resource2, 200),
+        let receipt = ledger.contribute(
+            (ledger.pool_resource1, 500),
+            (ledger.pool_resource2, 200),
             true,
         );
 
         // Assert
-        let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        let account_balance_changes = ledger.ledger.sum_descendant_balance_changes(
             receipt.expect_commit_success(),
-            test_runner.account_component_address.as_node_id(),
+            ledger.account_component_address.as_node_id(),
         );
         assert_eq!(
             account_balance_changes
-                .get(&test_runner.pool_unit_resource_address)
+                .get(&ledger.pool_unit_resource_address)
                 .cloned(),
             Some(BalanceChange::Fungible(dec!(316.2277660168379332)))
         );
         assert_eq!(
             account_balance_changes
-                .get(&test_runner.pool_resource1)
+                .get(&ledger.pool_resource1)
                 .cloned(),
             None
         );
         assert_eq!(
             account_balance_changes
-                .get(&test_runner.pool_resource2)
+                .get(&ledger.pool_resource2)
                 .cloned(),
             None
         );
@@ -822,32 +822,32 @@ pub fn test_complete_interactions() {
 
     {
         // Act
-        let receipt = test_runner.contribute(
-            (test_runner.pool_resource1, 700),
-            (test_runner.pool_resource2, 700),
+        let receipt = ledger.contribute(
+            (ledger.pool_resource1, 700),
+            (ledger.pool_resource2, 700),
             true,
         );
 
         // Assert
-        let account_balance_changes = test_runner.test_runner.sum_descendant_balance_changes(
+        let account_balance_changes = ledger.ledger.sum_descendant_balance_changes(
             receipt.expect_commit_success(),
-            test_runner.account_component_address.as_node_id(),
+            ledger.account_component_address.as_node_id(),
         );
         assert_eq!(
             account_balance_changes
-                .get(&test_runner.pool_unit_resource_address)
+                .get(&ledger.pool_unit_resource_address)
                 .cloned(),
             Some(BalanceChange::Fungible(dec!(442.71887242357310648)))
         );
         assert_eq!(
             account_balance_changes
-                .get(&test_runner.pool_resource1)
+                .get(&ledger.pool_resource1)
                 .cloned(),
             None
         );
         assert_eq!(
             account_balance_changes
-                .get(&test_runner.pool_resource2)
+                .get(&ledger.pool_resource2)
                 .cloned(),
             Some(BalanceChange::Fungible(420.into()))
         );
@@ -857,10 +857,10 @@ pub fn test_complete_interactions() {
 #[test]
 pub fn protected_deposit_fails_without_proper_authority_present() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
     // Act
-    let receipt = test_runner.protected_deposit(test_runner.pool_resource1, 10, false);
+    let receipt = ledger.protected_deposit(ledger.pool_resource1, 10, false);
 
     // Assert
     receipt.expect_specific_failure(is_auth_error)
@@ -869,14 +869,14 @@ pub fn protected_deposit_fails_without_proper_authority_present() {
 #[test]
 pub fn protected_withdraw_fails_without_proper_authority_present() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
     // Act
-    test_runner
-        .protected_deposit(test_runner.pool_resource1, 10, true)
+    ledger
+        .protected_deposit(ledger.pool_resource1, 10, true)
         .expect_commit_success();
-    let receipt = test_runner.protected_withdraw(
-        test_runner.pool_resource1,
+    let receipt = ledger.protected_withdraw(
+        ledger.pool_resource1,
         10,
         WithdrawStrategy::Exact,
         false,
@@ -889,12 +889,12 @@ pub fn protected_withdraw_fails_without_proper_authority_present() {
 #[test]
 pub fn contribute_fails_without_proper_authority_present() {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
     // Act
-    let receipt = test_runner.contribute(
-        (test_runner.pool_resource1, 10),
-        (test_runner.pool_resource2, 10),
+    let receipt = ledger.contribute(
+        (ledger.pool_resource1, 10),
+        (ledger.pool_resource2, 10),
         false,
     );
 
@@ -906,32 +906,32 @@ pub fn contribute_fails_without_proper_authority_present() {
 fn contribution_of_large_values_should_not_cause_panic() {
     // Arrange
     let max_mint_amount = Decimal(I192::from(2).pow(152));
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .mint_fungible(test_runner.pool_resource1, max_mint_amount)
-        .mint_fungible(test_runner.pool_resource1, max_mint_amount)
-        .mint_fungible(test_runner.pool_resource2, max_mint_amount)
-        .mint_fungible(test_runner.pool_resource2, max_mint_amount)
-        .take_all_from_worktop(test_runner.pool_resource1, "resource_1")
-        .take_all_from_worktop(test_runner.pool_resource2, "resource_2")
+        .mint_fungible(ledger.pool_resource1, max_mint_amount)
+        .mint_fungible(ledger.pool_resource1, max_mint_amount)
+        .mint_fungible(ledger.pool_resource2, max_mint_amount)
+        .mint_fungible(ledger.pool_resource2, max_mint_amount)
+        .take_all_from_worktop(ledger.pool_resource1, "resource_1")
+        .take_all_from_worktop(ledger.pool_resource2, "resource_2")
         .with_name_lookup(|builder, lookup| {
             let bucket1 = lookup.bucket("resource_1");
             let bucket2 = lookup.bucket("resource_2");
             builder.call_method(
-                test_runner.pool_component_address,
+                ledger.pool_component_address,
                 TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
                 TwoResourcePoolContributeManifestInput {
                     buckets: (bucket1, bucket2),
                 },
             )
         })
-        .try_deposit_entire_worktop_or_abort(test_runner.account_component_address, None)
+        .try_deposit_entire_worktop_or_abort(ledger.account_component_address, None)
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, true);
+    let receipt = ledger.execute_manifest(manifest, true);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -948,16 +948,16 @@ fn contribution_of_large_values_should_not_cause_panic() {
 fn get_redemption_value_should_not_panic_on_large_values() {
     // Arrange
     let mint_amount = Decimal(I192::from(2).pow(60));
-    let mut test_runner = TestEnvironment::new((18, 18));
-    let receipt = test_runner.contribute(
-        (test_runner.pool_resource1, mint_amount),
-        (test_runner.pool_resource2, mint_amount),
+    let mut ledger = TestEnvironment::new((18, 18));
+    let receipt = ledger.contribute(
+        (ledger.pool_resource1, mint_amount),
+        (ledger.pool_resource2, mint_amount),
         true,
     );
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.call_get_redemption_value(Decimal::MAX, true);
+    let receipt = ledger.call_get_redemption_value(Decimal::MAX, true);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -974,35 +974,35 @@ fn get_redemption_value_should_not_panic_on_large_values() {
 fn contributing_to_a_pool_with_very_large_difference_in_reserves_succeeds() {
     // Arrange
     let max_mint_amount = Decimal(I192::from(2).pow(152));
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let mut ledger = TestEnvironment::new((18, 18));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .mint_fungible(test_runner.pool_resource1, max_mint_amount)
-        .mint_fungible(test_runner.pool_resource2, dec!("1"))
-        .take_all_from_worktop(test_runner.pool_resource1, "resource_1")
-        .take_all_from_worktop(test_runner.pool_resource2, "resource_2")
+        .mint_fungible(ledger.pool_resource1, max_mint_amount)
+        .mint_fungible(ledger.pool_resource2, dec!("1"))
+        .take_all_from_worktop(ledger.pool_resource1, "resource_1")
+        .take_all_from_worktop(ledger.pool_resource2, "resource_2")
         .with_name_lookup(|builder, lookup| {
             let bucket1 = lookup.bucket("resource_1");
             let bucket2 = lookup.bucket("resource_2");
             builder.call_method(
-                test_runner.pool_component_address,
+                ledger.pool_component_address,
                 TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
                 TwoResourcePoolContributeManifestInput {
                     buckets: (bucket1, bucket2),
                 },
             )
         })
-        .try_deposit_entire_worktop_or_abort(test_runner.account_component_address, None)
+        .try_deposit_entire_worktop_or_abort(ledger.account_component_address, None)
         .build();
-    test_runner
+    ledger
         .execute_manifest(manifest, true)
         .expect_commit_success();
 
     // Act
-    let receipt = test_runner.contribute(
-        (test_runner.pool_resource1, dec!("5708990770.82384")),
-        (test_runner.pool_resource2, dec!("0.000000000000000001")),
+    let receipt = ledger.contribute(
+        (ledger.pool_resource1, dec!("5708990770.82384")),
+        (ledger.pool_resource2, dec!("0.000000000000000001")),
         true,
     );
 
@@ -1025,7 +1025,7 @@ fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
 }
 
 struct TestEnvironment {
-    test_runner: DefaultTestRunner,
+    ledger: DefaultLedgerSimulator,
 
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -1043,17 +1043,17 @@ impl TestEnvironment {
     }
 
     pub fn new_with_owner((divisibility1, divisibility2): (u8, u8), owner_role: OwnerRole) -> Self {
-        let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
-        let (public_key, _, account) = test_runner.new_account(false);
+        let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+        let (public_key, _, account) = ledger.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
-        let pool_resource1 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+        let pool_resource1 = ledger.create_freely_mintable_and_burnable_fungible_resource(
             OwnerRole::None,
             None,
             divisibility1,
             account,
         );
-        let pool_resource2 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+        let pool_resource2 = ledger.create_freely_mintable_and_burnable_fungible_resource(
             OwnerRole::None,
             None,
             divisibility2,
@@ -1075,7 +1075,7 @@ impl TestEnvironment {
                     },
                 )
                 .build();
-            let receipt = test_runner.execute_manifest(manifest, vec![]);
+            let receipt = ledger.execute_manifest(manifest, vec![]);
             let commit_result = receipt.expect_commit_success();
 
             (
@@ -1085,7 +1085,7 @@ impl TestEnvironment {
         };
 
         Self {
-            test_runner,
+            ledger,
             pool_component_address: pool_component,
             pool_unit_resource_address: pool_unit_resource,
             pool_resource1,
@@ -1200,7 +1200,7 @@ impl TestEnvironment {
         manifest: TransactionManifestV1,
         sign: bool,
     ) -> TransactionReceipt {
-        self.test_runner
+        self.ledger
             .execute_manifest(manifest, self.initial_proofs(sign))
     }
 

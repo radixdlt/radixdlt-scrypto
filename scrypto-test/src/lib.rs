@@ -1,14 +1,14 @@
 //! This crate is an implementation of for Scrypto-Test, a unit testing framework for Scrypto that
 //! follows an invocation-based approach instead of a transaction-based approach to testing,
 //! allowing Scrypto developers to write tests that look and feel like Scrypto. Scrypto-Test is not
-//! a replacement for transaction-based tests offered by the TestRunner, it would just be an
+//! a replacement for transaction-based tests offered by the LedgerSimulator, it would just be an
 //! addition and another way for Scrypto developers to test their code where Scrypto-Test could be
-//! classified as a unit-testing framework while the TestRunner could be classified as an
+//! classified as a unit-testing framework while the LedgerSimulator could be classified as an
 //! integration-testing framework.
 //!
 //! # Why
 //!
-//! We already have a way to test Scrypto blueprints in the from of the scrypto_test::prelude::TestRunner
+//! We already have a way to test Scrypto blueprints in the from of the scrypto_test::prelude::LedgerSimulator
 //! which is essentially an in-memory ledger that we can run transactions against, get back
 //! transaction receipts, and determine-based on the TransactionReceipt-if the behavior of the
 //! blueprint or component is as we expect or not. This approach is tried and tested and has been

@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_tests::common::PackageLoader;
-use scrypto_test::prelude::{CustomGenesis, TestRunnerBuilder};
+use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
 use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use substate_store_interface::interface::CommittableSubstateDatabase;
 use transaction::builder::ManifestBuilder;
@@ -27,20 +27,20 @@ fn get_current_time_rounded_to_seconds_with_state_flash_should_succeed() {
 
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .without_seconds_precision_update()
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("clock"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
 
     // Act
     if flash_substates {
-        let state_updates = generate_seconds_precision_state_updates(test_runner.substate_db());
+        let state_updates = generate_seconds_precision_state_updates(ledger.substate_db());
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-        test_runner.substate_db_mut().commit(&db_updates);
+        ledger.substate_db_mut().commit(&db_updates);
     }
 
     let time_to_set_ms = 1669663688996;
@@ -59,7 +59,7 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
             manifest_args![],
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
+    let receipt = ledger.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
 
     // Assert
     if expect_success {

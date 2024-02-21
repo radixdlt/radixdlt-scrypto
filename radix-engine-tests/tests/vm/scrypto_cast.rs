@@ -6,8 +6,8 @@ use scrypto_test::prelude::*;
 #[test]
 fn should_error_if_trying_to_cast_to_invalid_type() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("cast"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("cast"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -19,7 +19,7 @@ fn should_error_if_trying_to_cast_to_invalid_type() {
             manifest_args!(FAUCET),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -33,8 +33,8 @@ fn should_error_if_trying_to_cast_to_invalid_type() {
 #[test]
 fn should_succeed_if_trying_to_cast_to_any() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("cast"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("cast"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -46,7 +46,7 @@ fn should_succeed_if_trying_to_cast_to_any() {
             manifest_args!(FAUCET),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();

@@ -7,8 +7,8 @@ use scrypto_test::prelude::*;
 #[test]
 fn stored_bucket_in_committed_component_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("stored_values"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("stored_values"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -20,7 +20,7 @@ fn stored_bucket_in_committed_component_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -38,8 +38,8 @@ fn stored_bucket_in_committed_component_should_fail() {
 #[test]
 fn stored_bucket_in_owned_component_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("stored_values"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("stored_values"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -51,7 +51,7 @@ fn stored_bucket_in_owned_component_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

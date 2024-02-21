@@ -6,7 +6,7 @@ use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
 fn create_secured_component(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     auth: NonFungibleGlobalId,
     package_address: PackageAddress,
 ) -> ComponentAddress {
@@ -19,26 +19,26 @@ fn create_secured_component(
             manifest_args!(rule!(require(auth))),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let secured_component = receipt.expect_commit(true).new_component_addresses()[0];
     secured_component
 }
 
 fn create_resource_secured_component(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     account: ComponentAddress,
     package_address: PackageAddress,
 ) -> (ComponentAddress, NonFungibleGlobalId) {
-    let auth = test_runner.create_non_fungible_resource(account);
+    let auth = ledger.create_non_fungible_resource(account);
     let auth_local_id = NonFungibleLocalId::integer(1);
     let auth_global_id = NonFungibleGlobalId::new(auth, auth_local_id);
     let secured_component =
-        create_secured_component(test_runner, auth_global_id.clone(), package_address);
+        create_secured_component(ledger, auth_global_id.clone(), package_address);
     (secured_component, auth_global_id)
 }
 
 fn create_component(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     package_address: PackageAddress,
 ) -> ComponentAddress {
     let manifest = ManifestBuilder::new()
@@ -50,7 +50,7 @@ fn create_component(
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let my_component = receipt.expect_commit(true).new_component_addresses()[0];
     my_component
 }
@@ -58,13 +58,13 @@ fn create_component(
 #[test]
 fn cannot_make_cross_component_call_without_correct_global_caller_authorization() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
     let badge =
         NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(account.into()));
-    let secured_component = create_secured_component(&mut test_runner, badge, package_address);
-    let my_component = create_component(&mut test_runner, package_address);
+    let secured_component = create_secured_component(&mut ledger, badge, package_address);
+    let my_component = create_component(&mut ledger, package_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -75,7 +75,7 @@ fn cannot_make_cross_component_call_without_correct_global_caller_authorization(
             manifest_args!(secured_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(is_auth_error);
@@ -84,12 +84,12 @@ fn cannot_make_cross_component_call_without_correct_global_caller_authorization(
 #[test]
 fn can_make_cross_component_call_with_correct_global_caller_authorization() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
-    let my_component = create_component(&mut test_runner, package_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
+    let my_component = create_component(&mut ledger, package_address);
     let badge =
         NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(my_component.into()));
-    let secured_component = create_secured_component(&mut test_runner, badge, package_address);
+    let secured_component = create_secured_component(&mut ledger, badge, package_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -100,7 +100,7 @@ fn can_make_cross_component_call_with_correct_global_caller_authorization() {
             manifest_args!(secured_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -109,12 +109,12 @@ fn can_make_cross_component_call_with_correct_global_caller_authorization() {
 #[test]
 fn cannot_make_cross_component_call_without_resource_authorization() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
     let (secured_component, _) =
-        create_resource_secured_component(&mut test_runner, account, package_address);
-    let my_component = create_component(&mut test_runner, package_address);
+        create_resource_secured_component(&mut ledger, account, package_address);
+    let my_component = create_component(&mut ledger, package_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -125,7 +125,7 @@ fn cannot_make_cross_component_call_without_resource_authorization() {
             manifest_args!(secured_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(is_auth_error);
@@ -134,12 +134,12 @@ fn cannot_make_cross_component_call_without_resource_authorization() {
 #[test]
 fn can_make_cross_component_call_with_resource_authorization() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
     let (secured_component, auth_id) =
-        create_resource_secured_component(&mut test_runner, account, package_address);
-    let my_component = create_component(&mut test_runner, package_address);
+        create_resource_secured_component(&mut ledger, account, package_address);
+    let my_component = create_component(&mut ledger, package_address);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_non_fungibles_from_account(
@@ -153,7 +153,7 @@ fn can_make_cross_component_call_with_resource_authorization() {
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -168,7 +168,7 @@ fn can_make_cross_component_call_with_resource_authorization() {
             manifest_args!(secured_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -177,12 +177,12 @@ fn can_make_cross_component_call_with_resource_authorization() {
 #[test]
 fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
     let (secured_component, auth_id) =
-        create_resource_secured_component(&mut test_runner, account, package_address);
-    let my_component = create_component(&mut test_runner, package_address);
+        create_resource_secured_component(&mut ledger, account, package_address);
+    let my_component = create_component(&mut ledger, package_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -194,7 +194,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
             manifest_args!(secured_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

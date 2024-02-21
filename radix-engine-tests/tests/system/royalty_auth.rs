@@ -7,7 +7,7 @@ use scrypto_test::prelude::*;
 fn package_owner_can_claim_royalty() {
     // Arrange
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         package_address,
@@ -16,7 +16,7 @@ fn package_owner_can_claim_royalty() {
     ) = set_up_package_and_component();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
@@ -38,7 +38,7 @@ fn package_owner_can_claim_royalty() {
 fn non_package_owner_cannot_claim_royalty() {
     // Arrange
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         package_address,
@@ -47,7 +47,7 @@ fn non_package_owner_cannot_claim_royalty() {
     ) = set_up_package_and_component();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 5000)
             .claim_package_royalties(package_address)
@@ -64,7 +64,7 @@ fn non_package_owner_cannot_claim_royalty() {
 fn component_owner_can_set_royalty() {
     // Arrange
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         _package_address,
@@ -73,7 +73,7 @@ fn component_owner_can_set_royalty() {
     ) = set_up_package_and_component();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
@@ -97,11 +97,11 @@ fn component_owner_can_set_royalty() {
 #[test]
 fn non_component_owner_cannot_set_royalty() {
     // Arrange
-    let (mut test_runner, account, public_key, _package_address, component_address, _) =
+    let (mut ledger, account, public_key, _package_address, component_address, _) =
         set_up_package_and_component();
 
     // Negative case
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .set_component_royalty(
@@ -121,7 +121,7 @@ fn non_component_owner_cannot_set_royalty() {
 fn component_owner_can_claim_royalty() {
     // Arrange
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         _package_address,
@@ -130,7 +130,7 @@ fn component_owner_can_claim_royalty() {
     ) = set_up_package_and_component();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
@@ -151,11 +151,11 @@ fn component_owner_can_claim_royalty() {
 #[test]
 fn non_component_owner_cannot_claim_royalty() {
     // Arrange
-    let (mut test_runner, account, public_key, _package_address, component_address, _) =
+    let (mut ledger, account, public_key, _package_address, component_address, _) =
         set_up_package_and_component();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 5000)
             .claim_component_royalties(component_address)
@@ -169,7 +169,7 @@ fn non_component_owner_cannot_claim_royalty() {
 }
 
 fn set_up_package_and_component() -> (
-    DefaultTestRunner,
+    DefaultLedgerSimulator,
     ComponentAddress,
     Secp256k1PublicKey,
     PackageAddress,
@@ -177,15 +177,15 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let owner_badge_resource = ledger.create_non_fungible_resource(account);
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
 
     // Publish package
     let (code, definition) = PackageLoader::get("royalty-auth");
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .publish_package_with_owner(code, definition, owner_badge_addr.clone())
@@ -195,7 +195,7 @@ fn set_up_package_and_component() -> (
     let package_address = receipt.expect_commit(true).new_package_addresses()[0];
 
     // Instantiate component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
@@ -216,7 +216,7 @@ fn set_up_package_and_component() -> (
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     (
-        test_runner,
+        ledger,
         account,
         public_key,
         package_address,

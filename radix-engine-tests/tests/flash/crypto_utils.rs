@@ -6,7 +6,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_tests::common::PackageLoader;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-use scrypto_test::prelude::{CustomGenesis, TestRunnerBuilder};
+use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
 use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use substate_store_interface::interface::CommittableSubstateDatabase;
 
@@ -22,7 +22,7 @@ fn publishing_crypto_utils_with_state_flash_should_succeed() {
 
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .without_crypto_utils_update()
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
@@ -33,11 +33,11 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
         let state_updates =
             generate_vm_boot_scrypto_version_state_updates(ScryptoVmVersion::crypto_utils_added());
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-        test_runner.substate_db_mut().commit(&db_updates);
+        ledger.substate_db_mut().commit(&db_updates);
     }
 
     // Act
-    let receipt = test_runner.try_publish_package(PackageLoader::get("crypto_scrypto"));
+    let receipt = ledger.try_publish_package(PackageLoader::get("crypto_scrypto"));
 
     // Assert
     if expect_success {

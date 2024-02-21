@@ -6,10 +6,10 @@ use scrypto_test::prelude::*;
 #[test]
 fn test_query_transaction_runtime_info() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("transaction_runtime"));
+        ledger.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -21,7 +21,7 @@ fn test_query_transaction_runtime_info() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -33,10 +33,10 @@ fn test_query_transaction_runtime_info() {
 #[test]
 fn test_generate_ruid() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("transaction_runtime"));
+        ledger.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -54,7 +54,7 @@ fn test_generate_ruid() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -68,9 +68,9 @@ fn test_generate_ruid() {
 #[test]
 fn test_instance_of_and_blueprint_id() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("transaction_runtime"));
+        ledger.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -82,7 +82,7 @@ fn test_instance_of_and_blueprint_id() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();

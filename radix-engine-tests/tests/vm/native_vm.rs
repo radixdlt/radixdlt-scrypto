@@ -17,7 +17,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
-use scrypto_test::prelude::TestRunnerBuilder;
+use scrypto_test::prelude::LedgerSimulatorBuilder;
 use substate_store_impls::memory_db::*;
 use substate_store_interface::db_key_mapper::*;
 use transaction::prelude::*;
@@ -25,7 +25,7 @@ use transaction::prelude::*;
 #[test]
 fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -38,7 +38,7 @@ fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|runtime_error| {

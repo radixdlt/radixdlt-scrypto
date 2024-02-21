@@ -7,8 +7,8 @@ use substate_store_queries::typed_substate_layout::{RoleAssignmentError, PACKAGE
 #[test]
 fn test_handle_mismatch() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -18,7 +18,7 @@ fn test_handle_mismatch() {
             manifest_args!(),
         )
         .build();
-    let component_address = test_runner
+    let component_address = ledger
         .execute_manifest(manifest, vec![])
         .expect_commit_success()
         .new_component_addresses()[0];
@@ -32,7 +32,7 @@ fn test_handle_mismatch() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     println!("{:?}", receipt);
 
     // Assert
@@ -47,8 +47,8 @@ fn test_handle_mismatch() {
 #[test]
 fn test_put_address_reservation_into_component_state() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -61,7 +61,7 @@ fn test_put_address_reservation_into_component_state() {
             |lookup| manifest_args!(lookup.address_reservation("reservation")),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_failure();
@@ -70,8 +70,8 @@ fn test_put_address_reservation_into_component_state() {
 #[test]
 fn test_put_address_reservation_into_kv_store() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -84,7 +84,7 @@ fn test_put_address_reservation_into_kv_store() {
             |lookup| manifest_args!(lookup.address_reservation("reservation")),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_failure();
@@ -93,8 +93,8 @@ fn test_put_address_reservation_into_kv_store() {
 #[test]
 fn test_globalize_address_reservation() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -107,7 +107,7 @@ fn test_globalize_address_reservation() {
             |lookup| manifest_args!(lookup.address_reservation("reservation")),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_failure();
@@ -116,8 +116,8 @@ fn test_globalize_address_reservation() {
 #[test]
 fn test_write_after_locking_field_substate() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -129,7 +129,7 @@ fn test_write_after_locking_field_substate() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -143,8 +143,8 @@ fn test_write_after_locking_field_substate() {
 #[test]
 fn test_write_after_locking_key_value_store_entry() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -156,7 +156,7 @@ fn test_write_after_locking_key_value_store_entry() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -170,8 +170,8 @@ fn test_write_after_locking_key_value_store_entry() {
 #[test]
 fn test_write_after_locking_key_value_collection_entry() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -183,7 +183,7 @@ fn test_write_after_locking_key_value_collection_entry() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -197,8 +197,8 @@ fn test_write_after_locking_key_value_collection_entry() {
 #[test]
 fn test_set_role_of_role_assignment() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -210,7 +210,7 @@ fn test_set_role_of_role_assignment() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -226,8 +226,8 @@ fn test_set_role_of_role_assignment() {
 #[test]
 fn test_set_role_of_role_assignment_v2() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -239,7 +239,7 @@ fn test_set_role_of_role_assignment_v2() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -255,8 +255,8 @@ fn test_set_role_of_role_assignment_v2() {
 #[test]
 fn test_call_role_assignment_method_of_role_assignment() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("system"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("system"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -268,7 +268,7 @@ fn test_call_role_assignment_method_of_role_assignment() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

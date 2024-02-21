@@ -19,7 +19,7 @@ pub struct ManifestTransactionProcessorRunInput {
 #[test]
 fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let instructions: Vec<InstructionV1> = Vec::new();
     let manifest_encoded_instructions = manifest_encode(&instructions).unwrap();
 
@@ -38,7 +38,7 @@ fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
             },
         )
         .build();
-    let result = test_runner.execute_manifest(manifest, vec![]);
+    let result = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     result.expect_specific_failure(|e| {
@@ -54,9 +54,9 @@ fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
 #[test]
 fn calling_transaction_processor_from_scrypto_should_not_panic() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("tx_processor_access"));
+        ledger.publish_package_simple(PackageLoader::get("tx_processor_access"));
 
     // Act
     let manifest_encoded_instructions: Vec<u8> = vec![0u8];
@@ -70,7 +70,7 @@ fn calling_transaction_processor_from_scrypto_should_not_panic() {
             manifest_args!(manifest_encoded_instructions, references),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_failure();
@@ -79,12 +79,12 @@ fn calling_transaction_processor_from_scrypto_should_not_panic() {
 #[test]
 fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _, account0) = test_runner.new_account(true);
-    let (_, _, account1) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _, account0) = ledger.new_account(true);
+    let (_, _, account1) = ledger.new_account(true);
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("tx_processor_access"));
-    let initial_balance = test_runner.get_component_balance(account0, XRD);
+        ledger.publish_package_simple(PackageLoader::get("tx_processor_access"));
+    let initial_balance = ledger.get_component_balance(account0, XRD);
     let instructions = ManifestBuilder::new()
         .withdraw_from_account(account0, XRD, 10)
         .try_deposit_entire_worktop_or_abort(account1, None)
@@ -103,12 +103,12 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
             manifest_args!(manifest_encoded_instructions, references),
         )
         .build();
-    test_runner.execute_manifest(
+    ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
 
     // Assert
-    let final_balance = test_runner.get_component_balance(account0, XRD);
+    let final_balance = ledger.get_component_balance(account0, XRD);
     assert_eq!(initial_balance, final_balance);
 }

@@ -58,19 +58,19 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_with_kv_collection_test_definition(
             BLUEPRINT_NAME,
             vec![("test", "test", true), ("new", "new", false)],
         ),
     );
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "new", manifest_args!())
             .build(),
         vec![],
@@ -78,9 +78,9 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
     let component_address = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_method(component_address, "test", manifest_args!())
             .build(),
         vec![],

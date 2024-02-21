@@ -47,10 +47,10 @@ fn should_not_be_able_to_move_auth_zone() {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
@@ -59,9 +59,9 @@ fn should_not_be_able_to_move_auth_zone() {
     );
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
             .build(),
         vec![],
@@ -81,8 +81,8 @@ fn should_not_be_able_to_move_auth_zone() {
 #[test]
 fn test_auth_zone_create_proof_of_all_for_fungible() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -91,7 +91,7 @@ fn test_auth_zone_create_proof_of_all_for_fungible() {
         .create_proof_from_auth_zone_of_all(XRD, "proof")
         .drop_proof("proof")
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -103,9 +103,9 @@ fn test_auth_zone_create_proof_of_all_for_fungible() {
 #[test]
 fn test_auth_zone_create_proof_of_all_for_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -121,7 +121,7 @@ fn test_auth_zone_create_proof_of_all_for_non_fungible() {
         .create_proof_from_auth_zone_of_all(resource_address, "proof")
         .drop_proof("proof")
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

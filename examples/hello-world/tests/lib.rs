@@ -5,13 +5,13 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_hello() {
     // Setup the environment
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Create an account
-    let (public_key, _private_key, account) = test_runner.new_allocated_account();
+    let (public_key, _private_key, account) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.compile_and_publish(this_package!());
+    let package_address = ledger.compile_and_publish(this_package!());
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new()
@@ -23,7 +23,7 @@ fn test_hello() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -40,7 +40,7 @@ fn test_hello() {
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

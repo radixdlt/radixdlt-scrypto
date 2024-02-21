@@ -30,8 +30,8 @@ impl Action {
 
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let (
         token_address,
         mint_auth,
@@ -41,8 +41,8 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         _update_metadata_auth,
         freeze_auth,
         admin_auth,
-    ) = test_runner.create_restricted_token(account);
-    let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
+    ) = ledger.create_restricted_token(account);
+    let (_, updated_auth) = ledger.create_restricted_burn_token(account);
 
     if update_auth {
         let (module, role_key) = action.get_role();
@@ -56,7 +56,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 rule!(require(updated_auth)),
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(
                 manifest,
                 btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -101,7 +101,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .try_deposit_or_abort(account, None, "withdrawn")
             .try_deposit_entire_worktop_or_abort(account, None),
         Action::Recall => {
-            let vaults = test_runner.get_component_vaults(account, token_address);
+            let vaults = ledger.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
 
             builder
@@ -109,14 +109,14 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 .try_deposit_entire_worktop_or_abort(account, None)
         }
         Action::Freeze => {
-            let vaults = test_runner.get_component_vaults(account, token_address);
+            let vaults = ledger.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
             builder.freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         }
     };
 
     let manifest = builder.build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

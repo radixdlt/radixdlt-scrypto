@@ -151,8 +151,8 @@ fn test_pdec_macro_valid() {
 #[test]
 fn test_dec_macro_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("decimal"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("decimal"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -164,7 +164,7 @@ fn test_dec_macro_in_scrypto() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -175,8 +175,8 @@ fn test_dec_macro_in_scrypto() {
 #[test]
 fn test_pdec_macro_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("decimal"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("decimal"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -188,7 +188,7 @@ fn test_pdec_macro_in_scrypto() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let result = receipt.expect_commit_success();

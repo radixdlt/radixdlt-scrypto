@@ -13,11 +13,11 @@ use substate_store_queries::typed_substate_layout::{AccountNativePackage, Bluepr
 
 #[test]
 fn check_native_function_base_costs() {
-    let test_runner = TestRunnerBuilder::new().build();
+    let ledger = LedgerSimulatorBuilder::new().build();
     let mut lookup: IndexMap<PackageAddress, IndexSet<String>> = index_map_new();
-    let package_addresses = test_runner.find_all_packages();
+    let package_addresses = ledger.find_all_packages();
     for package_address in package_addresses {
-        let blueprint_definitions = test_runner.get_package_blueprint_definitions(&package_address);
+        let blueprint_definitions = ledger.get_package_blueprint_definitions(&package_address);
         for (_, definition) in blueprint_definitions {
             let functions = definition.interface.functions;
             for (name, _) in functions {
@@ -88,17 +88,17 @@ fn check_native_function_base_costs() {
 
 #[test]
 fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
-    let test_runner = TestRunnerBuilder::new().build();
+    let ledger = LedgerSimulatorBuilder::new().build();
     let bech32 = AddressBech32Encoder::for_simulator();
 
-    let package_addresses = test_runner.find_all_packages();
+    let package_addresses = ledger.find_all_packages();
     for package_address in package_addresses {
         println!("\nChecking {}", package_address.to_string(&bech32));
 
-        let schemas_by_hash = test_runner.get_package_blueprint_schema_inits(&package_address);
+        let schemas_by_hash = ledger.get_package_blueprint_schema_inits(&package_address);
         println!("Found {} schemas", schemas_by_hash.len());
 
-        let blueprint_definitions = test_runner.get_package_blueprint_definitions(&package_address);
+        let blueprint_definitions = ledger.get_package_blueprint_definitions(&package_address);
         for (key, definition) in blueprint_definitions {
             println!("Checking blueprint {:?}", key.blueprint);
             if let Some(fields) = definition.interface.state.fields {
@@ -397,8 +397,8 @@ impl CheckResult {
 #[test]
 pub fn test_fake_bucket() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package
     let (code, mut definition) = PackageLoader::get("fake_bucket");
@@ -411,10 +411,10 @@ pub fn test_fake_bucket() {
         .fields[0]
         .field = TypeRef::Static(LocalTypeId::WellKnown(DECIMAL_TYPE));
     let package_address =
-        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
 
     // Test abusing vault put method
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, XRD, 100)

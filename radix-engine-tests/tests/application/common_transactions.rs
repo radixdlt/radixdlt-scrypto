@@ -7,7 +7,7 @@ use radix_engine_interface::{metadata, metadata_init, mint_roles};
 use radix_engine_tests::common::*;
 use scrypto::prelude::Pow;
 use scrypto::NonFungibleData;
-use scrypto_test::prelude::TestRunnerBuilder;
+use scrypto_test::prelude::LedgerSimulatorBuilder;
 use transaction::manifest::{compile, BlobProvider};
 use transaction::prelude::*;
 use utils::ContextualDisplay;
@@ -326,10 +326,10 @@ where
     F: Fn(&ComponentAddress, &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Creating the account component required for this test
-    let (public_key, _, component_address) = test_runner.new_account(false);
+    let (public_key, _, component_address) = ledger.new_account(false);
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Defining the network and the bech32 encoder to use
@@ -346,7 +346,7 @@ where
     )
     .expect("Failed to compile manifest from manifest string");
 
-    test_runner.execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
+    ledger.execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
 }
 
 fn test_manifest_with_restricted_minting_resource<F>(
@@ -362,10 +362,10 @@ fn test_manifest_with_restricted_minting_resource<F>(
     ) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
 
     // Creating the account component required for this test
-    let (public_key, _, component_address) = test_runner.new_account(false);
+    let (public_key, _, component_address) = ledger.new_account(false);
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Defining the network and the bech32 encoder to use
@@ -374,7 +374,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     // Creating the minter badge and the requested resource
     let minter_badge_resource_address =
-        test_runner.create_fungible_resource(dec!(1), 0, component_address);
+        ledger.create_fungible_resource(dec!(1), 0, component_address);
 
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
@@ -412,7 +412,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
             )
             .build(),
     };
-    let result = test_runner.execute_manifest(manifest, vec![]);
+    let result = ledger.execute_manifest(manifest, vec![]);
     let mintable_non_fungible_resource_address =
         result.expect_commit(true).new_resource_addresses()[0].clone();
 
@@ -430,7 +430,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     )
     .expect("Failed to compile manifest from manifest string");
 
-    test_runner
+    ledger
         .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
         .expect_commit(expect_success);
 }
@@ -440,15 +440,15 @@ where
     F: Fn(&ComponentAddress, &[ComponentAddress], &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
 
     // Creating the account component required for this test
-    let (public_key, _, component_address) = test_runner.new_account(false);
+    let (public_key, _, component_address) = ledger.new_account(false);
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Creating the required accounts
     let accounts = (0..accounts_required)
-        .map(|_| test_runner.new_account(false).2)
+        .map(|_| ledger.new_account(false).2)
         .collect::<Vec<ComponentAddress>>();
 
     // Defining the network and the bech32 encoder to use
@@ -465,7 +465,7 @@ where
     )
     .expect("Failed to compile manifest from manifest string");
 
-    test_runner
+    ledger
         .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
         .expect_commit_success();
 }

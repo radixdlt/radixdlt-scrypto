@@ -4,7 +4,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::prelude::*;
-use scrypto_test::prelude::TestRunnerBuilder;
+use scrypto_test::prelude::LedgerSimulatorBuilder;
 use transaction::prelude::*;
 
 #[test]
@@ -58,12 +58,12 @@ fn account_remove_authorized_depositor_with_owner_auth_succeeds() {
 #[test]
 fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depositors_list() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -103,7 +103,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -113,12 +113,12 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
 fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone(
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -158,7 +158,7 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -168,12 +168,12 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
 fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone(
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -214,7 +214,7 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -223,12 +223,12 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
 #[test]
 fn authorized_depositor_can_be_removed_later() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -269,7 +269,7 @@ fn authorized_depositor_can_be_removed_later() {
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert 1
     receipt.expect_commit_success();
@@ -285,7 +285,7 @@ fn authorized_depositor_can_be_removed_later() {
             },
         )
         .build();
-    test_runner
+    ledger
         .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk1)])
         .expect_commit_success();
 
@@ -306,7 +306,7 @@ fn authorized_depositor_can_be_removed_later() {
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert 2
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -315,12 +315,12 @@ fn authorized_depositor_can_be_removed_later() {
 #[test]
 fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in_depositors_list() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -360,7 +360,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -370,12 +370,12 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
 fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone(
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -415,7 +415,7 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -425,12 +425,12 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
 fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone(
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -471,7 +471,7 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -480,12 +480,12 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
 #[test]
 fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_depositors_list() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -525,7 +525,7 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -535,12 +535,12 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
 fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone()
 {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -580,7 +580,7 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -590,12 +590,12 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
 fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone(
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -636,7 +636,7 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -645,12 +645,12 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
 #[test]
 fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_depositors_list() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -690,7 +690,7 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -700,12 +700,12 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
 fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone(
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -745,7 +745,7 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -755,12 +755,12 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
 fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone(
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk1, _, account1) = test_runner.new_account(true);
-    let (pk2, _, account2) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk1, _, account1) = ledger.new_account(true);
+    let (pk2, _, account2) = ledger.new_account(true);
 
     let badge = ResourceOrNonFungible::Resource(XRD);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -801,7 +801,7 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -810,8 +810,8 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
 #[test]
 fn authorized_depositor_badge_is_ignored_when_deposit_batch_is_permitted_without_it() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
 
     // Act
     for method_name in [
@@ -831,7 +831,7 @@ fn authorized_depositor_badge_is_ignored_when_deposit_batch_is_permitted_without
             )
             .build();
         let receipt =
-            test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
         // Assert
         receipt.expect_commit_success();
@@ -841,8 +841,8 @@ fn authorized_depositor_badge_is_ignored_when_deposit_batch_is_permitted_without
 #[test]
 fn authorized_depositor_badge_is_ignored_when_deposit_is_permitted_without_it() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
 
     // Act
     for method_name in [
@@ -865,7 +865,7 @@ fn authorized_depositor_badge_is_ignored_when_deposit_is_permitted_without_it() 
             })
             .build();
         let receipt =
-            test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
         // Assert
         receipt.expect_commit_success();
@@ -875,8 +875,8 @@ fn authorized_depositor_badge_is_ignored_when_deposit_is_permitted_without_it() 
 #[test]
 fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
 
     // Act
     for method_name in [
@@ -906,7 +906,7 @@ fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
             })
             .build();
         let receipt =
-            test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
         // Assert
         receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -916,8 +916,8 @@ fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
 #[test]
 fn authorized_depositor_badge_permits_caller_to_deposit() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
 
     // Act
     for method_name in [
@@ -955,7 +955,7 @@ fn authorized_depositor_badge_permits_caller_to_deposit() {
             })
             .build();
         let receipt =
-            test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
         // Assert
         receipt.expect_commit_success();
@@ -977,8 +977,8 @@ fn test_depositors_operation_method_auth(
     assertion: impl FnOnce(&TransactionReceipt),
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(true);
 
     let initial_proofs = if sign {
         vec![NonFungibleGlobalId::from_public_key(&pk)]
@@ -1003,7 +1003,7 @@ fn test_depositors_operation_method_auth(
         };
         builder.build()
     };
-    let receipt = test_runner.execute_manifest(manifest, initial_proofs);
+    let receipt = ledger.execute_manifest(manifest, initial_proofs);
 
     // Assert
     assertion(&receipt)

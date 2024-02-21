@@ -11,9 +11,9 @@ use scrypto_test::prelude::*;
 #[test]
 fn test_take_from_vault_after_mint() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -25,7 +25,7 @@ fn test_take_from_vault_after_mint() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -38,9 +38,9 @@ fn test_take_from_vault_after_mint() {
 #[test]
 fn test_query_nonexistent_and_mint() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -52,7 +52,7 @@ fn test_query_nonexistent_and_mint() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -65,7 +65,7 @@ fn test_query_nonexistent_and_mint() {
 #[test]
 fn cannot_get_total_supply_of_xrd() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -76,7 +76,7 @@ fn cannot_get_total_supply_of_xrd() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let commit = receipt.expect_commit_success();
@@ -87,9 +87,9 @@ fn cannot_get_total_supply_of_xrd() {
 #[test]
 fn test_set_mintable_with_self_resource_address() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -101,7 +101,7 @@ fn test_set_mintable_with_self_resource_address() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -113,9 +113,9 @@ fn test_set_mintable_with_self_resource_address() {
 #[test]
 fn test_resource_manager() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -136,7 +136,7 @@ fn test_resource_manager() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -148,9 +148,9 @@ fn test_resource_manager() {
 #[test]
 fn mint_with_bad_granularity_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -163,7 +163,7 @@ fn mint_with_bad_granularity_should_fail() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -184,9 +184,9 @@ fn mint_with_bad_granularity_should_fail() {
 #[test]
 fn create_fungible_too_high_granularity_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
-    let _package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
+    let _package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -200,7 +200,7 @@ fn create_fungible_too_high_granularity_should_fail() {
             Some(dec!("100")),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -221,9 +221,9 @@ fn create_fungible_too_high_granularity_should_fail() {
 #[test]
 fn mint_too_much_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -240,7 +240,7 @@ fn mint_too_much_should_fail() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -259,16 +259,16 @@ fn mint_too_much_should_fail() {
 #[test]
 fn can_mint_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
+    let (admin_token, resource) = ledger.create_mintable_burnable_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -281,7 +281,7 @@ fn can_mint_with_proof_in_root() {
         .mint_fungible(resource, 1)
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -293,16 +293,16 @@ fn can_mint_with_proof_in_root() {
 #[test]
 fn cannot_mint_in_component_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component = receipt.expect_commit(true).new_component_addresses()[0];
-    let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
+    let (admin_token, resource) = ledger.create_mintable_burnable_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -315,7 +315,7 @@ fn cannot_mint_in_component_with_proof_in_root() {
         .call_method(component, "mint", manifest_args!(resource))
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -334,16 +334,16 @@ fn cannot_mint_in_component_with_proof_in_root() {
 #[test]
 fn can_burn_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
+    let (admin_token, resource) = ledger.create_mintable_burnable_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -356,7 +356,7 @@ fn can_burn_with_proof_in_root() {
         .mint_fungible(resource, 1)
         .burn_all_from_worktop(resource)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -368,16 +368,16 @@ fn can_burn_with_proof_in_root() {
 #[test]
 fn cannot_burn_in_component_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component = receipt.expect_commit(true).new_component_addresses()[0];
-    let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
+    let (admin_token, resource) = ledger.create_mintable_burnable_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -393,7 +393,7 @@ fn cannot_burn_in_component_with_proof_in_root() {
             builder.call_method(component, "burn", manifest_args!(lookup.bucket("to_burn")))
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -412,9 +412,9 @@ fn cannot_burn_in_component_with_proof_in_root() {
 #[test]
 fn test_fungible_resource_amount_for_withdrawal() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -427,7 +427,7 @@ fn test_fungible_resource_amount_for_withdrawal() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -436,9 +436,9 @@ fn test_fungible_resource_amount_for_withdrawal() {
 #[test]
 fn test_non_fungible_resource_amount_for_withdrawal() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -451,7 +451,7 @@ fn test_non_fungible_resource_amount_for_withdrawal() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -460,9 +460,9 @@ fn test_non_fungible_resource_amount_for_withdrawal() {
 #[test]
 fn test_fungible_resource_take_advanced() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -475,7 +475,7 @@ fn test_fungible_resource_take_advanced() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -484,8 +484,8 @@ fn test_fungible_resource_take_advanced() {
 #[test]
 fn fungible_bucket_take_advanced_max_should_not_panic() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -497,7 +497,7 @@ fn fungible_bucket_take_advanced_max_should_not_panic() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_failure();
@@ -506,8 +506,8 @@ fn fungible_bucket_take_advanced_max_should_not_panic() {
 #[test]
 fn fungible_vault_take_advanced_max_should_not_panic() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -519,7 +519,7 @@ fn fungible_vault_take_advanced_max_should_not_panic() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_failure();
@@ -528,8 +528,8 @@ fn fungible_vault_take_advanced_max_should_not_panic() {
 #[test]
 fn non_fungible_bucket_take_advanced_max_should_not_panic() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -541,7 +541,7 @@ fn non_fungible_bucket_take_advanced_max_should_not_panic() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_failure();
@@ -550,8 +550,8 @@ fn non_fungible_bucket_take_advanced_max_should_not_panic() {
 #[test]
 fn non_fungible_vault_take_advanced_max_should_not_panic() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -563,7 +563,7 @@ fn non_fungible_vault_take_advanced_max_should_not_panic() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_failure();
@@ -572,9 +572,9 @@ fn non_fungible_vault_take_advanced_max_should_not_panic() {
 #[test]
 fn test_non_fungible_resource_take_advanced() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -587,7 +587,7 @@ fn test_non_fungible_resource_take_advanced() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -596,9 +596,9 @@ fn test_non_fungible_resource_take_advanced() {
 #[test]
 fn can_use_fungible_types_in_interface() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -611,7 +611,7 @@ fn can_use_fungible_types_in_interface() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -620,9 +620,9 @@ fn can_use_fungible_types_in_interface() {
 #[test]
 fn can_use_non_fungible_types_in_interface() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("resource"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -635,7 +635,7 @@ fn can_use_non_fungible_types_in_interface() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();

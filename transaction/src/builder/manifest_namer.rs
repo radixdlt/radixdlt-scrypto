@@ -695,7 +695,7 @@ impl ResolvableBucketBatch for ManifestExpression {
     }
 }
 
-/// This is created so that you can put TransactionSignatures::None in your TestRunner
+/// This is created so that you can put TransactionSignatures::None in your LedgerSimulator
 /// Because [] can't resolve the correct generic when used as a trait impl
 pub enum TransactionSignatures {
     None,

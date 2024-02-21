@@ -14,7 +14,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::KeyValueEntrySubstate;
-use scrypto_test::prelude::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
+use scrypto_test::prelude::{CustomGenesis, SubtreeVaults, LedgerSimulatorBuilder};
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
 use substate_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use substate_store_queries::typed_substate_layout::*;
@@ -547,7 +547,7 @@ fn test_genesis_time() {
 #[test]
 fn should_not_be_able_to_create_genesis_helper() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -559,7 +559,7 @@ fn should_not_be_able_to_create_genesis_helper() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -575,14 +575,14 @@ fn should_not_be_able_to_create_genesis_helper() {
 #[test]
 fn should_not_be_able_to_call_genesis_helper() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(GENESIS_HELPER, "wrap_up", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -637,7 +637,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     ];
 
     // Bootstrap
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(CustomGenesis {
             genesis_data_chunks: genesis_data_chunks,
             genesis_epoch: Epoch::of(1),
@@ -653,22 +653,22 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
         .lock_fee_from_faucet()
         .drop_auth_zone_proofs()
         .build();
-    test_runner.execute_manifest(manifest, vec![]);
+    ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     println!("Staker 0: {:?}", staker_0);
     println!("Staker 1: {:?}", staker_1);
-    let components = test_runner.find_all_components();
+    let components = ledger.find_all_components();
     let mut total_xrd_supply = Decimal::ZERO;
     for component in components {
-        let xrd_balance = test_runner.get_component_balance(component, XRD);
+        let xrd_balance = ledger.get_component_balance(component, XRD);
         total_xrd_supply = total_xrd_supply.checked_add(xrd_balance).unwrap();
         println!("{:?}, {}", component, xrd_balance);
     }
 
     let mut total_mint_amount = Decimal::ZERO;
     let mut total_burn_amount = Decimal::ZERO;
-    for tx_events in test_runner.collected_events() {
+    for tx_events in ledger.collected_events() {
         for event in tx_events {
             match &event.0 .0 {
                 Emitter::Method(x, _) if x.eq(XRD.as_node_id()) => {}
@@ -676,7 +676,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
                     continue;
                 }
             }
-            let actual_type_name = test_runner.event_name(&event.0);
+            let actual_type_name = ledger.event_name(&event.0);
             match actual_type_name.as_str() {
                 "MintFungibleResourceEvent" => {
                     total_mint_amount = total_mint_amount

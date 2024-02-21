@@ -11,8 +11,8 @@ use transaction::validation::*;
 #[test]
 fn test_manifest_with_non_existent_resource() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let non_existent_resource = resource_address(EntityType::GlobalFungibleResourceManager, 222);
 
     // Act
@@ -21,7 +21,7 @@ fn test_manifest_with_non_existent_resource() {
         .take_all_from_worktop(non_existent_resource, "non_existent")
         .try_deposit_or_abort(account, None, "non_existent")
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -40,8 +40,8 @@ fn test_manifest_with_non_existent_resource() {
 #[test]
 fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -57,7 +57,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         .push_to_auth_zone("proof3")
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -73,8 +73,8 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
 #[test]
 fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -84,7 +84,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -100,8 +100,8 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
 #[test]
 fn test_non_existent_blob_hash() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -121,7 +121,7 @@ fn test_non_existent_blob_hash() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -144,9 +144,9 @@ fn test_non_existent_blob_hash() {
 #[test]
 fn test_entire_auth_zone() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -159,7 +159,7 @@ fn test_entire_auth_zone() {
             manifest_args!(ManifestExpression::EntireAuthZone, dec!(1), XRD),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -175,8 +175,8 @@ fn test_entire_auth_zone() {
 #[test]
 fn test_faucet_drain_attempt_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -185,7 +185,7 @@ fn test_faucet_drain_attempt_should_fail() {
         .get_free_xrd_from_faucet()
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -201,7 +201,7 @@ fn test_faucet_drain_attempt_should_fail() {
 #[test]
 fn transaction_processor_produces_expected_error_for_undecodable_instructions() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let invalid_encoded_instructions = [0xde, 0xad, 0xbe, 0xef];
     let references = Default::default();
@@ -225,7 +225,7 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
     );
 
     // Act
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         executable,
         Default::default(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
@@ -245,8 +245,8 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
 #[test]
 fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(true);
 
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 73)
@@ -266,8 +266,8 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked() {
 #[test]
 fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked2() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(true);
 
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 73)
@@ -287,8 +287,8 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked2() {
 #[test]
 fn test_create_proof_from_bucket_of_amount() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(true);
 
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 73)
@@ -299,7 +299,7 @@ fn test_create_proof_from_bucket_of_amount() {
         .build();
 
     // Act
-    let receipt = test_runner.preview_manifest(
+    let receipt = ledger.preview_manifest(
         manifest,
         Default::default(),
         Default::default(),
@@ -341,9 +341,9 @@ fn test_create_proof_from_bucket_of_amount() {
 #[test]
 fn test_create_proof_from_bucket_of_non_fungibles() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(true);
-    let nft = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(true);
+    let nft = ledger.create_non_fungible_resource(account);
 
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, nft, 3)
@@ -362,7 +362,7 @@ fn test_create_proof_from_bucket_of_non_fungibles() {
         .build();
 
     // Act
-    let receipt = test_runner.preview_manifest(
+    let receipt = ledger.preview_manifest(
         manifest,
         Default::default(),
         Default::default(),
@@ -408,8 +408,8 @@ fn test_create_proof_from_bucket_of_non_fungibles() {
 #[test]
 fn test_drop_auth_zone_regular_proofs() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(true);
 
     let manifest = ManifestBuilder::new()
         .create_proof_from_account_of_amount(account, XRD, 73)
@@ -418,7 +418,7 @@ fn test_drop_auth_zone_regular_proofs() {
         .build();
 
     // Act
-    let receipt = test_runner.preview_manifest(
+    let receipt = ledger.preview_manifest(
         manifest,
         Default::default(),
         Default::default(),

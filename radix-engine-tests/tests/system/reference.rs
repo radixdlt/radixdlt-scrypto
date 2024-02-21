@@ -9,10 +9,10 @@ use scrypto_test::prelude::*;
 #[test]
 fn test_add_direct_access_ref_to_stored_substate_external_vault() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource = test_runner.create_recallable_token(account);
-    let vault_id = test_runner
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_recallable_token(account);
+    let vault_id = ledger
         .get_component_vaults(account, resource)
         .pop()
         .unwrap();
@@ -20,7 +20,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
 
     // Publish package
     let (code, package_def) = PackageLoader::get("reference");
-    let package_address = test_runner.publish_package_simple((code, package_def));
+    let package_address = ledger.publish_package_simple((code, package_def));
 
     // Instantiate component
     let component_address = {
@@ -29,7 +29,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -39,7 +39,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
     };
 
     // Call method
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(
@@ -62,10 +62,10 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
 #[test]
 fn test_add_direct_access_ref_to_heap_substate_external_vault() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource = test_runner.create_recallable_token(account);
-    let vault_id = test_runner
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_recallable_token(account);
+    let vault_id = ledger
         .get_component_vaults(account, resource)
         .pop()
         .unwrap();
@@ -73,7 +73,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
 
     // Publish package
     let (code, package_def) = PackageLoader::get("reference");
-    let package_address = test_runner.publish_package_simple((code, package_def));
+    let package_address = ledger.publish_package_simple((code, package_def));
 
     // Instantiate component
     let component_address = {
@@ -82,7 +82,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -92,7 +92,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
     };
 
     // Call method
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(
@@ -115,10 +115,10 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
 #[test]
 fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource = test_runner.create_recallable_token(account);
-    let vault_id = test_runner
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_recallable_token(account);
+    let vault_id = ledger
         .get_component_vaults(account, resource)
         .pop()
         .unwrap();
@@ -126,7 +126,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
 
     // Publish package
     let (code, package_def) = PackageLoader::get("reference");
-    let package_address = test_runner.publish_package_simple((code, package_def));
+    let package_address = ledger.publish_package_simple((code, package_def));
 
     // Instantiate component
     let component_address = {
@@ -135,7 +135,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -145,7 +145,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
     };
 
     // Call method
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(
@@ -168,13 +168,13 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
 #[test]
 fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource = test_runner.create_recallable_token(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_recallable_token(account);
 
     // Publish package
     let (code, package_def) = PackageLoader::get("reference");
-    let package_address = test_runner.publish_package_simple((code, package_def));
+    let package_address = ledger.publish_package_simple((code, package_def));
 
     // Instantiate component
     let component_address = {
@@ -190,7 +190,7 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
             )
             .build();
 
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -199,14 +199,14 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
         receipt.expect_commit(true).new_component_addresses()[0]
     };
 
-    let vault_id = test_runner
+    let vault_id = ledger
         .get_component_vaults(component_address, resource)
         .pop()
         .unwrap();
     println!("Recallable vault id: {:?}", vault_id);
 
     // Call function
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(
@@ -229,13 +229,13 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
 #[test]
 fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource = test_runner.create_recallable_token(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_recallable_token(account);
 
     // Publish package
     let (code, package_def) = PackageLoader::get("reference");
-    let package_address = test_runner.publish_package_simple((code, package_def));
+    let package_address = ledger.publish_package_simple((code, package_def));
 
     // Instantiate component
     let component_address = {
@@ -251,7 +251,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
             )
             .build();
 
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -260,14 +260,14 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
         receipt.expect_commit(true).new_component_addresses()[0]
     };
 
-    let vault_id = test_runner
+    let vault_id = ledger
         .get_component_vaults(component_address, resource)
         .pop()
         .unwrap();
     println!("Recallable vault id: {:?}", vault_id);
 
     // Call function
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(
@@ -290,13 +290,13 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
 #[test]
 fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource = test_runner.create_recallable_token(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_recallable_token(account);
 
     // Publish package
     let (code, package_def) = PackageLoader::get("reference");
-    let package_address = test_runner.publish_package_simple((code, package_def));
+    let package_address = ledger.publish_package_simple((code, package_def));
 
     // Instantiate component
     let component_address = {
@@ -312,7 +312,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
             )
             .build();
 
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -321,14 +321,14 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
         receipt.expect_commit(true).new_component_addresses()[0]
     };
 
-    let vault_id = test_runner
+    let vault_id = ledger
         .get_component_vaults(component_address, resource)
         .pop()
         .unwrap();
     println!("Recallable vault id: {:?}", vault_id);
 
     // Call function
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(
@@ -351,14 +351,14 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
 #[test]
 fn test_create_global_node_with_local_ref() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("reference"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
 
     // Call function
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
@@ -383,11 +383,11 @@ fn test_create_global_node_with_local_ref() {
 #[test]
 fn test_add_local_ref_to_stored_substate() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("reference"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
 
     // Instantiate component
     let component_address = {
@@ -396,7 +396,7 @@ fn test_add_local_ref_to_stored_substate() {
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -406,7 +406,7 @@ fn test_add_local_ref_to_stored_substate() {
     };
 
     // Call method
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(
@@ -430,17 +430,17 @@ fn test_add_local_ref_to_stored_substate() {
 #[test]
 fn test_internal_typed_reference() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource = test_runner.create_recallable_token(account);
-    let vault_id = test_runner
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_recallable_token(account);
+    let vault_id = ledger
         .get_component_vaults(account, resource)
         .pop()
         .unwrap();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("reference"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(

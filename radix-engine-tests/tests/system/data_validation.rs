@@ -8,14 +8,14 @@ use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
-fn setup_component(test_runner: &mut DefaultTestRunner) -> ComponentAddress {
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("data_validation"));
+fn setup_component(ledger: &mut DefaultLedgerSimulator) -> ComponentAddress {
+    let package_address = ledger.publish_package_simple(PackageLoader::get("data_validation"));
 
     let setup_manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "DataValidation", "new", manifest_args!())
         .build();
-    let setup_receipt = test_runner.execute_manifest(setup_manifest, vec![]);
+    let setup_receipt = ledger.execute_manifest(setup_manifest, vec![]);
     setup_receipt.expect_commit(true).new_component_addresses()[0]
 }
 
@@ -61,8 +61,8 @@ type ManifestConstructor = fn(
 #[test]
 fn valid_transactions_can_be_committed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let component_address = setup_component(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let component_address = setup_component(&mut ledger);
 
     // Act
     let manifest_with_default_handling = create_manifest_with_middle(
@@ -94,10 +94,10 @@ fn valid_transactions_can_be_committed() {
     );
 
     // Assert
-    test_runner
+    ledger
         .execute_manifest(manifest_with_default_handling, vec![])
         .expect_commit_success();
-    test_runner
+    ledger
         .execute_manifest(manifest_using_component, vec![])
         .expect_commit_success();
 }
@@ -105,8 +105,8 @@ fn valid_transactions_can_be_committed() {
 #[test]
 fn cannot_pass_bucket_for_proof_argument() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let component_address = setup_component(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let component_address = setup_component(&mut ledger);
 
     // Act
     let manifest = create_manifest_with_middle(
@@ -124,7 +124,7 @@ fn cannot_pass_bucket_for_proof_argument() {
     );
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let error_message = receipt
         .expect_commit_failure()
         .outcome
@@ -136,8 +136,8 @@ fn cannot_pass_bucket_for_proof_argument() {
 #[test]
 fn cannot_pass_proof_for_bucket_argument() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let component_address = setup_component(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let component_address = setup_component(&mut ledger);
 
     // Act
     let manifest = create_manifest_with_middle(
@@ -155,7 +155,7 @@ fn cannot_pass_proof_for_bucket_argument() {
     );
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let error_message = receipt
         .expect_commit_failure()
         .outcome
@@ -167,8 +167,8 @@ fn cannot_pass_proof_for_bucket_argument() {
 #[test]
 fn cannot_return_proof_for_bucket() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let component_address = setup_component(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let component_address = setup_component(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -181,7 +181,7 @@ fn cannot_return_proof_for_bucket() {
         .build();
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let error_message = receipt
         .expect_commit_failure()
         .outcome
@@ -193,8 +193,8 @@ fn cannot_return_proof_for_bucket() {
 #[test]
 fn cannot_return_bucket_for_proof() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let component_address = setup_component(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let component_address = setup_component(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -207,7 +207,7 @@ fn cannot_return_bucket_for_proof() {
         .build();
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let error_message = receipt
         .expect_commit_failure()
         .outcome
@@ -219,8 +219,8 @@ fn cannot_return_bucket_for_proof() {
 #[test]
 fn cannot_create_object_with_mismatching_data() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("data_validation"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("data_validation"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -234,7 +234,7 @@ fn cannot_create_object_with_mismatching_data() {
         .build();
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let error_message = receipt
         .expect_commit_failure()
         .outcome
@@ -246,8 +246,8 @@ fn cannot_create_object_with_mismatching_data() {
 #[test]
 fn cannot_update_substate_with_mismatching_data() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let component_address = setup_component(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let component_address = setup_component(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -260,7 +260,7 @@ fn cannot_update_substate_with_mismatching_data() {
         .build();
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let error_message = receipt
         .expect_commit_failure()
         .outcome
@@ -273,8 +273,8 @@ fn cannot_update_substate_with_mismatching_data() {
 #[test]
 fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let component_address = setup_component(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let component_address = setup_component(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -287,7 +287,7 @@ fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error
         .build();
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
@@ -301,8 +301,8 @@ fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error
 #[test]
 fn test_receive_reference_of_specific_blueprint() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let component_address = setup_component(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let component_address = setup_component(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -315,15 +315,15 @@ fn test_receive_reference_of_specific_blueprint() {
         .build();
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 }
 
 #[test]
 fn test_receive_reference_not_of_specific_blueprint() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let component_address = setup_component(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let component_address = setup_component(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -336,7 +336,7 @@ fn test_receive_reference_not_of_specific_blueprint() {
         .build();
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let error_message = receipt
         .expect_commit_failure()
         .outcome
@@ -348,8 +348,8 @@ fn test_receive_reference_not_of_specific_blueprint() {
 #[test]
 fn vec_of_u8_underflow_should_not_cause_panic() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("data_validation"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("data_validation"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -361,7 +361,7 @@ fn vec_of_u8_underflow_should_not_cause_panic() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::TypeCheckError(TypeCheckError::KeyValueStorePayloadValidationError(
                                                                   KeyOrValue::Value, e
