@@ -2,17 +2,17 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod execution_trace_test {
-    struct ExecutionTraceTest {
+    struct ExecutionTraceBp {
         vault: Vault,
     }
 
-    impl ExecutionTraceTest {
+    impl ExecutionTraceBp {
         pub fn transfer_resource_between_two_components(
             amount: u8,
         ) -> (
             ResourceAddress,
-            Global<ExecutionTraceTest>,
-            Global<ExecutionTraceTest>,
+            Global<ExecutionTraceBp>,
+            Global<ExecutionTraceBp>,
         ) {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
@@ -20,14 +20,14 @@ mod execution_trace_test {
 
             let resource_address = bucket.resource_address();
 
-            let source_component = ExecutionTraceTest {
+            let source_component = ExecutionTraceBp {
                 vault: Vault::with_bucket(bucket.into()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
             .globalize();
 
-            let target_component = ExecutionTraceTest {
+            let target_component = ExecutionTraceBp {
                 vault: Vault::new(resource_address),
             }
             .instantiate()
@@ -48,9 +48,9 @@ mod execution_trace_test {
             self.vault.put(b)
         }
 
-        pub fn create_and_fund_a_component(xrd: Vec<Bucket>) -> Global<ExecutionTraceTest> {
+        pub fn create_and_fund_a_component(xrd: Vec<Bucket>) -> Global<ExecutionTraceBp> {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
-            ExecutionTraceTest { vault }
+            ExecutionTraceBp { vault }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize()

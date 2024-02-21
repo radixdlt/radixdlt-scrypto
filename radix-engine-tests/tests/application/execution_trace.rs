@@ -19,7 +19,7 @@ fn test_trace_resource_transfers() {
         .lock_fee(account, 500)
         .call_function(
             package_address,
-            "ExecutionTraceTest",
+            "ExecutionTraceBp",
             "transfer_resource_between_two_components",
             manifest_args!(transfer_amount),
         )
@@ -137,7 +137,7 @@ fn test_trace_fee_payments() {
         .get_free_xrd_from_faucet()
         .call_function(
             package_address,
-            "ExecutionTraceTest",
+            "ExecutionTraceBp",
             "create_and_fund_a_component",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -199,7 +199,7 @@ fn test_instruction_traces() {
         .return_to_worktop("bucket")
         .call_function(
             package_address,
-            "ExecutionTraceTest",
+            "ExecutionTraceBp",
             "create_and_fund_a_component",
             manifest_args!(ManifestExpression::EntireWorktop),
         )

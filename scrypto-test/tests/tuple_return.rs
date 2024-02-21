@@ -1,5 +1,5 @@
 use scrypto_test::prelude::*;
-use tuple_return::test_bindings::*;
+use tuple_return::tuple_return_test::*;
 
 #[test]
 fn tuple_returns_work_with_scrypto_test() {
