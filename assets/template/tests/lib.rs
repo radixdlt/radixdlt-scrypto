@@ -1,7 +1,6 @@
-use scrypto::prelude::*;
 use scrypto_test::prelude::*;
 
-use ${wasm_name}::test_bindings::*;
+use ${wasm_name}::hello_test::*;
 
 #[test]
 fn test_hello() {

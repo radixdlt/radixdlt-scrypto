@@ -1028,6 +1028,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
 
+    let test_bindings_mod_ident = format_ident!("{}_test", module_ident);
+
     let output_test_bindings_fns = {
         let fns = generate_test_bindings_fns(&bp_name, bp_items)?;
 
@@ -1074,10 +1076,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #(#registered_type_impls)*
         }
 
-        // Only available when the blueprint is build with the test feature.
-        #[cfg(feature = "test")]
         #[automatically_derived]
-        pub mod test_bindings {
+        pub mod #test_bindings_mod_ident {
             #(#use_statements)*
 
             #output_test_bindings_state
@@ -2421,9 +2421,8 @@ mod tests {
                     }
                 }
 
-                #[cfg(feature = "test")]
                 #[automatically_derived]
-                pub mod test_bindings {
+                pub mod test_test {
                     use scrypto::prelude::*;
                     use super::*;
                     use scrypto::prelude::MethodAccessibility::*;

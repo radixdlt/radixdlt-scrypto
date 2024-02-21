@@ -86,3 +86,82 @@ pub mod ledger_simulator;
 pub mod prelude;
 pub mod sdk;
 pub mod utils;
+
+#[macro_export]
+macro_rules! this_package {
+    () => {
+        env!("CARGO_MANIFEST_DIR")
+    };
+}
+
+/// Includes the WASM file of a Scrypto package.
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The binary name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let wasm1 = include_code!("bin_name");
+///
+/// // Another package
+/// let wasm2 = include_code!("/path/to/package", "bin_name");
+/// ```
+#[macro_export]
+macro_rules! include_code {
+    ($bin_name: expr) => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".wasm"
+        ))
+    };
+    ($package_dir: expr, $bin_name: expr) => {
+        include_bytes!(concat!(
+            $package_dir,
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".wasm"
+        ))
+    };
+}
+
+/// Includes the schema file of a Scrypto package.
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The binary name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let schema1 = include_schema!("bin_name");
+///
+/// // Another package
+/// let schema2 = include_schema!("/path/to/package", "bin_name");
+/// ```
+#[macro_export]
+macro_rules! include_schema {
+    ($bin_name: expr) => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".rpd"
+        ))
+    };
+    ($package_dir: expr, $bin_name: expr) => {
+        include_bytes!(concat!(
+            $package_dir,
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".rpd"
+        ))
+    };
+}

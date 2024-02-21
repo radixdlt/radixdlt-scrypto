@@ -1,7 +1,6 @@
-use scrypto::prelude::*;
 use scrypto_test::prelude::*;
 
-use hello_world::test_bindings::*;
+use hello_world::hello_test::*;
 
 #[test]
 fn test_hello() {

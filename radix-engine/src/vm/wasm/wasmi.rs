@@ -2,7 +2,6 @@ use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
-use sbor::rust::num::NonZeroUsize;
 #[cfg(not(feature = "radix_engine_fuzzing"))]
 use sbor::rust::sync::Arc;
 use wasmi::core::Value;
@@ -1834,7 +1833,7 @@ impl WasmiEngine {
     pub fn new(options: WasmiEngineOptions) -> Self {
         #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
-            NonZeroUsize::new(options.max_cache_size).unwrap(),
+            sbor::rust::num::NonZeroUsize::new(options.max_cache_size).unwrap(),
         ));
         #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
