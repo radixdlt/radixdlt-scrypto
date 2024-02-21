@@ -2,6 +2,7 @@ use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
+use sbor::rust::num::NonZeroUsize;
 #[cfg(not(feature = "radix_engine_fuzzing"))]
 use sbor::rust::sync::Arc;
 use wasmi::core::Value;
