@@ -23,16 +23,12 @@ $scrypto test --path $test_pkg -- --nocapture
 # Logging
 $scrypto build --path ../examples/everything --log-level ERROR
 size1=$(ls -la ../examples/everything/target/wasm32-unknown-unknown/release/everything.wasm | cut -d ' ' -f 5)
-
 $scrypto build --path ../examples/everything --log-level WARN
 size2=$(ls -la ../examples/everything/target/wasm32-unknown-unknown/release/everything.wasm | cut -d ' ' -f 5)
-
 $scrypto build --path ../examples/everything --log-level INFO
 size3=$(ls -la ../examples/everything/target/wasm32-unknown-unknown/release/everything.wasm | cut -d ' ' -f 5)
-
 $scrypto build --path ../examples/everything --log-level DEBUG
 size4=$(ls -la ../examples/everything/target/wasm32-unknown-unknown/release/everything.wasm | cut -d ' ' -f 5)
-
 $scrypto build --path ../examples/everything --log-level TRACE
 size5=$(ls -la ../examples/everything/target/wasm32-unknown-unknown/release/everything.wasm | cut -d ' ' -f 5)
 
