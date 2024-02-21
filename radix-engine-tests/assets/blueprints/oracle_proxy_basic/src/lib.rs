@@ -2,17 +2,26 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod proxy {
+    enable_method_auth! {
+        methods {
+            set_component_address => restrict_to: [OWNER];
+            proxy_set_price => restrict_to: [OWNER];
+            proxy_get_oracle_info => PUBLIC;
+            proxy_get_price => PUBLIC;
+        }
+    }
+
     struct OracleProxy {
         component_address: Option<Global<AnyComponent>>,
     }
 
     impl OracleProxy {
-        pub fn instantiate_proxy() -> Global<OracleProxy> {
+        pub fn instantiate_proxy(owner_role: OwnerRole) -> Global<OracleProxy> {
             Self {
                 component_address: None,
             }
             .instantiate()
-            .prepare_to_globalize(OwnerRole::None)
+            .prepare_to_globalize(owner_role)
             .globalize()
         }
 
