@@ -283,7 +283,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         }
     }
 
-    pub fn with_custom_database<ND: TestDatabase>(self, database: ND) -> LedgerSimulatorBuilder<E, ND> {
+    pub fn with_custom_database<ND: TestDatabase>(
+        self,
+        database: ND,
+    ) -> LedgerSimulatorBuilder<E, ND> {
         LedgerSimulatorBuilder::<E, ND> {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,

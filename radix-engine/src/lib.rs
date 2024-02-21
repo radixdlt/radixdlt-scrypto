@@ -39,10 +39,6 @@ pub(crate) mod internal_prelude {
     pub use blueprint_schema_init::*;
     pub use radix_engine_common::prelude::*;
     pub use radix_engine_interface::prelude::*;
-    pub use sbor::rust::num::NonZeroU32;
-    pub use sbor::rust::num::NonZeroUsize;
     pub use sbor::rust::ops::AddAssign;
     pub use sbor::rust::ops::SubAssign;
-    #[cfg(feature = "std")]
-    pub use std::alloc;
 }

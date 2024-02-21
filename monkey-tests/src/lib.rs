@@ -367,13 +367,12 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         };
 
         let one_resource_pool = {
-            let one_pool_resource = ledger
-                .create_freely_mintable_and_burnable_fungible_resource(
-                    OwnerRole::None,
-                    None,
-                    fuzzer.next(0u8..=18u8),
-                    account,
-                );
+            let one_pool_resource = ledger.create_freely_mintable_and_burnable_fungible_resource(
+                OwnerRole::None,
+                None,
+                fuzzer.next(0u8..=18u8),
+                account,
+            );
 
             let (pool_address, pool_unit_resource_address) = ledger.create_one_resource_pool(
                 one_pool_resource,
