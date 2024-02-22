@@ -4,14 +4,14 @@ use scrypto::prelude::*;
 mod proxy {
     enable_method_auth! {
         methods {
-            set_component_address => restrict_to: [OWNER];
+            set_oracle_address => restrict_to: [OWNER];
             proxy_get_oracle_info => PUBLIC;
             proxy_get_price => PUBLIC;
         }
     }
 
     struct OracleProxy {
-        component_address: Option<Global<AnyComponent>>,
+        oracle_address: Option<Global<AnyComponent>>,
     }
 
     // This example assumes that:
@@ -20,7 +20,7 @@ mod proxy {
     impl OracleProxy {
         pub fn instantiate_proxy(owner_role: OwnerRole) -> Global<OracleProxy> {
             Self {
-                component_address: None,
+                oracle_address: None,
             }
             .instantiate()
             .prepare_to_globalize(owner_role)
@@ -28,13 +28,13 @@ mod proxy {
         }
 
         // Specify Oracle component address
-        pub fn set_component_address(&mut self, address: Global<AnyComponent>) {
-            info!("Set component_address to {:?}", address);
-            self.component_address = Some(address);
+        pub fn set_oracle_address(&mut self, address: Global<AnyComponent>) {
+            info!("Set oracle address to {:?}", address);
+            self.oracle_address = Some(address);
         }
 
         pub fn proxy_get_oracle_info(&self) -> String {
-            let oracle_address = self.component_address.unwrap();
+            let oracle_address = self.oracle_address.unwrap();
 
             let result = ScryptoVmV1Api::object_call(
                 oracle_address.address().as_node_id(),
@@ -50,7 +50,7 @@ mod proxy {
             base: ResourceAddress,
             quote: ResourceAddress,
         ) -> Option<Decimal> {
-            let oracle_address = self.component_address.unwrap();
+            let oracle_address = self.oracle_address.unwrap();
 
             let result = ScryptoVmV1Api::object_call(
                 oracle_address.address().as_node_id(),

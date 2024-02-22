@@ -43,7 +43,7 @@ fn oracle_configure<T>(
     test_runner: &mut DefaultTestRunner,
     proofs: T,
     resources: &IndexMap<String, ResourceAddress>,
-    oracle_component_address: ComponentAddress,
+    oracle_address: ComponentAddress,
 ) where
     T: IntoIterator<Item = NonFungibleGlobalId> + Clone,
 {
@@ -51,7 +51,7 @@ fn oracle_configure<T>(
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            oracle_component_address,
+            oracle_address,
             "set_price",
             manifest_args!(
                 resources.get("XRD").unwrap(),
@@ -60,7 +60,7 @@ fn oracle_configure<T>(
             ),
         )
         .call_method(
-            oracle_component_address,
+            oracle_address,
             "set_price",
             manifest_args!(
                 resources.get("XRD").unwrap(),
@@ -77,7 +77,7 @@ fn oracle_v3_configure<T>(
     test_runner: &mut DefaultTestRunner,
     proofs: T,
     resources: &IndexMap<String, ResourceAddress>,
-    oracle_component_address: ComponentAddress,
+    oracle_address: ComponentAddress,
 ) where
     T: IntoIterator<Item = NonFungibleGlobalId> + Clone,
 {
@@ -85,27 +85,27 @@ fn oracle_v3_configure<T>(
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            oracle_component_address,
+            oracle_address,
             "add_symbol",
             manifest_args!(resources.get("XRD").unwrap(), "XRD".to_string()),
         )
         .call_method(
-            oracle_component_address,
+            oracle_address,
             "add_symbol",
             manifest_args!(resources.get("USDT").unwrap(), "USDT".to_string()),
         )
         .call_method(
-            oracle_component_address,
+            oracle_address,
             "add_symbol",
             manifest_args!(resources.get("ETH").unwrap(), "ETH".to_string()),
         )
         .call_method(
-            oracle_component_address,
+            oracle_address,
             "set_price",
             manifest_args!("XRD".to_string(), "USDT".to_string(), dec!(20)),
         )
         .call_method(
-            oracle_component_address,
+            oracle_address,
             "set_price",
             manifest_args!("XRD".to_string(), "ETH".to_string(), dec!(30)),
         )
@@ -118,8 +118,8 @@ fn invoke_oracle_via_proxy_basic<T>(
     test_runner: &mut DefaultTestRunner,
     proofs: T,
     resources: &IndexMap<String, ResourceAddress>,
-    proxy_component_address: ComponentAddress,
-    oracle_component_address: ComponentAddress,
+    proxy_address: ComponentAddress,
+    oracle_address: ComponentAddress,
     info: &str,
 ) where
     T: IntoIterator<Item = NonFungibleGlobalId> + Clone,
@@ -128,26 +128,21 @@ fn invoke_oracle_via_proxy_basic<T>(
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            proxy_component_address,
-            "set_component_address",
-            manifest_args!(oracle_component_address),
+            proxy_address,
+            "set_oracle_address",
+            manifest_args!(oracle_address),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, proofs.clone());
     receipt.expect_commit_success();
 
-    oracle_configure(
-        test_runner,
-        proofs.clone(),
-        resources,
-        oracle_component_address,
-    );
+    oracle_configure(test_runner, proofs.clone(), resources, oracle_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            proxy_component_address,
+            proxy_address,
             "proxy_get_price",
             manifest_args!(
                 resources.get("XRD").unwrap(),
@@ -164,11 +159,7 @@ fn invoke_oracle_via_proxy_basic<T>(
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(
-            proxy_component_address,
-            "proxy_get_oracle_info",
-            manifest_args!(),
-        )
+        .call_method(proxy_address, "proxy_get_oracle_info", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let oracle_info: String = receipt.expect_commit_success().output(1);
@@ -181,8 +172,8 @@ fn invoke_oracle_via_generic_proxy<T>(
     test_runner: &mut DefaultTestRunner,
     proofs: T,
     resources: &IndexMap<String, ResourceAddress>,
-    proxy_component_address: ComponentAddress,
-    oracle_component_address: ComponentAddress,
+    proxy_address: ComponentAddress,
+    oracle_address: ComponentAddress,
     info: &str,
 ) where
     T: IntoIterator<Item = NonFungibleGlobalId> + Clone,
@@ -191,26 +182,21 @@ fn invoke_oracle_via_generic_proxy<T>(
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            proxy_component_address,
-            "set_component_address",
-            manifest_args!(oracle_component_address),
+            proxy_address,
+            "set_oracle_address",
+            manifest_args!(oracle_address),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, proofs.clone());
     receipt.expect_commit_success();
 
-    oracle_configure(
-        test_runner,
-        proofs.clone(),
-        resources,
-        oracle_component_address,
-    );
+    oracle_configure(test_runner, proofs.clone(), resources, oracle_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            proxy_component_address,
+            proxy_address,
             "proxy_call",
             manifest_args!(
                 "get_price",
@@ -232,7 +218,7 @@ fn invoke_oracle_via_generic_proxy<T>(
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            proxy_component_address,
+            proxy_address,
             "proxy_call",
             manifest_args!("get_oracle_info", to_manifest_value(&()).unwrap()),
         )
@@ -248,8 +234,8 @@ fn invoke_oracle_v3_via_generic_proxy<T>(
     test_runner: &mut DefaultTestRunner,
     proofs: T,
     resources: &IndexMap<String, ResourceAddress>,
-    proxy_component_address: ComponentAddress,
-    oracle_component_address: ComponentAddress,
+    proxy_address: ComponentAddress,
+    oracle_address: ComponentAddress,
     info: &str,
 ) where
     T: IntoIterator<Item = NonFungibleGlobalId> + Clone,
@@ -258,26 +244,21 @@ fn invoke_oracle_v3_via_generic_proxy<T>(
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            proxy_component_address,
-            "set_component_address",
-            manifest_args!(oracle_component_address),
+            proxy_address,
+            "set_oracle_address",
+            manifest_args!(oracle_address),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, proofs.clone());
     receipt.expect_commit_success();
 
-    oracle_v3_configure(
-        test_runner,
-        proofs.clone(),
-        resources,
-        oracle_component_address,
-    );
+    oracle_v3_configure(test_runner, proofs.clone(), resources, oracle_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            proxy_component_address,
+            proxy_address,
             "proxy_call",
             manifest_args!(
                 "get_address",
@@ -303,7 +284,7 @@ fn invoke_oracle_v3_via_generic_proxy<T>(
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            proxy_component_address,
+            proxy_address,
             "proxy_call",
             manifest_args!(
                 "get_price",
@@ -321,7 +302,7 @@ fn invoke_oracle_v3_via_generic_proxy<T>(
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            proxy_component_address,
+            proxy_address,
             "proxy_call",
             manifest_args!("get_oracle_info", to_manifest_value(&()).unwrap()),
         )
@@ -345,7 +326,7 @@ fn test_proxy_basic() {
     let owner_role = OwnerRole::Fixed(rule);
 
     // Publish and instantiate Oracle Proxy
-    let proxy_component_address = initialize_package(
+    let proxy_address = initialize_package(
         &mut test_runner,
         Some(owner_role.clone()),
         "oracle_proxy_basic",
@@ -354,7 +335,7 @@ fn test_proxy_basic() {
     );
 
     // Publish and instantiate Oracle v1
-    let oracle_v1_component_address = initialize_package(
+    let oracle_v1_address = initialize_package(
         &mut test_runner,
         Some(owner_role.clone()),
         "oracle_v1",
@@ -367,13 +348,13 @@ fn test_proxy_basic() {
         &mut test_runner,
         vec![owner_badge.clone()],
         &resources,
-        proxy_component_address,
-        oracle_v1_component_address,
+        proxy_address,
+        oracle_v1_address,
         "Oracle v1",
     );
 
     // Publish and instantiate Oracle v2
-    let oracle_v2_component_address = initialize_package(
+    let oracle_v2_address = initialize_package(
         &mut test_runner,
         Some(owner_role),
         "oracle_v2",
@@ -386,8 +367,8 @@ fn test_proxy_basic() {
         &mut test_runner,
         vec![owner_badge.clone()],
         &resources,
-        proxy_component_address,
-        oracle_v2_component_address,
+        proxy_address,
+        oracle_v2_address,
         "Oracle v2",
     );
 }
@@ -404,7 +385,7 @@ fn test_proxy_generic() {
     let owner_role = OwnerRole::Fixed(rule);
 
     // Publish and instantiate Oracle Proxy
-    let proxy_component_address = initialize_package(
+    let proxy_address = initialize_package(
         &mut test_runner,
         Some(owner_role.clone()),
         "generic_proxy",
@@ -413,7 +394,7 @@ fn test_proxy_generic() {
     );
 
     // Publish and instantiate Oracle v1
-    let oracle_v1_component_address = initialize_package(
+    let oracle_v1_address = initialize_package(
         &mut test_runner,
         Some(owner_role.clone()),
         "oracle_v1",
@@ -426,13 +407,13 @@ fn test_proxy_generic() {
         &mut test_runner,
         vec![owner_badge.clone()],
         &resources,
-        proxy_component_address,
-        oracle_v1_component_address,
+        proxy_address,
+        oracle_v1_address,
         "Oracle v1",
     );
 
     // Publish and instantiate Oracle v2
-    let oracle_v2_component_address = initialize_package(
+    let oracle_v2_address = initialize_package(
         &mut test_runner,
         Some(owner_role.clone()),
         "oracle_v2",
@@ -445,13 +426,13 @@ fn test_proxy_generic() {
         &mut test_runner,
         vec![owner_badge.clone()],
         &resources,
-        proxy_component_address,
-        oracle_v2_component_address,
+        proxy_address,
+        oracle_v2_address,
         "Oracle v2",
     );
 
     // Publish and instantiate Oracle v3
-    let oracle_v3_component_address = initialize_package(
+    let oracle_v3_address = initialize_package(
         &mut test_runner,
         Some(owner_role.clone()),
         "oracle_v3",
@@ -465,8 +446,8 @@ fn test_proxy_generic() {
         &mut test_runner,
         vec![owner_badge.clone()],
         &resources,
-        proxy_component_address,
-        oracle_v3_component_address,
+        proxy_address,
+        oracle_v3_address,
         "Oracle v3",
     );
 }

@@ -10,7 +10,7 @@ mod proxy {
     }
 
     struct GenericProxy {
-        component_address: Option<Global<AnyComponent>>,
+        oracle_address: Option<Global<AnyComponent>>,
     }
 
     // This example assumes that:
@@ -19,7 +19,7 @@ mod proxy {
     impl GenericProxy {
         pub fn instantiate_proxy(owner_role: OwnerRole) -> Global<GenericProxy> {
             Self {
-                component_address: None,
+                oracle_address: None,
             }
             .instantiate()
             .prepare_to_globalize(owner_role)
@@ -27,9 +27,9 @@ mod proxy {
         }
 
         // Specify Oracle component address
-        pub fn set_component_address(&mut self, address: Global<AnyComponent>) {
-            info!("Set component_address to {:?}", address);
-            self.component_address = Some(address);
+        pub fn set_oracle_address(&mut self, address: Global<AnyComponent>) {
+            info!("Set oracle address to {:?}", address);
+            self.oracle_address = Some(address);
         }
 
         // This method allows to call any method from configured component by method name.
@@ -57,7 +57,7 @@ mod proxy {
         //     .build();
         //  ```
         pub fn proxy_call(&self, method_name: String, args: ScryptoValue) -> ScryptoValue {
-            let oracle_address = self.component_address.unwrap();
+            let oracle_address = self.oracle_address.unwrap();
             let args = scrypto_encode(&args).unwrap();
 
             let bytes = ScryptoVmV1Api::object_call(
