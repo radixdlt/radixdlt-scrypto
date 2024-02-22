@@ -3,14 +3,14 @@ use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
 fn initialize_package(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     owner_badge: NonFungibleGlobalId,
     manager_badge: NonFungibleGlobalId,
     package_name: &str,
     blueprint_name: &str,
     function_name: &str,
 ) -> ComponentAddress {
-    let package_address = test_runner.publish_package_simple(PackageLoader::get(package_name));
+    let package_address = ledger.publish_package_simple(PackageLoader::get(package_name));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -21,26 +21,26 @@ fn initialize_package(
             manifest_args!(owner_badge, manager_badge),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let my_component = receipt.expect_commit(true).new_component_addresses()[0];
     my_component
 }
 
-fn create_some_resources(test_runner: &mut DefaultTestRunner) -> IndexMap<String, ResourceAddress> {
-    let (_public_key, _, account_address) = test_runner.new_account(false);
+fn create_some_resources(ledger: &mut DefaultLedgerSimulator) -> IndexMap<String, ResourceAddress> {
+    let (_public_key, _, account_address) = ledger.new_account(false);
     let mut resources = indexmap!();
 
     for symbol in ["XRD", "USDT", "ETH"] {
         resources.insert(
             symbol.to_string(),
-            test_runner.create_fungible_resource(dec!(20000), 18, account_address),
+            ledger.create_fungible_resource(dec!(20000), 18, account_address),
         );
     }
     resources
 }
 
 fn oracle_configure_as_global(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     proxy_manager_badge: NonFungibleGlobalId,
     oracle_manager_badge: NonFungibleGlobalId,
     resources: &IndexMap<String, ResourceAddress>,
@@ -56,7 +56,7 @@ fn oracle_configure_as_global(
             manifest_args!(oracle_address),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![proxy_manager_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![proxy_manager_badge]);
     receipt.expect_commit_success();
 
     // "set_price" is a protected method, need to be called directly on the Oracle component
@@ -81,12 +81,12 @@ fn oracle_configure_as_global(
             ),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![oracle_manager_badge.clone()]);
+    let receipt = ledger.execute_manifest(manifest, vec![oracle_manager_badge.clone()]);
     receipt.expect_commit_success();
 }
 
 fn oracle_configure_as_owned(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     proxy_manager_badge: NonFungibleGlobalId,
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
@@ -119,12 +119,12 @@ fn oracle_configure_as_owned(
             ),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![proxy_manager_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![proxy_manager_badge]);
     receipt.expect_commit_success();
 }
 
 fn oracle_v3_configure_as_global(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     proxy_manager_badge: NonFungibleGlobalId,
     oracle_manager_badge: NonFungibleGlobalId,
     resources: &IndexMap<String, ResourceAddress>,
@@ -140,7 +140,7 @@ fn oracle_v3_configure_as_global(
             manifest_args!(oracle_address),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![proxy_manager_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![proxy_manager_badge]);
     receipt.expect_commit_success();
 
     // "set_price" and "add_symbol" are protected methods, need to be called directly on the Oracle component
@@ -172,12 +172,12 @@ fn oracle_v3_configure_as_global(
             manifest_args!("XRD".to_string(), "ETH".to_string(), dec!(30)),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![oracle_manager_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![oracle_manager_badge]);
     receipt.expect_commit_success();
 }
 
 fn invoke_oracle_via_proxy_basic(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
     info: &str,
@@ -194,7 +194,7 @@ fn invoke_oracle_via_proxy_basic(
             ),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let price: Option<Decimal> = receipt.expect_commit_success().output(1);
 
     // Assert
@@ -205,7 +205,7 @@ fn invoke_oracle_via_proxy_basic(
         .lock_fee_from_faucet()
         .call_method(proxy_address, "proxy_get_oracle_info", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let oracle_info: String = receipt.expect_commit_success().output(1);
 
     // Assert
@@ -213,7 +213,7 @@ fn invoke_oracle_via_proxy_basic(
 }
 
 fn invoke_oracle_via_generic_proxy(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
     info: &str,
@@ -234,7 +234,7 @@ fn invoke_oracle_via_generic_proxy(
             ),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let price: Option<Decimal> = receipt.expect_commit_success().output(1);
 
     // Assert
@@ -249,7 +249,7 @@ fn invoke_oracle_via_generic_proxy(
             manifest_args!("get_oracle_info", to_manifest_value(&()).unwrap()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let oracle_info: String = receipt.expect_commit_success().output(1);
 
     // Assert
@@ -257,7 +257,7 @@ fn invoke_oracle_via_generic_proxy(
 }
 
 fn invoke_oracle_v3_via_generic_proxy(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
     info: &str,
@@ -279,7 +279,7 @@ fn invoke_oracle_v3_via_generic_proxy(
             ),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let eth_resource_address: Option<ResourceAddress> = receipt.expect_commit_success().output(1);
 
     // Assert
@@ -300,7 +300,7 @@ fn invoke_oracle_v3_via_generic_proxy(
             ),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let price: Option<Decimal> = receipt.expect_commit_success().output(1);
 
     // Assert
@@ -315,7 +315,7 @@ fn invoke_oracle_v3_via_generic_proxy(
             manifest_args!("get_oracle_info", to_manifest_value(&()).unwrap()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let oracle_info: String = receipt.expect_commit_success().output(1);
 
     // Assert
@@ -325,16 +325,16 @@ fn invoke_oracle_v3_via_generic_proxy(
 #[test]
 fn test_proxy_basic_oracle_as_global() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let resources = create_some_resources(&mut test_runner);
-    let (public_key, _, _account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let resources = create_some_resources(&mut ledger);
+    let (public_key, _, _account) = ledger.new_account(false);
     let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let oracle_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Publish and instantiate Oracle Proxy
     let proxy_address = initialize_package(
-        &mut test_runner,
+        &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
         "oracle_proxy_basic",
@@ -344,7 +344,7 @@ fn test_proxy_basic_oracle_as_global() {
 
     // Publish and instantiate Oracle v1
     let oracle_v1_address = initialize_package(
-        &mut test_runner,
+        &mut ledger,
         owner_badge.clone(),
         oracle_manager_badge.clone(),
         "oracle_v1",
@@ -353,7 +353,7 @@ fn test_proxy_basic_oracle_as_global() {
     );
 
     oracle_configure_as_global(
-        &mut test_runner,
+        &mut ledger,
         proxy_manager_badge.clone(),
         oracle_manager_badge.clone(),
         &resources,
@@ -362,11 +362,11 @@ fn test_proxy_basic_oracle_as_global() {
     );
 
     // Perform some operations on Oracle v1
-    invoke_oracle_via_proxy_basic(&mut test_runner, &resources, proxy_address, "Oracle v1");
+    invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v1");
 
     // Publish and instantiate Oracle v2
     let oracle_v2_address = initialize_package(
-        &mut test_runner,
+        &mut ledger,
         owner_badge,
         oracle_manager_badge.clone(),
         "oracle_v2",
@@ -375,7 +375,7 @@ fn test_proxy_basic_oracle_as_global() {
     );
 
     oracle_configure_as_global(
-        &mut test_runner,
+        &mut ledger,
         proxy_manager_badge,
         oracle_manager_badge,
         &resources,
@@ -383,22 +383,22 @@ fn test_proxy_basic_oracle_as_global() {
         oracle_v2_address,
     );
     // Perform some operations on Oracle v2
-    invoke_oracle_via_proxy_basic(&mut test_runner, &resources, proxy_address, "Oracle v2");
+    invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v2");
 }
 
 #[test]
 fn test_proxy_generic_oracle_as_global() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let resources = create_some_resources(&mut test_runner);
-    let (public_key, _, _account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let resources = create_some_resources(&mut ledger);
+    let (public_key, _, _account) = ledger.new_account(false);
     let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let oracle_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Publish and instantiate Oracle Proxy
     let proxy_address = initialize_package(
-        &mut test_runner,
+        &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
         "generic_proxy",
@@ -408,7 +408,7 @@ fn test_proxy_generic_oracle_as_global() {
 
     // Publish and instantiate Oracle v1
     let oracle_v1_address = initialize_package(
-        &mut test_runner,
+        &mut ledger,
         owner_badge.clone(),
         oracle_manager_badge.clone(),
         "oracle_v1",
@@ -417,7 +417,7 @@ fn test_proxy_generic_oracle_as_global() {
     );
 
     oracle_configure_as_global(
-        &mut test_runner,
+        &mut ledger,
         proxy_manager_badge.clone(),
         oracle_manager_badge.clone(),
         &resources,
@@ -426,11 +426,11 @@ fn test_proxy_generic_oracle_as_global() {
     );
 
     // Perform some operations on Oracle v1
-    invoke_oracle_via_generic_proxy(&mut test_runner, &resources, proxy_address, "Oracle v1");
+    invoke_oracle_via_generic_proxy(&mut ledger, &resources, proxy_address, "Oracle v1");
 
     // Publish and instantiate Oracle v2
     let oracle_v2_address = initialize_package(
-        &mut test_runner,
+        &mut ledger,
         owner_badge.clone(),
         oracle_manager_badge.clone(),
         "oracle_v2",
@@ -439,7 +439,7 @@ fn test_proxy_generic_oracle_as_global() {
     );
 
     oracle_configure_as_global(
-        &mut test_runner,
+        &mut ledger,
         proxy_manager_badge.clone(),
         oracle_manager_badge.clone(),
         &resources,
@@ -448,11 +448,11 @@ fn test_proxy_generic_oracle_as_global() {
     );
 
     // Perform some operations on Oracle v2
-    invoke_oracle_via_generic_proxy(&mut test_runner, &resources, proxy_address, "Oracle v2");
+    invoke_oracle_via_generic_proxy(&mut ledger, &resources, proxy_address, "Oracle v2");
 
     // Publish and instantiate Oracle v3
     let oracle_v3_address = initialize_package(
-        &mut test_runner,
+        &mut ledger,
         owner_badge,
         oracle_manager_badge.clone(),
         "oracle_v3",
@@ -461,7 +461,7 @@ fn test_proxy_generic_oracle_as_global() {
     );
 
     oracle_v3_configure_as_global(
-        &mut test_runner,
+        &mut ledger,
         proxy_manager_badge,
         oracle_manager_badge,
         &resources,
@@ -471,21 +471,21 @@ fn test_proxy_generic_oracle_as_global() {
 
     // Perform some operations on Oracle v3
     // Note that Oracle v3 has different API than v1 and v2
-    invoke_oracle_v3_via_generic_proxy(&mut test_runner, &resources, proxy_address, "Oracle v3");
+    invoke_oracle_v3_via_generic_proxy(&mut ledger, &resources, proxy_address, "Oracle v3");
 }
 
 #[test]
 fn test_proxy_basic_oracle_as_owned() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let resources = create_some_resources(&mut test_runner);
-    let (public_key, _, _account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let resources = create_some_resources(&mut ledger);
+    let (public_key, _, _account) = ledger.new_account(false);
     let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
     // Publish and instantiate Oracle Proxy
     let proxy_address = initialize_package(
-        &mut test_runner,
+        &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
         "oracle_proxy_basic",
@@ -493,11 +493,10 @@ fn test_proxy_basic_oracle_as_owned() {
         "instantiate_proxy",
     );
 
-    let oracle_v1_package_address =
-        test_runner.publish_package_simple(PackageLoader::get("oracle_v1"));
+    let oracle_v1_package_address = ledger.publish_package_simple(PackageLoader::get("oracle_v1"));
 
     oracle_configure_as_owned(
-        &mut test_runner,
+        &mut ledger,
         proxy_manager_badge.clone(),
         &resources,
         proxy_address,
@@ -505,13 +504,12 @@ fn test_proxy_basic_oracle_as_owned() {
     );
 
     // Perform some operations on Oracle v1
-    invoke_oracle_via_proxy_basic(&mut test_runner, &resources, proxy_address, "Oracle v1");
+    invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v1");
 
-    let oracle_v2_package_address =
-        test_runner.publish_package_simple(PackageLoader::get("oracle_v2"));
+    let oracle_v2_package_address = ledger.publish_package_simple(PackageLoader::get("oracle_v2"));
 
     oracle_configure_as_owned(
-        &mut test_runner,
+        &mut ledger,
         proxy_manager_badge.clone(),
         &resources,
         proxy_address,
@@ -519,5 +517,5 @@ fn test_proxy_basic_oracle_as_owned() {
     );
 
     // Perform some operations on Oracle v2
-    invoke_oracle_via_proxy_basic(&mut test_runner, &resources, proxy_address, "Oracle v2");
+    invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v2");
 }
