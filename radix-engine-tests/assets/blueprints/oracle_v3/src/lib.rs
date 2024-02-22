@@ -3,9 +3,12 @@ use scrypto::prelude::*;
 #[blueprint]
 mod oracle {
     enable_method_auth! {
+        roles {
+            oracle_manager_auth => updatable_by: [];
+        },
         methods {
-            set_price => restrict_to: [OWNER];
-            add_symbol => restrict_to: [OWNER];
+            set_price => restrict_to: [oracle_manager_auth, OWNER];
+            add_symbol => restrict_to: [oracle_manager_auth, OWNER];
             get_oracle_info => PUBLIC;
             get_price => PUBLIC;
             get_address => PUBLIC;
@@ -30,9 +33,18 @@ mod oracle {
             .instantiate()
         }
 
-        pub fn instantiate_global(owner_role: OwnerRole) -> Global<Oracle> {
+        pub fn instantiate_global(
+            owner_badge: NonFungibleGlobalId,
+            manager_badge: NonFungibleGlobalId,
+        ) -> Global<Oracle> {
+            let owner_role = OwnerRole::Fixed(rule!(require(owner_badge)));
+            let manager_rule = rule!(require(manager_badge));
+
             Self::instantiate_owned()
                 .prepare_to_globalize(owner_role)
+                .roles(roles! {
+                    oracle_manager_auth => manager_rule;
+                })
                 .globalize()
         }
 

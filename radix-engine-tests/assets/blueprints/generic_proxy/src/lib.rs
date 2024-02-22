@@ -3,8 +3,11 @@ use scrypto::prelude::*;
 #[blueprint]
 mod proxy {
     enable_method_auth! {
+        roles {
+            proxy_manager_auth => updatable_by: [];
+        },
         methods {
-            set_oracle_address => restrict_to: [OWNER];
+            set_oracle_address => restrict_to: [proxy_manager_auth, OWNER];
             proxy_call => PUBLIC;
         }
     }
@@ -17,12 +20,21 @@ mod proxy {
     // - called component are instantiated as global component
     // - called methods of the component are not protected
     impl GenericProxy {
-        pub fn instantiate_proxy(owner_role: OwnerRole) -> Global<GenericProxy> {
+        pub fn instantiate_proxy(
+            owner_badge: NonFungibleGlobalId,
+            manager_badge: NonFungibleGlobalId,
+        ) -> Global<GenericProxy> {
+            let owner_role = OwnerRole::Fixed(rule!(require(owner_badge)));
+            let manager_rule = rule!(require(manager_badge));
+
             Self {
                 oracle_address: None,
             }
             .instantiate()
             .prepare_to_globalize(owner_role)
+            .roles(roles! {
+                proxy_manager_auth => manager_rule;
+            })
             .globalize()
         }
 
