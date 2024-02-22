@@ -1,11 +1,11 @@
 use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::hash_tree::jellyfish::JellyfishMerkleTree;
-use crate::hash_tree::put_at_next_version;
 use crate::hash_tree::tree_store::{
     SerializedInMemoryTreeStore, StaleTreePart, TreeChildEntry, TreeInternalNode, TreeLeafNode,
     TreeNode, TreeStore, TypedInMemoryTreeStore,
 };
 use crate::hash_tree::types::{LeafKey, NodeKey};
+use crate::hash_tree::{put_at_next_version, NestedTreeStore};
 use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -472,7 +472,8 @@ pub enum Tier {
     Substate,
 }
 
-const TIER_SEP: u8 = b'_';
+// Note: in some tests, we assert on the low-level DB key encoding, so we need this detail
+const TIER_SEP: u8 = NestedTreeStore::<()>::TIER_SEPARATOR;
 
 pub struct HashTreeTester<S> {
     pub tree_store: S,

@@ -148,7 +148,7 @@ fn apply_node_database_updates<S: TreeStore>(
 ) -> Option<Hash> {
     let partition_root_version =
         get_lower_tier_root_version(node_tier_store, node_root_version, node_key);
-    let mut partition_tier_store = NestedTreeStore::new(node_tier_store, node_key.clone());
+    let partition_tier_store = NestedTreeStore::new(node_tier_store, node_key.clone());
     let partition_hash_changes = node_database_updates
         .partition_updates
         .iter()
@@ -156,7 +156,7 @@ fn apply_node_database_updates<S: TreeStore>(
             |(partition_num, partition_database_updates)| LeafHashChange {
                 key_bytes: vec![*partition_num],
                 hash_change: apply_partition_database_updates(
-                    &mut partition_tier_store,
+                    &partition_tier_store,
                     partition_root_version,
                     partition_num,
                     partition_database_updates,
@@ -166,7 +166,7 @@ fn apply_node_database_updates<S: TreeStore>(
         )
         .collect::<Vec<_>>();
     put_leaf_hash_changes(
-        &mut partition_tier_store,
+        &partition_tier_store,
         partition_root_version,
         next_version,
         partition_hash_changes,
@@ -183,10 +183,10 @@ fn apply_partition_database_updates<S: TreeStore>(
     let partition_key = vec![*partition_num];
     let substate_root_version =
         get_lower_tier_root_version(partition_tier_store, partition_root_version, &partition_key);
-    let mut substate_tier_store = NestedTreeStore::new(partition_tier_store, partition_key);
+    let substate_tier_store = NestedTreeStore::new(partition_tier_store, partition_key);
     match partition_database_updates {
         PartitionDatabaseUpdates::Delta { substate_updates } => put_leaf_hash_changes(
-            &mut substate_tier_store,
+            &substate_tier_store,
             substate_root_version,
             next_version,
             substate_updates
@@ -203,7 +203,7 @@ fn apply_partition_database_updates<S: TreeStore>(
                 ));
             }
             put_leaf_hash_changes(
-                &mut substate_tier_store,
+                &substate_tier_store,
                 None,
                 next_version,
                 new_substate_values
@@ -316,7 +316,7 @@ fn put_leaf_changes<S: TreeStore>(
     root_hash
 }
 
-struct NestedTreeStore<'s, S> {
+pub struct NestedTreeStore<'s, S> {
     underlying: &'s S,
     key_prefix_bytes: Vec<u8>,
 }
