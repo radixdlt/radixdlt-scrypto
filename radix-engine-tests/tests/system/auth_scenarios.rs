@@ -25,12 +25,12 @@ pub struct AuthScenariosEnv {
 
 impl AuthScenariosEnv {
     fn init(
-        test_runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+        ledger: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     ) -> AuthScenariosEnv {
-        let (pub_key, _, acco) = test_runner.new_account(false);
+        let (pub_key, _, acco) = ledger.new_account(false);
         let virtua_sig = NonFungibleGlobalId::from_public_key(&pub_key);
 
-        let cerb_badge_resource = test_runner.create_non_fungible_resource_advanced(
+        let cerb_badge_resource = ledger.create_non_fungible_resource_advanced(
             NonFungibleResourceRoles::default(),
             acco,
             1,
@@ -38,7 +38,7 @@ impl AuthScenariosEnv {
         let cerb_badge =
             NonFungibleGlobalId::new(cerb_badge_resource, NonFungibleLocalId::integer(1u64));
 
-        let cerb = test_runner.create_non_fungible_resource_with_roles(
+        let cerb = ledger.create_non_fungible_resource_with_roles(
             NonFungibleResourceRoles {
                 burn_roles: burn_roles! {
                     burner => rule!(require(cerb_badge.clone()));
@@ -64,7 +64,7 @@ impl AuthScenariosEnv {
             },
             acco,
         );
-        test_runner.execute_manifest(
+        ledger.execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .call_role_assignment_method(
@@ -81,14 +81,14 @@ impl AuthScenariosEnv {
         );
 
         let package_address =
-            test_runner.publish_package_simple(PackageLoader::get("auth_scenarios"));
+            ledger.publish_package_simple(PackageLoader::get("auth_scenarios"));
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(package_address, "Swappy", "create", manifest_args!(cerb))
             .deposit_batch(acco)
             .build();
-        let receipt = test_runner.execute_manifest(manifest, vec![virtua_sig.clone()]);
+        let receipt = ledger.execute_manifest(manifest, vec![virtua_sig.clone()]);
         let result = receipt.expect_commit_success();
         let swappy = result.new_component_addresses()[0];
         let swappy_resource = result.new_resource_addresses()[0];
@@ -105,10 +105,10 @@ impl AuthScenariosEnv {
             )
             .deposit_batch(acco)
             .build();
-        let receipt = test_runner.execute_manifest(manifest, vec![virtua_sig.clone()]);
+        let receipt = ledger.execute_manifest(manifest, vec![virtua_sig.clone()]);
         let result = receipt.expect_commit_success();
         let big_fi = result.new_component_addresses()[0];
-        let vault_id = test_runner.get_component_vaults(big_fi, cerb)[0];
+        let vault_id = ledger.get_component_vaults(big_fi, cerb)[0];
 
         AuthScenariosEnv {
             acco,
@@ -127,8 +127,8 @@ impl AuthScenariosEnv {
 #[test]
 fn scenario_1() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -136,7 +136,7 @@ fn scenario_1() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
         .call_method(env.swappy, "protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -144,8 +144,8 @@ fn scenario_1() {
 
 #[test]
 fn scenario_1_with_injected_costing_error() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     let mut inject_err_after_count = 1u64;
 
@@ -155,7 +155,7 @@ fn scenario_1_with_injected_costing_error() {
             .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
             .call_method(env.swappy, "protected_method", manifest_args!())
             .build();
-        let receipt = test_runner
+        let receipt = ledger
             .execute_manifest_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
                 manifest,
                 vec![env.virtua_sig.clone()],
@@ -174,8 +174,8 @@ fn scenario_1_with_injected_costing_error() {
 #[test]
 fn scenario_2() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -183,7 +183,7 @@ fn scenario_2() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge)
         .call_method(env.big_fi, "call_swappy", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -199,8 +199,8 @@ fn scenario_2() {
 #[test]
 fn scenario_3() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -212,7 +212,7 @@ fn scenario_3() {
             builder.call_method(env.big_fi, "deposit_cerb", manifest_args!(bucket))
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -221,8 +221,8 @@ fn scenario_3() {
 #[test]
 fn scenario_4() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -238,7 +238,7 @@ fn scenario_4() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -247,8 +247,8 @@ fn scenario_4() {
 #[test]
 fn scenario_5() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -257,7 +257,7 @@ fn scenario_5() {
         .call_method(env.big_fi, "mint_cerb", manifest_args!())
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -273,8 +273,8 @@ fn scenario_5() {
 #[test]
 fn scenario_6() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -283,7 +283,7 @@ fn scenario_6() {
         .pop_from_auth_zone("Arnold")
         .call_method(env.swappy, "protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -299,8 +299,8 @@ fn scenario_6() {
 #[test]
 fn scenario_7() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -312,7 +312,7 @@ fn scenario_7() {
             builder.call_method(env.swappy, "public_method", manifest_args!(proof))
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -326,8 +326,8 @@ fn scenario_7() {
 #[test]
 fn scenario_8() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -339,7 +339,7 @@ fn scenario_8() {
             builder.call_method(env.swappy, "put_proof_in_auth_zone", manifest_args!(proof))
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -353,8 +353,8 @@ fn scenario_8() {
 #[test]
 fn scenario_9() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -363,7 +363,7 @@ fn scenario_9() {
         .create_proof_from_auth_zone_of_all(env.swappy_badge.resource_address(), "Bennet")
         .call_method(env.swappy, "protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -372,8 +372,8 @@ fn scenario_9() {
 #[test]
 fn scenario_10() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -382,7 +382,7 @@ fn scenario_10() {
         .call_method(env.big_fi, "recall_cerb", manifest_args!(env.cerb_vault))
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -398,8 +398,8 @@ fn scenario_10() {
 #[test]
 fn scenario_11() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -414,7 +414,7 @@ fn scenario_11() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -423,8 +423,8 @@ fn scenario_11() {
 #[test]
 fn scenario_12() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -432,7 +432,7 @@ fn scenario_12() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.big_fi, "set_swappy_metadata", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -448,8 +448,8 @@ fn scenario_12() {
 #[test]
 fn scenario_13() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -457,7 +457,7 @@ fn scenario_13() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.swappy, "set_metadata", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -473,8 +473,8 @@ fn scenario_13() {
 #[test]
 fn scenario_14() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -484,7 +484,7 @@ fn scenario_14() {
         .call_function(env.package, "BigFi", "some_function", manifest_args!())
         .call_method(env.swappy, "protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -493,8 +493,8 @@ fn scenario_14() {
 #[test]
 fn scenario_15() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -506,7 +506,7 @@ fn scenario_15() {
         })
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -515,8 +515,8 @@ fn scenario_15() {
 #[test]
 fn scenario_16() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -524,7 +524,7 @@ fn scenario_16() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.swappy, "another_protected_method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -533,8 +533,8 @@ fn scenario_16() {
 #[test]
 fn scenario_17() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -542,7 +542,7 @@ fn scenario_17() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.swappy, "another_protected_method2", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -558,8 +558,8 @@ fn scenario_17() {
 #[test]
 fn scenario_18() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -575,7 +575,7 @@ fn scenario_18() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -584,8 +584,8 @@ fn scenario_18() {
 #[test]
 fn scenario_19() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -593,7 +593,7 @@ fn scenario_19() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.big_fi, "update_swappy_metadata_rule", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -609,8 +609,8 @@ fn scenario_19() {
 #[test]
 fn scenario_20() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -618,7 +618,7 @@ fn scenario_20() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.swappy, "update_metadata_rule", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -634,8 +634,8 @@ fn scenario_20() {
 #[test]
 fn scenario_21() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -651,7 +651,7 @@ fn scenario_21() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -660,8 +660,8 @@ fn scenario_21() {
 #[test]
 fn scenario_22() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -669,7 +669,7 @@ fn scenario_22() {
         .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
         .call_method(env.big_fi, "update_cerb_rule", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -685,8 +685,8 @@ fn scenario_22() {
 #[test]
 fn scenario_23() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -699,7 +699,7 @@ fn scenario_23() {
             manifest_args!(env.swappy),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -715,8 +715,8 @@ fn scenario_23() {
 #[test]
 fn scenario_24() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -724,7 +724,7 @@ fn scenario_24() {
         .create_proof_from_account_of_amount(env.acco, XRD, 1)
         .call_method(env.big_fi, "call_swappy_function", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -740,8 +740,8 @@ fn scenario_24() {
 #[test]
 fn scenario_25() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -753,7 +753,7 @@ fn scenario_25() {
             builder.call_method(env.big_fi, "burn_bucket", manifest_args!(bucket))
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -769,8 +769,8 @@ fn scenario_25() {
 #[test]
 fn scenario_26() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -783,7 +783,7 @@ fn scenario_26() {
         })
         .call_method(env.big_fi, "burn_vault", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -792,8 +792,8 @@ fn scenario_26() {
 #[test]
 fn scenario_27() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -811,7 +811,7 @@ fn scenario_27() {
         })
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -825,8 +825,8 @@ fn scenario_27() {
 #[test]
 fn scenario_28() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -848,7 +848,7 @@ fn scenario_28() {
         })
         .deposit_batch(env.acco)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -857,8 +857,8 @@ fn scenario_28() {
 #[test]
 fn scenario_29() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -876,7 +876,7 @@ fn scenario_29() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();
@@ -885,8 +885,8 @@ fn scenario_29() {
 #[test]
 fn scenario_30() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let env = AuthScenariosEnv::init(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let env = AuthScenariosEnv::init(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -899,7 +899,7 @@ fn scenario_30() {
         })
         .call_method(env.big_fi, "create_and_pass_proof", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![env.virtua_sig]);
+    let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
     // Assert
     receipt.expect_commit_success();

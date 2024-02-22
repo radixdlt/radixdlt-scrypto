@@ -447,7 +447,7 @@ package_interactions_tests! {
 #[test]
 fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
     let (code, mut definition) = CODE_AND_DEF.clone();
 
     for blueprint_definition in definition.blueprints.values_mut() {
@@ -465,7 +465,7 @@ fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -481,12 +481,12 @@ fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
 #[test]
 fn component_and_package_royalties_are_both_applied() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
     let (code, mut definition) = CODE_AND_DEF.clone();
     let royalty_amount = RoyaltyAmount::Xrd(10.into());
     update_package_royalties(&mut definition, royalty_amount);
 
-    let package_address = test_runner.publish_package_simple((code, definition));
+    let package_address = ledger.publish_package_simple((code, definition));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -497,7 +497,7 @@ fn component_and_package_royalties_are_both_applied() {
             manifest_args!(royalty_amount),
         )
         .build();
-    let component_address = *test_runner
+    let component_address = *ledger
         .execute_manifest(manifest, vec![])
         .expect_commit_success()
         .new_component_addresses()
@@ -509,7 +509,7 @@ fn component_and_package_royalties_are_both_applied() {
         .lock_fee_from_faucet()
         .call_method(component_address, "method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -526,8 +526,8 @@ fn component_and_package_royalties_are_both_applied() {
 #[test]
 fn test_component_with_missing_method_royalty() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
-    let package_address = test_runner.publish_package_simple(CODE_AND_DEF.clone());
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let package_address = ledger.publish_package_simple(CODE_AND_DEF.clone());
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -538,7 +538,7 @@ fn test_component_with_missing_method_royalty() {
             manifest_args!(),
         )
         .build();
-    let component_address = *test_runner
+    let component_address = *ledger
         .execute_manifest(manifest, vec![])
         .expect_commit_success()
         .new_component_addresses()
@@ -550,7 +550,7 @@ fn test_component_with_missing_method_royalty() {
         .lock_fee_from_faucet()
         .call_method(component_address, "method", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -648,9 +648,9 @@ macro_rules! component_instantiation_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+                let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
                 let package_address =
-                    test_runner.publish_package_simple(CODE_AND_DEF.clone());
+                    ledger.publish_package_simple(CODE_AND_DEF.clone());
 
                 // Act
                 let manifest = ManifestBuilder::new()
@@ -662,7 +662,7 @@ macro_rules! component_instantiation_tests {
                         manifest_args!(royalty_amount),
                     )
                     .build();
-                let receipt = test_runner.execute_manifest(manifest, vec![]);
+                let receipt = ledger.execute_manifest(manifest, vec![]);
 
                 // Assert
                 match error_checking_fn {
@@ -694,9 +694,9 @@ macro_rules! component_interaction_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+                let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
                 let package_address =
-                    test_runner.publish_package_simple(CODE_AND_DEF.clone());
+                    ledger.publish_package_simple(CODE_AND_DEF.clone());
 
                 let manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
@@ -707,7 +707,7 @@ macro_rules! component_interaction_tests {
                         manifest_args!(royalty_amount),
                     )
                     .build();
-                let receipt = test_runner.execute_manifest(manifest, vec![]);
+                let receipt = ledger.execute_manifest(manifest, vec![]);
 
                 let commit_result = match error_checking_fn {
                     Some(func) => {
@@ -726,7 +726,7 @@ macro_rules! component_interaction_tests {
                     .lock_fee_from_faucet()
                     .call_method(component_address, "method", manifest_args!())
                     .build();
-                let receipt = test_runner.execute_manifest(manifest, vec![]);
+                let receipt = ledger.execute_manifest(manifest, vec![]);
 
                 // Assert
                 assert_eq!(
@@ -754,7 +754,7 @@ macro_rules! package_publishing_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+                let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
                 let (code, mut definition) = CODE_AND_DEF.clone();
 
                 update_package_royalties(&mut definition, royalty_amount);
@@ -770,7 +770,7 @@ macro_rules! package_publishing_tests {
                         OwnerRole::None,
                     )
                     .build();
-                let receipt = test_runner.execute_manifest(manifest, vec![]);
+                let receipt = ledger.execute_manifest(manifest, vec![]);
 
                 // Assert
                 match error_checking_fn {
@@ -802,7 +802,7 @@ macro_rules! package_interactions_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+                let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
                 let (code, mut definition) = CODE_AND_DEF.clone();
 
                 update_package_royalties(&mut definition, royalty_amount);
@@ -817,7 +817,7 @@ macro_rules! package_interactions_tests {
                         OwnerRole::None,
                     )
                     .build();
-                let receipt = test_runner.execute_manifest(manifest, vec![]);
+                let receipt = ledger.execute_manifest(manifest, vec![]);
 
                 let commit_result = match error_checking_fn {
                     Some(func) => {
@@ -841,7 +841,7 @@ macro_rules! package_interactions_tests {
                         manifest_args!(),
                     )
                     .build();
-                let receipt = test_runner.execute_manifest(manifest, vec![]);
+                let receipt = ledger.execute_manifest(manifest, vec![]);
 
                 // Assert
                 assert_eq!(

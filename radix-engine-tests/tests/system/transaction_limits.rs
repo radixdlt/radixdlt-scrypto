@@ -15,10 +15,10 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
     let definition_len = scrypto_encode(&definition).unwrap().len();
 
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
-    let component_address = test_runner
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+    let component_address = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -49,7 +49,7 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
     let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
     let mut execution_config = ExecutionConfig::for_test_transaction();
     execution_config.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
         execution_config,
@@ -73,10 +73,10 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
     let definition_len = scrypto_encode(&definition).unwrap().len();
 
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
-    let component_address = test_runner
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+    let component_address = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -107,7 +107,7 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
     let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
     let mut execution_config = ExecutionConfig::for_test_transaction();
     execution_config.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
         execution_config,
@@ -129,9 +129,9 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
     let (code, definition) = PackageLoader::get("transaction_limits");
 
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -149,7 +149,7 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
     let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
     let mut execution_config = ExecutionConfig::for_test_transaction();
     execution_config.max_heap_substate_total_bytes = 1024 * 1024;
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
         execution_config,
@@ -169,9 +169,9 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
 #[test]
 fn test_default_substate_size_limit() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
+        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -182,7 +182,7 @@ fn test_default_substate_size_limit() {
             manifest_args!(MAX_SUBSTATE_VALUE_SIZE - 17),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -197,7 +197,7 @@ fn test_default_substate_size_limit() {
             manifest_args!(MAX_SUBSTATE_VALUE_SIZE - 16),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert #2
     receipt.expect_specific_failure(|e| match e {
@@ -226,9 +226,9 @@ fn test_default_invoke_payload_size_limit() {
     println!("{:?}", actor_len);
 
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
+        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -239,7 +239,7 @@ fn test_default_invoke_payload_size_limit() {
             manifest_args!(MAX_INVOKE_PAYLOAD_SIZE - actor_len - overhead_len),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -254,7 +254,7 @@ fn test_default_invoke_payload_size_limit() {
             manifest_args!(MAX_INVOKE_PAYLOAD_SIZE - actor_len - overhead_len + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert #2
     receipt.expect_specific_failure(|e| match e {
@@ -267,9 +267,9 @@ fn test_default_invoke_payload_size_limit() {
 
 #[test]
 fn verify_log_size_limit() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
+        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -280,7 +280,7 @@ fn verify_log_size_limit() {
             manifest_args!(MAX_LOG_SIZE + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -294,9 +294,9 @@ fn verify_log_size_limit() {
 
 #[test]
 fn verify_event_size_limit() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
+        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -307,7 +307,7 @@ fn verify_event_size_limit() {
             manifest_args!(MAX_EVENT_SIZE + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -321,9 +321,9 @@ fn verify_event_size_limit() {
 
 #[test]
 fn verify_panic_size_limit() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("transaction_limits"));
+        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -334,7 +334,7 @@ fn verify_panic_size_limit() {
             manifest_args!(MAX_PANIC_MESSAGE_SIZE + 1),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -351,10 +351,10 @@ fn test_allocating_buffers_exceeding_limit() {
     let (code, definition) = PackageLoader::get("transaction_limits");
 
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
-    let component_address = test_runner
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+    let component_address = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -375,7 +375,7 @@ fn test_allocating_buffers_exceeding_limit() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

@@ -104,10 +104,10 @@ impl VmInvoke for TestInvoke {
 
 fn run<F: FnOnce(TransactionReceipt)>(method: &str, is_method: bool, on_receipt: F) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_with_field_test_definition(
             BLUEPRINT_NAME,
@@ -131,9 +131,9 @@ fn run<F: FnOnce(TransactionReceipt)>(method: &str, is_method: bool, on_receipt:
             ],
         ),
     );
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "new", manifest_args!())
             .build(),
         vec![],
@@ -142,17 +142,17 @@ fn run<F: FnOnce(TransactionReceipt)>(method: &str, is_method: bool, on_receipt:
 
     // Act
     let receipt = if is_method {
-        test_runner.execute_manifest(
+        ledger.execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(test_runner.faucet_component(), 500u32)
+                .lock_fee(ledger.faucet_component(), 500u32)
                 .call_method(component_address, method, manifest_args!())
                 .build(),
             vec![],
         )
     } else {
-        test_runner.execute_manifest(
+        ledger.execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(test_runner.faucet_component(), 500u32)
+                .lock_fee(ledger.faucet_component(), 500u32)
                 .call_function(package_address, BLUEPRINT_NAME, method, manifest_args!())
                 .build(),
             vec![],

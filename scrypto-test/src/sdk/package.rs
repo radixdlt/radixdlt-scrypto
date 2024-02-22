@@ -4,9 +4,9 @@ use std::process::Command;
 
 use crate::prelude::*;
 
-pub struct Package;
+pub struct PackageFactory;
 
-impl Package {
+impl PackageFactory {
     pub fn publish<D>(
         code: Vec<u8>,
         package_definition: PackageDefinition,

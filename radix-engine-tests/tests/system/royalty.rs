@@ -10,14 +10,14 @@ use scrypto_test::prelude::*;
 fn test_component_royalty() {
     // Arrange
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("royalty"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("royalty"));
 
     // Instantiate component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
@@ -33,8 +33,8 @@ fn test_component_royalty() {
 
     // Act
     // Call the paid method
-    let account_pre_balance = test_runner.get_component_balance(account, XRD);
-    let receipt = test_runner.execute_manifest(
+    let account_pre_balance = ledger.get_component_balance(account, XRD);
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
@@ -45,8 +45,8 @@ fn test_component_royalty() {
     // Assert
     receipt.expect_commit(true);
     assert_eq!(receipt.fee_summary.total_royalty_cost_in_xrd, dec!("3"));
-    let account_post_balance = test_runner.get_component_balance(account, XRD);
-    let component_royalty = test_runner.inspect_component_royalty(component_address);
+    let account_post_balance = ledger.get_component_balance(account, XRD);
+    let component_royalty = ledger.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance
             .checked_sub(account_post_balance)
@@ -66,14 +66,14 @@ fn test_component_royalty() {
 #[test]
 fn test_component_royalty_in_usd() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("royalty"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("royalty"));
 
     // Instantiate component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
@@ -88,8 +88,8 @@ fn test_component_royalty_in_usd() {
     let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
     // Call the paid method
-    let account_pre_balance = test_runner.get_component_balance(account, XRD);
-    let receipt = test_runner.execute_manifest(
+    let account_pre_balance = ledger.get_component_balance(account, XRD);
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method_usd", manifest_args!())
@@ -105,8 +105,8 @@ fn test_component_royalty_in_usd() {
             .checked_mul(Decimal::ONE)
             .unwrap()
     );
-    let account_post_balance = test_runner.get_component_balance(account, XRD);
-    let component_royalty = test_runner.inspect_component_royalty(component_address);
+    let account_post_balance = ledger.get_component_balance(account, XRD);
+    let component_royalty = ledger.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance
             .checked_sub(account_post_balance)
@@ -122,7 +122,7 @@ fn test_component_royalty_in_usd() {
 #[test]
 fn test_package_royalty() {
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         package_address,
@@ -130,8 +130,8 @@ fn test_package_royalty() {
         _owner_badge_resource,
     ) = set_up_package_and_component();
 
-    let account_pre_balance = test_runner.get_component_balance(account, XRD);
-    let receipt = test_runner.execute_manifest(
+    let account_pre_balance = ledger.get_component_balance(account, XRD);
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
@@ -144,11 +144,11 @@ fn test_package_royalty() {
         receipt.fee_summary.total_royalty_cost_in_xrd,
         dec!(1).checked_add(dec!("2")).unwrap()
     );
-    let account_post_balance = test_runner.get_component_balance(account, XRD);
-    let package_royalty = test_runner
+    let account_post_balance = ledger.get_component_balance(account, XRD);
+    let package_royalty = ledger
         .inspect_package_royalty(package_address)
         .unwrap();
-    let component_royalty = test_runner.inspect_component_royalty(component_address);
+    let component_royalty = ledger.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance
             .checked_sub(account_post_balance)
@@ -162,7 +162,7 @@ fn test_package_royalty() {
 #[test]
 fn test_royalty_accumulation_when_success() {
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         package_address,
@@ -170,7 +170,7 @@ fn test_royalty_accumulation_when_success() {
         _owner_badge_resource,
     ) = set_up_package_and_component();
 
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
@@ -180,11 +180,11 @@ fn test_royalty_accumulation_when_success() {
 
     receipt.expect_commit(true);
     assert_eq!(
-        test_runner.inspect_package_royalty(package_address),
+        ledger.inspect_package_royalty(package_address),
         Some(dec!("2"))
     );
     assert_eq!(
-        test_runner.inspect_component_royalty(component_address),
+        ledger.inspect_component_royalty(component_address),
         dec!(1)
     );
 }
@@ -192,7 +192,7 @@ fn test_royalty_accumulation_when_success() {
 #[test]
 fn test_royalty_accumulation_when_failure() {
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         package_address,
@@ -200,7 +200,7 @@ fn test_royalty_accumulation_when_failure() {
         _owner_badge_resource,
     ) = set_up_package_and_component();
 
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method_panic", manifest_args!())
@@ -210,11 +210,11 @@ fn test_royalty_accumulation_when_failure() {
 
     receipt.expect_commit_failure();
     assert_eq!(
-        test_runner.inspect_package_royalty(package_address),
+        ledger.inspect_package_royalty(package_address),
         Some(Decimal::zero())
     );
     assert_eq!(
-        test_runner.inspect_component_royalty(component_address),
+        ledger.inspect_component_royalty(component_address),
         Decimal::zero()
     );
 }
@@ -222,7 +222,7 @@ fn test_royalty_accumulation_when_failure() {
 #[test]
 fn test_claim_royalty() {
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         package_address,
@@ -230,7 +230,7 @@ fn test_claim_royalty() {
         owner_badge_resource,
     ) = set_up_package_and_component();
 
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
@@ -240,16 +240,16 @@ fn test_claim_royalty() {
     receipt.expect_commit(true);
     receipt.expect_commit(true);
     assert_eq!(
-        test_runner.inspect_package_royalty(package_address),
+        ledger.inspect_package_royalty(package_address),
         Some(dec!("2"))
     );
     assert_eq!(
-        test_runner.inspect_component_royalty(component_address),
+        ledger.inspect_component_royalty(component_address),
         dec!(1)
     );
 
     // Claim package royalty
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
@@ -265,7 +265,7 @@ fn test_claim_royalty() {
     receipt.expect_commit(true);
 
     // Claim component royalty
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .claim_component_royalties(component_address)
@@ -277,20 +277,20 @@ fn test_claim_royalty() {
 
     // assert nothing left
     assert_eq!(
-        test_runner.inspect_package_royalty(package_address),
+        ledger.inspect_package_royalty(package_address),
         Some(dec!("0"))
     );
     assert_eq!(
-        test_runner.inspect_component_royalty(component_address),
+        ledger.inspect_component_royalty(component_address),
         dec!("0")
     );
 }
 
 fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: RoyaltyAmount) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_public_key, _, account) = test_runner.new_allocated_account();
-    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_public_key, _, account) = ledger.new_allocated_account();
+    let owner_badge_resource = ledger.create_non_fungible_resource(account);
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
 
@@ -309,7 +309,7 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: Roy
         .lock_fee_from_faucet()
         .publish_package_with_owner(code, definition, owner_badge_addr)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -344,17 +344,17 @@ fn cannot_initialize_package_royalty_if_greater_usd_than_allowed() {
 #[test]
 fn cannot_initialize_component_royalty_if_greater_than_allowed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let owner_badge_resource = ledger.create_non_fungible_resource(account);
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let package_address =
-        test_runner.publish_package_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
+        ledger.publish_package_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
 
     // Act
     let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
@@ -382,7 +382,7 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
 fn cannot_set_component_royalty_if_greater_than_allowed() {
     // Arrange
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         _package_address,
@@ -392,7 +392,7 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
     let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
@@ -424,14 +424,14 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
 fn cannot_set_royalty_after_locking() {
     // Arrange
     let (
-        mut test_runner,
+        mut ledger,
         account,
         public_key,
         _package_address,
         component_address,
         owner_badge_resource,
     ) = set_up_package_and_component();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
@@ -446,7 +446,7 @@ fn cannot_set_royalty_after_locking() {
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
@@ -473,7 +473,7 @@ fn cannot_set_royalty_after_locking() {
 }
 
 fn set_up_package_and_component() -> (
-    DefaultTestRunner,
+    DefaultLedgerSimulator,
     ComponentAddress,
     Secp256k1PublicKey,
     PackageAddress,
@@ -481,18 +481,18 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package
-    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let owner_badge_resource = ledger.create_non_fungible_resource(account);
     let owner_badge_addr =
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
     let package_address =
-        test_runner.publish_package_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
+        ledger.publish_package_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
 
     // Enable package royalty
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
@@ -506,7 +506,7 @@ fn set_up_package_and_component() -> (
     receipt.expect_commit(true);
 
     // Instantiate component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
@@ -521,7 +521,7 @@ fn set_up_package_and_component() -> (
     let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
     (
-        test_runner,
+        ledger,
         account,
         public_key,
         package_address,

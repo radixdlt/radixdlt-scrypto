@@ -1,11 +1,11 @@
 use scrypto_test::prelude::*;
-use tuple_return::test_bindings::*;
+use tuple_return::tuple_return_test::*;
 
 #[test]
 fn tuple_returns_work_with_scrypto_test() {
     // Arrange
     let mut env = TestEnvironment::new();
-    let package_address = Package::compile_and_publish(
+    let package_address = PackageFactory::compile_and_publish(
         concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
         &mut env,
     )

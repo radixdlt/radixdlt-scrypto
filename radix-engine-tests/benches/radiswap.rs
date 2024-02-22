@@ -3,7 +3,7 @@ use radix_engine::vm::NoExtension;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::{TestRunner, TestRunnerBuilder};
+use scrypto_test::prelude::{LedgerSimulator, LedgerSimulatorBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
 #[cfg(not(feature = "rocksdb"))]
@@ -34,18 +34,18 @@ const NUM_OF_PRE_FILLED_ACCOUNTS: usize = 200;
 /// ```
 fn bench_radiswap(c: &mut Criterion) {
     #[cfg(feature = "rocksdb")]
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_database(RocksDBWithMerkleTreeSubstateStore::clear(PathBuf::from(
             "/tmp/radiswap",
         )))
         .without_kernel_trace()
         .build();
     #[cfg(not(feature = "rocksdb"))]
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
 
     // Create account and publish package
-    let (pk, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package(
+    let (pk, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package(
         (
             include_workspace_asset_bytes!("radiswap.wasm").to_vec(),
             manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap(),
@@ -55,11 +55,11 @@ fn bench_radiswap(c: &mut Criterion) {
     );
 
     // Create freely mintable resources
-    let (btc_mint_auth, btc) = test_runner.create_mintable_burnable_fungible_resource(account);
-    let (eth_mint_auth, eth) = test_runner.create_mintable_burnable_fungible_resource(account);
+    let (btc_mint_auth, btc) = ledger.create_mintable_burnable_fungible_resource(account);
+    let (eth_mint_auth, eth) = ledger.create_mintable_burnable_fungible_resource(account);
 
     // Create Radiswap
-    let component_address: ComponentAddress = test_runner
+    let component_address: ComponentAddress = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_standard_test_fee(account)
@@ -79,7 +79,7 @@ fn bench_radiswap(c: &mut Criterion) {
     // Contribute to radiswap
     let btc_init_amount = Decimal::from(500_000);
     let eth_init_amount = Decimal::from(300_000);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_standard_test_fee(account)
@@ -117,8 +117,8 @@ fn bench_radiswap(c: &mut Criterion) {
         if i % 100 == 0 {
             println!("{}/{}", i, NUM_OF_PRE_FILLED_ACCOUNTS);
         }
-        let (pk2, _, account2) = test_runner.new_allocated_account();
-        test_runner
+        let (pk2, _, account2) = ledger.new_allocated_account();
+        ledger
             .execute_manifest(
                 ManifestBuilder::new()
                     .lock_fee_from_faucet()
@@ -146,7 +146,7 @@ fn bench_radiswap(c: &mut Criterion) {
     #[cfg(feature = "flamegraph")]
     for _ in 0..1000 {
         do_swap(
-            &mut test_runner,
+            &mut ledger,
             &accounts[index % accounts.len()],
             btc,
             component_address,
@@ -157,7 +157,7 @@ fn bench_radiswap(c: &mut Criterion) {
     c.bench_function("transaction::radiswap", |b| {
         b.iter(|| {
             do_swap(
-                &mut test_runner,
+                &mut ledger,
                 &accounts[index % accounts.len()],
                 btc,
                 component_address,
@@ -173,7 +173,7 @@ type DatabaseType = RocksDBWithMerkleTreeSubstateStore;
 type DatabaseType = InMemorySubstateDatabase;
 
 fn do_swap(
-    test_runner: &mut TestRunner<NoExtension, DatabaseType>,
+    ledger: &mut LedgerSimulator<NoExtension, DatabaseType>,
     account: &(Secp256k1PublicKey, ComponentAddress),
     btc: ResourceAddress,
     component_address: ComponentAddress,
@@ -189,7 +189,7 @@ fn do_swap(
         .try_deposit_entire_worktop_or_abort(account.1, None)
         .build();
 
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&account.0)],

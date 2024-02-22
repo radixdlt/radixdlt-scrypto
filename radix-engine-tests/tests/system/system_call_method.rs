@@ -41,10 +41,10 @@ fn call_method_with_owned_actor_should_fail() {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
@@ -53,9 +53,9 @@ fn call_method_with_owned_actor_should_fail() {
     );
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "new", manifest_args!())
             .build(),
         vec![],

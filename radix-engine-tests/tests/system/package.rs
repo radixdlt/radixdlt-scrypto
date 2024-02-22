@@ -14,7 +14,7 @@ use scrypto_test::prelude::*;
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let code = wat2wasm(
@@ -36,7 +36,7 @@ fn missing_memory_should_cause_error() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -54,15 +54,15 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_simple(PackageLoader::get("package"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package = ledger.publish_package_simple(PackageLoader::get("package"));
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "LargeReturnSize", "f", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -77,15 +77,15 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_simple(PackageLoader::get("package"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package = ledger.publish_package_simple(PackageLoader::get("package"));
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "MaxReturnSize", "f", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -100,8 +100,8 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_simple(PackageLoader::get("package"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package = ledger.publish_package_simple(PackageLoader::get("package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -109,7 +109,7 @@ fn zero_return_len_should_cause_data_validation_error() {
         .call_function(package, "ZeroReturnSize", "f", manifest_args!())
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemUpstreamError(_)));
@@ -118,7 +118,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let code = wat2wasm(include_local_wasm_str!("basic_package.wat"));
@@ -132,7 +132,7 @@ fn test_basic_package() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -141,7 +141,7 @@ fn test_basic_package() {
 #[test]
 fn test_basic_package_missing_export() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let mut blueprints = index_map_new();
     blueprints.insert(
         "Test".to_string(),
@@ -193,7 +193,7 @@ fn test_basic_package_missing_export() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -209,7 +209,7 @@ fn test_basic_package_missing_export() {
 #[test]
 fn bad_blueprint_schema_init_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let (code, mut definition) = PackageLoader::get("package");
@@ -231,7 +231,7 @@ fn bad_blueprint_schema_init_should_fail() {
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -247,7 +247,7 @@ fn bad_blueprint_schema_init_should_fail() {
 #[test]
 fn bad_function_schema_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let (code, definition) = PackageLoader::get("package_invalid");
@@ -256,7 +256,7 @@ fn bad_function_schema_should_fail() {
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -272,8 +272,8 @@ fn bad_function_schema_should_fail() {
 #[test]
 fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_simple(PackageLoader::get("publish_package"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package = ledger.publish_package_simple(PackageLoader::get("publish_package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -286,7 +286,7 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -302,8 +302,8 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
 #[test]
 fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_processor() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_simple(PackageLoader::get("publish_package"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package = ledger.publish_package_simple(PackageLoader::get("publish_package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -316,7 +316,7 @@ fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_pr
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -332,7 +332,7 @@ fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_pr
 #[test]
 fn should_not_be_able_to_publish_native_packages() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -349,7 +349,7 @@ fn should_not_be_able_to_publish_native_packages() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -365,8 +365,8 @@ fn should_not_be_able_to_publish_native_packages() {
 #[test]
 fn should_not_be_able_to_publish_native_packages_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_simple(PackageLoader::get("publish_package"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package = ledger.publish_package_simple(PackageLoader::get("publish_package"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -379,7 +379,7 @@ fn should_not_be_able_to_publish_native_packages_in_scrypto() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -395,7 +395,7 @@ fn should_not_be_able_to_publish_native_packages_in_scrypto() {
 #[test]
 fn name_validation_blueprint() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("publish_package");
 
     definition.blueprints = indexmap![
@@ -414,7 +414,7 @@ fn name_validation_blueprint() {
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -430,7 +430,7 @@ fn name_validation_blueprint() {
 #[test]
 fn name_validation_feature_set() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("publish_package");
 
     definition
@@ -447,7 +447,7 @@ fn name_validation_feature_set() {
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -463,7 +463,7 @@ fn name_validation_feature_set() {
 #[test]
 fn well_known_types_in_schema_are_validated() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let (code, mut definition) = PackageLoader::get("publish_package");
 
@@ -487,7 +487,7 @@ fn well_known_types_in_schema_are_validated() {
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -503,7 +503,7 @@ fn well_known_types_in_schema_are_validated() {
 #[test]
 fn publishing_of_package_with_blueprint_name_exceeding_length_limit_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     let (_, value) = definition.blueprints.pop().unwrap();
@@ -522,7 +522,7 @@ fn publishing_of_package_with_blueprint_name_exceeding_length_limit_fails() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -541,7 +541,7 @@ fn publishing_of_package_with_blueprint_name_exceeding_length_limit_fails() {
 #[test]
 fn publishing_of_package_where_outer_blueprint_is_inner_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     let (bp_name1, mut bp_definition1) = definition.blueprints.pop().unwrap();
@@ -568,7 +568,7 @@ fn publishing_of_package_where_outer_blueprint_is_inner_fails() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -584,7 +584,7 @@ fn publishing_of_package_where_outer_blueprint_is_inner_fails() {
 #[test]
 fn publishing_of_package_where_outer_blueprint_is_self_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     let (bp_name, mut bp_definition) = definition.blueprints.pop().unwrap();
@@ -604,7 +604,7 @@ fn publishing_of_package_where_outer_blueprint_is_self_fails() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -620,7 +620,7 @@ fn publishing_of_package_where_outer_blueprint_is_self_fails() {
 #[test]
 fn publishing_of_package_with_transient_blueprints_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition
@@ -639,7 +639,7 @@ fn publishing_of_package_with_transient_blueprints_fails() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -675,7 +675,7 @@ fn publishing_of_package_with_a_lookalike_character_fails() {
 #[test]
 fn test_error_path_when_package_definition_has_too_many_fields() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -697,7 +697,7 @@ fn test_error_path_when_package_definition_has_too_many_fields() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -713,7 +713,7 @@ fn test_error_path_when_package_definition_has_too_many_fields() {
 #[test]
 fn test_error_path_field_requires_a_non_existent_feature_on_the_same_blueprint() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -733,7 +733,7 @@ fn test_error_path_field_requires_a_non_existent_feature_on_the_same_blueprint()
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -749,7 +749,7 @@ fn test_error_path_field_requires_a_non_existent_feature_on_the_same_blueprint()
 #[test]
 fn test_error_path_field_requires_a_feature_on_an_outer_blueprint_when_its_blueprint_is_outer() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -769,7 +769,7 @@ fn test_error_path_field_requires_a_feature_on_an_outer_blueprint_when_its_bluep
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -786,7 +786,7 @@ fn test_error_path_field_requires_a_feature_on_an_outer_blueprint_when_its_bluep
 fn test_error_path_field_requires_a_feature_on_an_outer_blueprint_that_does_not_contain_this_feature(
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     let (name1, mut def1) = definition.blueprints.pop().unwrap();
@@ -812,7 +812,7 @@ fn test_error_path_field_requires_a_feature_on_an_outer_blueprint_that_does_not_
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -828,7 +828,7 @@ fn test_error_path_field_requires_a_feature_on_an_outer_blueprint_that_does_not_
 #[test]
 fn test_error_path_transient_field_can_not_have_a_generic_type_pointer() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -852,7 +852,7 @@ fn test_error_path_transient_field_can_not_have_a_generic_type_pointer() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -868,7 +868,7 @@ fn test_error_path_transient_field_can_not_have_a_generic_type_pointer() {
 #[test]
 fn test_error_path_can_not_have_an_event_with_invalid_local_type_id() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -889,7 +889,7 @@ fn test_error_path_can_not_have_an_event_with_invalid_local_type_id() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -905,7 +905,7 @@ fn test_error_path_can_not_have_an_event_with_invalid_local_type_id() {
 #[test]
 fn test_error_path_can_not_have_an_event_with_a_generic_schema_pointer() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -928,7 +928,7 @@ fn test_error_path_can_not_have_an_event_with_a_generic_schema_pointer() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -944,7 +944,7 @@ fn test_error_path_can_not_have_an_event_with_a_generic_schema_pointer() {
 #[test]
 fn test_error_path_can_not_have_a_type_schema_with_a_non_existent_local_type_id() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -966,7 +966,7 @@ fn test_error_path_can_not_have_a_type_schema_with_a_non_existent_local_type_id(
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -983,7 +983,7 @@ fn test_error_path_can_not_have_a_type_schema_with_a_non_existent_local_type_id(
 fn test_error_path_royalties_must_be_specified_for_all_functions_not_just_the_right_number_of_functions(
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1009,7 +1009,7 @@ fn test_error_path_royalties_must_be_specified_for_all_functions_not_just_the_ri
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1025,7 +1025,7 @@ fn test_error_path_royalties_must_be_specified_for_all_functions_not_just_the_ri
 #[test]
 fn test_error_path_access_rules_must_be_defined_for_all_functions_if_enabled() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1043,7 +1043,7 @@ fn test_error_path_access_rules_must_be_defined_for_all_functions_if_enabled() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1059,7 +1059,7 @@ fn test_error_path_access_rules_must_be_defined_for_all_functions_if_enabled() {
 #[test]
 fn test_error_path_access_rules_must_be_defined_for_all_functions_if_enabled2() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1091,7 +1091,7 @@ fn test_error_path_access_rules_must_be_defined_for_all_functions_if_enabled2() 
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1107,7 +1107,7 @@ fn test_error_path_access_rules_must_be_defined_for_all_functions_if_enabled2() 
 #[test]
 fn test_error_path_a_method_can_not_be_protected_by_a_role_not_in_the_role_specification() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1146,7 +1146,7 @@ fn test_error_path_a_method_can_not_be_protected_by_a_role_not_in_the_role_speci
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1162,7 +1162,7 @@ fn test_error_path_a_method_can_not_be_protected_by_a_role_not_in_the_role_speci
 #[test]
 fn test_error_path_reserved_role_is_rejected_during_validation() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1201,7 +1201,7 @@ fn test_error_path_reserved_role_is_rejected_during_validation() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1217,7 +1217,7 @@ fn test_error_path_reserved_role_is_rejected_during_validation() {
 #[test]
 fn test_error_path_incorrect_number_of_method_auth_is_rejected() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1239,7 +1239,7 @@ fn test_error_path_incorrect_number_of_method_auth_is_rejected() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1255,7 +1255,7 @@ fn test_error_path_incorrect_number_of_method_auth_is_rejected() {
 #[test]
 fn test_error_path_incorrect_names_of_methods_in_method_auth_is_rejected() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1292,7 +1292,7 @@ fn test_error_path_incorrect_names_of_methods_in_method_auth_is_rejected() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1308,7 +1308,7 @@ fn test_error_path_incorrect_names_of_methods_in_method_auth_is_rejected() {
 #[test]
 fn test_error_path_long_blueprint_name_is_rejected() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     let (_, def1) = definition.blueprints.pop().unwrap();
@@ -1327,7 +1327,7 @@ fn test_error_path_long_blueprint_name_is_rejected() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1343,7 +1343,7 @@ fn test_error_path_long_blueprint_name_is_rejected() {
 #[test]
 fn test_error_path_long_function_name_is_rejected() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1372,7 +1372,7 @@ fn test_error_path_long_function_name_is_rejected() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1388,7 +1388,7 @@ fn test_error_path_long_function_name_is_rejected() {
 #[test]
 fn test_error_path_long_feature_name_is_rejected() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1406,7 +1406,7 @@ fn test_error_path_long_feature_name_is_rejected() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -1422,7 +1422,7 @@ fn test_error_path_long_feature_name_is_rejected() {
 #[test]
 fn test_error_path_function_with_generic_inputs_is_rejected() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1446,7 +1446,7 @@ fn test_error_path_function_with_generic_inputs_is_rejected() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| format!("{error:?}").contains("Generics not supported"))
@@ -1455,7 +1455,7 @@ fn test_error_path_function_with_generic_inputs_is_rejected() {
 #[test]
 fn test_error_path_function_with_generic_outputs_is_rejected() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     definition.blueprints.values_mut().for_each(|bp_def| {
@@ -1479,7 +1479,7 @@ fn test_error_path_function_with_generic_outputs_is_rejected() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| format!("{error:?}").contains("Generics not supported"))
@@ -1487,7 +1487,7 @@ fn test_error_path_function_with_generic_outputs_is_rejected() {
 
 fn test_publishing_of_packages_with_invalid_names(name: &str) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
 
     let (_, value) = definition.blueprints.pop().unwrap();
@@ -1504,7 +1504,7 @@ fn test_publishing_of_packages_with_invalid_names(name: &str) {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {

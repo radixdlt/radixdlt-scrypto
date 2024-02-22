@@ -1,7 +1,7 @@
 mod compile;
 mod inject_costing_err;
-mod test_runner;
+mod ledger_simulator;
 
 pub use compile::*;
 pub use inject_costing_err::*;
-pub use test_runner::*;
+pub use ledger_simulator::*;

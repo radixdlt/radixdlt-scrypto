@@ -9,8 +9,8 @@ use substate_store_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
 #[test]
 fn get_global_address_in_local_in_function_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -20,7 +20,7 @@ fn get_global_address_in_local_in_function_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -33,7 +33,7 @@ fn get_global_address_in_local_in_function_should_fail() {
             manifest_args!(called_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -47,8 +47,8 @@ fn get_global_address_in_local_in_function_should_fail() {
 #[test]
 fn get_global_address_in_local_in_method_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -58,7 +58,7 @@ fn get_global_address_in_local_in_method_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -69,7 +69,7 @@ fn get_global_address_in_local_in_method_should_fail() {
             manifest_args!(called_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
@@ -82,7 +82,7 @@ fn get_global_address_in_local_in_method_should_fail() {
             manifest_args!(called_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -96,8 +96,8 @@ fn get_global_address_in_local_in_method_should_fail() {
 #[test]
 fn get_global_address_in_parent_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -107,7 +107,7 @@ fn get_global_address_in_parent_should_succeed() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -118,7 +118,7 @@ fn get_global_address_in_parent_should_succeed() {
             manifest_args!(called_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
@@ -127,7 +127,7 @@ fn get_global_address_in_parent_should_succeed() {
         .lock_fee_from_faucet()
         .call_method(component, "get_global_address_in_parent", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let get_global_address_component: ComponentAddress = receipt.expect_commit(true).output(1);
 
     // Assert
@@ -138,8 +138,8 @@ fn get_global_address_in_parent_should_succeed() {
 #[test]
 fn get_global_address_in_child_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -149,7 +149,7 @@ fn get_global_address_in_child_should_succeed() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -160,7 +160,7 @@ fn get_global_address_in_child_should_succeed() {
             manifest_args!(called_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
@@ -169,7 +169,7 @@ fn get_global_address_in_child_should_succeed() {
         .lock_fee_from_faucet()
         .call_method(component, "get_global_address_in_owned", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let get_global_address_component: ComponentAddress = receipt.expect_commit(true).output(1);
 
     // Assert
@@ -179,8 +179,8 @@ fn get_global_address_in_child_should_succeed() {
 
 fn test_call_component_address_protected_method(caller_child: bool, callee_child: bool) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -190,7 +190,7 @@ fn test_call_component_address_protected_method(caller_child: bool, callee_child
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -201,7 +201,7 @@ fn test_call_component_address_protected_method(caller_child: bool, callee_child
             manifest_args!(called_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
@@ -214,7 +214,7 @@ fn test_call_component_address_protected_method(caller_child: bool, callee_child
             manifest_args!(caller_child, callee_child),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -249,8 +249,8 @@ enum AssertAgainst {
 
 fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -260,7 +260,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -271,7 +271,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
             manifest_args!(called_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
@@ -308,7 +308,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
         .lock_fee_from_faucet()
         .call_method(component, method_name, args)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     if should_succeed {
@@ -376,8 +376,8 @@ mod global_caller_actor_badge {
 #[test]
 fn call_component_address_protected_method_in_parent_with_wrong_address_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -387,7 +387,7 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -398,7 +398,7 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
             manifest_args!(called_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
@@ -411,7 +411,7 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -425,8 +425,8 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
 #[test]
 fn can_instantiate_with_preallocated_address() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
     // Act + Assert
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -437,18 +437,18 @@ fn can_instantiate_with_preallocated_address() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 }
 
 #[test]
 fn errors_if_unused_preallocated_address() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
 
     // Act + Assert 1
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -463,7 +463,7 @@ fn errors_if_unused_preallocated_address() {
     receipt.expect_commit_failure();
 
     // Act + Assert 2
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -481,11 +481,11 @@ fn errors_if_unused_preallocated_address() {
 #[test]
 fn errors_if_assigns_same_address_to_two_components() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
 
     // Act + Assert
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -503,9 +503,9 @@ fn errors_if_assigns_same_address_to_two_components() {
 #[test]
 fn test_pass_named_global_addresses() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -548,7 +548,7 @@ fn test_pass_named_global_addresses() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -564,9 +564,9 @@ fn test_pass_named_global_addresses() {
 #[test]
 fn test_pass_static_global_addresses() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("address"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -583,7 +583,7 @@ fn test_pass_static_global_addresses() {
             ),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

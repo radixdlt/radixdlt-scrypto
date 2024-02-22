@@ -4,7 +4,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::prelude::*;
-use scrypto_test::prelude::{DefaultTestRunner, TestRunnerBuilder};
+use scrypto_test::prelude::{DefaultLedgerSimulator, LedgerSimulatorBuilder};
 use substate_store_queries::typed_substate_layout::AccountError;
 use transaction::prelude::*;
 
@@ -12,10 +12,10 @@ use transaction::prelude::*;
 fn account_deposit_method_is_callable_with_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
-        let receipt = test_runner.free_tokens_from_faucet_to_account(DepositMethod::Deposit, true);
+        let receipt = ledger.free_tokens_from_faucet_to_account(DepositMethod::Deposit, true);
 
         // Assert
         receipt.expect_commit_success();
@@ -26,11 +26,11 @@ fn account_deposit_method_is_callable_with_owner_signature() {
 fn account_deposit_batch_method_is_callable_with_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
         let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::DepositBatch, true);
+            ledger.free_tokens_from_faucet_to_account(DepositMethod::DepositBatch, true);
 
         // Assert
         receipt.expect_commit_success();
@@ -41,10 +41,10 @@ fn account_deposit_batch_method_is_callable_with_owner_signature() {
 fn account_deposit_method_is_not_callable_with_out_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
-        let receipt = test_runner.free_tokens_from_faucet_to_account(DepositMethod::Deposit, false);
+        let receipt = ledger.free_tokens_from_faucet_to_account(DepositMethod::Deposit, false);
 
         // Assert
         receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -55,11 +55,11 @@ fn account_deposit_method_is_not_callable_with_out_owner_signature() {
 fn account_deposit_batch_method_is_not_callable_with_out_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
         let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::DepositBatch, false);
+            ledger.free_tokens_from_faucet_to_account(DepositMethod::DepositBatch, false);
 
         // Assert
         receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -70,11 +70,11 @@ fn account_deposit_batch_method_is_not_callable_with_out_owner_signature() {
 fn account_try_deposit_method_is_callable_with_out_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
         let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDeposit, false);
+            ledger.free_tokens_from_faucet_to_account(DepositMethod::TryDeposit, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -85,10 +85,10 @@ fn account_try_deposit_method_is_callable_with_out_owner_signature() {
 fn account_try_deposit_batch_or_refund_method_is_callable_without_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
-        let receipt = test_runner
+        let receipt = ledger
             .free_tokens_from_faucet_to_account(DepositMethod::TryDepositBatchOrRefund, false);
 
         // Assert
@@ -98,10 +98,10 @@ fn account_try_deposit_batch_or_refund_method_is_callable_without_owner_signatur
 
 #[test]
 fn account_try_deposit_batch_or_refund_method_is_callable_with_array_of_resources() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account_address) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account_address) = ledger.new_account(true);
 
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
@@ -125,11 +125,11 @@ fn account_try_deposit_batch_or_refund_method_is_callable_with_array_of_resource
 fn account_try_deposit_or_abort_method_is_callable_without_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
         let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDepositOrAbort, false);
+            ledger.free_tokens_from_faucet_to_account(DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -140,10 +140,10 @@ fn account_try_deposit_or_abort_method_is_callable_without_owner_signature() {
 fn account_try_deposit_batch_or_abort_method_is_callable_without_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
-        let receipt = test_runner
+        let receipt = ledger
             .free_tokens_from_faucet_to_account(DepositMethod::TryDepositBatchOrAbort, false);
 
         // Assert
@@ -155,11 +155,11 @@ fn account_try_deposit_batch_or_abort_method_is_callable_without_owner_signature
 fn changing_default_deposit_rule_is_callable_with_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
         let receipt =
-            test_runner.transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true);
+            ledger.transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true);
 
         // Assert
         receipt.expect_commit_success();
@@ -170,11 +170,11 @@ fn changing_default_deposit_rule_is_callable_with_owner_signature() {
 fn changing_default_deposit_rule_is_not_callable_with_out_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
         let receipt =
-            test_runner.transition_default_deposit_rule(DefaultDepositRule::AllowExisting, false);
+            ledger.transition_default_deposit_rule(DefaultDepositRule::AllowExisting, false);
 
         // Assert
         receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -185,12 +185,12 @@ fn changing_default_deposit_rule_is_not_callable_with_out_owner_signature() {
 fn allow_all_allows_for_all_resource_deposits() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        let resource_address = test_runner.freely_mintable_resource();
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        let resource_address = ledger.freely_mintable_resource();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -201,15 +201,15 @@ fn allow_all_allows_for_all_resource_deposits() {
 fn allow_all_disallows_deposit_of_resource_in_deny_list() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        let resource_address = test_runner.freely_mintable_resource();
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        let resource_address = ledger.freely_mintable_resource();
+        ledger
             .add_to_deny_list(resource_address, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -220,18 +220,18 @@ fn allow_all_disallows_deposit_of_resource_in_deny_list() {
 fn resource_in_deny_list_could_be_converted_to_resource_in_allow_list() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        let resource_address = test_runner.freely_mintable_resource();
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        let resource_address = ledger.freely_mintable_resource();
+        ledger
             .add_to_deny_list(resource_address, true)
             .expect_commit_success();
-        test_runner
+        ledger
             .add_to_allow_list(resource_address, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -242,18 +242,18 @@ fn resource_in_deny_list_could_be_converted_to_resource_in_allow_list() {
 fn resource_in_deny_list_could_be_removed_from_there() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        let resource_address = test_runner.freely_mintable_resource();
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        let resource_address = ledger.freely_mintable_resource();
+        ledger
             .add_to_deny_list(resource_address, true)
             .expect_commit_success();
-        test_runner
+        ledger
             .remove_resource_preference(resource_address, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -264,17 +264,17 @@ fn resource_in_deny_list_could_be_removed_from_there() {
 fn allow_existing_disallows_deposit_of_resources_on_deny_list() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        ledger
             .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
-        test_runner
+        ledger
             .add_to_deny_list(XRD, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDepositOrAbort, false);
+            ledger.free_tokens_from_faucet_to_account(DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -285,14 +285,14 @@ fn allow_existing_disallows_deposit_of_resources_on_deny_list() {
 fn allow_existing_allows_deposit_of_xrd_if_not_on_deny_list() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        ledger
             .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDepositOrAbort, false);
+            ledger.free_tokens_from_faucet_to_account(DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -303,20 +303,20 @@ fn allow_existing_allows_deposit_of_xrd_if_not_on_deny_list() {
 fn allow_existing_allows_deposit_of_an_existing_resource() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
-        let resource_address = test_runner.freely_mintable_resource();
-        test_runner
+        let resource_address = ledger.freely_mintable_resource();
+        ledger
             .mint_and_deposit(resource_address, DepositMethod::Deposit, true)
             .expect_commit_success();
 
-        test_runner
+        ledger
             .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -327,21 +327,21 @@ fn allow_existing_allows_deposit_of_an_existing_resource() {
 fn allow_existing_allows_deposit_of_an_existing_resource_even_if_account_has_none_of_it() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
-        let resource_address = test_runner.freely_mintable_resource();
-        test_runner
+        let resource_address = ledger.freely_mintable_resource();
+        ledger
             .mint_and_deposit(resource_address, DepositMethod::Deposit, true)
             .expect_commit_success();
-        test_runner.burn(resource_address);
+        ledger.burn(resource_address);
 
-        test_runner
+        ledger
             .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -352,18 +352,18 @@ fn allow_existing_allows_deposit_of_an_existing_resource_even_if_account_has_non
 fn allow_existing_allows_deposit_of_a_resource_account_does_not_have_if_it_is_on_the_allow_list() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        let resource_address = test_runner.freely_mintable_resource();
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        let resource_address = ledger.freely_mintable_resource();
+        ledger
             .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
-        test_runner
+        ledger
             .add_to_allow_list(resource_address, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -374,21 +374,21 @@ fn allow_existing_allows_deposit_of_a_resource_account_does_not_have_if_it_is_on
 fn removing_an_address_from_the_allow_list_removes_it() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        let resource_address = test_runner.freely_mintable_resource();
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        let resource_address = ledger.freely_mintable_resource();
+        ledger
             .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
-        test_runner
+        ledger
             .add_to_allow_list(resource_address, true)
             .expect_commit_success();
-        test_runner
+        ledger
             .remove_resource_preference(resource_address, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -399,21 +399,21 @@ fn removing_an_address_from_the_allow_list_removes_it() {
 fn transitioning_an_address_to_deny_list_works_as_expected() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        let resource_address = test_runner.freely_mintable_resource();
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        let resource_address = ledger.freely_mintable_resource();
+        ledger
             .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
-        test_runner
+        ledger
             .add_to_allow_list(resource_address, true)
             .expect_commit_success();
-        test_runner
+        ledger
             .add_to_deny_list(resource_address, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -424,14 +424,14 @@ fn transitioning_an_address_to_deny_list_works_as_expected() {
 fn disallow_all_does_not_permit_deposit_of_any_resource() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        ledger
             .transition_default_deposit_rule(DefaultDepositRule::Reject, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDepositOrAbort, false);
+            ledger.free_tokens_from_faucet_to_account(DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -442,39 +442,39 @@ fn disallow_all_does_not_permit_deposit_of_any_resource() {
 fn disallow_all_permits_deposit_of_resource_in_allow_list() {
     // Arrange
     for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-        let resource_address = test_runner.freely_mintable_resource();
-        test_runner
+        let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
+        let resource_address = ledger.freely_mintable_resource();
+        ledger
             .transition_default_deposit_rule(DefaultDepositRule::Reject, true)
             .expect_commit_success();
-        test_runner
+        ledger
             .add_to_allow_list(resource_address, true)
             .expect_commit_success();
 
         // Act
         let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
+            ledger.mint_and_deposit(resource_address, DepositMethod::TryDepositOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
     }
 }
 
-struct AccountDepositModesTestRunner {
-    test_runner: DefaultTestRunner,
+struct AccountDepositModesLedgerSimulator {
+    ledger: DefaultLedgerSimulator,
     public_key: PublicKey,
     component_address: ComponentAddress,
 }
 
-impl AccountDepositModesTestRunner {
+impl AccountDepositModesLedgerSimulator {
     pub fn new(virtual_account: bool) -> Self {
-        let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
-        let (public_key, _, component_address) = test_runner.new_account(virtual_account);
+        let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+        let (public_key, _, component_address) = ledger.new_account(virtual_account);
 
         Self {
             component_address,
             public_key: public_key.into(),
-            test_runner,
+            ledger,
         }
     }
 
@@ -584,7 +584,7 @@ impl AccountDepositModesTestRunner {
     }
 
     pub fn freely_mintable_resource(&mut self) -> ResourceAddress {
-        self.test_runner
+        self.ledger
             .create_freely_mintable_and_burnable_fungible_resource(
                 OwnerRole::None,
                 None,
@@ -599,7 +599,7 @@ impl AccountDepositModesTestRunner {
         );
 
         let balance = self
-            .test_runner
+            .ledger
             .get_component_balance(self.component_address, resource_address);
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -616,7 +616,7 @@ impl AccountDepositModesTestRunner {
         manifest: TransactionManifestV1,
         sign: bool,
     ) -> TransactionReceipt {
-        self.test_runner.execute_manifest(
+        self.ledger.execute_manifest(
             manifest,
             if sign {
                 vec![self.virtual_signature_badge()]

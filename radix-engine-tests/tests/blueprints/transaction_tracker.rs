@@ -22,7 +22,7 @@ fn test_transaction_replay_protection() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
@@ -32,7 +32,7 @@ fn test_transaction_replay_protection() {
         end_epoch_exclusive: init_epoch.after(MAX_EPOCH_RANGE).unwrap(),
     });
     let validated = get_validated(&transaction).unwrap();
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         validated.get_executable(),
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
@@ -45,10 +45,10 @@ fn test_transaction_replay_protection() {
         .unwrap()
         .previous()
         .unwrap();
-    test_runner.set_current_epoch(new_epoch);
+    ledger.set_current_epoch(new_epoch);
 
     // 3. Run the transaction again
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         validated.get_executable(),
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
@@ -59,7 +59,7 @@ fn test_transaction_replay_protection() {
     });
 
     // 4. Advance to the max epoch (which triggers epoch update)
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // assert that precisely 1 partition was deleted:
     let partition_resets = receipt
@@ -86,7 +86,7 @@ fn test_transaction_replay_protection() {
     // Note that in production, this won't be possible.
     let mut executable = validated.get_executable();
     executable.skip_epoch_range_check();
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         executable,
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),

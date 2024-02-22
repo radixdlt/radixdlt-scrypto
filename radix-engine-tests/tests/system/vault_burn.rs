@@ -10,7 +10,7 @@ use scrypto_test::prelude::*;
 #[test]
 fn package_burn_is_only_callable_within_resource_package() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -23,7 +23,7 @@ fn package_burn_is_only_callable_within_resource_package() {
                 None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -42,7 +42,7 @@ fn package_burn_is_only_callable_within_resource_package() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -51,8 +51,8 @@ fn package_burn_is_only_callable_within_resource_package() {
 #[test]
 fn can_burn_by_amount_from_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -65,7 +65,7 @@ fn can_burn_by_amount_from_fungible_vault() {
                 None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -85,24 +85,24 @@ fn can_burn_by_amount_from_fungible_vault() {
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("50")))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.inspect_fungible_vault(vault_id).unwrap(),
+        ledger.inspect_fungible_vault(vault_id).unwrap(),
         dec!("50")
     )
 }
@@ -110,8 +110,8 @@ fn can_burn_by_amount_from_fungible_vault() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -124,7 +124,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -150,31 +150,31 @@ fn can_burn_by_amount_from_non_fungible_vault() {
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
-    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    let (amount, _) = ledger.inspect_non_fungible_vault(vault_id).unwrap();
     assert_eq!(amount, dec!(1))
 }
 
 #[test]
 fn can_burn_by_ids_from_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -187,7 +187,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -213,12 +213,12 @@ fn can_burn_by_ids_from_non_fungible_vault() {
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -229,12 +229,12 @@ fn can_burn_by_ids_from_non_fungible_vault() {
             manifest_args!(btreeset![NonFungibleLocalId::integer(1)]),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
+        ledger.inspect_non_fungible_vault(vault_id).unwrap().0,
         dec!(1)
     );
 }
@@ -242,9 +242,9 @@ fn can_burn_by_ids_from_non_fungible_vault() {
 #[test]
 fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
-    let (public_key, _, _) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
+    let (public_key, _, _) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
@@ -259,7 +259,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
                 None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -279,24 +279,24 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("50")))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.inspect_fungible_vault(vault_id).unwrap(),
+        ledger.inspect_fungible_vault(vault_id).unwrap(),
         dec!("50")
     )
 }
@@ -304,9 +304,9 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
-    let (public_key, _, _) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
+    let (public_key, _, _) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
@@ -321,7 +321,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -347,32 +347,32 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
-    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    let (amount, _) = ledger.inspect_non_fungible_vault(vault_id).unwrap();
     assert_eq!(amount, dec!(1))
 }
 
 #[test]
 fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
-    let (public_key, _, _) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
+    let (public_key, _, _) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
@@ -387,7 +387,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -413,12 +413,12 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -429,12 +429,12 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
             manifest_args!(btreeset![NonFungibleLocalId::integer(1)]),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
+        ledger.inspect_non_fungible_vault(vault_id).unwrap().0,
         dec!(1)
     );
 }
@@ -442,9 +442,9 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
 #[test]
 fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
-    let (public_key, _, _) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
+    let (public_key, _, _) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
@@ -459,7 +459,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
                 None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -479,24 +479,24 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("50")))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error);
     assert_eq!(
-        test_runner.inspect_fungible_vault(vault_id).unwrap(),
+        ledger.inspect_fungible_vault(vault_id).unwrap(),
         dec!("100")
     )
 }
@@ -504,9 +504,9 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
 #[test]
 fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
-    let (public_key, _, _) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
+    let (public_key, _, _) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
@@ -521,7 +521,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -547,32 +547,32 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error);
-    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    let (amount, _) = ledger.inspect_non_fungible_vault(vault_id).unwrap();
     assert_eq!(amount, dec!("2"))
 }
 
 #[test]
 fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
-    let (public_key, _, _) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
+    let (public_key, _, _) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
@@ -587,7 +587,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -613,12 +613,12 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -629,12 +629,12 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
             manifest_args!(btreeset![NonFungibleLocalId::integer(1)]),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error);
     assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
+        ledger.inspect_non_fungible_vault(vault_id).unwrap().0,
         dec!("2")
     );
 }
@@ -642,8 +642,8 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
 #[test]
 fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -656,7 +656,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
                 None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -676,24 +676,24 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("50")))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.inspect_fungible_vault(vault_id).unwrap(),
+        ledger.inspect_fungible_vault(vault_id).unwrap(),
         dec!("50")
     )
 }
@@ -701,8 +701,8 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -715,7 +715,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -741,31 +741,31 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
-    let (amount, _) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
+    let (amount, _) = ledger.inspect_non_fungible_vault(vault_id).unwrap();
     assert_eq!(amount, dec!(1))
 }
 
 #[test]
 fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -778,7 +778,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -804,12 +804,12 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
                 )
             })
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -820,12 +820,12 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
             manifest_args!(btreeset![NonFungibleLocalId::integer(1)]),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
+        ledger.inspect_non_fungible_vault(vault_id).unwrap().0,
         dec!(1)
     );
 }
@@ -833,8 +833,8 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
 #[test]
 fn can_burn_by_amount_from_fungible_account_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
@@ -850,7 +850,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -865,12 +865,12 @@ fn can_burn_by_amount_from_fungible_account_vault() {
             manifest_args!(resource_address, dec!("50")),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.get_component_balance(account, resource_address),
+        ledger.get_component_balance(account, resource_address),
         dec!("50")
     )
 }
@@ -878,8 +878,8 @@ fn can_burn_by_amount_from_fungible_account_vault() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_account_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
@@ -898,7 +898,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -909,12 +909,12 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
         .lock_fee_from_faucet()
         .call_method(account, "burn", manifest_args!(resource_address, dec!(1)))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.get_component_balance(account, resource_address),
+        ledger.get_component_balance(account, resource_address),
         dec!(1)
     )
 }
@@ -922,8 +922,8 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
 #[test]
 fn can_burn_by_ids_from_non_fungible_account_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
@@ -942,7 +942,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![virtual_signature_badge.clone()])
             .expect_commit_success()
             .new_resource_addresses()[0]
@@ -957,25 +957,25 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
             manifest_args!(resource_address, indexset!(NonFungibleLocalId::integer(1))),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![virtual_signature_badge]);
+    let receipt = ledger.execute_manifest(manifest, vec![virtual_signature_badge]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.get_component_balance(account, resource_address),
+        ledger.get_component_balance(account, resource_address),
         dec!(1)
     )
 }
 
 fn get_vault_id(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     component_address: ComponentAddress,
 ) -> NodeId {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success().output(1)
 }
 

@@ -144,7 +144,7 @@ fn references_read_from_state_are_visible_in_tests() {
     let definition = manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
 
     let (radiswap_package, _) =
-        Package::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
+        PackageFactory::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
 
     let radiswap_component = env
         .call_function_typed::<_, ComponentAddress>(
@@ -202,7 +202,7 @@ fn references_read_from_state_are_visible_in_tests1() {
     let definition = manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
 
     let (radiswap_package, _) =
-        Package::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
+        PackageFactory::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
 
     let radiswap_component = env
         .call_function_typed::<_, ComponentAddress>(

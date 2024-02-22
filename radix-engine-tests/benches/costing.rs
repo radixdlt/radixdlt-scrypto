@@ -18,7 +18,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use sbor::rust::iter;
-use scrypto_test::prelude::TestRunnerBuilder;
+use scrypto_test::prelude::LedgerSimulatorBuilder;
 use substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use transaction::prelude::TransactionCostingParameters;
 use wabt::wat2wasm;
@@ -194,15 +194,15 @@ fn bench_deserialize_wasm(c: &mut Criterion) {
 }
 
 fn bench_prepare_wasm(c: &mut Criterion) {
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
     let code = include_workspace_asset_bytes!("radiswap.wasm").to_vec();
     let package_definition: PackageDefinition =
         manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
 
     c.bench_function("costing::bench_prepare_wasm", |b| {
         b.iter(|| {
-            let (pk1, _, _) = test_runner.new_allocated_account();
-            test_runner.publish_package(
+            let (pk1, _, _) = ledger.new_allocated_account();
+            ledger.publish_package(
                 (code.clone(), package_definition.clone()),
                 btreemap!(),
                 OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),

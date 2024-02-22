@@ -8,15 +8,15 @@ use scrypto_test::prelude::*;
 #[test]
 fn test_worktop_resource_leak() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, 1)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -35,8 +35,8 @@ fn test_worktop_resource_leak() {
 #[test]
 fn test_many_current_auth_zone_call() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let mut expressions = Vec::<ManifestExpression>::new();
@@ -47,7 +47,7 @@ fn test_many_current_auth_zone_call() {
         .lock_standard_test_fee(account)
         .call_method(account, "no_such_method", manifest_args!(expressions))
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -64,8 +64,8 @@ fn test_many_current_auth_zone_call() {
 #[test]
 fn test_many_worktop_call() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let mut expressions = Vec::<ManifestExpression>::new();
@@ -76,7 +76,7 @@ fn test_many_worktop_call() {
         .lock_standard_test_fee(account)
         .call_method(account, "no_such_method", manifest_args!(expressions))
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

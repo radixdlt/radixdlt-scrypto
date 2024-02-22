@@ -296,21 +296,21 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let use_statements = {
         let mut use_statements = bp.use_statements;
 
-        let contains_prelude_import = use_statements
-            .iter()
-            .map(|x| quote! { #(#x) }.to_string())
-            .any(|x| x.contains("scrypto :: prelude :: *"));
-        if !contains_prelude_import {
-            let item: ItemUse = parse_quote! { use scrypto::prelude::*; };
-            use_statements.push(item);
-        }
-
         let contains_super_import = use_statements
             .iter()
             .map(|x| quote! { #(#x) }.to_string())
             .any(|x| x.contains("super :: *"));
         if !contains_super_import {
             let item: ItemUse = parse_quote! { use super::*; };
+            use_statements.push(item);
+        }
+
+        let contains_prelude_import = use_statements
+            .iter()
+            .map(|x| quote! { #(#x) }.to_string())
+            .any(|x| x.contains("scrypto :: prelude :: *"));
+        if !contains_prelude_import {
+            let item: ItemUse = parse_quote! { use scrypto::prelude::*; };
             use_statements.push(item);
         }
 
@@ -979,35 +979,35 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::ComponentAddress {
             type Error = ::scrypto::prelude::ParseComponentAddressError;
 
-            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+            fn try_from(value: #bp_ident) -> Result<Self, Self::Error> {
                 ::scrypto::prelude::ComponentAddress::try_from(value.0)
             }
         }
         impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::ResourceAddress {
             type Error = ::scrypto::prelude::ParseResourceAddressError;
 
-            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+            fn try_from(value: #bp_ident) -> Result<Self, Self::Error> {
                 ::scrypto::prelude::ResourceAddress::try_from(value.0)
             }
         }
         impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::PackageAddress {
             type Error = ::scrypto::prelude::ParsePackageAddressError;
 
-            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+            fn try_from(value: #bp_ident) -> Result<Self, Self::Error> {
                 ::scrypto::prelude::PackageAddress::try_from(value.0)
             }
         }
         impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::GlobalAddress {
             type Error = ::scrypto::prelude::ParseGlobalAddressError;
 
-            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+            fn try_from(value: #bp_ident) -> Result<Self, Self::Error> {
                 ::scrypto::prelude::GlobalAddress::try_from(value.0)
             }
         }
         impl ::core::convert::TryFrom<#bp_ident> for ::scrypto::prelude::InternalAddress {
             type Error = ::scrypto::prelude::ParseInternalAddressError;
 
-            fn try_from(value: #bp_ident) -> ::std::result::Result<Self, Self::Error> {
+            fn try_from(value: #bp_ident) -> Result<Self, Self::Error> {
                 ::scrypto::prelude::InternalAddress::try_from(value.0)
             }
         }
@@ -1027,6 +1027,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         }
     };
+
+    let test_bindings_mod_ident = format_ident!("{}_test", module_ident);
 
     let output_test_bindings_fns = {
         let fns = generate_test_bindings_fns(&bp_name, bp_items)?;
@@ -1074,10 +1076,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #(#registered_type_impls)*
         }
 
-        // Only available when the blueprint is build with the test feature.
-        #[cfg(feature = "test")]
         #[automatically_derived]
-        pub mod test_bindings {
+        pub mod #test_bindings_mod_ident {
             #(#use_statements)*
 
             #output_test_bindings_state
@@ -1725,7 +1725,7 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
                 ) -> Result<#rtn_type, E>
                 where
                     Y: ::scrypto::api::ClientApi<E>,
-                    E: ::std::fmt::Debug
+                    E: Debug
                 {
                     let rtn = env. #invocation_type ( #invocation_args )?;
                     Ok(::scrypto::prelude::scrypto_decode(&rtn).unwrap())
@@ -1874,8 +1874,8 @@ mod tests {
 
                 #[automatically_derived]
                 pub mod test {
-                    use scrypto::prelude::*;
                     use super::*;
+                    use scrypto::prelude::*;
                     use scrypto::prelude::MethodAccessibility::*;
                     use scrypto::prelude::RoyaltyAmount::*;
 
@@ -2421,11 +2421,10 @@ mod tests {
                     }
                 }
 
-                #[cfg(feature = "test")]
                 #[automatically_derived]
-                pub mod test_bindings {
-                    use scrypto::prelude::*;
+                pub mod test_test {
                     use super::*;
+                    use scrypto::prelude::*;
                     use scrypto::prelude::MethodAccessibility::*;
                     use scrypto::prelude::RoyaltyAmount::*;
 
@@ -2469,31 +2468,31 @@ mod tests {
 
                     impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::ComponentAddress {
                         type Error = ::scrypto::prelude::ParseComponentAddressError;
-                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                        fn try_from(value: Test) -> Result<Self, Self::Error> {
                             ::scrypto::prelude::ComponentAddress::try_from(value.0)
                         }
                     }
                     impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::ResourceAddress {
                         type Error = ::scrypto::prelude::ParseResourceAddressError;
-                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                        fn try_from(value: Test) -> Result<Self, Self::Error> {
                             ::scrypto::prelude::ResourceAddress::try_from(value.0)
                         }
                     }
                     impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::PackageAddress {
                         type Error = ::scrypto::prelude::ParsePackageAddressError;
-                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                        fn try_from(value: Test) -> Result<Self, Self::Error> {
                             ::scrypto::prelude::PackageAddress::try_from(value.0)
                         }
                     }
                     impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::GlobalAddress {
                         type Error = ::scrypto::prelude::ParseGlobalAddressError;
-                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                        fn try_from(value: Test) -> Result<Self, Self::Error> {
                             ::scrypto::prelude::GlobalAddress::try_from(value.0)
                         }
                     }
                     impl ::core::convert::TryFrom<Test> for ::scrypto::prelude::InternalAddress {
                         type Error = ::scrypto::prelude::ParseInternalAddressError;
-                        fn try_from(value: Test) -> ::std::result::Result<Self, Self::Error> {
+                        fn try_from(value: Test) -> Result<Self, Self::Error> {
                             ::scrypto::prelude::InternalAddress::try_from(value.0)
                         }
                     }
@@ -2517,7 +2516,7 @@ mod tests {
                         pub fn x<Y, E>(&self, i: u32, env: &mut Y) -> Result<u32, E>
                         where
                             Y: ::scrypto::api::ClientApi<E>,
-                            E: ::std::fmt::Debug
+                            E: Debug
                         {
                             let rtn = env.call_method(
                                 &self.0,
@@ -2534,7 +2533,7 @@ mod tests {
                         ) -> Result<u32, E>
                         where
                             Y: ::scrypto::api::ClientApi<E>,
-                            E: ::std::fmt::Debug
+                            E: Debug
                         {
                             let rtn = env.call_function(
                                 blueprint_package_address,

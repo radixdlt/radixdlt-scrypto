@@ -31,8 +31,8 @@ macro_rules! assert_sign_extensions {
 
                 assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops());
 
-                let mut test_runner = TestRunnerBuilder::new().build();
-                let package_address = test_runner.publish_package(
+                let mut ledger = LedgerSimulatorBuilder::new().build();
+                let package_address = ledger.publish_package(
                     (code, single_function_package_definition("Test", "f")),
                     BTreeMap::new(),
                     OwnerRole::None,
@@ -41,7 +41,7 @@ macro_rules! assert_sign_extensions {
                     .lock_fee_from_faucet()
                     .call_function(package_address, "Test", "f", manifest_args!())
                     .build();
-                let receipt = test_runner.execute_manifest(manifest, vec![]);
+                let receipt = ledger.execute_manifest(manifest, vec![]);
 
                 // Assert
                 let outcome: $type = receipt.expect_commit(true).output(1);
@@ -63,7 +63,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
     let code = wat2wasm(&include_local_wasm_str!("mutable_globals_import.wat"));
 
     // Act
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
@@ -74,7 +74,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let error_message = receipt
@@ -91,8 +91,8 @@ fn test_wasm_non_mvp_mutable_globals_export() {
     let code = wat2wasm(&include_local_wasm_str!("mutable_globals_export.wat"));
 
     // Act
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package(
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
@@ -101,7 +101,7 @@ fn test_wasm_non_mvp_mutable_globals_export() {
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     assert!(receipt.is_commit_success());

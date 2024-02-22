@@ -111,12 +111,12 @@ fn test_mint_small_size_nfts_from_manifest() {
 
 #[cfg(feature = "std")]
 fn execute_with_time_logging(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
     let start = std::time::Instant::now();
-    let receipt = test_runner.execute_manifest(manifest, proofs);
+    let receipt = ledger.execute_manifest(manifest, proofs);
     let duration = start.elapsed();
     println!(
         "Time elapsed is: {:?} - NOTE: this is a very bad measure. Use benchmarks instead.",
@@ -127,11 +127,11 @@ fn execute_with_time_logging(
 
 #[cfg(feature = "alloc")]
 fn execute_with_time_logging(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
-    let receipt = test_runner.execute_manifest(manifest, proofs);
+    let receipt = ledger.execute_manifest(manifest, proofs);
     (receipt, 0)
 }
 
@@ -370,9 +370,9 @@ impl Mode {
 
 fn run_basic_transfer(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key1, _, account1) = test_runner.new_allocated_account();
-    let (_, _, account2) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key1, _, account1) = ledger.new_allocated_account();
+    let (_, _, account2) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -382,7 +382,7 @@ fn run_basic_transfer(mode: Mode) {
         .build();
 
     let (receipt, _) = execute_with_time_logging(
-        &mut test_runner,
+        &mut ledger,
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
@@ -393,8 +393,8 @@ fn run_basic_transfer(mode: Mode) {
 
 fn run_basic_transfer_to_virtual_account(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key1, _, account1) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key1, _, account1) = ledger.new_allocated_account();
     let account2 = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PublicKey([123u8; 33]),
     ));
@@ -407,7 +407,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
         .build();
 
     let (receipt, _) = execute_with_time_logging(
-        &mut test_runner,
+        &mut ledger,
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
@@ -417,21 +417,21 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
 }
 
 fn run_radiswap(mode: Mode, use_v1_1_pools: bool) {
-    let mut test_runner = if use_v1_1_pools {
-        TestRunnerBuilder::new().build()
+    let mut ledger = if use_v1_1_pools {
+        LedgerSimulatorBuilder::new().build()
     } else {
-        TestRunnerBuilder::new().without_pools_v1_1().build()
+        LedgerSimulatorBuilder::new().without_pools_v1_1().build()
     };
 
     // Scrypto developer
-    let (pk1, _, _) = test_runner.new_allocated_account();
+    let (pk1, _, _) = ledger.new_allocated_account();
     // Radiswap operator
-    let (pk2, _, account2) = test_runner.new_allocated_account();
+    let (pk2, _, account2) = ledger.new_allocated_account();
     // Radiswap user
-    let (pk3, _, account3) = test_runner.new_allocated_account();
+    let (pk3, _, account3) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.publish_package(
+    let package_address = ledger.publish_package(
         (
             include_workspace_asset_bytes!("radiswap.wasm").to_vec(),
             manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap(),
@@ -441,9 +441,9 @@ fn run_radiswap(mode: Mode, use_v1_1_pools: bool) {
     );
 
     // Instantiate Radiswap
-    let btc = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
-    let eth = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
-    let component_address: ComponentAddress = test_runner
+    let btc = ledger.create_fungible_resource(1_000_000.into(), 18, account2);
+    let eth = ledger.create_fungible_resource(1_000_000.into(), 18, account2);
+    let component_address: ComponentAddress = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
@@ -463,7 +463,7 @@ fn run_radiswap(mode: Mode, use_v1_1_pools: bool) {
     // Contributing an initial amount to radiswap
     let btc_init_amount = Decimal::from(500_000);
     let eth_init_amount = Decimal::from(300_000);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
@@ -486,7 +486,7 @@ fn run_radiswap(mode: Mode, use_v1_1_pools: bool) {
 
     // Transfer `10,000 BTC` from `account2` to `account3`
     let btc_amount = Decimal::from(10_000);
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(account2, 500)
@@ -496,11 +496,11 @@ fn run_radiswap(mode: Mode, use_v1_1_pools: bool) {
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .expect_commit_success();
-    assert_eq!(test_runner.get_component_balance(account3, btc), btc_amount);
+    assert_eq!(ledger.get_component_balance(account3, btc), btc_amount);
 
     // Swap 2,000 BTC into ETH
     let btc_to_swap = Decimal::from(2000);
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account3, 500)
             .withdraw_from_account(account3, btc, btc_to_swap)
@@ -513,8 +513,8 @@ fn run_radiswap(mode: Mode, use_v1_1_pools: bool) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    let remaining_btc = test_runner.get_component_balance(account3, btc);
-    let eth_received = test_runner.get_component_balance(account3, eth);
+    let remaining_btc = ledger.get_component_balance(account3, btc);
+    let eth_received = ledger.get_component_balance(account3, eth);
     assert_eq!(remaining_btc, btc_amount.checked_sub(btc_to_swap).unwrap());
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     receipt.expect_commit(true);
@@ -523,17 +523,17 @@ fn run_radiswap(mode: Mode, use_v1_1_pools: bool) {
 }
 
 fn run_flash_loan(mode: Mode) {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Scrypto developer
-    let (pk1, _, _) = test_runner.new_allocated_account();
+    let (pk1, _, _) = ledger.new_allocated_account();
     // Flash loan operator
-    let (pk2, _, account2) = test_runner.new_allocated_account();
+    let (pk2, _, account2) = ledger.new_allocated_account();
     // Flash loan user
-    let (pk3, _, account3) = test_runner.new_allocated_account();
+    let (pk3, _, account3) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.publish_package(
+    let package_address = ledger.publish_package(
         (
             include_workspace_asset_bytes!("flash_loan.wasm").to_vec(),
             manifest_decode(include_workspace_asset_bytes!("flash_loan.rpd")).unwrap(),
@@ -544,7 +544,7 @@ fn run_flash_loan(mode: Mode) {
 
     // Instantiate flash_loan
     let xrd_init_amount = Decimal::from(100);
-    let (component_address, promise_token_address) = test_runner
+    let (component_address, promise_token_address) = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
@@ -568,8 +568,8 @@ fn run_flash_loan(mode: Mode) {
     // Take loan
     let loan_amount = Decimal::from(50);
     let repay_amount = loan_amount.checked_mul(dec!("1.001")).unwrap();
-    let old_balance = test_runner.get_component_balance(account3, XRD);
-    let receipt = test_runner.execute_manifest(
+    let old_balance = ledger.get_component_balance(account3, XRD);
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account3, 500)
             .call_method(component_address, "take_loan", manifest_args!(loan_amount))
@@ -588,8 +588,8 @@ fn run_flash_loan(mode: Mode) {
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
     receipt.expect_commit(true);
-    let new_balance = test_runner.get_component_balance(account3, XRD);
-    assert!(test_runner
+    let new_balance = ledger.get_component_balance(account3, XRD);
+    assert!(ledger
         .get_component_balance(account3, promise_token_address)
         .is_zero());
     assert_eq!(
@@ -607,7 +607,7 @@ fn run_flash_loan(mode: Mode) {
 
 fn run_publish_large_package(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let code = wat2wasm(&format!(
@@ -631,7 +631,7 @@ fn run_publish_large_package(mode: Mode) {
         )
         .build();
 
-    let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
+    let (receipt, _) = execute_with_time_logging(&mut ledger, manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -669,8 +669,8 @@ fn run_mint_large_size_nfts_from_manifest(mode: Mode) {
 
 fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
-    let (_, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (_, _, account) = ledger.new_allocated_account();
 
     // Act
     let mut low = 16;
@@ -706,7 +706,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
         if raw_transaction.0.len() > MAX_TRANSACTION_SIZE {
             high = mid - 1;
         } else {
-            let receipt = test_runner.execute_manifest(manifest, vec![]);
+            let receipt = ledger.execute_manifest(manifest, vec![]);
             if receipt.is_commit_success() {
                 last_success_receipt = Some((mid, receipt, raw_transaction));
                 low = mid + 1;
@@ -738,10 +738,10 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
 #[test]
 fn can_run_large_manifest() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let mut builder = ManifestBuilder::new()
@@ -758,7 +758,7 @@ fn can_run_large_manifest() {
         .build();
 
     let (receipt, _) = execute_with_time_logging(
-        &mut test_runner,
+        &mut ledger,
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -770,9 +770,9 @@ fn can_run_large_manifest() {
 #[test]
 fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_fungible_resource(100.into(), 0, account);
 
     // Act
     let mut builder = ManifestBuilder::new();
@@ -782,7 +782,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     let manifest = builder.lock_standard_test_fee(account).build();
 
     let (receipt, _) = execute_with_time_logging(
-        &mut test_runner,
+        &mut ledger,
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -791,14 +791,14 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     receipt.expect_commit(true);
 }
 
-fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, ComponentAddress) {
+fn setup_ledger_with_fee_blueprint_component() -> (DefaultLedgerSimulator, ComponentAddress) {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package and instantiate component
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("fee"));
-    let receipt1 = test_runner.execute_manifest(
+    let package_address = ledger.publish_package_simple(PackageLoader::get("fee"));
+    let receipt1 = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, XRD, 10)
@@ -817,12 +817,12 @@ fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, Compo
     let commit_result = receipt1.expect_commit(true);
     let component_address = commit_result.new_component_addresses()[0];
 
-    (test_runner, component_address)
+    (ledger, component_address)
 }
 
 #[test]
 fn spin_loop_should_end_in_reasonable_amount_of_time() {
-    let (mut test_runner, component_address) = setup_test_runner_with_fee_blueprint_component();
+    let (mut ledger, component_address) = setup_ledger_with_fee_blueprint_component();
 
     let manifest = ManifestBuilder::new()
         // First, lock the fee so that the loan will be repaid
@@ -831,7 +831,7 @@ fn spin_loop_should_end_in_reasonable_amount_of_time() {
         .call_method(component_address, "spin_loop", manifest_args!())
         .build();
 
-    let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
+    let (receipt, _) = execute_with_time_logging(&mut ledger, manifest, vec![]);
 
     // No assertion here - this is just a sanity-test
     println!(
@@ -862,7 +862,7 @@ impl NonFungibleData for TestNonFungibleData {
 ///
 #[test]
 fn publish_package_1mib() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let code = include_workspace_asset_bytes!("large_package.wasm").to_vec();
     let definition = manifest_decode(include_workspace_asset_bytes!("large_package.rpd")).unwrap();
     println!("Code size: {}", code.len());
@@ -870,7 +870,7 @@ fn publish_package_1mib() {
     assert!(code.len() >= 900 * 1024);
 
     // internally validates if publish succeeded
-    test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+    ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
 }
 
 /// Based on product requirements, system loan should be just enough to cover:
@@ -880,10 +880,10 @@ fn publish_package_1mib() {
 #[test]
 fn system_loan_should_cover_intended_use_case() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk1, sk1, _pk2, sk2, _pk3, sk3, _pk4, sk4, account, access_controller) =
-        test_runner.new_ed25519_virtual_account_with_access_controller(3);
+        ledger.new_ed25519_virtual_account_with_access_controller(3);
 
     let manifest1 = ManifestBuilder::new()
         .call_method(
@@ -903,14 +903,14 @@ fn system_loan_should_cover_intended_use_case() {
         })
         .build();
     let tx1 = create_notarized_transaction_advanced(
-        &mut test_runner,
+        &mut ledger,
         &network,
         manifest1,
         vec![&sk1, &sk2, &sk3], // sign
         &sk4,                   // notarize
         false,
     );
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable(),
         CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
@@ -923,15 +923,15 @@ fn system_loan_should_cover_intended_use_case() {
 #[test]
 fn transaction_with_large_payload_but_insufficient_fee_payment_should_be_rejected() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(true);
-    let resource_address = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(true);
+    let resource_address = ledger.create_non_fungible_resource(account);
 
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("0.2"))
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
     receipt.expect_commit_success();
 
     let manifest = ManifestBuilder::new()
@@ -948,7 +948,7 @@ fn transaction_with_large_payload_but_insufficient_fee_payment_should_be_rejecte
         })
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
     receipt.expect_specific_rejection(|e| {
         matches!(e, RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_))
     })

@@ -3,8 +3,8 @@
 //! parsing logic as well as the logic needed ot add these instructions to the original manifest
 //! builder that is being used.
 
-use radix_engine_common::prelude::*;
 use radix_engine_common::math::ParseDecimalError;
+use radix_engine_common::prelude::*;
 
 #[derive(Debug)]
 pub enum ParseResourceSpecifierError {

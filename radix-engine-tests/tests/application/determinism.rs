@@ -6,18 +6,18 @@ use scrypto_test::prelude::*;
 #[test]
 fn test_simple_deterministic_execution() {
     // Arrange
-    let mut test_runner0 = TestRunnerBuilder::new().with_state_hashing().build();
-    let mut test_runner1 = TestRunnerBuilder::new().with_state_hashing().build();
+    let mut ledger0 = LedgerSimulatorBuilder::new().with_state_hashing().build();
+    let mut ledger1 = LedgerSimulatorBuilder::new().with_state_hashing().build();
 
     // Act
-    let (public_key0, _, account0) = test_runner0.new_allocated_account();
-    let (public_key1, _, account1) = test_runner1.new_allocated_account();
+    let (public_key0, _, account0) = ledger0.new_allocated_account();
+    let (public_key1, _, account1) = ledger1.new_allocated_account();
 
     // Assert
     assert_eq!(public_key0, public_key1);
     assert_eq!(account0, account1);
-    assert_eq!(test_runner0.get_state_hash(), test_runner1.get_state_hash());
-    assert_eq!(test_runner0.substate_db(), test_runner1.substate_db());
+    assert_eq!(ledger0.get_state_hash(), ledger1.get_state_hash());
+    assert_eq!(ledger0.substate_db(), ledger1.substate_db());
 }
 
 #[test]
@@ -38,11 +38,11 @@ fn same_executions_result_in_same_final_state_hash() {
 /// Returns the root hash of the system's final state.
 fn create_and_pass_multiple_proofs() -> Hash {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().with_state_hashing().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().with_state_hashing().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+        ledger.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let mut builder = ManifestBuilder::new();
@@ -64,7 +64,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
             manifest_args!(proof_ids),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -72,5 +72,5 @@ fn create_and_pass_multiple_proofs() -> Hash {
     // Assert
     receipt.expect_commit_success();
 
-    test_runner.get_state_hash()
+    ledger.get_state_hash()
 }

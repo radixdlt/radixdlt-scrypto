@@ -16,11 +16,11 @@ use substate_store_queries::typed_substate_layout::*;
 #[test]
 fn can_call_public_function() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("role_assignment"));
 
     // Act
-    let receipt = test_runner.call_function(
+    let receipt = ledger.call_function(
         package_address,
         "FunctionAccessRules",
         "public_function",
@@ -34,11 +34,11 @@ fn can_call_public_function() {
 #[test]
 fn cannot_call_protected_function_without_auth() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("role_assignment"));
 
     // Act
-    let receipt = test_runner.call_function(
+    let receipt = ledger.call_function(
         package_address,
         "FunctionAccessRules",
         "protected_function",
@@ -59,9 +59,9 @@ fn cannot_call_protected_function_without_auth() {
 #[test]
 fn can_call_protected_function_with_auth() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
-    let (key, _priv, account) = test_runner.new_account(true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("role_assignment"));
+    let (key, _priv, account) = ledger.new_account(true);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -75,7 +75,7 @@ fn can_call_protected_function_with_auth() {
         )
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -88,10 +88,10 @@ fn roles_assignment_method_auth_cannot_be_mutated_when_locked() {
     roles.define_role("deposit_funds_auth_update", rule!(allow_all));
     roles.define_role("borrow_funds_auth", rule!(allow_all));
     roles.define_role("deposit_funds_auth", rule!(require(XRD)));
-    let mut test_runner = MutableRolesTestRunner::new(roles);
+    let mut ledger = MutableRolesLedgerSimulator::new(roles);
 
     // Act
-    let receipt = test_runner.set_role_rule(RoleKey::new("deposit_funds_auth"), rule!(allow_all));
+    let receipt = ledger.set_role_rule(RoleKey::new("deposit_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -108,12 +108,12 @@ fn role_assignment_method_auth_cant_be_mutated_when_required_proofs_are_not_pres
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
+    let mut ledger = MutableRolesLedgerSimulator::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id
     )));
 
     // Act
-    let receipt = test_runner.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
+    let receipt = ledger.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -130,13 +130,13 @@ fn role_assignment_method_auth_can_be_mutated_when_required_proofs_are_present()
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
+    let mut ledger = MutableRolesLedgerSimulator::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
 
     // Act
-    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
-    let receipt = test_runner.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
+    ledger.add_initial_proof(virtual_badge_non_fungible_global_id);
+    let receipt = ledger.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -147,21 +147,21 @@ fn component_role_assignment_can_be_mutated_through_manifest(to_rule: AccessRule
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
+    let mut ledger = MutableRolesLedgerSimulator::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
-    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
+    ledger.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
-    let receipt = test_runner.execute_manifest(
-        MutableRolesTestRunner::manifest_builder()
-            .set_main_role(test_runner.component_address, "borrow_funds_auth", to_rule)
+    let receipt = ledger.execute_manifest(
+        MutableRolesLedgerSimulator::manifest_builder()
+            .set_main_role(ledger.component_address, "borrow_funds_auth", to_rule)
             .build(),
     );
 
     // Assert
     receipt.expect_commit_success();
-    let receipt = test_runner.borrow_funds();
+    let receipt = ledger.borrow_funds();
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
@@ -191,15 +191,15 @@ fn component_role_assignment_can_be_mutated_to_non_fungible_resource_through_man
 #[test]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("role_assignment"));
     let component_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest(manifest, []);
+        let receipt = ledger.execute_manifest(manifest, []);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -215,7 +215,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, []);
+    let receipt = ledger.execute_manifest(manifest, []);
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
@@ -229,9 +229,9 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 #[test]
 fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
-    let (public_key, _, account) = test_runner.new_account(false);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (public_key, _, account) = ledger.new_account(false);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("role_assignment"));
 
     let component_address = {
         let manifest = ManifestBuilder::new()
@@ -239,7 +239,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -259,7 +259,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         [NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -274,11 +274,11 @@ fn update_rule() {
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
+    let mut ledger = MutableRolesLedgerSimulator::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
 
-    let receipt = test_runner.get_role(RoleKey::new("borrow_funds_auth"));
+    let receipt = ledger.get_role(RoleKey::new("borrow_funds_auth"));
     let ret = receipt.expect_commit(true).outcome.expect_success();
     assert_eq!(
         ret[1],
@@ -291,12 +291,12 @@ fn update_rule() {
     );
 
     // Act, update rule
-    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
-    let receipt = test_runner.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
+    ledger.add_initial_proof(virtual_badge_non_fungible_global_id);
+    let receipt = ledger.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.get_role(RoleKey::new("borrow_funds_auth"));
+    let receipt = ledger.get_role(RoleKey::new("borrow_funds_auth"));
 
     // Assert
     let ret = receipt.expect_commit(true).outcome.expect_success();
@@ -309,13 +309,13 @@ fn update_rule() {
 #[test]
 fn change_lock_owner_role_rules() {
     // Arrange
-    let mut test_runner =
-        MutableRolesTestRunner::new_with_owner_role(OwnerRole::Updatable(rule!(allow_all)));
+    let mut ledger =
+        MutableRolesLedgerSimulator::new_with_owner_role(OwnerRole::Updatable(rule!(allow_all)));
 
     // Act: verify if lock owner role is possible
-    let receipt = test_runner.lock_owner_role();
+    let receipt = ledger.lock_owner_role();
     receipt.expect_commit(true).outcome.expect_success();
-    let receipt = test_runner.lock_owner_role();
+    let receipt = ledger.lock_owner_role();
 
     // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
@@ -331,9 +331,9 @@ fn check_fall_to_owner() {
     // Arrange
     let mut roles = RoleAssignmentInit::new();
     roles.define_role("owner", FallToOwner::OWNER);
-    let mut test_runner = MutableRolesTestRunner::new(roles);
+    let mut ledger = MutableRolesLedgerSimulator::new(roles);
 
-    let receipt = test_runner.get_role(RoleKey::new("owner"));
+    let receipt = ledger.get_role(RoleKey::new("owner"));
     let ret = receipt.expect_commit(true).outcome.expect_success();
     assert_eq!(
         ret[1],
@@ -344,9 +344,9 @@ fn check_fall_to_owner() {
 #[test]
 fn setting_a_role_with_a_long_name_before_attachment_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
@@ -363,7 +363,7 @@ fn setting_a_role_with_a_long_name_before_attachment_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -379,9 +379,9 @@ fn setting_a_role_with_a_long_name_before_attachment_fails() {
 #[test]
 fn setting_a_reserved_role_before_attachment_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
@@ -398,7 +398,7 @@ fn setting_a_reserved_role_before_attachment_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -414,9 +414,9 @@ fn setting_a_reserved_role_before_attachment_fails() {
 #[test]
 fn setting_any_role_in_reserved_space_before_attachment_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
@@ -433,7 +433,7 @@ fn setting_any_role_in_reserved_space_before_attachment_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -449,9 +449,9 @@ fn setting_any_role_in_reserved_space_before_attachment_fails() {
 #[test]
 fn setting_a_reserved_role_in_reserved_space_before_attachment_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
@@ -468,7 +468,7 @@ fn setting_a_reserved_role_in_reserved_space_before_attachment_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -484,9 +484,9 @@ fn setting_a_reserved_role_in_reserved_space_before_attachment_fails() {
 #[test]
 fn creation_of_module_with_reserved_roles_before_attachment_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {
         ModuleId::Main => RoleAssignmentInit {
@@ -507,7 +507,7 @@ fn creation_of_module_with_reserved_roles_before_attachment_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -523,9 +523,9 @@ fn creation_of_module_with_reserved_roles_before_attachment_fails() {
 #[test]
 fn creation_of_module_with_role_names_exceeding_maximum_length_before_attachment_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {
         ModuleId::Main => RoleAssignmentInit {
@@ -546,7 +546,7 @@ fn creation_of_module_with_role_names_exceeding_maximum_length_before_attachment
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -562,9 +562,9 @@ fn creation_of_module_with_role_names_exceeding_maximum_length_before_attachment
 #[test]
 fn updating_a_reserved_role_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
@@ -578,7 +578,7 @@ fn updating_a_reserved_role_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let component_address = *test_runner
+    let component_address = *ledger
         .execute_manifest(manifest, vec![])
         .expect_commit_success()
         .new_component_addresses()
@@ -595,7 +595,7 @@ fn updating_a_reserved_role_fails() {
             AccessRule::DenyAll,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -611,9 +611,9 @@ fn updating_a_reserved_role_fails() {
 #[test]
 fn updating_any_role_on_reserved_space_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
@@ -627,7 +627,7 @@ fn updating_any_role_on_reserved_space_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let component_address = *test_runner
+    let component_address = *ledger
         .execute_manifest(manifest, vec![])
         .expect_commit_success()
         .new_component_addresses()
@@ -644,7 +644,7 @@ fn updating_any_role_on_reserved_space_fails() {
             AccessRule::DenyAll,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -660,7 +660,7 @@ fn updating_any_role_on_reserved_space_fails() {
 #[test]
 fn updating_a_role_not_in_the_package_definition_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("role-assignment-edge-cases");
     definition.blueprints.values_mut().for_each(|bp_def| {
         bp_def.auth_config.method_auth =
@@ -671,7 +671,7 @@ fn updating_a_role_not_in_the_package_definition_fails() {
                 methods: Default::default(),
             })
     });
-    let package_address = test_runner.publish_package_simple((code, definition));
+    let package_address = ledger.publish_package_simple((code, definition));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
@@ -685,7 +685,7 @@ fn updating_a_role_not_in_the_package_definition_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let component_address = *test_runner
+    let component_address = *ledger
         .execute_manifest(manifest, vec![])
         .expect_commit_success()
         .new_component_addresses()
@@ -702,7 +702,7 @@ fn updating_a_role_not_in_the_package_definition_fails() {
             AccessRule::DenyAll,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -718,13 +718,13 @@ fn updating_a_role_not_in_the_package_definition_fails() {
 #[test]
 fn updating_a_role_on_package_with_allow_all_method_accessibility_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("role-assignment-edge-cases");
     definition
         .blueprints
         .values_mut()
         .for_each(|bp_def| bp_def.auth_config.method_auth = MethodAuthTemplate::AllowAll);
-    let package_address = test_runner.publish_package_simple((code, definition));
+    let package_address = ledger.publish_package_simple((code, definition));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {};
@@ -738,7 +738,7 @@ fn updating_a_role_on_package_with_allow_all_method_accessibility_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let component_address = *test_runner
+    let component_address = *ledger
         .execute_manifest(manifest, vec![])
         .expect_commit_success()
         .new_component_addresses()
@@ -755,7 +755,7 @@ fn updating_a_role_on_package_with_allow_all_method_accessibility_fails() {
             AccessRule::DenyAll,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -771,9 +771,9 @@ fn updating_a_role_on_package_with_allow_all_method_accessibility_fails() {
 #[test]
 fn setting_a_role_with_invalid_utf8_characters_before_attachment_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {};
     let set_roles: IndexMap<(ModuleId, String), AccessRule> = indexmap! {
@@ -790,7 +790,7 @@ fn setting_a_role_with_invalid_utf8_characters_before_attachment_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -806,9 +806,9 @@ fn setting_a_role_with_invalid_utf8_characters_before_attachment_fails() {
 #[test]
 fn creation_with_a_role_with_invalid_utf8_characters_before_attachment_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
+        ledger.publish_package_simple(PackageLoader::get("role-assignment-edge-cases"));
 
     let init_roles: IndexMap<ModuleId, RoleAssignmentInit> = indexmap! {
         ModuleId::Main => RoleAssignmentInit {
@@ -829,7 +829,7 @@ fn creation_with_a_role_with_invalid_utf8_characters_before_attachment_fails() {
             manifest_args!(init_roles, set_roles),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -846,21 +846,21 @@ fn name(len: usize, chr: char) -> String {
     (0..len).map(|_| chr).collect()
 }
 
-struct MutableRolesTestRunner {
-    test_runner: DefaultTestRunner,
+struct MutableRolesLedgerSimulator {
+    ledger: DefaultLedgerSimulator,
     component_address: ComponentAddress,
     initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
 
-impl MutableRolesTestRunner {
+impl MutableRolesLedgerSimulator {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
     pub fn create_component(
         roles: RoleAssignmentInit,
-        test_runner: &mut DefaultTestRunner,
+        ledger: &mut DefaultLedgerSimulator,
     ) -> TransactionReceipt {
         let package_address =
-            test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
+            ledger.publish_package_simple(PackageLoader::get("role_assignment"));
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -871,15 +871,15 @@ impl MutableRolesTestRunner {
                 manifest_args!(roles),
             )
             .build();
-        test_runner.execute_manifest(manifest, vec![])
+        ledger.execute_manifest(manifest, vec![])
     }
 
     pub fn create_component_with_owner(
         owner_role: OwnerRole,
-        test_runner: &mut DefaultTestRunner,
+        ledger: &mut DefaultLedgerSimulator,
     ) -> TransactionReceipt {
         let package_address =
-            test_runner.publish_package_simple(PackageLoader::get("role_assignment"));
+            ledger.publish_package_simple(PackageLoader::get("role_assignment"));
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -890,43 +890,43 @@ impl MutableRolesTestRunner {
                 manifest_args!(owner_role),
             )
             .build();
-        test_runner.execute_manifest(manifest, vec![])
+        ledger.execute_manifest(manifest, vec![])
     }
 
     pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
-        let mut test_runner = TestRunnerBuilder::new().build();
+        let mut ledger = LedgerSimulatorBuilder::new().build();
         let receipt = Self::create_component_with_owner(
             OwnerRole::Fixed(update_access_rule),
-            &mut test_runner,
+            &mut ledger,
         );
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
-            test_runner,
+            ledger,
             component_address,
             initial_proofs: BTreeSet::new(),
         }
     }
 
     pub fn new_with_owner_role(owner_role: OwnerRole) -> Self {
-        let mut test_runner = TestRunnerBuilder::new().build();
-        let receipt = Self::create_component_with_owner(owner_role, &mut test_runner);
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+        let receipt = Self::create_component_with_owner(owner_role, &mut ledger);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
-            test_runner,
+            ledger,
             component_address,
             initial_proofs: BTreeSet::new(),
         }
     }
 
     pub fn new(roles: RoleAssignmentInit) -> Self {
-        let mut test_runner = TestRunnerBuilder::new().build();
-        let receipt = Self::create_component(roles, &mut test_runner);
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+        let receipt = Self::create_component(roles, &mut ledger);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
-            test_runner,
+            ledger,
             component_address,
             initial_proofs: BTreeSet::new(),
         }
@@ -978,7 +978,7 @@ impl MutableRolesTestRunner {
     }
 
     pub fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
-        self.test_runner
+        self.ledger
             .execute_manifest(manifest, self.initial_proofs.clone())
     }
 }

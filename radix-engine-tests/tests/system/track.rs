@@ -8,15 +8,15 @@ use substate_store_queries::typed_substate_layout::VaultError;
 #[test]
 fn test_lock_fee_and_then_withdraw_failure() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .withdraw_from_account(account, XRD, dec!("1000000"))
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

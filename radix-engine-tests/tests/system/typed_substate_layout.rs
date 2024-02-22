@@ -158,11 +158,11 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
 #[test]
 fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_typed() {
     let network = NetworkDefinition::simulator();
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let mut next_nonce: u32 = 0;
     for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = test_runner.get_current_epoch();
+        let epoch = ledger.get_current_epoch();
         let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
         let mut previous = None;
         loop {
@@ -172,7 +172,7 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
-                    let receipt = test_runner.execute_notarized_transaction(&next.raw_transaction);
+                    let receipt = ledger.execute_notarized_transaction(&next.raw_transaction);
                     match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_substate_changes_can_be_typed(commit_result);
@@ -194,11 +194,11 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
 #[test]
 fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
     let network = NetworkDefinition::simulator();
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let mut next_nonce: u32 = 0;
     for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = test_runner.get_current_epoch();
+        let epoch = ledger.get_current_epoch();
         let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
         let mut previous = None;
         loop {
@@ -208,7 +208,7 @@ fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
-                    let receipt = test_runner.execute_notarized_transaction(&next.raw_transaction);
+                    let receipt = ledger.execute_notarized_transaction(&next.raw_transaction);
                     match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_events_can_be_typed(commit_result);

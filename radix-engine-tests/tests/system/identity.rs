@@ -12,9 +12,9 @@ use scrypto_test::prelude::*;
 #[test]
 fn cannot_securify_in_advanced_mode() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
-    let component_address = test_runner.new_identity(pk.clone(), false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
+    let component_address = ledger.new_identity(pk.clone(), false);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -27,7 +27,7 @@ fn cannot_securify_in_advanced_mode() {
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -43,9 +43,9 @@ fn cannot_securify_in_advanced_mode() {
 #[test]
 fn can_securify_from_virtual_identity() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
-    let component_address = test_runner.new_identity(pk.clone(), true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
+    let component_address = ledger.new_identity(pk.clone(), true);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -58,7 +58,7 @@ fn can_securify_from_virtual_identity() {
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -67,9 +67,9 @@ fn can_securify_from_virtual_identity() {
 #[test]
 fn can_securify_from_virtual_identity_ed25519() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_ed25519_virtual_account();
-    let component_address = test_runner.new_identity(pk.clone(), true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_ed25519_virtual_account();
+    let component_address = ledger.new_identity(pk.clone(), true);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -82,7 +82,7 @@ fn can_securify_from_virtual_identity_ed25519() {
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -91,9 +91,9 @@ fn can_securify_from_virtual_identity_ed25519() {
 #[test]
 fn cannot_securify_twice() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
-    let component_address = test_runner.new_identity(pk.clone(), true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
+    let component_address = ledger.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
@@ -104,7 +104,7 @@ fn cannot_securify_twice() {
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
     receipt.expect_commit_success();
 
     // Act
@@ -118,7 +118,7 @@ fn cannot_securify_twice() {
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -134,9 +134,9 @@ fn cannot_securify_twice() {
 #[test]
 fn can_set_metadata_after_securify() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
-    let identity_address = test_runner.new_identity(pk.clone(), true);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
+    let identity_address = ledger.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
@@ -147,7 +147,7 @@ fn can_set_metadata_after_securify() {
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
     receipt.expect_commit_success();
 
     // Act
@@ -165,11 +165,11 @@ fn can_set_metadata_after_securify() {
         )
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_commit_success();
-    let value = test_runner
+    let value = ledger
         .get_metadata(identity_address.into(), "name")
         .expect("Should exist");
     assert_eq!(
@@ -181,9 +181,9 @@ fn can_set_metadata_after_securify() {
 #[test]
 fn can_set_metadata_on_securified_identity() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
-    let identity_address = test_runner.new_securified_identity(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
+    let identity_address = ledger.new_securified_identity(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -200,11 +200,11 @@ fn can_set_metadata_on_securified_identity() {
         )
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_commit_success();
-    let value = test_runner
+    let value = ledger
         .get_metadata(identity_address.into(), "name")
         .expect("Should exist");
     assert_eq!(
@@ -216,10 +216,10 @@ fn can_set_metadata_on_securified_identity() {
 #[test]
 fn securified_identity_is_owned_by_correct_owner_badge() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let pk = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let identity = test_runner.new_identity(pk, true);
-    let (_, _, account) = test_runner.new_account(true);
+    let identity = ledger.new_identity(pk, true);
+    let (_, _, account) = ledger.new_account(true);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -232,10 +232,10 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
         .try_deposit_entire_worktop_or_refund(account, None)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
-    let balance_change = test_runner
+    let balance_change = ledger
         .sum_descendant_balance_changes(receipt.expect_commit_success(), account.as_node_id())
         .get(&IDENTITY_OWNER_BADGE)
         .unwrap()
@@ -252,7 +252,7 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
 #[test]
 fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let identity = {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -265,14 +265,14 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
                 },
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
 
     // Act
-    let metadata = test_runner.get_metadata(identity.into(), "owner_badge");
+    let metadata = ledger.get_metadata(identity.into(), "owner_badge");
 
     // Assert
     assert!(is_metadata_empty(&metadata))

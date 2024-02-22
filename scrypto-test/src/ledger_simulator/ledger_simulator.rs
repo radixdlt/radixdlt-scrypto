@@ -192,9 +192,9 @@ impl<T: SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabas
 {
 }
 
-pub type DefaultTestRunner = TestRunner<NoExtension, InMemorySubstateDatabase>;
+pub type DefaultLedgerSimulator = LedgerSimulator<NoExtension, InMemorySubstateDatabase>;
 
-pub struct TestRunnerBuilder<E, D> {
+pub struct LedgerSimulatorBuilder<E, D> {
     custom_genesis: Option<CustomGenesis>,
     custom_extension: E,
     custom_database: D,
@@ -210,9 +210,9 @@ pub struct TestRunnerBuilder<E, D> {
     with_pools_v1_1: bool,
 }
 
-impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
+impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
     pub fn new() -> Self {
-        TestRunnerBuilder {
+        LedgerSimulatorBuilder {
             custom_genesis: None,
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
@@ -226,9 +226,9 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
     }
 }
 
-impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
-    pub fn with_state_hashing(self) -> TestRunnerBuilder<E, HashTreeUpdatingDatabase<D>> {
-        TestRunnerBuilder {
+impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
+    pub fn with_state_hashing(self) -> LedgerSimulatorBuilder<E, HashTreeUpdatingDatabase<D>> {
+        LedgerSimulatorBuilder {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
@@ -269,8 +269,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
     pub fn with_custom_extension<NE: NativeVmExtension>(
         self,
         extension: NE,
-    ) -> TestRunnerBuilder<NE, D> {
-        TestRunnerBuilder::<NE, D> {
+    ) -> LedgerSimulatorBuilder<NE, D> {
+        LedgerSimulatorBuilder::<NE, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: extension,
             custom_database: self.custom_database,
@@ -283,8 +283,11 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         }
     }
 
-    pub fn with_custom_database<ND: TestDatabase>(self, database: ND) -> TestRunnerBuilder<E, ND> {
-        TestRunnerBuilder::<E, ND> {
+    pub fn with_custom_database<ND: TestDatabase>(
+        self,
+        database: ND,
+    ) -> LedgerSimulatorBuilder<E, ND> {
+        LedgerSimulatorBuilder::<E, ND> {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: database,
@@ -319,9 +322,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
 
     pub fn build_from_snapshot(
         self,
-        snapshot: TestRunnerSnapshot,
-    ) -> TestRunner<E, InMemorySubstateDatabase> {
-        TestRunner {
+        snapshot: LedgerSimulatorSnapshot,
+    ) -> LedgerSimulator<E, InMemorySubstateDatabase> {
+        LedgerSimulator {
             scrypto_vm: ScryptoVm::default(),
             native_vm: NativeVm::new_with_extension(self.custom_extension),
             database: snapshot.database,
@@ -334,7 +337,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         }
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner<E, D>, ActiveValidatorSet) {
+    pub fn build_and_get_epoch(self) -> (LedgerSimulator<E, D>, ActiveValidatorSet) {
         //---------- Override configs for resource tracker ---------------
         let bootstrap_trace = false;
 
@@ -428,7 +431,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
             }
         }
 
-        let runner = TestRunner {
+        let runner = LedgerSimulator {
             scrypto_vm,
             native_vm,
             database: substate_db,
@@ -447,12 +450,12 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         (runner, next_epoch.validator_set)
     }
 
-    pub fn build(self) -> TestRunner<E, D> {
+    pub fn build(self) -> LedgerSimulator<E, D> {
         self.build_and_get_epoch().0
     }
 }
 
-pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
+pub struct LedgerSimulator<E: NativeVmExtension, D: TestDatabase> {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
     native_vm: NativeVm<E>,
     database: D,
@@ -472,14 +475,14 @@ pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
 }
 
 #[cfg(feature = "post_run_db_check")]
-impl<E: NativeVmExtension, D: TestDatabase> Drop for TestRunner<E, D> {
+impl<E: NativeVmExtension, D: TestDatabase> Drop for LedgerSimulator<E, D> {
     fn drop(&mut self) {
         self.check_database()
     }
 }
 
 #[derive(Clone)]
-pub struct TestRunnerSnapshot {
+pub struct LedgerSimulatorSnapshot {
     database: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
@@ -489,9 +492,9 @@ pub struct TestRunnerSnapshot {
     with_receipt_substate_check: bool,
 }
 
-impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
-    pub fn create_snapshot(&self) -> TestRunnerSnapshot {
-        TestRunnerSnapshot {
+impl<E: NativeVmExtension> LedgerSimulator<E, InMemorySubstateDatabase> {
+    pub fn create_snapshot(&self) -> LedgerSimulatorSnapshot {
+        LedgerSimulatorSnapshot {
             database: self.database.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
@@ -502,7 +505,7 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
         }
     }
 
-    pub fn restore_snapshot(&mut self, snapshot: TestRunnerSnapshot) {
+    pub fn restore_snapshot(&mut self, snapshot: LedgerSimulatorSnapshot) {
         self.database = snapshot.database;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
@@ -513,7 +516,7 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
     }
 }
 
-impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
+impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn faucet_component(&self) -> GlobalAddress {
         FAUCET.clone().into()
     }
@@ -799,7 +802,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .ok()?;
         let amount = vault_balance.into_latest().amount;
 
-        // TODO: Remove .collect() by using SystemDatabaseReader in test_runner
+        // TODO: Remove .collect() by using SystemDatabaseReader in ledger
         let iter: Vec<NonFungibleLocalId> = reader
             .collection_iter(
                 &vault_id,
@@ -2354,7 +2357,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 }
 
-impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, HashTreeUpdatingDatabase<D>> {
+impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, HashTreeUpdatingDatabase<D>> {
     pub fn get_state_hash(&self) -> Hash {
         self.database.get_current_root_hash()
     }
@@ -2496,7 +2499,7 @@ pub fn create_notarized_transaction(
 }
 
 pub fn create_notarized_transaction_advanced<S: Signer>(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     network: &NetworkDefinition,
     manifest: TransactionManifestV1,
     signers: Vec<&S>,
@@ -2508,7 +2511,7 @@ pub fn create_notarized_transaction_advanced<S: Signer>(
             network_id: network.id,
             start_epoch_inclusive: Epoch::zero(),
             end_epoch_exclusive: Epoch::of(99),
-            nonce: test_runner.next_transaction_nonce(),
+            nonce: ledger.next_transaction_nonce(),
             notary_public_key: notary.public_key().into(),
             notary_is_signatory: notary_is_signatory,
             tip_percentage: DEFAULT_TIP_PERCENTAGE,

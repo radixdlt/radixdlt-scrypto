@@ -11,10 +11,10 @@ pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{
     blueprint, component_royalties, component_royalty_config, debug, enable_function_auth,
-    enable_method_auth, enable_package_royalties, error, extern_blueprint_internal, include_code,
-    include_schema, info, internal_add_role, internal_component_royalty_entry, main_accessibility,
-    method_accessibilities, method_accessibility, role_list, roles, this_package, to_role_key,
-    trace, warn, NonFungibleData,
+    enable_method_auth, enable_package_royalties, error, extern_blueprint_internal, info,
+    internal_add_role, internal_component_royalty_entry, main_accessibility,
+    method_accessibilities, method_accessibility, role_list, roles, to_role_key, trace, warn,
+    NonFungibleData,
 };
 
 //=========================

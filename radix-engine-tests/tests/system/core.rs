@@ -17,11 +17,11 @@ struct Compo {
 #[test]
 fn inspect_component_state() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(package_address, "Compo", "new", manifest_args!())
@@ -31,7 +31,7 @@ fn inspect_component_state() {
 
     // Assert
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
-    let state: Compo = test_runner.component_state(component_address);
+    let state: Compo = ledger.component_state(component_address);
     assert_eq!(
         state,
         Compo {
@@ -42,9 +42,9 @@ fn inspect_component_state() {
 
 #[test]
 fn test_globalize_with_unflushed_invalid_own() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -56,7 +56,7 @@ fn test_globalize_with_unflushed_invalid_own() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -65,9 +65,9 @@ fn test_globalize_with_unflushed_invalid_own() {
 
 #[test]
 fn test_globalize_with_unflushed_kv_store_self_own() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -79,7 +79,7 @@ fn test_globalize_with_unflushed_kv_store_self_own() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -89,9 +89,9 @@ fn test_globalize_with_unflushed_kv_store_self_own() {
 #[test]
 fn test_globalize_with_unflushed_another_transient_own() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -104,7 +104,7 @@ fn test_globalize_with_unflushed_another_transient_own() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -125,9 +125,9 @@ fn test_globalize_with_unflushed_another_transient_own() {
 #[test]
 fn test_globalize_with_unflushed_another_own() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -140,7 +140,7 @@ fn test_globalize_with_unflushed_another_own() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -161,9 +161,9 @@ fn test_globalize_with_unflushed_another_own() {
 #[test]
 fn test_globalize_with_unflushed_another_own_v2() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -176,7 +176,7 @@ fn test_globalize_with_unflushed_another_own_v2() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -194,9 +194,9 @@ fn test_globalize_with_unflushed_another_own_v2() {
 
 #[test]
 fn test_call() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -204,7 +204,7 @@ fn test_call() {
         .call_function(package_address, "MoveTest", "move_proof", manifest_args![])
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -213,9 +213,9 @@ fn test_call() {
 
 #[test]
 fn cant_globalize_in_another_package() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address1 = test_runner.publish_package_simple(PackageLoader::get("core"));
-    let package_address2 = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address1 = ledger.publish_package_simple(PackageLoader::get("core"));
+    let package_address2 = ledger.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -226,7 +226,7 @@ fn cant_globalize_in_another_package() {
             manifest_args![package_address2],
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
@@ -236,14 +236,14 @@ fn cant_globalize_in_another_package() {
 }
 
 fn call_function_and_assert_error(blueprint: &str, function: &str, expected_error: &str) {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, blueprint, function, manifest_args![])
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|e| e.to_string().contains(expected_error));
 }
 
@@ -324,8 +324,8 @@ fn cant_store_role_assignment() {
 
 #[test]
 fn test_globalize_with_very_deep_own() {
-    let mut test_runner = TestRunnerBuilder::new().without_kernel_trace().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -336,15 +336,15 @@ fn test_globalize_with_very_deep_own() {
             manifest_args![10000u32],
         )
         .build();
-    let result = test_runner.execute_manifest(manifest, vec![]);
+    let result = ledger.execute_manifest(manifest, vec![]);
     result.expect_commit_failure();
 }
 
 #[test]
 fn test_insert_not_visible_global_refs_in_substate_key() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("core"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -356,7 +356,7 @@ fn test_insert_not_visible_global_refs_in_substate_key() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

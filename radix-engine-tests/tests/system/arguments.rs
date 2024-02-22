@@ -5,8 +5,8 @@ use scrypto_test::prelude::*;
 #[test]
 fn vector_of_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -22,7 +22,7 @@ fn vector_of_buckets_argument_should_succeed() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -31,8 +31,8 @@ fn vector_of_buckets_argument_should_succeed() {
 #[test]
 fn tuple_of_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -48,7 +48,7 @@ fn tuple_of_buckets_argument_should_succeed() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -57,8 +57,8 @@ fn tuple_of_buckets_argument_should_succeed() {
 #[test]
 fn treemap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -77,7 +77,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -86,8 +86,8 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
 #[test]
 fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -106,7 +106,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -115,8 +115,8 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
 #[test]
 fn some_optional_bucket_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -131,7 +131,7 @@ fn some_optional_bucket_argument_should_succeed() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -140,8 +140,8 @@ fn some_optional_bucket_argument_should_succeed() {
 #[test]
 fn none_optional_bucket_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("arguments"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("arguments"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -153,7 +153,7 @@ fn none_optional_bucket_argument_should_succeed() {
             manifest_args!(Option::<ManifestBucket>::None),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();

@@ -1,14 +1,14 @@
 //! This crate is an implementation of for Scrypto-Test, a unit testing framework for Scrypto that
 //! follows an invocation-based approach instead of a transaction-based approach to testing,
 //! allowing Scrypto developers to write tests that look and feel like Scrypto. Scrypto-Test is not
-//! a replacement for transaction-based tests offered by the TestRunner, it would just be an
+//! a replacement for transaction-based tests offered by the LedgerSimulator, it would just be an
 //! addition and another way for Scrypto developers to test their code where Scrypto-Test could be
-//! classified as a unit-testing framework while the TestRunner could be classified as an
+//! classified as a unit-testing framework while the LedgerSimulator could be classified as an
 //! integration-testing framework.
 //!
 //! # Why
 //!
-//! We already have a way to test Scrypto blueprints in the from of the scrypto_test::prelude::TestRunner
+//! We already have a way to test Scrypto blueprints in the from of the scrypto_test::prelude::LedgerSimulator
 //! which is essentially an in-memory ledger that we can run transactions against, get back
 //! transaction receipts, and determine-based on the TransactionReceipt-if the behavior of the
 //! blueprint or component is as we expect or not. This approach is tried and tested and has been
@@ -82,7 +82,86 @@
 //! [`TestEnvironment`]: crate::prelude::TestEnvironment
 
 pub mod environment;
+pub mod ledger_simulator;
 pub mod prelude;
-pub mod runner;
 pub mod sdk;
 pub mod utils;
+
+#[macro_export]
+macro_rules! this_package {
+    () => {
+        env!("CARGO_MANIFEST_DIR")
+    };
+}
+
+/// Includes the WASM file of a Scrypto package.
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The binary name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let wasm1 = include_code!("bin_name");
+///
+/// // Another package
+/// let wasm2 = include_code!("/path/to/package", "bin_name");
+/// ```
+#[macro_export]
+macro_rules! include_code {
+    ($bin_name: expr) => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".wasm"
+        ))
+    };
+    ($package_dir: expr, $bin_name: expr) => {
+        include_bytes!(concat!(
+            $package_dir,
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".wasm"
+        ))
+    };
+}
+
+/// Includes the schema file of a Scrypto package.
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The binary name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let schema1 = include_schema!("bin_name");
+///
+/// // Another package
+/// let schema2 = include_schema!("/path/to/package", "bin_name");
+/// ```
+#[macro_export]
+macro_rules! include_schema {
+    ($bin_name: expr) => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".rpd"
+        ))
+    };
+    ($package_dir: expr, $bin_name: expr) => {
+        include_bytes!(concat!(
+            $package_dir,
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".rpd"
+        ))
+    };
+}

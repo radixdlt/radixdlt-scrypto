@@ -28,8 +28,8 @@ fn create_payload_of_depth(n: usize) -> Vec<u8> {
 #[test]
 fn test_write_kv_store_entry_within_depth_limit() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("scrypto_env"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -41,7 +41,7 @@ fn test_write_kv_store_entry_within_depth_limit() {
             manifest_args!(create_payload_of_depth(KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH)),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -50,8 +50,8 @@ fn test_write_kv_store_entry_within_depth_limit() {
 #[test]
 fn test_write_kv_store_entry_exceeding_depth_limit() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("scrypto_env"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -65,7 +65,7 @@ fn test_write_kv_store_entry_exceeding_depth_limit() {
             )),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| format!("{:?}", e).contains("MaxDepthExceeded"))
@@ -74,8 +74,8 @@ fn test_write_kv_store_entry_exceeding_depth_limit() {
 #[test]
 fn test_pop_empty_auth_zone() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("scrypto_env"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -87,7 +87,7 @@ fn test_pop_empty_auth_zone() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     assert_eq!(
@@ -99,9 +99,9 @@ fn test_pop_empty_auth_zone() {
 #[test]
 fn test_create_signature_proof() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _priv_key, _account) = test_runner.new_account(true);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("scrypto_env"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _priv_key, _account) = ledger.new_account(true);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -113,7 +113,7 @@ fn test_create_signature_proof() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -132,8 +132,8 @@ fn test_create_signature_proof() {
 #[test]
 fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("scrypto_env"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -145,7 +145,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -166,8 +166,8 @@ fn should_not_be_able_to_open_mut_substate_twice_if_object_globalized() {
 
 fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("scrypto_env"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -179,7 +179,7 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
             manifest_args!(heap),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -193,8 +193,8 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
 #[test]
 fn should_be_able_to_bech32_encode_address() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("scrypto_env"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("scrypto_env"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -206,7 +206,7 @@ fn should_be_able_to_bech32_encode_address() {
             manifest_args!(FAUCET),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let result = receipt.expect_commit_success();

@@ -55,7 +55,7 @@ fn get_aggregate_verify_test_data(
 }
 
 fn crypto_scrypto_bls12381_v1_verify(
-    runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     msg: Vec<u8>,
     pub_key: Bls12381G1PublicKey,
@@ -76,7 +76,7 @@ fn crypto_scrypto_bls12381_v1_verify(
 }
 
 fn crypto_scrypto_bls12381_v1_aggregate_verify(
-    runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     msgs: Vec<Vec<u8>>,
     pub_keys: Vec<Bls12381G1PublicKey>,
@@ -103,7 +103,7 @@ fn crypto_scrypto_bls12381_v1_aggregate_verify(
 }
 
 fn crypto_scrypto_bls12381_v1_fast_aggregate_verify(
-    runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     msg: Vec<u8>,
     pub_keys: Vec<Bls12381G1PublicKey>,
@@ -124,7 +124,7 @@ fn crypto_scrypto_bls12381_v1_fast_aggregate_verify(
 }
 
 fn crypto_scrypto_bls12381_g2_signature_aggregate(
-    runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     signatures: Vec<Bls12381G2Signature>,
 ) -> TransactionReceiptV1 {
@@ -143,7 +143,7 @@ fn crypto_scrypto_bls12381_g2_signature_aggregate(
 }
 
 fn crypto_scrypto_keccak256_hash(
-    runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     data: Vec<u8>,
 ) -> TransactionReceiptV1 {
@@ -164,9 +164,9 @@ fn crypto_scrypto_keccak256_hash(
 #[test]
 fn test_crypto_scrypto_verify_bls12381_v1() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     let msg1 = hash("Test").to_vec();
     let pk = "93b1aa7542a5423e21d8e84b4472c31664412cc604a666e9fdf03baf3c758e728c7a11576ebb01110ac39a0df95636e2";
@@ -176,7 +176,7 @@ fn test_crypto_scrypto_verify_bls12381_v1() {
     let msg1_signature = Bls12381G2Signature::from_str(msg1_signature).unwrap();
     // Act
     let msg1_verify: bool = get_output!(crypto_scrypto_bls12381_v1_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msg1,
         pk,
@@ -191,7 +191,7 @@ fn test_crypto_scrypto_verify_bls12381_v1() {
 
     // Act
     let msg2_verify: bool = get_output!(crypto_scrypto_bls12381_v1_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msg2,
         pk,
@@ -205,9 +205,9 @@ fn test_crypto_scrypto_verify_bls12381_v1() {
 #[test]
 fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     let (_sks, _pks, _msgs, sigs) = get_aggregate_verify_test_data(10, 10);
 
@@ -216,7 +216,7 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
 
     // Act
     let agg_sig_from_scrypto =
-        crypto_scrypto_bls12381_g2_signature_aggregate(&mut test_runner, package_address, sigs)
+        crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, sigs)
             .expect_commit_success()
             .output(1);
 
@@ -225,7 +225,7 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
 
     // Attempt to aggregate signature from empty input
     let error_message =
-        crypto_scrypto_bls12381_g2_signature_aggregate(&mut test_runner, package_address, vec![])
+        crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, vec![])
             .expect_commit_failure()
             .outcome
             .expect_failure()
@@ -238,9 +238,9 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
 #[test]
 fn test_crypto_scrypto_bls12381_aggregate_verify() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10);
 
@@ -249,7 +249,7 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
 
     // Act
     let agg_sig_from_scrypto = get_output!(crypto_scrypto_bls12381_g2_signature_aggregate(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         sigs
     ));
@@ -259,7 +259,7 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
 
     // Act
     let agg_verify: bool = get_output!(crypto_scrypto_bls12381_v1_aggregate_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msgs.clone(),
         pks.clone(),
@@ -276,7 +276,7 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
     // Act
     // Attempt to verify with reversed public keys order
     let agg_verify_expect_false: bool = get_output!(crypto_scrypto_bls12381_v1_aggregate_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msgs.clone(),
         pks_rev,
@@ -285,7 +285,7 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
 
     // Attempt to verify signature of empty message vector
     let empty_message_error = get_failure!(crypto_scrypto_bls12381_v1_aggregate_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         vec![],
         pks,
@@ -294,7 +294,7 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
 
     // Attempt to verify signature using empty keys vector
     let empty_keys_error = get_failure!(crypto_scrypto_bls12381_v1_aggregate_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msgs,
         vec![],
@@ -310,9 +310,9 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
 #[test]
 fn test_crypto_scrypto_bls12381_fast_aggregate_verify() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     let sks: Vec<Bls12381G1PrivateKey> = (1..11)
         .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
@@ -330,7 +330,7 @@ fn test_crypto_scrypto_bls12381_fast_aggregate_verify() {
 
     // Act
     let agg_sig_from_scrypto: Bls12381G2Signature = get_output!(
-        crypto_scrypto_bls12381_g2_signature_aggregate(&mut test_runner, package_address, sigs)
+        crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, sigs)
     );
 
     // Assert
@@ -338,7 +338,7 @@ fn test_crypto_scrypto_bls12381_fast_aggregate_verify() {
 
     // Act
     let agg_verify: bool = get_output!(crypto_scrypto_bls12381_v1_fast_aggregate_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msg.clone(),
         pks.clone(),
@@ -355,7 +355,7 @@ fn test_crypto_scrypto_bls12381_fast_aggregate_verify() {
     // Attempt to verify non-matching signature
     let agg_verify_expect_false: bool =
         get_output!(crypto_scrypto_bls12381_v1_fast_aggregate_verify(
-            &mut test_runner,
+            &mut ledger,
             package_address,
             msg_false,
             pks,
@@ -364,7 +364,7 @@ fn test_crypto_scrypto_bls12381_fast_aggregate_verify() {
 
     // Attempt to verify signature using empty keys vector
     let empty_keys_error = get_failure!(crypto_scrypto_bls12381_v1_fast_aggregate_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msg,
         vec![],
@@ -379,9 +379,9 @@ fn test_crypto_scrypto_bls12381_fast_aggregate_verify() {
 #[test]
 fn test_crypto_scrypto_keccak256_hash() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     let data1 = b"Hello Radix".to_vec();
     let data2 = b"xidaR olleH".to_vec();
@@ -389,7 +389,7 @@ fn test_crypto_scrypto_keccak256_hash() {
 
     // Act
     let data1_hash: Hash = get_output!(crypto_scrypto_keccak256_hash(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         data1
     ));
@@ -401,7 +401,7 @@ fn test_crypto_scrypto_keccak256_hash() {
 
     // Act
     let data2_hash: Hash = get_output!(crypto_scrypto_keccak256_hash(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         data2
     ));
@@ -413,7 +413,7 @@ fn test_crypto_scrypto_keccak256_hash() {
 
     // Act
     let data3_hash: Hash = get_output!(crypto_scrypto_keccak256_hash(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         data3
     ));
@@ -427,9 +427,9 @@ fn test_crypto_scrypto_keccak256_hash() {
 #[test]
 fn test_crypto_scrypto_flow() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     let msg = b"Important message".to_vec();
 
@@ -437,7 +437,7 @@ fn test_crypto_scrypto_flow() {
     // Get the hash of the message using CryptoScrypto package
     let msg_hash: Vec<u8> = {
         let hash: Hash = get_output!(crypto_scrypto_keccak256_hash(
-            &mut test_runner,
+            &mut ledger,
             package_address,
             msg
         ));
@@ -454,7 +454,7 @@ fn test_crypto_scrypto_flow() {
 
     // Verify the BLS signature using CryptoScrypto package
     let result: bool = get_output!(crypto_scrypto_bls12381_v1_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msg_hash,
         public_key,
@@ -467,9 +467,9 @@ fn test_crypto_scrypto_flow() {
 
 #[test]
 fn test_crypto_scrypto_keccak256_costing() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     for size in [
         100usize,
@@ -485,15 +485,15 @@ fn test_crypto_scrypto_keccak256_costing() {
         900 * 1024,
     ] {
         let data = vec![0u8; size];
-        let _hash = crypto_scrypto_keccak256_hash(&mut test_runner, package_address, data);
+        let _hash = crypto_scrypto_keccak256_hash(&mut ledger, package_address, data);
     }
 }
 
 #[test]
 fn test_crypto_scrypto_verify_bls12381_v1_costing() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     let secret_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
     let public_key = secret_key.public_key();
@@ -514,7 +514,7 @@ fn test_crypto_scrypto_verify_bls12381_v1_costing() {
         let data = vec![0u8; size];
         let signature = secret_key.sign_v1(data.as_slice());
         let _ = crypto_scrypto_bls12381_v1_verify(
-            &mut test_runner,
+            &mut ledger,
             package_address,
             data,
             public_key,
@@ -525,9 +525,9 @@ fn test_crypto_scrypto_verify_bls12381_v1_costing() {
 
 #[test]
 fn test_crypto_scrypto_bls12381_g2_signature_aggregate_costing() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     for cnt in [1, 2, 5, 10, 20, 50, 100] {
         let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
@@ -541,15 +541,15 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate_costing() {
 
         // Act
         let _ =
-            crypto_scrypto_bls12381_g2_signature_aggregate(&mut test_runner, package_address, sigs);
+            crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, sigs);
     }
 }
 
 #[test]
 fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
         for cnt in [1u32, 2, 5, 10, 20] {
@@ -558,7 +558,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
             let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs).unwrap();
 
             let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
-                &mut test_runner,
+                &mut ledger,
                 package_address,
                 msgs,
                 pks,
@@ -570,9 +570,9 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
 
 #[test]
 fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     for (cnt, msg_size) in [
         (1, 100 * 1024),
@@ -586,7 +586,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
         let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
 
         let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
-            &mut test_runner,
+            &mut ledger,
             package_address,
             msgs,
             pks,
@@ -604,7 +604,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
     let agg_sig = Bls12381G2Signature::aggregate(&sigs1).unwrap();
 
     let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msgs1,
         pks1,
@@ -621,7 +621,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
     let agg_sig = Bls12381G2Signature::aggregate(&sigs1).unwrap();
 
     let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
-        &mut test_runner,
+        &mut ledger,
         package_address,
         msgs1,
         pks1,
@@ -631,9 +631,9 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
 
 #[test]
 fn test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing() {
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
 
     for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
         for cnt in [1u8, 2, 5, 10, 20, 50, 100] {
@@ -651,7 +651,7 @@ fn test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing() {
             let agg_sig_single_msg = Bls12381G2Signature::aggregate(&sigs).unwrap();
 
             let _ = crypto_scrypto_bls12381_v1_fast_aggregate_verify(
-                &mut test_runner,
+                &mut ledger,
                 package_address,
                 msg,
                 pks,

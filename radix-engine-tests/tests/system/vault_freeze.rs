@@ -7,16 +7,16 @@ use scrypto_test::prelude::*;
 #[test]
 fn cannot_burn_frozen_burn_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (key, _priv, account) = test_runner.new_account(true);
-    let token_address = test_runner.create_freezeable_token(account);
-    let vaults = test_runner.get_component_vaults(account, token_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _priv, account) = ledger.new_account(true);
+    let token_address = ledger.create_freezeable_token(account);
+    let vaults = ledger.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_burn(InternalAddress::new_or_panic(vault_id.into()))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act
@@ -25,7 +25,7 @@ fn cannot_burn_frozen_burn_fungible_vault() {
         .burn_in_account(account, token_address, 1)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -39,16 +39,16 @@ fn cannot_burn_frozen_burn_fungible_vault() {
 #[test]
 fn cannot_deposit_into_frozen_deposit_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (key, _priv, account) = test_runner.new_account(true);
-    let token_address = test_runner.create_freezeable_token(account);
-    let vaults = test_runner.get_component_vaults(account, token_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _priv, account) = ledger.new_account(true);
+    let token_address = ledger.create_freezeable_token(account);
+    let vaults = ledger.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_deposit(InternalAddress::new_or_panic(vault_id.into()))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act
@@ -58,7 +58,7 @@ fn cannot_deposit_into_frozen_deposit_fungible_vault() {
         .deposit_batch(account)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -72,16 +72,16 @@ fn cannot_deposit_into_frozen_deposit_fungible_vault() {
 #[test]
 fn cannot_withdraw_from_frozen_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (key, _priv, account) = test_runner.new_account(true);
-    let token_address = test_runner.create_freezeable_token(account);
-    let vaults = test_runner.get_component_vaults(account, token_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _priv, account) = ledger.new_account(true);
+    let token_address = ledger.create_freezeable_token(account);
+    let vaults = ledger.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act
@@ -91,7 +91,7 @@ fn cannot_withdraw_from_frozen_fungible_vault() {
         .deposit_batch(account)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -105,17 +105,17 @@ fn cannot_withdraw_from_frozen_fungible_vault() {
 #[test]
 fn can_recall_from_frozen_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (key, _priv, account) = test_runner.new_account(true);
-    let token_address = test_runner.create_freezeable_token(account);
-    let vaults = test_runner.get_component_vaults(account, token_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _priv, account) = ledger.new_account(true);
+    let token_address = ledger.create_freezeable_token(account);
+    let vaults = ledger.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let vault_address = InternalAddress::new_or_panic(vault_id.into());
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_withdraw(vault_address)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act
@@ -125,7 +125,7 @@ fn can_recall_from_frozen_fungible_vault() {
         .deposit_batch(account)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -134,23 +134,23 @@ fn can_recall_from_frozen_fungible_vault() {
 #[test]
 fn can_withdraw_from_unfrozen_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (key, _priv, account) = test_runner.new_account(true);
-    let token_address = test_runner.create_freezeable_token(account);
-    let vaults = test_runner.get_component_vaults(account, token_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _priv, account) = ledger.new_account(true);
+    let token_address = ledger.create_freezeable_token(account);
+    let vaults = ledger.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .unfreeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
     receipt.expect_commit_success();
 
     // Act
@@ -160,7 +160,7 @@ fn can_withdraw_from_unfrozen_fungible_vault() {
         .deposit_batch(account)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -169,16 +169,16 @@ fn can_withdraw_from_unfrozen_fungible_vault() {
 #[test]
 fn cannot_burn_frozen_burn_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (key, _priv, account) = test_runner.new_account(true);
-    let token_address = test_runner.create_freezeable_non_fungible(account);
-    let vaults = test_runner.get_component_vaults(account, token_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _priv, account) = ledger.new_account(true);
+    let token_address = ledger.create_freezeable_non_fungible(account);
+    let vaults = ledger.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_burn(InternalAddress::new_or_panic(vault_id.into()))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act
@@ -187,7 +187,7 @@ fn cannot_burn_frozen_burn_non_fungible_vault() {
         .burn_non_fungibles_in_account(account, token_address, [NonFungibleLocalId::integer(1)])
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -201,16 +201,16 @@ fn cannot_burn_frozen_burn_non_fungible_vault() {
 #[test]
 fn cannot_deposit_into_frozen_deposit_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (key, _priv, account) = test_runner.new_account(true);
-    let token_address = test_runner.create_freezeable_non_fungible(account);
-    let vaults = test_runner.get_component_vaults(account, token_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _priv, account) = ledger.new_account(true);
+    let token_address = ledger.create_freezeable_non_fungible(account);
+    let vaults = ledger.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_deposit(InternalAddress::new_or_panic(vault_id.into()))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act
@@ -224,7 +224,7 @@ fn cannot_deposit_into_frozen_deposit_non_fungible_vault() {
         .deposit_batch(account)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -238,16 +238,16 @@ fn cannot_deposit_into_frozen_deposit_non_fungible_vault() {
 #[test]
 fn cannot_withdraw_from_frozen_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (key, _priv, account) = test_runner.new_account(true);
-    let token_address = test_runner.create_freezeable_non_fungible(account);
-    let vaults = test_runner.get_component_vaults(account, token_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _priv, account) = ledger.new_account(true);
+    let token_address = ledger.create_freezeable_non_fungible(account);
+    let vaults = ledger.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act
@@ -261,7 +261,7 @@ fn cannot_withdraw_from_frozen_non_fungible_vault() {
         .deposit_batch(account)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -275,10 +275,10 @@ fn cannot_withdraw_from_frozen_non_fungible_vault() {
 #[test]
 fn can_freezy_recall_unfreezy_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (key, _priv, account) = test_runner.new_account(true);
-    let resource_address = test_runner.create_freezeable_non_fungible(account);
-    let vaults = test_runner.get_component_vaults(account, resource_address);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _priv, account) = ledger.new_account(true);
+    let resource_address = ledger.create_freezeable_non_fungible(account);
+    let vaults = ledger.get_component_vaults(account, resource_address);
     let vault_id = vaults[0];
     let internal_address = InternalAddress::new_or_panic(vault_id.into());
 
@@ -287,7 +287,7 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
         .lock_fee_from_faucet()
         .freeze_withdraw(internal_address)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -311,7 +311,7 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
             ],
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -329,7 +329,7 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
         .unfreeze_withdraw(internal_address)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();

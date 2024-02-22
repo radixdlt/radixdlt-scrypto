@@ -8,8 +8,8 @@ use scrypto_test::prelude::*;
 #[test]
 fn test_max_call_depth_success() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("recursion"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("recursion"));
 
     // Act
     // ============================
@@ -28,7 +28,7 @@ fn test_max_call_depth_success() {
             manifest_args!(num_calls),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -37,8 +37,8 @@ fn test_max_call_depth_success() {
 #[test]
 fn test_max_call_depth_failure() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("recursion"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("recursion"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -50,7 +50,7 @@ fn test_max_call_depth_failure() {
             manifest_args!(16u32),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

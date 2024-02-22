@@ -8,8 +8,8 @@ use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
 fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("logger"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("logger"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -20,7 +20,7 @@ fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
             manifest_args!(message.as_ref().to_owned()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     receipt
 }

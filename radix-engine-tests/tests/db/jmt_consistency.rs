@@ -6,11 +6,11 @@ use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 #[test]
 fn substate_store_matches_hash_tree_after_each_scenario() {
     let network = NetworkDefinition::simulator();
-    let mut test_runner = TestRunnerBuilder::new().with_state_hashing().build();
+    let mut ledger = LedgerSimulatorBuilder::new().with_state_hashing().build();
 
     let mut next_nonce: u32 = 0;
     for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = test_runner.get_current_epoch();
+        let epoch = ledger.get_current_epoch();
         let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
         let mut previous = None;
         loop {
@@ -20,11 +20,11 @@ fn substate_store_matches_hash_tree_after_each_scenario() {
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
-                    let receipt = test_runner.execute_notarized_transaction(&next.raw_transaction);
+                    let receipt = ledger.execute_notarized_transaction(&next.raw_transaction);
                     // TODO(when figured out): We could run this assert as part of the existing
                     // `post_run_db_check` feature; however, it is tricky to implement (syntactically),
                     // due to the assert only being available for certain `TestDatabase` impl.
-                    test_runner.assert_state_hash_tree_matches_substate_store();
+                    ledger.assert_state_hash_tree_matches_substate_store();
                     previous = Some(receipt);
                 }
                 NextAction::Completed(end_state) => {

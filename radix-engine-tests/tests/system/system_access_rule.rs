@@ -151,7 +151,7 @@ fn setting_a_role_access_rule_which_is_beyond_the_length_limit_should_error() {
 #[test]
 fn package_function_access_rules_are_checked_for_depth_and_width() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
     let rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
 
@@ -183,7 +183,7 @@ fn package_function_access_rules_are_checked_for_depth_and_width() {
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|error| {
@@ -285,22 +285,22 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(
             CUSTOM_PACKAGE_CODE_ID,
             TestInvoke(access_rule_creation, access_rule),
         ))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
             vec![("create_access_rule", "create_access_rule", false)],
         ),
     );
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(
                 package_address,
                 BLUEPRINT_NAME,
