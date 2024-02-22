@@ -8,18 +8,28 @@ mod proxy {
         },
         methods {
             set_oracle_address => restrict_to: [proxy_manager_auth, OWNER];
+            initialize_oracle => restrict_to: [proxy_manager_auth, OWNER];
+            proxy_set_price => restrict_to: [proxy_manager_auth, OWNER];
             proxy_get_oracle_info => PUBLIC;
             proxy_get_price => PUBLIC;
         }
     }
 
     struct OracleProxy {
-        oracle_address: Option<Global<AnyComponent>>,
+        // Either of below fields must be set in order to use Proxy.
+        // - Use `oracle_global_address` if Oracle is a global component.
+        // - Use `oracle_owned_address` if Oracle is an owned component.
+        oracle_global_address: Option<Global<AnyComponent>>,
+        // Vector used here, because it is not possible to drop Owned value.
+        // Only the last added address will be used, previous addresses will be kept, despite not being used.
+        oracle_owned_address: Vec<Owned<AnyComponent>>,
     }
 
-    // This example assumes that:
-    // - called component are instantiated as global component
-    // - called methods of the component are not protected
+    // This example demostrate a proxy working with:
+    // - Oracle as a global component
+    //   Proxy can call only public methods of Oracle component
+    // - Oracle as an owned component (instantiated by proxy)
+    //   Proxy can call any method from owned Oracle component
     impl OracleProxy {
         pub fn instantiate_proxy(
             owner_badge: NonFungibleGlobalId,
@@ -29,7 +39,8 @@ mod proxy {
             let manager_rule = rule!(require(manager_badge));
 
             Self {
-                oracle_address: None,
+                oracle_global_address: None,
+                oracle_owned_address: vec![],
             }
             .instantiate()
             .prepare_to_globalize(owner_role)
@@ -39,17 +50,38 @@ mod proxy {
             .globalize()
         }
 
-        // Specify Oracle component address
+        // Specify Oracle global component address
         pub fn set_oracle_address(&mut self, address: Global<AnyComponent>) {
-            info!("Set oracle address to {:?}", address);
-            self.oracle_address = Some(address);
+            info!("Set oracle global address to {:?}", address);
+            self.oracle_global_address = Some(address);
+        }
+
+        // Instantiate Oracle at given package address
+        pub fn initialize_oracle(&mut self, oracle_package_address: PackageAddress) {
+            info!("Instantiate oracla at address {:?}", oracle_package_address);
+            let result = ScryptoVmV1Api::blueprint_call(
+                oracle_package_address,
+                "Oracle",
+                "instantiate_owned",
+                scrypto_args!(),
+            );
+            self.oracle_owned_address
+                .push(scrypto_decode(&result).unwrap());
+        }
+
+        fn get_oracle_adddress(&self) -> AnyComponent {
+            if let Some(oracle_address) = self.oracle_global_address {
+                return *oracle_address;
+            } else if let Some(oracle_address) = self.oracle_owned_address.last() {
+                return **oracle_address;
+            };
+
+            panic!("Oracle address not set");
         }
 
         pub fn proxy_get_oracle_info(&self) -> String {
-            let oracle_address = self.oracle_address.unwrap();
-
             let result = ScryptoVmV1Api::object_call(
-                oracle_address.address().as_node_id(),
+                self.get_oracle_adddress().handle().as_node_id(),
                 "get_oracle_info",
                 scrypto_args!(),
             );
@@ -62,14 +94,26 @@ mod proxy {
             base: ResourceAddress,
             quote: ResourceAddress,
         ) -> Option<Decimal> {
-            let oracle_address = self.oracle_address.unwrap();
-
             let result = ScryptoVmV1Api::object_call(
-                oracle_address.address().as_node_id(),
+                self.get_oracle_adddress().handle().as_node_id(),
                 "get_price",
                 scrypto_args!(base, quote),
             );
             scrypto_decode(&result).unwrap()
+        }
+
+        // This method will fail if Oracle is a global component
+        pub fn proxy_set_price(
+            &self,
+            base: ResourceAddress,
+            quote: ResourceAddress,
+            price: Decimal,
+        ) {
+            ScryptoVmV1Api::object_call(
+                self.get_oracle_adddress().handle().as_node_id(),
+                "set_price",
+                scrypto_args!(base, quote, price),
+            );
         }
     }
 }

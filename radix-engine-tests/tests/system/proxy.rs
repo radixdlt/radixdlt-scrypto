@@ -39,12 +39,26 @@ fn create_some_resources(test_runner: &mut DefaultTestRunner) -> IndexMap<String
     resources
 }
 
-fn oracle_configure(
+fn oracle_configure_as_global(
     test_runner: &mut DefaultTestRunner,
+    proxy_manager_badge: NonFungibleGlobalId,
     oracle_manager_badge: NonFungibleGlobalId,
     resources: &IndexMap<String, ResourceAddress>,
+    proxy_address: ComponentAddress,
     oracle_address: ComponentAddress,
 ) {
+    // Set Oracle component address in Proxy
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            proxy_address,
+            "set_oracle_address",
+            manifest_args!(oracle_address),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![proxy_manager_badge]);
+    receipt.expect_commit_success();
+
     // "set_price" is a protected method, need to be called directly on the Oracle component
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -71,12 +85,64 @@ fn oracle_configure(
     receipt.expect_commit_success();
 }
 
-fn oracle_v3_configure(
+fn oracle_configure_as_owned(
     test_runner: &mut DefaultTestRunner,
+    proxy_manager_badge: NonFungibleGlobalId,
+    resources: &IndexMap<String, ResourceAddress>,
+    proxy_address: ComponentAddress,
+    oracle_package_address: PackageAddress,
+) {
+    // Set Oracle component address in Proxy
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            proxy_address,
+            "initialize_oracle",
+            manifest_args!(oracle_package_address),
+        )
+        .call_method(
+            proxy_address,
+            "proxy_set_price",
+            manifest_args!(
+                resources.get("XRD").unwrap(),
+                resources.get("USDT").unwrap(),
+                dec!(20)
+            ),
+        )
+        .call_method(
+            proxy_address,
+            "proxy_set_price",
+            manifest_args!(
+                resources.get("XRD").unwrap(),
+                resources.get("ETH").unwrap(),
+                dec!(30)
+            ),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![proxy_manager_badge]);
+    receipt.expect_commit_success();
+}
+
+fn oracle_v3_configure_as_global(
+    test_runner: &mut DefaultTestRunner,
+    proxy_manager_badge: NonFungibleGlobalId,
     oracle_manager_badge: NonFungibleGlobalId,
     resources: &IndexMap<String, ResourceAddress>,
+    proxy_address: ComponentAddress,
     oracle_address: ComponentAddress,
 ) {
+    // Set Oracle component address in Proxy
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            proxy_address,
+            "set_oracle_address",
+            manifest_args!(oracle_address),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![proxy_manager_badge]);
+    receipt.expect_commit_success();
+
     // "set_price" and "add_symbol" are protected methods, need to be called directly on the Oracle component
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -112,27 +178,10 @@ fn oracle_v3_configure(
 
 fn invoke_oracle_via_proxy_basic(
     test_runner: &mut DefaultTestRunner,
-    proxy_manager_badge: NonFungibleGlobalId,
-    oracle_manager_badge: NonFungibleGlobalId,
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
-    oracle_address: ComponentAddress,
     info: &str,
 ) {
-    // Set Oracle component address in Proxy
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_method(
-            proxy_address,
-            "set_oracle_address",
-            manifest_args!(oracle_address),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![proxy_manager_badge]);
-    receipt.expect_commit_success();
-
-    oracle_configure(test_runner, oracle_manager_badge, resources, oracle_address);
-
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -165,27 +214,10 @@ fn invoke_oracle_via_proxy_basic(
 
 fn invoke_oracle_via_generic_proxy(
     test_runner: &mut DefaultTestRunner,
-    proxy_manager_badge: NonFungibleGlobalId,
-    oracle_manager_badge: NonFungibleGlobalId,
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
-    oracle_address: ComponentAddress,
     info: &str,
 ) {
-    // Set Oracle component address in Proxy
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_method(
-            proxy_address,
-            "set_oracle_address",
-            manifest_args!(oracle_address),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![proxy_manager_badge]);
-    receipt.expect_commit_success();
-
-    oracle_configure(test_runner, oracle_manager_badge, resources, oracle_address);
-
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -226,27 +258,10 @@ fn invoke_oracle_via_generic_proxy(
 
 fn invoke_oracle_v3_via_generic_proxy(
     test_runner: &mut DefaultTestRunner,
-    proxy_manager_badge: NonFungibleGlobalId,
-    oracle_manager_badge: NonFungibleGlobalId,
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
-    oracle_address: ComponentAddress,
     info: &str,
 ) {
-    // Set Oracle component address in Proxy
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_method(
-            proxy_address,
-            "set_oracle_address",
-            manifest_args!(oracle_address),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![proxy_manager_badge]);
-    receipt.expect_commit_success();
-
-    oracle_v3_configure(test_runner, oracle_manager_badge, resources, oracle_address);
-
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -308,7 +323,7 @@ fn invoke_oracle_v3_via_generic_proxy(
 }
 
 #[test]
-fn test_proxy_basic() {
+fn test_proxy_basic_oracle_as_global() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let resources = create_some_resources(&mut test_runner);
@@ -337,16 +352,17 @@ fn test_proxy_basic() {
         "instantiate_global",
     );
 
-    // Perform some operations on Oracle v1
-    invoke_oracle_via_proxy_basic(
+    oracle_configure_as_global(
         &mut test_runner,
         proxy_manager_badge.clone(),
         oracle_manager_badge.clone(),
         &resources,
         proxy_address,
         oracle_v1_address,
-        "Oracle v1",
     );
+
+    // Perform some operations on Oracle v1
+    invoke_oracle_via_proxy_basic(&mut test_runner, &resources, proxy_address, "Oracle v1");
 
     // Publish and instantiate Oracle v2
     let oracle_v2_address = initialize_package(
@@ -358,20 +374,20 @@ fn test_proxy_basic() {
         "instantiate_global",
     );
 
-    // Perform some operations on Oracle v2
-    invoke_oracle_via_proxy_basic(
+    oracle_configure_as_global(
         &mut test_runner,
         proxy_manager_badge,
         oracle_manager_badge,
         &resources,
         proxy_address,
         oracle_v2_address,
-        "Oracle v2",
     );
+    // Perform some operations on Oracle v2
+    invoke_oracle_via_proxy_basic(&mut test_runner, &resources, proxy_address, "Oracle v2");
 }
 
 #[test]
-fn test_proxy_generic() {
+fn test_proxy_generic_oracle_as_global() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let resources = create_some_resources(&mut test_runner);
@@ -400,16 +416,17 @@ fn test_proxy_generic() {
         "instantiate_global",
     );
 
-    // Perform some operations on Oracle v1
-    invoke_oracle_via_generic_proxy(
+    oracle_configure_as_global(
         &mut test_runner,
         proxy_manager_badge.clone(),
         oracle_manager_badge.clone(),
         &resources,
         proxy_address,
         oracle_v1_address,
-        "Oracle v1",
     );
+
+    // Perform some operations on Oracle v1
+    invoke_oracle_via_generic_proxy(&mut test_runner, &resources, proxy_address, "Oracle v1");
 
     // Publish and instantiate Oracle v2
     let oracle_v2_address = initialize_package(
@@ -421,16 +438,17 @@ fn test_proxy_generic() {
         "instantiate_global",
     );
 
-    // Perform some operations on Oracle v2
-    invoke_oracle_via_generic_proxy(
+    oracle_configure_as_global(
         &mut test_runner,
         proxy_manager_badge.clone(),
         oracle_manager_badge.clone(),
         &resources,
         proxy_address,
         oracle_v2_address,
-        "Oracle v2",
     );
+
+    // Perform some operations on Oracle v2
+    invoke_oracle_via_generic_proxy(&mut test_runner, &resources, proxy_address, "Oracle v2");
 
     // Publish and instantiate Oracle v3
     let oracle_v3_address = initialize_package(
@@ -442,15 +460,64 @@ fn test_proxy_generic() {
         "instantiate_global",
     );
 
-    // Perform some operations on Oracle v3
-    // Note that Oracle v3 has different API than v1 and v2
-    invoke_oracle_v3_via_generic_proxy(
+    oracle_v3_configure_as_global(
         &mut test_runner,
         proxy_manager_badge,
         oracle_manager_badge,
         &resources,
         proxy_address,
         oracle_v3_address,
-        "Oracle v3",
     );
+
+    // Perform some operations on Oracle v3
+    // Note that Oracle v3 has different API than v1 and v2
+    invoke_oracle_v3_via_generic_proxy(&mut test_runner, &resources, proxy_address, "Oracle v3");
+}
+
+#[test]
+fn test_proxy_basic_oracle_as_owned() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let resources = create_some_resources(&mut test_runner);
+    let (public_key, _, _account) = test_runner.new_account(false);
+    let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
+
+    // Publish and instantiate Oracle Proxy
+    let proxy_address = initialize_package(
+        &mut test_runner,
+        owner_badge.clone(),
+        proxy_manager_badge.clone(),
+        "oracle_proxy_basic",
+        "OracleProxy",
+        "instantiate_proxy",
+    );
+
+    let oracle_v1_package_address =
+        test_runner.publish_package_simple(PackageLoader::get("oracle_v1"));
+
+    oracle_configure_as_owned(
+        &mut test_runner,
+        proxy_manager_badge.clone(),
+        &resources,
+        proxy_address,
+        oracle_v1_package_address,
+    );
+
+    // Perform some operations on Oracle v1
+    invoke_oracle_via_proxy_basic(&mut test_runner, &resources, proxy_address, "Oracle v1");
+
+    let oracle_v2_package_address =
+        test_runner.publish_package_simple(PackageLoader::get("oracle_v2"));
+
+    oracle_configure_as_owned(
+        &mut test_runner,
+        proxy_manager_badge.clone(),
+        &resources,
+        proxy_address,
+        oracle_v2_package_address,
+    );
+
+    // Perform some operations on Oracle v2
+    invoke_oracle_via_proxy_basic(&mut test_runner, &resources, proxy_address, "Oracle v2");
 }
