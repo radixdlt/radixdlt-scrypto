@@ -7,13 +7,13 @@ mod proxy {
             proxy_manager_auth => updatable_by: [];
         },
         methods {
-            set_oracle_address => restrict_to: [proxy_manager_auth, OWNER];
+            set_component_address => restrict_to: [proxy_manager_auth, OWNER];
             proxy_call => PUBLIC;
         }
     }
 
     struct GenericProxy {
-        oracle_address: Option<Global<AnyComponent>>,
+        component_address: Option<Global<AnyComponent>>,
     }
 
     // This example assumes that:
@@ -28,7 +28,7 @@ mod proxy {
             let manager_rule = rule!(require(manager_badge));
 
             Self {
-                oracle_address: None,
+                component_address: None,
             }
             .instantiate()
             .prepare_to_globalize(owner_role)
@@ -39,9 +39,9 @@ mod proxy {
         }
 
         // Specify Oracle component address
-        pub fn set_oracle_address(&mut self, address: Global<AnyComponent>) {
-            info!("Set oracle address to {:?}", address);
-            self.oracle_address = Some(address);
+        pub fn set_component_address(&mut self, address: Global<AnyComponent>) {
+            info!("Set component address to {:?}", address);
+            self.component_address = Some(address);
         }
 
         // This method allows to call any method from configured component by method name.
@@ -69,7 +69,7 @@ mod proxy {
         //     .build();
         //  ```
         pub fn proxy_call(&self, method_name: String, args: ScryptoValue) -> ScryptoValue {
-            let oracle_address = self.oracle_address.unwrap();
+            let oracle_address = self.component_address.unwrap();
             let args = scrypto_encode(&args).unwrap();
 
             let bytes = ScryptoVmV1Api::object_call(

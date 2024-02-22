@@ -46,15 +46,12 @@ fn oracle_configure_as_global(
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
     oracle_address: ComponentAddress,
+    method_name: &str,
 ) {
     // Set Oracle component address in Proxy
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(
-            proxy_address,
-            "set_oracle_address",
-            manifest_args!(oracle_address),
-        )
+        .call_method(proxy_address, method_name, manifest_args!(oracle_address))
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![proxy_manager_badge]);
     receipt.expect_commit_success();
@@ -130,15 +127,12 @@ fn oracle_v3_configure_as_global(
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
     oracle_address: ComponentAddress,
+    method_name: &str,
 ) {
     // Set Oracle component address in Proxy
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(
-            proxy_address,
-            "set_oracle_address",
-            manifest_args!(oracle_address),
-        )
+        .call_method(proxy_address, method_name, manifest_args!(oracle_address))
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![proxy_manager_badge]);
     receipt.expect_commit_success();
@@ -359,6 +353,7 @@ fn test_proxy_basic_oracle_as_global() {
         &resources,
         proxy_address,
         oracle_v1_address,
+        "set_oracle_address",
     );
 
     // Perform some operations on Oracle v1
@@ -381,6 +376,7 @@ fn test_proxy_basic_oracle_as_global() {
         &resources,
         proxy_address,
         oracle_v2_address,
+        "set_oracle_address",
     );
     // Perform some operations on Oracle v2
     invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v2");
@@ -423,6 +419,7 @@ fn test_proxy_generic_oracle_as_global() {
         &resources,
         proxy_address,
         oracle_v1_address,
+        "set_component_address",
     );
 
     // Perform some operations on Oracle v1
@@ -445,6 +442,7 @@ fn test_proxy_generic_oracle_as_global() {
         &resources,
         proxy_address,
         oracle_v2_address,
+        "set_component_address",
     );
 
     // Perform some operations on Oracle v2
@@ -467,6 +465,7 @@ fn test_proxy_generic_oracle_as_global() {
         &resources,
         proxy_address,
         oracle_v3_address,
+        "set_component_address",
     );
 
     // Perform some operations on Oracle v3
