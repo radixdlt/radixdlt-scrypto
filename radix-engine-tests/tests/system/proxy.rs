@@ -39,14 +39,12 @@ fn create_some_resources(ledger: &mut DefaultLedgerSimulator) -> IndexMap<String
     resources
 }
 
-fn oracle_configure_as_global(
+fn set_oracle_proxy_component_address(
     ledger: &mut DefaultLedgerSimulator,
-    proxy_manager_badge: NonFungibleGlobalId,
-    oracle_manager_badge: NonFungibleGlobalId,
-    resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
-    oracle_address: ComponentAddress,
     method_name: &str,
+    oracle_address: ComponentAddress,
+    proxy_manager_badge: NonFungibleGlobalId,
 ) {
     // Set Oracle component address in Proxy
     let manifest = ManifestBuilder::new()
@@ -55,7 +53,33 @@ fn oracle_configure_as_global(
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![proxy_manager_badge]);
     receipt.expect_commit_success();
+}
 
+fn set_oracle_proxy_package_address(
+    ledger: &mut DefaultLedgerSimulator,
+    proxy_address: ComponentAddress,
+    oracle_package_address: PackageAddress,
+    proxy_manager_badge: NonFungibleGlobalId,
+) {
+    // Set Oracle package address in Proxy
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            proxy_address,
+            "initialize_oracle",
+            manifest_args!(oracle_package_address),
+        )
+        .build();
+    let receipt = ledger.execute_manifest(manifest, vec![proxy_manager_badge]);
+    receipt.expect_commit_success();
+}
+
+fn set_prices_in_oracle_directly(
+    ledger: &mut DefaultLedgerSimulator,
+    oracle_address: ComponentAddress,
+    resources: &IndexMap<String, ResourceAddress>,
+    oracle_manager_badge: NonFungibleGlobalId,
+) {
     // "set_price" is a protected method, need to be called directly on the Oracle component
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -82,21 +106,15 @@ fn oracle_configure_as_global(
     receipt.expect_commit_success();
 }
 
-fn oracle_configure_as_owned(
+fn set_prices_in_oracle_via_proxy(
     ledger: &mut DefaultLedgerSimulator,
-    proxy_manager_badge: NonFungibleGlobalId,
-    resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
-    oracle_package_address: PackageAddress,
+    resources: &IndexMap<String, ResourceAddress>,
+    proxy_manager_badge: NonFungibleGlobalId,
 ) {
     // Set Oracle component address in Proxy
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(
-            proxy_address,
-            "initialize_oracle",
-            manifest_args!(oracle_package_address),
-        )
         .call_method(
             proxy_address,
             "proxy_set_price",
@@ -120,23 +138,12 @@ fn oracle_configure_as_owned(
     receipt.expect_commit_success();
 }
 
-fn oracle_v3_configure_as_global(
+fn set_prices_in_oracle_v3_directly(
     ledger: &mut DefaultLedgerSimulator,
-    proxy_manager_badge: NonFungibleGlobalId,
-    oracle_manager_badge: NonFungibleGlobalId,
-    resources: &IndexMap<String, ResourceAddress>,
-    proxy_address: ComponentAddress,
     oracle_address: ComponentAddress,
-    method_name: &str,
+    resources: &IndexMap<String, ResourceAddress>,
+    oracle_manager_badge: NonFungibleGlobalId,
 ) {
-    // Set Oracle component address in Proxy
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_method(proxy_address, method_name, manifest_args!(oracle_address))
-        .build();
-    let receipt = ledger.execute_manifest(manifest, vec![proxy_manager_badge]);
-    receipt.expect_commit_success();
-
     // "set_price" and "add_symbol" are protected methods, need to be called directly on the Oracle component
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -346,14 +353,19 @@ fn test_proxy_basic_oracle_as_global() {
         "instantiate_global",
     );
 
-    oracle_configure_as_global(
+    set_oracle_proxy_component_address(
         &mut ledger,
-        proxy_manager_badge.clone(),
-        oracle_manager_badge.clone(),
-        &resources,
         proxy_address,
-        oracle_v1_address,
         "set_oracle_address",
+        oracle_v1_address,
+        proxy_manager_badge.clone(),
+    );
+
+    set_prices_in_oracle_directly(
+        &mut ledger,
+        oracle_v1_address,
+        &resources,
+        oracle_manager_badge.clone(),
     );
 
     // Perform some operations on Oracle v1
@@ -369,14 +381,19 @@ fn test_proxy_basic_oracle_as_global() {
         "instantiate_global",
     );
 
-    oracle_configure_as_global(
+    set_oracle_proxy_component_address(
         &mut ledger,
-        proxy_manager_badge,
-        oracle_manager_badge,
-        &resources,
         proxy_address,
-        oracle_v2_address,
         "set_oracle_address",
+        oracle_v2_address,
+        proxy_manager_badge,
+    );
+
+    set_prices_in_oracle_directly(
+        &mut ledger,
+        oracle_v2_address,
+        &resources,
+        oracle_manager_badge,
     );
     // Perform some operations on Oracle v2
     invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v2");
@@ -412,14 +429,19 @@ fn test_proxy_generic_oracle_as_global() {
         "instantiate_global",
     );
 
-    oracle_configure_as_global(
+    set_oracle_proxy_component_address(
         &mut ledger,
-        proxy_manager_badge.clone(),
-        oracle_manager_badge.clone(),
-        &resources,
         proxy_address,
-        oracle_v1_address,
         "set_component_address",
+        oracle_v1_address,
+        proxy_manager_badge.clone(),
+    );
+
+    set_prices_in_oracle_directly(
+        &mut ledger,
+        oracle_v1_address,
+        &resources,
+        oracle_manager_badge.clone(),
     );
 
     // Perform some operations on Oracle v1
@@ -435,14 +457,19 @@ fn test_proxy_generic_oracle_as_global() {
         "instantiate_global",
     );
 
-    oracle_configure_as_global(
+    set_oracle_proxy_component_address(
         &mut ledger,
-        proxy_manager_badge.clone(),
-        oracle_manager_badge.clone(),
-        &resources,
         proxy_address,
-        oracle_v2_address,
         "set_component_address",
+        oracle_v2_address,
+        proxy_manager_badge.clone(),
+    );
+
+    set_prices_in_oracle_directly(
+        &mut ledger,
+        oracle_v2_address,
+        &resources,
+        oracle_manager_badge.clone(),
     );
 
     // Perform some operations on Oracle v2
@@ -458,14 +485,19 @@ fn test_proxy_generic_oracle_as_global() {
         "instantiate_global",
     );
 
-    oracle_v3_configure_as_global(
+    set_oracle_proxy_component_address(
         &mut ledger,
-        proxy_manager_badge,
-        oracle_manager_badge,
-        &resources,
         proxy_address,
-        oracle_v3_address,
         "set_component_address",
+        oracle_v3_address,
+        proxy_manager_badge,
+    );
+
+    set_prices_in_oracle_v3_directly(
+        &mut ledger,
+        oracle_v3_address,
+        &resources,
+        oracle_manager_badge,
     );
 
     // Perform some operations on Oracle v3
@@ -494,12 +526,18 @@ fn test_proxy_basic_oracle_as_owned() {
 
     let oracle_v1_package_address = ledger.publish_package_simple(PackageLoader::get("oracle_v1"));
 
-    oracle_configure_as_owned(
+    set_oracle_proxy_package_address(
         &mut ledger,
-        proxy_manager_badge.clone(),
-        &resources,
         proxy_address,
         oracle_v1_package_address,
+        proxy_manager_badge.clone(),
+    );
+
+    set_prices_in_oracle_via_proxy(
+        &mut ledger,
+        proxy_address,
+        &resources,
+        proxy_manager_badge.clone(),
     );
 
     // Perform some operations on Oracle v1
@@ -507,13 +545,14 @@ fn test_proxy_basic_oracle_as_owned() {
 
     let oracle_v2_package_address = ledger.publish_package_simple(PackageLoader::get("oracle_v2"));
 
-    oracle_configure_as_owned(
+    set_oracle_proxy_package_address(
         &mut ledger,
-        proxy_manager_badge.clone(),
-        &resources,
         proxy_address,
         oracle_v2_package_address,
+        proxy_manager_badge.clone(),
     );
+
+    set_prices_in_oracle_via_proxy(&mut ledger, proxy_address, &resources, proxy_manager_badge);
 
     // Perform some operations on Oracle v2
     invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v2");
