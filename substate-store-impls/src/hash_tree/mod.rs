@@ -11,6 +11,7 @@ use types::{NibblePath, NodeKey, Version};
 use utils::copy_u8_array;
 use utils::prelude::vec;
 use utils::rust::collections::{index_map_new, IndexMap};
+use utils::rust::ops::Deref;
 use utils::rust::vec::Vec;
 
 pub mod hash_tree_facade;
@@ -77,14 +78,14 @@ pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
     let mut by_db_partition = index_map_new();
     for node_tier_leaf in list_leaves(node_tier_store, node_root_version) {
         let db_node_key = node_tier_leaf.leaf_key().bytes.clone();
-        let mut partition_tier_store = NestedTreeStore::new(node_tier_store, db_node_key.clone());
+        let partition_tier_store = NestedTreeStore::new(node_tier_store, db_node_key.clone());
         for partition_tier_leaf in
             list_leaves(&partition_tier_store, node_tier_leaf.payload().clone())
         {
             let db_partition_num =
                 DbPartitionNum::from_be_bytes(copy_u8_array(&partition_tier_leaf.leaf_key().bytes));
             let substate_tier_store =
-                NestedTreeStore::new(&mut partition_tier_store, vec![db_partition_num]);
+                NestedTreeStore::new(&partition_tier_store, vec![db_partition_num]);
             let mut by_db_sort_key = index_map_new();
             for substate_tier_leaf in
                 list_leaves(&substate_tier_store, partition_tier_leaf.payload().clone())
@@ -316,15 +317,15 @@ fn put_leaf_changes<S: TreeStore>(
     root_hash
 }
 
-pub struct NestedTreeStore<'s, S> {
-    underlying: &'s S,
+pub struct NestedTreeStore<S> {
+    underlying: S,
     key_prefix_bytes: Vec<u8>,
 }
 
-impl<'s, S> NestedTreeStore<'s, S> {
+impl<S> NestedTreeStore<S> {
     const TIER_SEPARATOR: u8 = b'_';
 
-    pub fn new(underlying: &'s S, parent_tier_key_bytes: Vec<u8>) -> NestedTreeStore<'s, S> {
+    pub fn new(underlying: S, parent_tier_key_bytes: Vec<u8>) -> NestedTreeStore<S> {
         let mut key_prefix_bytes = parent_tier_key_bytes;
         key_prefix_bytes.push(Self::TIER_SEPARATOR);
         NestedTreeStore {
@@ -345,13 +346,15 @@ impl<'s, S> NestedTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore> ReadableTreeStore for NestedTreeStore<'s, S> {
+impl<'s, S: Deref<Target = impl ReadableTreeStore> + 's> ReadableTreeStore for NestedTreeStore<S> {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.underlying.get_node(&self.prefixed(key))
     }
 }
 
-impl<'s, S: WriteableTreeStore> WriteableTreeStore for NestedTreeStore<'s, S> {
+impl<'s, S: Deref<Target = impl WriteableTreeStore> + 's> WriteableTreeStore
+    for NestedTreeStore<S>
+{
     fn insert_node(&self, key: NodeKey, node: TreeNode) {
         self.underlying.insert_node(self.prefixed(&key), node);
     }
