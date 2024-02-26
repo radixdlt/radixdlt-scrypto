@@ -106,7 +106,49 @@ fn set_prices_in_oracle_directly(
     receipt.expect_commit_success();
 }
 
-fn set_prices_in_oracle_via_proxy(
+fn get_price_in_oracle_directly(
+    ledger: &mut DefaultLedgerSimulator,
+    oracle_address: ComponentAddress,
+    resources: &IndexMap<String, ResourceAddress>,
+) -> TransactionReceiptV1 {
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            oracle_address,
+            "get_price",
+            manifest_args!(
+                resources.get("XRD").unwrap(),
+                resources.get("USDT").unwrap(),
+            ),
+        )
+        .build();
+    let receipt = ledger.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    receipt
+}
+
+fn get_price_in_oracle_via_oracle_proxy(
+    ledger: &mut DefaultLedgerSimulator,
+    proxy_address: ComponentAddress,
+    resources: &IndexMap<String, ResourceAddress>,
+) -> TransactionReceiptV1 {
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            proxy_address,
+            "proxy_get_price",
+            manifest_args!(
+                resources.get("XRD").unwrap(),
+                resources.get("USDT").unwrap(),
+            ),
+        )
+        .build();
+    let receipt = ledger.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    receipt
+}
+
+fn set_prices_in_oracle_via_oracle_proxy(
     ledger: &mut DefaultLedgerSimulator,
     proxy_address: ComponentAddress,
     resources: &IndexMap<String, ResourceAddress>,
@@ -177,7 +219,7 @@ fn set_prices_in_oracle_v3_directly(
     receipt.expect_commit_success();
 }
 
-fn invoke_oracle_via_proxy_basic(
+fn invoke_oracle_via_oracle_proxy(
     ledger: &mut DefaultLedgerSimulator,
     resources: &IndexMap<String, ResourceAddress>,
     proxy_address: ComponentAddress,
@@ -211,6 +253,31 @@ fn invoke_oracle_via_proxy_basic(
 
     // Assert
     assert_eq!(&oracle_info, info);
+}
+
+fn get_price_in_oracle_via_generic_proxy(
+    ledger: &mut DefaultLedgerSimulator,
+    proxy_address: ComponentAddress,
+    resources: &IndexMap<String, ResourceAddress>,
+) -> TransactionReceiptV1 {
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            proxy_address,
+            "proxy_call",
+            manifest_args!(
+                "get_price",
+                to_manifest_value(&(
+                    resources.get("XRD").unwrap(),
+                    resources.get("USDT").unwrap(),
+                ))
+                .unwrap()
+            ),
+        )
+        .build();
+    let receipt = ledger.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    receipt
 }
 
 fn invoke_oracle_via_generic_proxy(
@@ -369,7 +436,7 @@ fn test_proxy_basic_oracle_as_global() {
     );
 
     // Perform some operations on Oracle v1
-    invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v1");
+    invoke_oracle_via_oracle_proxy(&mut ledger, &resources, proxy_address, "Oracle v1");
 
     // Publish and instantiate Oracle v2
     let oracle_v2_address = initialize_package(
@@ -396,7 +463,7 @@ fn test_proxy_basic_oracle_as_global() {
         oracle_manager_badge,
     );
     // Perform some operations on Oracle v2
-    invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v2");
+    invoke_oracle_via_oracle_proxy(&mut ledger, &resources, proxy_address, "Oracle v2");
 }
 
 #[test]
@@ -533,7 +600,7 @@ fn test_proxy_basic_oracle_as_owned() {
         proxy_manager_badge.clone(),
     );
 
-    set_prices_in_oracle_via_proxy(
+    set_prices_in_oracle_via_oracle_proxy(
         &mut ledger,
         proxy_address,
         &resources,
@@ -541,7 +608,7 @@ fn test_proxy_basic_oracle_as_owned() {
     );
 
     // Perform some operations on Oracle v1
-    invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v1");
+    invoke_oracle_via_oracle_proxy(&mut ledger, &resources, proxy_address, "Oracle v1");
 
     let oracle_v2_package_address = ledger.publish_package_simple(PackageLoader::get("oracle_v2"));
 
@@ -552,8 +619,235 @@ fn test_proxy_basic_oracle_as_owned() {
         proxy_manager_badge.clone(),
     );
 
-    set_prices_in_oracle_via_proxy(&mut ledger, proxy_address, &resources, proxy_manager_badge);
+    set_prices_in_oracle_via_oracle_proxy(
+        &mut ledger,
+        proxy_address,
+        &resources,
+        proxy_manager_badge,
+    );
 
     // Perform some operations on Oracle v2
-    invoke_oracle_via_proxy_basic(&mut ledger, &resources, proxy_address, "Oracle v2");
+    invoke_oracle_via_oracle_proxy(&mut ledger, &resources, proxy_address, "Oracle v2");
+}
+
+#[test]
+fn test_proxy_costing_overhead_1() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let resources = create_some_resources(&mut ledger);
+    let (public_key, _, _account) = ledger.new_account(false);
+    let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let oracle_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
+
+    // Publish and instantiate Oracle v1
+    let oracle_v1_address = initialize_package(
+        &mut ledger,
+        owner_badge.clone(),
+        oracle_manager_badge.clone(),
+        "oracle_v1",
+        "Oracle",
+        "instantiate_global",
+    );
+    set_prices_in_oracle_directly(
+        &mut ledger,
+        oracle_v1_address,
+        &resources,
+        oracle_manager_badge,
+    );
+
+    // Oracle Proxy Global
+    let oracle_proxy_address = initialize_package(
+        &mut ledger,
+        owner_badge.clone(),
+        proxy_manager_badge.clone(),
+        "oracle_proxy_basic",
+        "OracleProxy",
+        "instantiate_proxy",
+    );
+    set_oracle_proxy_component_address(
+        &mut ledger,
+        oracle_proxy_address,
+        "set_oracle_address",
+        oracle_v1_address,
+        proxy_manager_badge.clone(),
+    );
+
+    // Generic Proxy Global
+    let generic_proxy_address = initialize_package(
+        &mut ledger,
+        owner_badge.clone(),
+        proxy_manager_badge.clone(),
+        "generic_proxy",
+        "GenericProxy",
+        "instantiate_proxy",
+    );
+    set_oracle_proxy_component_address(
+        &mut ledger,
+        generic_proxy_address,
+        "set_component_address",
+        oracle_v1_address,
+        proxy_manager_badge.clone(),
+    );
+
+    // Oracle Proxy Owned
+    let oracle_proxy_owned_address = initialize_package(
+        &mut ledger,
+        owner_badge.clone(),
+        proxy_manager_badge.clone(),
+        "oracle_proxy_basic",
+        "OracleProxy",
+        "instantiate_proxy",
+    );
+    let oracle_v1_package_address = ledger.publish_package_simple(PackageLoader::get("oracle_v1"));
+    set_oracle_proxy_package_address(
+        &mut ledger,
+        oracle_proxy_owned_address,
+        oracle_v1_package_address,
+        proxy_manager_badge.clone(),
+    );
+    set_prices_in_oracle_via_oracle_proxy(
+        &mut ledger,
+        oracle_proxy_owned_address,
+        &resources,
+        proxy_manager_badge.clone(),
+    );
+
+    let receipt_oracle_v1 =
+        get_price_in_oracle_directly(&mut ledger, oracle_v1_address, &resources);
+    let receipt_oracle_proxy =
+        get_price_in_oracle_via_oracle_proxy(&mut ledger, oracle_proxy_address, &resources);
+    let receipt_generic_proxy =
+        get_price_in_oracle_via_generic_proxy(&mut ledger, generic_proxy_address, &resources);
+    let receipt_oracle_proxy_owned =
+        get_price_in_oracle_via_oracle_proxy(&mut ledger, oracle_proxy_owned_address, &resources);
+    println!(
+        "get_price Oracle v1 total_cost: {:?}",
+        receipt_oracle_v1.fee_summary.total_cost()
+    );
+    println!(
+        "get_price Oracle proxy total_cost: {:?} diff: {:?}",
+        receipt_oracle_proxy.fee_summary.total_cost(),
+        receipt_oracle_proxy.fee_summary.total_cost() - receipt_oracle_v1.fee_summary.total_cost()
+    );
+    println!(
+        "get_price generic proxy total_cost: {:?} diff: {:?}",
+        receipt_generic_proxy.fee_summary.total_cost(),
+        receipt_generic_proxy.fee_summary.total_cost() - receipt_oracle_v1.fee_summary.total_cost()
+    );
+    println!(
+        "get_price Oracle proxy owned total_cost: {:?} diff: {:?}",
+        receipt_oracle_proxy_owned.fee_summary.total_cost(),
+        receipt_oracle_proxy_owned.fee_summary.total_cost()
+            - receipt_oracle_v1.fee_summary.total_cost()
+    );
+
+    // 2024-02-26: According to above results proxy call cost should be less than 0.19
+    assert!(
+        (receipt_oracle_proxy.fee_summary.total_cost()
+            - receipt_oracle_v1.fee_summary.total_cost())
+            < dec!("0.19")
+    );
+    assert!(
+        (receipt_generic_proxy.fee_summary.total_cost()
+            - receipt_oracle_v1.fee_summary.total_cost())
+            < dec!("0.19")
+    );
+    assert!(
+        (receipt_oracle_proxy_owned.fee_summary.total_cost()
+            - receipt_oracle_v1.fee_summary.total_cost())
+            < dec!("0.19")
+    );
+}
+
+#[test]
+fn test_proxy_costing_overhead_2() {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _account) = ledger.new_account(false);
+    let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
+
+    let bls_priv_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
+    let bls_pub_key = bls_priv_key.public_key();
+    let msg = b"Important message";
+    let msg_signature = bls_priv_key.sign_v1(msg);
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(FAUCET, 500000)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "instantiate",
+                manifest_args!(bls_pub_key),
+            )
+            .build(),
+        vec![],
+    );
+    let crypto_scrypto_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+    // Generic Proxy
+    let generic_proxy_address = initialize_package(
+        &mut ledger,
+        owner_badge.clone(),
+        proxy_manager_badge.clone(),
+        "generic_proxy",
+        "GenericProxy",
+        "instantiate_proxy",
+    );
+    set_oracle_proxy_component_address(
+        &mut ledger,
+        generic_proxy_address,
+        "set_component_address",
+        crypto_scrypto_address,
+        proxy_manager_badge.clone(),
+    );
+
+    let receipt_crypto_scrypto = ledger.execute_manifest_with_costing_params(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(
+                crypto_scrypto_address,
+                "verify_with_internal_key",
+                manifest_args!(msg, msg_signature, false),
+            )
+            .build(),
+        vec![],
+        // We want to perform BLS verification in WASM not natively, thus extending the limit.
+        CostingParameters::default().with_execution_cost_unit_limit(EXECUTION_COST_UNIT_LIMIT * 10),
+    );
+
+    let receipt_generic_proxy = ledger.execute_manifest_with_costing_params(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(
+                generic_proxy_address,
+                "proxy_call",
+                manifest_args!(
+                    "verify_with_internal_key",
+                    to_manifest_value(&(msg, msg_signature, false)).unwrap()
+                ),
+            )
+            .build(),
+        vec![],
+        CostingParameters::default().with_execution_cost_unit_limit(EXECUTION_COST_UNIT_LIMIT * 10),
+    );
+    println!(
+        "verify crypto_scrypto total_cost: {:?}",
+        receipt_crypto_scrypto.fee_summary.total_cost()
+    );
+    println!(
+        "verify generic_proxy total_cost: {:?} diff: {:?}",
+        receipt_generic_proxy.fee_summary.total_cost(),
+        receipt_generic_proxy.fee_summary.total_cost()
+            - receipt_crypto_scrypto.fee_summary.total_cost()
+    );
+
+    // 2024-02-26: According to above results proxy call cost should be less than 0.19
+    assert!(
+        (receipt_generic_proxy.fee_summary.total_cost()
+            - receipt_crypto_scrypto.fee_summary.total_cost())
+            < dec!("0.19")
+    );
 }

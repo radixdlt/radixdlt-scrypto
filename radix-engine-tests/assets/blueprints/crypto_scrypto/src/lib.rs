@@ -2,9 +2,31 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod component_module {
-    struct CryptoScrypto {}
+    struct CryptoScrypto {
+        pub_key: Bls12381G1PublicKey,
+    }
 
     impl CryptoScrypto {
+        pub fn instantiate(pub_key: Bls12381G1PublicKey) -> Global<CryptoScrypto> {
+            Self { pub_key }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
+        }
+
+        pub fn verify_with_internal_key(
+            &self,
+            message: Vec<u8>,
+            signature: Bls12381G2Signature,
+            use_crypto_utils: bool,
+        ) -> bool {
+            if use_crypto_utils {
+                CryptoUtils::bls12381_v1_verify(message, self.pub_key, signature)
+            } else {
+                verify_bls12381_v1(&message, &self.pub_key, &signature)
+            }
+        }
+
         pub fn bls12381_v1_verify(
             message: Vec<u8>,
             pub_key: Bls12381G1PublicKey,
