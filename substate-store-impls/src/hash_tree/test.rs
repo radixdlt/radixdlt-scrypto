@@ -521,7 +521,12 @@ impl<S: TreeStore> HashTreeTester<S> {
     fn apply_database_updates(&mut self, database_updates: &DatabaseUpdates) -> Hash {
         let next_version = self.current_version.unwrap_or(0) + 1;
         let current_version = self.current_version.replace(next_version);
-        put_at_next_version(&mut self.tree_store, current_version, database_updates)
+        put_at_next_version(
+            &mut self.tree_store,
+            current_version,
+            database_updates,
+            false,
+        )
     }
 
     fn index_to_delta_maps(

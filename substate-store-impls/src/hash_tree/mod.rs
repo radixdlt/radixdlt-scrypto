@@ -75,6 +75,12 @@ impl ValuePayload {
 
 /// Inserts a new set of nodes at version `node_root_version` + 1 into the "3-Tier JMT" persisted
 /// within the given `TreeStore`.
+///
+/// When `store_values` is requested, Substate Tier's leaves will include complete Substate values.
+///
+/// Returns the new Node Tier root's hash.
+///
+/// Implementation note:
 /// In a traditional JMT, this inserts a new leaf node for each given "change", together with an
 /// entire new "parent chain" leading from that leaf to a new root node (common for all of them).
 /// In our instantiation of the JMT, we first update all touched Substate-Tier JMTs, then we update
@@ -91,8 +97,10 @@ pub fn put_at_next_version<S: TreeStore>(
     node_tier_store: &S,
     node_root_version: Option<Version>,
     database_updates: &DatabaseUpdates,
+    store_values: bool,
 ) -> Hash {
-    let next_version = node_root_version.unwrap_or(0) + 1;
+    let node_tier_version_progress =
+        VersionProgress::new(node_root_version, node_root_version.unwrap_or(0) + 1);
     let node_hash_changes = database_updates
         .node_updates
         .iter()
@@ -101,19 +109,19 @@ pub fn put_at_next_version<S: TreeStore>(
                 node_key,
                 apply_node_database_updates(
                     node_tier_store,
-                    node_root_version,
+                    node_tier_version_progress,
                     node_key,
                     node_database_updates,
-                    next_version,
+                    store_values,
                 ),
             )
         })
         .collect::<Vec<_>>();
     put_leaf_hash_changes(
         node_tier_store,
-        node_root_version,
-        next_version,
+        node_tier_version_progress,
         node_hash_changes,
+        store_values,
     )
     .unwrap_or(SPARSE_MERKLE_PLACEHOLDER_HASH)
 }
@@ -194,13 +202,14 @@ fn list_leaves_recursively<S: ReadableTreeStore>(
 
 fn apply_node_database_updates<S: TreeStore>(
     node_tier_store: &S,
-    node_root_version: Option<Version>,
+    node_tier_version_progress: VersionProgress,
     node_key: &DbNodeKey,
     node_database_updates: &NodeDatabaseUpdates,
-    next_version: Version,
+    store_values: bool,
 ) -> Option<Hash> {
-    let partition_root_version =
-        get_lower_tier_root_version(node_tier_store, node_root_version, node_key);
+    let VersionProgress { from, to } = node_tier_version_progress;
+    let partition_root_version = get_lower_tier_root_version(node_tier_store, from, node_key);
+    let partition_tier_version_progress = VersionProgress::new(partition_root_version, to);
     let partition_tier_store = NestedTreeStore::new(node_tier_store, node_key.clone());
     let partition_hash_changes = node_database_updates
         .partition_updates
@@ -210,42 +219,44 @@ fn apply_node_database_updates<S: TreeStore>(
                 &vec![*partition_num],
                 apply_partition_database_updates(
                     &partition_tier_store,
-                    partition_root_version,
+                    partition_tier_version_progress,
                     partition_num,
                     partition_database_updates,
-                    next_version,
+                    store_values,
                 ),
             )
         })
         .collect::<Vec<_>>();
     put_leaf_hash_changes(
         &partition_tier_store,
-        partition_root_version,
-        next_version,
+        partition_tier_version_progress,
         partition_hash_changes,
+        store_values,
     )
 }
 
 fn apply_partition_database_updates<S: TreeStore>(
     partition_tier_store: &S,
-    partition_root_version: Option<Version>,
+    partition_tier_version_progress: VersionProgress,
     partition_num: &DbPartitionNum,
     partition_database_updates: &PartitionDatabaseUpdates,
-    next_version: Version,
+    store_values: bool,
 ) -> Option<Hash> {
+    let VersionProgress { from, to } = partition_tier_version_progress;
     let partition_key = vec![*partition_num];
     let substate_root_version =
-        get_lower_tier_root_version(partition_tier_store, partition_root_version, &partition_key);
+        get_lower_tier_root_version(partition_tier_store, from, &partition_key);
+    let substate_tier_version_progress = VersionProgress::new(substate_root_version, to);
     let substate_tier_store = NestedTreeStore::new(partition_tier_store, partition_key);
     match partition_database_updates {
         PartitionDatabaseUpdates::Delta { substate_updates } => put_leaf_hash_changes(
             &substate_tier_store,
-            substate_root_version,
-            next_version,
+            substate_tier_version_progress,
             substate_updates
                 .into_iter()
                 .map(|(sort_key, update)| LeafChange::for_substate_update(sort_key, update))
                 .collect(),
+            store_values,
         ),
         PartitionDatabaseUpdates::Reset {
             new_substate_values,
@@ -257,12 +268,12 @@ fn apply_partition_database_updates<S: TreeStore>(
             }
             put_leaf_hash_changes(
                 &substate_tier_store,
-                None,
-                next_version,
+                VersionProgress::new(None, to), // a completely new tree is started after reset
                 new_substate_values
                     .into_iter()
                     .map(|(sort_key, value)| LeafChange::for_substate_reset(sort_key, value))
                     .collect(),
+                store_values,
             )
         }
     }
@@ -280,6 +291,18 @@ fn get_lower_tier_root_version<S: ReadableTreeStore>(
             .0;
         leaf_node_data.map(|(_hash, payload, _version)| payload.last_hash_change_version)
     })
+}
+
+#[derive(Clone, Copy)]
+struct VersionProgress {
+    from: Option<Version>,
+    to: Version,
+}
+
+impl VersionProgress {
+    pub fn new(from: Option<Version>, to: Version) -> Self {
+        Self { from, to }
+    }
 }
 
 struct LeafChange {
@@ -317,15 +340,21 @@ impl LeafChange {
         }
     }
 
-    pub fn to_stored_leaf_change(self, version: Version) -> StoredLeafChange {
-        // TODO(wip): pass config here
+    pub fn to_stored_leaf_change(self, version: Version, store_value: bool) -> StoredLeafChange {
         let payload = ValuePayload::new(version);
         StoredLeafChange {
             key: LeafKey {
                 bytes: self.key_bytes,
             },
             new_payload: self.hash_change.map(|payload_change| match payload_change {
-                PayloadChange::SubstateChange(value) => (hash(&value), payload.with_value(value)),
+                PayloadChange::SubstateChange(value) => (
+                    hash(&value),
+                    if store_value {
+                        payload.with_value(value)
+                    } else {
+                        payload
+                    },
+                ),
                 PayloadChange::AggregateChange(hash) => (hash, payload),
             }),
         }
@@ -334,17 +363,16 @@ impl LeafChange {
 
 fn put_leaf_hash_changes<S: TreeStore>(
     store: &S,
-    current_version: Option<Version>,
-    next_version: Version,
+    version_progress: VersionProgress,
     changes: Vec<LeafChange>,
+    store_values: bool,
 ) -> Option<Hash> {
     let root_hash = put_leaf_changes(
         store,
-        current_version,
-        next_version,
+        version_progress,
         changes
             .into_iter()
-            .map(|change| change.to_stored_leaf_change(next_version))
+            .map(|change| change.to_stored_leaf_change(version_progress.to, store_values))
             .collect(),
     );
     if root_hash == SPARSE_MERKLE_PLACEHOLDER_HASH {
@@ -363,8 +391,7 @@ struct StoredLeafChange {
 
 fn put_leaf_changes<S: TreeStore>(
     store: &S,
-    current_version: Option<Version>,
-    next_version: Version,
+    version_progress: VersionProgress,
     changes: Vec<StoredLeafChange>,
 ) -> Hash {
     let (root_hash, update_result) = JellyfishMerkleTree::new(store)
@@ -374,8 +401,8 @@ fn put_leaf_changes<S: TreeStore>(
                 .map(|change| (&change.key, change.new_payload.as_ref()))
                 .collect(),
             None,
-            current_version,
-            next_version,
+            version_progress.from,
+            version_progress.to,
         )
         .expect("error while reading tree during put");
     for (key, node) in update_result.node_batch.into_iter().flatten() {
@@ -388,6 +415,13 @@ fn put_leaf_changes<S: TreeStore>(
     root_hash
 }
 
+/// A [`TreeStore`] decorator for operating on a "nested" JMT (i.e. of the lower Tier).
+///
+/// Implementation-wise, this simply prepends every JMT node key with a preconfigured prefix (i.e. the parent's leaf's
+/// key bytes) and a predefined "Tier separator" byte.
+///
+/// This struct is public, since the Node (please mind the name-clash) wants to re-use it for certain JMT traversal
+/// use-cases.
 pub struct NestedTreeStore<S> {
     underlying: S,
     key_prefix_bytes: Vec<u8>,

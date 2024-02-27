@@ -65,6 +65,7 @@ pub fn compute_state_tree_update<S: ReadableTreeStore>(
         &mut collector,
         Some(parent_state_version).filter(|v| *v > 0),
         database_updates,
+        false,
     );
     (collector.into_diff(), root_hash)
 }

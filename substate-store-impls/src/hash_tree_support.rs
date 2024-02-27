@@ -41,6 +41,7 @@ impl<D> HashTreeUpdatingDatabase<D> {
             &mut self.tree_store,
             Some(self.current_version).filter(|version| *version > 0),
             db_updates,
+            false,
         );
         self.current_version += 1;
     }
