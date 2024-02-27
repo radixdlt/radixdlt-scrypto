@@ -155,12 +155,12 @@ fn hash_of_different_re_nodes_is_same_when_contained_entries_are_same() {
         change(7, 6, 2, Some(30)),
         change(7, 7, 9, Some(40)),
     ]);
-    let re_node_leaf_hashes = tester
+    let re_node_leafs = tester
         .get_leafs_of_tier(Tier::ReNode)
         .into_values()
         .collect::<Vec<_>>();
-    assert_eq!(re_node_leaf_hashes.len(), 2);
-    assert_eq!(re_node_leaf_hashes[0], re_node_leaf_hashes[1])
+    assert_eq!(re_node_leafs.len(), 2);
+    assert_eq!(re_node_leafs[0].value_hash, re_node_leafs[1].value_hash)
 }
 
 #[test]
@@ -212,9 +212,13 @@ fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
     );
 
     // Assert on the keys and hashes of the Substate-tier leaves:
-    let substate_tier_leaves = tester.get_leafs_of_tier(Tier::Substate);
+    let substate_tier_leaf_hashes = tester
+        .get_leafs_of_tier(Tier::Substate)
+        .into_iter()
+        .map(|(resolved_key, leaf)| (resolved_key, leaf.value_hash))
+        .collect::<HashMap<_, _>>();
     assert_eq!(
-        substate_tier_leaves,
+        substate_tier_leaf_hashes,
         hashmap!(
             LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEP, 99, TIER_SEP, 253] } => hash([1]),
             LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEP, 99, TIER_SEP, 66] } => hash([2]),
@@ -238,6 +242,65 @@ fn deletes_node_tier_leaf_when_all_its_entries_deleted() {
     assert_eq!(tester.get_leafs_of_tier(Tier::ReNode).len(), 1);
     tester.put_substate_changes(vec![change(2, 7, 3, None)]);
     assert_eq!(tester.get_leafs_of_tier(Tier::ReNode).len(), 0);
+}
+
+#[test]
+fn stores_substate_values_when_requested() {
+    let mut tester = HashTreeTester::new_empty().with_store_values();
+    tester.put_substate_changes(vec![
+        change_exact(vec![1, 3, 3, 7], 99, vec![253], Some(vec![66; 10203040])),
+        change_exact(vec![1, 3, 3, 7], 99, vec![66], Some(vec![])),
+        change_exact(vec![123, 12, 1, 0], 88, vec![6, 6, 6], Some(vec![7])),
+    ]);
+
+    // Even when storing values is configured, Node Tier leaves have nothing to store:
+    let node_tier_values = tester
+        .get_leafs_of_tier(Tier::ReNode)
+        .into_values()
+        .map(|node| node.value)
+        .collect::<HashSet<_>>();
+    assert_eq!(node_tier_values, hashset!(None));
+
+    // The same about Partition Tier:
+    let node_tier_values = tester
+        .get_leafs_of_tier(Tier::Partition)
+        .into_values()
+        .map(|node| node.value)
+        .collect::<HashSet<_>>();
+    assert_eq!(node_tier_values, hashset!(None));
+
+    // However, we should now expect the actual values stored within Substate-tier leaves:
+    let substate_tier_values = tester
+        .get_leafs_of_tier(Tier::Substate)
+        .into_iter()
+        .map(|(resolved_key, leaf)| (resolved_key, leaf.value))
+        .collect::<HashMap<_, _>>();
+    assert_eq!(
+        substate_tier_values,
+        hashmap!(
+            LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEP, 99, TIER_SEP, 253] } => Some(vec![66; 10203040]),
+            LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEP, 99, TIER_SEP, 66] } => Some(vec![]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEP, 88, TIER_SEP, 6, 6, 6] } => Some(vec![7]),
+        )
+    );
+}
+
+#[test]
+fn does_not_store_substate_values_when_not_requested() {
+    let mut tester = HashTreeTester::new_empty();
+    tester.put_substate_changes(vec![
+        change_exact(vec![1, 3, 3, 7], 99, vec![253], Some(vec![66; 10203040])),
+        change_exact(vec![1, 3, 3, 7], 99, vec![66], Some(vec![])),
+        change_exact(vec![123, 12, 1, 0], 88, vec![6, 6, 6], Some(vec![7]),
+        ),
+    ]);
+
+    let substate_tier_values = tester
+        .get_leafs_of_tier(Tier::Substate)
+        .into_values()
+        .map(|node| node.value)
+        .collect::<HashSet<_>>();
+    assert_eq!(substate_tier_values, hashset!(None));
 }
 
 #[test]
@@ -480,6 +543,7 @@ const TIER_SEP: u8 = NestedTreeStore::<()>::TIER_SEPARATOR;
 pub struct HashTreeTester<S> {
     pub tree_store: S,
     pub current_version: Option<Version>,
+    pub store_values: bool,
 }
 
 impl<S: TreeStore> HashTreeTester<S> {
@@ -487,6 +551,14 @@ impl<S: TreeStore> HashTreeTester<S> {
         Self {
             tree_store,
             current_version,
+            store_values: false,
+        }
+    }
+
+    pub fn with_store_values(self) -> Self {
+        Self {
+            store_values: true,
+            ..self
         }
     }
 
@@ -525,7 +597,7 @@ impl<S: TreeStore> HashTreeTester<S> {
             &mut self.tree_store,
             current_version,
             database_updates,
-            false,
+            self.store_values,
         )
     }
 
@@ -549,7 +621,7 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
         Self::new(TypedInMemoryTreeStore::new(), None)
     }
 
-    pub fn get_leafs_of_tier(&mut self, tier: Tier) -> HashMap<LeafKey, Hash> {
+    pub fn get_leafs_of_tier(&mut self, tier: Tier) -> HashMap<LeafKey, ValueTreeLeafNode> {
         let binding = self.tree_store.stale_part_buffer.borrow().clone();
         let stale_node_keys = binding
             .into_iter()
@@ -576,16 +648,15 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
             })
             .filter(|(key, _)| !stale_node_keys.contains(key))
             .filter_map(|(key, node)| match node {
-                TreeNode::Leaf(leaf) => Some((
-                    Self::leaf_key(key, &leaf.key_suffix),
-                    leaf.value_hash.clone(),
-                )),
+                TreeNode::Leaf(leaf) => {
+                    Some((Self::resolve_leaf_key(key, &leaf.key_suffix), leaf.clone()))
+                }
                 _ => None,
             })
             .collect()
     }
 
-    fn leaf_key(node_key: &NodeKey, suffix_from_leaf: &NibblePath) -> LeafKey {
+    fn resolve_leaf_key(node_key: &NodeKey, suffix_from_leaf: &NibblePath) -> LeafKey {
         LeafKey::new(
             NibblePath::from_iter(
                 node_key
