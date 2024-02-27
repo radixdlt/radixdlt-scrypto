@@ -631,7 +631,7 @@ fn test_proxy_basic_oracle_as_owned() {
 }
 
 #[test]
-fn test_proxy_costing_overhead_1() {
+fn test_proxy_costing_overhead() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let resources = create_some_resources(&mut ledger);
@@ -756,98 +756,6 @@ fn test_proxy_costing_overhead_1() {
     assert!(
         (receipt_oracle_proxy_owned.fee_summary.total_cost()
             - receipt_oracle_v1.fee_summary.total_cost())
-            < dec!("0.19")
-    );
-}
-
-#[test]
-fn test_proxy_costing_overhead_2() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-    let (public_key, _, _account) = ledger.new_account(false);
-    let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
-    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
-
-    let bls_priv_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
-    let bls_pub_key = bls_priv_key.public_key();
-    let msg = b"Important message";
-    let msg_signature = bls_priv_key.sign_v1(msg);
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
-    let receipt = ledger.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(FAUCET, 500000)
-            .call_function(
-                package_address,
-                "CryptoScrypto",
-                "instantiate",
-                manifest_args!(bls_pub_key),
-            )
-            .build(),
-        vec![],
-    );
-    let crypto_scrypto_address = receipt.expect_commit(true).new_component_addresses()[0];
-
-    // Generic Proxy
-    let generic_proxy_address = initialize_package(
-        &mut ledger,
-        owner_badge.clone(),
-        proxy_manager_badge.clone(),
-        "generic_proxy",
-        "GenericProxy",
-        "instantiate_proxy",
-    );
-    set_oracle_proxy_component_address(
-        &mut ledger,
-        generic_proxy_address,
-        "set_component_address",
-        crypto_scrypto_address,
-        proxy_manager_badge.clone(),
-    );
-
-    let receipt_crypto_scrypto = ledger.execute_manifest_with_costing_params(
-        ManifestBuilder::new()
-            .lock_fee_from_faucet()
-            .call_method(
-                crypto_scrypto_address,
-                "verify_with_internal_key",
-                manifest_args!(msg, msg_signature, false),
-            )
-            .build(),
-        vec![],
-        // We want to perform BLS verification in WASM not natively, thus extending the limit.
-        CostingParameters::default().with_execution_cost_unit_limit(EXECUTION_COST_UNIT_LIMIT * 10),
-    );
-
-    let receipt_generic_proxy = ledger.execute_manifest_with_costing_params(
-        ManifestBuilder::new()
-            .lock_fee_from_faucet()
-            .call_method(
-                generic_proxy_address,
-                "proxy_call",
-                manifest_args!(
-                    "verify_with_internal_key",
-                    to_manifest_value(&(msg, msg_signature, false)).unwrap()
-                ),
-            )
-            .build(),
-        vec![],
-        CostingParameters::default().with_execution_cost_unit_limit(EXECUTION_COST_UNIT_LIMIT * 10),
-    );
-    println!(
-        "verify crypto_scrypto total_cost: {:?}",
-        receipt_crypto_scrypto.fee_summary.total_cost()
-    );
-    println!(
-        "verify generic_proxy total_cost: {:?} diff: {:?}",
-        receipt_generic_proxy.fee_summary.total_cost(),
-        receipt_generic_proxy.fee_summary.total_cost()
-            - receipt_crypto_scrypto.fee_summary.total_cost()
-    );
-
-    // 2024-02-26: According to above results proxy call cost should be less than 0.19
-    assert!(
-        (receipt_generic_proxy.fee_summary.total_cost()
-            - receipt_crypto_scrypto.fee_summary.total_cost())
             < dec!("0.19")
     );
 }
