@@ -2,7 +2,7 @@ use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::hash_tree::jellyfish::JellyfishMerkleTree;
 use crate::hash_tree::tree_store::{
     SerializedInMemoryTreeStore, StaleTreePart, TreeChildEntry, TreeInternalNode, TreeLeafNode,
-    TreeNode, TreeStore, TypedInMemoryTreeStore,
+    TreeNode, TreeStore, TypedInMemoryTreeStore, ValueTreeLeafNode,
 };
 use crate::hash_tree::types::{LeafKey, NodeKey};
 use crate::hash_tree::{put_at_next_version, NestedTreeStore};
@@ -354,10 +354,11 @@ fn records_stale_subtree_root_key_when_partition_removed() {
 fn sbor_uses_custom_direct_codecs_for_nibbles() {
     let nibbles = nibbles("a1a2a3");
     let direct_bytes = nibbles.bytes().to_vec();
-    let node = TreeNode::Leaf(TreeLeafNode {
+    let node = TreeNode::Leaf(ValueTreeLeafNode {
         key_suffix: nibbles,
         value_hash: Hash([7; 32]),
         last_hash_change_version: 1337,
+        value: None,
     });
     let encoded = scrypto_encode(&node).unwrap();
     assert!(encoded
@@ -385,10 +386,11 @@ fn sbor_decodes_what_was_encoded() {
                 },
             ],
         }),
-        TreeNode::Leaf(TreeLeafNode {
+        TreeNode::Leaf(ValueTreeLeafNode {
             key_suffix: nibbles("abc"),
             value_hash: Hash([7; 32]),
             last_hash_change_version: 1337,
+            value: Some(vec![13, 37]),
         }),
         TreeNode::Null,
     ];

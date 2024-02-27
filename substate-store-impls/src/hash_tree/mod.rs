@@ -28,6 +28,13 @@ mod test;
 #[allow(dead_code)]
 mod types;
 
+// TODO(wip): doc
+#[derive(Clone, Debug, Ord, PartialOrd, Hash, Eq, PartialEq)]
+pub struct ValuePayload {
+    pub last_hash_change_version: Version,
+    pub value: Option<DbSubstateValue>,
+}
+
 /// Inserts a new set of nodes at version `node_root_version` + 1 into the "3-Tier JMT" persisted
 /// within the given `TreeStore`.
 /// In a traditional JMT, this inserts a new leaf node for each given "change", together with an
@@ -51,15 +58,17 @@ pub fn put_at_next_version<S: TreeStore>(
     let node_hash_changes = database_updates
         .node_updates
         .iter()
-        .map(|(node_key, node_database_updates)| LeafHashChange {
-            key_bytes: node_key.clone(),
-            hash_change: apply_node_database_updates(
-                node_tier_store,
-                node_root_version,
+        .map(|(node_key, node_database_updates)| {
+            LeafHashChange::from_lower_tier_root_hash(
                 node_key,
-                node_database_updates,
-                next_version,
-            ),
+                apply_node_database_updates(
+                    node_tier_store,
+                    node_root_version,
+                    node_key,
+                    node_database_updates,
+                    next_version,
+                ),
+            )
         })
         .collect::<Vec<_>>();
     put_leaf_hash_changes(
@@ -79,17 +88,19 @@ pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
     for node_tier_leaf in list_leaves(node_tier_store, node_root_version) {
         let db_node_key = node_tier_leaf.leaf_key().bytes.clone();
         let partition_tier_store = NestedTreeStore::new(node_tier_store, db_node_key.clone());
-        for partition_tier_leaf in
-            list_leaves(&partition_tier_store, node_tier_leaf.payload().clone())
-        {
+        for partition_tier_leaf in list_leaves(
+            &partition_tier_store,
+            node_tier_leaf.payload().last_hash_change_version,
+        ) {
             let db_partition_num =
                 DbPartitionNum::from_be_bytes(copy_u8_array(&partition_tier_leaf.leaf_key().bytes));
             let substate_tier_store =
                 NestedTreeStore::new(&partition_tier_store, vec![db_partition_num]);
             let mut by_db_sort_key = index_map_new();
-            for substate_tier_leaf in
-                list_leaves(&substate_tier_store, partition_tier_leaf.payload().clone())
-            {
+            for substate_tier_leaf in list_leaves(
+                &substate_tier_store,
+                partition_tier_leaf.payload().last_hash_change_version,
+            ) {
                 by_db_sort_key.insert(
                     DbSortKey(substate_tier_leaf.leaf_key().bytes.clone()),
                     substate_tier_leaf.value_hash(),
@@ -109,7 +120,10 @@ pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
 
 // only internals below
 
-fn list_leaves<S: ReadableTreeStore>(tree_store: &S, version: Version) -> Vec<LeafNode<Version>> {
+fn list_leaves<S: ReadableTreeStore>(
+    tree_store: &S,
+    version: Version,
+) -> Vec<LeafNode<ValuePayload>> {
     let mut leaves = Vec::new();
     list_leaves_recursively(tree_store, NodeKey::new_empty_path(version), &mut leaves);
     leaves
@@ -118,7 +132,7 @@ fn list_leaves<S: ReadableTreeStore>(tree_store: &S, version: Version) -> Vec<Le
 fn list_leaves_recursively<S: ReadableTreeStore>(
     tree_store: &S,
     key: NodeKey,
-    results: &mut Vec<LeafNode<Version>>,
+    results: &mut Vec<LeafNode<ValuePayload>>,
 ) {
     let Some(node) = tree_store.get_node(&key) else {
         panic!("{:?} referenced but not found in the storage", key);
@@ -153,18 +167,18 @@ fn apply_node_database_updates<S: TreeStore>(
     let partition_hash_changes = node_database_updates
         .partition_updates
         .iter()
-        .map(
-            |(partition_num, partition_database_updates)| LeafHashChange {
-                key_bytes: vec![*partition_num],
-                hash_change: apply_partition_database_updates(
+        .map(|(partition_num, partition_database_updates)| {
+            LeafHashChange::from_lower_tier_root_hash(
+                &vec![*partition_num],
+                apply_partition_database_updates(
                     &partition_tier_store,
                     partition_root_version,
                     partition_num,
                     partition_database_updates,
                     next_version,
                 ),
-            },
-        )
+            )
+        })
         .collect::<Vec<_>>();
     put_leaf_hash_changes(
         &partition_tier_store,
@@ -226,13 +240,31 @@ fn get_lower_tier_root_version<S: ReadableTreeStore>(
             .get_with_proof(&LeafKey::new(leaf_bytes), version)
             .unwrap()
             .0;
-        leaf_node_data.map(|(_hash, last_hash_change_version, _version)| last_hash_change_version)
+        leaf_node_data.map(|(_hash, payload, _version)| payload.last_hash_change_version)
     })
 }
 
 struct LeafHashChange {
     key_bytes: Vec<u8>,
-    hash_change: Option<Hash>,
+    hash_change: Option<HashWithOptionalValue>, // TODO(wip): enum, different per tier
+}
+
+struct HashWithOptionalValue {
+    hash: Hash,
+    value: Option<DbSubstateValue>,
+}
+
+impl HashWithOptionalValue {
+    pub fn from_value(value: &DbSubstateValue) -> Self {
+        Self {
+            hash: hash(value),
+            value: Some(value.clone()),
+        }
+    }
+
+    pub fn from_hash(hash: Hash) -> Self {
+        Self { hash, value: None }
+    }
 }
 
 impl LeafHashChange {
@@ -240,7 +272,7 @@ impl LeafHashChange {
         Self {
             key_bytes: sort_key.0.clone(),
             hash_change: match update {
-                DatabaseUpdate::Set(value) => Some(hash(value)),
+                DatabaseUpdate::Set(value) => Some(HashWithOptionalValue::from_value(value)),
                 DatabaseUpdate::Delete => None,
             },
         }
@@ -249,16 +281,36 @@ impl LeafHashChange {
     pub fn from_value(sort_key: &DbSortKey, value: &DbSubstateValue) -> Self {
         Self {
             key_bytes: sort_key.0.clone(),
-            hash_change: Some(hash(value)),
+            hash_change: Some(HashWithOptionalValue::from_value(value)),
+        }
+    }
+
+    pub fn from_lower_tier_root_hash(
+        node_key: &DbNodeKey,
+        lower_tier_root_hash: Option<Hash>,
+    ) -> Self {
+        Self {
+            key_bytes: node_key.clone(),
+            hash_change: lower_tier_root_hash.map(|hash| HashWithOptionalValue::from_hash(hash)),
         }
     }
 
     pub fn to_leaf_change(self, version: Version) -> LeafChange {
+        // TODO(wip): pass config here
         LeafChange {
             key: LeafKey {
                 bytes: self.key_bytes,
             },
-            new_payload: self.hash_change.map(|value_hash| (value_hash, version)),
+            new_payload: self.hash_change.map(|hash_with_optional_value| {
+                let HashWithOptionalValue { hash, value } = hash_with_optional_value;
+                (
+                    hash,
+                    ValuePayload {
+                        last_hash_change_version: version,
+                        value,
+                    },
+                )
+            }),
         }
     }
 }
@@ -287,7 +339,7 @@ fn put_leaf_hash_changes<S: TreeStore>(
 
 struct LeafChange {
     key: LeafKey,
-    new_payload: Option<(Hash, Version)>,
+    new_payload: Option<(Hash, ValuePayload)>,
 }
 
 fn put_leaf_changes<S: TreeStore>(

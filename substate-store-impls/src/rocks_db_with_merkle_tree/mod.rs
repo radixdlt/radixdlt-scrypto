@@ -1,5 +1,5 @@
 use crate::hash_tree::tree_store::{
-    encode_key, NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, TreeNodeV1, VersionedTreeNode,
+    encode_key, NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, VersionedTreeNode,
 };
 use itertools::Itertools;
 use radix_engine_common::constants::MAX_SUBSTATE_KEY_SIZE;
@@ -258,7 +258,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
                                     .unwrap();
                                 let value: VersionedTreeNode = scrypto_decode(&bytes).unwrap();
                                 match value.into_latest() {
-                                    TreeNodeV1::Internal(x) => {
+                                    TreeNode::Internal(x) => {
                                         for child in x.children {
                                             queue.push_back(
                                                 node_key.gen_child_node_key(
@@ -268,8 +268,8 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
                                             )
                                         }
                                     }
-                                    TreeNodeV1::Leaf(_) => {}
-                                    TreeNodeV1::Null => {}
+                                    TreeNode::Leaf(_) => {}
+                                    TreeNode::Null => {}
                                 }
                             }
                         }

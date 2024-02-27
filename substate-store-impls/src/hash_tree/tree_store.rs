@@ -6,13 +6,31 @@ use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
+use substate_store_interface::interface::DbSubstateValue;
 use utils::rust::collections::VecDeque;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
 
-define_single_versioned! {
+define_versioned!(
     #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
-    pub enum VersionedTreeNode => TreeNode = TreeNodeV1
+    pub enum VersionedTreeNode {
+        previous_versions: [
+            1 => TreeNodeV1: { updates_to: 2 },
+        ],
+        latest_version: {
+            2 => TreeNode = TreeNodeV2,
+        },
+    }
+);
+
+impl From<TreeNodeV1> for TreeNodeV2 {
+    fn from(value: TreeNodeV1) -> Self {
+        match value {
+            TreeNodeV1::Internal(internal) => TreeNodeV2::Internal(internal),
+            TreeNodeV1::Leaf(leaf) => TreeNodeV2::Leaf(ValueTreeLeafNode::from(leaf)),
+            TreeNodeV1::Null => TreeNodeV2::Null,
+        }
+    }
 }
 
 /// A physical tree node, to be used in the storage.
@@ -22,6 +40,17 @@ pub enum TreeNodeV1 {
     Internal(TreeInternalNode),
     /// Leaf node.
     Leaf(TreeLeafNode),
+    /// An "empty tree" indicator, which may only be used as a root.
+    Null,
+}
+
+/// A physical tree node, to be used in the storage.
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+pub enum TreeNodeV2 {
+    /// Internal node - always metadata-only, as per JMT design.
+    Internal(TreeInternalNode),
+    /// Leaf node.
+    Leaf(ValueTreeLeafNode),
     /// An "empty tree" indicator, which may only be used as a root.
     Null,
 }
@@ -55,6 +84,35 @@ pub struct TreeLeafNode {
     pub value_hash: Hash,
     /// A version at which the [`value_hash`] has most recently changed.
     pub last_hash_change_version: Version,
+}
+
+/// Leaf node.
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+pub struct ValueTreeLeafNode {
+    /// All the remaining nibbles in the _hashed_ payload's key.
+    pub key_suffix: NibblePath,
+    /// An externally-provided hash of the payload.
+    pub value_hash: Hash,
+    /// A version at which the [`value_hash`] has most recently changed.
+    pub last_hash_change_version: Version,
+    /// TODO(wip): doc
+    pub value: Option<DbSubstateValue>,
+}
+
+impl From<TreeLeafNode> for ValueTreeLeafNode {
+    fn from(value: TreeLeafNode) -> Self {
+        let TreeLeafNode {
+            key_suffix,
+            value_hash,
+            last_hash_change_version,
+        } = value;
+        Self {
+            key_suffix,
+            value_hash,
+            last_hash_change_version,
+            value: None,
+        }
+    }
 }
 
 /// A part of a tree that may become stale (i.e. need eventual pruning).
@@ -137,7 +195,7 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
                     while let Some(node_key) = queue.pop_front() {
                         if let Some(value) = self.tree_nodes.borrow_mut().remove(&node_key) {
                             match value {
-                                TreeNodeV1::Internal(x) => {
+                                TreeNode::Internal(x) => {
                                     for child in x.children {
                                         queue.push_back(
                                             node_key
@@ -145,8 +203,8 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
                                         )
                                     }
                                 }
-                                TreeNodeV1::Leaf(_) => {}
-                                TreeNodeV1::Null => {}
+                                TreeNode::Leaf(_) => {}
+                                TreeNode::Null => {}
                             }
                         }
                     }
