@@ -1,15 +1,15 @@
 [package]
-name = "oracle_proxy_basic"
+name = "oracle_v3"
 version = "1.0.0"
 edition = "2021"
 resolver = "2"
 
 [dependencies]
-sbor = { path = "../../../../sbor" }
-scrypto = { path = "../../../../scrypto" }
+sbor = { path = "../../../../../sbor" }
+scrypto = { path = "../../../../../scrypto" }
 
 [dev-dependencies]
-radix-engine = { path = "../../../../radix-engine" }
+radix-engine = { path = "../../../../../radix-engine" }
 
 [features]
 default = []

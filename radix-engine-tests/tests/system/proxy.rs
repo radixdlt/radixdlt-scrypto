@@ -405,7 +405,7 @@ fn test_proxy_basic_oracle_as_global() {
         &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
-        "oracle_proxy_basic",
+        "oracle_proxies/oracle_proxy_basic",
         "OracleProxy",
         "instantiate_proxy",
     );
@@ -415,7 +415,7 @@ fn test_proxy_basic_oracle_as_global() {
         &mut ledger,
         owner_badge.clone(),
         oracle_manager_badge.clone(),
-        "oracle_v1",
+        "oracles/oracle_v1",
         "Oracle",
         "instantiate_global",
     );
@@ -443,7 +443,7 @@ fn test_proxy_basic_oracle_as_global() {
         &mut ledger,
         owner_badge,
         oracle_manager_badge.clone(),
-        "oracle_v2",
+        "oracles/oracle_v2",
         "Oracle",
         "instantiate_global",
     );
@@ -481,7 +481,7 @@ fn test_proxy_generic_oracle_as_global() {
         &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
-        "generic_proxy",
+        "oracle_proxies/generic_proxy",
         "GenericProxy",
         "instantiate_proxy",
     );
@@ -491,7 +491,7 @@ fn test_proxy_generic_oracle_as_global() {
         &mut ledger,
         owner_badge.clone(),
         oracle_manager_badge.clone(),
-        "oracle_v1",
+        "oracles/oracle_v1",
         "Oracle",
         "instantiate_global",
     );
@@ -519,7 +519,7 @@ fn test_proxy_generic_oracle_as_global() {
         &mut ledger,
         owner_badge.clone(),
         oracle_manager_badge.clone(),
-        "oracle_v2",
+        "oracles/oracle_v2",
         "Oracle",
         "instantiate_global",
     );
@@ -547,7 +547,7 @@ fn test_proxy_generic_oracle_as_global() {
         &mut ledger,
         owner_badge,
         oracle_manager_badge.clone(),
-        "oracle_v3",
+        "oracles/oracle_v3",
         "Oracle",
         "instantiate_global",
     );
@@ -586,12 +586,13 @@ fn test_proxy_basic_oracle_as_owned() {
         &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
-        "oracle_proxy_basic",
+        "oracle_proxies/oracle_proxy_basic",
         "OracleProxy",
         "instantiate_proxy",
     );
 
-    let oracle_v1_package_address = ledger.publish_package_simple(PackageLoader::get("oracle_v1"));
+    let oracle_v1_package_address =
+        ledger.publish_package_simple(PackageLoader::get("oracles/oracle_v1"));
 
     set_oracle_proxy_package_address(
         &mut ledger,
@@ -610,7 +611,8 @@ fn test_proxy_basic_oracle_as_owned() {
     // Perform some operations on Oracle v1
     invoke_oracle_via_oracle_proxy(&mut ledger, &resources, proxy_address, "Oracle v1");
 
-    let oracle_v2_package_address = ledger.publish_package_simple(PackageLoader::get("oracle_v2"));
+    let oracle_v2_package_address =
+        ledger.publish_package_simple(PackageLoader::get("oracles/oracle_v2"));
 
     set_oracle_proxy_package_address(
         &mut ledger,
@@ -645,7 +647,7 @@ fn test_proxy_costing_overhead() {
         &mut ledger,
         owner_badge.clone(),
         oracle_manager_badge.clone(),
-        "oracle_v1",
+        "oracles/oracle_v1",
         "Oracle",
         "instantiate_global",
     );
@@ -661,7 +663,7 @@ fn test_proxy_costing_overhead() {
         &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
-        "oracle_proxy_basic",
+        "oracle_proxies/oracle_proxy_basic",
         "OracleProxy",
         "instantiate_proxy",
     );
@@ -678,7 +680,7 @@ fn test_proxy_costing_overhead() {
         &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
-        "generic_proxy",
+        "oracle_proxies/generic_proxy",
         "GenericProxy",
         "instantiate_proxy",
     );
@@ -695,11 +697,12 @@ fn test_proxy_costing_overhead() {
         &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
-        "oracle_proxy_basic",
+        "oracle_proxies/oracle_proxy_basic",
         "OracleProxy",
         "instantiate_proxy",
     );
-    let oracle_v1_package_address = ledger.publish_package_simple(PackageLoader::get("oracle_v1"));
+    let oracle_v1_package_address =
+        ledger.publish_package_simple(PackageLoader::get("oracles/oracle_v1"));
     set_oracle_proxy_package_address(
         &mut ledger,
         oracle_proxy_owned_address,

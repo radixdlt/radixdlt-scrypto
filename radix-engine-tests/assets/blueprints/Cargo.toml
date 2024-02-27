@@ -67,11 +67,11 @@ members = [
     "event-replacement",
     "decimal",
     "crypto_scrypto",
-    "oracle_proxy_basic",
-    "generic_proxy",
-    "oracle_v1",
-    "oracle_v2",
-    "oracle_v3",
+    "oracle_proxies/oracle_proxy_basic",
+    "oracle_proxies/generic_proxy",
+    "oracles/oracle_v1",
+    "oracles/oracle_v2",
+    "oracles/oracle_v3",
 ]
 
 [profile.release]
