@@ -12,18 +12,18 @@ mod proxy {
         }
     }
 
-    struct GenericProxy {
+    struct OracleGenericProxy {
         component_address: Option<Global<AnyComponent>>,
     }
 
     // This example assumes that:
     // - called component are instantiated as global component
     // - called methods of the component are not protected
-    impl GenericProxy {
+    impl OracleGenericProxy {
         pub fn instantiate_proxy(
             owner_badge: NonFungibleGlobalId,
             manager_badge: NonFungibleGlobalId,
-        ) -> Global<GenericProxy> {
+        ) -> Global<OracleGenericProxy> {
             let owner_role = OwnerRole::Fixed(rule!(require(owner_badge)));
             let manager_rule = rule!(require(manager_badge));
 
@@ -69,11 +69,13 @@ mod proxy {
         //     .build();
         //  ```
         pub fn proxy_call(&self, method_name: String, args: ScryptoValue) -> ScryptoValue {
-            let oracle_address = self.component_address.unwrap();
             let args = scrypto_encode(&args).unwrap();
 
             let bytes = ScryptoVmV1Api::object_call(
-                oracle_address.address().as_node_id(),
+                self.component_address
+                    .expect("Component address not set")
+                    .handle()
+                    .as_node_id(),
                 &method_name,
                 args,
             );

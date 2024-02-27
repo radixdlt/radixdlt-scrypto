@@ -69,7 +69,7 @@ members = [
     "crypto_scrypto",
     "oracle_proxies/oracle_proxy_with_global",
     "oracle_proxies/oracle_proxy_with_owned",
-    "oracle_proxies/generic_proxy",
+    "oracle_proxies/oracle_generic_proxy_with_global",
     "oracles/oracle_v1",
     "oracles/oracle_v2",
     "oracles/oracle_v3",

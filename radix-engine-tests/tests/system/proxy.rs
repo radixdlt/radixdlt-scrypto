@@ -481,8 +481,8 @@ fn test_oracle_generic_proxy_with_global() {
         &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
-        "oracle_proxies/generic_proxy",
-        "GenericProxy",
+        "oracle_proxies/oracle_generic_proxy_with_global",
+        "OracleGenericProxy",
         "instantiate_proxy",
     );
 
@@ -680,8 +680,8 @@ fn test_oracle_proxy_costing_overhead() {
         &mut ledger,
         owner_badge.clone(),
         proxy_manager_badge.clone(),
-        "oracle_proxies/generic_proxy",
-        "GenericProxy",
+        "oracle_proxies/oracle_generic_proxy_with_global",
+        "OracleGenericProxy",
         "instantiate_proxy",
     );
     set_oracle_proxy_component_address(
