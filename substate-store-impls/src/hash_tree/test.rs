@@ -1,8 +1,8 @@
 use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::hash_tree::jellyfish::JellyfishMerkleTree;
 use crate::hash_tree::tree_store::{
-    SerializedInMemoryTreeStore, StaleTreePart, TreeChildEntry, TreeInternalNode, TreeLeafNode,
-    TreeNode, TreeStore, TypedInMemoryTreeStore, ValueTreeLeafNode,
+    SerializedInMemoryTreeStore, StaleTreePart, TreeChildEntry, TreeInternalNode, TreeNode,
+    TreeStore, TypedInMemoryTreeStore, ValueTreeLeafNode,
 };
 use crate::hash_tree::types::{LeafKey, NodeKey};
 use crate::hash_tree::{put_at_next_version, NestedTreeStore};

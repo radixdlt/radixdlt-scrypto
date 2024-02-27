@@ -28,11 +28,49 @@ mod test;
 #[allow(dead_code)]
 mod types;
 
-// TODO(wip): doc
+/// Payload stored at each leaf node.
 #[derive(Clone, Debug, Ord, PartialOrd, Hash, Eq, PartialEq)]
 pub struct ValuePayload {
+    /// State version at which the stored value hash was most recently changed.
+    ///
+    /// In practice, this is a state version at which:
+    /// - (in Substate Tier) the represented Substate was most recently upserted,
+    /// - or (in upper Tiers) there was any change in the represented lower Tier.
+    ///
+    /// Please note this can be different than the tree Node's version (i.e. there are cases in which a tree Node is
+    /// changed - e.g. gets promoted up after losing all siblings - while its value remains unchanged).
+    ///
+    /// The version recorded here is used to navigate the 3-Tier JMT structure (i.e. locate the right lower tier root).
     pub last_hash_change_version: Version,
+
+    /// The actual value of the represented Substate.
+    ///
+    /// May be empty:
+    /// - for leaf nodes that do not represent Substates (i.e. leafs of upper Tiers),
+    /// - or when the JMT instance is explicitly configured to not store values.
+    ///
+    /// TODO(potential refactoring): This field is relevant only for Substate Tier, so from object modelling PoV, it
+    /// could be a type parameter. A naive refactoring might affect tree storage (which could be problematic for Node),
+    /// so special care is needed if we want to pursue this.
     pub value: Option<DbSubstateValue>,
+}
+
+impl ValuePayload {
+    /// Creates an instance with fields applicable for all Tiers.
+    pub fn new(last_hash_change_version: Version) -> Self {
+        Self {
+            last_hash_change_version,
+            value: None,
+        }
+    }
+
+    /// Augments the instance with the actual Substate value (for Substate Tier, when storing values is enabled).
+    pub fn with_value(self, value: DbSubstateValue) -> Self {
+        Self {
+            last_hash_change_version: self.last_hash_change_version,
+            value: Some(value),
+        }
+    }
 }
 
 /// Inserts a new set of nodes at version `node_root_version` + 1 into the "3-Tier JMT" persisted
@@ -59,7 +97,7 @@ pub fn put_at_next_version<S: TreeStore>(
         .node_updates
         .iter()
         .map(|(node_key, node_database_updates)| {
-            LeafHashChange::from_lower_tier_root_hash(
+            LeafChange::for_aggregate_update(
                 node_key,
                 apply_node_database_updates(
                     node_tier_store,
@@ -168,7 +206,7 @@ fn apply_node_database_updates<S: TreeStore>(
         .partition_updates
         .iter()
         .map(|(partition_num, partition_database_updates)| {
-            LeafHashChange::from_lower_tier_root_hash(
+            LeafChange::for_aggregate_update(
                 &vec![*partition_num],
                 apply_partition_database_updates(
                     &partition_tier_store,
@@ -206,7 +244,7 @@ fn apply_partition_database_updates<S: TreeStore>(
             next_version,
             substate_updates
                 .into_iter()
-                .map(|(sort_key, update)| LeafHashChange::from_update(sort_key, update))
+                .map(|(sort_key, update)| LeafChange::for_substate_update(sort_key, update))
                 .collect(),
         ),
         PartitionDatabaseUpdates::Reset {
@@ -223,7 +261,7 @@ fn apply_partition_database_updates<S: TreeStore>(
                 next_version,
                 new_substate_values
                     .into_iter()
-                    .map(|(sort_key, value)| LeafHashChange::from_value(sort_key, value))
+                    .map(|(sort_key, value)| LeafChange::for_substate_reset(sort_key, value))
                     .collect(),
             )
         }
@@ -244,72 +282,51 @@ fn get_lower_tier_root_version<S: ReadableTreeStore>(
     })
 }
 
-struct LeafHashChange {
+struct LeafChange {
     key_bytes: Vec<u8>,
-    hash_change: Option<HashWithOptionalValue>, // TODO(wip): enum, different per tier
+    hash_change: Option<PayloadChange>,
 }
 
-struct HashWithOptionalValue {
-    hash: Hash,
-    value: Option<DbSubstateValue>,
+enum PayloadChange {
+    SubstateChange(DbSubstateValue),
+    AggregateChange(Hash),
 }
 
-impl HashWithOptionalValue {
-    pub fn from_value(value: &DbSubstateValue) -> Self {
-        Self {
-            hash: hash(value),
-            value: Some(value.clone()),
-        }
-    }
-
-    pub fn from_hash(hash: Hash) -> Self {
-        Self { hash, value: None }
-    }
-}
-
-impl LeafHashChange {
-    pub fn from_update(sort_key: &DbSortKey, update: &DatabaseUpdate) -> Self {
+impl LeafChange {
+    pub fn for_substate_update(sort_key: &DbSortKey, update: &DatabaseUpdate) -> Self {
         Self {
             key_bytes: sort_key.0.clone(),
             hash_change: match update {
-                DatabaseUpdate::Set(value) => Some(HashWithOptionalValue::from_value(value)),
+                DatabaseUpdate::Set(value) => Some(PayloadChange::SubstateChange(value.clone())),
                 DatabaseUpdate::Delete => None,
             },
         }
     }
 
-    pub fn from_value(sort_key: &DbSortKey, value: &DbSubstateValue) -> Self {
+    pub fn for_substate_reset(sort_key: &DbSortKey, value: &DbSubstateValue) -> Self {
         Self {
             key_bytes: sort_key.0.clone(),
-            hash_change: Some(HashWithOptionalValue::from_value(value)),
+            hash_change: Some(PayloadChange::SubstateChange(value.clone())),
         }
     }
 
-    pub fn from_lower_tier_root_hash(
-        node_key: &DbNodeKey,
-        lower_tier_root_hash: Option<Hash>,
-    ) -> Self {
+    pub fn for_aggregate_update(node_key: &DbNodeKey, lower_tier_root_hash: Option<Hash>) -> Self {
         Self {
             key_bytes: node_key.clone(),
-            hash_change: lower_tier_root_hash.map(|hash| HashWithOptionalValue::from_hash(hash)),
+            hash_change: lower_tier_root_hash.map(|hash| PayloadChange::AggregateChange(hash)),
         }
     }
 
-    pub fn to_leaf_change(self, version: Version) -> LeafChange {
+    pub fn to_stored_leaf_change(self, version: Version) -> StoredLeafChange {
         // TODO(wip): pass config here
-        LeafChange {
+        let payload = ValuePayload::new(version);
+        StoredLeafChange {
             key: LeafKey {
                 bytes: self.key_bytes,
             },
-            new_payload: self.hash_change.map(|hash_with_optional_value| {
-                let HashWithOptionalValue { hash, value } = hash_with_optional_value;
-                (
-                    hash,
-                    ValuePayload {
-                        last_hash_change_version: version,
-                        value,
-                    },
-                )
+            new_payload: self.hash_change.map(|payload_change| match payload_change {
+                PayloadChange::SubstateChange(value) => (hash(&value), payload.with_value(value)),
+                PayloadChange::AggregateChange(hash) => (hash, payload),
             }),
         }
     }
@@ -319,7 +336,7 @@ fn put_leaf_hash_changes<S: TreeStore>(
     store: &S,
     current_version: Option<Version>,
     next_version: Version,
-    changes: Vec<LeafHashChange>,
+    changes: Vec<LeafChange>,
 ) -> Option<Hash> {
     let root_hash = put_leaf_changes(
         store,
@@ -327,7 +344,7 @@ fn put_leaf_hash_changes<S: TreeStore>(
         next_version,
         changes
             .into_iter()
-            .map(|change| change.to_leaf_change(next_version))
+            .map(|change| change.to_stored_leaf_change(next_version))
             .collect(),
     );
     if root_hash == SPARSE_MERKLE_PLACEHOLDER_HASH {
@@ -337,7 +354,9 @@ fn put_leaf_hash_changes<S: TreeStore>(
     }
 }
 
-struct LeafChange {
+/// A lower-level representation of a [`LeafChange`], tailored for obtaining the references as required by the
+/// [`JellyfishMerkleTree::batch_put_value_set()`] method.
+struct StoredLeafChange {
     key: LeafKey,
     new_payload: Option<(Hash, ValuePayload)>,
 }
@@ -346,7 +365,7 @@ fn put_leaf_changes<S: TreeStore>(
     store: &S,
     current_version: Option<Version>,
     next_version: Version,
-    changes: Vec<LeafChange>,
+    changes: Vec<StoredLeafChange>,
 ) -> Hash {
     let (root_hash, update_result) = JellyfishMerkleTree::new(store)
         .batch_put_value_set(

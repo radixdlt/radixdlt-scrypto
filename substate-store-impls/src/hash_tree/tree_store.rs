@@ -86,7 +86,7 @@ pub struct TreeLeafNode {
     pub last_hash_change_version: Version,
 }
 
-/// Leaf node.
+/// A leaf node capable of storing a Substate value.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 pub struct ValueTreeLeafNode {
     /// All the remaining nibbles in the _hashed_ payload's key.
@@ -95,7 +95,7 @@ pub struct ValueTreeLeafNode {
     pub value_hash: Hash,
     /// A version at which the [`value_hash`] has most recently changed.
     pub last_hash_change_version: Version,
-    /// TODO(wip): doc
+    /// An actual Substate value - only present for Substate Tier leaves, when the JMT is configured to store values.
     pub value: Option<DbSubstateValue>,
 }
 
