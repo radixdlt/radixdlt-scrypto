@@ -24,7 +24,7 @@ mod proxy {
     // - Oracle as an owned component (instantiated by proxy)
     //   Proxy can call any method from owned Oracle component
     impl OracleProxy {
-        pub fn instantiate_global(
+        pub fn instantiate_and_globalize(
             owner_badge: NonFungibleGlobalId,
             manager_badge: NonFungibleGlobalId,
         ) -> Global<OracleProxy> {
@@ -82,7 +82,6 @@ mod proxy {
             scrypto_decode(&result).unwrap()
         }
 
-        // This method will fail if Oracle is a global component
         pub fn set_price(&self, base: ResourceAddress, quote: ResourceAddress, price: Decimal) {
             ScryptoVmV1Api::object_call(
                 self.oracle_owned_address

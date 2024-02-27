@@ -33,7 +33,7 @@ mod oracle {
             .instantiate()
         }
 
-        pub fn instantiate_global(
+        pub fn instantiate_and_globalize(
             owner_badge: NonFungibleGlobalId,
             manager_badge: NonFungibleGlobalId,
         ) -> Global<Oracle> {

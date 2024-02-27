@@ -407,7 +407,7 @@ fn test_oracle_proxy_with_global() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_proxy_with_global",
         "OracleProxy",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
 
     // Publish and instantiate Oracle v1
@@ -417,7 +417,7 @@ fn test_oracle_proxy_with_global() {
         oracle_manager_badge.clone(),
         "oracles/oracle_v1",
         "Oracle",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
 
     set_oracle_proxy_component_address(
@@ -445,7 +445,7 @@ fn test_oracle_proxy_with_global() {
         oracle_manager_badge.clone(),
         "oracles/oracle_v2",
         "Oracle",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
 
     set_oracle_proxy_component_address(
@@ -483,7 +483,7 @@ fn test_oracle_generic_proxy_with_global() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_generic_proxy_with_global",
         "OracleGenericProxy",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
 
     // Publish and instantiate Oracle v1
@@ -493,7 +493,7 @@ fn test_oracle_generic_proxy_with_global() {
         oracle_manager_badge.clone(),
         "oracles/oracle_v1",
         "Oracle",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
 
     set_oracle_proxy_component_address(
@@ -521,7 +521,7 @@ fn test_oracle_generic_proxy_with_global() {
         oracle_manager_badge.clone(),
         "oracles/oracle_v2",
         "Oracle",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
 
     set_oracle_proxy_component_address(
@@ -549,7 +549,7 @@ fn test_oracle_generic_proxy_with_global() {
         oracle_manager_badge.clone(),
         "oracles/oracle_v3",
         "Oracle",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
 
     set_oracle_proxy_component_address(
@@ -588,7 +588,7 @@ fn test_oracle_proxy_with_owned() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_proxy_with_owned",
         "OracleProxy",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
 
     let oracle_v1_package_address =
@@ -649,7 +649,7 @@ fn test_oracle_proxy_costing_overhead() {
         oracle_manager_badge.clone(),
         "oracles/oracle_v1",
         "Oracle",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
     set_prices_in_oracle_directly(
         &mut ledger,
@@ -665,7 +665,7 @@ fn test_oracle_proxy_costing_overhead() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_proxy_with_global",
         "OracleProxy",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
     set_oracle_proxy_component_address(
         &mut ledger,
@@ -682,7 +682,7 @@ fn test_oracle_proxy_costing_overhead() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_generic_proxy_with_global",
         "OracleGenericProxy",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
     set_oracle_proxy_component_address(
         &mut ledger,
@@ -699,7 +699,7 @@ fn test_oracle_proxy_costing_overhead() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_proxy_with_owned",
         "OracleProxy",
-        "instantiate_global",
+        "instantiate_and_globalize",
     );
     let oracle_v1_package_address =
         ledger.publish_package_simple(PackageLoader::get("oracles/oracle_v1"));

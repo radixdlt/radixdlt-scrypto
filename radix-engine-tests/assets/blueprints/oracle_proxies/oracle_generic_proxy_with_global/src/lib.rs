@@ -20,7 +20,7 @@ mod proxy {
     // - called component are instantiated as global component
     // - called methods of the component are not protected
     impl OracleGenericProxy {
-        pub fn instantiate_global(
+        pub fn instantiate_and_globalize(
             owner_badge: NonFungibleGlobalId,
             manager_badge: NonFungibleGlobalId,
         ) -> Global<OracleGenericProxy> {
