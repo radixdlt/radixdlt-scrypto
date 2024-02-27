@@ -8,7 +8,7 @@ mod proxy {
         },
         methods {
             set_component_address => restrict_to: [proxy_manager_auth, OWNER];
-            proxy_call => PUBLIC;
+            call_method => PUBLIC;
         }
     }
 
@@ -20,7 +20,7 @@ mod proxy {
     // - called component are instantiated as global component
     // - called methods of the component are not protected
     impl OracleGenericProxy {
-        pub fn instantiate_proxy(
+        pub fn instantiate_global(
             owner_badge: NonFungibleGlobalId,
             manager_badge: NonFungibleGlobalId,
         ) -> Global<OracleGenericProxy> {
@@ -60,7 +60,7 @@ mod proxy {
         //     .lock_fee_from_faucet()
         //     .call_method(
         //         proxy_component_address,
-        //         "proxy_call",
+        //         "call_method",
         //         manifest_args!(
         //             "get_price",
         //             to_manifest_value(&("XRD".to_string(),)).unwrap()
@@ -68,7 +68,7 @@ mod proxy {
         //     )
         //     .build();
         //  ```
-        pub fn proxy_call(&self, method_name: String, args: ScryptoValue) -> ScryptoValue {
+        pub fn call_method(&self, method_name: String, args: ScryptoValue) -> ScryptoValue {
             let args = scrypto_encode(&args).unwrap();
 
             let bytes = ScryptoVmV1Api::object_call(

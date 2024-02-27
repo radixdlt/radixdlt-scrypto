@@ -8,9 +8,9 @@ mod proxy {
         },
         methods {
             initialize_oracle => restrict_to: [proxy_manager_auth, OWNER];
-            proxy_set_price => restrict_to: [proxy_manager_auth, OWNER];
-            proxy_get_oracle_info => PUBLIC;
-            proxy_get_price => PUBLIC;
+            set_price => restrict_to: [proxy_manager_auth, OWNER];
+            get_oracle_info => PUBLIC;
+            get_price => PUBLIC;
         }
     }
 
@@ -24,7 +24,7 @@ mod proxy {
     // - Oracle as an owned component (instantiated by proxy)
     //   Proxy can call any method from owned Oracle component
     impl OracleProxy {
-        pub fn instantiate_proxy(
+        pub fn instantiate_global(
             owner_badge: NonFungibleGlobalId,
             manager_badge: NonFungibleGlobalId,
         ) -> Global<OracleProxy> {
@@ -55,7 +55,7 @@ mod proxy {
                 .push(scrypto_decode(&result).unwrap());
         }
 
-        pub fn proxy_get_oracle_info(&self) -> String {
+        pub fn get_oracle_info(&self) -> String {
             let result = ScryptoVmV1Api::object_call(
                 self.oracle_owned_address
                     .last()
@@ -69,11 +69,7 @@ mod proxy {
             scrypto_decode(&result).unwrap()
         }
 
-        pub fn proxy_get_price(
-            &self,
-            base: ResourceAddress,
-            quote: ResourceAddress,
-        ) -> Option<Decimal> {
+        pub fn get_price(&self, base: ResourceAddress, quote: ResourceAddress) -> Option<Decimal> {
             let result = ScryptoVmV1Api::object_call(
                 self.oracle_owned_address
                     .last()
@@ -87,12 +83,7 @@ mod proxy {
         }
 
         // This method will fail if Oracle is a global component
-        pub fn proxy_set_price(
-            &self,
-            base: ResourceAddress,
-            quote: ResourceAddress,
-            price: Decimal,
-        ) {
+        pub fn set_price(&self, base: ResourceAddress, quote: ResourceAddress, price: Decimal) {
             ScryptoVmV1Api::object_call(
                 self.oracle_owned_address
                     .last()

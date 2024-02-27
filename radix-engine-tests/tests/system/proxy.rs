@@ -136,7 +136,7 @@ fn get_price_in_oracle_via_oracle_proxy(
         .lock_fee_from_faucet()
         .call_method(
             proxy_address,
-            "proxy_get_price",
+            "get_price",
             manifest_args!(
                 resources.get("XRD").unwrap(),
                 resources.get("USDT").unwrap(),
@@ -159,7 +159,7 @@ fn set_prices_in_oracle_via_oracle_proxy(
         .lock_fee_from_faucet()
         .call_method(
             proxy_address,
-            "proxy_set_price",
+            "set_price",
             manifest_args!(
                 resources.get("XRD").unwrap(),
                 resources.get("USDT").unwrap(),
@@ -168,7 +168,7 @@ fn set_prices_in_oracle_via_oracle_proxy(
         )
         .call_method(
             proxy_address,
-            "proxy_set_price",
+            "set_price",
             manifest_args!(
                 resources.get("XRD").unwrap(),
                 resources.get("ETH").unwrap(),
@@ -230,7 +230,7 @@ fn invoke_oracle_via_oracle_proxy(
         .lock_fee_from_faucet()
         .call_method(
             proxy_address,
-            "proxy_get_price",
+            "get_price",
             manifest_args!(
                 resources.get("XRD").unwrap(),
                 resources.get("USDT").unwrap(),
@@ -246,7 +246,7 @@ fn invoke_oracle_via_oracle_proxy(
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(proxy_address, "proxy_get_oracle_info", manifest_args!())
+        .call_method(proxy_address, "get_oracle_info", manifest_args!())
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
     let oracle_info: String = receipt.expect_commit_success().output(1);
@@ -264,7 +264,7 @@ fn get_price_in_oracle_via_generic_proxy(
         .lock_fee_from_faucet()
         .call_method(
             proxy_address,
-            "proxy_call",
+            "call_method",
             manifest_args!(
                 "get_price",
                 to_manifest_value(&(
@@ -291,7 +291,7 @@ fn invoke_oracle_via_generic_proxy(
         .lock_fee_from_faucet()
         .call_method(
             proxy_address,
-            "proxy_call",
+            "call_method",
             manifest_args!(
                 "get_price",
                 to_manifest_value(&(
@@ -313,7 +313,7 @@ fn invoke_oracle_via_generic_proxy(
         .lock_fee_from_faucet()
         .call_method(
             proxy_address,
-            "proxy_call",
+            "call_method",
             manifest_args!("get_oracle_info", to_manifest_value(&()).unwrap()),
         )
         .build();
@@ -335,7 +335,7 @@ fn invoke_oracle_v3_via_generic_proxy(
         .lock_fee_from_faucet()
         .call_method(
             proxy_address,
-            "proxy_call",
+            "call_method",
             manifest_args!(
                 "get_address",
                 // Note the comma in below tuple reference &(,)
@@ -361,7 +361,7 @@ fn invoke_oracle_v3_via_generic_proxy(
         .lock_fee_from_faucet()
         .call_method(
             proxy_address,
-            "proxy_call",
+            "call_method",
             manifest_args!(
                 "get_price",
                 to_manifest_value(&("XRD".to_string(), "USDT".to_string())).unwrap()
@@ -379,7 +379,7 @@ fn invoke_oracle_v3_via_generic_proxy(
         .lock_fee_from_faucet()
         .call_method(
             proxy_address,
-            "proxy_call",
+            "call_method",
             manifest_args!("get_oracle_info", to_manifest_value(&()).unwrap()),
         )
         .build();
@@ -407,7 +407,7 @@ fn test_oracle_proxy_with_global() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_proxy_with_global",
         "OracleProxy",
-        "instantiate_proxy",
+        "instantiate_global",
     );
 
     // Publish and instantiate Oracle v1
@@ -483,7 +483,7 @@ fn test_oracle_generic_proxy_with_global() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_generic_proxy_with_global",
         "OracleGenericProxy",
-        "instantiate_proxy",
+        "instantiate_global",
     );
 
     // Publish and instantiate Oracle v1
@@ -588,7 +588,7 @@ fn test_oracle_proxy_with_owned() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_proxy_with_owned",
         "OracleProxy",
-        "instantiate_proxy",
+        "instantiate_global",
     );
 
     let oracle_v1_package_address =
@@ -665,7 +665,7 @@ fn test_oracle_proxy_costing_overhead() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_proxy_with_global",
         "OracleProxy",
-        "instantiate_proxy",
+        "instantiate_global",
     );
     set_oracle_proxy_component_address(
         &mut ledger,
@@ -682,7 +682,7 @@ fn test_oracle_proxy_costing_overhead() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_generic_proxy_with_global",
         "OracleGenericProxy",
-        "instantiate_proxy",
+        "instantiate_global",
     );
     set_oracle_proxy_component_address(
         &mut ledger,
@@ -699,7 +699,7 @@ fn test_oracle_proxy_costing_overhead() {
         proxy_manager_badge.clone(),
         "oracle_proxies/oracle_proxy_with_owned",
         "OracleProxy",
-        "instantiate_proxy",
+        "instantiate_global",
     );
     let oracle_v1_package_address =
         ledger.publish_package_simple(PackageLoader::get("oracles/oracle_v1"));

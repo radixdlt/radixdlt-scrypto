@@ -8,9 +8,9 @@ mod proxy {
         },
         methods {
             set_oracle_address => restrict_to: [proxy_manager_auth, OWNER];
-            proxy_set_price => restrict_to: [proxy_manager_auth, OWNER];
-            proxy_get_oracle_info => PUBLIC;
-            proxy_get_price => PUBLIC;
+            set_price => restrict_to: [proxy_manager_auth, OWNER];
+            get_oracle_info => PUBLIC;
+            get_price => PUBLIC;
         }
     }
 
@@ -22,7 +22,7 @@ mod proxy {
     // - Oracle as a global component
     //   Proxy can call only public methods of Oracle component
     impl OracleProxy {
-        pub fn instantiate_proxy(
+        pub fn instantiate_global(
             owner_badge: NonFungibleGlobalId,
             manager_badge: NonFungibleGlobalId,
         ) -> Global<OracleProxy> {
@@ -46,7 +46,7 @@ mod proxy {
             self.oracle_global_address = Some(address);
         }
 
-        pub fn proxy_get_oracle_info(&self) -> String {
+        pub fn get_oracle_info(&self) -> String {
             let result = ScryptoVmV1Api::object_call(
                 self.oracle_global_address
                     .expect("Oracle address not set")
@@ -59,11 +59,7 @@ mod proxy {
             scrypto_decode(&result).unwrap()
         }
 
-        pub fn proxy_get_price(
-            &self,
-            base: ResourceAddress,
-            quote: ResourceAddress,
-        ) -> Option<Decimal> {
+        pub fn get_price(&self, base: ResourceAddress, quote: ResourceAddress) -> Option<Decimal> {
             let result = ScryptoVmV1Api::object_call(
                 self.oracle_global_address
                     .expect("Oracle address not set")
@@ -76,12 +72,7 @@ mod proxy {
         }
 
         // This method will fail if Oracle is a global component
-        pub fn proxy_set_price(
-            &self,
-            base: ResourceAddress,
-            quote: ResourceAddress,
-            price: Decimal,
-        ) {
+        pub fn set_price(&self, base: ResourceAddress, quote: ResourceAddress, price: Decimal) {
             ScryptoVmV1Api::object_call(
                 self.oracle_global_address
                     .expect("Oracle address not set")
