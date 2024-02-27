@@ -291,8 +291,7 @@ fn does_not_store_substate_values_when_not_requested() {
     tester.put_substate_changes(vec![
         change_exact(vec![1, 3, 3, 7], 99, vec![253], Some(vec![66; 10203040])),
         change_exact(vec![1, 3, 3, 7], 99, vec![66], Some(vec![])),
-        change_exact(vec![123, 12, 1, 0], 88, vec![6, 6, 6], Some(vec![7]),
-        ),
+        change_exact(vec![123, 12, 1, 0], 88, vec![6, 6, 6], Some(vec![7])),
     ]);
 
     let substate_tier_values = tester
