@@ -383,7 +383,39 @@ fn build_call_argument<'a>(
                 },
             ))
         }
-        _ => Err(BuildCallArgumentError::UnsupportedType(type_kind.clone())),
+        _ => {
+            let non_fungible_global_id_type = resolve_scrypto_well_known_type(
+                well_known_scrypto_custom_types::NON_FUNGIBLE_GLOBAL_ID_TYPE,
+            )
+            .unwrap();
+
+            if type_kind == &non_fungible_global_id_type.kind {
+                let (address, non_fungible_local_id) =
+                    NonFungibleGlobalId::try_from_canonical_string(
+                        address_bech32_decoder,
+                        &argument,
+                    )
+                    .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?
+                    .into_parts();
+                Ok((
+                    builder,
+                    ManifestValue::Tuple {
+                        fields: vec![
+                            ManifestValue::Custom {
+                                value: ManifestCustomValue::Address(address.into()),
+                            },
+                            ManifestValue::Custom {
+                                value: ManifestCustomValue::NonFungibleLocalId(
+                                    from_non_fungible_local_id(non_fungible_local_id),
+                                ),
+                            },
+                        ],
+                    },
+                ))
+            } else {
+                Err(BuildCallArgumentError::UnsupportedType(type_kind.clone()))
+            }
+        }
     }
 }
 
