@@ -2,7 +2,9 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod component_module {
-    struct CryptoScrypto {}
+    struct CryptoScrypto {
+        pub_key: Bls12381G1PublicKey,
+    }
 
     impl CryptoScrypto {
         pub fn bls12381_v1_verify(
