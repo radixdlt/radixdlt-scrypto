@@ -4,7 +4,7 @@ use crate::hash_tree::tree_store::{
 };
 use radix_engine_common::prelude::Hash;
 use std::cell::RefCell;
-use substate_store_interface::interface::DatabaseUpdates;
+use substate_store_interface::interface::{DatabaseUpdates, DbSubstateValue};
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
@@ -33,6 +33,10 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> 
 impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
     fn insert_node(&self, key: NodeKey, node: TreeNode) {
         self.diff.new_nodes.borrow_mut().push((key, node));
+    }
+
+    fn associate_substate_value(&self, _key: &NodeKey, _substate_value: &DbSubstateValue) {
+        // intentionally empty
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {

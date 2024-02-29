@@ -6,6 +6,7 @@ use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
+use substate_store_interface::interface::DbSubstateValue;
 use utils::rust::collections::VecDeque;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
@@ -77,6 +78,12 @@ pub trait WriteableTreeStore {
     /// Inserts the node under a new, unique key (i.e. never an update).
     fn insert_node(&self, key: NodeKey, node: TreeNode);
 
+    /// Associates the actually upserted Substate's value with the given key.
+    ///
+    /// This method will be called before the [`Self::insert_node()`] of Substate-Tier leaf nodes,
+    /// and allows the storage to keep correlated historical values, if required.
+    fn associate_substate_value(&self, key: &NodeKey, substate_value: &DbSubstateValue);
+
     /// Marks the given tree part for a (potential) future removal by an arbitrary external pruning
     /// process.
     fn record_stale_tree_part(&self, part: StaleTreePart);
@@ -122,6 +129,10 @@ impl ReadableTreeStore for TypedInMemoryTreeStore {
 impl WriteableTreeStore for TypedInMemoryTreeStore {
     fn insert_node(&self, key: NodeKey, node: TreeNode) {
         self.tree_nodes.borrow_mut().insert(key, node);
+    }
+
+    fn associate_substate_value(&self, _key: &NodeKey, _substate_value: &DbSubstateValue) {
+        // intentionally empty
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {
@@ -193,6 +204,10 @@ impl WriteableTreeStore for SerializedInMemoryTreeStore {
         self.memory
             .borrow_mut()
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
+    }
+
+    fn associate_substate_value(&self, _key: &NodeKey, _substate_value: &DbSubstateValue) {
+        // intentionally empty
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {
