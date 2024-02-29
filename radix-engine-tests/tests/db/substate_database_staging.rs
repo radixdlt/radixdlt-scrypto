@@ -30,7 +30,7 @@ fn substates_written_to_root_database_can_be_read() {
         },
     });
 
-    let mut db = SubstateDatabaseStaging::new(&root);
+    let db = SubstateDatabaseStaging::new(&root);
 
     // Act
     let substate = db.get_substate(
