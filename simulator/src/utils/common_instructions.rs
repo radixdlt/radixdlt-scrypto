@@ -116,6 +116,7 @@ pub fn build_call_arguments<'a>(
                 let (returned_builder, value) = build_call_argument(
                     builder,
                     address_bech32_decoder,
+                    schema,
                     schema
                         .v1()
                         .resolve_type_kind(*f)
@@ -174,6 +175,7 @@ macro_rules! matches_bucket {
 fn build_call_argument<'a>(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
+    schema: &VersionedScryptoSchema,
     type_kind: &ScryptoTypeKind<LocalTypeId>,
     type_validation: &TypeValidation<ScryptoCustomTypeValidation>,
     argument: String,
@@ -192,6 +194,36 @@ fn build_call_argument<'a>(
         ScryptoTypeKind::U64 => parse_basic_type!(builder, argument, U64),
         ScryptoTypeKind::U128 => parse_basic_type!(builder, argument, U128),
         ScryptoTypeKind::String => Ok((builder, ManifestValue::String { value: argument })),
+        ScryptoTypeKind::Tuple { field_types } => {
+            let mut manifest_value: Vec<ManifestValue> = vec![];
+            let args_parts = argument.split([',', ':']);
+
+            for (f, arg) in field_types.iter().zip(args_parts) {
+                let (b, mv) = build_call_argument(
+                    builder,
+                    address_bech32_decoder,
+                    schema,
+                    &schema
+                        .v1()
+                        .resolve_type_kind(*f)
+                        .expect("Inconsistent schema"),
+                    &schema
+                        .v1()
+                        .resolve_type_validation(*f)
+                        .expect("Inconsistent schema"),
+                    arg.to_owned(),
+                    account,
+                )?;
+                builder = b;
+                manifest_value.push(mv);
+            }
+            Ok((
+                builder,
+                ManifestValue::Tuple {
+                    fields: manifest_value,
+                },
+            ))
+        }
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Decimal) => Ok((
             builder,
             ManifestValue::Custom {
@@ -383,39 +415,7 @@ fn build_call_argument<'a>(
                 },
             ))
         }
-        _ => {
-            let non_fungible_global_id_type = resolve_scrypto_well_known_type(
-                well_known_scrypto_custom_types::NON_FUNGIBLE_GLOBAL_ID_TYPE,
-            )
-            .unwrap();
-
-            if type_kind == &non_fungible_global_id_type.kind {
-                let (address, non_fungible_local_id) =
-                    NonFungibleGlobalId::try_from_canonical_string(
-                        address_bech32_decoder,
-                        &argument,
-                    )
-                    .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?
-                    .into_parts();
-                Ok((
-                    builder,
-                    ManifestValue::Tuple {
-                        fields: vec![
-                            ManifestValue::Custom {
-                                value: ManifestCustomValue::Address(address.into()),
-                            },
-                            ManifestValue::Custom {
-                                value: ManifestCustomValue::NonFungibleLocalId(
-                                    from_non_fungible_local_id(non_fungible_local_id),
-                                ),
-                            },
-                        ],
-                    },
-                ))
-            } else {
-                Err(BuildCallArgumentError::UnsupportedType(type_kind.clone()))
-            }
-        }
+        _ => Err(BuildCallArgumentError::UnsupportedType(type_kind.clone())),
     }
 }
 
@@ -871,15 +871,23 @@ mod test {
         }
     }
 
+    #[cfg(test)]
     pub fn build_and_decode<S: AsRef<str>, T: ManifestDecode>(
         arg: S,
         type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
     ) -> Result<(ManifestBuilder, T), BuildAndDecodeArgError> {
+        let schema = VersionedScryptoSchema::V1(SchemaV1 {
+            type_kinds: vec![],
+            type_metadata: vec![],
+            type_validations: vec![],
+        });
+
         let builder = ManifestBuilder::new();
         let (builder, built_arg) = build_call_argument(
             builder,
             &AddressBech32Decoder::for_simulator(),
+            &schema,
             &type_kind,
             &type_validation,
             arg.as_ref().to_owned(),
@@ -895,6 +903,7 @@ mod test {
         ))
     }
 
+    #[cfg(test)]
     pub fn build_and_decode_arg<S: AsRef<str>, T: ManifestDecode>(
         arg: S,
         type_kind: ScryptoTypeKind<LocalTypeId>,
