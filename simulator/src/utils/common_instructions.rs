@@ -1052,8 +1052,43 @@ mod test {
         }
     }
 
+    #[test]
+    pub fn parsing_of_decimal_array_succeeds() {
+        // Arrange
+        let arg = "[12,13,14]";
+        let element_type = LocalTypeId::WellKnown(well_known_scrypto_custom_types::DECIMAL_TYPE);
+        let type_kind = ScryptoTypeKind::Array { element_type };
+
+        // Act
+        let parsed_arg: Vec<Decimal> = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+            .expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, vec![dec!("12"), dec!("13"), dec!("14")]);
+    }
+
+    #[test]
+    pub fn parsing_of_tuple_succeeds() {
+        // Arrange
+        let arg = "(12,13,-14)";
+        let field_types = vec![
+            LocalTypeId::WellKnown(well_known_scrypto_custom_types::DECIMAL_TYPE),
+            LocalTypeId::WellKnown(basic_well_known_types::U8_TYPE),
+            LocalTypeId::WellKnown(basic_well_known_types::I8_TYPE),
+        ];
+        let type_kind = ScryptoTypeKind::Tuple { field_types };
+
+        // Act
+        let parsed_arg: (Decimal, u8, i8) =
+            build_and_decode_arg(arg, type_kind, TypeValidation::None)
+                .expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, (dec!("12"), 13u8, -14i8));
+    }
+
     #[cfg(test)]
-    pub fn build_and_decode<S: AsRef<str>, T: ManifestDecode>(
+    fn build_and_decode<S: AsRef<str>, T: ManifestDecode>(
         arg: S,
         type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
@@ -1085,7 +1120,7 @@ mod test {
     }
 
     #[cfg(test)]
-    pub fn build_and_decode_arg<S: AsRef<str>, T: ManifestDecode>(
+    fn build_and_decode_arg<S: AsRef<str>, T: ManifestDecode>(
         arg: S,
         type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
@@ -1094,9 +1129,56 @@ mod test {
     }
 
     #[derive(Debug, Clone)]
-    pub enum BuildAndDecodeArgError {
+    #[cfg(test)]
+    enum BuildAndDecodeArgError {
         BuildCallArgumentError(BuildCallArgumentError),
         EncodeError(EncodeError),
         DecodeError(DecodeError),
+    }
+
+    #[test]
+    fn test_argument_split() {
+        let input = "aaa,(bbb,(abc,(def,ghi),ccc";
+        let error = split_argument_tuple_or_array(input).unwrap_err();
+        assert!(matches!(error, BuildCallArgumentError::FailedToParse(..)));
+
+        let input = "aaa,(bbb,(abc,(def,ghi),)ccc";
+        let error = split_argument_tuple_or_array(input).unwrap_err();
+        assert!(matches!(error, BuildCallArgumentError::FailedToParse(..)));
+
+        let input = "aaa,(bbb,(abc,(def,ghi),)ccc";
+        let error = split_argument_tuple_or_array(input).unwrap_err();
+        assert!(matches!(error, BuildCallArgumentError::FailedToParse(..)));
+
+        let input = "aaa,(bbb,(abc,[def,ghi])),ccc";
+        assert_eq!(
+            split_argument_tuple_or_array(input).unwrap(),
+            vec![
+                "aaa".to_string(),
+                "(bbb,(abc,[def,ghi]))".to_string(),
+                "ccc".to_string()
+            ]
+        );
+
+        let input = "aaa,bbb,(abc,[def,ghi]),ccc";
+        assert_eq!(
+            split_argument_tuple_or_array(input).unwrap(),
+            vec![
+                "aaa".to_string(),
+                "bbb".to_string(),
+                "(abc,[def,ghi])".to_string(),
+                "ccc".to_string()
+            ]
+        );
+
+        let input = "aaa,bbb,(abc,[def,ghi]), ";
+        assert_eq!(
+            split_argument_tuple_or_array(input).unwrap(),
+            vec![
+                "aaa".to_string(),
+                "bbb".to_string(),
+                "(abc,[def,ghi])".to_string(),
+            ]
+        );
     }
 }
