@@ -158,14 +158,14 @@ impl ProofSnapshot {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct ResourceSummary {
     pub buckets: IndexMap<NodeId, BucketSnapshot>,
     pub proofs: IndexMap<NodeId, ProofSnapshot>,
 }
 
 // TODO: Clean up
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum TraceActor {
     Method(NodeId),
     NonMethod,
@@ -180,7 +180,7 @@ impl TraceActor {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct ExecutionTrace {
     pub origin: TraceOrigin,
     pub kernel_call_depth: usize,

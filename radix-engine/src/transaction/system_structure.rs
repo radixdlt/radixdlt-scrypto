@@ -87,7 +87,7 @@ pub struct EventSystemStructure {
 pub type SubstateSystemStructures =
     IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSystemStructure>>>;
 
-#[derive(Default, Debug, Clone, ScryptoSbor)]
+#[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct SystemStructure {
     pub substate_system_structures: SubstateSystemStructures,
     pub event_system_structures: IndexMap<EventTypeIdentifier, EventSystemStructure>,

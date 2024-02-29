@@ -25,6 +25,8 @@ pub mod types;
 
 pub mod traits;
 
+pub mod iterators;
+
 mod macros;
 
 // Re-export SBOR derive.
@@ -63,6 +65,7 @@ pub mod prelude {
     pub use super::crypto::*;
     pub use super::data::manifest::prelude::*;
     pub use super::data::scrypto::prelude::*;
+    pub use super::iterators::*;
     pub use super::math::*;
     pub use super::network::*;
     pub use super::time::*;
