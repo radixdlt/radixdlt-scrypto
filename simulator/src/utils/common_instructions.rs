@@ -171,6 +171,7 @@ macro_rules! matches_bucket {
         )
     };
 }
+
 fn transform_scrypto_type_kind(
     type_kind: &ScryptoTypeKind<LocalTypeId>,
     type_validation: &TypeValidation<ScryptoCustomTypeValidation>,
@@ -224,6 +225,84 @@ fn transform_scrypto_type_kind(
     }
 }
 
+// Splits argument tuple or array elements delimited with "," into vector of elements.
+// Elements with brackets (round or square) are taken as is (even if they may include ",")
+fn split_argument_tuple_or_array(argument: &str) -> Result<Vec<String>, BuildCallArgumentError> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+    let mut round_brackets_level = 0;
+    let mut square_brackets_level = 0;
+    let mut prev_c: Option<char> = None;
+
+    let mut chars = argument.chars();
+
+    while let Some(c) = chars.next() {
+        if c.is_whitespace() {
+            continue;
+        }
+        match c {
+            ',' if round_brackets_level == 0 && square_brackets_level == 0 => {
+                result.push(current.clone());
+                current.clear();
+            }
+            '(' => {
+                current.push(c);
+                round_brackets_level += 1;
+            }
+            ')' => {
+                current.push(c);
+                if round_brackets_level > 0 {
+                    round_brackets_level -= 1;
+                } else {
+                    // Non matching closing bracket
+                    return Err(BuildCallArgumentError::FailedToParse(format!(
+                        "Non-matching closing bracket ')' : {}",
+                        argument
+                    )));
+                }
+            }
+            '[' => {
+                current.push(c);
+                square_brackets_level += 1;
+            }
+            ']' => {
+                current.push(c);
+                if square_brackets_level > 0 {
+                    square_brackets_level -= 1;
+                } else {
+                    // Non matching closing bracket
+                    return Err(BuildCallArgumentError::FailedToParse(format!(
+                        "Non-matching closing bracket ']' : {}",
+                        argument
+                    )));
+                }
+            }
+            _ => match prev_c {
+                Some(prev_c) if prev_c == ']' || prev_c == ')' => {
+                    return Err(BuildCallArgumentError::FailedToParse(format!(
+                        "Invalid argument after closing bracket {:?}: {}",
+                        prev_c, argument
+                    )))
+                }
+                _ => current.push(c),
+            },
+        }
+        prev_c = Some(c);
+    }
+    if round_brackets_level != 0 || square_brackets_level != 0 {
+        Err(BuildCallArgumentError::FailedToParse(format!(
+            "Non matching brackets found : {}",
+            argument
+        )))
+    } else {
+        if !current.is_empty() {
+            result.push(current);
+        }
+
+        Ok(result)
+    }
+}
+
 fn build_call_argument<'a>(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
@@ -236,7 +315,14 @@ fn build_call_argument<'a>(
     match type_kind {
         ScryptoTypeKind::Array { element_type } => {
             let mut elements: Vec<ManifestValue> = vec![];
-            let args_parts = argument.split([',', ':']);
+            if !argument.starts_with("[") || !argument.ends_with("]") {
+                return Err(BuildCallArgumentError::FailedToParse(format!(
+                    "Array argument not within square brackets: {}",
+                    argument
+                )));
+            }
+            let args_parts = split_argument_tuple_or_array(&argument[1..argument.len() - 1])?;
+
             let element_type_kind = schema
                 .v1()
                 .resolve_type_kind(*element_type)
@@ -285,7 +371,13 @@ fn build_call_argument<'a>(
         ScryptoTypeKind::String => Ok((builder, ManifestValue::String { value: argument })),
         ScryptoTypeKind::Tuple { field_types } => {
             let mut manifests_vec: Vec<ManifestValue> = vec![];
-            let args_parts = argument.split([',', ':']);
+            if !argument.starts_with("(") || !argument.ends_with(")") {
+                return Err(BuildCallArgumentError::FailedToParse(format!(
+                    "Tuple argument not within round brackets: {}",
+                    argument
+                )));
+            }
+            let args_parts = split_argument_tuple_or_array(&argument[1..argument.len() - 1])?;
 
             for (f, arg) in field_types.iter().zip(args_parts) {
                 let (b, mv) = build_call_argument(
