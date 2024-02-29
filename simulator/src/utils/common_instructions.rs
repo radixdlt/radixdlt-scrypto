@@ -171,6 +171,58 @@ macro_rules! matches_bucket {
         )
     };
 }
+fn transform_scrypto_type_kind(
+    type_kind: &ScryptoTypeKind<LocalTypeId>,
+    type_validation: &TypeValidation<ScryptoCustomTypeValidation>,
+) -> Result<ManifestValueKind, BuildCallArgumentError> {
+    match type_kind {
+        ScryptoTypeKind::Bool => Ok(ManifestValueKind::Bool),
+        ScryptoTypeKind::I8 => Ok(ManifestValueKind::I8),
+        ScryptoTypeKind::I16 => Ok(ManifestValueKind::I16),
+        ScryptoTypeKind::I32 => Ok(ManifestValueKind::I32),
+        ScryptoTypeKind::I64 => Ok(ManifestValueKind::I64),
+        ScryptoTypeKind::I128 => Ok(ManifestValueKind::I128),
+        ScryptoTypeKind::U8 => Ok(ManifestValueKind::U8),
+        ScryptoTypeKind::U16 => Ok(ManifestValueKind::U16),
+        ScryptoTypeKind::U32 => Ok(ManifestValueKind::U32),
+        ScryptoTypeKind::U64 => Ok(ManifestValueKind::U64),
+        ScryptoTypeKind::U128 => Ok(ManifestValueKind::U128),
+        ScryptoTypeKind::String => Ok(ManifestValueKind::String),
+        ScryptoTypeKind::Array { .. } => Ok(ManifestValueKind::Array),
+        ScryptoTypeKind::Tuple { .. } => Ok(ManifestValueKind::Tuple),
+        ScryptoTypeKind::Enum { .. } => Ok(ManifestValueKind::Enum),
+        ScryptoTypeKind::Map { .. } => Ok(ManifestValueKind::Map),
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Decimal) => {
+            Ok(ManifestValueKind::Custom(ManifestCustomValueKind::Decimal))
+        }
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::PreciseDecimal) => Ok(
+            ManifestValueKind::Custom(ManifestCustomValueKind::PreciseDecimal),
+        ),
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::NonFungibleLocalId) => Ok(
+            ManifestValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId),
+        ),
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference) => {
+            Ok(ManifestValueKind::Custom(ManifestCustomValueKind::Address))
+        }
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own)
+            if matches_bucket!(type_validation)
+                || matches_bucket!(type_validation, FUNGIBLE_BUCKET_BLUEPRINT)
+                || matches_bucket!(type_validation, NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
+        {
+            Ok(ManifestValueKind::Custom(ManifestCustomValueKind::Bucket))
+        }
+
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own)
+            if matches!(
+                type_validation,
+                TypeValidation::Custom(ScryptoCustomTypeValidation::Own(OwnValidation::IsProof))
+            ) =>
+        {
+            Ok(ManifestValueKind::Custom(ManifestCustomValueKind::Proof))
+        }
+        _ => Err(BuildCallArgumentError::UnsupportedType(type_kind.clone())),
+    }
+}
 
 fn build_call_argument<'a>(
     mut builder: ManifestBuilder,
@@ -182,6 +234,43 @@ fn build_call_argument<'a>(
     account: Option<ComponentAddress>,
 ) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentError> {
     match type_kind {
+        ScryptoTypeKind::Array { element_type } => {
+            let mut elements: Vec<ManifestValue> = vec![];
+            let args_parts = argument.split([',', ':']);
+            let element_type_kind = schema
+                .v1()
+                .resolve_type_kind(*element_type)
+                .expect("Inconsistent schema");
+            let element_type_validation = schema
+                .v1()
+                .resolve_type_validation(*element_type)
+                .expect("Inconsistent schema");
+
+            for arg in args_parts {
+                let (b, mv) = build_call_argument(
+                    builder,
+                    address_bech32_decoder,
+                    schema,
+                    &element_type_kind,
+                    &element_type_validation,
+                    arg.to_owned(),
+                    account,
+                )?;
+                builder = b;
+                elements.push(mv);
+            }
+
+            Ok((
+                builder,
+                ManifestValue::Array {
+                    element_value_kind: transform_scrypto_type_kind(
+                        element_type_kind,
+                        element_type_validation,
+                    )?,
+                    elements,
+                },
+            ))
+        }
         ScryptoTypeKind::Bool => parse_basic_type!(builder, argument, Bool),
         ScryptoTypeKind::I8 => parse_basic_type!(builder, argument, I8),
         ScryptoTypeKind::I16 => parse_basic_type!(builder, argument, I16),
@@ -195,7 +284,7 @@ fn build_call_argument<'a>(
         ScryptoTypeKind::U128 => parse_basic_type!(builder, argument, U128),
         ScryptoTypeKind::String => Ok((builder, ManifestValue::String { value: argument })),
         ScryptoTypeKind::Tuple { field_types } => {
-            let mut manifest_value: Vec<ManifestValue> = vec![];
+            let mut manifests_vec: Vec<ManifestValue> = vec![];
             let args_parts = argument.split([',', ':']);
 
             for (f, arg) in field_types.iter().zip(args_parts) {
@@ -215,12 +304,12 @@ fn build_call_argument<'a>(
                     account,
                 )?;
                 builder = b;
-                manifest_value.push(mv);
+                manifests_vec.push(mv);
             }
             Ok((
                 builder,
                 ManifestValue::Tuple {
-                    fields: manifest_value,
+                    fields: manifests_vec,
                 },
             ))
         }
