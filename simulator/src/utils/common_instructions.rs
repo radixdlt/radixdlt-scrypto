@@ -303,6 +303,102 @@ fn split_argument_tuple_or_array(argument: &str) -> Result<Vec<String>, BuildCal
     }
 }
 
+fn parse_tuple(
+    mut builder: ManifestBuilder,
+    address_bech32_decoder: &AddressBech32Decoder,
+    schema: &VersionedScryptoSchema,
+    field_types: &[LocalTypeId],
+    argument: String,
+    account: Option<ComponentAddress>,
+) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentError> {
+    let mut manifests_vec: Vec<ManifestValue> = vec![];
+    if !argument.starts_with("(") || !argument.ends_with(")") {
+        return Err(BuildCallArgumentError::FailedToParse(format!(
+            "Tuple argument not within round brackets: {}",
+            argument
+        )));
+    }
+    let args_parts = split_argument_tuple_or_array(&argument[1..argument.len() - 1])?;
+
+    for (f, arg) in field_types.iter().zip(args_parts) {
+        let (b, mv) = build_call_argument(
+            builder,
+            address_bech32_decoder,
+            schema,
+            &schema
+                .v1()
+                .resolve_type_kind(*f)
+                .expect("Inconsistent schema"),
+            &schema
+                .v1()
+                .resolve_type_validation(*f)
+                .expect("Inconsistent schema"),
+            arg.to_owned(),
+            account,
+        )?;
+        builder = b;
+        manifests_vec.push(mv);
+    }
+    Ok((
+        builder,
+        ManifestValue::Tuple {
+            fields: manifests_vec,
+        },
+    ))
+}
+
+fn parse_array(
+    mut builder: ManifestBuilder,
+    address_bech32_decoder: &AddressBech32Decoder,
+    schema: &VersionedScryptoSchema,
+    element_type: &LocalTypeId,
+    argument: String,
+    account: Option<ComponentAddress>,
+) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentError> {
+    let mut elements: Vec<ManifestValue> = vec![];
+    if !argument.starts_with("[") || !argument.ends_with("]") {
+        return Err(BuildCallArgumentError::FailedToParse(format!(
+            "Array argument not within square brackets: {}",
+            argument
+        )));
+    }
+    let args_parts = split_argument_tuple_or_array(&argument[1..argument.len() - 1])?;
+
+    let element_type_kind = schema
+        .v1()
+        .resolve_type_kind(*element_type)
+        .expect("Inconsistent schema");
+    let element_type_validation = schema
+        .v1()
+        .resolve_type_validation(*element_type)
+        .expect("Inconsistent schema");
+
+    for arg in args_parts {
+        let (b, mv) = build_call_argument(
+            builder,
+            address_bech32_decoder,
+            schema,
+            &element_type_kind,
+            &element_type_validation,
+            arg.to_owned(),
+            account,
+        )?;
+        builder = b;
+        elements.push(mv);
+    }
+
+    Ok((
+        builder,
+        ManifestValue::Array {
+            element_value_kind: transform_scrypto_type_kind(
+                element_type_kind,
+                element_type_validation,
+            )?,
+            elements,
+        },
+    ))
+}
+
 fn build_call_argument<'a>(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
@@ -313,50 +409,6 @@ fn build_call_argument<'a>(
     account: Option<ComponentAddress>,
 ) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentError> {
     match type_kind {
-        ScryptoTypeKind::Array { element_type } => {
-            let mut elements: Vec<ManifestValue> = vec![];
-            if !argument.starts_with("[") || !argument.ends_with("]") {
-                return Err(BuildCallArgumentError::FailedToParse(format!(
-                    "Array argument not within square brackets: {}",
-                    argument
-                )));
-            }
-            let args_parts = split_argument_tuple_or_array(&argument[1..argument.len() - 1])?;
-
-            let element_type_kind = schema
-                .v1()
-                .resolve_type_kind(*element_type)
-                .expect("Inconsistent schema");
-            let element_type_validation = schema
-                .v1()
-                .resolve_type_validation(*element_type)
-                .expect("Inconsistent schema");
-
-            for arg in args_parts {
-                let (b, mv) = build_call_argument(
-                    builder,
-                    address_bech32_decoder,
-                    schema,
-                    &element_type_kind,
-                    &element_type_validation,
-                    arg.to_owned(),
-                    account,
-                )?;
-                builder = b;
-                elements.push(mv);
-            }
-
-            Ok((
-                builder,
-                ManifestValue::Array {
-                    element_value_kind: transform_scrypto_type_kind(
-                        element_type_kind,
-                        element_type_validation,
-                    )?,
-                    elements,
-                },
-            ))
-        }
         ScryptoTypeKind::Bool => parse_basic_type!(builder, argument, Bool),
         ScryptoTypeKind::I8 => parse_basic_type!(builder, argument, I8),
         ScryptoTypeKind::I16 => parse_basic_type!(builder, argument, I16),
@@ -369,42 +421,22 @@ fn build_call_argument<'a>(
         ScryptoTypeKind::U64 => parse_basic_type!(builder, argument, U64),
         ScryptoTypeKind::U128 => parse_basic_type!(builder, argument, U128),
         ScryptoTypeKind::String => Ok((builder, ManifestValue::String { value: argument })),
-        ScryptoTypeKind::Tuple { field_types } => {
-            let mut manifests_vec: Vec<ManifestValue> = vec![];
-            if !argument.starts_with("(") || !argument.ends_with(")") {
-                return Err(BuildCallArgumentError::FailedToParse(format!(
-                    "Tuple argument not within round brackets: {}",
-                    argument
-                )));
-            }
-            let args_parts = split_argument_tuple_or_array(&argument[1..argument.len() - 1])?;
-
-            for (f, arg) in field_types.iter().zip(args_parts) {
-                let (b, mv) = build_call_argument(
-                    builder,
-                    address_bech32_decoder,
-                    schema,
-                    &schema
-                        .v1()
-                        .resolve_type_kind(*f)
-                        .expect("Inconsistent schema"),
-                    &schema
-                        .v1()
-                        .resolve_type_validation(*f)
-                        .expect("Inconsistent schema"),
-                    arg.to_owned(),
-                    account,
-                )?;
-                builder = b;
-                manifests_vec.push(mv);
-            }
-            Ok((
-                builder,
-                ManifestValue::Tuple {
-                    fields: manifests_vec,
-                },
-            ))
-        }
+        ScryptoTypeKind::Tuple { field_types } => parse_tuple(
+            builder,
+            address_bech32_decoder,
+            schema,
+            field_types,
+            argument,
+            account,
+        ),
+        ScryptoTypeKind::Array { element_type } => parse_array(
+            builder,
+            address_bech32_decoder,
+            schema,
+            element_type,
+            argument,
+            account,
+        ),
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Decimal) => Ok((
             builder,
             ManifestValue::Custom {
