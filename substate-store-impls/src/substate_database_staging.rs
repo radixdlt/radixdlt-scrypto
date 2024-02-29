@@ -225,8 +225,7 @@ fn merge_database_updates(this: &mut DatabaseUpdates, other: DatabaseUpdates) {
                                         substate_updates: other_substate_updates,
                                     },
                                 ) => this_substate_updates.extend(other_substate_updates),
-                                // We need to apply the delta on the reset. The strategy will be as
-                                // follows.
+                                // We need to apply the delta on the reset. 
                                 (
                                     PartitionDatabaseUpdates::Reset {
                                         new_substate_values: this_new_substate_values,
