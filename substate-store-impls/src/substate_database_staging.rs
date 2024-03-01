@@ -5,7 +5,7 @@ use substate_store_interface::interface::*;
 pub struct SubstateDatabaseStaging<'s, S> {
     /// The database overlay. All commits made to the database are written to the overlay. This
     /// covers new values and deletions too.
-    overlay: DatabaseUpdates,
+    overlay: StagingDatabaseUpdates,
 
     /// The root database that this type overlays. There is no restriction on what type this is at
     /// this level. This is an immutable reference to a substate store as there is no need for this
@@ -25,12 +25,8 @@ impl<'s, S> SubstateDatabaseStaging<'s, S> {
         self.root
     }
 
-    pub fn into_overlay(self) -> DatabaseUpdates {
-        self.overlay
-    }
-
-    pub fn overlay_ref(&self) -> &DatabaseUpdates {
-        &self.overlay
+    pub fn database_updates(&self) -> DatabaseUpdates {
+        self.overlay.clone().into()
     }
 }
 
@@ -49,10 +45,10 @@ where
         let overlay_lookup_result = match self.overlay.node_updates.get(node_key) {
             // This particular node key exists in the overlay and probably has some partitions
             // written to the overlay.
-            Some(NodeDatabaseUpdates { partition_updates }) => {
+            Some(StagingNodeDatabaseUpdates { partition_updates }) => {
                 match partition_updates.get(partition_num) {
                     // This partition has some data written to the overlay
-                    Some(PartitionDatabaseUpdates::Delta { substate_updates }) => {
+                    Some(StagingPartitionDatabaseUpdates::Delta { substate_updates }) => {
                         match substate_updates.get(sort_key) {
                             // The substate value is written to the overlay. It is a database set
                             // so we return the new value.
@@ -67,7 +63,7 @@ where
                             None => OverlayLookupResult::NotFound,
                         }
                     }
-                    Some(PartitionDatabaseUpdates::Reset {
+                    Some(StagingPartitionDatabaseUpdates::Reset {
                         new_substate_values,
                     }) => match new_substate_values.get(sort_key) {
                         // The substate value is written to the overlay.
@@ -110,34 +106,31 @@ where
         // return the iterator of the root store.
         match self.overlay.node_updates.get(node_key) {
             // There is a partition update in the overlay.
-            Some(NodeDatabaseUpdates { partition_updates }) => {
+            Some(StagingNodeDatabaseUpdates { partition_updates }) => {
                 match partition_updates.get(partition_num) {
                     // The partition was reset. None of the substates of this partition that exist
                     // in the root store "exist" anymore. We just need an iterator over the new
                     // substates in the reset action.
-                    Some(PartitionDatabaseUpdates::Reset {
+                    Some(StagingPartitionDatabaseUpdates::Reset {
                         new_substate_values,
                     }) => Box::new(
                         new_substate_values
                             .iter()
                             .map(|(sort_key, substate_value)| {
                                 (sort_key.clone(), substate_value.clone())
-                            })
-                            .sorted(),
+                            }),
                     ),
                     // There are some changes that need to be overlayed.
-                    Some(PartitionDatabaseUpdates::Delta { substate_updates }) => {
+                    Some(StagingPartitionDatabaseUpdates::Delta { substate_updates }) => {
                         let underlying = self.root.list_entries_from(partition_key, from_sort_key);
-                        let overlaying = substate_updates
-                            .iter()
-                            .map(|(sort_key, database_update)| match database_update {
-                                DatabaseUpdate::Set(substate_value) => {
-                                    (sort_key.clone(), Some(substate_value.clone()))
+                        let overlaying =
+                            substate_updates.iter().map(|(sort_key, database_update)| {
+                                match database_update {
+                                    DatabaseUpdate::Set(substate_value) => {
+                                        (sort_key.clone(), Some(substate_value.clone()))
+                                    }
+                                    DatabaseUpdate::Delete => (sort_key.clone(), None),
                                 }
-                                DatabaseUpdate::Delete => (sort_key.clone(), None),
-                            })
-                            .sorted_by(|(sort_key_a, _), (sort_key_b, _)| {
-                                sort_key_a.cmp(sort_key_b)
                             });
                         Box::new(OverlayingIterator::new(underlying, overlaying))
                     }
@@ -168,7 +161,7 @@ where
             self.root
                 .list_partition_keys()
                 .chain(self.overlay.node_updates.iter().flat_map(
-                    |(node_key, NodeDatabaseUpdates { partition_updates })| {
+                    |(node_key, StagingNodeDatabaseUpdates { partition_updates })| {
                         partition_updates
                             .keys()
                             .map(|partition_num| DbPartitionKey {
@@ -188,7 +181,7 @@ pub enum OverlayLookupResult<T> {
     NotFound,
 }
 
-fn merge_database_updates(this: &mut DatabaseUpdates, other: DatabaseUpdates) {
+fn merge_database_updates(this: &mut StagingDatabaseUpdates, other: DatabaseUpdates) {
     for (
         other_node_key,
         NodeDatabaseUpdates {
@@ -199,7 +192,7 @@ fn merge_database_updates(this: &mut DatabaseUpdates, other: DatabaseUpdates) {
         // Check if the other node key exists in `this` database updates.
         match this.node_updates.get_mut(&other_node_key) {
             // The node key exists in `this` database updates.
-            Some(NodeDatabaseUpdates {
+            Some(StagingNodeDatabaseUpdates {
                 partition_updates: this_partition_updates,
             }) => {
                 for (other_partition_num, other_partition_database_updates) in
@@ -218,7 +211,7 @@ fn merge_database_updates(this: &mut DatabaseUpdates, other: DatabaseUpdates) {
                                 // other state updates into this substate updates. This will also
                                 // override anything in `this` with anything in `other`.
                                 (
-                                    PartitionDatabaseUpdates::Delta {
+                                    StagingPartitionDatabaseUpdates::Delta {
                                         substate_updates: this_substate_updates,
                                     },
                                     PartitionDatabaseUpdates::Delta {
@@ -227,7 +220,7 @@ fn merge_database_updates(this: &mut DatabaseUpdates, other: DatabaseUpdates) {
                                 ) => this_substate_updates.extend(other_substate_updates),
                                 // We need to apply the delta on the reset. 
                                 (
-                                    PartitionDatabaseUpdates::Reset {
+                                    StagingPartitionDatabaseUpdates::Reset {
                                         new_substate_values: this_new_substate_values,
                                     },
                                     PartitionDatabaseUpdates::Delta {
@@ -254,15 +247,17 @@ fn merge_database_updates(this: &mut DatabaseUpdates, other: DatabaseUpdates) {
                                     this_partition_database_updates,
                                     other_partition_database_updates @ PartitionDatabaseUpdates::Reset { .. },
                                 ) => {
-                                    *this_partition_database_updates = other_partition_database_updates;
+                                    *this_partition_database_updates = other_partition_database_updates.into();
                                 }
                             }
                         }
                         // The partition num does not exist in `this` database updates. This merge
                         // is simple, just insert it.
                         None => {
-                            this_partition_updates
-                                .insert(other_partition_num, other_partition_database_updates);
+                            this_partition_updates.insert(
+                                other_partition_num,
+                                other_partition_database_updates.into(),
+                            );
                         }
                     }
                 }
@@ -274,9 +269,109 @@ fn merge_database_updates(this: &mut DatabaseUpdates, other: DatabaseUpdates) {
                     other_node_key,
                     NodeDatabaseUpdates {
                         partition_updates: other_partition_updates,
-                    },
+                    }
+                    .into(),
                 );
             }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, Default)]
+struct StagingDatabaseUpdates {
+    node_updates: BTreeMap<DbNodeKey, StagingNodeDatabaseUpdates>,
+}
+
+impl From<StagingDatabaseUpdates> for DatabaseUpdates {
+    fn from(value: StagingDatabaseUpdates) -> Self {
+        Self {
+            node_updates: value
+                .node_updates
+                .into_iter()
+                .map(|(key, value)| (key, NodeDatabaseUpdates::from(value)))
+                .collect(),
+        }
+    }
+}
+
+impl From<DatabaseUpdates> for StagingDatabaseUpdates {
+    fn from(value: DatabaseUpdates) -> Self {
+        Self {
+            node_updates: value
+                .node_updates
+                .into_iter()
+                .map(|(key, value)| (key, StagingNodeDatabaseUpdates::from(value)))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, Default)]
+struct StagingNodeDatabaseUpdates {
+    partition_updates: BTreeMap<DbPartitionNum, StagingPartitionDatabaseUpdates>,
+}
+
+impl From<StagingNodeDatabaseUpdates> for NodeDatabaseUpdates {
+    fn from(value: StagingNodeDatabaseUpdates) -> Self {
+        Self {
+            partition_updates: value
+                .partition_updates
+                .into_iter()
+                .map(|(key, value)| (key, PartitionDatabaseUpdates::from(value)))
+                .collect(),
+        }
+    }
+}
+
+impl From<NodeDatabaseUpdates> for StagingNodeDatabaseUpdates {
+    fn from(value: NodeDatabaseUpdates) -> Self {
+        Self {
+            partition_updates: value
+                .partition_updates
+                .into_iter()
+                .map(|(key, value)| (key, StagingPartitionDatabaseUpdates::from(value)))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+enum StagingPartitionDatabaseUpdates {
+    Delta {
+        substate_updates: BTreeMap<DbSortKey, DatabaseUpdate>,
+    },
+
+    Reset {
+        new_substate_values: BTreeMap<DbSortKey, DbSubstateValue>,
+    },
+}
+
+impl From<StagingPartitionDatabaseUpdates> for PartitionDatabaseUpdates {
+    fn from(value: StagingPartitionDatabaseUpdates) -> Self {
+        match value {
+            StagingPartitionDatabaseUpdates::Delta { substate_updates } => Self::Delta {
+                substate_updates: substate_updates.into_iter().collect(),
+            },
+            StagingPartitionDatabaseUpdates::Reset {
+                new_substate_values,
+            } => Self::Reset {
+                new_substate_values: new_substate_values.into_iter().collect(),
+            },
+        }
+    }
+}
+
+impl From<PartitionDatabaseUpdates> for StagingPartitionDatabaseUpdates {
+    fn from(value: PartitionDatabaseUpdates) -> Self {
+        match value {
+            PartitionDatabaseUpdates::Delta { substate_updates } => Self::Delta {
+                substate_updates: substate_updates.into_iter().collect(),
+            },
+            PartitionDatabaseUpdates::Reset {
+                new_substate_values,
+            } => Self::Reset {
+                new_substate_values: new_substate_values.into_iter().collect(),
+            },
         }
     }
 }
