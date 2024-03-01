@@ -4,6 +4,7 @@ use utils::prelude::borrow::*;
 
 pub type UnmergeableSubstateDatabaseOverlay<'a, S> = SubstateDatabaseOverlay<&'a S, S>;
 pub type MergeableSubstateDatabaseOverlay<'a, S> = SubstateDatabaseOverlay<&'a mut S, S>;
+pub type OwnedSubstateDatabaseOverlay<S> = SubstateDatabaseOverlay<S, S>;
 
 pub struct SubstateDatabaseOverlay<S, D> {
     /// The database overlay. All commits made to the database are written to the overlay. This
@@ -21,27 +22,33 @@ pub struct SubstateDatabaseOverlay<S, D> {
 
 impl<'a, D> UnmergeableSubstateDatabaseOverlay<'a, D> {
     pub fn new_unmergeable(root_database: &'a D) -> Self {
-        Self {
-            overlay: Default::default(),
-            root: root_database,
-            substate_database_type: PhantomData,
-        }
+        Self::new(root_database)
     }
 }
 
 impl<'a, D> MergeableSubstateDatabaseOverlay<'a, D> {
     pub fn new_mergeable(root_database: &'a mut D) -> Self {
+        Self::new(root_database)
+    }
+}
+
+impl<D> OwnedSubstateDatabaseOverlay<D> {
+    pub fn new_owned(root_database: D) -> Self {
+        Self::new(root_database)
+    }
+}
+
+impl<S, D> SubstateDatabaseOverlay<S, D> {
+    pub fn new(root_database: S) -> Self {
         Self {
             overlay: Default::default(),
             root: root_database,
             substate_database_type: PhantomData,
         }
     }
-}
 
-impl<S: Borrow<D>, D> SubstateDatabaseOverlay<S, D> {
-    fn get_readable_root(&self) -> &D {
-        self.root.borrow()
+    pub fn deconstruct(self) -> (S, DatabaseUpdates) {
+        (self.root, self.overlay.into())
     }
 
     pub fn database_updates(&self) -> DatabaseUpdates {
@@ -50,6 +57,12 @@ impl<S: Borrow<D>, D> SubstateDatabaseOverlay<S, D> {
 
     pub fn into_database_updates(self) -> DatabaseUpdates {
         self.overlay.into()
+    }
+}
+
+impl<S: Borrow<D>, D> SubstateDatabaseOverlay<S, D> {
+    fn get_readable_root(&self) -> &D {
+        self.root.borrow()
     }
 }
 
