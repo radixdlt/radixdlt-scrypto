@@ -104,6 +104,7 @@ where
         // to think about other partitions here. We first check if there are any partition updates
         // for the specified partition. If there is not, no overlaying is needed and we can just
         // return the iterator of the root store.
+        let from_sort_key = from_sort_key.cloned();
         match self.overlay.node_updates.get(node_key) {
             // There is a partition update in the overlay.
             Some(StagingNodeDatabaseUpdates { partition_updates }) => {
@@ -118,30 +119,51 @@ where
                             .iter()
                             .map(|(sort_key, substate_value)| {
                                 (sort_key.clone(), substate_value.clone())
+                            })
+                            .filter(move |(sort_key, _)| match from_sort_key {
+                                // A `from_sort_key` is specified. Only return sort keys that are
+                                // larger than or equal to the from sort key.
+                                Some(ref from_sort_key) => sort_key >= from_sort_key,
+                                // No `from_sort_key` is specified. Do not filter anything out. All
+                                // of the substates in this partition should be returned.
+                                None => true,
                             }),
                     ),
                     // There are some changes that need to be overlayed.
                     Some(StagingPartitionDatabaseUpdates::Delta { substate_updates }) => {
-                        let underlying = self.root.list_entries_from(partition_key, from_sort_key);
-                        let overlaying =
-                            substate_updates.iter().map(|(sort_key, database_update)| {
-                                match database_update {
+                        let underlying = self
+                            .root
+                            .list_entries_from(partition_key, from_sort_key.as_ref());
+                        let overlaying = substate_updates
+                            .iter()
+                            .map(|(sort_key, database_update)| match database_update {
                                     DatabaseUpdate::Set(substate_value) => {
                                         (sort_key.clone(), Some(substate_value.clone()))
                                     }
                                     DatabaseUpdate::Delete => (sort_key.clone(), None),
-                                }
+                            })
+                            .filter(move |(sort_key, _)| match from_sort_key {
+                                // A `from_sort_key` is specified. Only return sort keys that are
+                                // larger than or equal to the from sort key.
+                                Some(ref from_sort_key) => sort_key >= from_sort_key,
+                                // No `from_sort_key` is specified. Do not filter anything out. All
+                                // of the substates in this partition should be returned.
+                                None => true,
                             });
                         Box::new(OverlayingIterator::new(underlying, overlaying))
                     }
                     // Overlay doesn't contain anything for the provided partition number. Return an
                     // iterator over the data in the root store.
-                    None => self.root.list_entries_from(partition_key, from_sort_key),
+                    None => self
+                        .root
+                        .list_entries_from(partition_key, from_sort_key.as_ref()),
                 }
             }
             // Overlay doesn't contain anything for the provided node key. Return an iterator over
             // the data in the root store.
-            None => self.root.list_entries_from(partition_key, from_sort_key),
+            None => self
+                .root
+                .list_entries_from(partition_key, from_sort_key.as_ref()),
         }
     }
 }

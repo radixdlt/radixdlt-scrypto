@@ -282,6 +282,94 @@ fn partition_resets_are_not_combined() {
 }
 
 #[test]
+fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_reset_mode() {
+    // Arrange
+    let root = InMemorySubstateDatabase::standard();
+    let mut db = SubstateDatabaseStaging::new(&root);
+
+    db.commit(&DatabaseUpdates {
+        node_updates: indexmap! {
+            b"some-node".to_vec() => NodeDatabaseUpdates {
+                partition_updates: indexmap! {
+                    0 => PartitionDatabaseUpdates::Reset {
+                        new_substate_values: indexmap!{
+                            DbSortKey([0].to_vec()) => b"0".to_vec(),
+                            DbSortKey([1].to_vec()) => b"1".to_vec(),
+                            DbSortKey([2].to_vec()) => b"2".to_vec()
+                        }
+                    }
+                }
+            }
+        },
+    });
+
+    // Act
+    let mut substates = db.list_entries_from(
+        &DbPartitionKey {
+            node_key: b"some-node".to_vec(),
+            partition_num: 0,
+        },
+        Some(&DbSortKey([1].to_vec())),
+    );
+
+    // Assert
+    let substate1 = substates.next().expect("We must get the first substate");
+    let substate2 = substates.next().expect("We must get the first substate");
+    assert_eq!(
+        substates.next(),
+        None,
+        "Another substate is available after the two substates"
+    );
+
+    assert_eq!(substate1, (DbSortKey([1].to_vec()), b"1".to_vec()));
+    assert_eq!(substate2, (DbSortKey([2].to_vec()), b"2".to_vec()));
+}
+
+#[test]
+fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_delta_mode() {
+    // Arrange
+    let root = InMemorySubstateDatabase::standard();
+    let mut db = SubstateDatabaseStaging::new(&root);
+
+    db.commit(&DatabaseUpdates {
+        node_updates: indexmap! {
+            b"some-node".to_vec() => NodeDatabaseUpdates {
+                partition_updates: indexmap! {
+                    0 => PartitionDatabaseUpdates::Delta {
+                        substate_updates: indexmap!{
+                            DbSortKey([0].to_vec()) => DatabaseUpdate::Set(b"0".to_vec()),
+                            DbSortKey([1].to_vec()) => DatabaseUpdate::Set(b"1".to_vec()),
+                            DbSortKey([2].to_vec()) => DatabaseUpdate::Set(b"2".to_vec())
+                        }
+                    }
+                }
+            }
+        },
+    });
+
+    // Act
+    let mut substates = db.list_entries_from(
+        &DbPartitionKey {
+            node_key: b"some-node".to_vec(),
+            partition_num: 0,
+        },
+        Some(&DbSortKey([1].to_vec())),
+    );
+
+    // Assert
+    let substate1 = substates.next().expect("We must get the first substate");
+    let substate2 = substates.next().expect("We must get the first substate");
+    assert_eq!(
+        substates.next(),
+        None,
+        "Another substate is available after the two substates"
+    );
+
+    assert_eq!(substate1, (DbSortKey([1].to_vec()), b"1".to_vec()));
+    assert_eq!(substate2, (DbSortKey([2].to_vec()), b"2".to_vec()));
+}
+
+#[test]
 fn substates_written_on_a_staging_database_from_transactions_can_be_read_later() {
     // Arrange
     let root_database = InMemorySubstateDatabase::standard();
@@ -363,7 +451,7 @@ fn database_hashes_are_identical_between_staging_and_non_staging_database_at_eac
             })
         };
 
-        assert_eq!(dbg!(non_staging_database_hash), dbg!(staging_database_hash))
+        assert_eq!(non_staging_database_hash, staging_database_hash)
     })
 }
 
