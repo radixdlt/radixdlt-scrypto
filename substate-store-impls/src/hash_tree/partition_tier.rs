@@ -7,7 +7,13 @@ use substate_store_interface::interface::NodeDatabaseUpdates;
 use substate_store_interface::interface::*;
 use utils::prelude::*;
 
-/// The middle tier of the 3-tier JMT.
+/// The middle tier of the 3-tier JMT, corresponding to the partition part of a substate key.
+///
+/// Its leaf keys are partition numbers (a single byte, two nibbles).
+///
+/// Its leaves have:
+///   * Value Hash: The partition root hashes of the nested tree for a partition in the SubstateTier
+///   * Payload: The state version of the root of the partition in the Substate Tier
 pub struct PartitionTier<'s, S> {
     base_store: &'s S,
     root_version: Option<Version>,
@@ -91,7 +97,7 @@ impl<'s, S: WriteableTreeStore> WritableTier for PartitionTier<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore + WriteableTreeStore> PartitionTier<'s, S> {
-    pub(crate) fn put_entity_partition_updates(
+    pub(crate) fn apply_entity_updates(
         &mut self,
         next_version: Version,
         updates: &NodeDatabaseUpdates,
@@ -103,12 +109,11 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> PartitionTier<'s, S> {
                 .map(|(partition, partition_database_updates)| {
                     let new_partition_root_hash = self
                         .resolve_substate_tier(*partition)
-                        .put_partition_substate_updates(next_version, partition_database_updates);
-                    let new_leaf = new_partition_root_hash.map(|hash| {
-                        // In order to be able to resolve the new root of the child tree,
-                        //  we set the new leaf payload to be the version at which it was updated.
+                        .apply_partition_updates(next_version, partition_database_updates);
+                    let new_leaf = new_partition_root_hash.map(|new_partition_root_hash| {
+                        let new_leaf_hash = new_partition_root_hash;
                         let new_leaf_payload = next_version;
-                        (hash, new_leaf_payload)
+                        (new_leaf_hash, new_leaf_payload)
                     });
                     (partition, new_leaf)
                 });

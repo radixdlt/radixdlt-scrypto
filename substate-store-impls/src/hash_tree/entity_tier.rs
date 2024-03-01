@@ -6,8 +6,14 @@ use radix_engine_common::crypto::Hash;
 use substate_store_interface::interface::DatabaseUpdates;
 use utils::prelude::*;
 
-/// The top tier of the 3-tier JMT.
-/// Also known as the "Node Tier", but to avoid confusion with TreeNodes, we use the term Entity instead.
+/// The top tier of the 3-tier JMT, corresponding to the DbNodeId (aka DbEntityId) part of a substate key.
+/// We use the synonym "Entity" rather than "Node" to avoid confusion with TreeNodes.
+///
+/// Its leaf keys are DbNodeKeys (a hash of the ReNodeId, to promote spread leaves for a performant JMT).
+///
+/// Its leaves have:
+///   * Value Hash: The entity root hashes of the nested tree for an entity in the `PartitionTier`
+///   * Payload: The state version of the root of the entity in the `PartitionTier`
 pub struct EntityTier<'s, S> {
     base_store: &'s S,
     root_version: Option<Version>,
@@ -85,14 +91,13 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> EntityTier<'s, S> {
                 .node_updates
                 .iter()
                 .map(|(entity_key, entity_database_updates)| {
-                    let new_partition_root_hash = self
+                    let new_entity_root_hash = self
                         .resolve_partition_tier(entity_key.clone())
-                        .put_entity_partition_updates(next_version, entity_database_updates);
-                    let new_leaf = new_partition_root_hash.map(|hash| {
-                        // In order to be able to resolve the new root of the child tree,
-                        //  we set the new leaf payload to be the version at which it was updated.
+                        .apply_entity_updates(next_version, entity_database_updates);
+                    let new_leaf = new_entity_root_hash.map(|new_entity_root_hash| {
+                        let new_leaf_hash = new_entity_root_hash;
                         let new_leaf_payload = next_version;
-                        (hash, new_leaf_payload)
+                        (new_leaf_hash, new_leaf_payload)
                     });
                     (entity_key, new_leaf)
                 });
