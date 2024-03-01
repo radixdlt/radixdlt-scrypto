@@ -6,13 +6,13 @@ use radix_engine_common::crypto::{hash, Hash};
 use substate_store_interface::interface::*;
 use utils::prelude::*;
 
-/// The bottom tier of the 3-tier JMT, corresponding to the DbSortKey part of a substate key.
+/// The bottom tier of the 3-tier JMT, corresponding to the `DbSortKey` part of a substate key.
 ///
-/// Its leaf keys are DbSortKeys (an ordered key for substates under a partition).
+/// Its leaf keys are `DbSortKeys` (an ordered key for substates under a partition).
 ///
 /// Its leaves have:
-///   * Value Hash: The blake2b_256_hash of the substate value
-///   * Payload: The state version when the value was set
+/// * Value Hash: The `blake2b_256_hash` of the substate value
+/// * Payload: The state version when the substate value was set
 pub struct SubstateTier<'s, S> {
     base_store: &'s S,
     root_version: Option<Version>,

@@ -6,14 +6,14 @@ use radix_engine_common::crypto::Hash;
 use substate_store_interface::interface::DatabaseUpdates;
 use utils::prelude::*;
 
-/// The top tier of the 3-tier JMT, corresponding to the DbNodeId (aka DbEntityId) part of a substate key.
+/// The top tier of the 3-tier JMT, corresponding to the `DbNodeKey` (aka `DbEntityKey`) part of a substate key.
 /// We use the synonym "Entity" rather than "Node" to avoid confusion with TreeNodes.
 ///
-/// Its leaf keys are DbNodeKeys (a hash of the ReNodeId, to promote spread leaves for a performant JMT).
+/// Its leaf keys are `DbEntityKey` (a hash of the ReNodeId, to promote spread leaves for a performant JMT).
 ///
 /// Its leaves have:
-///   * Value Hash: The entity root hashes of the nested tree for an entity in the `PartitionTier`
-///   * Payload: The state version of the root of the entity in the `PartitionTier`
+/// * Value Hash: The entity root hash of the corresponding nested entity tree in the `PartitionTier`
+/// * Payload: The state version of the root of the corresponding nested entity tree in the `PartitionTier`
 pub struct EntityTier<'s, S> {
     base_store: &'s S,
     root_version: Option<Version>,

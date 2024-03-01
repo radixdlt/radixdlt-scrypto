@@ -12,8 +12,8 @@ use utils::prelude::*;
 /// Its leaf keys are partition numbers (a single byte, two nibbles).
 ///
 /// Its leaves have:
-///   * Value Hash: The partition root hashes of the nested tree for a partition in the SubstateTier
-///   * Payload: The state version of the root of the partition in the Substate Tier
+/// * Value Hash: The partition root hash of the corresponding nested partition tree in the `SubstateTier`
+/// * Payload: The state version of the root of the corresponding nested partition tree in the `SubstateTier`
 pub struct PartitionTier<'s, S> {
     base_store: &'s S,
     root_version: Option<Version>,
