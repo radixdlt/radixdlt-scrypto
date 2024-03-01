@@ -11,6 +11,6 @@ pub mod memory_db;
 pub mod rocks_db;
 #[cfg(feature = "rocksdb")]
 pub mod rocks_db_with_merkle_tree;
-pub mod substate_database_staging;
+pub mod single_substate_database_overlay;
 
 pub mod hash_tree_support;

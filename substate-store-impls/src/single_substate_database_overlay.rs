@@ -1,7 +1,7 @@
 use radix_engine_common::prelude::*;
 use substate_store_interface::interface::*;
 
-pub struct SubstateDatabaseStaging<'s, S> {
+pub struct SingleSubstateDatabaseOverlay<'s, S> {
     /// The database overlay. All commits made to the database are written to the overlay. This
     /// covers new values and deletions too.
     overlay: StagingDatabaseUpdates,
@@ -12,7 +12,7 @@ pub struct SubstateDatabaseStaging<'s, S> {
     root: &'s S,
 }
 
-impl<'s, S> SubstateDatabaseStaging<'s, S> {
+impl<'s, S> SingleSubstateDatabaseOverlay<'s, S> {
     pub fn new(root_database: &'s S) -> Self {
         Self {
             overlay: Default::default(),
@@ -33,7 +33,7 @@ impl<'s, S> SubstateDatabaseStaging<'s, S> {
     }
 }
 
-impl<'s, S> SubstateDatabase for SubstateDatabaseStaging<'s, S>
+impl<'s, S> SubstateDatabase for SingleSubstateDatabaseOverlay<'s, S>
 where
     S: SubstateDatabase,
 {
@@ -171,13 +171,13 @@ where
     }
 }
 
-impl<'s, S> CommittableSubstateDatabase for SubstateDatabaseStaging<'s, S> {
+impl<'s, S> CommittableSubstateDatabase for SingleSubstateDatabaseOverlay<'s, S> {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
         merge_database_updates(&mut self.overlay, database_updates.clone())
     }
 }
 
-impl<'s, S> ListableSubstateDatabase for SubstateDatabaseStaging<'s, S>
+impl<'s, S> ListableSubstateDatabase for SingleSubstateDatabaseOverlay<'s, S>
 where
     S: ListableSubstateDatabase,
 {
