@@ -115,35 +115,22 @@ pub trait WritableTier: Tier {
     fn record_stale_local_node(&self, local_key: &TreeNodeKey);
 }
 
-pub enum BaseTree {
-    Existing,
-    Empty,
-}
-
 pub trait ReadWritableTier: ReadableTier + WritableTier {
     fn apply_leaf_updates<'a>(
-        &self,
-        base_tree: BaseTree,
+        &mut self,
         next_version: Version,
-        leaf_updates: impl Iterator<Item = (&'a Self::TypedLeafKey, Option<(Hash, Self::Payload)>)>,
+        leaf_updates: Vec<(&'a Self::TypedLeafKey, Option<(Hash, Self::Payload)>)>,
     ) -> (Option<Hash>, TreeUpdateBatch<Self::Payload>)
     where
         <Self as Tier>::TypedLeafKey: 'a,
     {
         let value_set = leaf_updates
+            .into_iter()
             .map(|(key, option)| (Self::to_leaf_key(&key), option))
             .collect();
         let (root_hash, update_result) = self
             .jmt()
-            .batch_put_value_set(
-                value_set,
-                None,
-                match base_tree {
-                    BaseTree::Existing => self.root_version(),
-                    BaseTree::Empty => None,
-                },
-                next_version,
-            )
+            .batch_put_value_set(value_set, None, self.root_version(), next_version)
             .expect("error while reading tree during put");
 
         for (key, node) in update_result.node_batch.iter().flatten() {

@@ -71,29 +71,26 @@ impl<'s, S: WriteableTreeStore> WritableTier for EntityTier<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore + WriteableTreeStore> EntityTier<'s, S> {
-    pub fn put_all_entity_updates(
-        &self,
-        next_version: Version,
-        updates: &DatabaseUpdates,
-    ) -> Option<Hash> {
-        let leaf_updates =
-            updates
-                .node_updates
-                .iter()
-                .map(|(entity_key, entity_database_updates)| {
-                    let new_partition_root_hash = self
-                        .resolve_partition_tier(entity_key.clone())
-                        .put_entity_partition_updates(next_version, entity_database_updates);
-                    let new_leaf = new_partition_root_hash.map(|hash| {
-                        // In order to be able to resolve the new root of the child tree,
-                        //  we set the new leaf payload to be the version at which it was updated.
-                        let new_leaf_payload = next_version;
-                        (hash, new_leaf_payload)
-                    });
-                    (entity_key, new_leaf)
+    pub fn put_all_entity_updates(&mut self, updates: &DatabaseUpdates) -> Option<Hash> {
+        let next_version = self.root_version.unwrap_or(0) + 1;
+        let leaf_updates = updates
+            .node_updates
+            .iter()
+            .map(|(entity_key, entity_database_updates)| {
+                let new_partition_root_hash = self
+                    .resolve_partition_tier(entity_key.clone())
+                    .put_entity_partition_updates(next_version, entity_database_updates);
+                let new_leaf = new_partition_root_hash.map(|hash| {
+                    // In order to be able to resolve the new root of the child tree,
+                    //  we set the new leaf payload to be the version at which it was updated.
+                    let new_leaf_payload = next_version;
+                    (hash, new_leaf_payload)
                 });
-        let (new_root_hash, _) =
-            self.apply_leaf_updates(BaseTree::Existing, next_version, leaf_updates);
+                (entity_key, new_leaf)
+            })
+            .collect();
+        let (new_root_hash, _) = self.apply_leaf_updates(next_version, leaf_updates);
+        self.root_version = Some(next_version);
         new_root_hash
     }
 }

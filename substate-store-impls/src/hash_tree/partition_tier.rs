@@ -88,28 +88,28 @@ impl<'s, S: WriteableTreeStore> WritableTier for PartitionTier<'s, S> {
 
 impl<'s, S: ReadableTreeStore + WriteableTreeStore> PartitionTier<'s, S> {
     pub(crate) fn put_entity_partition_updates(
-        &self,
+        &mut self,
         next_version: Version,
         updates: &NodeDatabaseUpdates,
     ) -> Option<Hash> {
-        let leaf_updates =
-            updates
-                .partition_updates
-                .iter()
-                .map(|(partition, partition_database_updates)| {
-                    let new_partition_root_hash = self
-                        .resolve_substate_tier(*partition)
-                        .put_partition_substate_updates(next_version, partition_database_updates);
-                    let new_leaf = new_partition_root_hash.map(|hash| {
-                        // In order to be able to resolve the new root of the child tree,
-                        //  we set the new leaf payload to be the version at which it was updated.
-                        let new_leaf_payload = next_version;
-                        (hash, new_leaf_payload)
-                    });
-                    (partition, new_leaf)
+        let leaf_updates = updates
+            .partition_updates
+            .iter()
+            .map(|(partition, partition_database_updates)| {
+                let new_partition_root_hash = self
+                    .resolve_substate_tier(*partition)
+                    .put_partition_substate_updates(next_version, partition_database_updates);
+                let new_leaf = new_partition_root_hash.map(|hash| {
+                    // In order to be able to resolve the new root of the child tree,
+                    //  we set the new leaf payload to be the version at which it was updated.
+                    let new_leaf_payload = next_version;
+                    (hash, new_leaf_payload)
                 });
-        let (new_root_hash, _) =
-            self.apply_leaf_updates(BaseTree::Existing, next_version, leaf_updates);
+                (partition, new_leaf)
+            })
+            .collect();
+        let (new_root_hash, _) = self.apply_leaf_updates(next_version, leaf_updates);
+        self.root_version = Some(next_version);
         new_root_hash
     }
 }

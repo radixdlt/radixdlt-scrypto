@@ -88,25 +88,28 @@ impl<'s, S: WriteableTreeStore> WritableTier for SubstateTier<'s, S> {
 
 impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
     pub fn put_partition_substate_updates(
-        &self,
+        &mut self,
         next_version: Version,
         updates: &PartitionDatabaseUpdates,
     ) -> Option<Hash> {
-        match updates {
+        let (leaf_updates, substate_value_map) = match updates {
             PartitionDatabaseUpdates::Delta { substate_updates } => {
-                let leaf_updates = substate_updates.iter().map(|(sort_key, update)| {
-                    let value = match update {
-                        DatabaseUpdate::Set(value) => Some(value),
-                        DatabaseUpdate::Delete => None,
-                    };
-                    let new_leaf = value.map(|value| {
-                        let value_hash = hash(value);
-                        // We set a payload of the version for consistency with the leaves of other tiers.
-                        let new_leaf_payload = next_version;
-                        (value_hash, new_leaf_payload)
-                    });
-                    (sort_key, new_leaf)
-                });
+                let leaf_updates = substate_updates
+                    .iter()
+                    .map(|(sort_key, update)| {
+                        let value = match update {
+                            DatabaseUpdate::Set(value) => Some(value),
+                            DatabaseUpdate::Delete => None,
+                        };
+                        let new_leaf = value.map(|value| {
+                            let value_hash = hash(value);
+                            // We set a payload of the version for consistency with the leaves of other tiers.
+                            let new_leaf_payload = next_version;
+                            (value_hash, new_leaf_payload)
+                        });
+                        (sort_key, new_leaf)
+                    })
+                    .collect::<Vec<_>>();
 
                 let substate_value_map = substate_updates
                     .iter()
@@ -114,14 +117,9 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
                         DatabaseUpdate::Set(value) => Some((Self::to_leaf_key(sort_key), value)),
                         DatabaseUpdate::Delete => None,
                     })
-                    .collect();
+                    .collect::<HashMap<_, _>>();
 
-                let (new_root_hash, update_batch) =
-                    self.apply_leaf_updates(BaseTree::Existing, next_version, leaf_updates);
-
-                self.associate_substate_values(substate_value_map, &update_batch);
-
-                new_root_hash
+                (leaf_updates, substate_value_map)
             }
             PartitionDatabaseUpdates::Reset {
                 new_substate_values,
@@ -136,32 +134,37 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
                         ));
                 }
 
-                let leaf_updates =
-                    new_substate_values
-                        .iter()
-                        .map(|(sort_key, new_substate_value)| {
-                            let value_hash = hash(new_substate_value);
-                            let new_leaf_payload = next_version;
-                            let new_leaf = Some((value_hash, new_leaf_payload));
-                            (sort_key, new_leaf)
-                        });
+                let leaf_updates = new_substate_values
+                    .iter()
+                    .map(|(sort_key, new_substate_value)| {
+                        let value_hash = hash(new_substate_value);
+                        let new_leaf_payload = next_version;
+                        let new_leaf = Some((value_hash, new_leaf_payload));
+                        (sort_key, new_leaf)
+                    })
+                    .collect::<Vec<_>>();
 
                 let substate_value_map = new_substate_values
                     .iter()
                     .map(|(sort_key, new_substate_value)| {
                         (Self::to_leaf_key(sort_key), new_substate_value)
                     })
-                    .collect();
+                    .collect::<HashMap<_, _>>();
 
-                // Then we apply updates on top of an empty base tree
-                let (new_root_hash, update_batch) =
-                    self.apply_leaf_updates(BaseTree::Empty, next_version, leaf_updates);
+                // Forgetting its previous version effectively starts a new, empty tree:
+                self.root_version = None;
 
-                self.associate_substate_values(substate_value_map, &update_batch);
-
-                new_root_hash
+                (leaf_updates, substate_value_map)
             }
-        }
+        };
+
+        let (new_root_hash, update_batch) = self.apply_leaf_updates(next_version, leaf_updates);
+
+        self.associate_substate_values(substate_value_map, &update_batch);
+
+        self.root_version = Some(next_version);
+
+        new_root_hash
     }
 
     fn associate_substate_values(
