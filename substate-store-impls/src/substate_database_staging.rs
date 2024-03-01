@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use radix_engine_common::prelude::*;
 use substate_store_interface::interface::*;
 
@@ -137,10 +136,10 @@ where
                         let overlaying = substate_updates
                             .iter()
                             .map(|(sort_key, database_update)| match database_update {
-                                    DatabaseUpdate::Set(substate_value) => {
-                                        (sort_key.clone(), Some(substate_value.clone()))
-                                    }
-                                    DatabaseUpdate::Delete => (sort_key.clone(), None),
+                                DatabaseUpdate::Set(substate_value) => {
+                                    (sort_key.clone(), Some(substate_value.clone()))
+                                }
+                                DatabaseUpdate::Delete => (sort_key.clone(), None),
                             })
                             .filter(move |(sort_key, _)| match from_sort_key {
                                 // A `from_sort_key` is specified. Only return sort keys that are
@@ -179,22 +178,27 @@ where
     S: ListableSubstateDatabase,
 {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
-        Box::new(
-            self.root
-                .list_partition_keys()
-                .chain(self.overlay.node_updates.iter().flat_map(
-                    |(node_key, StagingNodeDatabaseUpdates { partition_updates })| {
-                        partition_updates
-                            .keys()
-                            .map(|partition_num| DbPartitionKey {
-                                node_key: node_key.clone(),
-                                partition_num: *partition_num,
-                            })
-                    },
-                ))
-                .unique()
-                .sorted(),
-        )
+        let overlying = self
+            .overlay
+            .node_updates
+            .iter()
+            .flat_map(
+                |(node_key, StagingNodeDatabaseUpdates { partition_updates })| {
+                    partition_updates
+                        .keys()
+                        .map(|partition_num| DbPartitionKey {
+                            node_key: node_key.clone(),
+                            partition_num: *partition_num,
+                        })
+                },
+            )
+            .map(|partition_key| (partition_key, Some(())));
+        let underlying = self
+            .root
+            .list_partition_keys()
+            .map(|partition_key| (partition_key, ()));
+
+        Box::new(OverlayingIterator::new(underlying, overlying).map(|(value, _)| value))
     }
 }
 
