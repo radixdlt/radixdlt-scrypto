@@ -443,6 +443,18 @@ impl NibblePath {
         NibblePath { num_nibbles, bytes }
     }
 
+    pub fn prefix_with(&self, prefix_bytes: &[u8]) -> Self {
+        NibblePath {
+            num_nibbles: prefix_bytes.len() * 2 + self.num_nibbles,
+            bytes: {
+                let mut vec = Vec::with_capacity(prefix_bytes.len() + self.bytes.len());
+                vec.extend_from_slice(prefix_bytes);
+                vec.extend_from_slice(&self.bytes);
+                vec
+            },
+        }
+    }
+
     /// Adds a nibble to the end of the nibble path.
     pub fn push(&mut self, nibble: Nibble) {
         if self.num_nibbles % 2 == 0 {
@@ -680,14 +692,14 @@ impl LeafKey {
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/storage/jellyfish-merkle/src/node_type/mod.rs#L48
 /// The unique key of each node.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd, Sbor)]
-pub struct NodeKey {
+pub struct TreeNodeKey {
     // The version at which the node is created.
     version: Version,
     // The nibble path this node represents in the tree.
     nibble_path: NibblePath,
 }
 
-impl NodeKey {
+impl TreeNodeKey {
     /// Creates a new `NodeKey`.
     pub fn new(version: Version, nibble_path: NibblePath) -> Self {
         Self {
@@ -729,8 +741,14 @@ impl NodeKey {
     }
 }
 
+impl From<TreeNodeKey> for (Version, NibblePath) {
+    fn from(value: TreeNodeKey) -> Self {
+        (value.version, value.nibble_path)
+    }
+}
+
 // INITIAL-MODIFICATION: just to show it in errors
-impl fmt::Display for NodeKey {
+impl fmt::Display for TreeNodeKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "v{}:{}", self.version, self.nibble_path)
     }
@@ -898,12 +916,12 @@ impl InternalNode {
         }
     }
 
-    fn gen_node_in_proof<K: Clone, R: TreeReader<K>>(
+    fn gen_node_in_proof<K: Clone, R: TreeReader<K> + ?Sized>(
         &self,
         start: u8,
         width: u8,
         (existence_bitmap, leaf_bitmap): (u16, u16),
-        (tree_reader, node_key): (&R, &NodeKey),
+        (tree_reader, node_key): (&R, &TreeNodeKey),
     ) -> Result<NodeInProof, StorageError> {
         // Given a bit [start, 1 << nibble_height], return the value of that range.
         let (range_existence_bitmap, range_leaf_bitmap) =
@@ -968,12 +986,12 @@ impl InternalNode {
     ///     |   MSB|<---------------------- uint 16 ---------------------------->|LSB
     ///  height    chs: `child_half_start`         shs: `sibling_half_start`
     /// ```
-    pub fn get_child_with_siblings<K: Clone, R: TreeReader<K>>(
+    pub fn get_child_with_siblings<K: Clone, R: TreeReader<K> + ?Sized>(
         &self,
-        node_key: &NodeKey,
+        node_key: &TreeNodeKey,
         n: Nibble,
         reader: Option<&R>,
-    ) -> Result<(Option<NodeKey>, Vec<NodeInProof>), StorageError> {
+    ) -> Result<(Option<TreeNodeKey>, Vec<NodeInProof>), StorageError> {
         let mut siblings = vec![];
         let (existence_bitmap, leaf_bitmap) = self.generate_bitmaps();
 
@@ -1109,6 +1127,17 @@ impl<P: Clone> LeafNode<P> {
     }
 }
 
+impl<P> From<LeafNode<P>> for (LeafKey, Hash, P, Version) {
+    fn from(value: LeafNode<P>) -> Self {
+        (
+            value.leaf_key,
+            value.value_hash,
+            value.payload,
+            value.version,
+        )
+    }
+}
+
 impl<K> From<LeafNode<K>> for SparseMerkleLeafNode {
     fn from(leaf_node: LeafNode<K>) -> Self {
         Self::new(leaf_node.leaf_key, leaf_node.value_hash)
@@ -1194,13 +1223,13 @@ impl<P: Clone> Node<P> {
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/storage/jellyfish-merkle/src/lib.rs#L129
 pub trait TreeReader<K> {
     /// Gets node given a node key. Returns error if the node does not exist.
-    fn get_node(&self, node_key: &NodeKey) -> Result<Node<K>, StorageError> {
+    fn get_node(&self, node_key: &TreeNodeKey) -> Result<Node<K>, StorageError> {
         self.get_node_option(node_key)?
             .ok_or_else(|| StorageError::NotFound(node_key.clone()))
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<K>>, StorageError>;
+    fn get_node_option(&self, node_key: &TreeNodeKey) -> Result<Option<Node<K>>, StorageError>;
 }
 
 // INITIAL-MODIFICATION: we propagate usage of our own error enum (instead of `std::io::ErrorKind`
@@ -1209,7 +1238,7 @@ pub trait TreeReader<K> {
 #[derive(Debug)]
 pub enum StorageError {
     /// A node expected to exist (according to JMT logic) was not actually found in the storage.
-    NotFound(NodeKey),
+    NotFound(TreeNodeKey),
 
     /// Nodes read from the storage are violating some JMT property (e.g. form a cycle).
     InconsistentState,

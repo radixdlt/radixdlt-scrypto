@@ -1,24 +1,16 @@
-use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
-use crate::hash_tree::jellyfish::JellyfishMerkleTree;
-use crate::hash_tree::tree_store::{
-    ReadableTreeStore, SerializedInMemoryTreeStore, StaleTreePart, TreeChildEntry,
-    TreeInternalNode, TreeLeafNode, TreeNode, TreeStore, TypedInMemoryTreeStore,
-    WriteableTreeStore,
-};
-use crate::hash_tree::types::{LeafKey, NodeKey};
-use crate::hash_tree::{put_at_next_version, NestedTreeStore};
+use super::jellyfish::JellyfishMerkleTree;
+use super::put_at_next_version;
+use super::tier_framework::TIER_SEPARATOR;
+use super::tree_store::*;
+use super::types::*;
 use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::prelude::indexmap::indexmap;
 use std::cell::RefCell;
 use std::ops::Deref;
-use substate_store_interface::interface::{
-    DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
-    DbSubstateKey, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
-};
-use utils::prelude::{index_map_new, IndexMap};
-use utils::rust::collections::{hashmap, hashset, HashMap, HashSet};
+use substate_store_interface::interface::*;
+use utils::prelude::*;
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
@@ -248,12 +240,12 @@ fn substate_values_get_associated_with_substate_tier_leaves() {
         associated_substate_values.deref(),
         &hashmap!(
             // 2 incidentally-complete node keys: (they differ only at their last byte)
-            NodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, 0, TIER_SEP, 8, TIER_SEP, 6, 6, 6, 1])) => vec![4],
-            NodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, 0, TIER_SEP, 8, TIER_SEP, 6, 6, 6, 2])) => vec![],
+            StoredTreeNodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, 0, TIER_SEP, 8, TIER_SEP, 6, 6, 6, 1])) => vec![4],
+            StoredTreeNodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, 0, TIER_SEP, 8, TIER_SEP, 6, 6, 6, 2])) => vec![],
             // A slightly-incomplete node key: (cut short at the first byte it differs)
-            NodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, 0, TIER_SEP, 8, TIER_SEP, 6, 6, 7])) => vec![1, 2, 3],
+            StoredTreeNodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, 0, TIER_SEP, 8, TIER_SEP, 6, 6, 7])) => vec![1, 2, 3],
             // A very incomplete node key, representing Substate-Tier root: (since it is the only Substate within its partition)
-            NodeKey::new(1, NibblePath::new_even(vec![220, 3, TIER_SEP, 99, TIER_SEP])) => vec![7; 66],
+            StoredTreeNodeKey::new(1, NibblePath::new_even(vec![220, 3, TIER_SEP, 99, TIER_SEP])) => vec![7; 66],
         )
     );
 }
@@ -368,16 +360,16 @@ fn records_stale_subtree_root_key_when_partition_removed() {
         tester.tree_store.stale_part_buffer.borrow().to_vec(),
         vec![
             // The entire subtree starting at the root of substate-tier JMT of partition `4:7`:
-            StaleTreePart::Subtree(NodeKey::new(
+            StaleTreePart::Subtree(StoredTreeNodeKey::new(
                 1,
                 NibblePath::new_even([from_seed(4), vec![TIER_SEP, 7, TIER_SEP]].concat())
             )),
             // Regular single-node stale nodes up to the root, caused by hash update:
-            StaleTreePart::Node(NodeKey::new(
+            StaleTreePart::Node(StoredTreeNodeKey::new(
                 1,
                 NibblePath::new_even([from_seed(4), vec![TIER_SEP]].concat())
             )),
-            StaleTreePart::Node(NodeKey::new(1, NibblePath::new_even(vec![]))),
+            StaleTreePart::Node(StoredTreeNodeKey::new(1, NibblePath::new_even(vec![]))),
             // Importantly: individual 3x deletes of substate-tier nodes are not recorded
         ]
     );
@@ -506,7 +498,7 @@ pub enum Tier {
 }
 
 // Note: in some tests, we assert on the low-level DB key encoding, so we need this detail
-const TIER_SEP: u8 = NestedTreeStore::<()>::TIER_SEPARATOR;
+const TIER_SEP: u8 = TIER_SEPARATOR;
 
 pub struct HashTreeTester<S> {
     pub tree_store: S,
@@ -582,8 +574,14 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
             .flat_map(|stale_part| match stale_part {
                 StaleTreePart::Node(key) => vec![key],
                 StaleTreePart::Subtree(key) => JellyfishMerkleTree::new(&mut self.tree_store)
-                    .get_all_nodes_referenced(key)
-                    .unwrap(),
+                    .get_all_nodes_referenced(TreeNodeKey::new(
+                        key.version(),
+                        key.nibble_path().clone(),
+                    ))
+                    .unwrap()
+                    .into_iter()
+                    .map(|key| StoredTreeNodeKey::unprefixed(key))
+                    .collect(),
             })
             .collect::<HashSet<_>>();
         let expected_separator_count = tier as usize;
@@ -611,7 +609,7 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
             .collect()
     }
 
-    fn leaf_key(node_key: &NodeKey, suffix_from_leaf: &NibblePath) -> LeafKey {
+    fn leaf_key(node_key: &StoredTreeNodeKey, suffix_from_leaf: &NibblePath) -> LeafKey {
         LeafKey::new(
             NibblePath::from_iter(
                 node_key
@@ -627,21 +625,21 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
 /// A degenerate, test [`TreeStore`] which only stores associated Substate values.
 #[derive(Debug, Default)]
 struct SubstateValueAssociationStore {
-    associated_substate_values: RefCell<HashMap<NodeKey, DbSubstateValue>>,
+    associated_substate_values: RefCell<HashMap<StoredTreeNodeKey, DbSubstateValue>>,
 }
 
 impl ReadableTreeStore for SubstateValueAssociationStore {
-    fn get_node(&self, _key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, _key: &StoredTreeNodeKey) -> Option<TreeNode> {
         None
     }
 }
 
 impl WriteableTreeStore for SubstateValueAssociationStore {
-    fn insert_node(&self, _key: NodeKey, _node: TreeNode) {
+    fn insert_node(&self, _key: StoredTreeNodeKey, _node: TreeNode) {
         // deliberately empty
     }
 
-    fn associate_substate_value(&self, key: &NodeKey, substate_value: &DbSubstateValue) {
+    fn associate_substate_value(&self, key: &StoredTreeNodeKey, substate_value: &DbSubstateValue) {
         self.associated_substate_values
             .borrow_mut()
             .insert(key.clone(), substate_value.clone());
