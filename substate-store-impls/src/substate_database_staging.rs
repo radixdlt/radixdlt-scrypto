@@ -27,6 +27,10 @@ impl<'s, S> SubstateDatabaseStaging<'s, S> {
     pub fn database_updates(&self) -> DatabaseUpdates {
         self.overlay.clone().into()
     }
+
+    pub fn into_database_updates(self) -> DatabaseUpdates {
+        self.overlay.into()
+    }
 }
 
 impl<'s, S> SubstateDatabase for SubstateDatabaseStaging<'s, S>

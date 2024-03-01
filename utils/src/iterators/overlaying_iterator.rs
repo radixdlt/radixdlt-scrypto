@@ -1,6 +1,6 @@
-use crate::internal_prelude::*;
-use sbor::rust::cmp::*;
-use sbor::rust::iter::*;
+use crate::prelude::*;
+use core::cmp::*;
+use core::iter::*;
 
 /// An iterator overlaying a "change on a value" (coming from the [`overlaying`] iterator) over a
 /// "base value" (coming from the [`underlying`] iterator).
@@ -69,20 +69,5 @@ where
                 return self.underlying.next();
             }
         }
-    }
-}
-
-/// An internal [`Peekable`] extension trait; only for easier syntax.
-trait PeekableKeyExt<'a, K> {
-    /// Peeks at the next entry's key.
-    fn peek_key(&'a mut self) -> Option<&'a K>;
-}
-
-impl<'a, K, V: 'a, I> PeekableKeyExt<'a, K> for Peekable<I>
-where
-    I: Iterator<Item = (K, V)>,
-{
-    fn peek_key(&'a mut self) -> Option<&'a K> {
-        self.peek().map(|(key, _value)| key)
     }
 }

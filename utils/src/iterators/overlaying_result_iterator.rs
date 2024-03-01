@@ -1,7 +1,6 @@
-use super::*;
-use crate::internal_prelude::*;
-use sbor::rust::cmp::*;
-use sbor::rust::iter::*;
+use crate::prelude::*;
+use core::cmp::*;
+use core::iter::*;
 
 /// An iterator overlaying a "change on a value" (coming from the [`overlaying`] iterator) over a
 /// "base value" (coming from the [`underlying`] iterator) which may error.
