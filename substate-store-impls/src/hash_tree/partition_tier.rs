@@ -15,7 +15,7 @@ pub struct PartitionTier<'s, S> {
     tree_node_prefix: Vec<u8>,
 }
 
-impl<'s, S> Tier for PartitionTier<'s, S> {
+impl<'s, S> TierView for PartitionTier<'s, S> {
     type TypedLeafKey = DbPartitionNum;
     type StoredNode = TreeNode;
     type Payload = Version;
@@ -57,7 +57,7 @@ impl<'s, S> PartitionTier<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore> PartitionTier<'s, S> {
-    fn resolve_substate_tier(&self, partition: DbPartitionNum) -> SubstateTier<'s, S> {
+    fn resolve_substate_tier(&'_ self, partition: DbPartitionNum) -> SubstateTier<'s, S> {
         let partition_root_version = self.get_persisted_leaf_payload(&partition);
         SubstateTier::new(
             &self.base_store,
@@ -84,11 +84,15 @@ impl<'s, S: WriteableTreeStore> WritableTier for PartitionTier<'s, S> {
         self.base_store
             .record_stale_tree_part(StaleTreePart::Node(self.stored_node_key(local_key)))
     }
+
+    fn set_root_version(&mut self, new_version: Option<Version>) {
+        self.root_version = new_version;
+    }
 }
 
 impl<'s, S: ReadableTreeStore + WriteableTreeStore> PartitionTier<'s, S> {
     pub(crate) fn put_entity_partition_updates(
-        &self,
+        &mut self,
         next_version: Version,
         updates: &NodeDatabaseUpdates,
     ) -> Option<Hash> {
@@ -108,8 +112,8 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> PartitionTier<'s, S> {
                     });
                     (partition, new_leaf)
                 });
-        let (new_root_hash, _) =
-            self.apply_leaf_updates(BaseTree::Existing, next_version, leaf_updates);
-        new_root_hash
+        let update_batch = self.generate_tier_update_batch(next_version, leaf_updates);
+        self.apply_tier_update_batch(&update_batch);
+        update_batch.new_root_hash
     }
 }

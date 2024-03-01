@@ -20,7 +20,7 @@ pub trait StoredNode {
     fn from_jmt_node(node: &Node<Self::Payload>, key: &TreeNodeKey) -> Self;
 }
 
-pub trait Tier {
+pub trait TierView {
     type TypedLeafKey;
     type StoredNode: StoredNode<Payload = Self::Payload>;
     type Payload: Clone;
@@ -30,7 +30,7 @@ pub trait Tier {
     fn root_version(&self) -> Option<Version>;
 }
 
-pub trait ReadableTier: Tier {
+pub trait ReadableTier: TierView {
     /// Gets node by key, if it exists.
     fn get_local_node(&self, local_key: &TreeNodeKey) -> Option<Self::StoredNode>;
 
@@ -50,7 +50,7 @@ pub trait ReadableTier: Tier {
     }
 }
 
-pub trait IterableLeaves: Tier {
+pub trait IterableLeaves: TierView {
     fn iter_leaves(
         &self,
     ) -> Box<dyn Iterator<Item = (Hash, Self::TypedLeafKey, Self::Payload)> + '_>;
@@ -106,52 +106,40 @@ impl<R: ReadableTier + ?Sized> TreeReader<<R::StoredNode as StoredNode>::Payload
     }
 }
 
-pub trait WritableTier: Tier {
+pub trait WritableTier: TierView {
     /// Inserts the node under a new, unique key (i.e. never an update).
     fn insert_local_node(&self, local_key: &TreeNodeKey, node: Self::StoredNode);
 
     /// Marks the given tree part for a future removal by an arbitrary external pruning
     /// process.
     fn record_stale_local_node(&self, local_key: &TreeNodeKey);
+
+    /// Sets the root version of the TierView
+    fn set_root_version(&mut self, new_version: Option<Version>);
 }
 
-pub enum BaseTree {
-    Existing,
-    Empty,
+pub struct TierUpdateBatch<P> {
+    pub new_version: Version,
+    pub new_root_hash: Option<Hash>,
+    pub tree_update_batch: TreeUpdateBatch<P>,
 }
 
 pub trait ReadWritableTier: ReadableTier + WritableTier {
-    fn apply_leaf_updates<'a>(
+    fn generate_tier_update_batch<'a>(
         &self,
-        base_tree: BaseTree,
-        next_version: Version,
+        new_version: Version,
         leaf_updates: impl Iterator<Item = (&'a Self::TypedLeafKey, Option<(Hash, Self::Payload)>)>,
-    ) -> (Option<Hash>, TreeUpdateBatch<Self::Payload>)
+    ) -> TierUpdateBatch<Self::Payload>
     where
-        <Self as Tier>::TypedLeafKey: 'a,
+        <Self as TierView>::TypedLeafKey: 'a,
     {
         let value_set = leaf_updates
             .map(|(key, option)| (Self::to_leaf_key(&key), option))
             .collect();
-        let (root_hash, update_result) = self
+        let (root_hash, update_batch) = self
             .jmt()
-            .batch_put_value_set(
-                value_set,
-                None,
-                match base_tree {
-                    BaseTree::Existing => self.root_version(),
-                    BaseTree::Empty => None,
-                },
-                next_version,
-            )
+            .batch_put_value_set(value_set, None, self.root_version(), new_version)
             .expect("error while reading tree during put");
-
-        for (key, node) in update_result.node_batch.iter().flatten() {
-            self.insert_local_node(key, Self::StoredNode::from_jmt_node(node, &key));
-        }
-        for stale_node in update_result.stale_node_index_batch.iter().flatten() {
-            self.record_stale_local_node(&stale_node.node_key);
-        }
 
         let root_hash = if root_hash == SPARSE_MERKLE_PLACEHOLDER_HASH {
             None
@@ -159,7 +147,27 @@ pub trait ReadWritableTier: ReadableTier + WritableTier {
             Some(root_hash)
         };
 
-        (root_hash, update_result)
+        TierUpdateBatch {
+            new_version,
+            tree_update_batch: update_batch,
+            new_root_hash: root_hash,
+        }
+    }
+
+    fn apply_tier_update_batch(&mut self, tier_update_batch: &TierUpdateBatch<Self::Payload>) {
+        let TierUpdateBatch {
+            new_version,
+            tree_update_batch: update_batch,
+            new_root_hash: _,
+        } = tier_update_batch;
+        for (key, node) in update_batch.node_batch.iter().flatten() {
+            self.insert_local_node(key, Self::StoredNode::from_jmt_node(node, &key));
+        }
+        for stale_node in update_batch.stale_node_index_batch.iter().flatten() {
+            self.record_stale_local_node(&stale_node.node_key);
+        }
+
+        self.set_root_version(Some(*new_version));
     }
 }
 

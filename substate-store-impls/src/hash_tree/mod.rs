@@ -47,7 +47,7 @@ pub fn put_at_next_version<S: TreeStore>(
     current_state_version: Option<Version>,
     database_updates: &DatabaseUpdates,
 ) -> Hash {
-    let entity_tier = EntityTier::new(tree_store, current_state_version);
+    let mut entity_tier = EntityTier::new(tree_store, current_state_version);
     let next_state_version = current_state_version.unwrap_or(0) + 1;
     entity_tier
         .put_all_entity_updates(next_state_version, database_updates)
