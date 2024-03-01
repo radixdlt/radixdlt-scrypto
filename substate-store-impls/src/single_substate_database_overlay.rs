@@ -2,10 +2,10 @@ use radix_engine_common::prelude::*;
 use substate_store_interface::interface::*;
 use utils::prelude::borrow::*;
 
-pub type UnmergeableDatabaseOverlay<'a, S> = DatabaseOverlay<&'a S, S>;
-pub type MergeableDatabaseOverlay<'a, S> = DatabaseOverlay<&'a mut S, S>;
+pub type UnmergeableSubstateDatabaseOverlay<'a, S> = SubstateDatabaseOverlay<&'a S, S>;
+pub type MergeableSubstateDatabaseOverlay<'a, S> = SubstateDatabaseOverlay<&'a mut S, S>;
 
-pub struct DatabaseOverlay<S, D> {
+pub struct SubstateDatabaseOverlay<S, D> {
     /// The database overlay. All commits made to the database are written to the overlay. This
     /// covers new values and deletions too.
     overlay: StagingDatabaseUpdates,
@@ -19,7 +19,7 @@ pub struct DatabaseOverlay<S, D> {
     substate_database_type: PhantomData<D>,
 }
 
-impl<'a, D> UnmergeableDatabaseOverlay<'a, D> {
+impl<'a, D> UnmergeableSubstateDatabaseOverlay<'a, D> {
     pub fn new_unmergeable(root_database: &'a D) -> Self {
         Self {
             overlay: Default::default(),
@@ -29,7 +29,7 @@ impl<'a, D> UnmergeableDatabaseOverlay<'a, D> {
     }
 }
 
-impl<'a, D> MergeableDatabaseOverlay<'a, D> {
+impl<'a, D> MergeableSubstateDatabaseOverlay<'a, D> {
     pub fn new_mergeable(root_database: &'a mut D) -> Self {
         Self {
             overlay: Default::default(),
@@ -39,7 +39,7 @@ impl<'a, D> MergeableDatabaseOverlay<'a, D> {
     }
 }
 
-impl<S: Borrow<D>, D> DatabaseOverlay<S, D> {
+impl<S: Borrow<D>, D> SubstateDatabaseOverlay<S, D> {
     fn get_readable_root(&self) -> &D {
         self.root.borrow()
     }
@@ -53,20 +53,20 @@ impl<S: Borrow<D>, D> DatabaseOverlay<S, D> {
     }
 }
 
-impl<S: BorrowMut<D>, D> DatabaseOverlay<S, D> {
+impl<S: BorrowMut<D>, D> SubstateDatabaseOverlay<S, D> {
     fn get_writable_root(&mut self) -> &mut D {
         self.root.borrow_mut()
     }
 }
 
-impl<S: BorrowMut<D>, D: CommittableSubstateDatabase> DatabaseOverlay<S, D> {
+impl<S: BorrowMut<D>, D: CommittableSubstateDatabase> SubstateDatabaseOverlay<S, D> {
     pub fn commit_overlay_into_root_store(&mut self) {
         let overlay = mem::replace(&mut self.overlay, StagingDatabaseUpdates::default());
         self.get_writable_root().commit(&overlay.into());
     }
 }
 
-impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for DatabaseOverlay<S, D> {
+impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOverlay<S, D> {
     fn get_substate(
         &self,
         partition_key @ DbPartitionKey {
@@ -203,13 +203,15 @@ impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for DatabaseOverlay<S, 
     }
 }
 
-impl<S, D> CommittableSubstateDatabase for DatabaseOverlay<S, D> {
+impl<S, D> CommittableSubstateDatabase for SubstateDatabaseOverlay<S, D> {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
         merge_database_updates(&mut self.overlay, database_updates.clone())
     }
 }
 
-impl<S: Borrow<D>, D: ListableSubstateDatabase> ListableSubstateDatabase for DatabaseOverlay<S, D> {
+impl<S: Borrow<D>, D: ListableSubstateDatabase> ListableSubstateDatabase
+    for SubstateDatabaseOverlay<S, D>
+{
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
         let overlying = self
             .overlay
