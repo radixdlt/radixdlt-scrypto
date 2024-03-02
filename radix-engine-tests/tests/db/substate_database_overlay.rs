@@ -3,7 +3,7 @@ use radix_engine::transaction::*;
 use scrypto::prelude::*;
 use scrypto_test::ledger_simulator::*;
 use substate_store_impls::memory_db::*;
-use substate_store_impls::single_substate_database_overlay::*;
+use substate_store_impls::substate_database_overlay::*;
 use substate_store_interface::db_key_mapper::*;
 use substate_store_interface::interface::*;
 use transaction::builder::*;
