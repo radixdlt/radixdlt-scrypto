@@ -30,7 +30,7 @@ fn substates_written_to_root_database_can_be_read() {
         },
     });
 
-    let db = SingleSubstateDatabaseOverlay::new(&root);
+    let db = SubstateDatabaseOverlay::new_unmergeable(&root);
 
     // Act
     let substate = db.get_substate(
@@ -49,7 +49,7 @@ fn substates_written_to_root_database_can_be_read() {
 fn substates_written_to_overlay_can_be_read_later() {
     // Arrange
     let root = InMemorySubstateDatabase::standard();
-    let mut db = SingleSubstateDatabaseOverlay::new(&root);
+    let mut db = SubstateDatabaseOverlay::new_unmergeable(&root);
 
     db.commit(&DatabaseUpdates {
         node_updates: indexmap! {
@@ -100,7 +100,7 @@ fn substate_deletes_to_overlay_prevent_substate_from_being_read() {
         },
     });
 
-    let mut db = SingleSubstateDatabaseOverlay::new(&root);
+    let mut db = SubstateDatabaseOverlay::new_unmergeable(&root);
     db.commit(&DatabaseUpdates {
         node_updates: indexmap! {
             b"some-node".to_vec() => NodeDatabaseUpdates {
@@ -148,7 +148,7 @@ fn partition_deletes_to_overlay_prevent_substate_from_being_read() {
         },
     });
 
-    let mut db = SingleSubstateDatabaseOverlay::new(&root);
+    let mut db = SubstateDatabaseOverlay::new_unmergeable(&root);
     db.commit(&DatabaseUpdates {
         node_updates: indexmap! {
             b"some-node".to_vec() => NodeDatabaseUpdates {
@@ -194,7 +194,7 @@ fn partition_resets_to_overlay_return_new_substate_data() {
         },
     });
 
-    let mut db = SingleSubstateDatabaseOverlay::new(&root);
+    let mut db = SubstateDatabaseOverlay::new_unmergeable(&root);
     db.commit(&DatabaseUpdates {
         node_updates: indexmap! {
             b"some-node".to_vec() => NodeDatabaseUpdates {
@@ -242,7 +242,7 @@ fn partition_resets_are_not_combined() {
         },
     });
 
-    let mut db = SingleSubstateDatabaseOverlay::new(&root);
+    let mut db = SubstateDatabaseOverlay::new_unmergeable(&root);
     db.commit(&DatabaseUpdates {
         node_updates: indexmap! {
             b"some-node".to_vec() => NodeDatabaseUpdates {
@@ -285,7 +285,7 @@ fn partition_resets_are_not_combined() {
 fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_reset_mode() {
     // Arrange
     let root = InMemorySubstateDatabase::standard();
-    let mut db = SingleSubstateDatabaseOverlay::new(&root);
+    let mut db = SubstateDatabaseOverlay::new_unmergeable(&root);
 
     db.commit(&DatabaseUpdates {
         node_updates: indexmap! {
@@ -329,7 +329,7 @@ fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_reset_mode() 
 fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_delta_mode() {
     // Arrange
     let root = InMemorySubstateDatabase::standard();
-    let mut db = SingleSubstateDatabaseOverlay::new(&root);
+    let mut db = SubstateDatabaseOverlay::new_unmergeable(&root);
 
     db.commit(&DatabaseUpdates {
         node_updates: indexmap! {
@@ -373,7 +373,7 @@ fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_delta_mode() 
 fn substates_written_on_a_staging_database_from_transactions_can_be_read_later() {
     // Arrange
     let root_database = InMemorySubstateDatabase::standard();
-    let database = SingleSubstateDatabaseOverlay::new(&root_database);
+    let database = SubstateDatabaseOverlay::new_unmergeable(&root_database);
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_database(database)
         .without_kernel_trace()
@@ -462,7 +462,7 @@ fn run_scenarios(
     check_callback: impl Fn(
         (&InMemorySubstateDatabase, &TransactionReceipt),
         (
-            &SingleSubstateDatabaseOverlay<InMemorySubstateDatabase>,
+            &UnmergeableSubstateDatabaseOverlay<'_, InMemorySubstateDatabase>,
             &TransactionReceipt,
         ),
     ),
@@ -472,7 +472,7 @@ fn run_scenarios(
     let db1 = InMemorySubstateDatabase::standard();
 
     let db2_root = InMemorySubstateDatabase::standard();
-    let db2 = SingleSubstateDatabaseOverlay::new(&db2_root);
+    let db2 = SubstateDatabaseOverlay::new_unmergeable(&db2_root);
 
     let mut ledger1 = LedgerSimulatorBuilder::new()
         .with_custom_database(db1)
