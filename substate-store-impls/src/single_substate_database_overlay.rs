@@ -117,43 +117,63 @@ where
                     // substates in the reset action.
                     Some(StagingPartitionDatabaseUpdates::Reset {
                         new_substate_values,
-                    }) => Box::new(
-                        new_substate_values
-                            .iter()
-                            .map(|(sort_key, substate_value)| {
-                                (sort_key.clone(), substate_value.clone())
-                            })
-                            .filter(move |(sort_key, _)| match from_sort_key {
-                                // A `from_sort_key` is specified. Only return sort keys that are
-                                // larger than or equal to the from sort key.
-                                Some(ref from_sort_key) => sort_key >= from_sort_key,
-                                // No `from_sort_key` is specified. Do not filter anything out. All
-                                // of the substates in this partition should be returned.
-                                None => true,
-                            }),
-                    ),
+                    }) => {
+                        match from_sort_key {
+                            // A `from_sort_key` is specified. Only return sort keys that are larger
+                            // than or equal to the from sort key. We do this through BTreeMap's
+                            // range function instead of doing filtering. We're able to do this
+                            // since a `BTreeMap`'s keys are always sorted.
+                            Some(from_sort_key) => {
+                                Box::new(new_substate_values.range(from_sort_key..).map(
+                                    |(sort_key, substate_value)| {
+                                        (sort_key.clone(), substate_value.clone())
+                                    },
+                                ))
+                            }
+                            // No `from_sort_key` is specified. Start iterating from the beginning.
+                            None => Box::new(new_substate_values.iter().map(
+                                |(sort_key, substate_value)| {
+                                    (sort_key.clone(), substate_value.clone())
+                                },
+                            )),
+                        }
+                    }
                     // There are some changes that need to be overlayed.
                     Some(StagingPartitionDatabaseUpdates::Delta { substate_updates }) => {
                         let underlying = self
                             .root
                             .list_entries_from(partition_key, from_sort_key.as_ref());
-                        let overlaying = substate_updates
-                            .iter()
-                            .map(|(sort_key, database_update)| match database_update {
-                                DatabaseUpdate::Set(substate_value) => {
-                                    (sort_key.clone(), Some(substate_value.clone()))
-                                }
-                                DatabaseUpdate::Delete => (sort_key.clone(), None),
-                            })
-                            .filter(move |(sort_key, _)| match from_sort_key {
-                                // A `from_sort_key` is specified. Only return sort keys that are
-                                // larger than or equal to the from sort key.
-                                Some(ref from_sort_key) => sort_key >= from_sort_key,
-                                // No `from_sort_key` is specified. Do not filter anything out. All
-                                // of the substates in this partition should be returned.
-                                None => true,
-                            });
-                        Box::new(OverlayingIterator::new(underlying, overlaying))
+
+                        match from_sort_key {
+                            // A `from_sort_key` is specified. Only return sort keys that are larger
+                            // than or equal to the from sort key. We do this through BTreeMap's
+                            // range function instead of doing filtering. We're able to do this
+                            // since a `BTreeMap`'s keys are always sorted.
+                            Some(from_sort_key) => {
+                                let overlaying = substate_updates.range(from_sort_key..).map(
+                                    |(sort_key, database_update)| match database_update {
+                                        DatabaseUpdate::Set(substate_value) => {
+                                            (sort_key.clone(), Some(substate_value.clone()))
+                                        }
+                                        DatabaseUpdate::Delete => (sort_key.clone(), None),
+                                    },
+                                );
+                                Box::new(OverlayingIterator::new(underlying, overlaying))
+                            }
+                            // No `from_sort_key` is specified. Start iterating from the beginning.
+                            None => {
+                                let overlaying =
+                                    substate_updates.iter().map(|(sort_key, database_update)| {
+                                        match database_update {
+                                            DatabaseUpdate::Set(substate_value) => {
+                                                (sort_key.clone(), Some(substate_value.clone()))
+                                            }
+                                            DatabaseUpdate::Delete => (sort_key.clone(), None),
+                                        }
+                                    });
+                                Box::new(OverlayingIterator::new(underlying, overlaying))
+                            }
+                        }
                     }
                     // Overlay doesn't contain anything for the provided partition number. Return an
                     // iterator over the data in the root store.

@@ -1,5 +1,3 @@
-use core::ops::{Deref, DerefMut};
-
 use sbor::rust::prelude::*;
 use substate_store_interface::interface::*;
 
