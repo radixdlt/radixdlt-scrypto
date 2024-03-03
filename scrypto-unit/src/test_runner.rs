@@ -465,6 +465,42 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         }
     }
 
+    pub fn build_without_bootstrapping(self) -> TestRunner<E, D> {
+        //---------- Override configs for resource tracker ---------------
+        #[cfg(not(feature = "resource_tracker"))]
+        let trace = self.trace;
+        #[cfg(feature = "resource_tracker")]
+        let trace = false;
+        //----------------------------------------------------------------
+
+        let scrypto_vm = ScryptoVm {
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_validator_config: WasmValidatorConfigV1::new(),
+        };
+        let native_vm = NativeVm::new_with_extension(self.custom_extension);
+        let substate_db = self.custom_database;
+
+        // Note that 0 is not a valid private key
+        let next_private_key = 100;
+
+        // Starting from non-zero considering that bootstrap might have used a few.
+        let next_transaction_nonce = 100;
+
+        let runner = TestRunner {
+            scrypto_vm,
+            native_vm,
+            database: substate_db,
+            next_private_key,
+            next_transaction_nonce,
+            trace,
+            collected_events: vec![],
+            xrd_free_credits_used: false,
+            skip_receipt_check: self.skip_receipt_check,
+        };
+
+        runner
+    }
+
     pub fn build_and_get_epoch(self) -> (TestRunner<E, D>, ActiveValidatorSet) {
         //---------- Override configs for resource tracker ---------------
         let bootstrap_trace = false;
