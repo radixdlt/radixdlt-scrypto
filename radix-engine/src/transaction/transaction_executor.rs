@@ -36,7 +36,7 @@ use substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::
 use transaction::model::*;
 
 /// Protocol-defined costing parameters
-#[derive(Debug, Copy, Clone, ScryptoSbor)]
+#[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct CostingParameters {
     /// The price of execution cost unit in XRD.
     pub execution_cost_unit_price: Decimal,
