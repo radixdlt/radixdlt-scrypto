@@ -1,5 +1,6 @@
 use crate::hash_tree::tree_store::StaleTreePart;
-use crate::hash_tree::types::{LeafKey, LeafNode, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use crate::hash_tree::types::{LeafKey, LeafNode, Node, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use crate::hash_tree::Payload::SubstateValue;
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_common::crypto::{hash, Hash};
 use substate_store_interface::interface::{
@@ -51,15 +52,17 @@ pub fn put_at_next_version<S: TreeStore>(
     let node_hash_changes = database_updates
         .node_updates
         .iter()
-        .map(|(node_key, node_database_updates)| LeafHashChange {
-            key_bytes: node_key.clone(),
-            hash_change: apply_node_database_updates(
-                node_tier_store,
-                node_root_version,
+        .map(|(node_key, node_database_updates)| {
+            LeafChange::for_node(
                 node_key,
-                node_database_updates,
-                next_version,
-            ),
+                apply_node_database_updates(
+                    node_tier_store,
+                    node_root_version,
+                    node_key,
+                    node_database_updates,
+                    next_version,
+                ),
+            )
         })
         .collect::<Vec<_>>();
     put_leaf_hash_changes(
@@ -153,18 +156,18 @@ fn apply_node_database_updates<S: TreeStore>(
     let partition_hash_changes = node_database_updates
         .partition_updates
         .iter()
-        .map(
-            |(partition_num, partition_database_updates)| LeafHashChange {
-                key_bytes: vec![*partition_num],
-                hash_change: apply_partition_database_updates(
+        .map(|(partition_num, partition_database_updates)| {
+            LeafChange::for_partition(
+                partition_num,
+                apply_partition_database_updates(
                     &partition_tier_store,
                     partition_root_version,
                     partition_num,
                     partition_database_updates,
                     next_version,
                 ),
-            },
-        )
+            )
+        })
         .collect::<Vec<_>>();
     put_leaf_hash_changes(
         &partition_tier_store,
@@ -192,7 +195,7 @@ fn apply_partition_database_updates<S: TreeStore>(
             next_version,
             substate_updates
                 .into_iter()
-                .map(|(sort_key, update)| LeafHashChange::from_update(sort_key, update))
+                .map(|(sort_key, update)| LeafChange::for_substate_upsert(sort_key, update))
                 .collect(),
         ),
         PartitionDatabaseUpdates::Reset {
@@ -209,7 +212,7 @@ fn apply_partition_database_updates<S: TreeStore>(
                 next_version,
                 new_substate_values
                     .into_iter()
-                    .map(|(sort_key, value)| LeafHashChange::from_value(sort_key, value))
+                    .map(|(sort_key, value)| LeafChange::for_substate_reset(sort_key, value))
                     .collect(),
             )
         }
@@ -230,35 +233,54 @@ fn get_lower_tier_root_version<S: ReadableTreeStore>(
     })
 }
 
-struct LeafHashChange {
-    key_bytes: Vec<u8>,
-    hash_change: Option<Hash>,
+enum Payload<'a> {
+    NestedTreeRootHash(Hash),
+    SubstateValue(&'a DbSubstateValue),
 }
 
-impl LeafHashChange {
-    pub fn from_update(sort_key: &DbSortKey, update: &DatabaseUpdate) -> Self {
+impl Payload<'_> {
+    pub fn value_hash(&self) -> Hash {
+        match self {
+            Self::NestedTreeRootHash(hash) => hash.clone(),
+            Self::SubstateValue(value) => hash(*value),
+        }
+    }
+}
+
+struct LeafChange<'a> {
+    key_bytes: Vec<u8>,
+    new_payload: Option<Payload<'a>>,
+}
+
+impl<'a> LeafChange<'a> {
+    pub fn for_node(node_key: &DbNodeKey, new_root_hash: Option<Hash>) -> Self {
+        Self {
+            key_bytes: node_key.clone(),
+            new_payload: new_root_hash.map(|hash| Payload::NestedTreeRootHash(hash)),
+        }
+    }
+
+    pub fn for_partition(partition_num: &DbPartitionNum, new_root_hash: Option<Hash>) -> Self {
+        Self {
+            key_bytes: vec![*partition_num],
+            new_payload: new_root_hash.map(|hash| Payload::NestedTreeRootHash(hash)),
+        }
+    }
+
+    pub fn for_substate_upsert(sort_key: &DbSortKey, update: &'a DatabaseUpdate) -> Self {
         Self {
             key_bytes: sort_key.0.clone(),
-            hash_change: match update {
-                DatabaseUpdate::Set(value) => Some(hash(value)),
+            new_payload: match update {
+                DatabaseUpdate::Set(value) => Some(SubstateValue(value)),
                 DatabaseUpdate::Delete => None,
             },
         }
     }
 
-    pub fn from_value(sort_key: &DbSortKey, value: &DbSubstateValue) -> Self {
+    pub fn for_substate_reset(sort_key: &DbSortKey, value: &'a DbSubstateValue) -> Self {
         Self {
             key_bytes: sort_key.0.clone(),
-            hash_change: Some(hash(value)),
-        }
-    }
-
-    pub fn to_leaf_change(self, version: Version) -> LeafChange {
-        LeafChange {
-            key: LeafKey {
-                bytes: self.key_bytes,
-            },
-            new_payload: self.hash_change.map(|value_hash| (value_hash, version)),
+            new_payload: Some(SubstateValue(value)),
         }
     }
 }
@@ -267,54 +289,68 @@ fn put_leaf_hash_changes<S: TreeStore>(
     store: &S,
     current_version: Option<Version>,
     next_version: Version,
-    changes: Vec<LeafHashChange>,
-) -> Option<Hash> {
-    let root_hash = put_leaf_changes(
-        store,
-        current_version,
-        next_version,
-        changes
-            .into_iter()
-            .map(|change| change.to_leaf_change(next_version))
-            .collect(),
-    );
-    if root_hash == SPARSE_MERKLE_PLACEHOLDER_HASH {
-        None
-    } else {
-        Some(root_hash)
-    }
-}
-
-struct LeafChange {
-    key: LeafKey,
-    new_payload: Option<(Hash, Version)>,
-}
-
-fn put_leaf_changes<S: TreeStore>(
-    store: &S,
-    current_version: Option<Version>,
-    next_version: Version,
     changes: Vec<LeafChange>,
-) -> Hash {
+) -> Option<Hash> {
+    // We need to re-allocate it like this in order to:
+    // - construct the right shape (i.e. a reference to a tuple) of items passed to JMT,
+    // - and recover Substate values based on `LeafKey` from the update batch returned by JMT.
+    let changes = changes
+        .into_iter()
+        .map(|change| {
+            (
+                LeafKey {
+                    bytes: change.key_bytes,
+                },
+                change
+                    .new_payload
+                    .map(|payload| ((payload.value_hash(), next_version), payload)),
+            )
+        })
+        .collect::<IndexMap<_, _>>();
     let (root_hash, update_result) = JellyfishMerkleTree::new(store)
         .batch_put_value_set(
             changes
                 .iter()
-                .map(|change| (&change.key, change.new_payload.as_ref()))
+                .map(|(key, change)| {
+                    (
+                        key,
+                        change
+                            .as_ref()
+                            .map(|(hash_and_version, _payload)| hash_and_version),
+                    )
+                })
                 .collect(),
             None,
             current_version,
             next_version,
         )
         .expect("error while reading tree during put");
+
     for (key, node) in update_result.node_batch.into_iter().flatten() {
+        // We promised to associate Substate values; but not all newly-created nodes are leaves:
+        if let Node::Leaf(leaf_node) = &node {
+            // And not every newly-created leaf comes from a value change: (sometimes it is just a tree re-structuring!)
+            if let Some(change) = changes.get(leaf_node.leaf_key()) {
+                // Now: if a JMT leaf was created due to value change, then it must have been an upsert:
+                let (_hash_and_version, payload) = change.as_ref().expect("unexpected delete");
+                // Only the Substate Tier's leaves contain Substate values:
+                if let Payload::SubstateValue(substate_value) = payload {
+                    store.associate_substate_value(&key, *substate_value);
+                }
+            }
+        }
         let node = TreeNode::from(&key, &node);
-        store.insert_node(key, node)
+        store.insert_node(key, node);
     }
     for key in update_result.stale_node_index_batch.into_iter().flatten() {
         store.record_stale_tree_part(StaleTreePart::Node(key.node_key));
     }
-    root_hash
+
+    if root_hash == SPARSE_MERKLE_PLACEHOLDER_HASH {
+        None
+    } else {
+        Some(root_hash)
+    }
 }
 
 pub struct NestedTreeStore<S> {
@@ -357,6 +393,11 @@ impl<'s, S: Deref<Target = impl WriteableTreeStore> + 's> WriteableTreeStore
 {
     fn insert_node(&self, key: NodeKey, node: TreeNode) {
         self.underlying.insert_node(self.prefixed(&key), node);
+    }
+
+    fn associate_substate_value(&self, key: &NodeKey, substate_value: &DbSubstateValue) {
+        self.underlying
+            .associate_substate_value(&self.prefixed(&key), substate_value);
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {

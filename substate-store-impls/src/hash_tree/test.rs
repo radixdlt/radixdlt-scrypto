@@ -1,8 +1,9 @@
 use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::hash_tree::jellyfish::JellyfishMerkleTree;
 use crate::hash_tree::tree_store::{
-    SerializedInMemoryTreeStore, StaleTreePart, TreeChildEntry, TreeInternalNode, TreeLeafNode,
-    TreeNode, TreeStore, TypedInMemoryTreeStore,
+    ReadableTreeStore, SerializedInMemoryTreeStore, StaleTreePart, TreeChildEntry,
+    TreeInternalNode, TreeLeafNode, TreeNode, TreeStore, TypedInMemoryTreeStore,
+    WriteableTreeStore,
 };
 use crate::hash_tree::types::{LeafKey, NodeKey};
 use crate::hash_tree::{put_at_next_version, NestedTreeStore};
@@ -10,6 +11,8 @@ use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::prelude::indexmap::indexmap;
+use std::cell::RefCell;
+use std::ops::Deref;
 use substate_store_interface::interface::{
     DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
     DbSubstateKey, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
@@ -221,6 +224,36 @@ fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
             LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEP, 88, TIER_SEP, 6, 6, 6] } => hash([3]),
             LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEP, 88, TIER_SEP, 6, 6, 7] } => hash([4]),
             LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEP, 66, TIER_SEP, 1, 2, 3] } => hash([5]),
+        )
+    );
+}
+
+#[test]
+fn substate_values_get_associated_with_substate_tier_leaves() {
+    let mut tester = HashTreeTester::new(SubstateValueAssociationStore::default(), None);
+    tester.put_substate_changes(vec![
+        change_exact(vec![123, 12, 1, 0], 8, vec![6, 6, 6, 1], Some(vec![4])),
+        change_exact(vec![123, 12, 1, 0], 8, vec![6, 6, 6, 2], Some(vec![])),
+        change_exact(
+            vec![123, 12, 1, 0],
+            8,
+            vec![6, 6, 7, 5, 9],
+            Some(vec![1, 2, 3]),
+        ),
+        change_exact(vec![220, 3], 99, vec![253], Some(vec![7; 66])),
+    ]);
+
+    let associated_substate_values = tester.tree_store.associated_substate_values.borrow();
+    assert_eq!(
+        associated_substate_values.deref(),
+        &hashmap!(
+            // 2 incidentally-complete node keys: (they differ only at their last byte)
+            NodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, 0, TIER_SEP, 8, TIER_SEP, 6, 6, 6, 1])) => vec![4],
+            NodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, 0, TIER_SEP, 8, TIER_SEP, 6, 6, 6, 2])) => vec![],
+            // A slightly-incomplete node key: (cut short at the first byte it differs)
+            NodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, 0, TIER_SEP, 8, TIER_SEP, 6, 6, 7])) => vec![1, 2, 3],
+            // A very incomplete node key, representing Substate-Tier root: (since it is the only Substate within its partition)
+            NodeKey::new(1, NibblePath::new_even(vec![220, 3, TIER_SEP, 99, TIER_SEP])) => vec![7; 66],
         )
     );
 }
@@ -588,5 +621,33 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
             )
             .bytes(),
         )
+    }
+}
+
+/// A degenerate, test [`TreeStore`] which only stores associated Substate values.
+#[derive(Debug, Default)]
+struct SubstateValueAssociationStore {
+    associated_substate_values: RefCell<HashMap<NodeKey, DbSubstateValue>>,
+}
+
+impl ReadableTreeStore for SubstateValueAssociationStore {
+    fn get_node(&self, _key: &NodeKey) -> Option<TreeNode> {
+        None
+    }
+}
+
+impl WriteableTreeStore for SubstateValueAssociationStore {
+    fn insert_node(&self, _key: NodeKey, _node: TreeNode) {
+        // deliberately empty
+    }
+
+    fn associate_substate_value(&self, key: &NodeKey, substate_value: &DbSubstateValue) {
+        self.associated_substate_values
+            .borrow_mut()
+            .insert(key.clone(), substate_value.clone());
+    }
+
+    fn record_stale_tree_part(&self, _part: StaleTreePart) {
+        // deliberately empty
     }
 }
