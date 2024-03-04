@@ -1,0 +1,11 @@
+[package]
+name = "scrypto-compiler"
+version = "1.2.0-dev"
+edition = "2021"
+
+[dependencies]
+radix-engine-common = { path = "../radix-engine-common" }
+radix-engine-interface = { path = "../radix-engine-interface" }
+radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
+utils = { path = "../utils" }
+
