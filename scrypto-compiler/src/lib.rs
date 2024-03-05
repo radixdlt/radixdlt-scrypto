@@ -1,10 +1,7 @@
 use radix_engine_interface::types::Level;
 use std::env;
 use std::ffi::OsStr;
-use std::ffi::OsString;
-use std::fs;
 use std::io;
-use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::process::ExitStatus;
@@ -12,7 +9,9 @@ use std::process::ExitStatus;
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
     IOError(io::Error),
-    CargoFailure(ExitStatus),
+    CargoBuildFailure(ExitStatus),
+    CargoMetadataFailure(ExitStatus),
+    CargoTargetDirectoryResolutionError,
 }
 
 pub struct ScryptoCompiler {
@@ -23,7 +22,7 @@ pub struct ScryptoCompiler {
     package: Option<String>,
     target_directory: Option<String>,
     manifest_directory: Option<String>,
-    tracing: bool,
+    trace: bool,
     log_level: Level,
     no_schema: bool,
     coverage: bool,
@@ -35,11 +34,44 @@ impl ScryptoCompiler {
         ScryptoCompilerBuilder::default()
     }
 
-    pub fn prepare_features(&self) -> String {
-        self.features.join(",")
+    fn prepare_features(&self) -> String {
+        // firstly apply user features
+        let mut features = self.features.join(",");
+
+        // now apply scrypto features
+        if self.trace {
+            features.push_str(",scrypto/trace");
+        }
+        if self.no_schema {
+            features.push_str(",scrypto/no-schema");
+        }
+        if Level::Error <= self.log_level {
+            features.push_str(",scrypto/log-error");
+        }
+        if Level::Warn <= self.log_level {
+            features.push_str(",scrypto/log-warn");
+        }
+        if Level::Info <= self.log_level {
+            features.push_str(",scrypto/log-info");
+        }
+        if Level::Debug <= self.log_level {
+            features.push_str(",scrypto/log-debug");
+        }
+        if Level::Trace <= self.log_level {
+            features.push_str(",scrypto/log-trace");
+        }
+        if self.coverage {
+            features.push_str(",scrypto/coverage");
+        }
+
+        if features.starts_with(',') {
+            features.remove(0);
+        }
+
+        features
     }
 
-    pub fn prepare_rust_flags(&self) -> String {
+    fn prepare_rust_flags(&self) -> String {
         if self.coverage {
             "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir"
                 .to_owned()
@@ -48,22 +80,70 @@ impl ScryptoCompiler {
         }
     }
 
-    pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
-        //manifest_path: impl AsRef<OsStr>,
+    fn get_default_target_directory(
+        manifest_path: impl AsRef<OsStr>,
+    ) -> Result<String, ScryptoCompilerError> {
+        let output = Command::new("cargo")
+            .arg("metadata")
+            .arg("--manifest-path")
+            .arg(manifest_path.as_ref())
+            .arg("--format-version")
+            .arg("1")
+            .arg("--no-deps")
+            .output()
+            .map_err(ScryptoCompilerError::IOError)?;
+        if output.status.success() {
+            let parsed = serde_json::from_slice::<serde_json::Value>(&output.stdout)
+                .map_err(|_| ScryptoCompilerError::CargoTargetDirectoryResolutionError)?;
+            let target_directory = parsed
+                .as_object()
+                .and_then(|o| o.get("target_directory"))
+                .and_then(|o| o.as_str())
+                .ok_or(ScryptoCompilerError::CargoTargetDirectoryResolutionError)?;
+            Ok(target_directory.to_owned())
+        } else {
+            Err(ScryptoCompilerError::CargoMetadataFailure(output.status))
+        }
+    }
 
-        let target_directory = self
-            .target_directory
-            .as_ref()
-            .map_or(env::current_dir().unwrap(), |v| PathBuf::from(v));
+    fn prepare_paths(&mut self) -> Result<(PathBuf, PathBuf), ScryptoCompilerError> {
         let mut manifest_path = self
             .manifest_directory
             .as_ref()
             .map_or(env::current_dir().unwrap(), |v| PathBuf::from(v));
         manifest_path.push("Cargo.toml");
-        let features = self.prepare_features();
+
+        let target_directory = if self.force_local_target {
+            let mut target_path = manifest_path.clone();
+            target_path.pop(); // Cargo.toml
+            target_path.push("target");
+            target_path
+        } else if let Some(directory) = &self.target_directory {
+            PathBuf::from(directory)
+        } else {
+            PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
+        };
+
+        Ok((manifest_path, target_directory))
+    }
+
+    fn prepare_command(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
+        let (manifest_path, target_directory) = self.prepare_paths()?;
+
+        let features_list = self.prepare_features();
+        let features = (!features_list.is_empty())
+            .then_some(vec!["--features", &features_list])
+            .unwrap_or_default();
+
         let rustflags = self.prepare_rust_flags();
 
-        let status = Command::new("cargo")
+        let package = self
+            .package
+            .as_ref()
+            .and_then(|p| Some(vec!["--package", &p]))
+            .unwrap_or_default();
+
+        command
             .arg("build")
             .arg("--target")
             .arg("wasm32-unknown-unknown")
@@ -72,19 +152,30 @@ impl ScryptoCompiler {
             .arg(target_directory)
             .arg("--manifest-path")
             .arg(manifest_path)
-            .args(if features.is_empty() {
-                vec![]
-            } else {
-                vec!["--features", &features]
-            })
+            .args(package)
+            .args(features)
             .env("CARGO_ENCODED_RUSTFLAGS", rustflags)
-            .status()
-            .map_err(ScryptoCompilerError::IOError)?;
+            .envs(self.set_environment_variables.clone());
+
+        self.unset_environment_variables.iter().for_each(|e| {
+            command.env_remove(e);
+        });
+
+        Ok(())
+    }
+
+    pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
+        // Create compilation command
+        let mut command = Command::new("cargo");
+        self.prepare_command(&mut command)?;
+
+        // Execute command
+        let status = command.status().map_err(ScryptoCompilerError::IOError)?;
 
         status
             .success()
             .then_some(())
-            .ok_or(ScryptoCompilerError::CargoFailure(status))
+            .ok_or(ScryptoCompilerError::CargoBuildFailure(status))
     }
 }
 
@@ -113,7 +204,7 @@ pub struct ScryptoCompilerBuilder {
     package: Option<String>,
     target_directory: Option<String>,
     manifest_directory: Option<String>,
-    tracing: bool,
+    trace: bool,
     log_level: Level,
     no_schema: bool,
     coverage: bool,
@@ -157,8 +248,8 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn tracing(&mut self, tracing: bool) -> &mut Self {
-        self.tracing = tracing;
+    pub fn trace(&mut self, trace: bool) -> &mut Self {
+        self.trace = trace;
         self
     }
 
@@ -195,7 +286,7 @@ impl ScryptoCompilerBuilder {
             package: self.package.clone(),
             target_directory: self.target_directory.clone(),
             manifest_directory: self.manifest_directory.clone(),
-            tracing: self.tracing,
+            trace: self.trace,
             log_level: self.log_level,
             no_schema: self.no_schema,
             coverage: self.coverage,

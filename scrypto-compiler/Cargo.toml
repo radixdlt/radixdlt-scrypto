@@ -8,4 +8,5 @@ radix-engine-common = { path = "../radix-engine-common" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
 utils = { path = "../utils" }
+serde_json = { version = "1.0.81" }
 
