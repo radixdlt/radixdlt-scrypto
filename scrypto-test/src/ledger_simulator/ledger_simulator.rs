@@ -872,7 +872,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         reader.read_typed_kv_entry(kv_store_id.as_node_id(), key)
     }
 
-    pub fn get_resource_total_supply(&self, resource: ResourceAddress) -> Decimal {
+    pub fn get_fungible_resource_total_supply(&self, resource: ResourceAddress) -> Decimal {
         let total_supply = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
