@@ -6,6 +6,8 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::process::ExitStatus;
 
+const MANIFEST_FILE: &str = "Cargo.toml";
+
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
     IOError(io::Error),
@@ -20,6 +22,7 @@ pub enum ScryptoCompilerInvalidParam {
     CoverageDiscardsTargetDirectory,
     CoverageDiscardsForceLocalTarget,
     ForceLocalTargetDiscardsTargetDirectory,
+    CargoTomlInManifestDirectory,
 }
 
 pub struct ScryptoCompiler {
@@ -51,6 +54,13 @@ impl ScryptoCompiler {
         }
         if self.force_local_target && self.target_directory.is_some() {
             return Err(ScryptoCompilerInvalidParam::ForceLocalTargetDiscardsTargetDirectory);
+        }
+        if self
+            .manifest_directory
+            .as_ref()
+            .is_some_and(|v| PathBuf::from(v).ends_with(MANIFEST_FILE))
+        {
+            return Err(ScryptoCompilerInvalidParam::CargoTomlInManifestDirectory);
         }
         Ok(())
     }
@@ -132,16 +142,13 @@ impl ScryptoCompiler {
             .manifest_directory
             .as_ref()
             .map_or(env::current_dir().unwrap(), |v| PathBuf::from(v));
-        manifest_path.push("Cargo.toml");
 
         let target_directory = if self.coverage {
             let mut target_path = manifest_path.clone();
-            target_path.pop(); // Cargo.toml
             target_path.push("coverage");
             target_path
         } else if self.force_local_target {
             let mut target_path = manifest_path.clone();
-            target_path.pop(); // Cargo.toml
             target_path.push("target");
             target_path
         } else if let Some(directory) = &self.target_directory {
@@ -150,6 +157,7 @@ impl ScryptoCompiler {
             PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
         };
 
+        manifest_path.push(MANIFEST_FILE);
         Ok((manifest_path, target_directory))
     }
 
@@ -334,4 +342,46 @@ fn test_builder() {
         .target_directory("./out")
         .compile()
         .unwrap();
+}
+
+#[test]
+fn test_invalid_param() {
+    assert!(matches!(
+        ScryptoCompiler::new()
+            .coverage(true)
+            .target_directory("./out")
+            .compile(),
+        Err(ScryptoCompilerError::InvalidParam(
+            ScryptoCompilerInvalidParam::CoverageDiscardsTargetDirectory
+        ))
+    ));
+
+    assert!(matches!(
+        ScryptoCompiler::new()
+            .coverage(true)
+            .force_local_target(true)
+            .compile(),
+        Err(ScryptoCompilerError::InvalidParam(
+            ScryptoCompilerInvalidParam::CoverageDiscardsForceLocalTarget
+        ))
+    ));
+
+    assert!(matches!(
+        ScryptoCompiler::new()
+            .target_directory("./out")
+            .force_local_target(true)
+            .compile(),
+        Err(ScryptoCompilerError::InvalidParam(
+            ScryptoCompilerInvalidParam::ForceLocalTargetDiscardsTargetDirectory
+        ))
+    ));
+
+    assert!(matches!(
+        ScryptoCompiler::new()
+            .manifest_directory("./Cargo.toml")
+            .compile(),
+        Err(ScryptoCompilerError::InvalidParam(
+            ScryptoCompilerInvalidParam::CargoTomlInManifestDirectory
+        ))
+    ));
 }
