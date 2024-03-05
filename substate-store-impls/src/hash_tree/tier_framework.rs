@@ -1,5 +1,4 @@
 use core::iter;
-use std::ops::Deref;
 
 use super::jellyfish::JellyfishMerkleTree;
 use super::jellyfish::TreeUpdateBatch;
@@ -8,6 +7,7 @@ use super::types::*;
 use radix_engine_common::crypto::Hash;
 use substate_store_interface::interface::DbNodeKey;
 use utils::prelude::*;
+use utils::rust::ops::Deref;
 
 // Rename for this file to avoid confusion with TreeNodes!
 pub(crate) type DbEntityKey = DbNodeKey;
