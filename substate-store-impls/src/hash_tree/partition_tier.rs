@@ -21,7 +21,19 @@ pub struct PartitionTier<'s, S> {
     tree_node_prefix: Vec<u8>,
 }
 
-impl<'s, S> TierView for PartitionTier<'s, S> {
+// Note: `#[derive(Clone)]` does not work because of a (wrongful) complaint about an unsatisfied `S: Default`.
+impl<'s, S> Clone for PartitionTier<'s, S> {
+    fn clone(&self) -> Self {
+        Self {
+            base_store: self.base_store,
+            root_version: self.root_version.clone(),
+            entity_key: self.entity_key.clone(),
+            tree_node_prefix: self.tree_node_prefix.clone(),
+        }
+    }
+}
+
+impl<'s, S> StateTreeTier for PartitionTier<'s, S> {
     type TypedLeafKey = DbPartitionNum;
     type StoredNode = TreeNode;
     type Payload = Version;
@@ -63,10 +75,21 @@ impl<'s, S> PartitionTier<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore> PartitionTier<'s, S> {
-    fn resolve_substate_tier(&'_ self, partition: DbPartitionNum) -> SubstateTier<'s, S> {
+    pub fn iter_partition_substate_tiers_from(
+        &self,
+        from: Option<DbPartitionNum>,
+    ) -> impl Iterator<Item = SubstateTier<'s, S>> + 's {
+        let base_store = self.base_store; // Note: This avoids capturing the `_ lifetime below.
+        let entity_key = self.entity_key.clone(); // Note: This is the only reason for `move` below.
+        iter_leaves_from(Rc::new(self.clone()), from.as_ref()).map(move |leaf| {
+            SubstateTier::new(base_store, Some(leaf.payload), entity_key.clone(), leaf.key)
+        })
+    }
+
+    pub fn get_partition_substate_tier(&self, partition: DbPartitionNum) -> SubstateTier<'s, S> {
         let partition_root_version = self.get_persisted_leaf_payload(&partition);
         SubstateTier::new(
-            &self.base_store,
+            self.base_store,
             partition_root_version,
             self.entity_key.clone(),
             partition,
@@ -80,7 +103,7 @@ impl<'s, S: ReadableTreeStore> ReadableTier for PartitionTier<'s, S> {
     }
 }
 
-impl<'s, S: WriteableTreeStore> WritableTier for PartitionTier<'s, S> {
+impl<'s, S: WriteableTreeStore> WriteableTier for PartitionTier<'s, S> {
     fn insert_local_node(&self, local_key: &TreeNodeKey, node: Self::StoredNode) {
         self.base_store
             .insert_node(self.stored_node_key(local_key), node);
@@ -108,7 +131,7 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> PartitionTier<'s, S> {
                 .iter()
                 .map(|(partition, partition_database_updates)| {
                     let new_partition_root_hash = self
-                        .resolve_substate_tier(*partition)
+                        .get_partition_substate_tier(*partition)
                         .apply_partition_updates(next_version, partition_database_updates);
                     let new_leaf = new_partition_root_hash.map(|new_partition_root_hash| {
                         let new_leaf_hash = new_partition_root_hash;

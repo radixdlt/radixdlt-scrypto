@@ -687,6 +687,10 @@ impl LeafKey {
             bytes: bytes.to_vec(),
         }
     }
+
+    pub fn into_path(self) -> NibblePath {
+        NibblePath::new_even(self.bytes)
+    }
 }
 
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/storage/jellyfish-merkle/src/node_type/mod.rs#L48
@@ -1124,17 +1128,6 @@ impl<P: Clone> LeafNode<P> {
     /// the same value, but stored under different keys - we want their root hashes to differ).
     pub fn leaf_hash(&self) -> Hash {
         hash([self.leaf_key.bytes.as_slice(), &self.value_hash.0].concat())
-    }
-}
-
-impl<P> From<LeafNode<P>> for (LeafKey, Hash, P, Version) {
-    fn from(value: LeafNode<P>) -> Self {
-        (
-            value.leaf_key,
-            value.value_hash,
-            value.payload,
-            value.version,
-        )
     }
 }
 

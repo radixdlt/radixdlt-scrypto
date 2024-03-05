@@ -19,6 +19,16 @@ pub struct EntityTier<'s, S> {
     root_version: Option<Version>,
 }
 
+// Note: `#[derive(Clone)]` does not work because of a (wrongful) complaint about an unsatisfied `S: Default`.
+impl<'s, S> Clone for EntityTier<'s, S> {
+    fn clone(&self) -> Self {
+        Self {
+            base_store: self.base_store,
+            root_version: self.root_version.clone(),
+        }
+    }
+}
+
 impl<'s, S> EntityTier<'s, S> {
     pub fn new(base_store: &'s S, root_version: Option<Version>) -> Self {
         Self {
@@ -33,13 +43,22 @@ impl<'s, S> EntityTier<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore> EntityTier<'s, S> {
-    fn resolve_partition_tier(&self, entity_key: DbEntityKey) -> PartitionTier<'s, S> {
+    pub fn iter_entity_partition_tiers_from(
+        &self,
+        from: Option<&DbEntityKey>,
+    ) -> impl Iterator<Item = PartitionTier<'s, S>> + 's {
+        let base_store = self.base_store; // Note: This avoids capturing the `_ lifetime below.
+        iter_leaves_from(Rc::new(self.clone()), from)
+            .map(|leaf| PartitionTier::new(base_store, Some(leaf.payload), leaf.key))
+    }
+
+    pub fn get_entity_partition_tier(&self, entity_key: DbEntityKey) -> PartitionTier<'s, S> {
         let entity_root_version = self.get_persisted_leaf_payload(&entity_key);
-        PartitionTier::new(&self.base_store, entity_root_version, entity_key)
+        PartitionTier::new(self.base_store, entity_root_version, entity_key)
     }
 }
 
-impl<'s, S> TierView for EntityTier<'s, S> {
+impl<'s, S> StateTreeTier for EntityTier<'s, S> {
     type TypedLeafKey = DbEntityKey;
     type StoredNode = TreeNode;
     type Payload = Version;
@@ -64,7 +83,7 @@ impl<'s, S: ReadableTreeStore> ReadableTier for EntityTier<'s, S> {
     }
 }
 
-impl<'s, S: WriteableTreeStore> WritableTier for EntityTier<'s, S> {
+impl<'s, S: WriteableTreeStore> WriteableTier for EntityTier<'s, S> {
     fn insert_local_node(&self, local_key: &TreeNodeKey, node: Self::StoredNode) {
         self.base_store
             .insert_node(self.stored_node_key(local_key), node);
@@ -81,7 +100,11 @@ impl<'s, S: WriteableTreeStore> WritableTier for EntityTier<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore + WriteableTreeStore> EntityTier<'s, S> {
-    pub fn put_all_entity_updates(
+    pub fn put_next_version_entity_updates(&mut self, updates: &DatabaseUpdates) -> Option<Hash> {
+        self.put_entity_updates(self.root_version.unwrap_or(0) + 1, updates)
+    }
+
+    pub fn put_entity_updates(
         &mut self,
         next_version: Version,
         updates: &DatabaseUpdates,
@@ -92,7 +115,7 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> EntityTier<'s, S> {
                 .iter()
                 .map(|(entity_key, entity_database_updates)| {
                     let new_entity_root_hash = self
-                        .resolve_partition_tier(entity_key.clone())
+                        .get_entity_partition_tier(entity_key.clone())
                         .apply_entity_updates(next_version, entity_database_updates);
                     let new_leaf = new_entity_root_hash.map(|new_entity_root_hash| {
                         let new_leaf_hash = new_entity_root_hash;

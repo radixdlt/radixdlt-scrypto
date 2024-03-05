@@ -152,7 +152,7 @@ pub trait WriteableTreeStore {
     /// and allows the storage to keep correlated historical values, if required.
     fn associate_substate_value(
         &self,
-        global_key: &StoredTreeNodeKey,
+        state_tree_leaf_key: &StoredTreeNodeKey,
         substate_value: &DbSubstateValue,
     );
 
@@ -170,24 +170,34 @@ impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
 pub struct TypedInMemoryTreeStore {
     pub tree_nodes: RefCell<HashMap<StoredTreeNodeKey, TreeNode>>,
     pub stale_part_buffer: RefCell<Vec<StaleTreePart>>,
+    pub associated_substate_values: RefCell<HashMap<StoredTreeNodeKey, DbSubstateValue>>,
     pub pruning_enabled: bool,
+    pub store_substate_values: bool,
 }
 
 impl TypedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
-    pub fn new() -> TypedInMemoryTreeStore {
-        TypedInMemoryTreeStore {
+    pub fn new() -> Self {
+        Self {
             tree_nodes: RefCell::new(hash_map_new()),
             stale_part_buffer: RefCell::new(Vec::new()),
+            associated_substate_values: RefCell::new(hash_map_new()),
             pruning_enabled: false,
+            store_substate_values: false,
         }
     }
 
-    pub fn with_pruning() -> TypedInMemoryTreeStore {
-        TypedInMemoryTreeStore {
-            tree_nodes: RefCell::new(hash_map_new()),
-            stale_part_buffer: RefCell::new(Vec::new()),
+    pub fn with_pruning_enabled(self) -> Self {
+        Self {
             pruning_enabled: true,
+            ..self
+        }
+    }
+
+    pub fn storing_substate_values(self) -> Self {
+        Self {
+            store_substate_values: true,
+            ..self
         }
     }
 }
@@ -216,12 +226,12 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
         self.tree_nodes.borrow_mut().insert(key, node);
     }
 
-    fn associate_substate_value(
-        &self,
-        _key: &StoredTreeNodeKey,
-        _substate_value: &DbSubstateValue,
-    ) {
-        // intentionally empty
+    fn associate_substate_value(&self, key: &StoredTreeNodeKey, substate_value: &DbSubstateValue) {
+        if self.store_substate_values {
+            self.associated_substate_values
+                .borrow_mut()
+                .insert(key.clone(), substate_value.clone());
+        }
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {

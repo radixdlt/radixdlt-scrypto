@@ -1,4 +1,5 @@
 use core::iter;
+use std::ops::Deref;
 
 use super::jellyfish::JellyfishMerkleTree;
 use super::jellyfish::TreeUpdateBatch;
@@ -20,7 +21,7 @@ pub trait StoredNode {
     fn from_jmt_node(node: &Node<Self::Payload>, key: &TreeNodeKey) -> Self;
 }
 
-pub trait TierView {
+pub trait StateTreeTier {
     type TypedLeafKey;
     type StoredNode: StoredNode<Payload = Self::Payload>;
     type Payload: Clone;
@@ -30,7 +31,7 @@ pub trait TierView {
     fn root_version(&self) -> Option<Version>;
 }
 
-pub trait ReadableTier: TierView {
+pub trait ReadableTier: StateTreeTier {
     /// Gets node by key, if it exists.
     fn get_local_node(&self, local_key: &TreeNodeKey) -> Option<Self::StoredNode>;
 
@@ -50,47 +51,109 @@ pub trait ReadableTier: TierView {
     }
 }
 
-pub trait IterableLeaves: TierView {
-    fn iter_leaves(
-        &self,
-    ) -> Box<dyn Iterator<Item = (Hash, Self::TypedLeafKey, Self::Payload)> + '_>;
+pub struct TierLeaf<T: StateTreeTier> {
+    pub key: T::TypedLeafKey,
+    pub value_hash: Hash,
+    pub payload: T::Payload,
+    pub local_key: TreeNodeKey,
 }
 
-impl<T: ReadableTier<StoredNode = TreeNode, Payload = Version>> IterableLeaves for T {
-    fn iter_leaves(
-        &self,
-    ) -> Box<dyn Iterator<Item = (Hash, Self::TypedLeafKey, Self::Payload)> + '_> {
-        match self.root_version() {
-            Some(version) => iter_leaves_internal(self, TreeNodeKey::new_empty_path(version)),
-            None => Box::new(iter::empty()),
+impl<T: StateTreeTier<Payload = Version>> TierLeaf<T> {
+    pub fn new(local_key: TreeNodeKey, leaf: TreeLeafNode) -> Self {
+        let TreeLeafNode {
+            key_suffix,
+            value_hash,
+            last_hash_change_version,
+        } = leaf;
+        let full_key = NibblePath::from_iter(
+            local_key
+                .nibble_path()
+                .nibbles()
+                .chain(key_suffix.nibbles()),
+        );
+        Self {
+            key: T::to_typed_key(LeafKey::new(full_key.bytes())),
+            value_hash,
+            payload: last_hash_change_version,
+            local_key,
         }
     }
 }
 
-fn iter_leaves_internal<T>(
-    tier: &T,
-    from_key: TreeNodeKey,
-) -> Box<dyn Iterator<Item = (Hash, T::TypedLeafKey, T::Payload)> + '_>
+/// Returns a lexicographically-sorted iterator of all the leaves existing at the given `tier`'s
+/// current version and greater or equal to the given `from_key`.
+pub fn iter_leaves_from<'t, T>(
+    tier: impl Deref<Target = T> + Clone + 't,
+    from_key: Option<&T::TypedLeafKey>,
+) -> Box<dyn Iterator<Item = TierLeaf<T>> + 't>
 where
-    T: ReadableTier<StoredNode = TreeNode, Payload = Version>,
+    T: ReadableTier<StoredNode = TreeNode, Payload = Version> + 't,
+    T::TypedLeafKey: 't,
 {
-    let Some(node) = tier.get_local_node(&from_key) else {
-        panic!("{:?} referenced but not found in the storage", from_key);
+    tier.root_version()
+        .map(|version| {
+            recurse_until_leaves(
+                tier,
+                TreeNodeKey::new_empty_path(version),
+                from_key
+                    .map(|from| T::to_leaf_key(from).into_path().nibbles().collect())
+                    .unwrap_or_else(|| VecDeque::new()),
+            )
+        })
+        .unwrap_or_else(|| Box::new(iter::empty()))
+}
+
+/// Returns a lexicographically-sorted iterator of all the leaves located below the `at_key` node
+/// and having [`NibblePath`]s greater or equal to the given `from_nibbles`.
+///
+/// The algorithm:
+/// - starts at the given `at_key`,
+/// - then goes down the tree, guided by the given `from_nibbles` chain, for as long as it is
+///   possible,
+///   - Note: this means it will either locate exactly this nibble path, or - if it does not
+///     exist - settle at its direct successor.
+/// - and then continues as if it was a classic DFS all the way,
+/// - but only leaf nodes are returned.
+///
+/// The implementation is a lazy recursive composite of child iterators.
+pub fn recurse_until_leaves<'t, T>(
+    tier: impl Deref<Target = T> + Clone + 't,
+    at_key: TreeNodeKey,
+    from_nibbles: VecDeque<Nibble>,
+) -> Box<dyn Iterator<Item = TierLeaf<T>> + 't>
+where
+    T: ReadableTier<StoredNode = TreeNode, Payload = Version> + 't,
+    T::TypedLeafKey: 't,
+{
+    let Some(node) = tier.get_local_node(&at_key) else {
+        panic!("{:?} referenced but not found in the storage", at_key);
     };
     match node {
         TreeNode::Internal(internal) => {
-            Box::new(internal.children.into_iter().flat_map(move |child| {
-                iter_leaves_internal(
-                    tier,
-                    from_key.gen_child_node_key(child.version, child.nibble),
-                )
-            }))
+            let mut child_from_nibbles = from_nibbles;
+            let from_nibble = child_from_nibbles.pop_front();
+            Box::new(
+                internal
+                    .children
+                    .into_iter()
+                    .filter(move |child| Some(child.nibble) >= from_nibble)
+                    .flat_map(move |child| {
+                        let child_key = at_key.gen_child_node_key(child.version, child.nibble);
+                        let child_from_nibbles = if Some(child.nibble) == from_nibble {
+                            mem::take(&mut child_from_nibbles)
+                        } else {
+                            VecDeque::new()
+                        };
+                        recurse_until_leaves(tier.clone(), child_key, child_from_nibbles)
+                    }),
+            )
         }
-        TreeNode::Leaf(leaf) => {
-            let leaf_node = LeafNode::from(&from_key, &leaf);
-            let (leaf_key, value_hash, payload, _version) = leaf_node.into();
-            Box::new(iter::once((value_hash, T::to_typed_key(leaf_key), payload)))
-        }
+        TreeNode::Leaf(leaf) => Box::new(
+            Some(leaf)
+                .filter(move |leaf| leaf.key_suffix.nibbles().ge(from_nibbles))
+                .map(|leaf| TierLeaf::new(at_key, leaf))
+                .into_iter(),
+        ),
         TreeNode::Null => Box::new(iter::empty()),
     }
 }
@@ -106,7 +169,7 @@ impl<R: ReadableTier + ?Sized> TreeReader<<R::StoredNode as StoredNode>::Payload
     }
 }
 
-pub trait WritableTier: TierView {
+pub trait WriteableTier: StateTreeTier {
     /// Inserts the node under a new, unique key (i.e. never an update).
     fn insert_local_node(&self, local_key: &TreeNodeKey, node: Self::StoredNode);
 
@@ -124,14 +187,14 @@ pub struct TierUpdateBatch<P> {
     pub tree_update_batch: TreeUpdateBatch<P>,
 }
 
-pub trait ReadWritableTier: ReadableTier + WritableTier {
+pub trait RwTier: ReadableTier + WriteableTier {
     fn generate_tier_update_batch<'a>(
         &self,
         new_version: Version,
         leaf_updates: impl Iterator<Item = (&'a Self::TypedLeafKey, Option<(Hash, Self::Payload)>)>,
     ) -> TierUpdateBatch<Self::Payload>
     where
-        <Self as TierView>::TypedLeafKey: 'a,
+        <Self as StateTreeTier>::TypedLeafKey: 'a,
     {
         let value_set = leaf_updates
             .map(|(key, option)| (Self::to_leaf_key(&key), option))
@@ -171,4 +234,4 @@ pub trait ReadWritableTier: ReadableTier + WritableTier {
     }
 }
 
-impl<T: ReadableTier + WritableTier> ReadWritableTier for T {}
+impl<T: ReadableTier + WriteableTier> RwTier for T {}

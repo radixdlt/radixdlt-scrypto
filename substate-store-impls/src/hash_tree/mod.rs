@@ -13,10 +13,6 @@ use tree_store::*;
 use types::*;
 use utils::prelude::*;
 
-use self::{
-    partition_tier::PartitionTier, substate_tier::SubstateTier, tier_framework::IterableLeaves,
-};
-
 // The sources copied from Aptos (the `jellyfish` and `types` modules) contain support for
 // generating proofs, which we plan to use in near future. Hence, we do not delete that code, but
 // suppress warnings.
@@ -47,10 +43,8 @@ pub fn put_at_next_version<S: TreeStore>(
     current_state_version: Option<Version>,
     database_updates: &DatabaseUpdates,
 ) -> Hash {
-    let mut entity_tier = EntityTier::new(tree_store, current_state_version);
-    let next_state_version = current_state_version.unwrap_or(0) + 1;
-    entity_tier
-        .put_all_entity_updates(next_state_version, database_updates)
+    EntityTier::new(tree_store, current_state_version)
+        .put_next_version_entity_updates(database_updates)
         .unwrap_or(SPARSE_MERKLE_PLACEHOLDER_HASH)
 }
 
@@ -58,28 +52,19 @@ pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
     tree_store: &S,
     root_state_version: Version,
 ) -> IndexMap<DbPartitionKey, IndexMap<DbSortKey, Hash>> {
-    let entity_tier: EntityTier<'_, S> = EntityTier::new(tree_store, Some(root_state_version));
-    let mut by_db_partition = index_map_new();
-    for (_, entity_key, entity_version) in entity_tier.iter_leaves() {
-        let partition_tier =
-            PartitionTier::new(tree_store, Some(entity_version), entity_key.clone());
-        for (_, partition, partition_version) in partition_tier.iter_leaves() {
-            let substate_tier = SubstateTier::new(
-                tree_store,
-                Some(partition_version),
-                entity_key.clone(),
-                partition,
-            );
-            let mut by_db_sort_key = index_map_new();
-            for (value_hash, sort_key, _) in substate_tier.iter_leaves() {
-                by_db_sort_key.insert(sort_key, value_hash);
-            }
-            let partition_key = DbPartitionKey {
-                node_key: entity_key.clone(),
-                partition_num: partition,
-            };
-            by_db_partition.insert(partition_key, by_db_sort_key);
-        }
-    }
-    by_db_partition
+    EntityTier::new(tree_store, Some(root_state_version))
+        .iter_entity_partition_tiers_from(None)
+        .flat_map(|partition_tier| {
+            partition_tier
+                .iter_partition_substate_tiers_from(None)
+                .map(|substate_tier| {
+                    let by_sort_key = substate_tier
+                        .iter_substate_summaries_from(None)
+                        .map(|substate| (substate.sort_key, substate.value_hash))
+                        .collect::<IndexMap<_, _>>();
+                    (substate_tier.partition_key().clone(), by_sort_key)
+                })
+                .collect::<Vec<_>>() // needed only due to lifetime of the `partition_tier`
+        })
+        .collect()
 }

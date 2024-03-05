@@ -16,9 +16,20 @@ use utils::prelude::*;
 pub struct SubstateTier<'s, S> {
     base_store: &'s S,
     root_version: Option<Version>,
-    entity_key: DbEntityKey,
-    partition: DbPartitionNum,
+    partition_key: DbPartitionKey,
     tree_node_prefix: Vec<u8>,
+}
+
+// Note: `#[derive(Clone)]` does not work because of a (wrongful) complaint about an unsatisfied `S: Default`.
+impl<'s, S> Clone for SubstateTier<'s, S> {
+    fn clone(&self) -> Self {
+        Self {
+            base_store: self.base_store,
+            root_version: self.root_version.clone(),
+            partition_key: self.partition_key.clone(),
+            tree_node_prefix: self.tree_node_prefix.clone(),
+        }
+    }
 }
 
 impl<'s, S> SubstateTier<'s, S> {
@@ -28,7 +39,7 @@ impl<'s, S> SubstateTier<'s, S> {
         entity_key: DbEntityKey,
         partition: DbPartitionNum,
     ) -> Self {
-        let mut tree_node_prefix = Vec::with_capacity(entity_key.len() + 1);
+        let mut tree_node_prefix = Vec::with_capacity(entity_key.len() + 3);
         tree_node_prefix.extend_from_slice(&entity_key);
         tree_node_prefix.push(TIER_SEPARATOR);
         tree_node_prefix.push(partition);
@@ -37,18 +48,16 @@ impl<'s, S> SubstateTier<'s, S> {
         Self {
             base_store,
             root_version,
-            entity_key,
-            partition,
+            partition_key: DbPartitionKey {
+                node_key: entity_key,
+                partition_num: partition,
+            },
             tree_node_prefix,
         }
     }
 
-    pub fn entity_key(&self) -> &DbEntityKey {
-        &self.entity_key
-    }
-
-    pub fn partition(&self) -> DbPartitionNum {
-        self.partition
+    pub fn partition_key(&self) -> &DbPartitionKey {
+        &self.partition_key
     }
 
     fn stored_node_key(&self, local_key: &TreeNodeKey) -> StoredTreeNodeKey {
@@ -56,7 +65,7 @@ impl<'s, S> SubstateTier<'s, S> {
     }
 }
 
-impl<'s, S> TierView for SubstateTier<'s, S> {
+impl<'s, S> StateTreeTier for SubstateTier<'s, S> {
     type TypedLeafKey = DbSortKey;
     type StoredNode = TreeNode;
     type Payload = Version;
@@ -80,7 +89,7 @@ impl<'s, S: ReadableTreeStore> ReadableTier for SubstateTier<'s, S> {
     }
 }
 
-impl<'s, S: WriteableTreeStore> WritableTier for SubstateTier<'s, S> {
+impl<'s, S: WriteableTreeStore> WriteableTier for SubstateTier<'s, S> {
     fn insert_local_node(&self, local_key: &TreeNodeKey, node: Self::StoredNode) {
         self.base_store
             .insert_node(self.stored_node_key(local_key), node);
@@ -94,6 +103,45 @@ impl<'s, S: WriteableTreeStore> WritableTier for SubstateTier<'s, S> {
     fn set_root_version(&mut self, new_version: Option<Version>) {
         self.root_version = new_version;
     }
+}
+
+impl<'s, S: ReadableTreeStore> SubstateTier<'s, S> {
+    pub fn get_substate_summary(&self, sort_key: &DbSortKey) -> Option<SubstateSummary> {
+        // Performance note:
+        // When reading from a tree-based store, getting a leaf has the same cost as starting an
+        // iterator and taking its first element. The only possible savings would be available in
+        // the "not found" case, which is rare in our use-cases.
+        // Hence, for simplicity, we prefer to re-use the single (non-trivial) leaf-locating code.
+        self.iter_substate_summaries_from(Some(sort_key))
+            .next()
+            .filter(|least_ge_summary| &least_ge_summary.sort_key == sort_key)
+    }
+
+    pub fn iter_substate_summaries_from(
+        &self,
+        from: Option<&DbSortKey>,
+    ) -> impl Iterator<Item = SubstateSummary> + 's {
+        let tree_node_prefix = self.tree_node_prefix.clone(); // Note: This avoids capturing the `_ lifetime below.
+        iter_leaves_from(Rc::new(self.clone()), from).map(move |leaf| SubstateSummary {
+            sort_key: leaf.key,
+            upsert_version: leaf.payload,
+            value_hash: leaf.value_hash,
+            state_tree_leaf_key: StoredTreeNodeKey::prefixed(&tree_node_prefix, &leaf.local_key),
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SubstateSummary {
+    pub sort_key: DbSortKey,
+    pub upsert_version: Version,
+    pub value_hash: Hash,
+
+    /// A global tree node key of this Substate's leaf.
+    ///
+    /// Note: this is a low-level detail, needed e.g. to properly correlate the Substate value
+    /// stored by [`WriteableTreeStore::associate_substate_value()`].
+    pub state_tree_leaf_key: StoredTreeNodeKey,
 }
 
 impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
@@ -170,7 +218,7 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
     fn new_leaf(
         new_substate_value: &DbSubstateValue,
         new_version: Version,
-    ) -> (Hash, <Self as TierView>::Payload) {
+    ) -> (Hash, <Self as StateTreeTier>::Payload) {
         let value_hash = hash(new_substate_value);
         // We set a payload of the version for consistency with the leaves of other tiers.
         let new_leaf_payload = new_version;
