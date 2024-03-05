@@ -1,6 +1,4 @@
-use crate::hash_tree::tree_store::{
-    encode_key, NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, TreeNodeV1, VersionedTreeNode,
-};
+use crate::hash_tree::tree_store::*;
 use itertools::Itertools;
 use radix_engine_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -298,7 +296,7 @@ impl ListableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
 }
 
 impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.db
             .get_cf(self.cf(MERKLE_NODES_CF), &encode_key(key))
             .unwrap()

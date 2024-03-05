@@ -1,15 +1,7 @@
-use sbor::rust::collections::HashMap;
-use sbor::rust::vec::Vec;
-
-use crate::hash_tree::types::{LeafKey, Version};
-
-use super::tree_store::{
-    ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
-};
-use super::types::{
-    Child, InternalNode, LeafNode, Nibble, NibblePath, Node, NodeKey, NodeType, StorageError,
-    TreeReader,
-};
+use super::tier_framework::*;
+use super::tree_store::*;
+use super::types::*;
+use utils::prelude::*;
 
 impl TreeInternalNode {
     fn from(internal_node: &InternalNode) -> Self {
@@ -27,7 +19,7 @@ impl TreeInternalNode {
 }
 
 impl TreeLeafNode {
-    fn from(key: &NodeKey, leaf_node: &LeafNode<Version>) -> Self {
+    fn from(key: &TreeNodeKey, leaf_node: &LeafNode<Version>) -> Self {
         TreeLeafNode {
             key_suffix: NibblePath::from_iter(
                 NibblePath::new_even(leaf_node.leaf_key().bytes.clone())
@@ -36,18 +28,6 @@ impl TreeLeafNode {
             ),
             value_hash: leaf_node.value_hash(),
             last_hash_change_version: leaf_node.payload().clone(),
-        }
-    }
-}
-
-impl TreeNode {
-    pub fn from(key: &NodeKey, node: &Node<Version>) -> Self {
-        match node {
-            Node::Internal(internal_node) => {
-                TreeNode::Internal(TreeInternalNode::from(internal_node))
-            }
-            Node::Leaf(leaf_node) => TreeNode::Leaf(TreeLeafNode::from(key, leaf_node)),
-            Node::Null => TreeNode::Null,
         }
     }
 }
@@ -77,18 +57,30 @@ impl InternalNode {
     }
 }
 
-impl Node<Version> {
-    fn from(key: &NodeKey, tree_node: &TreeNode) -> Self {
-        match tree_node {
-            TreeNode::Internal(internal_node) => Node::Internal(InternalNode::from(internal_node)),
-            TreeNode::Leaf(leaf_node) => Node::Leaf(LeafNode::from(key, leaf_node)),
+impl StoredNode for TreeNode {
+    type Payload = Version;
+
+    fn into_jmt_node(&self, key: &TreeNodeKey) -> Node<Version> {
+        match self {
+            TreeNode::Internal(internal_node) => Node::Internal(InternalNode::from(&internal_node)),
+            TreeNode::Leaf(leaf_node) => Node::Leaf(LeafNode::from(key, &leaf_node)),
             TreeNode::Null => Node::Null,
+        }
+    }
+
+    fn from_jmt_node(node: &Node<Self::Payload>, key: &TreeNodeKey) -> Self {
+        match node {
+            Node::Internal(internal_node) => {
+                TreeNode::Internal(TreeInternalNode::from(&internal_node))
+            }
+            Node::Leaf(leaf_node) => TreeNode::Leaf(TreeLeafNode::from(key, &leaf_node)),
+            Node::Null => TreeNode::Null,
         }
     }
 }
 
 impl LeafNode<Version> {
-    pub fn from(key: &NodeKey, leaf_node: &TreeLeafNode) -> Self {
+    pub fn from(key: &TreeNodeKey, leaf_node: &TreeLeafNode) -> Self {
         let full_key = NibblePath::from_iter(
             key.nibble_path()
                 .nibbles()
@@ -100,13 +92,5 @@ impl LeafNode<Version> {
             leaf_node.last_hash_change_version,
             key.version(),
         )
-    }
-}
-
-impl<R: ReadableTreeStore> TreeReader<Version> for R {
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<Version>>, StorageError> {
-        Ok(self
-            .get_node(node_key)
-            .map(|tree_node| Node::from(node_key, &tree_node)))
     }
 }

@@ -18,7 +18,7 @@ impl<D> HashTreeUpdatingDatabase<D> {
     pub fn new(underlying: D) -> Self {
         HashTreeUpdatingDatabase {
             underlying,
-            tree_store: TypedInMemoryTreeStore::with_pruning(),
+            tree_store: TypedInMemoryTreeStore::new().with_pruning_enabled(),
             current_version: 0,
             current_hash: Hash([0; Hash::LENGTH]),
         }
