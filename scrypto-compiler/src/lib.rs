@@ -12,6 +12,14 @@ pub enum ScryptoCompilerError {
     CargoBuildFailure(ExitStatus),
     CargoMetadataFailure(ExitStatus),
     CargoTargetDirectoryResolutionError,
+    InvalidParam(ScryptoCompilerInvalidParam),
+}
+
+#[derive(Debug)]
+pub enum ScryptoCompilerInvalidParam {
+    CoverageDiscardsTargetDirectory,
+    CoverageDiscardsForceLocalTarget,
+    ForceLocalTargetDiscardsTargetDirectory,
 }
 
 pub struct ScryptoCompiler {
@@ -32,6 +40,19 @@ pub struct ScryptoCompiler {
 impl ScryptoCompiler {
     pub fn new() -> ScryptoCompilerBuilder {
         ScryptoCompilerBuilder::default()
+    }
+
+    fn validate_input_parameters(&self) -> Result<(), ScryptoCompilerInvalidParam> {
+        if self.coverage && self.force_local_target {
+            return Err(ScryptoCompilerInvalidParam::CoverageDiscardsForceLocalTarget);
+        }
+        if self.coverage && self.target_directory.is_some() {
+            return Err(ScryptoCompilerInvalidParam::CoverageDiscardsTargetDirectory);
+        }
+        if self.force_local_target && self.target_directory.is_some() {
+            return Err(ScryptoCompilerInvalidParam::ForceLocalTargetDiscardsTargetDirectory);
+        }
+        Ok(())
     }
 
     fn prepare_features(&self) -> String {
@@ -113,7 +134,12 @@ impl ScryptoCompiler {
             .map_or(env::current_dir().unwrap(), |v| PathBuf::from(v));
         manifest_path.push("Cargo.toml");
 
-        let target_directory = if self.force_local_target {
+        let target_directory = if self.coverage {
+            let mut target_path = manifest_path.clone();
+            target_path.pop(); // Cargo.toml
+            target_path.push("coverage");
+            target_path
+        } else if self.force_local_target {
             let mut target_path = manifest_path.clone();
             target_path.pop(); // Cargo.toml
             target_path.push("target");
@@ -165,6 +191,10 @@ impl ScryptoCompiler {
     }
 
     pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
+        // Verify if passed builder parameters are valid
+        self.validate_input_parameters()
+            .map_err(|e| ScryptoCompilerError::InvalidParam(e))?;
+
         // Create compilation command
         let mut command = Command::new("cargo");
         self.prepare_command(&mut command)?;
