@@ -20,18 +20,6 @@ pub struct SubstateTier<'s, S> {
     tree_node_prefix: Vec<u8>,
 }
 
-// Note: `#[derive(Clone)]` does not work because of a (wrongful) complaint about an unsatisfied `S: Default`.
-impl<'s, S> Clone for SubstateTier<'s, S> {
-    fn clone(&self) -> Self {
-        Self {
-            base_store: self.base_store,
-            root_version: self.root_version.clone(),
-            partition_key: self.partition_key.clone(),
-            tree_node_prefix: self.tree_node_prefix.clone(),
-        }
-    }
-}
-
 impl<'s, S> SubstateTier<'s, S> {
     pub fn new(
         base_store: &'s S,
@@ -120,14 +108,26 @@ impl<'s, S: ReadableTreeStore> SubstateTier<'s, S> {
     pub fn iter_substate_summaries_from(
         &self,
         from: Option<&DbSortKey>,
+    ) -> impl Iterator<Item = SubstateSummary> + '_ {
+        iter_leaves_from(self, from).map(self.create_summary_mapper())
+    }
+
+    pub fn into_iter_substate_summaries_from(
+        self,
+        from: Option<&DbSortKey>,
     ) -> impl Iterator<Item = SubstateSummary> + 's {
-        let tree_node_prefix = self.tree_node_prefix.clone(); // Note: This avoids capturing the `_ lifetime below.
-        iter_leaves_from(Rc::new(self.clone()), from).map(move |leaf| SubstateSummary {
+        let summary_mapper = self.create_summary_mapper(); // we soon lose `self`
+        iter_leaves_from(Rc::new(self), from).map(summary_mapper)
+    }
+
+    fn create_summary_mapper(&self) -> impl FnMut(TierLeaf<Self>) -> SubstateSummary {
+        let tree_node_prefix = self.tree_node_prefix.clone();
+        move |leaf| SubstateSummary {
             sort_key: leaf.key,
             upsert_version: leaf.payload,
             value_hash: leaf.value_hash,
             state_tree_leaf_key: StoredTreeNodeKey::prefixed(&tree_node_prefix, &leaf.local_key),
-        })
+        }
     }
 }
 

@@ -56,15 +56,15 @@ pub fn list_substate_hashes_at_version<S: ReadableTreeStore>(
         .iter_entity_partition_tiers_from(None)
         .flat_map(|partition_tier| {
             partition_tier
-                .iter_partition_substate_tiers_from(None)
+                .into_iter_partition_substate_tiers_from(None)
                 .map(|substate_tier| {
+                    let partition_key = substate_tier.partition_key().clone();
                     let by_sort_key = substate_tier
-                        .iter_substate_summaries_from(None)
+                        .into_iter_substate_summaries_from(None)
                         .map(|substate| (substate.sort_key, substate.value_hash))
                         .collect::<IndexMap<_, _>>();
-                    (substate_tier.partition_key().clone(), by_sort_key)
+                    (partition_key, by_sort_key)
                 })
-                .collect::<Vec<_>>() // needed only due to lifetime of the `partition_tier`
         })
         .collect()
 }

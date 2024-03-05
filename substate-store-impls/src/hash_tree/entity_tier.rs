@@ -19,16 +19,6 @@ pub struct EntityTier<'s, S> {
     root_version: Option<Version>,
 }
 
-// Note: `#[derive(Clone)]` does not work because of a (wrongful) complaint about an unsatisfied `S: Default`.
-impl<'s, S> Clone for EntityTier<'s, S> {
-    fn clone(&self) -> Self {
-        Self {
-            base_store: self.base_store,
-            root_version: self.root_version.clone(),
-        }
-    }
-}
-
 impl<'s, S> EntityTier<'s, S> {
     pub fn new(base_store: &'s S, root_version: Option<Version>) -> Self {
         Self {
@@ -46,15 +36,26 @@ impl<'s, S: ReadableTreeStore> EntityTier<'s, S> {
     pub fn iter_entity_partition_tiers_from(
         &self,
         from: Option<&DbEntityKey>,
+    ) -> impl Iterator<Item = PartitionTier<'s, S>> + '_ {
+        iter_leaves_from(self, from).map(self.create_partition_tier_mapper())
+    }
+
+    pub fn into_iter_entity_partition_tiers_from(
+        self,
+        from: Option<&DbEntityKey>,
     ) -> impl Iterator<Item = PartitionTier<'s, S>> + 's {
-        let base_store = self.base_store; // Note: This avoids capturing the `_ lifetime below.
-        iter_leaves_from(Rc::new(self.clone()), from)
-            .map(|leaf| PartitionTier::new(base_store, Some(leaf.payload), leaf.key))
+        let partition_tier_mapper = self.create_partition_tier_mapper(); // we soon lose `self`
+        iter_leaves_from(Rc::new(self), from).map(partition_tier_mapper)
     }
 
     pub fn get_entity_partition_tier(&self, entity_key: DbEntityKey) -> PartitionTier<'s, S> {
         let entity_root_version = self.get_persisted_leaf_payload(&entity_key);
         PartitionTier::new(self.base_store, entity_root_version, entity_key)
+    }
+
+    fn create_partition_tier_mapper(&self) -> impl FnMut(TierLeaf<Self>) -> PartitionTier<'s, S> {
+        let base_store = self.base_store; // Note: This avoids capturing the `_ lifetime below.
+        move |leaf| PartitionTier::new(base_store, Some(leaf.payload), leaf.key)
     }
 }
 

@@ -55,6 +55,13 @@ pub struct TierLeaf<T: StateTreeTier> {
     pub key: T::TypedLeafKey,
     pub value_hash: Hash,
     pub payload: T::Payload,
+
+    /// A local tree node key of the leaf (i.e. expressed within tier [`T`]).
+    ///
+    /// Note: this is a somewhat leaky low-level detail, not needed by most use-cases. However, it
+    /// is cheap to capture, and allows to resolve the actual (i.e. global) [`StoredTreeNodeKey`]
+    /// for cases which need to directly reference the state tree storage - see e.g. the
+    /// [`SubstateSummary::state_tree_leaf_key`].
     pub local_key: TreeNodeKey,
 }
 

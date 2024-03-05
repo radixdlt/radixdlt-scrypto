@@ -21,18 +21,6 @@ pub struct PartitionTier<'s, S> {
     tree_node_prefix: Vec<u8>,
 }
 
-// Note: `#[derive(Clone)]` does not work because of a (wrongful) complaint about an unsatisfied `S: Default`.
-impl<'s, S> Clone for PartitionTier<'s, S> {
-    fn clone(&self) -> Self {
-        Self {
-            base_store: self.base_store,
-            root_version: self.root_version.clone(),
-            entity_key: self.entity_key.clone(),
-            tree_node_prefix: self.tree_node_prefix.clone(),
-        }
-    }
-}
-
 impl<'s, S> StateTreeTier for PartitionTier<'s, S> {
     type TypedLeafKey = DbPartitionNum;
     type StoredNode = TreeNode;
@@ -78,12 +66,16 @@ impl<'s, S: ReadableTreeStore> PartitionTier<'s, S> {
     pub fn iter_partition_substate_tiers_from(
         &self,
         from: Option<DbPartitionNum>,
+    ) -> impl Iterator<Item = SubstateTier<'s, S>> + '_ {
+        iter_leaves_from(self, from.as_ref()).map(self.create_substate_tier_mapper())
+    }
+
+    pub fn into_iter_partition_substate_tiers_from(
+        self,
+        from: Option<DbPartitionNum>,
     ) -> impl Iterator<Item = SubstateTier<'s, S>> + 's {
-        let base_store = self.base_store; // Note: This avoids capturing the `_ lifetime below.
-        let entity_key = self.entity_key.clone(); // Note: This is the only reason for `move` below.
-        iter_leaves_from(Rc::new(self.clone()), from.as_ref()).map(move |leaf| {
-            SubstateTier::new(base_store, Some(leaf.payload), entity_key.clone(), leaf.key)
-        })
+        let substate_tier_mapper = self.create_substate_tier_mapper(); // we soon lose `self`
+        iter_leaves_from(Rc::new(self), from.as_ref()).map(substate_tier_mapper)
     }
 
     pub fn get_partition_substate_tier(&self, partition: DbPartitionNum) -> SubstateTier<'s, S> {
@@ -94,6 +86,12 @@ impl<'s, S: ReadableTreeStore> PartitionTier<'s, S> {
             self.entity_key.clone(),
             partition,
         )
+    }
+
+    fn create_substate_tier_mapper(&self) -> impl FnMut(TierLeaf<Self>) -> SubstateTier<'s, S> {
+        let base_store = self.base_store; // Note: This avoids capturing the `_ lifetime below.
+        let entity_key = self.entity_key.clone(); // Note: This is the only reason for `move` below.
+        move |leaf| SubstateTier::new(base_store, Some(leaf.payload), entity_key.clone(), leaf.key)
     }
 }
 
