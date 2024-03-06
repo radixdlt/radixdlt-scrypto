@@ -23,6 +23,7 @@ pub enum ScryptoCompilerInvalidParam {
     CoverageDiscardsForceLocalTarget,
     ForceLocalTargetDiscardsTargetDirectory,
     CargoTomlInManifestDirectory,
+    EnvironmentVariableSetAndUnset(String),
 }
 
 pub struct ScryptoCompiler {
@@ -61,6 +62,17 @@ impl ScryptoCompiler {
             .is_some_and(|v| PathBuf::from(v).ends_with(MANIFEST_FILE))
         {
             return Err(ScryptoCompilerInvalidParam::CargoTomlInManifestDirectory);
+        }
+        if let Some(env) = self.set_environment_variables.iter().find_map(|v| {
+            if self.unset_environment_variables.contains(&v.0) {
+                Some(v.0.clone())
+            } else {
+                None
+            }
+        }) {
+            return Err(ScryptoCompilerInvalidParam::EnvironmentVariableSetAndUnset(
+                env,
+            ));
         }
         Ok(())
     }
@@ -138,17 +150,19 @@ impl ScryptoCompiler {
     }
 
     fn prepare_paths(&mut self) -> Result<(PathBuf, PathBuf), ScryptoCompilerError> {
-        let mut manifest_path = self
+        let manifest_directory = self
             .manifest_directory
             .as_ref()
             .map_or(env::current_dir().unwrap(), |v| PathBuf::from(v));
+        let mut manifest_path = manifest_directory.clone();
+        manifest_path.push(MANIFEST_FILE);
 
         let target_directory = if self.coverage {
-            let mut target_path = manifest_path.clone();
+            let mut target_path = manifest_directory.clone();
             target_path.push("coverage");
             target_path
         } else if self.force_local_target {
-            let mut target_path = manifest_path.clone();
+            let mut target_path = manifest_directory;
             target_path.push("target");
             target_path
         } else if let Some(directory) = &self.target_directory {
@@ -157,7 +171,6 @@ impl ScryptoCompiler {
             PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
         };
 
-        manifest_path.push(MANIFEST_FILE);
         Ok((manifest_path, target_directory))
     }
 
@@ -334,54 +347,104 @@ impl ScryptoCompilerBuilder {
     }
 }
 
-#[test]
-fn test_builder() {
-    ScryptoCompiler::new()
-        .env("test", "value")
-        .feature("feature_1")
-        .target_directory("./out")
-        .compile()
-        .unwrap();
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_invalid_param() {
-    assert!(matches!(
-        ScryptoCompiler::new()
-            .coverage(true)
-            .target_directory("./out")
-            .compile(),
-        Err(ScryptoCompilerError::InvalidParam(
-            ScryptoCompilerInvalidParam::CoverageDiscardsTargetDirectory
-        ))
-    ));
+    fn cargo_clean(manifest_dir: &str) {
+        Command::new("cargo")
+            .arg("clean")
+            .arg("--manifest-path")
+            .arg(manifest_dir.to_owned() + "/Cargo.toml")
+            .output()
+            .unwrap();
+    }
 
-    assert!(matches!(
-        ScryptoCompiler::new()
-            .coverage(true)
-            .force_local_target(true)
-            .compile(),
-        Err(ScryptoCompilerError::InvalidParam(
-            ScryptoCompilerInvalidParam::CoverageDiscardsForceLocalTarget
-        ))
-    ));
+    #[test]
+    fn test_compilation_faucet() {
+        // Arrange
+        let manifest_dir = "../assets/blueprints/faucet";
 
-    assert!(matches!(
-        ScryptoCompiler::new()
-            .target_directory("./out")
-            .force_local_target(true)
-            .compile(),
-        Err(ScryptoCompilerError::InvalidParam(
-            ScryptoCompilerInvalidParam::ForceLocalTargetDiscardsTargetDirectory
-        ))
-    ));
+        cargo_clean(manifest_dir);
 
-    assert!(matches!(
-        ScryptoCompiler::new()
-            .manifest_directory("./Cargo.toml")
-            .compile(),
-        Err(ScryptoCompilerError::InvalidParam(
-            ScryptoCompilerInvalidParam::CargoTomlInManifestDirectory
-        ))
-    ));
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .compile();
+
+        // Assert
+        assert!(status.is_ok())
+    }
+
+    #[test]
+    fn test_compilation_current_dir_faucet() {
+        // Arrange
+        let manifest_dir = "../assets/blueprints/faucet";
+
+        // change current directory to fauce blueprint
+        std::env::set_current_dir(manifest_dir).unwrap();
+
+        cargo_clean("./");
+
+        // Act
+        // Compile project in current directory without specyfing manifest path
+        let status = ScryptoCompiler::new().compile();
+
+        // Assert
+        assert!(status.is_ok())
+    }
+
+    #[test]
+    fn test_invalid_param() {
+        assert!(matches!(
+            ScryptoCompiler::new()
+                .coverage(true)
+                .target_directory("./out")
+                .compile(),
+            Err(ScryptoCompilerError::InvalidParam(
+                ScryptoCompilerInvalidParam::CoverageDiscardsTargetDirectory
+            ))
+        ));
+
+        assert!(matches!(
+            ScryptoCompiler::new()
+                .coverage(true)
+                .force_local_target(true)
+                .compile(),
+            Err(ScryptoCompilerError::InvalidParam(
+                ScryptoCompilerInvalidParam::CoverageDiscardsForceLocalTarget
+            ))
+        ));
+
+        assert!(matches!(
+            ScryptoCompiler::new()
+                .target_directory("./out")
+                .force_local_target(true)
+                .compile(),
+            Err(ScryptoCompilerError::InvalidParam(
+                ScryptoCompilerInvalidParam::ForceLocalTargetDiscardsTargetDirectory
+            ))
+        ));
+
+        assert!(matches!(
+            ScryptoCompiler::new()
+                .manifest_directory("./Cargo.toml")
+                .compile(),
+            Err(ScryptoCompilerError::InvalidParam(
+                ScryptoCompilerInvalidParam::CargoTomlInManifestDirectory
+            ))
+        ));
+
+        let name = String::from("TEST");
+        let result = ScryptoCompiler::new()
+            .env(&name, "none")
+            .unset_env(&name)
+            .compile();
+        assert!(match result {
+            Err(ScryptoCompilerError::InvalidParam(
+                ScryptoCompilerInvalidParam::EnvironmentVariableSetAndUnset(error_name),
+            )) => error_name == name,
+            _ => false,
+        });
+    }
 }
