@@ -12,7 +12,7 @@ const MANIFEST_FILE: &str = "Cargo.toml";
 pub enum ScryptoCompilerError {
     IOError(io::Error),
     CargoBuildFailure(ExitStatus),
-    CargoMetadataFailure(ExitStatus),
+    CargoMetadataFailure(String, ExitStatus),
     CargoTargetDirectoryResolutionError,
     InvalidParam(ScryptoCompilerInvalidParam),
 }
@@ -39,6 +39,7 @@ pub struct ScryptoCompiler {
     no_schema: bool,
     coverage: bool,
     force_local_target: bool,
+    wasm_optimization: Option<wasm_opt::OptimizationOptions>,
 }
 
 impl ScryptoCompiler {
@@ -145,7 +146,10 @@ impl ScryptoCompiler {
                 .ok_or(ScryptoCompilerError::CargoTargetDirectoryResolutionError)?;
             Ok(target_directory.to_owned())
         } else {
-            Err(ScryptoCompilerError::CargoMetadataFailure(output.status))
+            Err(ScryptoCompilerError::CargoMetadataFailure(
+                manifest_path.as_ref().to_str().unwrap().to_string(),
+                output.status,
+            ))
         }
     }
 
@@ -211,6 +215,14 @@ impl ScryptoCompiler {
         Ok(())
     }
 
+    fn wasm_optimize(&mut self) -> Result<(), ScryptoCompilerError> {
+        if self.wasm_optimization.is_none() {
+            return Ok(());
+        }
+
+        Ok(())
+    }
+
     pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
         // Verify if passed builder parameters are valid
         self.validate_input_parameters()
@@ -226,7 +238,9 @@ impl ScryptoCompiler {
         status
             .success()
             .then_some(())
-            .ok_or(ScryptoCompilerError::CargoBuildFailure(status))
+            .ok_or(ScryptoCompilerError::CargoBuildFailure(status))?;
+
+        self.wasm_optimize()
     }
 }
 
@@ -260,6 +274,7 @@ pub struct ScryptoCompilerBuilder {
     no_schema: bool,
     coverage: bool,
     force_local_target: bool,
+    wasm_optimization: Option<wasm_opt::OptimizationOptions>,
 }
 
 impl ScryptoCompilerBuilder {
@@ -324,9 +339,10 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    // pub fn optimize_size_with_wasm_opt(&mut self, WasmOptConfig::default()) -> &mut Self {
-    //     self
-    // }
+    pub fn optimize_with_wasm_opt(&mut self, options: wasm_opt::OptimizationOptions) -> &mut Self {
+        self.wasm_optimization = Some(options);
+        self
+    }
 
     pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
         let mut compiler = ScryptoCompiler {
@@ -342,6 +358,7 @@ impl ScryptoCompilerBuilder {
             no_schema: self.no_schema,
             coverage: self.coverage,
             force_local_target: self.force_local_target,
+            wasm_optimization: self.wasm_optimization.to_owned(),
         };
         compiler.compile()
     }
@@ -349,6 +366,7 @@ impl ScryptoCompilerBuilder {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::serial;
     use super::*;
 
     fn cargo_clean(manifest_dir: &str) {
@@ -361,37 +379,54 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_compilation_faucet() {
         // Arrange
+        let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "../assets/blueprints/faucet";
-
         cargo_clean(manifest_dir);
+        std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
         let status = ScryptoCompiler::new()
             .manifest_directory(manifest_dir)
             .compile();
 
+        if status.is_err() {
+            println!("{:?}", status);
+        }
+
         // Assert
-        assert!(status.is_ok())
+        assert!(status.is_ok());
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
     }
 
     #[test]
+    #[serial]
     fn test_compilation_current_dir_faucet() {
         // Arrange
+        let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "../assets/blueprints/faucet";
+
+        println!("CUR DIR: {}", std::env::current_dir().unwrap().display());
 
         // change current directory to fauce blueprint
         std::env::set_current_dir(manifest_dir).unwrap();
 
         cargo_clean("./");
+        println!("CUR DIR: {}", std::env::current_dir().unwrap().display());
 
         // Act
         // Compile project in current directory without specyfing manifest path
         let status = ScryptoCompiler::new().compile();
 
         // Assert
-        assert!(status.is_ok())
+        assert!(status.is_ok());
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
     }
 
     #[test]

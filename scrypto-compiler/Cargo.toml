@@ -6,7 +6,13 @@ edition = "2021"
 [dependencies]
 radix-engine-common = { path = "../radix-engine-common" }
 radix-engine-interface = { path = "../radix-engine-interface" }
-radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
 utils = { path = "../utils" }
 serde_json = { version = "1.0.81" }
+wasm-opt = { version = "0.114.1" }
 
+[dev-dependencies]
+serial_test = "3.0.0"
+
+[lib]
+doctest = false
+bench = false
