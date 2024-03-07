@@ -1520,7 +1520,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::lexer::tokenize;
+    use crate::manifest::lexer::{tokenize, Position, Span};
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
     use radix_engine_common::address::AddressBech32Decoder;
     use radix_engine_common::constants::CONSENSUS_MANAGER;
@@ -1545,7 +1545,8 @@ mod tests {
         ( $s:expr,   $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
                 .parse_value()
-                .unwrap();
+                .unwrap()
+                .value;
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_value(
@@ -1588,7 +1589,8 @@ mod tests {
         ( $s:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
                 .parse_value()
-                .unwrap();
+                .unwrap()
+                .value;
             match generate_value(
                 &value,
                 None,
@@ -2201,7 +2203,21 @@ mod tests {
             &NetworkDefinition::simulator(),
             BlobProvider::default(),
         );
-        let expected = CompileError::ParserError(ParserError::MaxDepthExceeded(PARSER_MAX_DEPTH));
+        let expected = CompileError::ParserError(ParserError::MaxDepthExceeded {
+            actual: 20,
+            span: Span {
+                start: Position {
+                    full_index: 231,
+                    line_number: 1,
+                    line_char_index: 231,
+                },
+                end: Position {
+                    full_index: 236,
+                    line_number: 1,
+                    line_char_index: 236,
+                },
+            },
+        });
 
         match result {
             Ok(_) => {

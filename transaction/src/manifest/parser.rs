@@ -1,5 +1,5 @@
 use crate::manifest::ast::{Instruction, Value, ValueKind};
-use crate::manifest::lexer::{Token, TokenKind};
+use crate::manifest::lexer::{Span, Token, TokenKind};
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
 use radix_engine_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
 
@@ -10,12 +10,33 @@ pub const PARSER_MAX_DEPTH: usize = MANIFEST_SBOR_V1_MAX_DEPTH - 4;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParserError {
     UnexpectedEof,
-    UnexpectedToken { expected: TokenType, actual: Token },
-    InvalidNumberOfValues { expected: usize, actual: usize },
-    InvalidNumberOfTypes { expected: usize, actual: usize },
-    InvalidHex(String),
-    UnknownEnumDiscriminator(String),
-    MaxDepthExceeded(usize),
+    UnexpectedToken {
+        expected: TokenType,
+        actual: TokenKind,
+        span: Span,
+    },
+    InvalidNumberOfValues {
+        expected: usize,
+        actual: usize,
+        span: Span,
+    },
+    InvalidNumberOfTypes {
+        expected: usize,
+        actual: usize,
+        span: Span,
+    },
+    InvalidHex {
+        actual: String,
+        span: Span,
+    },
+    UnknownEnumDiscriminator {
+        actual: String,
+        span: Span,
+    },
+    MaxDepthExceeded {
+        actual: usize,
+        span: Span,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,6 +46,18 @@ pub enum TokenType {
     ValueKind,
     EnumDiscriminator,
     Exact(TokenKind),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TokenValue {
+    pub token: Token,
+    pub value: Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TokenValueKind {
+    pub token: Token,
+    pub value_kind: ValueKind,
 }
 
 pub enum InstructionIdent {
@@ -403,7 +436,8 @@ macro_rules! advance_match {
         if token.kind != $expected {
             return Err(ParserError::UnexpectedToken {
                 expected: TokenType::Exact($expected),
-                actual: token,
+                actual: token.kind,
+                span: token.span,
             });
         }
     }};
@@ -423,7 +457,12 @@ impl Parser {
     fn track_stack_depth_increase(&mut self) -> Result<(), ParserError> {
         self.stack_depth += 1;
         if self.stack_depth > self.max_depth {
-            return Err(ParserError::MaxDepthExceeded(self.max_depth));
+            let token = self.peek()?;
+
+            return Err(ParserError::MaxDepthExceeded {
+                actual: self.max_depth,
+                span: token.span,
+            });
         }
         Ok(())
     }
@@ -464,7 +503,7 @@ impl Parser {
     fn parse_values_till_semicolon(&mut self) -> Result<Vec<Value>, ParserError> {
         let mut values = Vec::new();
         while self.peek()?.kind != TokenKind::Semicolon {
-            values.push(self.parse_value()?);
+            values.push(self.parse_value()?.value);
         }
         Ok(values)
     }
@@ -475,54 +514,56 @@ impl Parser {
             TokenKind::Ident(ident_str) => {
                 InstructionIdent::from_ident(ident_str).ok_or(ParserError::UnexpectedToken {
                     expected: TokenType::Instruction,
-                    actual: token,
+                    actual: token.kind,
+                    span: token.span,
                 })?
             }
             _ => {
                 return Err(ParserError::UnexpectedToken {
                     expected: TokenType::Instruction,
-                    actual: token,
+                    actual: token.kind,
+                    span: token.span,
                 });
             }
         };
         let instruction = match instruction_ident {
             InstructionIdent::TakeFromWorktop => Instruction::TakeFromWorktop {
-                resource_address: self.parse_value()?,
-                amount: self.parse_value()?,
-                new_bucket: self.parse_value()?,
+                resource_address: self.parse_value()?.value,
+                amount: self.parse_value()?.value,
+                new_bucket: self.parse_value()?.value,
             },
             InstructionIdent::TakeNonFungiblesFromWorktop => {
                 Instruction::TakeNonFungiblesFromWorktop {
-                    resource_address: self.parse_value()?,
-                    ids: self.parse_value()?,
-                    new_bucket: self.parse_value()?,
+                    resource_address: self.parse_value()?.value,
+                    ids: self.parse_value()?.value,
+                    new_bucket: self.parse_value()?.value,
                 }
             }
             InstructionIdent::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
-                resource_address: self.parse_value()?,
-                new_bucket: self.parse_value()?,
+                resource_address: self.parse_value()?.value,
+                new_bucket: self.parse_value()?.value,
             },
             InstructionIdent::ReturnToWorktop => Instruction::ReturnToWorktop {
-                bucket: self.parse_value()?,
+                bucket: self.parse_value()?.value,
             },
             InstructionIdent::AssertWorktopContains => Instruction::AssertWorktopContains {
-                resource_address: self.parse_value()?,
-                amount: self.parse_value()?,
+                resource_address: self.parse_value()?.value,
+                amount: self.parse_value()?.value,
             },
             InstructionIdent::AssertWorktopContainsNonFungibles => {
                 Instruction::AssertWorktopContainsNonFungibles {
-                    resource_address: self.parse_value()?,
-                    ids: self.parse_value()?,
+                    resource_address: self.parse_value()?.value,
+                    ids: self.parse_value()?.value,
                 }
             }
             InstructionIdent::AssertWorktopContainsAny => Instruction::AssertWorktopContainsAny {
-                resource_address: self.parse_value()?,
+                resource_address: self.parse_value()?.value,
             },
             InstructionIdent::PopFromAuthZone => Instruction::PopFromAuthZone {
-                new_proof: self.parse_value()?,
+                new_proof: self.parse_value()?.value,
             },
             InstructionIdent::PushToAuthZone => Instruction::PushToAuthZone {
-                proof: self.parse_value()?,
+                proof: self.parse_value()?.value,
             },
             InstructionIdent::DropAuthZoneProofs => Instruction::DropAuthZoneProofs,
             InstructionIdent::DropAuthZoneRegularProofs => Instruction::DropAuthZoneRegularProofs,
@@ -531,80 +572,80 @@ impl Parser {
             }
             InstructionIdent::CreateProofFromAuthZoneOfAmount => {
                 Instruction::CreateProofFromAuthZoneOfAmount {
-                    resource_address: self.parse_value()?,
-                    amount: self.parse_value()?,
-                    new_proof: self.parse_value()?,
+                    resource_address: self.parse_value()?.value,
+                    amount: self.parse_value()?.value,
+                    new_proof: self.parse_value()?.value,
                 }
             }
             InstructionIdent::CreateProofFromAuthZoneOfNonFungibles => {
                 Instruction::CreateProofFromAuthZoneOfNonFungibles {
-                    resource_address: self.parse_value()?,
-                    ids: self.parse_value()?,
-                    new_proof: self.parse_value()?,
+                    resource_address: self.parse_value()?.value,
+                    ids: self.parse_value()?.value,
+                    new_proof: self.parse_value()?.value,
                 }
             }
             InstructionIdent::CreateProofFromAuthZoneOfAll => {
                 Instruction::CreateProofFromAuthZoneOfAll {
-                    resource_address: self.parse_value()?,
-                    new_proof: self.parse_value()?,
+                    resource_address: self.parse_value()?.value,
+                    new_proof: self.parse_value()?.value,
                 }
             }
 
             InstructionIdent::CreateProofFromBucketOfAmount => {
                 Instruction::CreateProofFromBucketOfAmount {
-                    bucket: self.parse_value()?,
-                    amount: self.parse_value()?,
-                    new_proof: self.parse_value()?,
+                    bucket: self.parse_value()?.value,
+                    amount: self.parse_value()?.value,
+                    new_proof: self.parse_value()?.value,
                 }
             }
             InstructionIdent::CreateProofFromBucketOfNonFungibles => {
                 Instruction::CreateProofFromBucketOfNonFungibles {
-                    bucket: self.parse_value()?,
-                    ids: self.parse_value()?,
-                    new_proof: self.parse_value()?,
+                    bucket: self.parse_value()?.value,
+                    ids: self.parse_value()?.value,
+                    new_proof: self.parse_value()?.value,
                 }
             }
             InstructionIdent::CreateProofFromBucketOfAll => {
                 Instruction::CreateProofFromBucketOfAll {
-                    bucket: self.parse_value()?,
-                    new_proof: self.parse_value()?,
+                    bucket: self.parse_value()?.value,
+                    new_proof: self.parse_value()?.value,
                 }
             }
             InstructionIdent::BurnResource => Instruction::BurnResource {
-                bucket: self.parse_value()?,
+                bucket: self.parse_value()?.value,
             },
 
             InstructionIdent::CloneProof => Instruction::CloneProof {
-                proof: self.parse_value()?,
-                new_proof: self.parse_value()?,
+                proof: self.parse_value()?.value,
+                new_proof: self.parse_value()?.value,
             },
             InstructionIdent::DropProof => Instruction::DropProof {
-                proof: self.parse_value()?,
+                proof: self.parse_value()?.value,
             },
             InstructionIdent::CallFunction => Instruction::CallFunction {
-                package_address: self.parse_value()?,
-                blueprint_name: self.parse_value()?,
-                function_name: self.parse_value()?,
+                package_address: self.parse_value()?.value,
+                blueprint_name: self.parse_value()?.value,
+                function_name: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallMethod => Instruction::CallMethod {
-                address: self.parse_value()?,
-                method_name: self.parse_value()?,
+                address: self.parse_value()?.value,
+                method_name: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallRoyaltyMethod => Instruction::CallRoyaltyMethod {
-                address: self.parse_value()?,
-                method_name: self.parse_value()?,
+                address: self.parse_value()?.value,
+                method_name: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallMetadataMethod => Instruction::CallMetadataMethod {
-                address: self.parse_value()?,
-                method_name: self.parse_value()?,
+                address: self.parse_value()?.value,
+                method_name: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallRoleAssignmentMethod => Instruction::CallRoleAssignmentMethod {
-                address: self.parse_value()?,
-                method_name: self.parse_value()?,
+                address: self.parse_value()?.value,
+                method_name: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallDirectVaultMethod => Instruction::CallDirectVaultMethod {
@@ -615,28 +656,28 @@ impl Parser {
             InstructionIdent::DropNamedProofs => Instruction::DropNamedProofs,
             InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
             InstructionIdent::AllocateGlobalAddress => Instruction::AllocateGlobalAddress {
-                package_address: self.parse_value()?,
-                blueprint_name: self.parse_value()?,
-                address_reservation: self.parse_value()?,
-                named_address: self.parse_value()?,
+                package_address: self.parse_value()?.value,
+                blueprint_name: self.parse_value()?.value,
+                address_reservation: self.parse_value()?.value,
+                named_address: self.parse_value()?.value,
             },
 
             /* Call direct vault method aliases */
             InstructionIdent::RecallFromVault => Instruction::RecallFromVault {
-                vault_id: self.parse_value()?,
+                vault_id: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::FreezeVault => Instruction::FreezeVault {
-                vault_id: self.parse_value()?,
+                vault_id: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::UnfreezeVault => Instruction::UnfreezeVault {
-                vault_id: self.parse_value()?,
+                vault_id: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::RecallNonFungiblesFromVault => {
                 Instruction::RecallNonFungiblesFromVault {
-                    vault_id: self.parse_value()?,
+                    vault_id: self.parse_value()?.value,
                     args: self.parse_values_till_semicolon()?,
                 }
             }
@@ -682,57 +723,57 @@ impl Parser {
 
             /* Call non-main method aliases */
             InstructionIdent::SetMetadata => Instruction::SetMetadata {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::RemoveMetadata => Instruction::RemoveMetadata {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::LockMetadata => Instruction::LockMetadata {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::SetComponentRoyalty => Instruction::SetComponentRoyalty {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::LockComponentRoyalty => Instruction::LockComponentRoyalty {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::ClaimComponentRoyalties => Instruction::ClaimComponentRoyalties {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::SetOwnerRole => Instruction::SetOwnerRole {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::LockOwnerRole => Instruction::LockOwnerRole {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::SetRole => Instruction::SetRole {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
 
             /* Call main method aliases */
             InstructionIdent::MintFungible => Instruction::MintFungible {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::MintNonFungible => Instruction::MintNonFungible {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::MintRuidNonFungible => Instruction::MintRuidNonFungible {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::ClaimPackageRoyalties => Instruction::ClaimPackageRoyalties {
-                address: self.parse_value()?,
+                address: self.parse_value()?.value,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CreateValidator => Instruction::CreateValidator {
@@ -743,7 +784,7 @@ impl Parser {
         Ok(instruction)
     }
 
-    pub fn parse_value(&mut self) -> Result<Value, ParserError> {
+    pub fn parse_value(&mut self) -> Result<TokenValue, ParserError> {
         self.track_stack_depth_increase()?;
         let token = self.advance()?;
         let value = match &token.kind {
@@ -766,7 +807,8 @@ impl Parser {
                 let value_ident =
                     SborValueIdent::from_ident(ident_str).ok_or(ParserError::UnexpectedToken {
                         expected: TokenType::Value,
-                        actual: token,
+                        actual: token.kind.clone(),
+                        span: token.span,
                     })?;
                 match value_ident {
                     SborValueIdent::Enum => self.parse_enum_content()?,
@@ -814,12 +856,13 @@ impl Parser {
             _ => {
                 return Err(ParserError::UnexpectedToken {
                     expected: TokenType::Value,
-                    actual: token,
+                    actual: token.kind,
+                    span: token.span,
                 });
             }
         };
         self.track_stack_depth_decrease()?;
-        Ok(value)
+        Ok(TokenValue { token, value })
     }
 
     pub fn parse_enum_content(&mut self) -> Result<Value, ParserError> {
@@ -830,18 +873,25 @@ impl Parser {
             TokenKind::Ident(discriminator) => KNOWN_ENUM_DISCRIMINATORS
                 .get(discriminator.as_str())
                 .cloned()
-                .ok_or(ParserError::UnknownEnumDiscriminator(discriminator.clone()))?,
+                .ok_or(ParserError::UnknownEnumDiscriminator {
+                    actual: discriminator.clone(),
+                    span: discriminator_token.span,
+                })?,
             _ => {
                 return Err(ParserError::UnexpectedToken {
                     expected: TokenType::EnumDiscriminator,
-                    actual: discriminator_token,
+                    actual: discriminator_token.kind,
+                    span: discriminator_token.span,
                 })
             }
         };
         advance_match!(self, TokenKind::GreaterThan);
 
-        let fields =
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        let fields = self
+            .parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?
+            .iter()
+            .map(|token_value| token_value.value.clone())
+            .collect();
 
         Ok(Value::Enum(discriminator, fields))
     }
@@ -850,15 +900,20 @@ impl Parser {
         let generics = self.parse_generics(1)?;
         Ok(Value::Array(
             generics[0],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?
+                .iter()
+                .map(|token_value| token_value.value.clone())
+                .collect(),
         ))
     }
 
     pub fn parse_tuple_content(&mut self) -> Result<Value, ParserError> {
-        Ok(Value::Tuple(self.parse_values_any(
-            TokenKind::OpenParenthesis,
-            TokenKind::CloseParenthesis,
-        )?))
+        Ok(Value::Tuple(
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?
+                .iter()
+                .map(|token_value| token_value.value.clone())
+                .collect(),
+        ))
     }
 
     pub fn parse_map_content(&mut self) -> Result<Value, ParserError> {
@@ -866,9 +921,9 @@ impl Parser {
         advance_match!(self, TokenKind::OpenParenthesis);
         let mut entries = Vec::new();
         while self.peek()?.kind != TokenKind::CloseParenthesis {
-            let key_value = self.parse_value()?;
+            let key_value = self.parse_value()?.value;
             advance_match!(self, TokenKind::FatArrow);
-            let value_value = self.parse_value()?;
+            let value_value = self.parse_value()?.value;
             entries.push((key_value, value_value));
             if self.peek()?.kind != TokenKind::CloseParenthesis {
                 advance_match!(self, TokenKind::Comma);
@@ -883,7 +938,7 @@ impl Parser {
         &mut self,
         open: TokenKind,
         close: TokenKind,
-    ) -> Result<Vec<Value>, ParserError> {
+    ) -> Result<Vec<TokenValue>, ParserError> {
         advance_match!(self, open);
         let mut values = Vec::new();
         while self.peek()?.kind != close {
@@ -903,17 +958,24 @@ impl Parser {
             Err(ParserError::InvalidNumberOfValues {
                 actual: values.len(),
                 expected: 1,
+                span: Span {
+                    start: values[0].token.span.start,
+                    end: values[values.len() - 1].token.span.end,
+                },
             })
         } else {
-            Ok(values[0].clone())
+            Ok(values[0].value.clone())
         }
     }
 
     fn parse_generics(&mut self, n: usize) -> Result<Vec<ValueKind>, ParserError> {
         advance_match!(self, TokenKind::LessThan);
         let mut types = Vec::new();
+        let mut tokens = Vec::new();
         while self.peek()?.kind != TokenKind::GreaterThan {
-            types.push(self.parse_type()?);
+            let token_value_kind = self.parse_type()?;
+            types.push(token_value_kind.value_kind);
+            tokens.push(token_value_kind.token);
             if self.peek()?.kind != TokenKind::GreaterThan {
                 advance_match!(self, TokenKind::Comma);
             }
@@ -924,20 +986,25 @@ impl Parser {
             Err(ParserError::InvalidNumberOfTypes {
                 expected: n,
                 actual: types.len(),
+                span: Span {
+                    start: tokens[0].span.start,
+                    end: tokens[tokens.len() - 1].span.end,
+                },
             })
         } else {
             Ok(types)
         }
     }
 
-    fn parse_type(&mut self) -> Result<ValueKind, ParserError> {
+    fn parse_type(&mut self) -> Result<TokenValueKind, ParserError> {
         let token = self.advance()?;
-        let the_type = match &token.kind {
+        let value_kind = match &token.kind {
             TokenKind::Ident(ident_str) => {
                 let value_kind_ident = SborValueKindIdent::from_ident(&ident_str).ok_or(
                     ParserError::UnexpectedToken {
                         expected: TokenType::ValueKind,
-                        actual: token,
+                        actual: token.kind.clone(),
+                        span: token.span,
                     },
                 )?;
                 match value_kind_ident {
@@ -989,11 +1056,12 @@ impl Parser {
             _ => {
                 return Err(ParserError::UnexpectedToken {
                     expected: TokenType::ValueKind,
-                    actual: token,
+                    actual: token.kind,
+                    span: token.span,
                 });
             }
         };
-        Ok(the_type)
+        Ok(TokenValueKind { token, value_kind })
     }
 }
 
@@ -1015,7 +1083,7 @@ mod tests {
     macro_rules! parse_value_ok {
         ( $s:expr, $expected:expr ) => {{
             let mut parser = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH);
-            assert_eq!(parser.parse_value(), Ok($expected));
+            assert_eq!(parser.parse_value().map(|tv| tv.value), Ok($expected));
             assert!(parser.is_eof());
         }};
     }
@@ -1144,19 +1212,17 @@ mod tests {
             r#"Enum<0u8)"#,
             ParserError::UnexpectedToken {
                 expected: TokenType::Exact(TokenKind::GreaterThan),
-                actual: Token {
-                    kind: TokenKind::CloseParenthesis,
-                    span: Span {
-                        start: Position {
-                            full_index: 8,
-                            line_number: 1,
-                            line_char_index: 8,
-                        },
-                        end: Position {
-                            full_index: 9,
-                            line_number: 1,
-                            line_char_index: 9,
-                        }
+                actual: TokenKind::CloseParenthesis,
+                span: Span {
+                    start: Position {
+                        full_index: 8,
+                        line_number: 1,
+                        line_char_index: 8,
+                    },
+                    end: Position {
+                        full_index: 9,
+                        line_number: 1,
+                        line_char_index: 9,
                     }
                 },
             }
@@ -1165,7 +1231,19 @@ mod tests {
             r#"Address("abc", "def")"#,
             ParserError::InvalidNumberOfValues {
                 actual: 2,
-                expected: 1
+                expected: 1,
+                span: Span {
+                    start: Position {
+                        full_index: 8,
+                        line_number: 1,
+                        line_char_index: 8,
+                    },
+                    end: Position {
+                        full_index: 20,
+                        line_number: 1,
+                        line_char_index: 20,
+                    }
+                }
             }
         );
     }
@@ -1185,7 +1263,21 @@ mod tests {
         // Should actually be an error not a panic
         parse_value_error!(
             &value_string,
-            ParserError::MaxDepthExceeded(PARSER_MAX_DEPTH)
+            ParserError::MaxDepthExceeded {
+                actual: 20,
+                span: Span {
+                    start: Position {
+                        full_index: 120,
+                        line_number: 1,
+                        line_char_index: 120
+                    },
+                    end: Position {
+                        full_index: 125,
+                        line_number: 1,
+                        line_char_index: 125
+                    }
+                }
+            }
         );
     }
 
