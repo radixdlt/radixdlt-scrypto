@@ -1,12 +1,10 @@
+use cargo_toml::Manifest;
 use radix_engine_interface::types::Level;
-use std::env;
-use std::ffi::OsStr;
-use std::io;
-use std::path::PathBuf;
-use std::process::Command;
-use std::process::ExitStatus;
+use std::process::{Command, ExitStatus};
+use std::{env, ffi::OsStr, io, path::Path, path::PathBuf};
 
 const MANIFEST_FILE: &str = "Cargo.toml";
+const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
@@ -14,7 +12,9 @@ pub enum ScryptoCompilerError {
     CargoBuildFailure(ExitStatus),
     CargoMetadataFailure(String, ExitStatus),
     CargoTargetDirectoryResolutionError,
+    CargoManifestLoadFailure(String),
     InvalidParam(ScryptoCompilerInvalidParam),
+    WasmOptimizationError(wasm_opt::OptimizationError),
 }
 
 #[derive(Debug)]
@@ -40,6 +40,11 @@ pub struct ScryptoCompiler {
     coverage: bool,
     force_local_target: bool,
     wasm_optimization: Option<wasm_opt::OptimizationOptions>,
+
+    internal_target_directory: PathBuf,
+    internal_manifest_path: PathBuf,
+    internal_binary_target_directory: PathBuf,
+    internal_binary_path: PathBuf,
 }
 
 impl ScryptoCompiler {
@@ -153,6 +158,37 @@ impl ScryptoCompiler {
         }
     }
 
+    fn get_binary_name(
+        manifest_path: impl AsRef<Path>,
+        binary_target_directory: impl AsRef<Path>,
+    ) -> Result<PathBuf, ScryptoCompilerError> {
+        // Find the binary paths
+        let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
+            ScryptoCompilerError::CargoManifestLoadFailure(
+                manifest_path.as_ref().to_str().unwrap().to_string(),
+            )
+        })?;
+        let mut wasm_name = None;
+        if let Some(lib) = manifest.lib {
+            wasm_name = lib.name.clone();
+        }
+        if wasm_name.is_none() {
+            if let Some(pkg) = manifest.package {
+                wasm_name = Some(pkg.name.replace("-", "_"));
+            }
+        }
+        let mut bin_path = PathBuf::new();
+        bin_path.push(binary_target_directory);
+        bin_path.push(
+            wasm_name.ok_or(ScryptoCompilerError::CargoManifestLoadFailure(
+                manifest_path.as_ref().to_str().unwrap().to_string(),
+            ))?,
+        );
+        bin_path.with_extension("wasm");
+
+        Ok(bin_path)
+    }
+
     fn prepare_paths(&mut self) -> Result<(PathBuf, PathBuf), ScryptoCompilerError> {
         let manifest_directory = self
             .manifest_directory
@@ -174,6 +210,16 @@ impl ScryptoCompiler {
         } else {
             PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
         };
+
+        self.internal_manifest_path = manifest_path.clone();
+        self.internal_target_directory = target_directory.clone();
+
+        self.internal_binary_target_directory = self.internal_target_directory.clone();
+        self.internal_binary_target_directory.push(BUILD_TARGET);
+        self.internal_binary_target_directory
+            .push(self.profile.as_directory_name());
+
+        self.internal_binary_path = Self::get_binary_name(&manifest_path, &target_directory)?;
 
         Ok((manifest_path, target_directory))
     }
@@ -197,8 +243,8 @@ impl ScryptoCompiler {
         command
             .arg("build")
             .arg("--target")
-            .arg("wasm32-unknown-unknown")
-            .arg(self.profile.clone().as_string())
+            .arg(BUILD_TARGET)
+            .arg(self.profile.as_string())
             .arg("--target-dir")
             .arg(target_directory)
             .arg("--manifest-path")
@@ -216,11 +262,13 @@ impl ScryptoCompiler {
     }
 
     fn wasm_optimize(&mut self) -> Result<(), ScryptoCompilerError> {
-        if self.wasm_optimization.is_none() {
-            return Ok(());
+        if let Some(wasm_opt_config) = &self.wasm_optimization {
+            wasm_opt_config
+                .run(&self.internal_binary_path, &self.internal_binary_path)
+                .map_err(ScryptoCompilerError::WasmOptimizationError)
+        } else {
+            Ok(())
         }
-
-        Ok(())
     }
 
     pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
@@ -252,10 +300,16 @@ pub enum Profile {
 }
 
 impl Profile {
-    fn as_string(self) -> String {
+    fn as_string(&self) -> String {
         match self {
             Profile::Release => String::from("--release"),
             Profile::Debug => String::new(),
+        }
+    }
+    fn as_directory_name(&self) -> String {
+        match self {
+            Profile::Release => String::from("release"),
+            Profile::Debug => String::from("debug"),
         }
     }
 }
@@ -359,6 +413,10 @@ impl ScryptoCompilerBuilder {
             coverage: self.coverage,
             force_local_target: self.force_local_target,
             wasm_optimization: self.wasm_optimization.to_owned(),
+            internal_target_directory: PathBuf::new(),
+            internal_manifest_path: PathBuf::new(),
+            internal_binary_target_directory: PathBuf::new(),
+            internal_binary_path: PathBuf::new(),
         };
         compiler.compile()
     }
@@ -366,8 +424,8 @@ impl ScryptoCompilerBuilder {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
     use super::*;
+    use serial_test::serial;
 
     fn cargo_clean(manifest_dir: &str) {
         Command::new("cargo")

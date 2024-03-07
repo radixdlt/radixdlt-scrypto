@@ -9,6 +9,7 @@ radix-engine-interface = { path = "../radix-engine-interface" }
 utils = { path = "../utils" }
 serde_json = { version = "1.0.81" }
 wasm-opt = { version = "0.114.1" }
+cargo_toml = { version = "0.19.2" }
 
 [dev-dependencies]
 serial_test = "3.0.0"
