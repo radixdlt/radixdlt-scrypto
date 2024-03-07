@@ -190,7 +190,7 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
 
         let tier_update_batch = self.generate_tier_update_batch(next_version, leaf_updates);
         self.apply_tier_update_batch(&tier_update_batch);
-        self.associate_substate_values(updates, &tier_update_batch.tree_update_batch);
+        self.associate_substates(updates, &tier_update_batch.tree_update_batch);
 
         tier_update_batch.new_root_hash
     }
@@ -205,7 +205,7 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
         (value_hash, new_leaf_payload)
     }
 
-    fn associate_substate_values(
+    fn associate_substates(
         &self,
         substate_updates: &PartitionDatabaseUpdates,
         tree_update_batch: &TreeUpdateBatch<Version>,
