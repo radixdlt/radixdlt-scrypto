@@ -1,7 +1,8 @@
 use cargo_toml::Manifest;
 use radix_engine_interface::types::Level;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
-use std::{env, ffi::OsStr, io, path::Path, path::PathBuf};
+use std::{env, io};
 
 const MANIFEST_FILE: &str = "Cargo.toml";
 const BUILD_TARGET: &str = "wasm32-unknown-unknown";
@@ -13,12 +14,12 @@ pub enum ScryptoCompilerError {
     CargoMetadataFailure(String, ExitStatus),
     CargoTargetDirectoryResolutionError,
     CargoManifestLoadFailure(String),
-    InvalidParam(ScryptoCompilerInvalidParam),
+    InvalidParam(ScryptoCompilerInvalidInputParam),
     WasmOptimizationError(wasm_opt::OptimizationError),
 }
 
 #[derive(Debug)]
-pub enum ScryptoCompilerInvalidParam {
+pub enum ScryptoCompilerInvalidInputParam {
     CoverageDiscardsTargetDirectory,
     CoverageDiscardsForceLocalTarget,
     ForceLocalTargetDiscardsTargetDirectory,
@@ -26,25 +27,29 @@ pub enum ScryptoCompilerInvalidParam {
     EnvironmentVariableSetAndUnset(String),
 }
 
-pub struct ScryptoCompiler {
+#[derive(Clone, Default)]
+pub struct ScryptoCompilerInputParams {
     profile: Profile,
     set_environment_variables: Vec<(String, String)>,
     unset_environment_variables: Vec<String>,
     features: Vec<String>,
     package: Option<String>,
-    target_directory: Option<String>,
-    manifest_directory: Option<String>,
+    target_directory: Option<PathBuf>,
+    manifest_directory: Option<PathBuf>,
     trace: bool,
     log_level: Level,
     no_schema: bool,
     coverage: bool,
     force_local_target: bool,
     wasm_optimization: Option<wasm_opt::OptimizationOptions>,
+}
 
-    internal_target_directory: PathBuf,
-    internal_manifest_path: PathBuf,
-    internal_binary_target_directory: PathBuf,
-    internal_binary_path: PathBuf,
+pub struct ScryptoCompiler {
+    input_params: ScryptoCompilerInputParams,
+
+    target_directory: PathBuf,
+    manifest_path: PathBuf,
+    target_binary_path: PathBuf,
 }
 
 impl ScryptoCompiler {
@@ -52,65 +57,89 @@ impl ScryptoCompiler {
         ScryptoCompilerBuilder::default()
     }
 
-    fn validate_input_parameters(&self) -> Result<(), ScryptoCompilerInvalidParam> {
-        if self.coverage && self.force_local_target {
-            return Err(ScryptoCompilerInvalidParam::CoverageDiscardsForceLocalTarget);
+    // Internal constructor
+    fn from_input_params(
+        input_params: &ScryptoCompilerInputParams,
+    ) -> Result<Self, ScryptoCompilerError> {
+        // Firstly validate input parameters
+        ScryptoCompiler::validate_input_parameters(input_params)
+            .map_err(|e| ScryptoCompilerError::InvalidParam(e))?;
+        // Secondly prepare internally used path basing on input parameters
+        let (manifest_path, target_directory, target_binary_path) =
+            ScryptoCompiler::prepare_paths(input_params)?;
+        // Lastly create ScryptoCompiler object
+        Ok(Self {
+            input_params: input_params.to_owned(),
+            manifest_path,
+            target_directory,
+            target_binary_path,
+        })
+    }
+
+    fn validate_input_parameters(
+        input_params: &ScryptoCompilerInputParams,
+    ) -> Result<(), ScryptoCompilerInvalidInputParam> {
+        if input_params.coverage && input_params.force_local_target {
+            return Err(ScryptoCompilerInvalidInputParam::CoverageDiscardsForceLocalTarget);
         }
-        if self.coverage && self.target_directory.is_some() {
-            return Err(ScryptoCompilerInvalidParam::CoverageDiscardsTargetDirectory);
+        if input_params.coverage && input_params.target_directory.is_some() {
+            return Err(ScryptoCompilerInvalidInputParam::CoverageDiscardsTargetDirectory);
         }
-        if self.force_local_target && self.target_directory.is_some() {
-            return Err(ScryptoCompilerInvalidParam::ForceLocalTargetDiscardsTargetDirectory);
+        if input_params.force_local_target && input_params.target_directory.is_some() {
+            return Err(ScryptoCompilerInvalidInputParam::ForceLocalTargetDiscardsTargetDirectory);
         }
-        if self
+        if input_params
             .manifest_directory
             .as_ref()
             .is_some_and(|v| PathBuf::from(v).ends_with(MANIFEST_FILE))
         {
-            return Err(ScryptoCompilerInvalidParam::CargoTomlInManifestDirectory);
+            return Err(ScryptoCompilerInvalidInputParam::CargoTomlInManifestDirectory);
         }
-        if let Some(env) = self.set_environment_variables.iter().find_map(|v| {
-            if self.unset_environment_variables.contains(&v.0) {
+        if let Some(env) = input_params.set_environment_variables.iter().find_map(|v| {
+            if input_params.unset_environment_variables.contains(&v.0) {
                 Some(v.0.clone())
             } else {
                 None
             }
         }) {
-            return Err(ScryptoCompilerInvalidParam::EnvironmentVariableSetAndUnset(
-                env,
-            ));
+            return Err(ScryptoCompilerInvalidInputParam::EnvironmentVariableSetAndUnset(env));
         }
         Ok(())
     }
 
     fn prepare_features(&self) -> String {
-        // firstly apply user features
-        let mut features = self.features.join(",");
+        let mut features = String::new();
 
-        // now apply scrypto features
-        if self.trace {
+        // Firstly apply scrypto features
+        if self.input_params.trace {
             features.push_str(",scrypto/trace");
         }
-        if self.no_schema {
+        if self.input_params.no_schema {
             features.push_str(",scrypto/no-schema");
         }
-        if Level::Error <= self.log_level {
+        if Level::Error <= self.input_params.log_level {
             features.push_str(",scrypto/log-error");
         }
-        if Level::Warn <= self.log_level {
+        if Level::Warn <= self.input_params.log_level {
             features.push_str(",scrypto/log-warn");
         }
-        if Level::Info <= self.log_level {
+        if Level::Info <= self.input_params.log_level {
             features.push_str(",scrypto/log-info");
         }
-        if Level::Debug <= self.log_level {
+        if Level::Debug <= self.input_params.log_level {
             features.push_str(",scrypto/log-debug");
         }
-        if Level::Trace <= self.log_level {
+        if Level::Trace <= self.input_params.log_level {
             features.push_str(",scrypto/log-trace");
         }
-        if self.coverage {
+        if self.input_params.coverage {
             features.push_str(",scrypto/coverage");
+        }
+
+        // Then apply user features
+        if !self.input_params.features.is_empty() {
+            features.push(',');
+            features.push_str(&self.input_params.features.join(","));
         }
 
         if features.starts_with(',') {
@@ -121,7 +150,7 @@ impl ScryptoCompiler {
     }
 
     fn prepare_rust_flags(&self) -> String {
-        if self.coverage {
+        if self.input_params.coverage {
             "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir"
                 .to_owned()
         } else {
@@ -129,13 +158,11 @@ impl ScryptoCompiler {
         }
     }
 
-    fn get_default_target_directory(
-        manifest_path: impl AsRef<OsStr>,
-    ) -> Result<String, ScryptoCompilerError> {
+    fn get_default_target_directory(manifest_path: &Path) -> Result<String, ScryptoCompilerError> {
         let output = Command::new("cargo")
             .arg("metadata")
             .arg("--manifest-path")
-            .arg(manifest_path.as_ref())
+            .arg(manifest_path)
             .arg("--format-version")
             .arg("1")
             .arg("--no-deps")
@@ -152,21 +179,19 @@ impl ScryptoCompiler {
             Ok(target_directory.to_owned())
         } else {
             Err(ScryptoCompilerError::CargoMetadataFailure(
-                manifest_path.as_ref().to_str().unwrap().to_string(),
+                manifest_path.display().to_string(),
                 output.status,
             ))
         }
     }
 
-    fn get_binary_name(
-        manifest_path: impl AsRef<Path>,
-        binary_target_directory: impl AsRef<Path>,
+    fn get_target_binary_path(
+        manifest_path: &Path,
+        binary_target_directory: &Path,
     ) -> Result<PathBuf, ScryptoCompilerError> {
-        // Find the binary paths
+        // Find the binary name
         let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
-            ScryptoCompilerError::CargoManifestLoadFailure(
-                manifest_path.as_ref().to_str().unwrap().to_string(),
-            )
+            ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
         let mut wasm_name = None;
         if let Some(lib) = manifest.lib {
@@ -177,11 +202,11 @@ impl ScryptoCompiler {
                 wasm_name = Some(pkg.name.replace("-", "_"));
             }
         }
-        let mut bin_path = PathBuf::new();
-        bin_path.push(binary_target_directory);
+        // Merge the name with binary tearget directory
+        let mut bin_path: PathBuf = binary_target_directory.into();
         bin_path.push(
             wasm_name.ok_or(ScryptoCompilerError::CargoManifestLoadFailure(
-                manifest_path.as_ref().to_str().unwrap().to_string(),
+                manifest_path.display().to_string(),
             ))?,
         );
         bin_path.with_extension("wasm");
@@ -189,44 +214,51 @@ impl ScryptoCompiler {
         Ok(bin_path)
     }
 
-    fn prepare_paths(&mut self) -> Result<(PathBuf, PathBuf), ScryptoCompilerError> {
-        let manifest_directory = self
+    // Returns manifest path, target directory, target binary path
+    fn prepare_paths(
+        input_params: &ScryptoCompilerInputParams,
+    ) -> Result<(PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
+        // Generate manifest path (manifest directory + "/Cargo.toml")
+        let manifest_directory = input_params
             .manifest_directory
             .as_ref()
             .map_or(env::current_dir().unwrap(), |v| PathBuf::from(v));
         let mut manifest_path = manifest_directory.clone();
         manifest_path.push(MANIFEST_FILE);
 
-        let target_directory = if self.coverage {
+        // Generate target directory
+        let target_directory = if input_params.coverage {
+            // If coverate compiler parameter is set to true then set target directory as
+            // manifest directory + "/coverage"
             let mut target_path = manifest_directory.clone();
             target_path.push("coverage");
             target_path
-        } else if self.force_local_target {
+        } else if input_params.force_local_target {
+            // If force local target compiler parameter is set to true then set target directory as
+            // manifest directory + "/target"
             let mut target_path = manifest_directory;
             target_path.push("target");
             target_path
-        } else if let Some(directory) = &self.target_directory {
+        } else if let Some(directory) = &input_params.target_directory {
+            // If target directory is explicitly specified as compiler parameter then use it as is
             PathBuf::from(directory)
         } else {
+            // If target directory is not specified as compiler parameter then get default
+            // target directory basing on manifest file
             PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
         };
 
-        self.internal_manifest_path = manifest_path.clone();
-        self.internal_target_directory = target_directory.clone();
+        let mut target_binary_directory = target_directory.clone();
+        target_binary_directory.push(BUILD_TARGET);
+        target_binary_directory.push(input_params.profile.as_directory_name());
 
-        self.internal_binary_target_directory = self.internal_target_directory.clone();
-        self.internal_binary_target_directory.push(BUILD_TARGET);
-        self.internal_binary_target_directory
-            .push(self.profile.as_directory_name());
+        let target_binary_path =
+            Self::get_target_binary_path(&manifest_path, &target_binary_directory)?;
 
-        self.internal_binary_path = Self::get_binary_name(&manifest_path, &target_directory)?;
-
-        Ok((manifest_path, target_directory))
+        Ok((manifest_path, target_directory, target_binary_path))
     }
 
     fn prepare_command(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
-        let (manifest_path, target_directory) = self.prepare_paths()?;
-
         let features_list = self.prepare_features();
         let features = (!features_list.is_empty())
             .then_some(vec!["--features", &features_list])
@@ -235,6 +267,7 @@ impl ScryptoCompiler {
         let rustflags = self.prepare_rust_flags();
 
         let package = self
+            .input_params
             .package
             .as_ref()
             .and_then(|p| Some(vec!["--package", &p]))
@@ -244,27 +277,30 @@ impl ScryptoCompiler {
             .arg("build")
             .arg("--target")
             .arg(BUILD_TARGET)
-            .arg(self.profile.as_string())
+            .arg(self.input_params.profile.as_command_arg())
             .arg("--target-dir")
-            .arg(target_directory)
+            .arg(&self.target_directory)
             .arg("--manifest-path")
-            .arg(manifest_path)
+            .arg(&self.manifest_path)
             .args(package)
             .args(features)
             .env("CARGO_ENCODED_RUSTFLAGS", rustflags)
-            .envs(self.set_environment_variables.clone());
+            .envs(self.input_params.set_environment_variables.clone());
 
-        self.unset_environment_variables.iter().for_each(|e| {
-            command.env_remove(e);
-        });
+        self.input_params
+            .unset_environment_variables
+            .iter()
+            .for_each(|e| {
+                command.env_remove(e);
+            });
 
         Ok(())
     }
 
     fn wasm_optimize(&mut self) -> Result<(), ScryptoCompilerError> {
-        if let Some(wasm_opt_config) = &self.wasm_optimization {
+        if let Some(wasm_opt_config) = &self.input_params.wasm_optimization {
             wasm_opt_config
-                .run(&self.internal_binary_path, &self.internal_binary_path)
+                .run(&self.target_binary_path, &self.target_binary_path)
                 .map_err(ScryptoCompilerError::WasmOptimizationError)
         } else {
             Ok(())
@@ -272,10 +308,6 @@ impl ScryptoCompiler {
     }
 
     pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
-        // Verify if passed builder parameters are valid
-        self.validate_input_parameters()
-            .map_err(|e| ScryptoCompilerError::InvalidParam(e))?;
-
         // Create compilation command
         let mut command = Command::new("cargo");
         self.prepare_command(&mut command)?;
@@ -300,7 +332,7 @@ pub enum Profile {
 }
 
 impl Profile {
-    fn as_string(&self) -> String {
+    fn as_command_arg(&self) -> String {
         match self {
             Profile::Release => String::from("--release"),
             Profile::Debug => String::new(),
@@ -316,109 +348,82 @@ impl Profile {
 
 #[derive(Default)]
 pub struct ScryptoCompilerBuilder {
-    profile: Profile,
-    set_environment_variables: Vec<(String, String)>,
-    unset_environment_variables: Vec<String>,
-    features: Vec<String>,
-    package: Option<String>,
-    target_directory: Option<String>,
-    manifest_directory: Option<String>,
-    trace: bool,
-    log_level: Level,
-    no_schema: bool,
-    coverage: bool,
-    force_local_target: bool,
-    wasm_optimization: Option<wasm_opt::OptimizationOptions>,
+    input_params: ScryptoCompilerInputParams,
 }
 
 impl ScryptoCompilerBuilder {
     pub fn profile(&mut self, profile: Profile) -> &mut Self {
-        self.profile = profile;
+        self.input_params.profile = profile;
         self
     }
 
     pub fn env(&mut self, name: &str, value: &str) -> &mut Self {
-        self.set_environment_variables
+        self.input_params
+            .set_environment_variables
             .push((name.to_string(), value.to_string()));
         self
     }
 
     pub fn unset_env(&mut self, name: &str) -> &mut Self {
-        self.unset_environment_variables.push(name.to_string());
+        self.input_params
+            .unset_environment_variables
+            .push(name.to_string());
         self
     }
 
     pub fn feature(&mut self, name: &str) -> &mut Self {
-        self.features.push(name.to_string());
+        self.input_params.features.push(name.to_string());
         self
     }
 
     pub fn package(&mut self, name: &str) -> &mut Self {
-        self.package = Some(name.to_string());
+        self.input_params.package = Some(name.to_string());
         self
     }
 
-    pub fn target_directory(&mut self, directory: &str) -> &mut Self {
-        self.target_directory = Some(directory.to_string());
+    pub fn target_directory(&mut self, directory: impl Into<PathBuf>) -> &mut Self {
+        self.input_params.target_directory = Some(directory.into());
+
         self
     }
 
-    pub fn manifest_directory(&mut self, directory: &str) -> &mut Self {
-        self.manifest_directory = Some(directory.to_string());
+    pub fn manifest_directory(&mut self, directory: impl Into<PathBuf>) -> &mut Self {
+        self.input_params.manifest_directory = Some(directory.into());
         self
     }
 
     pub fn trace(&mut self, trace: bool) -> &mut Self {
-        self.trace = trace;
+        self.input_params.trace = trace;
         self
     }
 
     pub fn log_level(&mut self, log_level: Level) -> &mut Self {
-        self.log_level = log_level;
+        self.input_params.log_level = log_level;
         self
     }
 
     pub fn no_schema(&mut self, no_schema: bool) -> &mut Self {
-        self.no_schema = no_schema;
+        self.input_params.no_schema = no_schema;
         self
     }
 
     pub fn coverage(&mut self, coverage: bool) -> &mut Self {
-        self.coverage = coverage;
+        self.input_params.coverage = coverage;
         self
     }
 
     pub fn force_local_target(&mut self, local_target: bool) -> &mut Self {
-        self.force_local_target = local_target;
+        self.input_params.force_local_target = local_target;
         self
     }
 
     pub fn optimize_with_wasm_opt(&mut self, options: wasm_opt::OptimizationOptions) -> &mut Self {
-        self.wasm_optimization = Some(options);
+        self.input_params.wasm_optimization = Some(options);
         self
     }
 
     pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
-        let mut compiler = ScryptoCompiler {
-            profile: self.profile.clone(),
-            set_environment_variables: self.set_environment_variables.to_owned(),
-            unset_environment_variables: self.unset_environment_variables.to_owned(),
-            features: self.features.to_owned(),
-            package: self.package.clone(),
-            target_directory: self.target_directory.clone(),
-            manifest_directory: self.manifest_directory.clone(),
-            trace: self.trace,
-            log_level: self.log_level,
-            no_schema: self.no_schema,
-            coverage: self.coverage,
-            force_local_target: self.force_local_target,
-            wasm_optimization: self.wasm_optimization.to_owned(),
-            internal_target_directory: PathBuf::new(),
-            internal_manifest_path: PathBuf::new(),
-            internal_binary_target_directory: PathBuf::new(),
-            internal_binary_path: PathBuf::new(),
-        };
-        compiler.compile()
+        ScryptoCompiler::from_input_params(&self.input_params)?.compile()
     }
 }
 
@@ -468,13 +473,10 @@ mod tests {
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "../assets/blueprints/faucet";
 
-        println!("CUR DIR: {}", std::env::current_dir().unwrap().display());
-
         // change current directory to fauce blueprint
         std::env::set_current_dir(manifest_dir).unwrap();
 
         cargo_clean("./");
-        println!("CUR DIR: {}", std::env::current_dir().unwrap().display());
 
         // Act
         // Compile project in current directory without specyfing manifest path
@@ -495,7 +497,7 @@ mod tests {
                 .target_directory("./out")
                 .compile(),
             Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidParam::CoverageDiscardsTargetDirectory
+                ScryptoCompilerInvalidInputParam::CoverageDiscardsTargetDirectory
             ))
         ));
 
@@ -505,7 +507,7 @@ mod tests {
                 .force_local_target(true)
                 .compile(),
             Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidParam::CoverageDiscardsForceLocalTarget
+                ScryptoCompilerInvalidInputParam::CoverageDiscardsForceLocalTarget
             ))
         ));
 
@@ -515,7 +517,7 @@ mod tests {
                 .force_local_target(true)
                 .compile(),
             Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidParam::ForceLocalTargetDiscardsTargetDirectory
+                ScryptoCompilerInvalidInputParam::ForceLocalTargetDiscardsTargetDirectory
             ))
         ));
 
@@ -524,7 +526,7 @@ mod tests {
                 .manifest_directory("./Cargo.toml")
                 .compile(),
             Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidParam::CargoTomlInManifestDirectory
+                ScryptoCompilerInvalidInputParam::CargoTomlInManifestDirectory
             ))
         ));
 
@@ -535,7 +537,7 @@ mod tests {
             .compile();
         assert!(match result {
             Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidParam::EnvironmentVariableSetAndUnset(error_name),
+                ScryptoCompilerInvalidInputParam::EnvironmentVariableSetAndUnset(error_name),
             )) => error_name == name,
             _ => false,
         });
