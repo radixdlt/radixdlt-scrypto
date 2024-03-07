@@ -983,10 +983,16 @@ impl WriteableTreeStore for SubstateValueAssociationStore {
         // deliberately empty
     }
 
-    fn associate_substate_value(&self, key: &StoredTreeNodeKey, substate_value: &DbSubstateValue) {
+    fn associate_substate(
+        &self,
+        state_tree_leaf_key: &StoredTreeNodeKey,
+        _partition_key: &DbPartitionKey,
+        _sort_key: &DbSortKey,
+        substate_value: &DbSubstateValue,
+    ) {
         self.associated_substate_values
             .borrow_mut()
-            .insert(key.clone(), substate_value.clone());
+            .insert(state_tree_leaf_key.clone(), substate_value.clone());
     }
 
     fn record_stale_tree_part(&self, _part: StaleTreePart) {

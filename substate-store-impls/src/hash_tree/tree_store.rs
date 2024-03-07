@@ -8,7 +8,7 @@ use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
-use substate_store_interface::interface::DbSubstateValue;
+use substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateValue};
 use utils::rust::collections::VecDeque;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
@@ -146,13 +146,17 @@ pub trait WriteableTreeStore {
     /// Inserts the node under a new, unique key (i.e. never an update).
     fn insert_node(&self, global_key: StoredTreeNodeKey, node: TreeNode);
 
-    /// Associates the actually upserted Substate's value with the given key.
+    /// Associates the actually upserted Substate entry with the given tree leaf key.
     ///
-    /// This method will be called before the [`Self::insert_node()`] of Substate-Tier leaf nodes,
-    /// and allows the storage to keep correlated historical values, if required.
-    fn associate_substate_value(
+    /// This method will be called after the [`Self::insert_node()`] of Substate-Tier leaf nodes,
+    /// and allows the storage to keep correlated historical values, if required. The correlation
+    /// may be implemented either directly (i.e. to the given `substate_value`) or via the given
+    /// `partition_key` + `sort_key` (if it makes sense e.g. for performance reasons).
+    fn associate_substate(
         &self,
         state_tree_leaf_key: &StoredTreeNodeKey,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
         substate_value: &DbSubstateValue,
     );
 
@@ -226,11 +230,17 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
         self.tree_nodes.borrow_mut().insert(key, node);
     }
 
-    fn associate_substate_value(&self, key: &StoredTreeNodeKey, substate_value: &DbSubstateValue) {
+    fn associate_substate(
+        &self,
+        state_tree_leaf_key: &StoredTreeNodeKey,
+        _partition_key: &DbPartitionKey,
+        _sort_key: &DbSortKey,
+        substate_value: &DbSubstateValue,
+    ) {
         if self.store_substate_values {
             self.associated_substate_values
                 .borrow_mut()
-                .insert(key.clone(), substate_value.clone());
+                .insert(state_tree_leaf_key.clone(), substate_value.clone());
         }
     }
 
@@ -305,9 +315,11 @@ impl WriteableTreeStore for SerializedInMemoryTreeStore {
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
     }
 
-    fn associate_substate_value(
+    fn associate_substate(
         &self,
-        _key: &StoredTreeNodeKey,
+        _state_tree_leaf_key: &StoredTreeNodeKey,
+        _partition_key: &DbPartitionKey,
+        _sort_key: &DbSortKey,
         _substate_value: &DbSubstateValue,
     ) {
         // intentionally empty

@@ -140,7 +140,7 @@ pub struct SubstateSummary {
     /// A global tree node key of this Substate's leaf.
     ///
     /// Note: this is a low-level detail, needed e.g. to properly correlate the Substate value
-    /// stored by [`WriteableTreeStore::associate_substate_value()`].
+    /// stored by [`WriteableTreeStore::associate_substate()`].
     pub state_tree_leaf_key: StoredTreeNodeKey,
 }
 
@@ -150,25 +150,15 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
         next_version: Version,
         updates: &PartitionDatabaseUpdates,
     ) -> Option<Hash> {
-        let (leaf_updates, substate_value_map): (Box<dyn Iterator<Item = _>>, _) = match updates {
+        let leaf_updates: Box<dyn Iterator<Item = _>> = match updates {
             PartitionDatabaseUpdates::Delta { substate_updates } => {
-                let leaf_updates = substate_updates.iter().map(|(sort_key, update)| {
+                Box::new(substate_updates.iter().map(|(sort_key, update)| {
                     let new_leaf = match update {
                         DatabaseUpdate::Set(value) => Some(Self::new_leaf(value, next_version)),
                         DatabaseUpdate::Delete => None,
                     };
                     (sort_key, new_leaf)
-                });
-
-                let substate_value_map = substate_updates
-                    .iter()
-                    .filter_map(|(sort_key, update)| match update {
-                        DatabaseUpdate::Set(value) => Some((Self::to_leaf_key(sort_key), value)),
-                        DatabaseUpdate::Delete => None,
-                    })
-                    .collect();
-
-                (Box::new(leaf_updates), substate_value_map)
+                }))
             }
             PartitionDatabaseUpdates::Reset {
                 new_substate_values,
@@ -187,30 +177,20 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
                 }
                 self.set_root_version(None);
 
-                // Then we handle the substate sets similarly to above:
-                let leaf_updates =
+                Box::new(
                     new_substate_values
                         .iter()
                         .map(|(sort_key, new_substate_value)| {
                             let new_leaf = Some(Self::new_leaf(new_substate_value, next_version));
                             (sort_key, new_leaf)
-                        });
-
-                let substate_value_map = new_substate_values
-                    .iter()
-                    .map(|(sort_key, new_substate_value)| {
-                        (Self::to_leaf_key(sort_key), new_substate_value)
-                    })
-                    .collect();
-
-                (Box::new(leaf_updates), substate_value_map)
+                        }),
+                )
             }
         };
 
         let tier_update_batch = self.generate_tier_update_batch(next_version, leaf_updates);
-
         self.apply_tier_update_batch(&tier_update_batch);
-        self.associate_substate_values(substate_value_map, &tier_update_batch.tree_update_batch);
+        self.associate_substate_values(updates, &tier_update_batch.tree_update_batch);
 
         tier_update_batch.new_root_hash
     }
@@ -227,16 +207,21 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
 
     fn associate_substate_values(
         &self,
-        substate_value_map: HashMap<LeafKey, &DbSubstateValue>,
-        update_batch: &TreeUpdateBatch<Version>,
+        substate_updates: &PartitionDatabaseUpdates,
+        tree_update_batch: &TreeUpdateBatch<Version>,
     ) {
-        for (key, node) in update_batch.node_batch.iter().flatten() {
+        for (key, node) in tree_update_batch.node_batch.iter().flatten() {
             // We promised to associate Substate values; but not all newly-created nodes are leaves:
             if let Node::Leaf(leaf_node) = &node {
                 // And not every newly-created leaf comes from a value change: (sometimes it is just a tree re-structuring!)
-                if let Some(substate_value) = substate_value_map.get(leaf_node.leaf_key()) {
-                    self.base_store
-                        .associate_substate_value(&self.stored_node_key(&key), *substate_value);
+                let sort_key = Self::to_typed_key(leaf_node.leaf_key().clone());
+                if let Some(substate_value) = substate_updates.get_upserted_value(&sort_key) {
+                    self.base_store.associate_substate(
+                        &self.stored_node_key(&key),
+                        &self.partition_key,
+                        &sort_key,
+                        substate_value,
+                    );
                 }
             }
         }
