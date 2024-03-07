@@ -277,7 +277,7 @@ impl ScryptoCompiler {
             .arg("build")
             .arg("--target")
             .arg(BUILD_TARGET)
-            .arg(self.input_params.profile.as_command_arg())
+            .args(self.input_params.profile.as_command_args())
             .arg("--target-dir")
             .arg(&self.target_directory)
             .arg("--manifest-path")
@@ -307,7 +307,8 @@ impl ScryptoCompiler {
         }
     }
 
-    pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
+    // Returns output wasm file path
+    pub fn compile(&mut self) -> Result<PathBuf, ScryptoCompilerError> {
         // Create compilation command
         let mut command = Command::new("cargo");
         self.prepare_command(&mut command)?;
@@ -320,7 +321,9 @@ impl ScryptoCompiler {
             .then_some(())
             .ok_or(ScryptoCompilerError::CargoBuildFailure(status))?;
 
-        self.wasm_optimize()
+        self.wasm_optimize()?;
+
+        Ok(self.target_binary_path.clone())
     }
 }
 
@@ -332,10 +335,10 @@ pub enum Profile {
 }
 
 impl Profile {
-    fn as_command_arg(&self) -> String {
+    fn as_command_args(&self) -> Vec<String> {
         match self {
-            Profile::Release => String::from("--release"),
-            Profile::Debug => String::new(),
+            Profile::Release => vec![String::from("--release")],
+            Profile::Debug => vec![],
         }
     }
     fn as_directory_name(&self) -> String {
@@ -422,7 +425,8 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn compile(&mut self) -> Result<(), ScryptoCompilerError> {
+    // Returns output wasm file path
+    pub fn compile(&mut self) -> Result<PathBuf, ScryptoCompilerError> {
         ScryptoCompiler::from_input_params(&self.input_params)?.compile()
     }
 }
@@ -455,10 +459,6 @@ mod tests {
             .manifest_directory(manifest_dir)
             .compile();
 
-        if status.is_err() {
-            println!("{:?}", status);
-        }
-
         // Assert
         assert!(status.is_ok());
 
@@ -481,6 +481,28 @@ mod tests {
         // Act
         // Compile project in current directory without specyfing manifest path
         let status = ScryptoCompiler::new().compile();
+
+        // Assert
+        assert!(status.is_ok());
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_compilation_faucet_debug() {
+        // Arrange
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "../assets/blueprints/faucet";
+        cargo_clean(manifest_dir);
+        std::env::set_current_dir(cur_dir.clone()).unwrap();
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .profile(Profile::Debug)
+            .compile();
 
         // Assert
         assert!(status.is_ok());
