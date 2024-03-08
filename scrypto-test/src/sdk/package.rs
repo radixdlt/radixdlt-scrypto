@@ -79,28 +79,27 @@ impl PackageFactory {
     where
         P: AsRef<Path>,
     {
-        // Build
-        let wasm_path = match ScryptoCompiler::new()
+        // Initialize compiler
+        let mut compiler = ScryptoCompiler::new()
             .manifest_directory(path.as_ref())
-            .compile()
-        {
-            Ok(wasm_path) => wasm_path,
-            Err(error) => panic!(
+            .build()
+            .unwrap_or_else(|err| panic!("Failed to initialize Scrypto Compiler  {:?}", err));
+
+        // Build
+        let wasm_path = compiler.compile().unwrap_or_else(|err| {
+            panic!(
                 "Failed to compile package: {:?}, error: {:?}",
                 path.as_ref(),
-                error
-            ),
-        };
-
-        // Extract schema
-        let code = std::fs::read(&wasm_path).unwrap_or_else(|err| {
-            panic!(
-                "Failed to read built WASM from path {:?} - {:?}",
-                &wasm_path, err
+                err
             )
         });
-        let definition = extract_definition(&code).unwrap();
 
-        (code, definition)
+        // Extract schema
+        compiler.extract_schema_from_wasm().unwrap_or_else(|err| {
+            panic!(
+                "Failed to extract schema from WASM from path {:?} - {:?}",
+                &wasm_path, err
+            )
+        })
     }
 }

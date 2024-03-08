@@ -10,21 +10,15 @@ impl Compile {
         #[cfg(feature = "coverage")]
         let coverage = true;
 
-        let mut compiler = match ScryptoCompiler::new()
+        // Initialize compiler
+        let mut compiler = ScryptoCompiler::new()
             .manifest_directory(package_dir.as_ref())
             .env("RUSTFLAGS", "")
             .env("CARGO_ENCODED_RUSTFLAGS", "")
             .coverage(coverage)
             .log_level(Level::Trace) // all logs from error to trace
             .build()
-        {
-            Ok(compiler) => compiler,
-            Err(error) => panic!(
-                "Failed to compile package: {:?}, error: {:?}",
-                package_dir.as_ref(),
-                error
-            ),
-        };
+            .unwrap_or_else(|err| panic!("Failed to initialize Scrypto Compiler {:?}", err));
 
         #[cfg(feature = "coverage")]
         // Check if binary exists in coverage directory, if it doesn't only then build it
@@ -54,34 +48,29 @@ impl Compile {
             }
         };
 
-        let wasm_path = match compiler.compile() {
-            Ok(wasm_path) => wasm_path,
-            Err(error) => {
-                match &error {
-                    ScryptoCompilerError::CargoBuildFailure(stderr, _) => eprintln!(
-                        "Package compilation error:\n{}",
-                        std::str::from_utf8(&stderr).unwrap()
-                    ),
-                    _ => (),
-                }
-
-                panic!(
-                    "Failed to compile package: {:?}, error: {:?}",
-                    package_dir.as_ref(),
-                    error
-                );
+        // Build
+        let wasm_path = compiler.compile().unwrap_or_else(|error| {
+            match &error {
+                ScryptoCompilerError::CargoBuildFailure(stderr, _) => eprintln!(
+                    "Package compilation error:\n{}",
+                    std::str::from_utf8(&stderr).unwrap()
+                ),
+                _ => (),
             }
-        };
+
+            panic!(
+                "Failed to compile package: {:?}, error: {:?}",
+                package_dir.as_ref(),
+                error
+            );
+        });
 
         // Extract schema
-        let code = std::fs::read(&wasm_path).unwrap_or_else(|err| {
+        compiler.extract_schema_from_wasm().unwrap_or_else(|err| {
             panic!(
-                "Failed to read built WASM from path {:?} - {:?}",
+                "Failed to extract schema from WASM from path {:?} - {:?}",
                 &wasm_path, err
             )
-        });
-        let definition = extract_definition(&code).unwrap();
-
-        (code, definition)
+        })
     }
 }
