@@ -1167,8 +1167,12 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
     };
 
     // Surround span with few lines for more context
-    span.start.line_number -= min(5, span.start.line_number);
-    span.end.line_number = min(span.end.line_number + 5, lines_cnt - 1);
+    if span.start.line_number > 5 {
+        span.start.line_number -= 5;
+    } else {
+        span.start.line_number = 0;
+    }
+    span.end.line_number = min(span.end.line_number + 5, lines_cnt);
 
     let mut source = String::new();
     let mut skipped_chars = 0;
@@ -1179,6 +1183,8 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
         } else if (i + 1) <= span.end.line_number {
             source.push_str(line.into());
             source.push('\n');
+        } else if (i + 1) > span.end.line_number {
+            break;
         }
     }
 
@@ -1188,7 +1194,7 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
     let snippet = Snippet {
         slices: vec![Slice {
             source: source.as_str(),
-            line_start: span.start.line_number,
+            line_start: span.start.line_number + 1,
             origin: None,
             fold: false,
             annotations: vec![SourceAnnotation {
