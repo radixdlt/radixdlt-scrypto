@@ -1,5 +1,6 @@
 use cargo_toml::Manifest;
-use radix_engine_interface::types::Level;
+use radix_engine::utils::{extract_definition, ExtractSchemaError};
+use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 use std::{env, io};
@@ -25,6 +26,7 @@ pub enum ScryptoCompilerError {
     InvalidParam(ScryptoCompilerInvalidInputParam),
     /// Returns WASM Optimization error
     WasmOptimizationError(wasm_opt::OptimizationError),
+    ExtractSchema(ExtractSchemaError),
 }
 
 #[derive(Debug)]
@@ -363,6 +365,16 @@ impl ScryptoCompiler {
 
     pub fn target_binary_path(&self) -> PathBuf {
         self.target_binary_path.clone()
+    }
+
+    pub fn extract_schema_from_wasm(
+        &self,
+    ) -> Result<(Vec<u8>, PackageDefinition), ScryptoCompilerError> {
+        let code = std::fs::read(&self.target_binary_path)
+            .map_err(|e| ScryptoCompilerError::IOError(e))?;
+        let definition =
+            extract_definition(&code).map_err(|e| ScryptoCompilerError::ExtractSchema(e))?;
+        Ok((code, definition))
     }
 }
 
