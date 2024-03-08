@@ -6,7 +6,7 @@ use radix_engine_common::{
 };
 use std::path::PathBuf;
 use std::str::FromStr;
-use transaction::manifest::{compile, BlobProvider};
+use transaction::manifest::{compile, compiler::compile_error_diagnostics, BlobProvider};
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]
@@ -33,7 +33,8 @@ pub struct Args {
 pub enum Error {
     IoError(std::io::Error),
     EncodeError(sbor::EncodeError),
-    CompileError(transaction::manifest::CompileError),
+    // CompileError(transaction::manifest::CompileError),
+    CompileError(String),
     ParseNetworkError(ParseNetworkError),
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
@@ -52,8 +53,12 @@ pub fn run() -> Result<(), Error> {
             blobs.push(std::fs::read(path).map_err(Error::IoError)?);
         }
     }
-    let transaction = compile(&content, &network, BlobProvider::new_with_blobs(blobs))
-        .map_err(Error::CompileError)?;
+    let transaction =
+        compile(&content, &network, BlobProvider::new_with_blobs(blobs)).map_err(|err| {
+            //println!("{}", err);
+            compile_error_diagnostics(&content, err);
+            std::process::exit(1);
+        })?;
     validate_call_arguments_to_native_components(&transaction.instructions)
         .map_err(Error::InstructionSchemaValidationError)?;
     std::fs::write(

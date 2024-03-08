@@ -7,6 +7,14 @@ pub enum CompileError {
     GeneratorError(generator::GeneratorError),
 }
 
+pub fn compile_error_diagnostics(s: &str, err: CompileError) {
+    match err {
+        CompileError::LexerError(err) => println!("This is LexerError {:?}", err),
+        CompileError::ParserError(err) => parser::parser_error_diagnostics(s, err),
+        CompileError::GeneratorError(err) => println!("This is GeneratorError {:?}", err),
+    }
+}
+
 pub fn compile<B>(
     s: &str,
     network: &NetworkDefinition,

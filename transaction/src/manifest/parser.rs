@@ -1,7 +1,10 @@
 use crate::manifest::ast::{Instruction, Value, ValueKind};
-use crate::manifest::lexer::{Span, Token, TokenKind};
+use crate::manifest::lexer::{Position, Span, Token, TokenKind};
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
+use annotate_snippets::{Annotation, AnnotationType, Renderer, Slice, Snippet, SourceAnnotation};
 use radix_engine_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
+use sbor::rust::cmp::min;
+use sbor::rust::fmt;
 
 // For values greater than below it is not possible to encode compiled manifest due to
 //   EncodeError::MaxDepthExceeded(MANIFEST_SBOR_V1_MAX_DEPTH)
@@ -11,6 +14,11 @@ pub const PARSER_MAX_DEPTH: usize = MANIFEST_SBOR_V1_MAX_DEPTH - 4;
 pub enum ParserError {
     UnexpectedEof,
     UnexpectedToken {
+        expected: TokenType,
+        actual: TokenKind,
+        span: Span,
+    },
+    UnexpectedTokenOrMissingSemicolon {
         expected: TokenType,
         actual: TokenKind,
         span: Span,
@@ -46,6 +54,18 @@ pub enum TokenType {
     ValueKind,
     EnumDiscriminator,
     Exact(TokenKind),
+}
+
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TokenType::Instruction => write!(f, "an Instruction"),
+            TokenType::Value => write!(f, "a Value"),
+            TokenType::ValueKind => write!(f, "a Value kind"),
+            TokenType::EnumDiscriminator => write!(f, "a valid enum discriminator"),
+            TokenType::Exact(token_kind) => write!(f, "{}", token_kind),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -503,7 +523,27 @@ impl Parser {
     fn parse_values_till_semicolon(&mut self) -> Result<Vec<Value>, ParserError> {
         let mut values = Vec::new();
         while self.peek()?.kind != TokenKind::Semicolon {
-            values.push(self.parse_value()?.value);
+            let stack_depth = self.stack_depth;
+            let result = self.parse_value();
+            match result {
+                Ok(token_value) => values.push(token_value.value),
+                Err(err) => match err {
+                    // parse_value() is recursive so we need to check the stack depth to determine
+                    // if semicolon might be missing
+                    ParserError::UnexpectedToken {
+                        expected,
+                        actual,
+                        span,
+                    } if expected == TokenType::Value && (stack_depth + 1 == self.stack_depth) => {
+                        return Err(ParserError::UnexpectedTokenOrMissingSemicolon {
+                            expected,
+                            actual,
+                            span,
+                        })
+                    }
+                    err => return Err(err),
+                },
+            }
         }
         Ok(values)
     }
@@ -1065,6 +1105,108 @@ impl Parser {
     }
 }
 
+pub fn parser_error_diagnostics(s: &str, err: ParserError) {
+    let lines_cnt = s.lines().count();
+    // println!("err = {:?}", err);
+    let (mut span, title, label) = match err {
+        ParserError::UnexpectedEof => (
+            Span {
+                start: Position {
+                    full_index: s.len() - 1,
+                    line_number: lines_cnt - 1,
+                    line_char_index: 0,
+                },
+                end: Position {
+                    full_index: s.len() - 1,
+                    line_number: lines_cnt - 1,
+                    line_char_index: 0,
+                },
+            },
+            "Unexpected end of file".to_string(),
+            "end of file".to_string(),
+        ),
+        ParserError::UnexpectedToken {
+            expected,
+            actual,
+            span,
+        } => {
+            let title = format!("expected {}, found {}", expected, actual);
+            (span, title, "unexpected token".to_string())
+        }
+        ParserError::UnexpectedTokenOrMissingSemicolon {
+            expected,
+            actual,
+            span,
+        } => {
+            let title = format!("expected `;` or {}, found {}", expected, actual);
+            (span, title, "unexpected token".to_string())
+        }
+        ParserError::InvalidNumberOfValues {
+            expected,
+            actual,
+            span,
+        } => {
+            let title = format!("expected {} number of values, found {}", expected, actual);
+            (span, title, "invalid number of values".to_string())
+        }
+        ParserError::InvalidNumberOfTypes {
+            expected,
+            actual,
+            span,
+        } => {
+            let title = format!("expected {} number of types, found {}", expected, actual);
+            (span, title, "invalid number of types".to_string())
+        }
+        ParserError::InvalidHex { span, .. } | ParserError::MaxDepthExceeded { span, .. } => {
+            (span, "title".to_string(), "label".to_string())
+        }
+        ParserError::UnknownEnumDiscriminator { actual, span } => {
+            let title = format!("unknown enum discrimitaror found `{}`", actual);
+            (span, title, "unknown enum discrimitaror".to_string())
+        }
+    };
+
+    // Surround span with few lines for more context
+    span.start.line_number -= min(5, span.start.line_number);
+    span.end.line_number = min(span.end.line_number + 5, lines_cnt - 1);
+
+    let mut source = String::new();
+    let mut skipped_chars = 0;
+    for (i, line) in s.lines().enumerate() {
+        if (i + 1) < span.start.line_number {
+            // Add 1 for '\n' character
+            skipped_chars += line.chars().count() + 1;
+        } else if (i + 1) < span.end.line_number {
+            source.push_str(line.into());
+            source.push('\n');
+        }
+    }
+
+    span.start.full_index -= skipped_chars;
+    span.end.full_index -= skipped_chars;
+
+    let snippet = Snippet {
+        slices: vec![Slice {
+            source: source.as_str(),
+            line_start: span.start.line_number,
+            origin: None,
+            fold: false,
+            annotations: vec![SourceAnnotation {
+                label: label.as_str(),
+                annotation_type: AnnotationType::Info,
+                range: (span.start.full_index, span.end.full_index),
+            }],
+        }],
+        title: Some(Annotation {
+            label: Some(title.as_str()),
+            id: None,
+            annotation_type: AnnotationType::Error,
+        }),
+        footer: vec![],
+    };
+    let renderer = Renderer::styled();
+    println!("{}", renderer.render(snippet));
+}
 #[cfg(test)]
 mod tests {
     use super::*;
