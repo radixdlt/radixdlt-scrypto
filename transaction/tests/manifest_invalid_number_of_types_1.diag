@@ -1,0 +1,15 @@
+[1m[91merror[0m: [1mexpected 2 number of types, found 3[0m
+[1m[94m   |[0m
+[1m[94m20 |[0m         None,
+[1m[94m21 |[0m         None,
+[1m[94m22 |[0m         None
+[1m[94m23 |[0m     )
+[1m[94m24 |[0m     Tuple(
+[1m[94m25 |[0m         Map<String, Tuple, Tuple>(
+[1m[94m   |[0m[1m[94m             --------------------[0m [1m[94m[1m[94minfo[0m[1m[94m: invalid number of types[0m[0m
+[1m[94m26 |[0m         "name" => Tuple(
+[1m[94m27 |[0m                 Some(Enum<Metadata::String>("MyResource")),
+[1m[94m28 |[0m                 true
+[1m[94m29 |[0m             )
+[1m[94m30 |[0m         ),
+[1m[94m   |[0m

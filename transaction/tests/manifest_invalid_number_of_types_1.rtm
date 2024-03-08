@@ -1,0 +1,37 @@
+CALL_METHOD
+    Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+    "lock_fee"
+    Decimal("500");
+
+CREATE_FUNGIBLE_RESOURCE
+    Enum<OwnerRole::None>()
+    true
+    18u8
+    Tuple(
+        Some(
+            Tuple(
+                Some(Enum<AccessRule::AllowAll>()),
+                Some(Enum<AccessRule::DenyAll>())
+            )
+        ),
+        None,
+        None,
+        None,
+        None,
+        None
+    )
+    Tuple(
+        Map<String, Tuple, Tuple>(
+        "name" => Tuple(
+                Some(Enum<Metadata::String>("MyResource")),
+                true
+            )
+        ),
+        Map<String, Enum>(
+            "metadata_setter" => Some(Enum<AccessRule::AllowAll>()),
+            "metadata_setter_updater" => None,
+            "metadata_locker" => Some(Enum<AccessRule::DenyAll>()),
+            "metadata_locker_updater" => None
+        )
+    )
+    None;

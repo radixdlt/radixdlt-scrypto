@@ -1,0 +1,15 @@
+[1m[91merror[0m: [1munknown enum discriminator found `Metadata::StingArray`[0m
+[1m[94m   |[0m
+[1m[94m 4 |[0m     "lock_fee"
+[1m[94m 5 |[0m ;
+[1m[94m 6 |[0m SET_METADATA
+[1m[94m 7 |[0m     Address("resource_sim1n2pqvufl0fmexzpkl6rzk50n2seaz49jgfaqensv7ujxdlf6szr08f")
+[1m[94m 8 |[0m     "field_name"
+[1m[94m 9 |[0m     Enum<Metadata::StingArray>(
+[1m[94m   |[0m[1m[94m          --------------------[0m [1m[94m[1m[94minfo[0m[1m[94m: unknown enum discriminator[0m[0m
+[1m[94m10 |[0m         Array<String>(
+[1m[94m11 |[0m             "some_string",
+[1m[94m12 |[0m             "another_string",
+[1m[94m13 |[0m             "yet_another_string"
+[1m[94m14 |[0m         )
+[1m[94m   |[0m

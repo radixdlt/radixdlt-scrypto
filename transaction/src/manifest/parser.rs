@@ -1117,12 +1117,12 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
                     line_char_index: 0,
                 },
                 end: Position {
-                    full_index: s.len() - 1,
+                    full_index: s.len(),
                     line_number: lines_cnt,
                     line_char_index: 0,
                 },
             },
-            "Unexpected end of file".to_string(),
+            "unexpected end of file".to_string(),
             "end of file".to_string(),
         ),
         ParserError::UnexpectedToken {
