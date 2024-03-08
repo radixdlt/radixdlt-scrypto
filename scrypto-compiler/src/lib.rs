@@ -13,7 +13,7 @@ pub enum ScryptoCompilerError {
     /// Returns IO Error which occured during compilation
     IOError(io::Error),
     /// Returns output from stderr and process exit status
-    CargoBuildFailure(Vec<u8>, ExitStatus),
+    CargoBuildFailure(String, ExitStatus),
     /// Returns path to Cargo.toml for which cargo metadata command failed and process exit status
     CargoMetadataFailure(String, ExitStatus),
     /// Returns path to Cargo.toml for which results of cargo metadata command is not not valid json or target directory field is missing
@@ -354,7 +354,7 @@ impl ScryptoCompiler {
             .success()
             .then_some(())
             .ok_or(ScryptoCompilerError::CargoBuildFailure(
-                output.stderr,
+                String::from_utf8(output.stderr.clone()).unwrap_or(format!("{:?}", output.stderr)),
                 output.status,
             ))?;
 

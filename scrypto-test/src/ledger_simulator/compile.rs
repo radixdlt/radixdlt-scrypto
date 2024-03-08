@@ -51,10 +51,9 @@ impl Compile {
         // Build
         let wasm_path = compiler.compile().unwrap_or_else(|error| {
             match &error {
-                ScryptoCompilerError::CargoBuildFailure(stderr, _) => eprintln!(
-                    "Package compilation error:\n{}",
-                    std::str::from_utf8(&stderr).unwrap()
-                ),
+                ScryptoCompilerError::CargoBuildFailure(stderr, _) => {
+                    eprintln!("Package compilation error:\n{}", stderr)
+                }
                 _ => (),
             }
 
