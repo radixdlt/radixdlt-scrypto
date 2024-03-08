@@ -11,7 +11,7 @@ wasm-opt = { version = "0.114.1" }
 cargo_toml = { version = "0.19.2" }
 
 [dev-dependencies]
-serial_test = "3.0.0"
+once_cell = "1.19.0"
 
 [lib]
 doctest = false
@@ -21,4 +21,3 @@ bench = false
 default = ["std"]
 std = ["serde_json/std", "radix-engine-interface/std", "utils/std"]
 alloc = ["serde_json/alloc", "radix-engine-interface/alloc", "utils/alloc"]
-

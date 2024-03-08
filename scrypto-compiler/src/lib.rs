@@ -477,7 +477,10 @@ impl ScryptoCompilerBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
+    use once_cell::sync::Lazy;
+    use std::sync::Mutex;
+
+    static SERIAL_COMPILE_MUTEX: Lazy<Mutex<()>> = Lazy::new(Mutex::default);
 
     fn cargo_clean(manifest_dir: &str) {
         Command::new("cargo")
@@ -489,11 +492,15 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_compilation() {
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
         // Arrange
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "./tests/assets/blueprint";
+
+        //prepare_blueprint(manifest_dir);
+
         cargo_clean(manifest_dir);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
@@ -510,11 +517,14 @@ mod tests {
     }
 
     #[test]
-    #[serial]
-    fn test_compilation_in_current_dit() {
+    fn test_compilation_in_current_dir() {
         // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "./tests/assets/blueprint";
+        //prepare_blueprint(manifest_dir);
+
         std::env::set_current_dir(manifest_dir).unwrap();
 
         cargo_clean("./");
@@ -530,11 +540,13 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_compilation_debug() {
         // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "./tests/assets/blueprint";
+
         cargo_clean(manifest_dir);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
@@ -552,12 +564,14 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     #[ignore]
     fn test_compilation_coverage() {
         // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "./tests/assets/blueprint";
+
         cargo_clean(manifest_dir);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
@@ -575,11 +589,13 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_compilation_with_feature() {
         // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "./tests/assets/blueprint";
+
         cargo_clean(manifest_dir);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
@@ -597,11 +613,13 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_compilation_with_feature_and_loglevel() {
         // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "./tests/assets/blueprint";
+
         cargo_clean(manifest_dir);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
@@ -620,11 +638,13 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_compilation_fails_with_non_existing_feature() {
         // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "./tests/assets/blueprint";
+
         cargo_clean(manifest_dir);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
@@ -697,5 +717,67 @@ mod tests {
             )) => error_name == name,
             _ => false,
         });
+    }
+
+    #[test]
+    fn test_target_binary_path() {
+        let output_path = PathBuf::from(
+            "tests/assets/blueprint/target/wasm32-unknown-unknown/release/test_blueprint.wasm",
+        );
+        let package_dir = "./tests/assets/blueprint";
+        let compiler = ScryptoCompiler::new()
+            .manifest_directory(package_dir)
+            .build()
+            .unwrap();
+
+        let absolute_path = compiler.target_binary_path();
+        let skip_count = absolute_path.iter().count() - output_path.iter().count();
+        let relative_path: PathBuf = absolute_path.iter().skip(skip_count).collect();
+
+        assert_eq!(relative_path, output_path);
+    }
+
+    #[test]
+    fn test_target_binary_path_target() {
+        let target_dir = "./tests/target";
+        let compiler = ScryptoCompiler::new()
+            .manifest_directory("./tests/assets/blueprint")
+            .target_directory(target_dir)
+            .build()
+            .unwrap();
+
+        assert_eq!(
+            "./tests/target/wasm32-unknown-unknown/release/test_blueprint.wasm",
+            compiler.target_binary_path().display().to_string()
+        );
+    }
+
+    #[test]
+    fn test_target_binary_path_coverage() {
+        let package_dir = "./tests/assets/blueprint";
+        let compiler = ScryptoCompiler::new()
+            .manifest_directory(package_dir)
+            .coverage(true)
+            .build()
+            .unwrap();
+
+        assert_eq!(
+            "./tests/assets/blueprint/coverage/wasm32-unknown-unknown/release/test_blueprint.wasm",
+            compiler.target_binary_path().display().to_string()
+        );
+    }
+
+    #[test]
+    fn test_target_binary_path_force_local() {
+        let compiler = ScryptoCompiler::new()
+            .manifest_directory("./tests/assets/blueprint")
+            .force_local_target(true)
+            .build()
+            .unwrap();
+
+        assert_eq!(
+            "./tests/assets/blueprint/target/wasm32-unknown-unknown/release/test_blueprint.wasm",
+            compiler.target_binary_path().display().to_string()
+        );
     }
 }
