@@ -299,6 +299,11 @@ impl ScryptoCompiler {
             .and_then(|p| Some(vec!["--package", &p]))
             .unwrap_or_default();
 
+        if self.input_params.coverage {
+            // coverage uses '-Z' flag which requires use of nightly toolchain
+            command.arg("+nightly");
+        }
+
         command
             .arg("build")
             .arg("--target")
@@ -354,6 +359,10 @@ impl ScryptoCompiler {
         self.wasm_optimize()?;
 
         Ok(self.target_binary_path.clone())
+    }
+
+    pub fn target_binary_path(&self) -> PathBuf {
+        self.target_binary_path.clone()
     }
 }
 
@@ -455,9 +464,13 @@ impl ScryptoCompilerBuilder {
         self
     }
 
+    pub fn build(&mut self) -> Result<ScryptoCompiler, ScryptoCompilerError> {
+        ScryptoCompiler::from_input_params(&self.input_params)
+    }
+
     // Returns output wasm file path
     pub fn compile(&mut self) -> Result<PathBuf, ScryptoCompilerError> {
-        ScryptoCompiler::from_input_params(&self.input_params)?.compile()
+        self.build()?.compile()
     }
 }
 
@@ -529,6 +542,29 @@ mod tests {
         let status = ScryptoCompiler::new()
             .manifest_directory(manifest_dir)
             .profile(Profile::Debug)
+            .compile();
+
+        // Assert
+        assert!(status.is_ok());
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    #[serial]
+    #[ignore]
+    fn test_compilation_coverage() {
+        // Arrange
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets/blueprint";
+        cargo_clean(manifest_dir);
+        std::env::set_current_dir(cur_dir.clone()).unwrap();
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .coverage(true)
             .compile();
 
         // Assert
