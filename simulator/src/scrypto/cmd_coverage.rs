@@ -106,8 +106,17 @@ impl Coverage {
 
         // Build package
         let path = self.path.clone().unwrap_or(current_dir().unwrap());
-        let (wasm_path, _) = build_package(&path, false, false, true, Level::Trace, true, &vec![])
-            .map_err(Error::BuildError)?;
+        let (wasm_path, _) = build_package(
+            &path,
+            false,
+            false,
+            true,
+            Level::Trace,
+            true,
+            &vec![],
+            &vec![],
+        )
+        .map_err(Error::BuildError)?;
         assert!(wasm_path.is_file());
 
         if unset_rustup_toolchain {

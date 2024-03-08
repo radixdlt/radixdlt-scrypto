@@ -69,7 +69,8 @@ impl Publish {
                 self.disable_wasm_opt,
                 self.log_level.unwrap_or(Level::default()),
                 false,
-                &vec![]
+                &vec![],
+                &vec![],
             )
             .map_err(Error::BuildError)?
         } else {

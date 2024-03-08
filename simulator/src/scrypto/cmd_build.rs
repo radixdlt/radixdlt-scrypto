@@ -27,7 +27,12 @@ pub struct Build {
 
     /// Project features to use
     #[clap(short, long)]
-    features: Option<Vec<String>>
+    features: Option<Vec<String>>,
+
+    /// Environment variables to use
+    /// Specify as NAME=VALUE or NAME
+    #[clap(short, long)]
+    env: Option<Vec<String>>,
 }
 
 impl Build {
@@ -40,6 +45,7 @@ impl Build {
             self.log_level.unwrap_or(Level::default()),
             false,
             &self.features.clone().unwrap_or(vec![]),
+            &self.env.clone().unwrap_or(vec![]),
         )
         .map(|_| ())
         .map_err(Error::BuildError)

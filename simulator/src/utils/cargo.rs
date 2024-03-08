@@ -51,7 +51,13 @@ pub fn build_package<P: AsRef<Path>>(
     log_level: Level,
     coverage: bool,
     features: &[String],
+    env_variables: &[String],
 ) -> Result<(PathBuf, PathBuf), BuildError> {
+    let env_variables_decoded: Vec<Vec<&str>> = env_variables
+        .iter()
+        .map(|env| env.split('=').collect::<Vec<&str>>())
+        .collect();
+
     // Build with schema
     let mut compiler_builder = ScryptoCompiler::new();
     compiler_builder
@@ -62,6 +68,13 @@ pub fn build_package<P: AsRef<Path>>(
         .no_schema(false);
     features.iter().for_each(|f| {
         compiler_builder.feature(f);
+    });
+    env_variables_decoded.iter().for_each(|v| {
+        if v.len() == 1 {
+            compiler_builder.env(v[0], "");
+        } else if v.len() == 2 {
+            compiler_builder.env(v[0], v[1]);
+        }
     });
     let mut compiler = compiler_builder
         .build()
@@ -94,6 +107,13 @@ pub fn build_package<P: AsRef<Path>>(
     features.iter().for_each(|f| {
         compiler.feature(f);
     });
+    env_variables_decoded.iter().for_each(|v| {
+        if v.len() == 1 {
+            compiler.env(v[0], "");
+        } else if v.len() == 2 {
+            compiler.env(v[0], v[1]);
+        }
+    });
 
     // Optimizes the built wasm using Binaryen's wasm-opt tool. The code that follows is equivalent
     // to running the following commands in the CLI:
@@ -121,8 +141,17 @@ where
     S: AsRef<OsStr>,
 {
     if !coverage {
-        build_package(&path, false, false, false, Level::Trace, false, &vec![])
-            .map_err(TestError::BuildError)?;
+        build_package(
+            &path,
+            false,
+            false,
+            false,
+            Level::Trace,
+            false,
+            &vec![],
+            &vec![],
+        )
+        .map_err(TestError::BuildError)?;
     }
 
     let mut cargo = path.as_ref().to_owned();
