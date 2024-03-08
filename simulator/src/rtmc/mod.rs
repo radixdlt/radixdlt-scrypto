@@ -55,8 +55,7 @@ pub fn run() -> Result<(), Error> {
     }
     let transaction =
         compile(&content, &network, BlobProvider::new_with_blobs(blobs)).map_err(|err| {
-            //println!("{}", err);
-            compile_error_diagnostics(&content, err);
+            eprintln!("{}", compile_error_diagnostics(&content, err));
             std::process::exit(1);
         })?;
     validate_call_arguments_to_native_components(&transaction.instructions)

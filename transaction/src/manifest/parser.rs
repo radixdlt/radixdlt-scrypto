@@ -1105,7 +1105,7 @@ impl Parser {
     }
 }
 
-pub fn parser_error_diagnostics(s: &str, err: ParserError) {
+pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
     let lines_cnt = s.lines().count();
     // println!("err = {:?}", err);
     let (mut span, title, label) = match err {
@@ -1113,12 +1113,12 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) {
             Span {
                 start: Position {
                     full_index: s.len() - 1,
-                    line_number: lines_cnt - 1,
+                    line_number: lines_cnt,
                     line_char_index: 0,
                 },
                 end: Position {
                     full_index: s.len() - 1,
-                    line_number: lines_cnt - 1,
+                    line_number: lines_cnt,
                     line_char_index: 0,
                 },
             },
@@ -1176,7 +1176,7 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) {
         if (i + 1) < span.start.line_number {
             // Add 1 for '\n' character
             skipped_chars += line.chars().count() + 1;
-        } else if (i + 1) < span.end.line_number {
+        } else if (i + 1) <= span.end.line_number {
             source.push_str(line.into());
             source.push('\n');
         }
@@ -1204,8 +1204,10 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) {
         }),
         footer: vec![],
     };
+
     let renderer = Renderer::styled();
-    println!("{}", renderer.render(snippet));
+    let s = renderer.render(snippet).to_string();
+    s
 }
 #[cfg(test)]
 mod tests {
