@@ -24,6 +24,10 @@ pub struct Build {
     /// The default is INFO.
     #[clap(long)]
     log_level: Option<Level>,
+
+    /// Project features to use
+    #[clap(short, long)]
+    features: Option<Vec<String>>
 }
 
 impl Build {
@@ -35,6 +39,7 @@ impl Build {
             self.disable_wasm_opt,
             self.log_level.unwrap_or(Level::default()),
             false,
+            &self.features.clone().unwrap_or(vec![]),
         )
         .map(|_| ())
         .map_err(Error::BuildError)

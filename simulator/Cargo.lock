@@ -1481,6 +1481,7 @@ name = "scrypto-compiler"
 version = "1.2.0-dev"
 dependencies = [
  "cargo_toml",
+ "radix-engine",
  "radix-engine-interface",
  "serde_json",
  "utils",

@@ -50,23 +50,32 @@ pub fn build_package<P: AsRef<Path>>(
     disable_wasm_opt: bool,
     log_level: Level,
     coverage: bool,
+    features: &[String],
 ) -> Result<(PathBuf, PathBuf), BuildError> {
     // Build with schema
-    let wasm_path = ScryptoCompiler::new()
+    let mut compiler_builder = ScryptoCompiler::new();
+    compiler_builder
         .manifest_directory(base_path.as_ref())
         .force_local_target(force_local_target)
         .trace(trace)
         .log_level(log_level)
-        .no_schema(false)
+        .no_schema(false);
+    features.iter().for_each(|f| {
+        compiler_builder.feature(f);
+    });
+    let mut compiler = compiler_builder
+        .build()
+        .map_err(|e| BuildError::ScryptoCompilerError(e))?;
+    let wasm_path = compiler
         .compile()
         .map_err(|e| BuildError::ScryptoCompilerError(e))?;
 
     let definition_path = wasm_path.with_extension("rpd");
 
     // Extract SCHEMA
-    let wasm =
-        fs::read(&wasm_path).map_err(|err| BuildError::IOErrorAtPath(err, wasm_path.clone()))?;
-    let definition = extract_definition(&wasm).map_err(BuildError::SchemaExtractionError)?;
+    let (_, definition) = compiler
+        .extract_schema_from_wasm()
+        .map_err(|e| BuildError::ScryptoCompilerError(e))?;
     fs::write(
         &definition_path,
         manifest_encode(&definition).map_err(BuildError::SchemaEncodeError)?,
@@ -82,6 +91,9 @@ pub fn build_package<P: AsRef<Path>>(
         .no_schema(true)
         .log_level(log_level)
         .coverage(coverage);
+    features.iter().for_each(|f| {
+        compiler.feature(f);
+    });
 
     // Optimizes the built wasm using Binaryen's wasm-opt tool. The code that follows is equivalent
     // to running the following commands in the CLI:
@@ -109,7 +121,7 @@ where
     S: AsRef<OsStr>,
 {
     if !coverage {
-        build_package(&path, false, false, false, Level::Trace, false)
+        build_package(&path, false, false, false, Level::Trace, false, &vec![])
             .map_err(TestError::BuildError)?;
     }
 
