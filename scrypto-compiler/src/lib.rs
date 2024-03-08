@@ -19,6 +19,8 @@ pub enum ScryptoCompilerError {
     CargoTargetDirectoryResolutionError(String),
     /// Returns path to Cargo.toml which was failed to load
     CargoManifestLoadFailure(String),
+    /// Returns path to Cargo.toml which cannot be found
+    CargoManifestFileNotFound(String),
     /// Returns information about invalid input compiler parameter
     InvalidParam(ScryptoCompilerInvalidInputParam),
     /// Returns WASM Optimization error
@@ -244,6 +246,12 @@ impl ScryptoCompiler {
         let mut manifest_path = manifest_directory.clone();
         manifest_path.push(MANIFEST_FILE);
 
+        if !manifest_path.exists() {
+            return Err(ScryptoCompilerError::CargoManifestFileNotFound(
+                manifest_path.display().to_string(),
+            ));
+        }
+
         // Generate target directory
         let target_directory = if input_params.coverage {
             // If coverate compiler parameter is set to true then set target directory as
@@ -442,8 +450,8 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn optimize_with_wasm_opt(&mut self, options: wasm_opt::OptimizationOptions) -> &mut Self {
-        self.input_params.wasm_optimization = Some(options);
+    pub fn optimize_with_wasm_opt(&mut self, options: &wasm_opt::OptimizationOptions) -> &mut Self {
+        self.input_params.wasm_optimization = Some(options.to_owned());
         self
     }
 
@@ -543,6 +551,29 @@ mod tests {
         let status = ScryptoCompiler::new()
             .manifest_directory(manifest_dir)
             .feature("feature-1")
+            .compile();
+
+        // Assert
+        assert!(status.is_ok());
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_compilation_with_feature_and_loglevel() {
+        // Arrange
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets/blueprint";
+        cargo_clean(manifest_dir);
+        std::env::set_current_dir(cur_dir.clone()).unwrap();
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .feature("feature-1")
+            .log_level(Level::Warn)
             .compile();
 
         // Assert
