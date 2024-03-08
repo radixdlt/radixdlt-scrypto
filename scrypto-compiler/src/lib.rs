@@ -9,21 +9,33 @@ const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
+    /// Returns IO Error which occured during compilation
     IOError(io::Error),
-    CargoBuildFailure(ExitStatus),
+    /// Returns output from stderr and process exit status
+    CargoBuildFailure(Vec<u8>, ExitStatus),
+    /// Returns path to Cargo.toml for which cargo metadata command failed and process exit status
     CargoMetadataFailure(String, ExitStatus),
-    CargoTargetDirectoryResolutionError,
+    /// Returns path to Cargo.toml for which results of cargo metadata command is not not valid json or target directory field is missing
+    CargoTargetDirectoryResolutionError(String),
+    /// Returns path to Cargo.toml which was failed to load
     CargoManifestLoadFailure(String),
+    /// Returns information about invalid input compiler parameter
     InvalidParam(ScryptoCompilerInvalidInputParam),
+    /// Returns WASM Optimization error
     WasmOptimizationError(wasm_opt::OptimizationError),
 }
 
 #[derive(Debug)]
 pub enum ScryptoCompilerInvalidInputParam {
+    /// Both parameters were specified: 'coverage' and 'target directory'
     CoverageDiscardsTargetDirectory,
+    /// Both parameters were specified: 'coverage' and 'force local target'
     CoverageDiscardsForceLocalTarget,
+    /// Both parameters were specified: 'force local target' and 'target directory'
     ForceLocalTargetDiscardsTargetDirectory,
+    /// Remove 'Cargo.toml' from 'manifest directory' parameter
     CargoTomlInManifestDirectory,
+    /// Same variable were set and unset
     EnvironmentVariableSetAndUnset(String),
 }
 
@@ -169,13 +181,19 @@ impl ScryptoCompiler {
             .output()
             .map_err(ScryptoCompilerError::IOError)?;
         if output.status.success() {
-            let parsed = serde_json::from_slice::<serde_json::Value>(&output.stdout)
-                .map_err(|_| ScryptoCompilerError::CargoTargetDirectoryResolutionError)?;
+            let parsed =
+                serde_json::from_slice::<serde_json::Value>(&output.stdout).map_err(|_| {
+                    ScryptoCompilerError::CargoTargetDirectoryResolutionError(
+                        manifest_path.display().to_string(),
+                    )
+                })?;
             let target_directory = parsed
                 .as_object()
                 .and_then(|o| o.get("target_directory"))
                 .and_then(|o| o.as_str())
-                .ok_or(ScryptoCompilerError::CargoTargetDirectoryResolutionError)?;
+                .ok_or(ScryptoCompilerError::CargoTargetDirectoryResolutionError(
+                    manifest_path.display().to_string(),
+                ))?;
             Ok(target_directory.to_owned())
         } else {
             Err(ScryptoCompilerError::CargoMetadataFailure(
@@ -209,7 +227,7 @@ impl ScryptoCompiler {
                 manifest_path.display().to_string(),
             ))?,
         );
-        bin_path.with_extension("wasm");
+        bin_path.set_extension("wasm");
 
         Ok(bin_path)
     }
@@ -314,12 +332,16 @@ impl ScryptoCompiler {
         self.prepare_command(&mut command)?;
 
         // Execute command
-        let status = command.status().map_err(ScryptoCompilerError::IOError)?;
+        let output = command.output().map_err(ScryptoCompilerError::IOError)?;
 
-        status
+        output
+            .status
             .success()
             .then_some(())
-            .ok_or(ScryptoCompilerError::CargoBuildFailure(status))?;
+            .ok_or(ScryptoCompilerError::CargoBuildFailure(
+                output.stderr,
+                output.status,
+            ))?;
 
         self.wasm_optimize()?;
 
@@ -447,10 +469,10 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_compilation_faucet() {
+    fn test_compilation() {
         // Arrange
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "../assets/blueprints/faucet";
+        let manifest_dir = "./tests/assets/blueprint";
         cargo_clean(manifest_dir);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
@@ -468,18 +490,15 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_compilation_current_dir_faucet() {
+    fn test_compilation_in_current_dit() {
         // Arrange
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "../assets/blueprints/faucet";
-
-        // change current directory to fauce blueprint
+        let manifest_dir = "./tests/assets/blueprint";
         std::env::set_current_dir(manifest_dir).unwrap();
 
         cargo_clean("./");
 
         // Act
-        // Compile project in current directory without specyfing manifest path
         let status = ScryptoCompiler::new().compile();
 
         // Assert
@@ -491,10 +510,10 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_compilation_faucet_debug() {
+    fn test_compilation_debug() {
         // Arrange
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "../assets/blueprints/faucet";
+        let manifest_dir = "./tests/assets/blueprint";
         cargo_clean(manifest_dir);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
@@ -506,6 +525,54 @@ mod tests {
 
         // Assert
         assert!(status.is_ok());
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_compilation_with_feature() {
+        // Arrange
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets/blueprint";
+        cargo_clean(manifest_dir);
+        std::env::set_current_dir(cur_dir.clone()).unwrap();
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .feature("feature-1")
+            .compile();
+
+        // Assert
+        assert!(status.is_ok());
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_compilation_fails_with_non_existing_feature() {
+        // Arrange
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets/blueprint";
+        cargo_clean(manifest_dir);
+        std::env::set_current_dir(cur_dir.clone()).unwrap();
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .feature("feature-2")
+            .compile();
+
+        // Assert
+        assert!(match status {
+            Err(ScryptoCompilerError::CargoBuildFailure(_stderr, exit_status)) =>
+                exit_status.code().unwrap() == 101,
+            _ => false,
+        });
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();

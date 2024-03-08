@@ -1,0 +1,22 @@
+[package]
+name = "test_blueprint"
+version = "1.2.0-dev"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+sbor = { path = "../../../../sbor" }
+scrypto = { path = "../../../../scrypto" }
+
+# [dev-dependencies]
+# transaction = { path = "../../../../transaction" }
+# radix-engine = { path = "../../../../radix-engine" }
+# scrypto-test = { path = "../../../../scrypto-test" }
+
+[lib]
+doctest = false
+crate-type = ["cdylib", "lib"]
+
+[features]
+feature-1 = []
