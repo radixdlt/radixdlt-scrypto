@@ -253,7 +253,7 @@ impl ScryptoCompiler {
         let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
-        if manifest.workspace.is_some() {
+        if manifest.workspace.is_some() && !manifest.workspace.unwrap().members.is_empty() {
             return Err(ScryptoCompilerError::CargoManifestIsWorkspace(
                 manifest_path.display().to_string(),
             ));
@@ -396,25 +396,6 @@ impl ScryptoCompiler {
 
         Ok(self.target_binary_path.clone())
     }
-
-    // pub fn compile_workspace(&mut self) -> Result<Vec<PathBuf>, ScryptoCompilerError> {
-    //     if self.is_workspace()? {
-    //         return Err(ScryptoCompilerError::CargoManifestNoWorkspace);
-    //     }
-    //     let members = self.get_workspace_members()?;
-
-    //     let mut result: Vec<PathBuf> = Vec::new();
-    //     for member in members {
-    //         let mut new_input_params = self.input_params.clone();
-    //         if let Some(md) = new_input_params.manifest_directory.as_mut() {
-    //             md.push(member);
-    //         } else {
-    //             new_input_params.manifest_directory = Some(member.into());
-    //         }
-    //         result.push(ScryptoCompiler::from_input_params(&new_input_params)?.compile()?);
-    //     }
-    //     Ok(result)
-    // }
 
     pub fn target_binary_path(&self) -> PathBuf {
         self.target_binary_path.clone()
@@ -582,8 +563,6 @@ mod tests {
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "./tests/assets/blueprint";
 
-        //prepare_blueprint(manifest_dir);
-
         cargo_clean(manifest_dir);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
@@ -606,7 +585,6 @@ mod tests {
 
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_dir = "./tests/assets/blueprint";
-        //prepare_blueprint(manifest_dir);
 
         std::env::set_current_dir(manifest_dir).unwrap();
 
