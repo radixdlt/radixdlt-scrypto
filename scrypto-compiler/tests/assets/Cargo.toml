@@ -1,0 +1,7 @@
+[workspace]
+resolver = "1"
+
+members = [
+    "blueprint",
+    "blueprint_2",
+]

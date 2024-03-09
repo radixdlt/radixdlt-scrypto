@@ -26,7 +26,12 @@ pub enum ScryptoCompilerError {
     InvalidParam(ScryptoCompilerInvalidInputParam),
     /// Returns WASM Optimization error
     WasmOptimizationError(wasm_opt::OptimizationError),
+    /// Returns error occured during schema extraction
     ExtractSchema(ExtractSchemaError),
+    /// Specified manifest is a workspace, use 'compile_workspace' function
+    CargoManifestIsWorkspace(String),
+    /// Specified manifest which is not a workspace
+    CargoManifestNoWorkspace(String),
 }
 
 #[derive(Debug)]
@@ -60,6 +65,7 @@ pub struct ScryptoCompilerInputParams {
     wasm_optimization: Option<wasm_opt::OptimizationOptions>,
 }
 
+#[derive(Clone)]
 pub struct ScryptoCompiler {
     input_params: ScryptoCompilerInputParams,
 
@@ -207,6 +213,38 @@ impl ScryptoCompiler {
         }
     }
 
+    fn get_workspace_members(manifest_path: &Path) -> Result<Vec<String>, ScryptoCompilerError> {
+        let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
+            ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
+        })?;
+        if let Some(workspace) = manifest.workspace {
+            Ok(workspace.members)
+        } else {
+            Err(ScryptoCompilerError::CargoManifestNoWorkspace(
+                manifest_path.display().to_string(),
+            ))
+        }
+    }
+
+    fn get_manifest_path(
+        input_params: &ScryptoCompilerInputParams,
+    ) -> Result<PathBuf, ScryptoCompilerError> {
+        let manifest_directory = input_params
+            .manifest_directory
+            .as_ref()
+            .map_or(env::current_dir().unwrap(), |v| PathBuf::from(v));
+        let mut manifest_path = manifest_directory.clone();
+        manifest_path.push(MANIFEST_FILE);
+
+        if !manifest_path.exists() {
+            Err(ScryptoCompilerError::CargoManifestFileNotFound(
+                manifest_path.display().to_string(),
+            ))
+        } else {
+            Ok(manifest_path)
+        }
+    }
+
     fn get_target_binary_path(
         manifest_path: &Path,
         binary_target_directory: &Path,
@@ -215,6 +253,11 @@ impl ScryptoCompiler {
         let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
+        if manifest.workspace.is_some() {
+            return Err(ScryptoCompilerError::CargoManifestIsWorkspace(
+                manifest_path.display().to_string(),
+            ));
+        }
         let mut wasm_name = None;
         if let Some(lib) = manifest.lib {
             wasm_name = lib.name.clone();
@@ -241,18 +284,9 @@ impl ScryptoCompiler {
         input_params: &ScryptoCompilerInputParams,
     ) -> Result<(PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
         // Generate manifest path (manifest directory + "/Cargo.toml")
-        let manifest_directory = input_params
-            .manifest_directory
-            .as_ref()
-            .map_or(env::current_dir().unwrap(), |v| PathBuf::from(v));
-        let mut manifest_path = manifest_directory.clone();
-        manifest_path.push(MANIFEST_FILE);
-
-        if !manifest_path.exists() {
-            return Err(ScryptoCompilerError::CargoManifestFileNotFound(
-                manifest_path.display().to_string(),
-            ));
-        }
+        let manifest_path = Self::get_manifest_path(input_params)?;
+        let mut manifest_directory = manifest_path.clone();
+        manifest_directory.pop();
 
         // Generate target directory
         let target_directory = if input_params.coverage {
@@ -362,6 +396,25 @@ impl ScryptoCompiler {
 
         Ok(self.target_binary_path.clone())
     }
+
+    // pub fn compile_workspace(&mut self) -> Result<Vec<PathBuf>, ScryptoCompilerError> {
+    //     if self.is_workspace()? {
+    //         return Err(ScryptoCompilerError::CargoManifestNoWorkspace);
+    //     }
+    //     let members = self.get_workspace_members()?;
+
+    //     let mut result: Vec<PathBuf> = Vec::new();
+    //     for member in members {
+    //         let mut new_input_params = self.input_params.clone();
+    //         if let Some(md) = new_input_params.manifest_directory.as_mut() {
+    //             md.push(member);
+    //         } else {
+    //             new_input_params.manifest_directory = Some(member.into());
+    //         }
+    //         result.push(ScryptoCompiler::from_input_params(&new_input_params)?.compile()?);
+    //     }
+    //     Ok(result)
+    // }
 
     pub fn target_binary_path(&self) -> PathBuf {
         self.target_binary_path.clone()
@@ -483,6 +536,24 @@ impl ScryptoCompilerBuilder {
     // Returns output wasm file path
     pub fn compile(&mut self) -> Result<PathBuf, ScryptoCompilerError> {
         self.build()?.compile()
+    }
+
+    pub fn compile_workspace(&mut self) -> Result<Vec<PathBuf>, ScryptoCompilerError> {
+        let manifest_path = ScryptoCompiler::get_manifest_path(&self.input_params)?;
+
+        let members = ScryptoCompiler::get_workspace_members(&manifest_path)?;
+
+        let mut result: Vec<PathBuf> = Vec::new();
+        for member in members {
+            let mut new_input_params = self.input_params.clone();
+            if let Some(md) = new_input_params.manifest_directory.as_mut() {
+                md.push(member);
+            } else {
+                new_input_params.manifest_directory = Some(member.into());
+            }
+            result.push(ScryptoCompiler::from_input_params(&new_input_params)?.compile()?);
+        }
+        Ok(result)
     }
 }
 
@@ -678,6 +749,73 @@ mod tests {
     }
 
     #[test]
+    fn test_compilation_workspace() {
+        // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets";
+
+        cargo_clean(manifest_dir);
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .compile_workspace();
+
+        // Assert
+        assert!(status.is_ok());
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    fn test_compilation_workspace_in_current_dir() {
+        // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets";
+
+        cargo_clean(manifest_dir);
+        std::env::set_current_dir(manifest_dir).unwrap();
+
+        // Act
+        let status = ScryptoCompiler::new().compile_workspace();
+
+        // Assert
+        assert!(status.is_ok());
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    fn test_compilation_workspace_fail_on_wrong_method() {
+        // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets";
+
+        cargo_clean(manifest_dir);
+        std::env::set_current_dir(manifest_dir).unwrap();
+
+        // Act
+        let status = ScryptoCompiler::new().compile();
+
+        // Assert
+        assert!(matches!(
+            status,
+            Err(ScryptoCompilerError::CargoManifestIsWorkspace(..))
+        ));
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
     fn test_invalid_param() {
         assert!(matches!(
             ScryptoCompiler::new()
@@ -733,9 +871,8 @@ mod tests {
 
     #[test]
     fn test_target_binary_path() {
-        let output_path = PathBuf::from(
-            "tests/assets/blueprint/target/wasm32-unknown-unknown/release/test_blueprint.wasm",
-        );
+        let output_path =
+            PathBuf::from("tests/assets/target/wasm32-unknown-unknown/release/test_blueprint.wasm");
         let package_dir = "./tests/assets/blueprint";
         let compiler = ScryptoCompiler::new()
             .manifest_directory(package_dir)
