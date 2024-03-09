@@ -20,5 +20,5 @@ bench = false
 
 [features]
 default = ["std"]
-std = ["serde_json/std", "radix-engine-interface/std", "radix-engine/std", "utils/std"]
-alloc = ["serde_json/alloc", "radix-engine-interface/alloc", "radix-engine/alloc", "utils/alloc"]
+std = ["serde_json/std", "radix-engine-interface/std", "radix-engine/std", "radix-engine/moka", "utils/std"]
+alloc = ["serde_json/alloc", "radix-engine-interface/alloc", "radix-engine/alloc", "radix-engine/lru", "utils/alloc"]
