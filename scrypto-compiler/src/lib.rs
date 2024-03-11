@@ -23,8 +23,6 @@ pub enum ScryptoCompilerError {
     CargoManifestLoadFailure(String),
     /// Returns path to Cargo.toml which cannot be found
     CargoManifestFileNotFound(String),
-    /// Returns information about invalid input compiler parameter
-    InvalidParam(ScryptoCompilerInvalidInputParam),
     /// Returns WASM Optimization error
     WasmOptimizationError(wasm_opt::OptimizationError),
     /// Returns error occured during schema extraction
@@ -35,20 +33,6 @@ pub enum ScryptoCompilerError {
     CargoManifestNoWorkspace(String),
 }
 
-#[derive(Debug)]
-pub enum ScryptoCompilerInvalidInputParam {
-    /// Both parameters were specified: 'coverage' and 'target directory'
-    CoverageDiscardsTargetDirectory,
-    /// Both parameters were specified: 'coverage' and 'force local target'
-    CoverageDiscardsForceLocalTarget,
-    /// Both parameters were specified: 'force local target' and 'target directory'
-    ForceLocalTargetDiscardsTargetDirectory,
-    /// Remove 'Cargo.toml' from 'manifest directory' parameter
-    CargoTomlInManifestDirectory,
-    /// Same variable were set and unset
-    EnvironmentVariableSetAndUnset(String),
-}
-
 #[derive(Clone, Default)]
 pub struct ScryptoCompilerInputParams {
     profile: Profile,
@@ -56,7 +40,7 @@ pub struct ScryptoCompilerInputParams {
     features: Vec<String>,
     package: Vec<String>,
     target_directory: Option<PathBuf>,
-    manifest_directory: Option<PathBuf>,
+    manifest_path: Option<PathBuf>,
     wasm_optimization: Option<wasm_opt::OptimizationOptions>,
 }
 
@@ -119,8 +103,7 @@ impl ScryptoCompiler {
         input_params: &ScryptoCompilerInputParams,
     ) -> Result<Self, ScryptoCompilerError> {
         // Firstly validate input parameters
-        ScryptoCompiler::validate_input_parameters(input_params)
-            .map_err(|e| ScryptoCompilerError::InvalidParam(e))?;
+        ScryptoCompiler::validate_input_parameters(input_params)?;
         // Secondly prepare internally used path basing on input parameters
         let (manifest_path, target_directory, target_binary_path) =
             ScryptoCompiler::prepare_paths(input_params)?;
@@ -134,15 +117,8 @@ impl ScryptoCompiler {
     }
 
     fn validate_input_parameters(
-        input_params: &ScryptoCompilerInputParams,
-    ) -> Result<(), ScryptoCompilerInvalidInputParam> {
-        if input_params
-            .manifest_directory
-            .as_ref()
-            .is_some_and(|v| PathBuf::from(v).ends_with(MANIFEST_FILE))
-        {
-            return Err(ScryptoCompilerInvalidInputParam::CargoTomlInManifestDirectory);
-        }
+        _input_params: &ScryptoCompilerInputParams,
+    ) -> Result<(), ScryptoCompilerError> {
         Ok(())
     }
 
@@ -196,15 +172,23 @@ impl ScryptoCompiler {
         }
     }
 
+    // Returns path to Cargo.toml (including the file)
     fn get_manifest_path(
         input_params: &ScryptoCompilerInputParams,
     ) -> Result<PathBuf, ScryptoCompilerError> {
-        let manifest_directory = input_params
-            .manifest_directory
-            .as_ref()
-            .map_or(env::current_dir().unwrap(), |v| PathBuf::from(v));
-        let mut manifest_path = manifest_directory.clone();
-        manifest_path.push(MANIFEST_FILE);
+        let manifest_path = match input_params.manifest_path.clone() {
+            Some(mut path) => {
+                if !path.ends_with(MANIFEST_FILE) {
+                    path.push(MANIFEST_FILE);
+                }
+                path
+            }
+            None => {
+                let mut path = env::current_dir().map_err(|e| ScryptoCompilerError::IOError(e))?;
+                path.push(MANIFEST_FILE);
+                path
+            }
+        };
 
         if !manifest_path.exists() {
             Err(ScryptoCompilerError::CargoManifestFileNotFound(
@@ -255,8 +239,6 @@ impl ScryptoCompiler {
     ) -> Result<(PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
         // Generate manifest path (manifest directory + "/Cargo.toml")
         let manifest_path = Self::get_manifest_path(input_params)?;
-        let mut manifest_directory = manifest_path.clone();
-        manifest_directory.pop();
 
         // Generate target directory
         let target_directory = if let Some(directory) = &input_params.target_directory {
@@ -405,8 +387,8 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn manifest_directory(&mut self, directory: impl Into<PathBuf>) -> &mut Self {
-        self.input_params.manifest_directory = Some(directory.into());
+    pub fn manifest_path(&mut self, path: impl Into<PathBuf>) -> &mut Self {
+        self.input_params.manifest_path = Some(path.into());
         self
     }
 
@@ -482,10 +464,10 @@ impl ScryptoCompilerBuilder {
         let mut result: Vec<PathBuf> = Vec::new();
         for member in members {
             let mut new_input_params = self.input_params.clone();
-            if let Some(md) = new_input_params.manifest_directory.as_mut() {
+            if let Some(md) = new_input_params.manifest_path.as_mut() {
                 md.push(member);
             } else {
-                new_input_params.manifest_directory = Some(member.into());
+                new_input_params.manifest_path = Some(member.into());
             }
             result.push(ScryptoCompiler::from_input_params(&new_input_params)?.compile()?);
         }
@@ -501,11 +483,11 @@ mod tests {
 
     static SERIAL_COMPILE_MUTEX: Lazy<Mutex<()>> = Lazy::new(Mutex::default);
 
-    fn cargo_clean(manifest_dir: &str) {
+    fn cargo_clean(manifest_path: &str) {
         Command::new("cargo")
             .arg("clean")
             .arg("--manifest-path")
-            .arg(manifest_dir.to_owned() + "/Cargo.toml")
+            .arg(manifest_path.to_owned() + "/Cargo.toml")
             .output()
             .unwrap();
     }
@@ -516,18 +498,18 @@ mod tests {
 
         // Arrange
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .compile();
 
         // Assert
-        assert!(status.is_ok());
+        assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();
@@ -539,9 +521,9 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        std::env::set_current_dir(manifest_dir).unwrap();
+        std::env::set_current_dir(manifest_path).unwrap();
 
         cargo_clean("./");
 
@@ -549,7 +531,7 @@ mod tests {
         let status = ScryptoCompiler::new().compile();
 
         // Assert
-        assert!(status.is_ok());
+        assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();
@@ -561,20 +543,20 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .env("TEST", EnvironmentVariableAction::Set(String::from("1")))
             .env("OTHER", EnvironmentVariableAction::Unset)
             .compile();
 
         // Assert
-        assert!(status.is_ok());
+        assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();
@@ -587,19 +569,19 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .coverage()
             .compile();
 
         // Assert
-        assert!(status.is_ok());
+        assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();
@@ -611,19 +593,19 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .feature("feature-1")
             .compile();
 
         // Assert
-        assert!(status.is_ok());
+        assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();
@@ -635,20 +617,20 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .feature("feature-1")
             .log_level(Level::Warn)
             .compile();
 
         // Assert
-        assert!(status.is_ok());
+        assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();
@@ -660,14 +642,14 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .feature("feature-2")
             .compile();
 
@@ -688,17 +670,17 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets";
+        let manifest_path = "./tests/assets";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .compile_workspace();
 
         // Assert
-        assert!(status.is_ok());
+        assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();
@@ -710,16 +692,16 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets";
+        let manifest_path = "./tests/assets";
 
-        cargo_clean(manifest_dir);
-        std::env::set_current_dir(manifest_dir).unwrap();
+        cargo_clean(manifest_path);
+        std::env::set_current_dir(manifest_path).unwrap();
 
         // Act
         let status = ScryptoCompiler::new().compile_workspace();
 
         // Assert
-        assert!(status.is_ok());
+        assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();
@@ -731,10 +713,10 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets";
+        let manifest_path = "./tests/assets";
 
-        cargo_clean(manifest_dir);
-        std::env::set_current_dir(manifest_dir).unwrap();
+        cargo_clean(manifest_path);
+        std::env::set_current_dir(manifest_path).unwrap();
 
         // Act
         let status = ScryptoCompiler::new().compile();
@@ -755,13 +737,13 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .profile(Profile::Release)
             .compile();
 
@@ -778,13 +760,13 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .profile(Profile::Debug)
             .compile();
 
@@ -801,13 +783,13 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .profile(Profile::Test)
             .compile();
 
@@ -824,13 +806,13 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .profile(Profile::Bench)
             .compile();
 
@@ -847,13 +829,13 @@ mod tests {
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
-        let manifest_dir = "./tests/assets/blueprint";
+        let manifest_path = "./tests/assets/blueprint";
 
-        cargo_clean(manifest_dir);
+        cargo_clean(manifest_path);
 
         // Act
         let status = ScryptoCompiler::new()
-            .manifest_directory(manifest_dir)
+            .manifest_path(manifest_path)
             .profile(Profile::Custom(String::from("custom")))
             .compile();
 
@@ -865,24 +847,12 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_param() {
-        assert!(matches!(
-            ScryptoCompiler::new()
-                .manifest_directory("./Cargo.toml")
-                .compile(),
-            Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidInputParam::CargoTomlInManifestDirectory
-            ))
-        ));
-    }
-
-    #[test]
     fn test_target_binary_path() {
         let output_path =
             PathBuf::from("tests/assets/target/wasm32-unknown-unknown/release/test_blueprint.wasm");
         let package_dir = "./tests/assets/blueprint";
         let compiler = ScryptoCompiler::new()
-            .manifest_directory(package_dir)
+            .manifest_path(package_dir)
             .build()
             .unwrap();
 
@@ -897,7 +867,7 @@ mod tests {
     fn test_target_binary_path_target() {
         let target_dir = "./tests/target";
         let compiler = ScryptoCompiler::new()
-            .manifest_directory("./tests/assets/blueprint")
+            .manifest_path("./tests/assets/blueprint")
             .target_directory(target_dir)
             .build()
             .unwrap();

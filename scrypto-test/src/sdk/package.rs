@@ -81,7 +81,7 @@ impl PackageFactory {
     {
         // Initialize compiler
         let mut compiler = ScryptoCompiler::new()
-            .manifest_directory(path.as_ref())
+            .manifest_path(path.as_ref())
             .build()
             .unwrap_or_else(|err| panic!("Failed to initialize Scrypto Compiler  {:?}", err));
 

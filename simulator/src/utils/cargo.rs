@@ -61,7 +61,7 @@ pub fn build_package<P: AsRef<Path>>(
     // Build with schema
     let mut compiler_builder = ScryptoCompiler::new();
     compiler_builder
-        .manifest_directory(base_path.as_ref())
+        .manifest_path(base_path.as_ref())
         .log_level(log_level);
     if trace {
         compiler_builder.trace();
@@ -101,7 +101,7 @@ pub fn build_package<P: AsRef<Path>>(
     // Build without SCHEMA
     let mut compiler = ScryptoCompiler::new();
     compiler
-        .manifest_directory(base_path.as_ref())
+        .manifest_path(base_path.as_ref())
         .no_schema()
         .log_level(log_level);
     if trace {

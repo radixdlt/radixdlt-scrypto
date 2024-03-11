@@ -9,7 +9,7 @@ impl Compile {
         // Initialize compiler
         let mut compiler_builder = ScryptoCompiler::new();
         compiler_builder
-            .manifest_directory(package_dir.as_ref())
+            .manifest_path(package_dir.as_ref())
             .env("RUSTFLAGS", EnvironmentVariableAction::Set("".into()))
             .env(
                 "CARGO_ENCODED_RUSTFLAGS",
