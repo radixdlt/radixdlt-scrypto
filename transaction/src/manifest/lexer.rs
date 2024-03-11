@@ -451,14 +451,18 @@ pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
             "unexpected end of file".to_string(),
             "end of file".to_string(),
         ),
-        LexerError::UnexpectedChar(c, position) => (
-            Span {
-                start: position,
-                end: position,
-            },
-            format!("unexpected character {:?}", c),
-            "unexpected character".to_string(),
-        ),
+        LexerError::UnexpectedChar(c, position) => {
+            let mut end = position;
+            end.full_index += 1;
+            (
+                Span {
+                    start: position,
+                    end,
+                },
+                format!("unexpected character {:?}", c),
+                "unexpected character".to_string(),
+            )
+        }
         LexerError::InvalidInteger(string, span) => (
             span,
             format!("invalid integer {}", string),
