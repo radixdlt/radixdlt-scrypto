@@ -89,3 +89,10 @@ fn test_manifest_lexer_error_invalid_unicode() {
     // InvalidUnicode
     check_manifest!("manifest_lexer_error_invalid_unicode_1");
 }
+
+#[test]
+fn test_manifest_lexer_error_diagnostics_unexpected_eof() {
+    // UnexpectedEof
+    check_manifest!("manifest_lexer_error_unexpected_eof_1");
+    check_manifest!("manifest_lexer_error_unexpected_eof_2");
+}
