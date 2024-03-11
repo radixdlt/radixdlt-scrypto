@@ -27,39 +27,39 @@ macro_rules! check_manifest {
 #[test]
 fn test_manifest_parser_error_diagnostics_unexpected_token() {
     // UnexpectedToken
-    check_manifest!("manifest_unexpected_token_1");
-    check_manifest!("manifest_unexpected_token_2");
+    check_manifest!("manifest_parser_error_unexpected_token_1");
+    check_manifest!("manifest_parser_error_unexpected_token_2");
 }
 
 #[test]
 fn test_manifest_parser_error_diagnostics_unexpected_token_or_missing_semicolon() {
     // UnexpectedTokenOrMissingSemicolon
-    check_manifest!("manifest_unexpected_token_or_missing_semicolon_1");
+    check_manifest!("manifest_parser_error_unexpected_token_or_missing_semicolon_1");
 }
 
 #[test]
 fn test_manifest_parser_error_diagnostics_invalid_number_of_types() {
     // InvalidNumberOfTypes
-    check_manifest!("manifest_invalid_number_of_types_1");
-    check_manifest!("manifest_invalid_number_of_types_2");
+    check_manifest!("manifest_parser_error_invalid_number_of_types_1");
+    check_manifest!("manifest_parser_error_invalid_number_of_types_2");
 }
 
 #[test]
 fn test_manifest_parser_error_diagnostics_invalid_number_of_values() {
     // InvalidNumberOfValues
-    check_manifest!("manifest_invalid_number_of_values_1");
-    check_manifest!("manifest_invalid_number_of_values_2");
+    check_manifest!("manifest_parser_error_invalid_number_of_values_1");
+    check_manifest!("manifest_parser_error_invalid_number_of_values_2");
 }
 
 #[test]
 fn test_manifest_parser_error_diagnostics_unexpected_eof() {
     // UnexpectedEof
-    check_manifest!("manifest_unexpected_eof_1");
+    check_manifest!("manifest_parser_error_unexpected_eof_1");
 }
 
 #[test]
 fn test_manifest_parser_error_diagnostics_unknown_enum_discriminator() {
     // UnknownEnumDiscriminator
-    check_manifest!("manifest_unknown_enum_discriminator_1");
-    check_manifest!("manifest_unknown_enum_discriminator_2");
+    check_manifest!("manifest_parser_error_unknown_enum_discriminator_1");
+    check_manifest!("manifest_parser_error_unknown_enum_discriminator_2");
 }
