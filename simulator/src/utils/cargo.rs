@@ -62,9 +62,10 @@ pub fn build_package<P: AsRef<Path>>(
     let mut compiler_builder = ScryptoCompiler::new();
     compiler_builder
         .manifest_directory(base_path.as_ref())
-        .trace(trace)
-        .log_level(log_level)
-        .no_schema(false);
+        .log_level(log_level);
+    if trace {
+        compiler_builder.trace();
+    }
     if force_local_target {
         compiler_builder.target_directory("./");
     }
@@ -101,9 +102,11 @@ pub fn build_package<P: AsRef<Path>>(
     let mut compiler = ScryptoCompiler::new();
     compiler
         .manifest_directory(base_path.as_ref())
-        .trace(trace)
-        .no_schema(true)
+        .no_schema()
         .log_level(log_level);
+    if trace {
+        compiler_builder.trace();
+    }
     if force_local_target {
         compiler_builder.target_directory("./");
     }

@@ -57,9 +57,6 @@ pub struct ScryptoCompilerInputParams {
     package: Vec<String>,
     target_directory: Option<PathBuf>,
     manifest_directory: Option<PathBuf>,
-    trace: bool,
-    log_level: Level,
-    no_schema: bool,
     wasm_optimization: Option<wasm_opt::OptimizationOptions>,
 }
 
@@ -147,48 +144,6 @@ impl ScryptoCompiler {
             return Err(ScryptoCompilerInvalidInputParam::CargoTomlInManifestDirectory);
         }
         Ok(())
-    }
-
-    fn prepare_features(&self) -> String {
-        let mut features = String::new();
-
-        // Firstly apply scrypto features
-        if self.input_params.trace {
-            features.push_str(",scrypto/trace");
-        }
-        if self.input_params.no_schema {
-            features.push_str(",scrypto/no-schema");
-        }
-        if Level::Error <= self.input_params.log_level {
-            features.push_str(",scrypto/log-error");
-        }
-        if Level::Warn <= self.input_params.log_level {
-            features.push_str(",scrypto/log-warn");
-        }
-        if Level::Info <= self.input_params.log_level {
-            features.push_str(",scrypto/log-info");
-        }
-        if Level::Debug <= self.input_params.log_level {
-            features.push_str(",scrypto/log-debug");
-        }
-        if Level::Trace <= self.input_params.log_level {
-            features.push_str(",scrypto/log-trace");
-        }
-        // if self.input_params.coverage {
-        //     features.push_str(",scrypto/coverage");
-        // }
-
-        // Then apply user features
-        if !self.input_params.features.is_empty() {
-            features.push(',');
-            features.push_str(&self.input_params.features.join(","));
-        }
-
-        if features.starts_with(',') {
-            features.remove(0);
-        }
-
-        features
     }
 
     fn prepare_rust_flags(&self) -> String {
@@ -324,10 +279,13 @@ impl ScryptoCompiler {
     }
 
     fn prepare_command(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
-        let features_list = self.prepare_features();
-        let features = (!features_list.is_empty())
-            .then_some(vec!["--features", &features_list])
-            .unwrap_or_default();
+        let features: Vec<&str> = self
+            .input_params
+            .features
+            .iter()
+            .map(|f| ["--features", f])
+            .flatten()
+            .collect();
 
         let rustflags = self.prepare_rust_flags();
 
@@ -335,7 +293,7 @@ impl ScryptoCompiler {
             .input_params
             .package
             .iter()
-            .map(|p| vec!["--package", p])
+            .map(|p| ["--package", p])
             .flatten()
             .collect();
 
@@ -452,18 +410,46 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn trace(&mut self, trace: bool) -> &mut Self {
-        self.input_params.trace = trace;
+    pub fn trace(&mut self) -> &mut Self {
+        self.input_params
+            .features
+            .push(String::from("scrypto/trace"));
         self
     }
 
     pub fn log_level(&mut self, log_level: Level) -> &mut Self {
-        self.input_params.log_level = log_level;
+        if Level::Error <= log_level {
+            self.input_params
+                .features
+                .push(String::from("scrypto/log-error"));
+        }
+        if Level::Warn <= log_level {
+            self.input_params
+                .features
+                .push(String::from("scrypto/log-warn"));
+        }
+        if Level::Info <= log_level {
+            self.input_params
+                .features
+                .push(String::from("scrypto/log-info"));
+        }
+        if Level::Debug <= log_level {
+            self.input_params
+                .features
+                .push(String::from("scrypto/log-debug"));
+        }
+        if Level::Trace <= log_level {
+            self.input_params
+                .features
+                .push(String::from("scrypto/log-trace"));
+        }
         self
     }
 
-    pub fn no_schema(&mut self, no_schema: bool) -> &mut Self {
-        self.input_params.no_schema = no_schema;
+    pub fn no_schema(&mut self) -> &mut Self {
+        self.input_params
+            .features
+            .push(String::from("scrypto/no-schema"));
         self
     }
 
