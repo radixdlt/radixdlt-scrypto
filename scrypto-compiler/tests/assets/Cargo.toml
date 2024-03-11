@@ -5,3 +5,6 @@ members = [
     "blueprint",
     "blueprint_2",
 ]
+
+[profile.custom]
+inherits = "dev"

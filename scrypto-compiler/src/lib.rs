@@ -417,19 +417,31 @@ pub enum Profile {
     #[default]
     Release,
     Debug,
+    Test,
+    Bench,
+    Custom(String),
 }
 
 impl Profile {
     fn as_command_args(&self) -> Vec<String> {
-        match self {
-            Profile::Release => vec![String::from("--release")],
-            Profile::Debug => vec![],
-        }
+        vec![
+            String::from("--profile"),
+            match self {
+                Profile::Release => String::from("release"),
+                Profile::Debug => String::from("dev"),
+                Profile::Test => String::from("test"),
+                Profile::Bench => String::from("bench"),
+                Profile::Custom(name) => name.clone(),
+            },
+        ]
     }
     fn as_directory_name(&self) -> String {
         match self {
             Profile::Release => String::from("release"),
             Profile::Debug => String::from("debug"),
+            Profile::Test => String::from("test"),
+            Profile::Bench => String::from("bench"),
+            Profile::Custom(name) => name.clone(),
         }
     }
 }
@@ -788,6 +800,121 @@ mod tests {
             status,
             Err(ScryptoCompilerError::CargoManifestIsWorkspace(..))
         ));
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    fn test_compilation_profile_release() {
+        // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets/blueprint";
+
+        cargo_clean(manifest_dir);
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .profile(Profile::Release)
+            .compile();
+
+        // Assert
+        assert!(status.is_ok(), "{:?}", status);
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    fn test_compilation_profile_debug() {
+        // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets/blueprint";
+
+        cargo_clean(manifest_dir);
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .profile(Profile::Debug)
+            .compile();
+
+        // Assert
+        assert!(status.is_ok(), "{:?}", status);
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    fn test_compilation_profile_test() {
+        // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets/blueprint";
+
+        cargo_clean(manifest_dir);
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .profile(Profile::Test)
+            .compile();
+
+        // Assert
+        assert!(status.is_ok(), "{:?}", status);
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    fn test_compilation_profile_bench() {
+        // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets/blueprint";
+
+        cargo_clean(manifest_dir);
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .profile(Profile::Bench)
+            .compile();
+
+        // Assert
+        assert!(status.is_ok(), "{:?}", status);
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    fn test_compilation_profile_custom() {
+        // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_dir = "./tests/assets/blueprint";
+
+        cargo_clean(manifest_dir);
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_directory(manifest_dir)
+            .profile(Profile::Custom(String::from("custom")))
+            .compile();
+
+        // Assert
+        assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
         std::env::set_current_dir(cur_dir).unwrap();
