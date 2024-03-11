@@ -35,6 +35,7 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         self.diff.new_nodes.borrow_mut().push((key, node));
     }
 
+    #[allow(unused_variables)]
     fn associate_substate(
         &self,
         state_tree_leaf_key: &StoredTreeNodeKey,
