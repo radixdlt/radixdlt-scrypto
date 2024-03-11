@@ -94,7 +94,7 @@ pub enum LexerError {
     UnexpectedEof,
     UnexpectedChar(char, Position),
     InvalidInteger(String, Span),
-    InvalidUnicode(u32, Position),
+    InvalidUnicode(u32, Span),
     UnknownIdentifier(String, Position),
 }
 
@@ -326,6 +326,8 @@ impl Lexer {
                     'r' => s.push('\r'),
                     't' => s.push('\t'),
                     'u' => {
+                        // Remember '\\' position
+                        self.start = self.previous;
                         let mut unicode = self.read_utf16_unit()?;
                         // Check unicode surrogate pair
                         // (see https://unicodebook.readthedocs.io/unicode_encodings.html#surrogates)
@@ -339,10 +341,13 @@ impl Lexer {
                                 return Err(self.unexpected_char());
                             }
                         }
-                        s.push(
-                            char::from_u32(unicode)
-                                .ok_or(LexerError::InvalidUnicode(unicode, self.current))?,
-                        );
+                        s.push(char::from_u32(unicode).ok_or(LexerError::InvalidUnicode(
+                            unicode,
+                            Span {
+                                start: self.start,
+                                end: self.current,
+                            },
+                        ))?);
                     }
                     _ => {
                         return Err(self.unexpected_char());
@@ -469,11 +474,8 @@ pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
             format!("invalid integer {}", string),
             "invalid integer".to_string(),
         ),
-        LexerError::InvalidUnicode(value, position) => (
-            Span {
-                start: position,
-                end: position,
-            },
+        LexerError::InvalidUnicode(value, span) => (
+            span,
             format!("invalid unicode value {}", value),
             "invalid unicode".to_string(),
         ),
@@ -766,10 +768,17 @@ mod tests {
             r#""\uDCAC\u1234""#,
             LexerError::InvalidUnicode(
                 1238580,
-                Position {
-                    full_index: 13,
-                    line_number: 1,
-                    line_char_index: 13
+                Span {
+                    start: Position {
+                        full_index: 2,
+                        line_number: 1,
+                        line_char_index: 2
+                    },
+                    end: Position {
+                        full_index: 13,
+                        line_number: 1,
+                        line_char_index: 13
+                    }
                 }
             )
         );
