@@ -428,6 +428,7 @@ impl Lexer {
     }
 
     fn unexpected_char_previous(&self) -> LexerError {
+        // If advance() is used, we want to get the position of previous token not the current one
         LexerError::UnexpectedChar(self.text[self.previous.full_index], self.previous)
     }
 }
