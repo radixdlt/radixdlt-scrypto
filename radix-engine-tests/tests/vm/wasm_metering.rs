@@ -5,14 +5,28 @@ use radix_engine::{
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
+use wabt::{wasm2wat_with_features, Features};
 
 #[test]
 fn test_loop() {
+    let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "1000"));
+    let instrumented_code = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
+        .validate(
+            &code,
+            single_function_package_definition("Test", "f")
+                .blueprints
+                .values(),
+        )
+        .unwrap();
+    println!(
+        "{}",
+        wasm2wat_with_features(&instrumented_code.0, Features::new()).unwrap()
+    );
+
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
-    let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "1000"));
     let package_address = ledger.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),

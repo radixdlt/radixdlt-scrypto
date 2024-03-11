@@ -569,17 +569,6 @@ fn get_blueprint_name(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<
     runtime.actor_get_blueprint_name().map(|buffer| buffer.0)
 }
 
-fn consume_wasm_execution_units(
-    caller: Caller<'_, HostState>,
-    n: u64,
-) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
-
-    // TODO: wasm-instrument uses u64 for cost units. We need to decide if we want to move from u32
-    // to u64 as well.
-    runtime.consume_wasm_execution_units(n as u32)
-}
-
 fn emit_event(
     mut caller: Caller<'_, HostState>,
     event_name_ptr: u32,
@@ -1266,13 +1255,6 @@ impl WasmiModule {
             },
         );
 
-        let host_consume_wasm_execution_units = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>, n: u64| -> Result<(), Trap> {
-                consume_wasm_execution_units(caller, n).map_err(|e| e.into())
-            },
-        );
-
         let host_emit_event = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -1562,11 +1544,6 @@ impl WasmiModule {
             ACTOR_GET_BLUEPRINT_NAME_FUNCTION_NAME,
             host_get_blueprint_name
         );
-        linker_define!(
-            linker,
-            COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
-            host_consume_wasm_execution_units
-        );
         linker_define!(linker, ACTOR_EMIT_EVENT_FUNCTION_NAME, host_emit_event);
         linker_define!(linker, SYS_LOG_FUNCTION_NAME, host_emit_log);
         linker_define!(linker, SYS_PANIC_FUNCTION_NAME, host_panic);
@@ -1753,6 +1730,18 @@ impl WasmInstance for WasmiInstance {
                 .data_mut()
                 .runtime_ptr
                 .write(runtime as *mut _ as usize as *mut _);
+        }
+
+        {
+            // hack to quickly gauge the potential performance gain
+            self.instance
+                .get_global(
+                    &self.store,
+                    COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
+                )
+                .unwrap()
+                .set(self.store.as_context_mut(), Value::I64(i64::MAX))
+                .unwrap();
         }
 
         let func = self.get_export_func(func_name).unwrap();

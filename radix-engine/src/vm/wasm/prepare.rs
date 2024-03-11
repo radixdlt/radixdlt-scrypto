@@ -1129,7 +1129,7 @@ impl WasmModule {
     ) -> Result<Self, PrepareError> {
         #[cfg(not(feature = "coverage"))]
         {
-            let backend = gas_metering::host_function::Injector::new(
+            let backend = gas_metering::mutable_global::Injector::new(
                 MODULE_ENV_NAME,
                 COSTING_CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
             );
