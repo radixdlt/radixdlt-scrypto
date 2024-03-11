@@ -49,7 +49,7 @@ pub fn build_package<P: AsRef<Path>>(
     force_local_target: bool,
     disable_wasm_opt: bool,
     log_level: Level,
-    coverage: bool,
+    _coverage: bool,
     features: &[String],
     env_variables: &[String],
 ) -> Result<(PathBuf, PathBuf), BuildError> {
@@ -103,8 +103,7 @@ pub fn build_package<P: AsRef<Path>>(
         .manifest_directory(base_path.as_ref())
         .trace(trace)
         .no_schema(true)
-        .log_level(log_level)
-        .coverage(coverage);
+        .log_level(log_level);
     if force_local_target {
         compiler_builder.target_directory("./");
     }

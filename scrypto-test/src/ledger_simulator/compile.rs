@@ -6,20 +6,23 @@ pub struct Compile;
 
 impl Compile {
     pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
-        let coverage = false;
-        #[cfg(feature = "coverage")]
-        let coverage = true;
-
         // Initialize compiler
-        let mut compiler = ScryptoCompiler::new()
+        let mut compiler_builder = ScryptoCompiler::new();
+        compiler_builder
             .manifest_directory(package_dir.as_ref())
             .env("RUSTFLAGS", EnvironmentVariableAction::Set("".into()))
             .env(
                 "CARGO_ENCODED_RUSTFLAGS",
                 EnvironmentVariableAction::Set("".into()),
             )
-            .coverage(coverage)
-            .log_level(Level::Trace) // all logs from error to trace
+            .log_level(Level::Trace); // all logs from error to trace
+
+        #[cfg(feature = "coverage")]
+        {
+            compiler_builder.coverage();
+        }
+
+        let mut compiler = compiler_builder
             .build()
             .unwrap_or_else(|err| panic!("Failed to initialize Scrypto Compiler {:?}", err));
 

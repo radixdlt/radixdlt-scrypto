@@ -60,7 +60,6 @@ pub struct ScryptoCompilerInputParams {
     trace: bool,
     log_level: Level,
     no_schema: bool,
-    coverage: bool,
     wasm_optimization: Option<wasm_opt::OptimizationOptions>,
 }
 
@@ -140,9 +139,6 @@ impl ScryptoCompiler {
     fn validate_input_parameters(
         input_params: &ScryptoCompilerInputParams,
     ) -> Result<(), ScryptoCompilerInvalidInputParam> {
-        if input_params.coverage && input_params.target_directory.is_some() {
-            return Err(ScryptoCompilerInvalidInputParam::CoverageDiscardsTargetDirectory);
-        }
         if input_params
             .manifest_directory
             .as_ref()
@@ -178,9 +174,9 @@ impl ScryptoCompiler {
         if Level::Trace <= self.input_params.log_level {
             features.push_str(",scrypto/log-trace");
         }
-        if self.input_params.coverage {
-            features.push_str(",scrypto/coverage");
-        }
+        // if self.input_params.coverage {
+        //     features.push_str(",scrypto/coverage");
+        // }
 
         // Then apply user features
         if !self.input_params.features.is_empty() {
@@ -196,12 +192,7 @@ impl ScryptoCompiler {
     }
 
     fn prepare_rust_flags(&self) -> String {
-        if self.input_params.coverage {
-            "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir"
-                .to_owned()
-        } else {
-            env::var("CARGO_ENCODED_RUSTFLAGS").unwrap_or_default()
-        }
+        env::var("CARGO_ENCODED_RUSTFLAGS").unwrap_or_default()
     }
 
     fn get_default_target_directory(manifest_path: &Path) -> Result<String, ScryptoCompilerError> {
@@ -313,13 +304,7 @@ impl ScryptoCompiler {
         manifest_directory.pop();
 
         // Generate target directory
-        let target_directory = if input_params.coverage {
-            // If coverate compiler parameter is set to true then set target directory as
-            // manifest directory + "/coverage"
-            let mut target_path = manifest_directory.clone();
-            target_path.push("coverage");
-            target_path
-        } else if let Some(directory) = &input_params.target_directory {
+        let target_directory = if let Some(directory) = &input_params.target_directory {
             // If target directory is explicitly specified as compiler parameter then use it as is
             PathBuf::from(directory)
         } else {
@@ -353,11 +338,6 @@ impl ScryptoCompiler {
             .map(|p| vec!["--package", p])
             .flatten()
             .collect();
-
-        if self.input_params.coverage {
-            // coverage uses '-Z' flag which requires use of nightly toolchain
-            command.arg("+nightly");
-        }
 
         command
             .arg("build")
@@ -487,8 +467,10 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn coverage(&mut self, coverage: bool) -> &mut Self {
-        self.input_params.coverage = coverage;
+    pub fn coverage(&mut self) -> &mut Self {
+        self.input_params
+            .features
+            .push(String::from("scrypto/coverage"));
         self
     }
 
@@ -627,7 +609,7 @@ mod tests {
         // Act
         let status = ScryptoCompiler::new()
             .manifest_directory(manifest_dir)
-            .coverage(true)
+            .coverage()
             .compile();
 
         // Assert
@@ -900,16 +882,6 @@ mod tests {
     fn test_invalid_param() {
         assert!(matches!(
             ScryptoCompiler::new()
-                .coverage(true)
-                .target_directory("./out")
-                .compile(),
-            Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidInputParam::CoverageDiscardsTargetDirectory
-            ))
-        ));
-
-        assert!(matches!(
-            ScryptoCompiler::new()
                 .manifest_directory("./Cargo.toml")
                 .compile(),
             Err(ScryptoCompilerError::InvalidParam(
@@ -946,21 +918,6 @@ mod tests {
 
         assert_eq!(
             "./tests/target/wasm32-unknown-unknown/release/test_blueprint.wasm",
-            compiler.target_binary_path().display().to_string()
-        );
-    }
-
-    #[test]
-    fn test_target_binary_path_coverage() {
-        let package_dir = "./tests/assets/blueprint";
-        let compiler = ScryptoCompiler::new()
-            .manifest_directory(package_dir)
-            .coverage(true)
-            .build()
-            .unwrap();
-
-        assert_eq!(
-            "./tests/assets/blueprint/coverage/wasm32-unknown-unknown/release/test_blueprint.wasm",
             compiler.target_binary_path().display().to_string()
         );
     }
