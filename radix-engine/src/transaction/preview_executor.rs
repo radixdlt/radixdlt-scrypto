@@ -24,6 +24,13 @@ pub fn execute_preview<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
 
     let validator = NotarizedTransactionValidator::new(validation_config);
 
+    let mut execution_config = if preview_intent.flags.disable_auth {
+        ExecutionConfig::for_preview_no_auth(network.clone())
+    } else {
+        ExecutionConfig::for_preview(network.clone())
+    };
+    execution_config = execution_config.with_kernel_trace(with_kernel_trace);
+
     let validated = validator
         .validate_preview_intent_v1(preview_intent)
         .map_err(PreviewError::TransactionValidationError)?;
@@ -32,7 +39,7 @@ pub fn execute_preview<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
         substate_db,
         vm,
         &CostingParameters::default(),
-        &ExecutionConfig::for_preview(network.clone()).with_kernel_trace(with_kernel_trace),
+        &execution_config,
         &validated.get_executable(),
     ))
 }

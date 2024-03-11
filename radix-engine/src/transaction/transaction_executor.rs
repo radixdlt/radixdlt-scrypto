@@ -186,6 +186,14 @@ impl ExecutionConfig {
         }
     }
 
+    pub fn for_preview_no_auth(network_definition: NetworkDefinition) -> Self {
+        Self {
+            enabled_modules: EnabledModules::for_preview_no_auth(),
+            enable_cost_breakdown: true,
+            ..Self::default(network_definition)
+        }
+    }
+
     pub fn with_kernel_trace(mut self, enabled: bool) -> Self {
         if enabled {
             self.enabled_modules.insert(EnabledModules::KERNEL_TRACE);

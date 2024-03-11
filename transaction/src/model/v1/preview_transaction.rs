@@ -6,6 +6,7 @@ pub struct PreviewFlags {
     pub use_free_credit: bool,
     pub assume_all_signature_proofs: bool,
     pub skip_epoch_check: bool,
+    pub disable_auth: bool,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
