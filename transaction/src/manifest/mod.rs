@@ -2,6 +2,7 @@ pub mod ast;
 pub mod blob_provider;
 pub mod compiler;
 pub mod decompiler;
+pub mod diagnostic_snippets;
 #[cfg(feature = "std")]
 pub mod dumper;
 pub mod e2e;

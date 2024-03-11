@@ -1,10 +1,8 @@
-use std::fmt::Display;
-
-use annotate_snippets::{Annotation, AnnotationType, Renderer, Slice, Snippet, SourceAnnotation};
-use sbor::rust::cmp::min;
+use crate::manifest::diagnostic_snippets::create_snippet;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::str::FromStr;
+use std::fmt::Display;
 
 /// The span of tokens. The `start` and `end` are Unicode code points / UTF-32 - as opposed to a
 /// byte-based / UTF-8 index.
@@ -440,7 +438,7 @@ impl Lexer {
 
 pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
     let lines_cnt = s.lines().count();
-    let (mut span, title, label) = match err {
+    let (span, title, label) = match err {
         LexerError::UnexpectedEof => (
             Span {
                 start: Position {
@@ -488,55 +486,7 @@ pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
             "unknown identifier".to_string(),
         ),
     };
-
-    // Surround span with few lines for more context
-    if span.start.line_number > 5 {
-        span.start.line_number -= 5;
-    } else {
-        span.start.line_number = 1;
-    }
-    span.end.line_number = min(span.end.line_number + 5, lines_cnt);
-
-    let mut source = String::new();
-    let mut skipped_chars = 0;
-    for (i, line) in s.lines().enumerate() {
-        if (i + 1) < span.start.line_number {
-            // Add 1 for '\n' character
-            skipped_chars += line.chars().count() + 1;
-        } else if (i + 1) <= span.end.line_number {
-            source.push_str(line.into());
-            source.push('\n');
-        } else if (i + 1) > span.end.line_number {
-            break;
-        }
-    }
-
-    span.start.full_index -= skipped_chars;
-    span.end.full_index -= skipped_chars;
-
-    let snippet = Snippet {
-        slices: vec![Slice {
-            source: source.as_str(),
-            line_start: span.start.line_number,
-            origin: None,
-            fold: false,
-            annotations: vec![SourceAnnotation {
-                label: label.as_str(),
-                annotation_type: AnnotationType::Info,
-                range: (span.start.full_index, span.end.full_index),
-            }],
-        }],
-        title: Some(Annotation {
-            label: Some(title.as_str()),
-            id: None,
-            annotation_type: AnnotationType::Error,
-        }),
-        footer: vec![],
-    };
-
-    let renderer = Renderer::styled();
-    let s = renderer.render(snippet).to_string();
-    s
+    create_snippet(s, &span, &title, &label)
 }
 
 #[cfg(test)]
