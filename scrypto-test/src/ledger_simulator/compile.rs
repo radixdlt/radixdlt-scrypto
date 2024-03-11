@@ -13,8 +13,11 @@ impl Compile {
         // Initialize compiler
         let mut compiler = ScryptoCompiler::new()
             .manifest_directory(package_dir.as_ref())
-            .env("RUSTFLAGS", "")
-            .env("CARGO_ENCODED_RUSTFLAGS", "")
+            .env("RUSTFLAGS", EnvironmentVariableAction::Set("".into()))
+            .env(
+                "CARGO_ENCODED_RUSTFLAGS",
+                EnvironmentVariableAction::Set("".into()),
+            )
             .coverage(coverage)
             .log_level(Level::Trace) // all logs from error to trace
             .build()

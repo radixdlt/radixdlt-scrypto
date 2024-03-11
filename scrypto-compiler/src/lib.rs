@@ -4,6 +4,7 @@ use radix_engine_interface::{blueprints::package::PackageDefinition, types::Leve
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 use std::{env, io};
+use utils::prelude::IndexMap;
 
 const MANIFEST_FILE: &str = "Cargo.toml";
 const BUILD_TARGET: &str = "wasm32-unknown-unknown";
@@ -51,8 +52,7 @@ pub enum ScryptoCompilerInvalidInputParam {
 #[derive(Clone, Default)]
 pub struct ScryptoCompilerInputParams {
     profile: Profile,
-    set_environment_variables: Vec<(String, String)>,
-    unset_environment_variables: Vec<String>,
+    environment_variables: IndexMap<String, EnvironmentVariableAction>,
     features: Vec<String>,
     package: Option<String>,
     target_directory: Option<PathBuf>,
@@ -63,6 +63,46 @@ pub struct ScryptoCompilerInputParams {
     coverage: bool,
     force_local_target: bool,
     wasm_optimization: Option<wasm_opt::OptimizationOptions>,
+}
+
+#[derive(Default, Clone)]
+pub enum Profile {
+    #[default]
+    Release,
+    Debug,
+    Test,
+    Bench,
+    Custom(String),
+}
+
+impl Profile {
+    fn as_command_args(&self) -> Vec<String> {
+        vec![
+            String::from("--profile"),
+            match self {
+                Profile::Release => String::from("release"),
+                Profile::Debug => String::from("dev"),
+                Profile::Test => String::from("test"),
+                Profile::Bench => String::from("bench"),
+                Profile::Custom(name) => name.clone(),
+            },
+        ]
+    }
+    fn as_directory_name(&self) -> String {
+        match self {
+            Profile::Release => String::from("release"),
+            Profile::Debug => String::from("debug"),
+            Profile::Test => String::from("test"),
+            Profile::Bench => String::from("bench"),
+            Profile::Custom(name) => name.clone(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum EnvironmentVariableAction {
+    Set(String),
+    Unset,
 }
 
 #[derive(Clone)]
@@ -116,15 +156,6 @@ impl ScryptoCompiler {
             .is_some_and(|v| PathBuf::from(v).ends_with(MANIFEST_FILE))
         {
             return Err(ScryptoCompilerInvalidInputParam::CargoTomlInManifestDirectory);
-        }
-        if let Some(env) = input_params.set_environment_variables.iter().find_map(|v| {
-            if input_params.unset_environment_variables.contains(&v.0) {
-                Some(v.0.clone())
-            } else {
-                None
-            }
-        }) {
-            return Err(ScryptoCompilerInvalidInputParam::EnvironmentVariableSetAndUnset(env));
         }
         Ok(())
     }
@@ -351,14 +382,16 @@ impl ScryptoCompiler {
             .arg(&self.manifest_path)
             .args(package)
             .args(features)
-            .env("CARGO_ENCODED_RUSTFLAGS", rustflags)
-            .envs(self.input_params.set_environment_variables.clone());
+            .env("CARGO_ENCODED_RUSTFLAGS", rustflags);
 
         self.input_params
-            .unset_environment_variables
+            .environment_variables
             .iter()
-            .for_each(|e| {
-                command.env_remove(e);
+            .for_each(|(name, action)| {
+                match action {
+                    EnvironmentVariableAction::Set(value) => command.env(name, value),
+                    EnvironmentVariableAction::Unset => command.env_remove(name),
+                };
             });
 
         Ok(())
@@ -412,40 +445,6 @@ impl ScryptoCompiler {
     }
 }
 
-#[derive(Default, Clone)]
-pub enum Profile {
-    #[default]
-    Release,
-    Debug,
-    Test,
-    Bench,
-    Custom(String),
-}
-
-impl Profile {
-    fn as_command_args(&self) -> Vec<String> {
-        vec![
-            String::from("--profile"),
-            match self {
-                Profile::Release => String::from("release"),
-                Profile::Debug => String::from("dev"),
-                Profile::Test => String::from("test"),
-                Profile::Bench => String::from("bench"),
-                Profile::Custom(name) => name.clone(),
-            },
-        ]
-    }
-    fn as_directory_name(&self) -> String {
-        match self {
-            Profile::Release => String::from("release"),
-            Profile::Debug => String::from("debug"),
-            Profile::Test => String::from("test"),
-            Profile::Bench => String::from("bench"),
-            Profile::Custom(name) => name.clone(),
-        }
-    }
-}
-
 #[derive(Default)]
 pub struct ScryptoCompilerBuilder {
     input_params: ScryptoCompilerInputParams,
@@ -457,17 +456,10 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn env(&mut self, name: &str, value: &str) -> &mut Self {
+    pub fn env(&mut self, name: &str, action: EnvironmentVariableAction) -> &mut Self {
         self.input_params
-            .set_environment_variables
-            .push((name.to_string(), value.to_string()));
-        self
-    }
-
-    pub fn unset_env(&mut self, name: &str) -> &mut Self {
-        self.input_params
-            .unset_environment_variables
-            .push(name.to_string());
+            .environment_variables
+            .insert(name.to_string(), action);
         self
     }
 
@@ -613,7 +605,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compilation_debug() {
+    fn test_compilation_env_var() {
         // Arrange
         let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
@@ -626,7 +618,8 @@ mod tests {
         // Act
         let status = ScryptoCompiler::new()
             .manifest_directory(manifest_dir)
-            .profile(Profile::Debug)
+            .env("TEST", EnvironmentVariableAction::Set(String::from("1")))
+            .env("OTHER", EnvironmentVariableAction::Unset)
             .compile();
 
         // Assert
@@ -960,18 +953,6 @@ mod tests {
                 ScryptoCompilerInvalidInputParam::CargoTomlInManifestDirectory
             ))
         ));
-
-        let name = String::from("TEST");
-        let result = ScryptoCompiler::new()
-            .env(&name, "none")
-            .unset_env(&name)
-            .compile();
-        assert!(match result {
-            Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidInputParam::EnvironmentVariableSetAndUnset(error_name),
-            )) => error_name == name,
-            _ => false,
-        });
     }
 
     #[test]

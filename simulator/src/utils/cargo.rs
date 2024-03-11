@@ -71,9 +71,9 @@ pub fn build_package<P: AsRef<Path>>(
     });
     env_variables_decoded.iter().for_each(|v| {
         if v.len() == 1 {
-            compiler_builder.env(v[0], "");
+            compiler_builder.env(v[0], EnvironmentVariableAction::Set("".into()));
         } else if v.len() == 2 {
-            compiler_builder.env(v[0], v[1]);
+            compiler_builder.env(v[0], EnvironmentVariableAction::Set(v[1].into()));
         }
     });
     let mut compiler = compiler_builder
@@ -109,9 +109,9 @@ pub fn build_package<P: AsRef<Path>>(
     });
     env_variables_decoded.iter().for_each(|v| {
         if v.len() == 1 {
-            compiler.env(v[0], "");
+            compiler.env(v[0], EnvironmentVariableAction::Set("".into()));
         } else if v.len() == 2 {
-            compiler.env(v[0], v[1]);
+            compiler.env(v[0], EnvironmentVariableAction::Set(v[1].into()));
         }
     });
 
