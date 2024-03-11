@@ -104,6 +104,8 @@ pub struct Lexer {
     text: Vec<char>,
     /// The current position in the text
     current: Position,
+    /// The previous position in the text
+    previous: Position,
     /// The start position of token being lexed
     start: Position,
 }
@@ -130,6 +132,11 @@ impl Lexer {
                 line_number: 1,
                 line_char_index: 0,
             },
+            previous: Position {
+                full_index: 0,
+                line_number: 1,
+                line_char_index: 0,
+            },
             start: Position {
                 full_index: 0,
                 line_number: 1,
@@ -151,6 +158,7 @@ impl Lexer {
 
     fn advance(&mut self) -> Result<char, LexerError> {
         let c = self.peek()?;
+        self.previous = self.current;
         self.current.full_index += 1;
         if c == '\n' {
             self.current.line_number += 1;
@@ -237,43 +245,43 @@ impl Lexer {
                 '1' => match self.advance()? {
                     '2' => match self.advance()? {
                         '8' => self.parse_int(&s, "i128", TokenKind::I128Literal),
-                        _ => Err(self.unexpected_char()),
+                        _ => Err(self.unexpected_char_previous()),
                     },
                     '6' => self.parse_int(&s, "i16", TokenKind::I16Literal),
-                    _ => Err(self.unexpected_char()),
+                    _ => Err(self.unexpected_char_previous()),
                 },
                 '3' => match self.advance()? {
                     '2' => self.parse_int(&s, "i32", TokenKind::I32Literal),
-                    _ => Err(self.unexpected_char()),
+                    _ => Err(self.unexpected_char_previous()),
                 },
                 '6' => match self.advance()? {
                     '4' => self.parse_int(&s, "i64", TokenKind::I64Literal),
-                    _ => Err(self.unexpected_char()),
+                    _ => Err(self.unexpected_char_previous()),
                 },
                 '8' => self.parse_int(&s, "i8", TokenKind::I8Literal),
-                _ => Err(self.unexpected_char()),
+                _ => Err(self.unexpected_char_previous()),
             },
             'u' => match self.advance()? {
                 '1' => match self.advance()? {
                     '2' => match self.advance()? {
                         '8' => self.parse_int(&s, "u128", TokenKind::U128Literal),
-                        _ => Err(self.unexpected_char()),
+                        _ => Err(self.unexpected_char_previous()),
                     },
                     '6' => self.parse_int(&s, "u16", TokenKind::U16Literal),
-                    _ => Err(self.unexpected_char()),
+                    _ => Err(self.unexpected_char_previous()),
                 },
                 '3' => match self.advance()? {
                     '2' => self.parse_int(&s, "u32", TokenKind::U32Literal),
-                    _ => Err(self.unexpected_char()),
+                    _ => Err(self.unexpected_char_previous()),
                 },
                 '6' => match self.advance()? {
                     '4' => self.parse_int(&s, "u64", TokenKind::U64Literal),
-                    _ => Err(self.unexpected_char()),
+                    _ => Err(self.unexpected_char_previous()),
                 },
                 '8' => self.parse_int(&s, "u8", TokenKind::U8Literal),
-                _ => Err(self.unexpected_char()),
+                _ => Err(self.unexpected_char_previous()),
             },
-            _ => Err(self.unexpected_char()),
+            _ => Err(self.unexpected_char_previous()),
         }
         .map(|kind| self.new_token(kind, self.start, self.current))
     }
@@ -398,10 +406,10 @@ impl Lexer {
             ';' => TokenKind::Semicolon,
             '=' => match self.advance()? {
                 '>' => TokenKind::FatArrow,
-                _ => return Err(self.unexpected_char()),
+                _ => return Err(self.unexpected_char_previous()),
             },
             _ => {
-                return Err(self.unexpected_char());
+                return Err(self.unexpected_char_previous());
             }
         };
 
@@ -417,6 +425,10 @@ impl Lexer {
 
     fn unexpected_char(&self) -> LexerError {
         LexerError::UnexpectedChar(self.text[self.current.full_index - 1], self.current)
+    }
+
+    fn unexpected_char_previous(&self) -> LexerError {
+        LexerError::UnexpectedChar(self.text[self.previous.full_index], self.previous)
     }
 }
 
@@ -701,9 +713,9 @@ mod tests {
             LexerError::UnexpectedChar(
                 '7',
                 Position {
-                    full_index: 3,
+                    full_index: 2,
                     line_number: 1,
-                    line_char_index: 3
+                    line_char_index: 2
                 }
             )
         );
@@ -712,9 +724,20 @@ mod tests {
             LexerError::UnexpectedChar(
                 '7',
                 Position {
-                    full_index: 18,
+                    full_index: 17,
                     line_number: 3,
-                    line_char_index: 5
+                    line_char_index: 4
+                }
+            )
+        );
+        lex_error!(
+            "3_0i8",
+            LexerError::UnexpectedChar(
+                '_',
+                Position {
+                    full_index: 1,
+                    line_number: 1,
+                    line_char_index: 1
                 }
             )
         );
