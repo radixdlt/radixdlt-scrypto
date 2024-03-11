@@ -1,0 +1,11 @@
+[1m[91merror[0m: [1minvalid unicode value 1238580[0m
+[1m[94m   |[0m
+[1m[94m 4 |[0m     "lock_fee"
+[1m[94m 5 |[0m ;
+[1m[94m 6 |[0m CALL_METHOD
+[1m[94m 7 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+[1m[94m 8 |[0m     "some_method"
+[1m[94m 9 |[0m     "\uDCAC\u1234"
+[1m[94m   |[0m[1m[94m       -----------[0m [1m[94m[1m[94minfo[0m[1m[94m: invalid unicode[0m[0m
+[1m[94m10 |[0m ;
+[1m[94m   |[0m
