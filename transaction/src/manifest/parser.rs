@@ -1163,6 +1163,8 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
         ParserError::UnknownEnumDiscriminator { actual, span } => {
             let title = format!("unknown enum discrimitaror found `{}`", actual);
             (span, title, "unknown enum discrimitaror".to_string())
+            let title = format!("unknown enum discriminator found `{}`", actual);
+            (span, title, "unknown enum discriminator".to_string())
         }
     };
 
@@ -1170,7 +1172,7 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
     if span.start.line_number > 5 {
         span.start.line_number -= 5;
     } else {
-        span.start.line_number = 0;
+        span.start.line_number = 1;
     }
     span.end.line_number = min(span.end.line_number + 5, lines_cnt);
 
@@ -1194,7 +1196,7 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
     let snippet = Snippet {
         slices: vec![Slice {
             source: source.as_str(),
-            line_start: span.start.line_number + 1,
+            line_start: span.start.line_number,
             origin: None,
             fold: false,
             annotations: vec![SourceAnnotation {

@@ -370,7 +370,7 @@ impl Lexer {
             if c.is_ascii_hexdigit() {
                 code = code * 16 + c.to_digit(16).unwrap();
             } else {
-                return Err(self.unexpected_char());
+                return Err(self.unexpected_char_previous());
             }
         }
 
@@ -493,7 +493,7 @@ pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
     if span.start.line_number > 5 {
         span.start.line_number -= 5;
     } else {
-        span.start.line_number = 0;
+        span.start.line_number = 1;
     }
     span.end.line_number = min(span.end.line_number + 5, lines_cnt);
 
@@ -517,7 +517,7 @@ pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
     let snippet = Snippet {
         slices: vec![Slice {
             source: source.as_str(),
-            line_start: span.start.line_number + 1,
+            line_start: span.start.line_number,
             origin: None,
             fold: false,
             annotations: vec![SourceAnnotation {
