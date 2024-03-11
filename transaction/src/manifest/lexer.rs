@@ -1,4 +1,9 @@
+use std::fmt::Display;
+
+use annotate_snippets::{Annotation, AnnotationType, Renderer, Slice, Snippet, SourceAnnotation};
+use sbor::rust::cmp::min;
 use sbor::rust::fmt;
+use sbor::rust::fmt::Debug;
 use sbor::rust::str::FromStr;
 
 /// The span of tokens. The `start` and `end` are Unicode code points / UTF-32 - as opposed to a
@@ -88,7 +93,7 @@ pub struct Token {
 pub enum LexerError {
     UnexpectedEof,
     UnexpectedChar(char, Position),
-    InvalidInteger(String, Position),
+    InvalidInteger(String, Span),
     InvalidUnicode(u32, Position),
     UnknownIdentifier(String, Position),
 }
@@ -99,6 +104,8 @@ pub struct Lexer {
     text: Vec<char>,
     /// The current position in the text
     current: Position,
+    /// The start position of token being lexed
+    start: Position,
 }
 
 pub fn tokenize(s: &str) -> Result<Vec<Token>, LexerError> {
@@ -119,6 +126,11 @@ impl Lexer {
         Self {
             text: text.chars().collect(),
             current: Position {
+                full_index: 0,
+                line_number: 1,
+                line_char_index: 0,
+            },
+            start: Position {
                 full_index: 0,
                 line_number: 1,
                 line_char_index: 0,
@@ -195,7 +207,7 @@ impl Lexer {
 
     // TODO: consider using DFA
     fn tokenize_number(&mut self) -> Result<Token, LexerError> {
-        let start = self.current;
+        self.start = self.current;
         let mut s = String::new();
 
         // negative sign
@@ -205,7 +217,9 @@ impl Lexer {
 
         // integer
         match self.advance()? {
-            c @ '0' => s.push(c),
+            c @ '0' => {
+                s.push(c);
+            }
             c @ '1'..='9' => {
                 s.push(c);
                 while self.peek()?.is_ascii_digit() {
@@ -261,18 +275,28 @@ impl Lexer {
             },
             _ => Err(self.unexpected_char()),
         }
-        .map(|kind| self.new_token(kind, start, self.current))
+        .map(|kind| self.new_token(kind, self.start, self.current))
     }
 
-    fn parse_int<T: FromStr>(
+    fn parse_int<T>(
         &self,
         int: &str,
         ty: &str,
         map: fn(T) -> TokenKind,
-    ) -> Result<TokenKind, LexerError> {
-        int.parse::<T>()
-            .map(map)
-            .map_err(|_| LexerError::InvalidInteger(format!("{}{}", int, ty), self.current))
+    ) -> Result<TokenKind, LexerError>
+    where
+        T: FromStr,
+        <T as FromStr>::Err: Display,
+    {
+        int.parse::<T>().map(map).map_err(|err| {
+            LexerError::InvalidInteger(
+                format!("{} - {} {}", int, err.to_string(), ty),
+                Span {
+                    start: self.start,
+                    end: self.current,
+                },
+            )
+        })
     }
 
     fn tokenize_string(&mut self) -> Result<Token, LexerError> {
@@ -394,6 +418,106 @@ impl Lexer {
     fn unexpected_char(&self) -> LexerError {
         LexerError::UnexpectedChar(self.text[self.current.full_index - 1], self.current)
     }
+}
+
+pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
+    let lines_cnt = s.lines().count();
+    let (mut span, title, label) = match err {
+        LexerError::UnexpectedEof => (
+            Span {
+                start: Position {
+                    full_index: s.len() - 1,
+                    line_number: lines_cnt,
+                    line_char_index: 0,
+                },
+                end: Position {
+                    full_index: s.len() - 1,
+                    line_number: lines_cnt,
+                    line_char_index: 0,
+                },
+            },
+            "unexpected end of file".to_string(),
+            "end of file".to_string(),
+        ),
+        LexerError::UnexpectedChar(c, position) => (
+            Span {
+                start: position,
+                end: position,
+            },
+            format!("unexpected character {:?}", c),
+            "unexpected character".to_string(),
+        ),
+        LexerError::InvalidInteger(string, span) => (
+            span,
+            format!("invalid integer {}", string),
+            "invalid integer".to_string(),
+        ),
+        LexerError::InvalidUnicode(value, position) => (
+            Span {
+                start: position,
+                end: position,
+            },
+            format!("invalid unicode value {}", value),
+            "invalid unicode".to_string(),
+        ),
+        LexerError::UnknownIdentifier(string, position) => (
+            Span {
+                start: position,
+                end: position,
+            },
+            format!("unknown identifier {}", string),
+            "unknown identifier".to_string(),
+        ),
+    };
+
+    // Surround span with few lines for more context
+    if span.start.line_number > 5 {
+        span.start.line_number -= 5;
+    } else {
+        span.start.line_number = 0;
+    }
+    span.end.line_number = min(span.end.line_number + 5, lines_cnt);
+
+    let mut source = String::new();
+    let mut skipped_chars = 0;
+    for (i, line) in s.lines().enumerate() {
+        if (i + 1) < span.start.line_number {
+            // Add 1 for '\n' character
+            skipped_chars += line.chars().count() + 1;
+        } else if (i + 1) <= span.end.line_number {
+            source.push_str(line.into());
+            source.push('\n');
+        } else if (i + 1) > span.end.line_number {
+            break;
+        }
+    }
+
+    span.start.full_index -= skipped_chars;
+    span.end.full_index -= skipped_chars;
+
+    let snippet = Snippet {
+        slices: vec![Slice {
+            source: source.as_str(),
+            line_start: span.start.line_number + 1,
+            origin: None,
+            fold: false,
+            annotations: vec![SourceAnnotation {
+                label: label.as_str(),
+                annotation_type: AnnotationType::Info,
+                range: (span.start.full_index, span.end.full_index),
+            }],
+        }],
+        title: Some(Annotation {
+            label: Some(title.as_str()),
+            id: None,
+            annotation_type: AnnotationType::Error,
+        }),
+        footer: vec![],
+    };
+
+    let renderer = Renderer::styled();
+    let s = renderer.render(snippet).to_string();
+    s
 }
 
 #[cfg(test)]
