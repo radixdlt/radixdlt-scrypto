@@ -67,3 +67,11 @@ fn test_manifest_parser_error_diagnostics_unknown_enum_discriminator() {
     check_manifest!("manifest_parser_error_unknown_enum_discriminator_1");
     check_manifest!("manifest_parser_error_unknown_enum_discriminator_2");
 }
+
+#[test]
+fn test_manifest_lexer_error_unexpected_char() {
+    // UnexpectedChar
+    check_manifest!("manifest_lexer_error_unexpected_char_1");
+    check_manifest!("manifest_lexer_error_unexpected_char_2");
+    check_manifest!("manifest_lexer_error_unexpected_char_3");
+}
