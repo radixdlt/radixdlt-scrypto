@@ -75,3 +75,10 @@ fn test_manifest_lexer_error_unexpected_char() {
     check_manifest!("manifest_lexer_error_unexpected_char_2");
     check_manifest!("manifest_lexer_error_unexpected_char_3");
 }
+#[test]
+fn test_manifest_lexer_error_invalid_integer() {
+    // InvalidInteger
+    check_manifest!("manifest_lexer_error_invalid_integer_1");
+    check_manifest!("manifest_lexer_error_invalid_integer_2");
+    check_manifest!("manifest_lexer_error_invalid_integer_3");
+}
