@@ -1187,6 +1187,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         package_address
     }
 
+    /// Publishes a package at a specified address.
+    ///
+    /// This is for testing only. On real networks, this operation is not allowed to users.
     pub fn publish_package_at_address<P: Into<PackagePublishingSource>>(
         &mut self,
         source: P,
