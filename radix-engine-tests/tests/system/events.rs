@@ -2109,6 +2109,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 
@@ -2192,6 +2193,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 
@@ -2334,6 +2336,7 @@ fn account_configuration_emits_expected_events() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 
@@ -2556,6 +2559,7 @@ fn account_deposit_batch_emits_expected_events() {
                 use_free_credit: true,
                 assume_all_signature_proofs: true,
                 skip_epoch_check: true,
+                disable_auth: false,
             },
         );
 
@@ -2645,6 +2649,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 

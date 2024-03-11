@@ -514,6 +514,7 @@ mod tests {
                 use_free_credit: true,
                 assume_all_signature_proofs: false,
                 skip_epoch_check: false,
+                disable_auth: false,
             },
         };
 
