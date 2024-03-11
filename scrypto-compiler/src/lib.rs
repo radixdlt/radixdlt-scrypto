@@ -54,7 +54,7 @@ pub struct ScryptoCompilerInputParams {
     profile: Profile,
     environment_variables: IndexMap<String, EnvironmentVariableAction>,
     features: Vec<String>,
-    package: Option<String>,
+    package: Vec<String>,
     target_directory: Option<PathBuf>,
     manifest_directory: Option<PathBuf>,
     trace: bool,
@@ -359,12 +359,13 @@ impl ScryptoCompiler {
 
         let rustflags = self.prepare_rust_flags();
 
-        let package = self
+        let package: Vec<&str> = self
             .input_params
             .package
-            .as_ref()
-            .and_then(|p| Some(vec!["--package", &p]))
-            .unwrap_or_default();
+            .iter()
+            .map(|p| vec!["--package", p])
+            .flatten()
+            .collect();
 
         if self.input_params.coverage {
             // coverage uses '-Z' flag which requires use of nightly toolchain
@@ -469,7 +470,7 @@ impl ScryptoCompilerBuilder {
     }
 
     pub fn package(&mut self, name: &str) -> &mut Self {
-        self.input_params.package = Some(name.to_string());
+        self.input_params.package.push(name.to_string());
         self
     }
 
