@@ -62,10 +62,12 @@ pub fn build_package<P: AsRef<Path>>(
     let mut compiler_builder = ScryptoCompiler::new();
     compiler_builder
         .manifest_directory(base_path.as_ref())
-        .force_local_target(force_local_target)
         .trace(trace)
         .log_level(log_level)
         .no_schema(false);
+    if force_local_target {
+        compiler_builder.target_directory("./");
+    }
     features.iter().for_each(|f| {
         compiler_builder.feature(f);
     });
@@ -99,11 +101,13 @@ pub fn build_package<P: AsRef<Path>>(
     let mut compiler = ScryptoCompiler::new();
     compiler
         .manifest_directory(base_path.as_ref())
-        .force_local_target(force_local_target)
         .trace(trace)
         .no_schema(true)
         .log_level(log_level)
         .coverage(coverage);
+    if force_local_target {
+        compiler_builder.target_directory("./");
+    }
     features.iter().for_each(|f| {
         compiler.feature(f);
     });

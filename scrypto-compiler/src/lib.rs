@@ -61,7 +61,6 @@ pub struct ScryptoCompilerInputParams {
     log_level: Level,
     no_schema: bool,
     coverage: bool,
-    force_local_target: bool,
     wasm_optimization: Option<wasm_opt::OptimizationOptions>,
 }
 
@@ -141,14 +140,8 @@ impl ScryptoCompiler {
     fn validate_input_parameters(
         input_params: &ScryptoCompilerInputParams,
     ) -> Result<(), ScryptoCompilerInvalidInputParam> {
-        if input_params.coverage && input_params.force_local_target {
-            return Err(ScryptoCompilerInvalidInputParam::CoverageDiscardsForceLocalTarget);
-        }
         if input_params.coverage && input_params.target_directory.is_some() {
             return Err(ScryptoCompilerInvalidInputParam::CoverageDiscardsTargetDirectory);
-        }
-        if input_params.force_local_target && input_params.target_directory.is_some() {
-            return Err(ScryptoCompilerInvalidInputParam::ForceLocalTargetDiscardsTargetDirectory);
         }
         if input_params
             .manifest_directory
@@ -326,12 +319,6 @@ impl ScryptoCompiler {
             let mut target_path = manifest_directory.clone();
             target_path.push("coverage");
             target_path
-        } else if input_params.force_local_target {
-            // If force local target compiler parameter is set to true then set target directory as
-            // manifest directory + "/target"
-            let mut target_path = manifest_directory;
-            target_path.push("target");
-            target_path
         } else if let Some(directory) = &input_params.target_directory {
             // If target directory is explicitly specified as compiler parameter then use it as is
             PathBuf::from(directory)
@@ -502,11 +489,6 @@ impl ScryptoCompilerBuilder {
 
     pub fn coverage(&mut self, coverage: bool) -> &mut Self {
         self.input_params.coverage = coverage;
-        self
-    }
-
-    pub fn force_local_target(&mut self, local_target: bool) -> &mut Self {
-        self.input_params.force_local_target = local_target;
         self
     }
 
@@ -928,26 +910,6 @@ mod tests {
 
         assert!(matches!(
             ScryptoCompiler::new()
-                .coverage(true)
-                .force_local_target(true)
-                .compile(),
-            Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidInputParam::CoverageDiscardsForceLocalTarget
-            ))
-        ));
-
-        assert!(matches!(
-            ScryptoCompiler::new()
-                .target_directory("./out")
-                .force_local_target(true)
-                .compile(),
-            Err(ScryptoCompilerError::InvalidParam(
-                ScryptoCompilerInvalidInputParam::ForceLocalTargetDiscardsTargetDirectory
-            ))
-        ));
-
-        assert!(matches!(
-            ScryptoCompiler::new()
                 .manifest_directory("./Cargo.toml")
                 .compile(),
             Err(ScryptoCompilerError::InvalidParam(
@@ -999,20 +961,6 @@ mod tests {
 
         assert_eq!(
             "./tests/assets/blueprint/coverage/wasm32-unknown-unknown/release/test_blueprint.wasm",
-            compiler.target_binary_path().display().to_string()
-        );
-    }
-
-    #[test]
-    fn test_target_binary_path_force_local() {
-        let compiler = ScryptoCompiler::new()
-            .manifest_directory("./tests/assets/blueprint")
-            .force_local_target(true)
-            .build()
-            .unwrap();
-
-        assert_eq!(
-            "./tests/assets/blueprint/target/wasm32-unknown-unknown/release/test_blueprint.wasm",
             compiler.target_binary_path().display().to_string()
         );
     }
