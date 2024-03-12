@@ -59,7 +59,7 @@ pub fn build_package<P: AsRef<Path>>(
         .collect();
 
     // Build with schema
-    let mut compiler_builder = ScryptoCompiler::new();
+    let mut compiler_builder = ScryptoCompiler::builder();
     compiler_builder
         .manifest_path(base_path.as_ref())
         .log_level(log_level);
@@ -99,7 +99,7 @@ pub fn build_package<P: AsRef<Path>>(
     .map_err(|err| BuildError::IOErrorAtPath(err, definition_path.clone()))?;
 
     // Build without SCHEMA
-    let mut compiler = ScryptoCompiler::new();
+    let mut compiler = ScryptoCompiler::builder();
     compiler
         .manifest_path(base_path.as_ref())
         .no_schema()

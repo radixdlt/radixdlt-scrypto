@@ -7,7 +7,7 @@ pub struct Compile;
 impl Compile {
     pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
         // Initialize compiler
-        let mut compiler_builder = ScryptoCompiler::new();
+        let mut compiler_builder = ScryptoCompiler::builder();
         compiler_builder
             .manifest_path(package_dir.as_ref())
             .env("RUSTFLAGS", EnvironmentVariableAction::Set("".into()))

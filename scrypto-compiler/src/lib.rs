@@ -94,7 +94,7 @@ pub struct ScryptoCompiler {
 }
 
 impl ScryptoCompiler {
-    pub fn new() -> ScryptoCompilerBuilder {
+    pub fn builder() -> ScryptoCompilerBuilder {
         ScryptoCompilerBuilder::default()
     }
 
@@ -538,7 +538,7 @@ mod tests {
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .compile();
 
@@ -562,7 +562,7 @@ mod tests {
         cargo_clean("./");
 
         // Act
-        let status = ScryptoCompiler::new().compile();
+        let status = ScryptoCompiler::builder().compile();
 
         // Assert
         assert!(status.is_ok(), "{:?}", status);
@@ -583,7 +583,7 @@ mod tests {
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .env("TEST", EnvironmentVariableAction::Set(String::from("1")))
             .env("OTHER", EnvironmentVariableAction::Unset)
@@ -609,7 +609,7 @@ mod tests {
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .coverage()
             .compile();
@@ -633,7 +633,7 @@ mod tests {
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .feature("feature-1")
             .compile();
@@ -657,7 +657,7 @@ mod tests {
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .feature("feature-1")
             .log_level(Level::Warn)
@@ -682,7 +682,7 @@ mod tests {
         std::env::set_current_dir(cur_dir.clone()).unwrap();
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .feature("feature-2")
             .compile();
@@ -709,7 +709,7 @@ mod tests {
         cargo_clean(manifest_path);
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .compile_workspace();
 
@@ -732,7 +732,7 @@ mod tests {
         std::env::set_current_dir(manifest_path).unwrap();
 
         // Act
-        let status = ScryptoCompiler::new().compile_workspace();
+        let status = ScryptoCompiler::builder().compile_workspace();
 
         // Assert
         assert!(status.is_ok(), "{:?}", status);
@@ -753,7 +753,7 @@ mod tests {
         std::env::set_current_dir(manifest_path).unwrap();
 
         // Act
-        let status = ScryptoCompiler::new().compile();
+        let status = ScryptoCompiler::builder().compile();
 
         // Assert
         assert!(matches!(
@@ -776,7 +776,7 @@ mod tests {
         cargo_clean(manifest_path);
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .profile(Profile::Release)
             .compile();
@@ -799,7 +799,7 @@ mod tests {
         cargo_clean(manifest_path);
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .profile(Profile::Debug)
             .compile();
@@ -822,7 +822,7 @@ mod tests {
         cargo_clean(manifest_path);
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .profile(Profile::Test)
             .compile();
@@ -845,7 +845,7 @@ mod tests {
         cargo_clean(manifest_path);
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .profile(Profile::Bench)
             .compile();
@@ -868,7 +868,7 @@ mod tests {
         cargo_clean(manifest_path);
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .profile(Profile::Custom(String::from("custom")))
             .compile();
@@ -891,7 +891,7 @@ mod tests {
         cargo_clean(manifest_path);
 
         // Act
-        let status = ScryptoCompiler::new()
+        let status = ScryptoCompiler::builder()
             .manifest_path(manifest_path)
             .compile_with_stdio(Some(Stdio::piped()), Some(Stdio::null()), None);
 
@@ -907,7 +907,7 @@ mod tests {
         let output_path =
             PathBuf::from("tests/assets/target/wasm32-unknown-unknown/release/test_blueprint.wasm");
         let package_dir = "./tests/assets/blueprint";
-        let compiler = ScryptoCompiler::new()
+        let compiler = ScryptoCompiler::builder()
             .manifest_path(package_dir)
             .build()
             .unwrap();
@@ -922,7 +922,7 @@ mod tests {
     #[test]
     fn test_target_binary_path_target() {
         let target_dir = "./tests/target";
-        let compiler = ScryptoCompiler::new()
+        let compiler = ScryptoCompiler::builder()
             .manifest_path("./tests/assets/blueprint")
             .target_directory(target_dir)
             .build()
