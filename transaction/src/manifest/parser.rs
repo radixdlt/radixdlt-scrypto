@@ -42,6 +42,7 @@ pub enum ParserError {
     },
     MaxDepthExceeded {
         actual: usize,
+        max: usize,
         span: Span,
     },
 }
@@ -479,7 +480,8 @@ impl Parser {
             let token = self.peek()?;
 
             return Err(ParserError::MaxDepthExceeded {
-                actual: self.max_depth,
+                actual: self.stack_depth,
+                max: self.max_depth,
                 span: token.span,
             });
         }
@@ -1156,8 +1158,10 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
             let title = format!("expected {} number of types, found {}", expected, actual);
             (span, title, "invalid number of types".to_string())
         }
-        ParserError::InvalidHex { span, .. } | ParserError::MaxDepthExceeded { span, .. } => {
-            (span, "title".to_string(), "label".to_string())
+        ParserError::InvalidHex { span, .. } => (span, "title".to_string(), "label".to_string()),
+        ParserError::MaxDepthExceeded { span, actual, max } => {
+            let title = format!("manifest actual depth {} exceeded max {}", actual, max);
+            (span, title, "max depth exceeded".to_string())
         }
         ParserError::UnknownEnumDiscriminator { actual, span } => {
             let title = format!("unknown enum discriminator found `{}`", actual);
@@ -1367,7 +1371,8 @@ mod tests {
         parse_value_error!(
             &value_string,
             ParserError::MaxDepthExceeded {
-                actual: 20,
+                actual: 21,
+                max: 20,
                 span: Span {
                     start: Position {
                         full_index: 120,

@@ -2204,7 +2204,8 @@ mod tests {
             BlobProvider::default(),
         );
         let expected = CompileError::ParserError(ParserError::MaxDepthExceeded {
-            actual: 20,
+            actual: 21,
+            max: 20,
             span: Span {
                 start: Position {
                     full_index: 231,
