@@ -2,7 +2,7 @@ use cargo_toml::Manifest;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus};
+use std::process::{Command, ExitStatus, Stdio};
 use std::{env, io};
 use utils::prelude::IndexMap;
 
@@ -315,12 +315,36 @@ impl ScryptoCompiler {
         }
     }
 
+    pub fn compile_with_stdio<T: Into<Stdio>>(
+        &mut self,
+        stdin: Option<T>,
+        stdout: Option<T>,
+        stderr: Option<T>,
+    ) -> Result<PathBuf, ScryptoCompilerError> {
+        // Create compilation command
+        let mut command = Command::new("cargo");
+        self.prepare_command(&mut command)?;
+        if let Some(s) = stdin {
+            command.stdin(s);
+        }
+        if let Some(s) = stdout {
+            command.stdout(s);
+        }
+        if let Some(s) = stderr {
+            command.stderr(s);
+        }
+        self.compile_internal(&mut command)
+    }
+
     // Returns output wasm file path
     pub fn compile(&mut self) -> Result<PathBuf, ScryptoCompilerError> {
         // Create compilation command
         let mut command = Command::new("cargo");
         self.prepare_command(&mut command)?;
+        self.compile_internal(&mut command)
+    }
 
+    fn compile_internal(&mut self, command: &mut Command) -> Result<PathBuf, ScryptoCompilerError> {
         // Execute command
         let output = command.output().map_err(ScryptoCompilerError::IOError)?;
 
@@ -454,6 +478,16 @@ impl ScryptoCompilerBuilder {
     // Returns output wasm file path
     pub fn compile(&mut self) -> Result<PathBuf, ScryptoCompilerError> {
         self.build()?.compile()
+    }
+
+    // Returns output wasm file path
+    pub fn compile_with_stdio<T: Into<Stdio>>(
+        &mut self,
+        stdin: Option<T>,
+        stdout: Option<T>,
+        stderr: Option<T>,
+    ) -> Result<PathBuf, ScryptoCompilerError> {
+        self.build()?.compile_with_stdio(stdin, stdout, stderr)
     }
 
     pub fn compile_workspace(&mut self) -> Result<Vec<PathBuf>, ScryptoCompilerError> {
@@ -838,6 +872,28 @@ mod tests {
             .manifest_path(manifest_path)
             .profile(Profile::Custom(String::from("custom")))
             .compile();
+
+        // Assert
+        assert!(status.is_ok(), "{:?}", status);
+
+        // Restore current directory
+        std::env::set_current_dir(cur_dir).unwrap();
+    }
+
+    #[test]
+    fn test_compilation_with_stdio() {
+        // Arrange
+        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+
+        let cur_dir = std::env::current_dir().unwrap();
+        let manifest_path = "./tests/assets/blueprint";
+
+        cargo_clean(manifest_path);
+
+        // Act
+        let status = ScryptoCompiler::new()
+            .manifest_path(manifest_path)
+            .compile_with_stdio(Some(Stdio::piped()), Some(Stdio::null()), None);
 
         // Assert
         assert!(status.is_ok(), "{:?}", status);
