@@ -1,5 +1,4 @@
 use std::ffi::OsStr;
-use std::fs;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
@@ -79,53 +78,12 @@ pub fn build_package<P: AsRef<Path>>(
             compiler_builder.env(v[0], EnvironmentVariableAction::Set(v[1].into()));
         }
     });
-    let mut compiler = compiler_builder
-        .build()
-        .map_err(|e| BuildError::ScryptoCompilerError(e))?;
-    let wasm_path = compiler
-        .compile()
-        .map_err(|e| BuildError::ScryptoCompilerError(e))?;
-
-    let definition_path = wasm_path.with_extension("rpd");
-
-    // Extract SCHEMA
-    let (_, definition) = compiler
-        .extract_schema_from_wasm()
-        .map_err(|e| BuildError::ScryptoCompilerError(e))?;
-    fs::write(
-        &definition_path,
-        manifest_encode(&definition).map_err(BuildError::SchemaEncodeError)?,
-    )
-    .map_err(|err| BuildError::IOErrorAtPath(err, definition_path.clone()))?;
-
-    // Build without SCHEMA
-    let mut compiler = ScryptoCompiler::builder();
-    compiler
-        .manifest_path(base_path.as_ref())
-        .no_schema()
-        .log_level(log_level);
-    if trace {
-        compiler_builder.scrypto_macro_trace();
-    }
-    if force_local_target {
-        compiler_builder.target_directory("./");
-    }
-    features.iter().for_each(|f| {
-        compiler.feature(f);
-    });
-    env_variables_decoded.iter().for_each(|v| {
-        if v.len() == 1 {
-            compiler.env(v[0], EnvironmentVariableAction::Set("".into()));
-        } else if v.len() == 2 {
-            compiler.env(v[0], EnvironmentVariableAction::Set(v[1].into()));
-        }
-    });
 
     // Optimizes the built wasm using Binaryen's wasm-opt tool. The code that follows is equivalent
     // to running the following commands in the CLI:
     // wasm-opt -0z --strip-debug --strip-dwarf --strip-procedures $some_path $some_path
     if !disable_wasm_opt {
-        compiler.optimize_with_wasm_opt(
+        compiler_builder.optimize_with_wasm_opt(
             wasm_opt::OptimizationOptions::new_optimize_for_size_aggressively()
                 .add_pass(wasm_opt::Pass::StripDebug)
                 .add_pass(wasm_opt::Pass::StripDwarf)
@@ -133,11 +91,14 @@ pub fn build_package<P: AsRef<Path>>(
         );
     }
 
-    let wasm_path = compiler
+    let build_results = compiler_builder
         .compile()
         .map_err(|e| BuildError::ScryptoCompilerError(e))?;
 
-    Ok((wasm_path, definition_path))
+    Ok((
+        build_results.wasm.path,
+        build_results.package_definition.path,
+    ))
 }
 
 /// Runs tests within a package.

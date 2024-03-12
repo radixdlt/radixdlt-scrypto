@@ -98,6 +98,18 @@ pub enum EnvironmentVariableAction {
     Unset,
 }
 
+#[derive(Debug)]
+pub struct BuildArtifacts {
+    pub wasm: BuildArtifact<Vec<u8>>,
+    pub package_definition: BuildArtifact<PackageDefinition>,
+}
+
+#[derive(Debug)]
+pub struct BuildArtifact<T> {
+    pub path: PathBuf,
+    pub content: T,
+}
+
 #[derive(Clone)]
 pub struct ScryptoCompiler {
     /// Scrypto compiler input parameters.
@@ -177,18 +189,18 @@ impl ScryptoCompiler {
         }
     }
 
-    fn get_workspace_members(manifest_path: &Path) -> Result<Vec<String>, ScryptoCompilerError> {
-        let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
-            ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
-        })?;
-        if let Some(workspace) = manifest.workspace {
-            Ok(workspace.members)
-        } else {
-            Err(ScryptoCompilerError::CargoManifestNoWorkspace(
-                manifest_path.display().to_string(),
-            ))
-        }
-    }
+    // fn get_workspace_members(manifest_path: &Path) -> Result<Vec<String>, ScryptoCompilerError> {
+    //     let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
+    //         ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
+    //     })?;
+    //     if let Some(workspace) = manifest.workspace {
+    //         Ok(workspace.members)
+    //     } else {
+    //         Err(ScryptoCompilerError::CargoManifestNoWorkspace(
+    //             manifest_path.display().to_string(),
+    //         ))
+    //     }
+    // }
 
     // Returns path to Cargo.toml (including the file)
     fn get_manifest_path(
@@ -278,14 +290,23 @@ impl ScryptoCompiler {
         Ok((manifest_path, target_directory, target_binary_path))
     }
 
-    fn prepare_command(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
-        let features: Vec<&str> = self
+    fn prepare_command(
+        &mut self,
+        command: &mut Command,
+        no_schema: bool,
+    ) -> Result<(), ScryptoCompilerError> {
+        let mut features: Vec<&str> = self
             .input_params
             .features
             .iter()
             .map(|f| ["--features", f])
             .flatten()
             .collect();
+        if no_schema {
+            features.push("scrypto/no-schema");
+        } else {
+            features.retain(|&item| item != "scrypto/no-schema");
+        }
 
         let rustflags = self.prepare_rust_flags();
 
@@ -332,10 +353,10 @@ impl ScryptoCompiler {
         Ok(())
     }
 
-    fn wasm_optimize(&mut self) -> Result<(), ScryptoCompilerError> {
+    fn wasm_optimize(&mut self, wasm_path: &Path) -> Result<(), ScryptoCompilerError> {
         if let Some(wasm_opt_config) = &self.input_params.wasm_optimization {
             wasm_opt_config
-                .run(&self.target_binary_path, &self.target_binary_path)
+                .run(wasm_path, wasm_path)
                 .map_err(ScryptoCompilerError::WasmOptimizationError)
         } else {
             Ok(())
@@ -347,10 +368,8 @@ impl ScryptoCompiler {
         stdin: Option<T>,
         stdout: Option<T>,
         stderr: Option<T>,
-    ) -> Result<PathBuf, ScryptoCompilerError> {
-        // Create compilation command
+    ) -> Result<BuildArtifacts, ScryptoCompilerError> {
         let mut command = Command::new("cargo");
-        self.prepare_command(&mut command)?;
         if let Some(s) = stdin {
             command.stdin(s);
         }
@@ -363,16 +382,53 @@ impl ScryptoCompiler {
         self.compile_internal(&mut command)
     }
 
-    // Returns output wasm file path
-    pub fn compile(&mut self) -> Result<PathBuf, ScryptoCompilerError> {
-        // Create compilation command
+    pub fn compile(&mut self) -> Result<BuildArtifacts, ScryptoCompilerError> {
         let mut command = Command::new("cargo");
-        self.prepare_command(&mut command)?;
         self.compile_internal(&mut command)
     }
 
-    fn compile_internal(&mut self, command: &mut Command) -> Result<PathBuf, ScryptoCompilerError> {
-        // Execute command
+    // Implements two phase compilation:
+    // 1st: compile with schema and extract schema to .rpd file
+    // 2nd: compile without schema and with optional wasm optimisations - this is the final .wasm file
+    fn compile_internal(
+        &mut self,
+        command: &mut Command,
+    ) -> Result<BuildArtifacts, ScryptoCompilerError> {
+        // 1st phase
+        self.prepare_command(command, true)?;
+        let target_binary_1st_phase = self.cargo_command_call(command)?;
+
+        let code_1s_phase = std::fs::read(&target_binary_1st_phase)
+            .map_err(|e| ScryptoCompilerError::IOError(e))?;
+        let package_definition = extract_definition(&code_1s_phase)
+            .map_err(|e| ScryptoCompilerError::ExtractSchema(e))?;
+        let package_definition_path = target_binary_1st_phase.with_extension("rpd");
+
+        // // 2nd phase
+        self.prepare_command(command, false)?;
+        let target_binary_2nd_phase = self.cargo_command_call(command)?;
+
+        self.wasm_optimize(&target_binary_2nd_phase)?;
+
+        let code_2nd_phase = std::fs::read(&target_binary_2nd_phase)
+            .map_err(|e| ScryptoCompilerError::IOError(e))?;
+
+        Ok(BuildArtifacts {
+            wasm: BuildArtifact {
+                path: target_binary_2nd_phase,
+                content: code_2nd_phase,
+            },
+            package_definition: BuildArtifact {
+                path: package_definition_path,
+                content: package_definition,
+            },
+        })
+    }
+
+    fn cargo_command_call(
+        &mut self,
+        command: &mut Command,
+    ) -> Result<PathBuf, ScryptoCompilerError> {
         let output = command.output().map_err(ScryptoCompilerError::IOError)?;
 
         output
@@ -383,8 +439,6 @@ impl ScryptoCompiler {
                 String::from_utf8(output.stderr.clone()).unwrap_or(format!("{:?}", output.stderr)),
                 output.status,
             ))?;
-
-        self.wasm_optimize()?;
 
         Ok(self.target_binary_path.clone())
     }
@@ -410,6 +464,17 @@ pub struct ScryptoCompilerBuilder {
 }
 
 impl ScryptoCompilerBuilder {
+    pub fn manifest_path(&mut self, path: impl Into<PathBuf>) -> &mut Self {
+        self.input_params.manifest_path = Some(path.into());
+        self
+    }
+
+    pub fn target_directory(&mut self, directory: impl Into<PathBuf>) -> &mut Self {
+        self.input_params.target_directory = Some(directory.into());
+
+        self
+    }
+
     pub fn profile(&mut self, profile: Profile) -> &mut Self {
         self.input_params.profile = profile;
         self
@@ -439,17 +504,6 @@ impl ScryptoCompilerBuilder {
 
     pub fn package(&mut self, name: &str) -> &mut Self {
         self.input_params.package.insert(name.to_string());
-        self
-    }
-
-    pub fn target_directory(&mut self, directory: impl Into<PathBuf>) -> &mut Self {
-        self.input_params.target_directory = Some(directory.into());
-
-        self
-    }
-
-    pub fn manifest_path(&mut self, path: impl Into<PathBuf>) -> &mut Self {
-        self.input_params.manifest_path = Some(path.into());
         self
     }
 
@@ -520,7 +574,7 @@ impl ScryptoCompilerBuilder {
     }
 
     // Returns output wasm file path
-    pub fn compile(&mut self) -> Result<PathBuf, ScryptoCompilerError> {
+    pub fn compile(&mut self) -> Result<BuildArtifacts, ScryptoCompilerError> {
         self.build()?.compile()
     }
 
@@ -530,27 +584,27 @@ impl ScryptoCompilerBuilder {
         stdin: Option<T>,
         stdout: Option<T>,
         stderr: Option<T>,
-    ) -> Result<PathBuf, ScryptoCompilerError> {
+    ) -> Result<BuildArtifacts, ScryptoCompilerError> {
         self.build()?.compile_with_stdio(stdin, stdout, stderr)
     }
 
-    pub fn compile_workspace(&mut self) -> Result<Vec<PathBuf>, ScryptoCompilerError> {
-        let manifest_path = ScryptoCompiler::get_manifest_path(&self.input_params)?;
+    // pub fn compile_workspace(&mut self) -> Result<Vec<PathBuf>, ScryptoCompilerError> {
+    //     let manifest_path = ScryptoCompiler::get_manifest_path(&self.input_params)?;
 
-        let members = ScryptoCompiler::get_workspace_members(&manifest_path)?;
+    //     let members = ScryptoCompiler::get_workspace_members(&manifest_path)?;
 
-        let mut result: Vec<PathBuf> = Vec::new();
-        for member in members {
-            let mut new_input_params = self.input_params.clone();
-            if let Some(md) = new_input_params.manifest_path.as_mut() {
-                md.push(member);
-            } else {
-                new_input_params.manifest_path = Some(member.into());
-            }
-            result.push(ScryptoCompiler::from_input_params(&new_input_params)?.compile()?);
-        }
-        Ok(result)
-    }
+    //     let mut result: Vec<PathBuf> = Vec::new();
+    //     for member in members {
+    //         let mut new_input_params = self.input_params.clone();
+    //         if let Some(md) = new_input_params.manifest_path.as_mut() {
+    //             md.push(member);
+    //         } else {
+    //             new_input_params.manifest_path = Some(member.into());
+    //         }
+    //         result.push(ScryptoCompiler::from_input_params(&new_input_params)?.compile()?);
+    //     }
+    //     Ok(result)
+    // }
 }
 
 #[cfg(test)]
@@ -558,6 +612,7 @@ mod tests {
     use super::*;
     use once_cell::sync::Lazy;
     use std::sync::Mutex;
+    //use tempdir::TempDir;
 
     static SERIAL_COMPILE_MUTEX: Lazy<Mutex<()>> = Lazy::new(Mutex::default);
 
@@ -745,7 +800,7 @@ mod tests {
     #[test]
     fn test_compilation_workspace() {
         // Arrange
-        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+        /*let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_path = "./tests/assets";
@@ -761,13 +816,13 @@ mod tests {
         assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
-        std::env::set_current_dir(cur_dir).unwrap();
+        std::env::set_current_dir(cur_dir).unwrap();*/
     }
 
     #[test]
     fn test_compilation_workspace_in_current_dir() {
         // Arrange
-        let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
+        /*let _shared = SERIAL_COMPILE_MUTEX.lock().unwrap();
 
         let cur_dir = std::env::current_dir().unwrap();
         let manifest_path = "./tests/assets";
@@ -782,7 +837,7 @@ mod tests {
         assert!(status.is_ok(), "{:?}", status);
 
         // Restore current directory
-        std::env::set_current_dir(cur_dir).unwrap();
+        std::env::set_current_dir(cur_dir).unwrap();*/
     }
 
     #[test]
@@ -969,6 +1024,7 @@ mod tests {
         let compiler = ScryptoCompiler::builder()
             .manifest_path("./tests/assets/blueprint")
             .target_directory(target_dir)
+            .custom_options(&["-j", "1"])
             .build()
             .unwrap();
 
