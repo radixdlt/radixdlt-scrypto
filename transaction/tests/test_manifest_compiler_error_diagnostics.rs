@@ -69,6 +69,13 @@ fn test_manifest_parser_error_diagnostics_unknown_enum_discriminator() {
 }
 
 #[test]
+fn test_manifest_parser_error_diagnostics_max_depth_exceeded() {
+    // MaxDepthExceeded
+    check_manifest!("manifest_parser_error_max_depth_exceeded_1");
+    check_manifest!("manifest_parser_error_max_depth_exceeded_2");
+}
+
+#[test]
 fn test_manifest_lexer_error_unexpected_char() {
     // UnexpectedChar
     check_manifest!("manifest_lexer_error_unexpected_char_1");
