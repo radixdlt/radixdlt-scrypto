@@ -1,3 +1,4 @@
+use crate::manifest::token::Token;
 use radix_engine_common::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
 use strum::{EnumCount, EnumDiscriminants, FromRepr};
 
@@ -481,4 +482,16 @@ impl Value {
             }
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TokenValueKind {
+    pub token: Token,
+    pub value_kind: ValueKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TokenValue {
+    pub token: Token,
+    pub value: Value,
 }

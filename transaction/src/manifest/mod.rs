@@ -10,6 +10,7 @@ pub mod generator;
 pub mod lexer;
 pub mod manifest_enums;
 pub mod parser;
+pub mod token;
 
 pub use blob_provider::*;
 pub use compiler::{compile, CompileError};

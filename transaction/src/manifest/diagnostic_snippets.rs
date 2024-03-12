@@ -1,4 +1,4 @@
-use crate::manifest::lexer::Span;
+use crate::manifest::token::Span;
 use annotate_snippets::{Annotation, AnnotationType, Renderer, Slice, Snippet, SourceAnnotation};
 use sbor::rust::cmp::min;
 

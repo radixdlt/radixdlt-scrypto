@@ -1,7 +1,7 @@
-use crate::manifest::ast::{Instruction, Value, ValueKind};
+use crate::manifest::ast::{Instruction, TokenValue, TokenValueKind, Value, ValueKind};
 use crate::manifest::diagnostic_snippets::create_snippet;
-use crate::manifest::lexer::{Position, Span, Token, TokenKind};
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
+use crate::manifest::token::{Position, Span, Token, TokenKind};
 use radix_engine_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
 use sbor::rust::fmt;
 
@@ -62,18 +62,6 @@ impl fmt::Display for TokenType {
             TokenType::Exact(token_kind) => write!(f, "{}", token_kind),
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TokenValue {
-    pub token: Token,
-    pub value: Value,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TokenValueKind {
-    pub token: Token,
-    pub value_kind: ValueKind,
 }
 
 pub enum InstructionIdent {
@@ -1170,7 +1158,8 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::lexer::{tokenize, Position, Span};
+    use crate::manifest::lexer::tokenize;
+    use crate::manifest::token::{Position, Span};
 
     #[macro_export]
     macro_rules! parse_instruction_ok {

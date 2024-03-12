@@ -1498,8 +1498,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::lexer::{tokenize, Position, Span};
+    use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
+    use crate::manifest::token::{Position, Span};
     use radix_engine_common::address::AddressBech32Decoder;
     use radix_engine_common::constants::CONSENSUS_MANAGER;
     use radix_engine_common::crypto::Secp256k1PrivateKey;
