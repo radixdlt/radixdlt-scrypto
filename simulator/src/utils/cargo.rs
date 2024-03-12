@@ -64,7 +64,7 @@ pub fn build_package<P: AsRef<Path>>(
         .manifest_path(base_path.as_ref())
         .log_level(log_level);
     if trace {
-        compiler_builder.trace();
+        compiler_builder.scrypto_macro_trace();
     }
     if force_local_target {
         compiler_builder.target_directory("./");
@@ -105,7 +105,7 @@ pub fn build_package<P: AsRef<Path>>(
         .no_schema()
         .log_level(log_level);
     if trace {
-        compiler_builder.trace();
+        compiler_builder.scrypto_macro_trace();
     }
     if force_local_target {
         compiler_builder.target_directory("./");

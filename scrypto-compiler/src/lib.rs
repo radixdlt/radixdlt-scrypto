@@ -416,7 +416,7 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn trace(&mut self) -> &mut Self {
+    pub fn scrypto_macro_trace(&mut self) -> &mut Self {
         self.input_params
             .features
             .push(String::from("scrypto/trace"));
