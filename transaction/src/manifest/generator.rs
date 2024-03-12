@@ -56,7 +56,6 @@ use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::ResourceAddress;
 use radix_engine_interface::*;
-use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::IndexMap;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
@@ -451,12 +450,12 @@ where
             args,
         } => {
             let package_address = generate_dynamic_package_address(
-                package_address,
+                &package_address,
                 address_bech32_decoder,
                 resolver,
             )?;
-            let blueprint_name = generate_string(&blueprint_name)?;
-            let function_name = generate_string(&function_name)?;
+            let blueprint_name = generate_string(blueprint_name)?;
+            let function_name = generate_string(function_name)?;
             let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
@@ -476,7 +475,7 @@ where
         } => {
             let address =
                 generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
-            let method_name = generate_string(&method_name)?;
+            let method_name = generate_string(method_name)?;
             let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
@@ -494,7 +493,7 @@ where
         } => {
             let address =
                 generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
-            let method_name = generate_string(&method_name)?;
+            let method_name = generate_string(method_name)?;
             let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
@@ -512,7 +511,7 @@ where
         } => {
             let address =
                 generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
-            let method_name = generate_string(&method_name)?;
+            let method_name = generate_string(method_name)?;
             let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
@@ -530,7 +529,7 @@ where
         } => {
             let address =
                 generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
-            let method_name = generate_string(&method_name)?;
+            let method_name = generate_string(method_name)?;
             let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
@@ -587,7 +586,7 @@ where
 
             InstructionV1::AllocateGlobalAddress {
                 package_address: generate_package_address(package_address, address_bech32_decoder)?,
-                blueprint_name: generate_string(&blueprint_name)?,
+                blueprint_name: generate_string(blueprint_name)?,
             }
         }
 
@@ -810,7 +809,7 @@ macro_rules! invalid_type {
 }
 
 fn generate_args<B>(
-    values: &Vec<ast::Value>,
+    values: &Vec<ast::ValueWithSpan>,
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
@@ -821,7 +820,7 @@ where
     let mut fields = Vec::new();
     for v in values {
         fields.push(generate_value(
-            v,
+            &v,
             None,
             resolver,
             address_bech32_decoder,
@@ -832,18 +831,18 @@ where
     Ok(ManifestValue::Tuple { fields })
 }
 
-fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
-    match value {
+fn generate_string(value: &ast::ValueWithSpan) -> Result<String, GeneratorError> {
+    match &value.value {
         ast::Value::String(s) => Ok(s.into()),
         v => invalid_type!(v, ast::ValueKind::String),
     }
 }
 
-fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
-    match value {
-        ast::Value::Decimal(inner) => match &**inner {
+fn generate_decimal(value: &ast::ValueWithSpan) -> Result<Decimal, GeneratorError> {
+    match &value.value {
+        ast::Value::Decimal(inner) => match &inner.value {
             ast::Value::String(s) => {
-                Decimal::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
+                Decimal::from_str(&s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
             }
             v => invalid_type!(v, ast::ValueKind::String),
         },
@@ -851,9 +850,9 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     }
 }
 
-fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, GeneratorError> {
-    match value {
-        ast::Value::PreciseDecimal(inner) => match &**inner {
+fn generate_precise_decimal(value: &ast::ValueWithSpan) -> Result<PreciseDecimal, GeneratorError> {
+    match &value.value {
+        ast::Value::PreciseDecimal(inner) => match &inner.value {
             ast::Value::String(s) => PreciseDecimal::from_str(s)
                 .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into())),
 
@@ -864,13 +863,13 @@ fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, Genera
 }
 
 fn generate_package_address(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<PackageAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(inner) => match inner.borrow() {
+    match &value.value {
+        ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
                     }
@@ -884,13 +883,13 @@ fn generate_package_address(
 }
 
 fn generate_resource_address(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<ResourceAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(inner) => match inner.borrow() {
+    match &value.value {
+        ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = ResourceAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
                     }
@@ -904,14 +903,14 @@ fn generate_resource_address(
 }
 
 fn generate_dynamic_global_address(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
     resolver: &mut NameResolver,
 ) -> Result<DynamicGlobalAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(value) => match value.borrow() {
+    match &value.value {
+        ast::Value::Address(value) => match &value.value {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
                         return Ok(DynamicGlobalAddress::Static(address));
                     }
@@ -920,7 +919,7 @@ fn generate_dynamic_global_address(
             }
             v => return invalid_type!(v, ast::ValueKind::String),
         },
-        ast::Value::NamedAddress(inner) => match &**inner {
+        ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(*n)),
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
@@ -960,14 +959,14 @@ fn generate_internal_address(
 }
 
 fn generate_dynamic_package_address(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
     resolver: &mut NameResolver,
 ) -> Result<DynamicPackageAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(value) => match value.borrow() {
+    match &value.value {
+        ast::Value::Address(value) => match &value.value {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
                         return Ok(DynamicPackageAddress::Static(address));
                     }
@@ -976,7 +975,7 @@ fn generate_dynamic_package_address(
             }
             v => return invalid_type!(v, ast::ValueKind::String),
         },
-        ast::Value::NamedAddress(inner) => match &**inner {
+        ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(*n)),
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
@@ -993,13 +992,13 @@ fn generate_dynamic_package_address(
 }
 
 fn generate_local_address(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<InternalAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(value) => match value.borrow() {
+    match &value.value {
+        ast::Value::Address(value) => match &value.value {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = InternalAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
                     }
@@ -1019,12 +1018,12 @@ fn generate_local_address(
 }
 
 fn declare_bucket(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
     bucket_id: ManifestBucket,
 ) -> Result<(), GeneratorError> {
-    match value {
-        ast::Value::Bucket(inner) => match &**inner {
+    match &value.value {
+        ast::Value::Bucket(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_bucket(name.to_string(), bucket_id)
                 .map_err(GeneratorError::NameResolverError),
@@ -1035,11 +1034,11 @@ fn declare_bucket(
 }
 
 fn generate_bucket(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
 ) -> Result<ManifestBucket, GeneratorError> {
-    match value {
-        ast::Value::Bucket(inner) => match &**inner {
+    match &value.value {
+        ast::Value::Bucket(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(ManifestBucket(*n)),
             ast::Value::String(s) => resolver
                 .resolve_bucket(&s)
@@ -1051,12 +1050,12 @@ fn generate_bucket(
 }
 
 fn declare_proof(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
     proof_id: ManifestProof,
 ) -> Result<(), GeneratorError> {
-    match value {
-        ast::Value::Proof(inner) => match &**inner {
+    match &value.value {
+        ast::Value::Proof(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_proof(name.to_string(), proof_id)
                 .map_err(GeneratorError::NameResolverError),
@@ -1067,12 +1066,12 @@ fn declare_proof(
 }
 
 fn declare_address_reservation(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
     address_reservation_id: ManifestAddressReservation,
 ) -> Result<(), GeneratorError> {
-    match value {
-        ast::Value::AddressReservation(inner) => match &**inner {
+    match &value.value {
+        ast::Value::AddressReservation(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_address_reservation(name.to_string(), address_reservation_id)
                 .map_err(GeneratorError::NameResolverError),
@@ -1083,12 +1082,12 @@ fn declare_address_reservation(
 }
 
 fn declare_named_address(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
     address_id: u32,
 ) -> Result<(), GeneratorError> {
-    match value {
-        ast::Value::NamedAddress(inner) => match &**inner {
+    match &value.value {
+        ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_named_address(name.to_string(), address_id)
                 .map_err(GeneratorError::NameResolverError),
@@ -1099,11 +1098,11 @@ fn declare_named_address(
 }
 
 fn generate_proof(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
 ) -> Result<ManifestProof, GeneratorError> {
-    match value {
-        ast::Value::Proof(inner) => match &**inner {
+    match &value.value {
+        ast::Value::Proof(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(ManifestProof(*n)),
             ast::Value::String(s) => resolver
                 .resolve_proof(&s)
@@ -1115,11 +1114,11 @@ fn generate_proof(
 }
 
 fn generate_address_reservation(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
 ) -> Result<ManifestAddressReservation, GeneratorError> {
-    match value {
-        ast::Value::AddressReservation(inner) => match &**inner {
+    match &value.value {
+        ast::Value::AddressReservation(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(ManifestAddressReservation(*n)),
             ast::Value::String(s) => resolver
                 .resolve_address_reservation(&s)
@@ -1131,14 +1130,14 @@ fn generate_address_reservation(
 }
 
 fn generate_static_address(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<ManifestAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(value) => match value.borrow() {
+    match &value.value {
+        ast::Value::Address(value) => match &value.value {
             ast::Value::String(s) => {
                 // Check bech32 && entity type
-                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     // Check length
                     if full_data.len() == NodeId::LENGTH {
                         return Ok(ManifestAddress::Static(NodeId(
@@ -1161,11 +1160,11 @@ fn generate_static_address(
 }
 
 fn generate_named_address(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
 ) -> Result<ManifestAddress, GeneratorError> {
-    match value {
-        ast::Value::NamedAddress(inner) => match &**inner {
+    match &value.value {
+        ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(ManifestAddress::Named(*n)),
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
@@ -1178,11 +1177,11 @@ fn generate_named_address(
 }
 
 fn generate_non_fungible_local_id(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
 ) -> Result<NonFungibleLocalId, GeneratorError> {
-    match value {
-        ast::Value::NonFungibleLocalId(inner) => match inner.as_ref() {
-            ast::Value::String(s) => NonFungibleLocalId::from_str(s.as_str())
+    match &value.value {
+        ast::Value::NonFungibleLocalId(inner) => match &inner.value {
+            ast::Value::String(s) => NonFungibleLocalId::from_str(s)
                 .map_err(|_| GeneratorError::InvalidNonFungibleLocalId(s.clone())),
             v => invalid_type!(v, ast::ValueKind::String)?,
         },
@@ -1190,9 +1189,9 @@ fn generate_non_fungible_local_id(
     }
 }
 
-fn generate_expression(value: &ast::Value) -> Result<ManifestExpression, GeneratorError> {
-    match value {
-        ast::Value::Expression(inner) => match &**inner {
+fn generate_expression(value: &ast::ValueWithSpan) -> Result<ManifestExpression, GeneratorError> {
+    match &value.value {
+        ast::Value::Expression(inner) => match &inner.value {
             ast::Value::String(s) => match s.as_str() {
                 "ENTIRE_WORKTOP" => Ok(ManifestExpression::EntireWorktop),
                 "ENTIRE_AUTH_ZONE" => Ok(ManifestExpression::EntireAuthZone),
@@ -1204,12 +1203,15 @@ fn generate_expression(value: &ast::Value) -> Result<ManifestExpression, Generat
     }
 }
 
-fn generate_blob<B>(value: &ast::Value, blobs: &B) -> Result<ManifestBlobRef, GeneratorError>
+fn generate_blob<B>(
+    value: &ast::ValueWithSpan,
+    blobs: &B,
+) -> Result<ManifestBlobRef, GeneratorError>
 where
     B: IsBlobProvider,
 {
-    match value {
-        ast::Value::Blob(inner) => match &**inner {
+    match &value.value {
+        ast::Value::Blob(inner) => match &inner.value {
             ast::Value::String(s) => {
                 let hash = Hash::from_str(s)
                     .map_err(|_| GeneratorError::InvalidBlobHash(s.to_string()))?;
@@ -1225,14 +1227,14 @@ where
 }
 
 fn generate_non_fungible_local_ids(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
 ) -> Result<Vec<NonFungibleLocalId>, GeneratorError> {
-    match value {
+    match &value.value {
         ast::Value::Array(kind, values) => {
-            if kind != &ast::ValueKind::NonFungibleLocalId {
+            if kind.value_kind != ast::ValueKind::NonFungibleLocalId {
                 return Err(GeneratorError::InvalidAstType {
                     expected_type: ast::ValueKind::String,
-                    actual: kind.clone(),
+                    actual: kind.value_kind.clone(),
                 });
             }
 
@@ -1245,8 +1247,8 @@ fn generate_non_fungible_local_ids(
     }
 }
 
-fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
-    let bytes = match value {
+fn generate_byte_vec_from_hex(value: &ast::ValueWithSpan) -> Result<Vec<u8>, GeneratorError> {
+    let bytes = match &value.value {
         ast::Value::String(s) => {
             hex::decode(s).map_err(|_| GeneratorError::InvalidBytesHex(s.to_owned()))?
         }
@@ -1256,7 +1258,7 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
 }
 
 pub fn generate_value<B>(
-    value: &ast::Value,
+    value_with_span: &ast::ValueWithSpan,
     expected_type: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
@@ -1266,15 +1268,15 @@ where
     B: IsBlobProvider,
 {
     if let Some(ty) = expected_type {
-        if ty != value.value_kind() {
+        if ty != value_with_span.value.value_kind() {
             return Err(GeneratorError::UnexpectedValue {
                 expected_type: ty,
-                actual: value.clone(),
+                actual: value_with_span.value.clone(),
             });
         }
     }
 
-    match value {
+    match &value_with_span.value {
         // ==============
         // Basic types
         // ==============
@@ -1293,18 +1295,18 @@ where
             value: value.clone(),
         }),
         ast::Value::Tuple(fields) => Ok(Value::Tuple {
-            fields: generate_singletons(fields, None, resolver, address_bech32_decoder, blobs)?,
+            fields: generate_singletons(&fields, None, resolver, address_bech32_decoder, blobs)?,
         }),
         ast::Value::Enum(discriminator, fields) => Ok(Value::Enum {
             discriminator: discriminator.clone(),
-            fields: generate_singletons(fields, None, resolver, address_bech32_decoder, blobs)?,
+            fields: generate_singletons(&fields, None, resolver, address_bech32_decoder, blobs)?,
         }),
         ast::Value::Array(element_type, elements) => {
-            let element_value_kind = element_type.value_kind();
+            let element_value_kind = element_type.value_kind.value_kind();
             Ok(Value::Array {
                 element_value_kind,
                 elements: generate_singletons(
-                    elements,
+                    &elements,
                     Some(element_value_kind),
                     resolver,
                     address_bech32_decoder,
@@ -1313,13 +1315,13 @@ where
             })
         }
         ast::Value::Map(key_type, value_type, entries) => {
-            let key_value_kind = key_type.value_kind();
-            let value_value_kind = value_type.value_kind();
+            let key_value_kind = key_type.value_kind.value_kind();
+            let value_value_kind = value_type.value_kind.value_kind();
             Ok(Value::Map {
                 key_value_kind,
                 value_value_kind,
                 entries: generate_kv_entries(
-                    entries,
+                    &entries,
                     key_value_kind,
                     value_value_kind,
                     resolver,
@@ -1334,7 +1336,7 @@ where
         ast::Value::Some(value) => Ok(Value::Enum {
             discriminator: OPTION_VARIANT_SOME,
             fields: vec![generate_value(
-                value,
+                &value,
                 None,
                 resolver,
                 address_bech32_decoder,
@@ -1348,7 +1350,7 @@ where
         ast::Value::Ok(value) => Ok(Value::Enum {
             discriminator: RESULT_VARIANT_OK,
             fields: vec![generate_value(
-                value,
+                &value,
                 None,
                 resolver,
                 address_bech32_decoder,
@@ -1358,7 +1360,7 @@ where
         ast::Value::Err(value) => Ok(Value::Enum {
             discriminator: RESULT_VARIANT_ERR,
             fields: vec![generate_value(
-                value,
+                &value,
                 None,
                 resolver,
                 address_bech32_decoder,
@@ -1366,14 +1368,14 @@ where
             )?],
         }),
         ast::Value::Bytes(value) => {
-            let bytes = generate_byte_vec_from_hex(value)?;
+            let bytes = generate_byte_vec_from_hex(&value)?;
             Ok(Value::Array {
                 element_value_kind: ValueKind::U8,
                 elements: bytes.iter().map(|i| Value::U8 { value: *i }).collect(),
             })
         }
         ast::Value::NonFungibleGlobalId(value) => {
-            let global_id = match value.as_ref() {
+            let global_id = match &value.value {
                 ast::Value::String(s) => NonFungibleGlobalId::try_from_canonical_string(
                     address_bech32_decoder,
                     s.as_str(),
@@ -1399,41 +1401,44 @@ where
         // ==============
         // Custom Types
         // ==============
-        ast::Value::Address(_) => {
-            generate_static_address(value, address_bech32_decoder).map(|v| Value::Custom {
+        ast::Value::Address(_) => generate_static_address(value_with_span, address_bech32_decoder)
+            .map(|v| Value::Custom {
                 value: ManifestCustomValue::Address(v),
-            })
-        }
+            }),
         ast::Value::NamedAddress(_) => {
-            generate_named_address(value, resolver).map(|v| Value::Custom {
+            generate_named_address(value_with_span, resolver).map(|v| Value::Custom {
                 value: ManifestCustomValue::Address(v),
             })
         }
-        ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
-            value: ManifestCustomValue::Bucket(v),
-        }),
-        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| Value::Custom {
+        ast::Value::Bucket(_) => {
+            generate_bucket(value_with_span, resolver).map(|v| Value::Custom {
+                value: ManifestCustomValue::Bucket(v),
+            })
+        }
+        ast::Value::Proof(_) => generate_proof(value_with_span, resolver).map(|v| Value::Custom {
             value: ManifestCustomValue::Proof(v),
         }),
-        ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
+        ast::Value::Expression(_) => generate_expression(value_with_span).map(|v| Value::Custom {
             value: ManifestCustomValue::Expression(v),
         }),
-        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| Value::Custom {
+        ast::Value::Blob(_) => generate_blob(value_with_span, blobs).map(|v| Value::Custom {
             value: ManifestCustomValue::Blob(v),
         }),
-        ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
+        ast::Value::Decimal(_) => generate_decimal(value_with_span).map(|v| Value::Custom {
             value: ManifestCustomValue::Decimal(from_decimal(v)),
         }),
-        ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
-            value: ManifestCustomValue::PreciseDecimal(from_precise_decimal(v)),
-        }),
+        ast::Value::PreciseDecimal(_) => {
+            generate_precise_decimal(value_with_span).map(|v| Value::Custom {
+                value: ManifestCustomValue::PreciseDecimal(from_precise_decimal(v)),
+            })
+        }
         ast::Value::NonFungibleLocalId(_) => {
-            generate_non_fungible_local_id(value).map(|v| Value::Custom {
+            generate_non_fungible_local_id(value_with_span).map(|v| Value::Custom {
                 value: ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(v)),
             })
         }
         ast::Value::AddressReservation(_) => {
-            generate_address_reservation(value, resolver).map(|v| Value::Custom {
+            generate_address_reservation(value_with_span, resolver).map(|v| Value::Custom {
                 value: ManifestCustomValue::AddressReservation(v),
             })
         }
@@ -1441,7 +1446,7 @@ where
 }
 
 fn generate_singletons<B>(
-    elements: &Vec<ast::Value>,
+    elements: &Vec<ast::ValueWithSpan>,
     expected_value_kind: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
@@ -1464,7 +1469,7 @@ where
 }
 
 fn generate_kv_entries<B>(
-    entries: &[(ast::Value, ast::Value)],
+    entries: &[(ast::ValueWithSpan, ast::ValueWithSpan)],
     key_value_kind: ManifestValueKind,
     value_value_kind: ManifestValueKind,
     resolver: &mut NameResolver,
@@ -1524,8 +1529,7 @@ mod tests {
         ( $s:expr,   $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
                 .parse_value()
-                .unwrap()
-                .value;
+                .unwrap();
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_value(
@@ -1568,8 +1572,7 @@ mod tests {
         ( $s:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
                 .parse_value()
-                .unwrap()
-                .value;
+                .unwrap();
             match generate_value(
                 &value,
                 None,

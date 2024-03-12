@@ -1,4 +1,4 @@
-use crate::manifest::ast::{Instruction, TokenValue, TokenValueKind, Value, ValueKind};
+use crate::manifest::ast::{Instruction, Value, ValueKind, ValueKindWithSpan, ValueWithSpan};
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::token::{Position, Span, Token, TokenKind};
@@ -505,13 +505,13 @@ impl Parser {
         Ok(instructions)
     }
 
-    fn parse_values_till_semicolon(&mut self) -> Result<Vec<Value>, ParserError> {
+    fn parse_values_till_semicolon(&mut self) -> Result<Vec<ValueWithSpan>, ParserError> {
         let mut values = Vec::new();
         while self.peek()?.kind != TokenKind::Semicolon {
             let stack_depth = self.stack_depth;
             let result = self.parse_value();
             match result {
-                Ok(token_value) => values.push(token_value.value),
+                Ok(value) => values.push(value),
                 Err(err) => match err {
                     // parse_value() is recursive so we need to check the stack depth to determine
                     // if semicolon might be missing
@@ -553,42 +553,42 @@ impl Parser {
         };
         let instruction = match instruction_ident {
             InstructionIdent::TakeFromWorktop => Instruction::TakeFromWorktop {
-                resource_address: self.parse_value()?.value,
-                amount: self.parse_value()?.value,
-                new_bucket: self.parse_value()?.value,
+                resource_address: self.parse_value()?,
+                amount: self.parse_value()?,
+                new_bucket: self.parse_value()?,
             },
             InstructionIdent::TakeNonFungiblesFromWorktop => {
                 Instruction::TakeNonFungiblesFromWorktop {
-                    resource_address: self.parse_value()?.value,
-                    ids: self.parse_value()?.value,
-                    new_bucket: self.parse_value()?.value,
+                    resource_address: self.parse_value()?,
+                    ids: self.parse_value()?,
+                    new_bucket: self.parse_value()?,
                 }
             }
             InstructionIdent::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
-                resource_address: self.parse_value()?.value,
-                new_bucket: self.parse_value()?.value,
+                resource_address: self.parse_value()?,
+                new_bucket: self.parse_value()?,
             },
             InstructionIdent::ReturnToWorktop => Instruction::ReturnToWorktop {
-                bucket: self.parse_value()?.value,
+                bucket: self.parse_value()?,
             },
             InstructionIdent::AssertWorktopContains => Instruction::AssertWorktopContains {
-                resource_address: self.parse_value()?.value,
-                amount: self.parse_value()?.value,
+                resource_address: self.parse_value()?,
+                amount: self.parse_value()?,
             },
             InstructionIdent::AssertWorktopContainsNonFungibles => {
                 Instruction::AssertWorktopContainsNonFungibles {
-                    resource_address: self.parse_value()?.value,
-                    ids: self.parse_value()?.value,
+                    resource_address: self.parse_value()?,
+                    ids: self.parse_value()?,
                 }
             }
             InstructionIdent::AssertWorktopContainsAny => Instruction::AssertWorktopContainsAny {
-                resource_address: self.parse_value()?.value,
+                resource_address: self.parse_value()?,
             },
             InstructionIdent::PopFromAuthZone => Instruction::PopFromAuthZone {
-                new_proof: self.parse_value()?.value,
+                new_proof: self.parse_value()?,
             },
             InstructionIdent::PushToAuthZone => Instruction::PushToAuthZone {
-                proof: self.parse_value()?.value,
+                proof: self.parse_value()?,
             },
             InstructionIdent::DropAuthZoneProofs => Instruction::DropAuthZoneProofs,
             InstructionIdent::DropAuthZoneRegularProofs => Instruction::DropAuthZoneRegularProofs,
@@ -597,80 +597,80 @@ impl Parser {
             }
             InstructionIdent::CreateProofFromAuthZoneOfAmount => {
                 Instruction::CreateProofFromAuthZoneOfAmount {
-                    resource_address: self.parse_value()?.value,
-                    amount: self.parse_value()?.value,
-                    new_proof: self.parse_value()?.value,
+                    resource_address: self.parse_value()?,
+                    amount: self.parse_value()?,
+                    new_proof: self.parse_value()?,
                 }
             }
             InstructionIdent::CreateProofFromAuthZoneOfNonFungibles => {
                 Instruction::CreateProofFromAuthZoneOfNonFungibles {
-                    resource_address: self.parse_value()?.value,
-                    ids: self.parse_value()?.value,
-                    new_proof: self.parse_value()?.value,
+                    resource_address: self.parse_value()?,
+                    ids: self.parse_value()?,
+                    new_proof: self.parse_value()?,
                 }
             }
             InstructionIdent::CreateProofFromAuthZoneOfAll => {
                 Instruction::CreateProofFromAuthZoneOfAll {
-                    resource_address: self.parse_value()?.value,
-                    new_proof: self.parse_value()?.value,
+                    resource_address: self.parse_value()?,
+                    new_proof: self.parse_value()?,
                 }
             }
 
             InstructionIdent::CreateProofFromBucketOfAmount => {
                 Instruction::CreateProofFromBucketOfAmount {
-                    bucket: self.parse_value()?.value,
-                    amount: self.parse_value()?.value,
-                    new_proof: self.parse_value()?.value,
+                    bucket: self.parse_value()?,
+                    amount: self.parse_value()?,
+                    new_proof: self.parse_value()?,
                 }
             }
             InstructionIdent::CreateProofFromBucketOfNonFungibles => {
                 Instruction::CreateProofFromBucketOfNonFungibles {
-                    bucket: self.parse_value()?.value,
-                    ids: self.parse_value()?.value,
-                    new_proof: self.parse_value()?.value,
+                    bucket: self.parse_value()?,
+                    ids: self.parse_value()?,
+                    new_proof: self.parse_value()?,
                 }
             }
             InstructionIdent::CreateProofFromBucketOfAll => {
                 Instruction::CreateProofFromBucketOfAll {
-                    bucket: self.parse_value()?.value,
-                    new_proof: self.parse_value()?.value,
+                    bucket: self.parse_value()?,
+                    new_proof: self.parse_value()?,
                 }
             }
             InstructionIdent::BurnResource => Instruction::BurnResource {
-                bucket: self.parse_value()?.value,
+                bucket: self.parse_value()?,
             },
 
             InstructionIdent::CloneProof => Instruction::CloneProof {
-                proof: self.parse_value()?.value,
-                new_proof: self.parse_value()?.value,
+                proof: self.parse_value()?,
+                new_proof: self.parse_value()?,
             },
             InstructionIdent::DropProof => Instruction::DropProof {
-                proof: self.parse_value()?.value,
+                proof: self.parse_value()?,
             },
             InstructionIdent::CallFunction => Instruction::CallFunction {
-                package_address: self.parse_value()?.value,
-                blueprint_name: self.parse_value()?.value,
-                function_name: self.parse_value()?.value,
+                package_address: self.parse_value()?,
+                blueprint_name: self.parse_value()?,
+                function_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallMethod => Instruction::CallMethod {
-                address: self.parse_value()?.value,
-                method_name: self.parse_value()?.value,
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallRoyaltyMethod => Instruction::CallRoyaltyMethod {
-                address: self.parse_value()?.value,
-                method_name: self.parse_value()?.value,
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallMetadataMethod => Instruction::CallMetadataMethod {
-                address: self.parse_value()?.value,
-                method_name: self.parse_value()?.value,
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallRoleAssignmentMethod => Instruction::CallRoleAssignmentMethod {
-                address: self.parse_value()?.value,
-                method_name: self.parse_value()?.value,
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallDirectVaultMethod => Instruction::CallDirectVaultMethod {
@@ -681,28 +681,28 @@ impl Parser {
             InstructionIdent::DropNamedProofs => Instruction::DropNamedProofs,
             InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
             InstructionIdent::AllocateGlobalAddress => Instruction::AllocateGlobalAddress {
-                package_address: self.parse_value()?.value,
-                blueprint_name: self.parse_value()?.value,
-                address_reservation: self.parse_value()?.value,
-                named_address: self.parse_value()?.value,
+                package_address: self.parse_value()?,
+                blueprint_name: self.parse_value()?,
+                address_reservation: self.parse_value()?,
+                named_address: self.parse_value()?,
             },
 
             /* Call direct vault method aliases */
             InstructionIdent::RecallFromVault => Instruction::RecallFromVault {
-                vault_id: self.parse_value()?.value,
+                vault_id: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::FreezeVault => Instruction::FreezeVault {
-                vault_id: self.parse_value()?.value,
+                vault_id: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::UnfreezeVault => Instruction::UnfreezeVault {
-                vault_id: self.parse_value()?.value,
+                vault_id: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::RecallNonFungiblesFromVault => {
                 Instruction::RecallNonFungiblesFromVault {
-                    vault_id: self.parse_value()?.value,
+                    vault_id: self.parse_value()?,
                     args: self.parse_values_till_semicolon()?,
                 }
             }
@@ -748,57 +748,57 @@ impl Parser {
 
             /* Call non-main method aliases */
             InstructionIdent::SetMetadata => Instruction::SetMetadata {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::RemoveMetadata => Instruction::RemoveMetadata {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::LockMetadata => Instruction::LockMetadata {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::SetComponentRoyalty => Instruction::SetComponentRoyalty {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::LockComponentRoyalty => Instruction::LockComponentRoyalty {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::ClaimComponentRoyalties => Instruction::ClaimComponentRoyalties {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::SetOwnerRole => Instruction::SetOwnerRole {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::LockOwnerRole => Instruction::LockOwnerRole {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::SetRole => Instruction::SetRole {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
 
             /* Call main method aliases */
             InstructionIdent::MintFungible => Instruction::MintFungible {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::MintNonFungible => Instruction::MintNonFungible {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::MintRuidNonFungible => Instruction::MintRuidNonFungible {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::ClaimPackageRoyalties => Instruction::ClaimPackageRoyalties {
-                address: self.parse_value()?.value,
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CreateValidator => Instruction::CreateValidator {
@@ -809,7 +809,7 @@ impl Parser {
         Ok(instruction)
     }
 
-    pub fn parse_value(&mut self) -> Result<TokenValue, ParserError> {
+    pub fn parse_value(&mut self) -> Result<ValueWithSpan, ParserError> {
         self.track_stack_depth_increase()?;
         let token = self.advance()?;
         let value = match &token.kind {
@@ -887,7 +887,10 @@ impl Parser {
             }
         };
         self.track_stack_depth_decrease()?;
-        Ok(TokenValue { token, value })
+        Ok(ValueWithSpan {
+            value,
+            span: token.span,
+        })
     }
 
     pub fn parse_enum_content(&mut self) -> Result<Value, ParserError> {
@@ -912,11 +915,8 @@ impl Parser {
         };
         advance_match!(self, TokenKind::GreaterThan);
 
-        let fields = self
-            .parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?
-            .iter()
-            .map(|token_value| token_value.value.clone())
-            .collect();
+        let fields =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
 
         Ok(Value::Enum(discriminator, fields))
     }
@@ -924,21 +924,16 @@ impl Parser {
     pub fn parse_array_content(&mut self) -> Result<Value, ParserError> {
         let generics = self.parse_generics(1)?;
         Ok(Value::Array(
-            generics[0],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?
-                .iter()
-                .map(|token_value| token_value.value.clone())
-                .collect(),
+            generics[0].clone(),
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
         ))
     }
 
     pub fn parse_tuple_content(&mut self) -> Result<Value, ParserError> {
-        Ok(Value::Tuple(
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?
-                .iter()
-                .map(|token_value| token_value.value.clone())
-                .collect(),
-        ))
+        Ok(Value::Tuple(self.parse_values_any(
+            TokenKind::OpenParenthesis,
+            TokenKind::CloseParenthesis,
+        )?))
     }
 
     pub fn parse_map_content(&mut self) -> Result<Value, ParserError> {
@@ -946,16 +941,20 @@ impl Parser {
         advance_match!(self, TokenKind::OpenParenthesis);
         let mut entries = Vec::new();
         while self.peek()?.kind != TokenKind::CloseParenthesis {
-            let key_value = self.parse_value()?.value;
+            let key = self.parse_value()?;
             advance_match!(self, TokenKind::FatArrow);
-            let value_value = self.parse_value()?.value;
-            entries.push((key_value, value_value));
+            let value = self.parse_value()?;
+            entries.push((key, value));
             if self.peek()?.kind != TokenKind::CloseParenthesis {
                 advance_match!(self, TokenKind::Comma);
             }
         }
         advance_match!(self, TokenKind::CloseParenthesis);
-        Ok(Value::Map(generics[0], generics[1], entries))
+        Ok(Value::Map(
+            generics[0].clone(),
+            generics[1].clone(),
+            entries,
+        ))
     }
 
     /// Parse a comma-separated value list, enclosed by a pair of marks.
@@ -963,7 +962,7 @@ impl Parser {
         &mut self,
         open: TokenKind,
         close: TokenKind,
-    ) -> Result<Vec<TokenValue>, ParserError> {
+    ) -> Result<Vec<ValueWithSpan>, ParserError> {
         advance_match!(self, open);
         let mut values = Vec::new();
         while self.peek()?.kind != close {
@@ -976,7 +975,7 @@ impl Parser {
         Ok(values)
     }
 
-    fn parse_values_one(&mut self) -> Result<Value, ParserError> {
+    fn parse_values_one(&mut self) -> Result<ValueWithSpan, ParserError> {
         let values =
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
         if values.len() != 1 {
@@ -984,23 +983,21 @@ impl Parser {
                 actual: values.len(),
                 expected: 1,
                 span: Span {
-                    start: values[0].token.span.start,
-                    end: values[values.len() - 1].token.span.end,
+                    start: values[0].span.start,
+                    end: values[values.len() - 1].span.end,
                 },
             })
         } else {
-            Ok(values[0].value.clone())
+            Ok(values[0].clone())
         }
     }
 
-    fn parse_generics(&mut self, n: usize) -> Result<Vec<ValueKind>, ParserError> {
+    fn parse_generics(&mut self, n: usize) -> Result<Vec<ValueKindWithSpan>, ParserError> {
         advance_match!(self, TokenKind::LessThan);
         let mut types = Vec::new();
-        let mut tokens = Vec::new();
         while self.peek()?.kind != TokenKind::GreaterThan {
             let token_value_kind = self.parse_type()?;
-            types.push(token_value_kind.value_kind);
-            tokens.push(token_value_kind.token);
+            types.push(token_value_kind);
             if self.peek()?.kind != TokenKind::GreaterThan {
                 advance_match!(self, TokenKind::Comma);
             }
@@ -1012,8 +1009,8 @@ impl Parser {
                 expected: n,
                 actual: types.len(),
                 span: Span {
-                    start: tokens[0].span.start,
-                    end: tokens[tokens.len() - 1].span.end,
+                    start: types[0].span.start,
+                    end: types[types.len() - 1].span.end,
                 },
             })
         } else {
@@ -1021,7 +1018,7 @@ impl Parser {
         }
     }
 
-    fn parse_type(&mut self) -> Result<TokenValueKind, ParserError> {
+    fn parse_type(&mut self) -> Result<ValueKindWithSpan, ParserError> {
         let token = self.advance()?;
         let value_kind = match &token.kind {
             TokenKind::Ident(ident_str) => {
@@ -1086,7 +1083,10 @@ impl Parser {
                 });
             }
         };
-        Ok(TokenValueKind { token, value_kind })
+        Ok(ValueKindWithSpan {
+            value_kind,
+            span: token.span,
+        })
     }
 }
 
@@ -1211,11 +1211,41 @@ mod tests {
         parse_value_ok!(r#""test""#, Value::String("test".into()));
     }
 
+    macro_rules! position {
+        ($full_index:expr, $line_number:expr, $line_char_index:expr) => {
+            Position {
+                full_index: $full_index,
+                line_number: $line_number,
+                line_char_index: $line_char_index,
+            }
+        };
+    }
+    macro_rules! span {
+        (start = ($st_full_index:expr, $st_line_number:expr, $st_line_char_index:expr),
+         end = ($end_full_index:expr, $end_line_number:expr, $end_line_char_index:expr)) => {
+            Span {
+                start: position!($st_full_index, $st_line_number, $st_line_char_index),
+                end: position!($end_full_index, $end_line_number, $end_line_char_index),
+            }
+        };
+    }
     #[test]
     fn test_enum() {
         parse_value_ok!(
             r#"Enum<0u8>("Hello", 123u8)"#,
-            Value::Enum(0, vec![Value::String("Hello".into()), Value::U8(123)],)
+            Value::Enum(
+                0,
+                vec![
+                    ValueWithSpan {
+                        value: Value::String("Hello".into()),
+                        span: span!(start = (10, 1, 10), end = (17, 1, 17)),
+                    },
+                    ValueWithSpan {
+                        value: Value::U8(123),
+                        span: span!(start = (19, 1, 19), end = (24, 1, 24)),
+                    },
+                ],
+            )
         );
         parse_value_ok!(r#"Enum<0u8>()"#, Value::Enum(0, Vec::new()));
         parse_value_ok!(
@@ -1225,7 +1255,19 @@ mod tests {
         // Check we allow trailing commas
         parse_value_ok!(
             r#"Enum<0u8>("Hello", 123u8,)"#,
-            Value::Enum(0, vec![Value::String("Hello".into()), Value::U8(123)],)
+            Value::Enum(
+                0,
+                vec![
+                    ValueWithSpan {
+                        value: Value::String("Hello".into()),
+                        span: span!(start = (10, 1, 10), end = (17, 1, 17)),
+                    },
+                    ValueWithSpan {
+                        value: Value::U8(123),
+                        span: span!(start = (19, 1, 19), end = (24, 1, 24)),
+                    },
+                ],
+            )
         );
     }
 
@@ -1233,13 +1275,52 @@ mod tests {
     fn test_array() {
         parse_value_ok!(
             r#"Array<U8>(1u8, 2u8)"#,
-            Value::Array(ValueKind::U8, vec![Value::U8(1), Value::U8(2)])
+            Value::Array(
+                ValueKindWithSpan {
+                    value_kind: ValueKind::U8,
+                    span: span!(start = (6, 1, 6), end = (8, 1, 8)),
+                },
+                vec![
+                    ValueWithSpan {
+                        value: Value::U8(1),
+                        span: span!(start = (10, 1, 10), end = (13, 1, 13)),
+                    },
+                    ValueWithSpan {
+                        value: Value::U8(2),
+                        span: span!(start = (15, 1, 15), end = (18, 1, 18)),
+                    }
+                ],
+            )
         );
-        parse_value_ok!(r#"Array<U8>()"#, Value::Array(ValueKind::U8, vec![]));
+        parse_value_ok!(
+            r#"Array<U8>()"#,
+            Value::Array(
+                ValueKindWithSpan {
+                    value_kind: ValueKind::U8,
+                    span: span!(start = (6, 1, 6), end = (8, 1, 8)),
+                },
+                vec![]
+            )
+        );
         // Check we allow trailing commas
         parse_value_ok!(
             r#"Array<U8>(1u8, 2u8,)"#,
-            Value::Array(ValueKind::U8, vec![Value::U8(1), Value::U8(2)])
+            Value::Array(
+                ValueKindWithSpan {
+                    value_kind: ValueKind::U8,
+                    span: span!(start = (6, 1, 6), end = (8, 1, 8)),
+                },
+                vec![
+                    ValueWithSpan {
+                        value: Value::U8(1),
+                        span: span!(start = (10, 1, 10), end = (13, 1, 13)),
+                    },
+                    ValueWithSpan {
+                        value: Value::U8(2),
+                        span: span!(start = (15, 1, 15), end = (18, 1, 18)),
+                    }
+                ],
+            )
         );
     }
 
@@ -1248,16 +1329,44 @@ mod tests {
         parse_value_ok!(r#"Tuple()"#, Value::Tuple(vec![]));
         parse_value_ok!(
             r#"Tuple("Hello", 123u8)"#,
-            Value::Tuple(vec![Value::String("Hello".into()), Value::U8(123),])
+            Value::Tuple(vec![
+                ValueWithSpan {
+                    value: Value::String("Hello".into()),
+                    span: span!(start = (6, 1, 6), end = (13, 1, 13)),
+                },
+                ValueWithSpan {
+                    value: Value::U8(123),
+                    span: span!(start = (15, 1, 15), end = (20, 1, 20)),
+                },
+            ])
         );
         parse_value_ok!(
             r#"Tuple(1u8, 2u8)"#,
-            Value::Tuple(vec![Value::U8(1), Value::U8(2)])
+            Value::Tuple(vec![
+                ValueWithSpan {
+                    value: Value::U8(1),
+                    span: span!(start = (6, 1, 6), end = (9, 1, 9)),
+                },
+                ValueWithSpan {
+                    value: Value::U8(2),
+                    span: span!(start = (11, 1, 11), end = (14, 1, 14)),
+                },
+            ])
         );
+
         // Check we allow trailing commas
         parse_value_ok!(
             r#"Tuple(1u8, 2u8,)"#,
-            Value::Tuple(vec![Value::U8(1), Value::U8(2)])
+            Value::Tuple(vec![
+                ValueWithSpan {
+                    value: Value::U8(1),
+                    span: span!(start = (6, 1, 6), end = (9, 1, 9)),
+                },
+                ValueWithSpan {
+                    value: Value::U8(2),
+                    span: span!(start = (11, 1, 11), end = (14, 1, 14)),
+                },
+            ])
         );
     }
 
@@ -1266,31 +1375,95 @@ mod tests {
         parse_value_ok!(
             r#"Map<String, U8>("Hello" => 123u8)"#,
             Value::Map(
-                ValueKind::String,
-                ValueKind::U8,
-                vec![(Value::String("Hello".into()), Value::U8(123))]
+                ValueKindWithSpan {
+                    value_kind: ValueKind::String,
+                    span: span!(start = (4, 1, 4), end = (10, 1, 10)),
+                },
+                ValueKindWithSpan {
+                    value_kind: ValueKind::U8,
+                    span: span!(start = (12, 1, 12), end = (14, 1, 14)),
+                },
+                vec![(
+                    ValueWithSpan {
+                        value: Value::String("Hello".into()),
+                        span: span!(start = (16, 1, 16), end = (23, 1, 23)),
+                    },
+                    ValueWithSpan {
+                        value: Value::U8(123),
+                        span: span!(start = (27, 1, 27), end = (32, 1, 32)),
+                    }
+                )]
             )
         );
         parse_value_ok!(
             r#"Map<String, U8>("Hello" => 123u8, "world!" => 1u8)"#,
             Value::Map(
-                ValueKind::String,
-                ValueKind::U8,
+                ValueKindWithSpan {
+                    value_kind: ValueKind::String,
+                    span: span!(start = (4, 1, 4), end = (10, 1, 10)),
+                },
+                ValueKindWithSpan {
+                    value_kind: ValueKind::U8,
+                    span: span!(start = (12, 1, 12), end = (14, 1, 14)),
+                },
                 vec![
-                    (Value::String("Hello".into()), Value::U8(123)),
-                    (Value::String("world!".into()), Value::U8(1)),
+                    (
+                        ValueWithSpan {
+                            value: Value::String("Hello".into()),
+                            span: span!(start = (16, 1, 16), end = (23, 1, 23)),
+                        },
+                        ValueWithSpan {
+                            value: Value::U8(123),
+                            span: span!(start = (27, 1, 27), end = (32, 1, 32)),
+                        }
+                    ),
+                    (
+                        ValueWithSpan {
+                            value: Value::String("world!".into()),
+                            span: span!(start = (34, 1, 34), end = (42, 1, 42)),
+                        },
+                        ValueWithSpan {
+                            value: Value::U8(1),
+                            span: span!(start = (46, 1, 46), end = (49, 1, 49)),
+                        }
+                    )
                 ]
             )
         );
+
         // Check we allow trailing commas
         parse_value_ok!(
             r#"Map<String, U8>("Hello" => 123u8, "world!" => 1u8,)"#,
             Value::Map(
-                ValueKind::String,
-                ValueKind::U8,
+                ValueKindWithSpan {
+                    value_kind: ValueKind::String,
+                    span: span!(start = (4, 1, 4), end = (10, 1, 10)),
+                },
+                ValueKindWithSpan {
+                    value_kind: ValueKind::U8,
+                    span: span!(start = (12, 1, 12), end = (14, 1, 14)),
+                },
                 vec![
-                    (Value::String("Hello".into()), Value::U8(123)),
-                    (Value::String("world!".into()), Value::U8(1)),
+                    (
+                        ValueWithSpan {
+                            value: Value::String("Hello".into()),
+                            span: span!(start = (16, 1, 16), end = (23, 1, 23)),
+                        },
+                        ValueWithSpan {
+                            value: Value::U8(123),
+                            span: span!(start = (27, 1, 27), end = (32, 1, 32)),
+                        }
+                    ),
+                    (
+                        ValueWithSpan {
+                            value: Value::String("world!".into()),
+                            span: span!(start = (34, 1, 34), end = (42, 1, 42)),
+                        },
+                        ValueWithSpan {
+                            value: Value::U8(1),
+                            span: span!(start = (46, 1, 46), end = (49, 1, 49)),
+                        }
+                    )
                 ]
             )
         );

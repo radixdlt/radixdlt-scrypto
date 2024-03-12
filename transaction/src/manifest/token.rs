@@ -1,7 +1,5 @@
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-// use sbor::rust::str::FromStr;
-// use std::fmt::Display;
 
 /// The span of tokens. The `start` and `end` are Unicode code points / UTF-32 - as opposed to a
 /// byte-based / UTF-8 index.

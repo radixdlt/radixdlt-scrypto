@@ -1,4 +1,4 @@
-use crate::manifest::token::Token;
+use crate::manifest::token::Span;
 use radix_engine_common::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
 use strum::{EnumCount, EnumDiscriminants, FromRepr};
 
@@ -6,63 +6,63 @@ use strum::{EnumCount, EnumDiscriminants, FromRepr};
 #[strum_discriminants(derive(FromRepr))]
 pub enum Instruction {
     TakeFromWorktop {
-        resource_address: Value,
-        amount: Value,
-        new_bucket: Value,
+        resource_address: ValueWithSpan,
+        amount: ValueWithSpan,
+        new_bucket: ValueWithSpan,
     },
 
     TakeNonFungiblesFromWorktop {
-        ids: Value,
-        resource_address: Value,
-        new_bucket: Value,
+        ids: ValueWithSpan,
+        resource_address: ValueWithSpan,
+        new_bucket: ValueWithSpan,
     },
 
     TakeAllFromWorktop {
-        resource_address: Value,
-        new_bucket: Value,
+        resource_address: ValueWithSpan,
+        new_bucket: ValueWithSpan,
     },
 
     ReturnToWorktop {
-        bucket: Value,
+        bucket: ValueWithSpan,
     },
 
     AssertWorktopContains {
-        resource_address: Value,
-        amount: Value,
+        resource_address: ValueWithSpan,
+        amount: ValueWithSpan,
     },
 
     AssertWorktopContainsNonFungibles {
-        resource_address: Value,
-        ids: Value,
+        resource_address: ValueWithSpan,
+        ids: ValueWithSpan,
     },
 
     AssertWorktopContainsAny {
-        resource_address: Value,
+        resource_address: ValueWithSpan,
     },
 
     PopFromAuthZone {
-        new_proof: Value,
+        new_proof: ValueWithSpan,
     },
 
     PushToAuthZone {
-        proof: Value,
+        proof: ValueWithSpan,
     },
 
     CreateProofFromAuthZoneOfAmount {
-        resource_address: Value,
-        amount: Value,
-        new_proof: Value,
+        resource_address: ValueWithSpan,
+        amount: ValueWithSpan,
+        new_proof: ValueWithSpan,
     },
 
     CreateProofFromAuthZoneOfNonFungibles {
-        resource_address: Value,
-        ids: Value,
-        new_proof: Value,
+        resource_address: ValueWithSpan,
+        ids: ValueWithSpan,
+        new_proof: ValueWithSpan,
     },
 
     CreateProofFromAuthZoneOfAll {
-        resource_address: Value,
-        new_proof: Value,
+        resource_address: ValueWithSpan,
+        new_proof: ValueWithSpan,
     },
 
     DropAuthZoneSignatureProofs,
@@ -72,64 +72,64 @@ pub enum Instruction {
     DropAuthZoneProofs,
 
     CreateProofFromBucketOfAmount {
-        bucket: Value,
-        amount: Value,
-        new_proof: Value,
+        bucket: ValueWithSpan,
+        amount: ValueWithSpan,
+        new_proof: ValueWithSpan,
     },
 
     CreateProofFromBucketOfNonFungibles {
-        bucket: Value,
-        ids: Value,
-        new_proof: Value,
+        bucket: ValueWithSpan,
+        ids: ValueWithSpan,
+        new_proof: ValueWithSpan,
     },
 
     CreateProofFromBucketOfAll {
-        bucket: Value,
-        new_proof: Value,
+        bucket: ValueWithSpan,
+        new_proof: ValueWithSpan,
     },
 
     BurnResource {
-        bucket: Value,
+        bucket: ValueWithSpan,
     },
 
     CloneProof {
-        proof: Value,
-        new_proof: Value,
+        proof: ValueWithSpan,
+        new_proof: ValueWithSpan,
     },
 
     DropProof {
-        proof: Value,
+        proof: ValueWithSpan,
     },
 
     CallFunction {
-        package_address: Value,
-        blueprint_name: Value,
-        function_name: Value,
-        args: Vec<Value>,
+        package_address: ValueWithSpan,
+        blueprint_name: ValueWithSpan,
+        function_name: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
 
     CallMethod {
-        address: Value,
-        method_name: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        method_name: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
 
     CallRoyaltyMethod {
-        address: Value,
-        method_name: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        method_name: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
 
     CallMetadataMethod {
-        address: Value,
-        method_name: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        method_name: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
 
     CallRoleAssignmentMethod {
-        address: Value,
-        method_name: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        method_name: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
 
     CallDirectVaultMethod {
@@ -143,122 +143,122 @@ pub enum Instruction {
     DropAllProofs,
 
     AllocateGlobalAddress {
-        package_address: Value,
-        blueprint_name: Value,
-        address_reservation: Value,
-        named_address: Value,
+        package_address: ValueWithSpan,
+        blueprint_name: ValueWithSpan,
+        address_reservation: ValueWithSpan,
+        named_address: ValueWithSpan,
     },
 
     /* Call direct vault method aliases */
     RecallFromVault {
-        vault_id: Value,
-        args: Vec<Value>,
+        vault_id: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     FreezeVault {
-        vault_id: Value,
-        args: Vec<Value>,
+        vault_id: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     UnfreezeVault {
-        vault_id: Value,
-        args: Vec<Value>,
+        vault_id: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     RecallNonFungiblesFromVault {
-        vault_id: Value,
-        args: Vec<Value>,
+        vault_id: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
 
     /* Call function aliases */
     PublishPackage {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     PublishPackageAdvanced {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     CreateFungibleResource {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     CreateFungibleResourceWithInitialSupply {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     CreateNonFungibleResource {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     CreateNonFungibleResourceWithInitialSupply {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     CreateAccessController {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     CreateIdentity {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     CreateIdentityAdvanced {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     CreateAccount {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
     CreateAccountAdvanced {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
 
     /* call non-main method aliases */
     SetMetadata {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     RemoveMetadata {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     LockMetadata {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     SetComponentRoyalty {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     SetOwnerRole {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     LockOwnerRole {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     SetRole {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     LockComponentRoyalty {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     ClaimComponentRoyalties {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
 
     /* call main method aliases */
     ClaimPackageRoyalties {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     MintFungible {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     MintNonFungible {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     MintRuidNonFungible {
-        address: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
     CreateValidator {
-        args: Vec<Value>,
+        args: Vec<ValueWithSpan>,
     },
 }
 
@@ -398,34 +398,38 @@ pub enum Value {
     // ==============
     // Composite basic values
     // ==============
-    Enum(u8, Vec<Value>),
-    Array(ValueKind, Vec<Value>),
-    Tuple(Vec<Value>),
-    Map(ValueKind, ValueKind, Vec<(Value, Value)>),
+    Enum(u8, Vec<ValueWithSpan>),
+    Array(ValueKindWithSpan, Vec<ValueWithSpan>),
+    Tuple(Vec<ValueWithSpan>),
+    Map(
+        ValueKindWithSpan,
+        ValueKindWithSpan,
+        Vec<(ValueWithSpan, ValueWithSpan)>,
+    ),
 
     // ==============
     // Alias values
     // ==============
-    Some(Box<Value>),
+    Some(Box<ValueWithSpan>),
     None,
-    Ok(Box<Value>),
-    Err(Box<Value>),
-    Bytes(Box<Value>),
-    NonFungibleGlobalId(Box<Value>),
+    Ok(Box<ValueWithSpan>),
+    Err(Box<ValueWithSpan>),
+    Bytes(Box<ValueWithSpan>),
+    NonFungibleGlobalId(Box<ValueWithSpan>),
 
     // ==============
     // Custom values
     // ==============
-    Address(Box<Value>),
-    NamedAddress(Box<Value>),
-    Bucket(Box<Value>),
-    Proof(Box<Value>),
-    Expression(Box<Value>),
-    Blob(Box<Value>),
-    Decimal(Box<Value>),
-    PreciseDecimal(Box<Value>),
-    NonFungibleLocalId(Box<Value>),
-    AddressReservation(Box<Value>),
+    Address(Box<ValueWithSpan>),
+    NamedAddress(Box<ValueWithSpan>),
+    Bucket(Box<ValueWithSpan>),
+    Proof(Box<ValueWithSpan>),
+    Expression(Box<ValueWithSpan>),
+    Blob(Box<ValueWithSpan>),
+    Decimal(Box<ValueWithSpan>),
+    PreciseDecimal(Box<ValueWithSpan>),
+    NonFungibleLocalId(Box<ValueWithSpan>),
+    AddressReservation(Box<ValueWithSpan>),
 }
 
 impl Value {
@@ -485,13 +489,19 @@ impl Value {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TokenValueKind {
-    pub token: Token,
+pub struct ValueKindWithSpan {
     pub value_kind: ValueKind,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TokenValue {
-    pub token: Token,
+pub struct ValueWithSpan {
     pub value: Value,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InstructionWithSpan {
+    pub instruction: Instruction,
+    pub span: Span,
 }
