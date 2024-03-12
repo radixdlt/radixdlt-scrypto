@@ -35,13 +35,20 @@ pub enum ScryptoCompilerError {
 
 #[derive(Clone, Default)]
 pub struct ScryptoCompilerInputParams {
-    profile: Profile,
-    environment_variables: IndexMap<String, EnvironmentVariableAction>,
-    features: Vec<String>,
-    package: Vec<String>,
-    target_directory: Option<PathBuf>,
-    manifest_path: Option<PathBuf>,
-    wasm_optimization: Option<wasm_opt::OptimizationOptions>,
+    /// Path to Cargo.toml file, if not specified current directory will be used.
+    pub manifest_path: Option<PathBuf>,
+    /// Path to directory where compilation artifacts are stored, if not specified default location will by used.
+    pub target_directory: Option<PathBuf>,
+    /// Compilation profile.
+    pub profile: Profile,
+    /// List of environment variables to set or unest during compilation.
+    pub environment_variables: IndexMap<String, EnvironmentVariableAction>,
+    /// List of features, used for 'cargo build --features'.
+    pub features: Vec<String>,
+    /// List of packages to compile, used for 'cargo build --package'.
+    pub package: Vec<String>,
+    /// If optimizations are specified they will by applied after compilation.
+    pub wasm_optimization: Option<wasm_opt::OptimizationOptions>,
 }
 
 #[derive(Default, Clone)]
@@ -86,10 +93,14 @@ pub enum EnvironmentVariableAction {
 
 #[derive(Clone)]
 pub struct ScryptoCompiler {
+    /// Scrypto compiler input parameters.
     input_params: ScryptoCompilerInputParams,
-
-    target_directory: PathBuf,
+    /// Path to Cargo.toml file. If specified in input_params it has the same value, otherwise it is generated.
     manifest_path: PathBuf,
+    /// Path to directory where compilation artifacts are stored. If specified in input_params it has the same value,
+    /// otherwise it is generated.
+    target_directory: PathBuf,
+    /// Path to target binary WASM file.
     target_binary_path: PathBuf,
 }
 
