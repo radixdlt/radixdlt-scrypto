@@ -45,8 +45,10 @@ pub struct ScryptoCompilerInputParams {
     pub environment_variables: IndexMap<String, EnvironmentVariableAction>,
     /// List of features, used for 'cargo build --features'. Optional field.
     pub features: IndexSet<String>,
-    /// If set to true then disables default features. Defult value is false.
+    /// If set to true then '--no-default-features' option is passed to 'cargo build'. Defult value is false.
     pub no_default_features: bool,
+    /// If set to true then '--all-features' option is passed to 'cargo build'. Defult value is false.
+    pub all_features: bool,
     /// List of packages to compile, used for 'cargo build --package'. Optional field.
     pub package: IndexSet<String>,
     /// If optimizations are specified they will by applied after compilation.
@@ -311,6 +313,9 @@ impl ScryptoCompiler {
         if self.input_params.no_default_features {
             command.arg("--no-default-features");
         }
+        if self.input_params.all_features {
+            command.arg("--all_features");
+        }
 
         self.input_params
             .environment_variables
@@ -424,6 +429,11 @@ impl ScryptoCompilerBuilder {
 
     pub fn no_default_features(&mut self) -> &mut Self {
         self.input_params.no_default_features = true;
+        self
+    }
+
+    pub fn all_features(&mut self) -> &mut Self {
+        self.input_params.all_features = true;
         self
     }
 
