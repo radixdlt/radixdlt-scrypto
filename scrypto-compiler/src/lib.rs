@@ -4,14 +4,14 @@ use radix_engine_interface::{blueprints::package::PackageDefinition, types::Leve
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use std::{env, io};
-use utils::prelude::IndexMap;
+use utils::prelude::{IndexMap, IndexSet};
 
 const MANIFEST_FILE: &str = "Cargo.toml";
 const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
-    /// Returns IO Error which occured during compilation
+    /// Returns IO Error which occurred during compilation
     IOError(io::Error),
     /// Returns output from stderr and process exit status
     CargoBuildFailure(String, ExitStatus),
@@ -39,16 +39,21 @@ pub struct ScryptoCompilerInputParams {
     pub manifest_path: Option<PathBuf>,
     /// Path to directory where compilation artifacts are stored, if not specified default location will by used.
     pub target_directory: Option<PathBuf>,
-    /// Compilation profile.
+    /// Compilation profile. If not specified default profile: Release will be used.
     pub profile: Profile,
-    /// List of environment variables to set or unest during compilation.
+    /// List of environment variables to set or unest during compilation. Optional field.
     pub environment_variables: IndexMap<String, EnvironmentVariableAction>,
-    /// List of features, used for 'cargo build --features'.
-    pub features: Vec<String>,
-    /// List of packages to compile, used for 'cargo build --package'.
-    pub package: Vec<String>,
+    /// List of features, used for 'cargo build --features'. Optional field.
+    pub features: IndexSet<String>,
+    /// If set to true then disables default features. Defult value is false.
+    pub no_default_features: bool,
+    /// List of packages to compile, used for 'cargo build --package'. Optional field.
+    pub package: IndexSet<String>,
     /// If optimizations are specified they will by applied after compilation.
     pub wasm_optimization: Option<wasm_opt::OptimizationOptions>,
+    /// List of custom options, passed as 'cargo build' arguments without any modifications. Optional field.
+    /// Add each option as separate entry (for instance: '-j 1' must be added as two entires: '-j' and '1' one by one).
+    pub custom_options: IndexSet<String>,
 }
 
 #[derive(Default, Clone)]
@@ -232,7 +237,7 @@ impl ScryptoCompiler {
                 wasm_name = Some(pkg.name.replace("-", "_"));
             }
         }
-        // Merge the name with binary tearget directory
+        // Merge the name with binary target directory
         let mut bin_path: PathBuf = binary_target_directory.into();
         bin_path.push(
             wasm_name.ok_or(ScryptoCompilerError::CargoManifestLoadFailure(
@@ -303,6 +308,10 @@ impl ScryptoCompiler {
             .args(features)
             .env("CARGO_ENCODED_RUSTFLAGS", rustflags);
 
+        if self.input_params.no_default_features {
+            command.arg("--no-default-features");
+        }
+
         self.input_params
             .environment_variables
             .iter()
@@ -312,6 +321,8 @@ impl ScryptoCompiler {
                     EnvironmentVariableAction::Unset => command.env_remove(name),
                 };
             });
+
+        command.args(self.input_params.custom_options.iter());
 
         Ok(())
     }
@@ -407,12 +418,17 @@ impl ScryptoCompilerBuilder {
     }
 
     pub fn feature(&mut self, name: &str) -> &mut Self {
-        self.input_params.features.push(name.to_string());
+        self.input_params.features.insert(name.to_string());
+        self
+    }
+
+    pub fn no_default_features(&mut self) -> &mut Self {
+        self.input_params.no_default_features = true;
         self
     }
 
     pub fn package(&mut self, name: &str) -> &mut Self {
-        self.input_params.package.push(name.to_string());
+        self.input_params.package.insert(name.to_string());
         self
     }
 
@@ -430,7 +446,7 @@ impl ScryptoCompilerBuilder {
     pub fn scrypto_macro_trace(&mut self) -> &mut Self {
         self.input_params
             .features
-            .push(String::from("scrypto/trace"));
+            .insert(String::from("scrypto/trace"));
         self
     }
 
@@ -438,27 +454,27 @@ impl ScryptoCompilerBuilder {
         if Level::Error <= log_level {
             self.input_params
                 .features
-                .push(String::from("scrypto/log-error"));
+                .insert(String::from("scrypto/log-error"));
         }
         if Level::Warn <= log_level {
             self.input_params
                 .features
-                .push(String::from("scrypto/log-warn"));
+                .insert(String::from("scrypto/log-warn"));
         }
         if Level::Info <= log_level {
             self.input_params
                 .features
-                .push(String::from("scrypto/log-info"));
+                .insert(String::from("scrypto/log-info"));
         }
         if Level::Debug <= log_level {
             self.input_params
                 .features
-                .push(String::from("scrypto/log-debug"));
+                .insert(String::from("scrypto/log-debug"));
         }
         if Level::Trace <= log_level {
             self.input_params
                 .features
-                .push(String::from("scrypto/log-trace"));
+                .insert(String::from("scrypto/log-trace"));
         }
         self
     }
@@ -466,19 +482,26 @@ impl ScryptoCompilerBuilder {
     pub fn no_schema(&mut self) -> &mut Self {
         self.input_params
             .features
-            .push(String::from("scrypto/no-schema"));
+            .insert(String::from("scrypto/no-schema"));
         self
     }
 
     pub fn coverage(&mut self) -> &mut Self {
         self.input_params
             .features
-            .push(String::from("scrypto/coverage"));
+            .insert(String::from("scrypto/coverage"));
         self
     }
 
     pub fn optimize_with_wasm_opt(&mut self, options: &wasm_opt::OptimizationOptions) -> &mut Self {
         self.input_params.wasm_optimization = Some(options.to_owned());
+        self
+    }
+
+    pub fn custom_options(&mut self, options: &[&str]) -> &mut Self {
+        self.input_params
+            .custom_options
+            .extend(options.iter().map(|item| item.to_string()));
         self
     }
 
