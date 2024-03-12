@@ -6,6 +6,6 @@
 [1m[94m6 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
 [1m[94m7 |[0m     "some_method"
 [1m[94m8 |[0m     Decimal(300i9)
-[1m[94m  |[0m[1m[94m                 -[0m [1m[94m[1m[94minfo[0m[1m[94m: unexpected character[0m[0m
+[1m[94m  |[0m[1m[91m                 ^[0m [1m[91munexpected character[0m
 [1m[94m9 |[0m ;
 [1m[94m  |[0m

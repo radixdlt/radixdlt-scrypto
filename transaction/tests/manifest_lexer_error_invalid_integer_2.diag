@@ -2,6 +2,6 @@
 [1m[94m  |[0m
 [1m[94m1 |[0m CALL_METHOD Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh") "lock_fee";
 [1m[94m2 |[0m CALL_METHOD Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq") "some_method" 300i8;
-[1m[94m  |[0m[1m[94m                                                                                                           -----[0m [1m[94m[1m[94minfo[0m[1m[94m: invalid integer[0m[0m
+[1m[94m  |[0m[1m[91m                                                                                                           ^^^^^[0m [1m[91minvalid integer[0m
 [1m[94m3 |[0m CALL_METHOD Address("account_sim1c956qr3kxlgypxwst89j9yf24tjc7zxd4up38x37zr6q4jxdx9rhma") "try_deposit_batch_or_abort" Expression("ENTIRE_WORKTOP") None;
 [1m[94m  |[0m

@@ -6,7 +6,7 @@
 [1m[94m23 |[0m                                       Tuple(
 [1m[94m24 |[0m                                         Tuple(
 [1m[94m25 |[0m                                           Tuple(
-[1m[94m   |[0m[1m[94m                                           -----[0m [1m[94m[1m[94minfo[0m[1m[94m: max depth exceeded[0m[0m
+[1m[94m   |[0m[1m[91m                                           ^^^^^[0m [1m[91mmax depth exceeded[0m
 [1m[94m26 |[0m                                             Tuple(
 [1m[94m27 |[0m                                               Tuple(
 [1m[94m28 |[0m                                                 Tuple(

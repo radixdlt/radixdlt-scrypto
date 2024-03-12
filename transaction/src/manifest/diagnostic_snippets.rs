@@ -39,7 +39,7 @@ pub fn create_snippet(s: &str, span: &Span, title: &str, label: &str) -> String 
             fold: false,
             annotations: vec![SourceAnnotation {
                 label: label,
-                annotation_type: AnnotationType::Info,
+                annotation_type: AnnotationType::Error,
                 range: (span.start.full_index, span.end.full_index),
             }],
         }],

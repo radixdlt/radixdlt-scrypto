@@ -5,5 +5,5 @@
 [1m[94m3 |[0m   "blueprint"
 [1m[94m4 |[0m   "func"
 [1m[94m5 |[0m   Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(0u8)))))))))))))))))))))))))))));
-[1m[94m  |[0m[1m[94m                                                                                                                           -----[0m [1m[94m[1m[94minfo[0m[1m[94m: max depth exceeded[0m[0m
+[1m[94m  |[0m[1m[91m                                                                                                                           ^^^^^[0m [1m[91mmax depth exceeded[0m
 [1m[94m  |[0m

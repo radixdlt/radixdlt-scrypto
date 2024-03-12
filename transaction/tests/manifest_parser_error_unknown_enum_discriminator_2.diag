@@ -6,7 +6,7 @@
 [1m[94m 6 |[0m     Address("resource_sim1n2pqvufl0fmexzpkl6rzk50n2seaz49jgfaqensv7ujxdlf6szr08f")
 [1m[94m 7 |[0m     "field_name"
 [1m[94m 8 |[0m     Enum<Metadata::StingArray>(
-[1m[94m   |[0m[1m[94m          --------------------[0m [1m[94m[1m[94minfo[0m[1m[94m: unknown enum discriminator[0m[0m
+[1m[94m   |[0m[1m[91m          ^^^^^^^^^^^^^^^^^^^^[0m [1m[91munknown enum discriminator[0m
 [1m[94m 9 |[0m         Array<String>(
 [1m[94m10 |[0m             "some_string",
 [1m[94m11 |[0m             "another_string",
