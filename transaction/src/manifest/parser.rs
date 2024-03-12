@@ -32,10 +32,6 @@ pub enum ParserError {
         actual: usize,
         span: Span,
     },
-    InvalidHex {
-        actual: String,
-        span: Span,
-    },
     UnknownEnumDiscriminator {
         actual: String,
         span: Span,
@@ -1158,7 +1154,6 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
             let title = format!("expected {} number of types, found {}", expected, actual);
             (span, title, "invalid number of types".to_string())
         }
-        ParserError::InvalidHex { span, .. } => (span, "title".to_string(), "label".to_string()),
         ParserError::MaxDepthExceeded { span, actual, max } => {
             let title = format!("manifest actual depth {} exceeded max {}", actual, max);
             (span, title, "max depth exceeded".to_string())

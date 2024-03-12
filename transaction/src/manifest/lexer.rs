@@ -93,7 +93,6 @@ pub enum LexerError {
     UnexpectedChar(char, Position),
     InvalidInteger(String, Span),
     InvalidUnicode(u32, Span),
-    UnknownIdentifier(String, Position),
 }
 
 #[derive(Debug, Clone)]
@@ -476,14 +475,6 @@ pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
             span,
             format!("invalid unicode value {}", value),
             "invalid unicode".to_string(),
-        ),
-        LexerError::UnknownIdentifier(string, position) => (
-            Span {
-                start: position,
-                end: position,
-            },
-            format!("unknown identifier {}", string),
-            "unknown identifier".to_string(),
         ),
     };
     create_snippet(s, &span, &title, &label)
