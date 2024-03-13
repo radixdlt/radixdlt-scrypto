@@ -21,6 +21,28 @@ pub struct Position {
     pub line_char_index: usize,
 }
 
+#[macro_export]
+macro_rules! position {
+    ($full_index:expr, $line_number:expr, $line_char_index:expr) => {
+        Position {
+            full_index: $full_index,
+            line_number: $line_number,
+            line_char_index: $line_char_index,
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! span {
+    (start = ($st_full_index:expr, $st_line_number:expr, $st_line_char_index:expr),
+         end = ($end_full_index:expr, $end_line_number:expr, $end_line_char_index:expr)) => {
+        Span {
+            start: position!($st_full_index, $st_line_number, $st_line_char_index),
+            end: position!($end_full_index, $end_line_number, $end_line_char_index),
+        }
+    };
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     // ==============

@@ -2,6 +2,7 @@ use crate::manifest::ast::{Instruction, Value, ValueKind, ValueKindWithSpan, Val
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::token::{Position, Span, Token, TokenKind};
+use crate::{position, span};
 use radix_engine_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
 use sbor::rust::fmt;
 
@@ -1108,18 +1109,10 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
     // println!("err = {:?}", err);
     let (span, title, label) = match err {
         ParserError::UnexpectedEof => (
-            Span {
-                start: Position {
-                    full_index: s.len() - 1,
-                    line_number: lines_cnt,
-                    line_char_index: 0,
-                },
-                end: Position {
-                    full_index: s.len(),
-                    line_number: lines_cnt,
-                    line_char_index: 0,
-                },
-            },
+            span!(
+                start = (s.len() - 1, lines_cnt, 0),
+                end = (s.len(), lines_cnt, 0)
+            ),
             "unexpected end of file".to_string(),
             "end of file".to_string(),
         ),
@@ -1224,24 +1217,6 @@ mod tests {
         parse_value_ok!(r#""test""#, Value::String("test".into()));
     }
 
-    macro_rules! position {
-        ($full_index:expr, $line_number:expr, $line_char_index:expr) => {
-            Position {
-                full_index: $full_index,
-                line_number: $line_number,
-                line_char_index: $line_char_index,
-            }
-        };
-    }
-    macro_rules! span {
-        (start = ($st_full_index:expr, $st_line_number:expr, $st_line_char_index:expr),
-         end = ($end_full_index:expr, $end_line_number:expr, $end_line_char_index:expr)) => {
-            Span {
-                start: position!($st_full_index, $st_line_number, $st_line_char_index),
-                end: position!($end_full_index, $end_line_number, $end_line_char_index),
-            }
-        };
-    }
     #[test]
     fn test_enum() {
         parse_value_ok!(
@@ -1490,18 +1465,7 @@ mod tests {
             ParserError::UnexpectedToken {
                 expected: TokenType::Exact(TokenKind::GreaterThan),
                 actual: TokenKind::CloseParenthesis,
-                span: Span {
-                    start: Position {
-                        full_index: 8,
-                        line_number: 1,
-                        line_char_index: 8,
-                    },
-                    end: Position {
-                        full_index: 9,
-                        line_number: 1,
-                        line_char_index: 9,
-                    }
-                },
+                span: span!(start = (8, 1, 8), end = (9, 1, 9)),
             }
         );
         parse_value_error!(
@@ -1509,18 +1473,7 @@ mod tests {
             ParserError::InvalidNumberOfValues {
                 actual: 2,
                 expected: 1,
-                span: Span {
-                    start: Position {
-                        full_index: 8,
-                        line_number: 1,
-                        line_char_index: 8,
-                    },
-                    end: Position {
-                        full_index: 20,
-                        line_number: 1,
-                        line_char_index: 20,
-                    }
-                }
+                span: span!(start = (8, 1, 8), end = (20, 1, 20)),
             }
         );
     }
@@ -1543,18 +1496,7 @@ mod tests {
             ParserError::MaxDepthExceeded {
                 actual: 21,
                 max: 20,
-                span: Span {
-                    start: Position {
-                        full_index: 120,
-                        line_number: 1,
-                        line_char_index: 120
-                    },
-                    end: Position {
-                        full_index: 125,
-                        line_number: 1,
-                        line_char_index: 125
-                    }
-                }
+                span: span!(start = (120, 1, 120), end = (125, 1, 125)),
             }
         );
     }

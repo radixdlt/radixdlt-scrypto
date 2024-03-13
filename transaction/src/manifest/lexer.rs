@@ -1,5 +1,6 @@
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::token::{Position, Span, Token, TokenKind};
+use crate::{position, span};
 // use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::str::FromStr;
@@ -42,21 +43,9 @@ impl Lexer {
     pub fn new(text: &str) -> Self {
         Self {
             text: text.chars().collect(),
-            current: Position {
-                full_index: 0,
-                line_number: 1,
-                line_char_index: 0,
-            },
-            previous: Position {
-                full_index: 0,
-                line_number: 1,
-                line_char_index: 0,
-            },
-            start: Position {
-                full_index: 0,
-                line_number: 1,
-                line_char_index: 0,
-            },
+            current: position!(0, 1, 0),
+            previous: position!(0, 1, 0),
+            start: position!(0, 1, 0),
         }
     }
 
@@ -357,18 +346,10 @@ pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
     let lines_cnt = s.lines().count();
     let (span, title, label) = match err {
         LexerError::UnexpectedEof => (
-            Span {
-                start: Position {
-                    full_index: s.len() - 1,
-                    line_number: lines_cnt,
-                    line_char_index: 0,
-                },
-                end: Position {
-                    full_index: s.len() - 1,
-                    line_number: lines_cnt,
-                    line_char_index: 0,
-                },
-            },
+            span!(
+                start = (s.len() - 1, lines_cnt, 0),
+                end = (s.len() - 1, lines_cnt, 0)
+            ),
             "unexpected end of file".to_string(),
             "end of file".to_string(),
         ),
@@ -564,49 +545,15 @@ mod tests {
     fn test_unexpected_char() {
         lex_error!(
             "1u8 +2u32",
-            LexerError::UnexpectedChar(
-                '+',
-                Position {
-                    full_index: 4,
-                    line_number: 1,
-                    line_char_index: 4
-                }
-            )
+            LexerError::UnexpectedChar('+', position!(4, 1, 4))
         );
 
-        lex_error!(
-            "x=7",
-            LexerError::UnexpectedChar(
-                '7',
-                Position {
-                    full_index: 2,
-                    line_number: 1,
-                    line_char_index: 2
-                }
-            )
-        );
+        lex_error!("x=7", LexerError::UnexpectedChar('7', position!(2, 1, 2)));
         lex_error!(
             "1i128\n 1u64 \n 1i37",
-            LexerError::UnexpectedChar(
-                '7',
-                Position {
-                    full_index: 17,
-                    line_number: 3,
-                    line_char_index: 4
-                }
-            )
+            LexerError::UnexpectedChar('7', position!(17, 3, 4))
         );
-        lex_error!(
-            "3_0i8",
-            LexerError::UnexpectedChar(
-                '_',
-                Position {
-                    full_index: 1,
-                    line_number: 1,
-                    line_char_index: 1
-                }
-            )
-        );
+        lex_error!("3_0i8", LexerError::UnexpectedChar('_', position!(1, 1, 1)));
     }
 
     #[test]
@@ -625,21 +572,7 @@ mod tests {
         );
         lex_error!(
             r#""\uDCAC\u1234""#,
-            LexerError::InvalidUnicode(
-                1238580,
-                Span {
-                    start: Position {
-                        full_index: 2,
-                        line_number: 1,
-                        line_char_index: 2
-                    },
-                    end: Position {
-                        full_index: 13,
-                        line_number: 1,
-                        line_char_index: 13
-                    }
-                }
-            )
+            LexerError::InvalidUnicode(1238580, span!(start = (2, 1, 2), end = (13, 1, 13)))
         );
     }
 }
