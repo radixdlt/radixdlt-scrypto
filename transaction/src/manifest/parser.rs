@@ -5,6 +5,8 @@ use crate::manifest::token::{Position, Span, Token, TokenKind};
 use radix_engine_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
 use sbor::rust::fmt;
 
+use super::ast::InstructionWithSpan;
+
 // For values greater than below it is not possible to encode compiled manifest due to
 //   EncodeError::MaxDepthExceeded(MANIFEST_SBOR_V1_MAX_DEPTH)
 pub const PARSER_MAX_DEPTH: usize = MANIFEST_SBOR_V1_MAX_DEPTH - 4;
@@ -495,8 +497,8 @@ impl Parser {
         Ok(token)
     }
 
-    pub fn parse_manifest(&mut self) -> Result<Vec<Instruction>, ParserError> {
-        let mut instructions = Vec::<Instruction>::new();
+    pub fn parse_manifest(&mut self) -> Result<Vec<InstructionWithSpan>, ParserError> {
+        let mut instructions = Vec::<InstructionWithSpan>::new();
 
         while !self.is_eof() {
             instructions.push(self.parse_instruction()?);
@@ -533,7 +535,7 @@ impl Parser {
         Ok(values)
     }
 
-    pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {
+    pub fn parse_instruction(&mut self) -> Result<InstructionWithSpan, ParserError> {
         let token = self.advance()?;
         let instruction_ident = match &token.kind {
             TokenKind::Ident(ident_str) => {
@@ -551,6 +553,8 @@ impl Parser {
                 });
             }
         };
+        let instruction_start = token.span.start;
+
         let instruction = match instruction_ident {
             InstructionIdent::TakeFromWorktop => Instruction::TakeFromWorktop {
                 resource_address: self.parse_value()?,
@@ -805,8 +809,17 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
         };
+        let instruction_end = self.peek()?.span.end;
+
         advance_match!(self, TokenKind::Semicolon);
-        Ok(instruction)
+
+        Ok(InstructionWithSpan {
+            instruction,
+            span: Span {
+                start: instruction_start,
+                end: instruction_end,
+            },
+        })
     }
 
     pub fn parse_value(&mut self) -> Result<ValueWithSpan, ParserError> {

@@ -198,7 +198,7 @@ impl NameResolver {
 }
 
 pub fn generate_manifest<B>(
-    instructions: &[ast::Instruction],
+    instructions: &[ast::InstructionWithSpan],
     address_bech32_decoder: &AddressBech32Decoder,
     blobs: B,
 ) -> Result<TransactionManifestV1, GeneratorError>
@@ -226,7 +226,7 @@ where
 }
 
 pub fn generate_instruction<B>(
-    instruction: &ast::Instruction,
+    instruction: &ast::InstructionWithSpan,
     id_validator: &mut ManifestValidator,
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
@@ -235,7 +235,7 @@ pub fn generate_instruction<B>(
 where
     B: IsBlobProvider,
 {
-    Ok(match instruction {
+    Ok(match &instruction.instruction {
         ast::Instruction::TakeFromWorktop {
             resource_address,
             amount,
