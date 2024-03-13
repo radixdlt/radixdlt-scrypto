@@ -156,10 +156,6 @@ impl ScryptoCompiler {
         Ok(())
     }
 
-    fn prepare_rust_flags(&self) -> String {
-        env::var("CARGO_ENCODED_RUSTFLAGS").unwrap_or_default()
-    }
-
     fn get_default_target_directory(manifest_path: &Path) -> Result<String, ScryptoCompilerError> {
         let output = Command::new("cargo")
             .arg("metadata")
@@ -342,8 +338,6 @@ impl ScryptoCompiler {
         }
         let features: Vec<&str> = features.into_iter().flatten().collect();
 
-        let rustflags = self.prepare_rust_flags();
-
         let package: Vec<&str> = self
             .input_params
             .package
@@ -361,8 +355,7 @@ impl ScryptoCompiler {
             .arg("--manifest-path")
             .arg(&self.manifest_path)
             .args(package)
-            .args(features)
-            .env("CARGO_ENCODED_RUSTFLAGS", rustflags);
+            .args(features);
 
         if for_package_extract {
             command.arg("--release");
@@ -715,8 +708,12 @@ mod tests {
         let status = ScryptoCompiler::builder()
             .manifest_path(blueprint_manifest_path)
             .target_directory(target_directory.path())
-            .env("TEST", EnvironmentVariableAction::Set(String::from("1")))
+            .env("TEST", EnvironmentVariableAction::Set(String::from("1 1")))
             .env("OTHER", EnvironmentVariableAction::Unset)
+            .env(
+                "RUSTFLAGS",
+                EnvironmentVariableAction::Set(String::from("-C opt-level=0")),
+            )
             .compile();
 
         // Assert
