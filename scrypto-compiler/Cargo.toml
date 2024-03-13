@@ -13,6 +13,7 @@ cargo_toml = { version = "0.19.2" }
 
 [dev-dependencies]
 once_cell = "1.19.0"
+tempdir = "0.3.7"
 
 [lib]
 doctest = false
