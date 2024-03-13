@@ -3,8 +3,10 @@ use crate::data::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::manifest::ast;
+use crate::manifest::token::Span;
 use crate::model::*;
 use crate::validation::*;
+use crate::{position, span};
 use radix_engine_common::address::AddressBech32Decoder;
 use radix_engine_common::constants::PACKAGE_PACKAGE;
 use radix_engine_common::constants::{
@@ -61,33 +63,47 @@ use sbor::rust::str::FromStr;
 use sbor::rust::vec;
 use sbor::*;
 
+macro_rules! get_span {
+    ($outer:expr, $inner_vec:expr) => {
+        if $inner_vec.is_empty() {
+            $outer.span
+        } else {
+            let start = $inner_vec.get(0).unwrap().span.start;
+            let end = $inner_vec.get($inner_vec.len() - 1).unwrap().span.end;
+            Span { start, end }
+        }
+    };
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
     InvalidAstType {
         expected_type: ast::ValueKind,
         actual: ast::ValueKind,
+        span: Span,
     },
     InvalidAstValue {
         expected_type: Vec<ast::ValueKind>,
         actual: ast::Value,
+        span: Span,
     },
     UnexpectedValue {
         expected_type: ManifestValueKind,
         actual: ast::Value,
+        span: Span,
     },
-    InvalidPackageAddress(String),
-    InvalidDecimal(String),
-    InvalidPreciseDecimal(String),
-    InvalidNonFungibleLocalId(String),
-    InvalidNonFungibleGlobalId,
-    InvalidExpression(String),
-    InvalidBlobHash(String),
-    BlobNotFound(String),
-    InvalidBytesHex(String),
-    NameResolverError(NameResolverError),
-    IdValidationError(ManifestIdValidationError),
-    InvalidGlobalAddress(String),
-    InvalidInternalAddress(String),
+    InvalidPackageAddress(String, Span),
+    InvalidDecimal(String, Span),
+    InvalidPreciseDecimal(String, Span),
+    InvalidNonFungibleLocalId(String, Span),
+    InvalidNonFungibleGlobalId(Span),
+    InvalidExpression(String, Span),
+    InvalidBlobHash(String, Span),
+    BlobNotFound(String, Span),
+    InvalidBytesHex(String, Span),
+    NameResolverError(NameResolverError, Span),
+    IdValidationError(ManifestIdValidationError, Span),
+    InvalidGlobalAddress(String, Span),
+    InvalidInternalAddress(String, Span),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -286,7 +302,7 @@ where
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
                 .drop_bucket(&bucket_id)
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
             InstructionV1::ReturnToWorktop { bucket_id }
         }
         ast::Instruction::AssertWorktopContains {
@@ -314,7 +330,7 @@ where
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::PopFromAuthZone
@@ -323,7 +339,7 @@ where
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(&proof_id)
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, proof.span))?;
             InstructionV1::PushToAuthZone { proof_id }
         }
         ast::Instruction::DropAuthZoneProofs => InstructionV1::DropAuthZoneProofs,
@@ -340,7 +356,7 @@ where
             let amount = generate_decimal(amount)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromAuthZoneOfAmount {
@@ -358,7 +374,7 @@ where
             let ids = generate_non_fungible_local_ids(ids)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
@@ -374,7 +390,7 @@ where
                 generate_resource_address(resource_address, address_bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromAuthZoneOfAll { resource_address }
@@ -384,7 +400,7 @@ where
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
                 .drop_bucket(&bucket_id)
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
             InstructionV1::BurnResource { bucket_id }
         }
 
@@ -397,7 +413,7 @@ where
             let amount = generate_decimal(amount)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount }
@@ -411,7 +427,7 @@ where
             let ids = generate_non_fungible_local_ids(ids)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids }
@@ -420,7 +436,7 @@ where
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromBucketOfAll { bucket_id }
@@ -430,7 +446,7 @@ where
             let proof_id = generate_proof(proof, resolver)?;
             let proof_id2 = id_validator
                 .clone_proof(&proof_id)
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, proof.span))?;
             declare_proof(new_proof, resolver, proof_id2)?;
 
             InstructionV1::CloneProof { proof_id }
@@ -439,7 +455,7 @@ where
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(&proof_id)
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, proof.span))?;
             InstructionV1::DropProof { proof_id }
         }
 
@@ -456,16 +472,24 @@ where
             )?;
             let blueprint_name = generate_string(blueprint_name)?;
             let function_name = generate_string(function_name)?;
-            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
-            id_validator
-                .process_call_data(&args)
-                .map_err(GeneratorError::IdValidationError)?;
+            let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
+
+            id_validator.process_call_data(&args_inner).map_err(|err| {
+                let span = if args.is_empty() {
+                    instruction.span
+                } else {
+                    let start = args.get(0).unwrap().span.start;
+                    let end = args.get(args.len() - 1).unwrap().span.end;
+                    Span { start, end }
+                };
+                GeneratorError::IdValidationError(err, span)
+            })?;
 
             InstructionV1::CallFunction {
                 package_address,
                 blueprint_name,
                 function_name,
-                args,
+                args: args_inner,
             }
         }
         ast::Instruction::CallMethod {
@@ -476,14 +500,14 @@ where
             let address =
                 generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
             let method_name = generate_string(method_name)?;
-            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
-            id_validator
-                .process_call_data(&args)
-                .map_err(GeneratorError::IdValidationError)?;
+            let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
+            id_validator.process_call_data(&args_inner).map_err(|err| {
+                GeneratorError::IdValidationError(err, get_span!(instruction, args))
+            })?;
             InstructionV1::CallMethod {
                 address,
                 method_name,
-                args,
+                args: args_inner,
             }
         }
         ast::Instruction::CallRoyaltyMethod {
@@ -494,14 +518,14 @@ where
             let address =
                 generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
             let method_name = generate_string(method_name)?;
-            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
-            id_validator
-                .process_call_data(&args)
-                .map_err(GeneratorError::IdValidationError)?;
+            let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
+            id_validator.process_call_data(&args_inner).map_err(|err| {
+                GeneratorError::IdValidationError(err, get_span!(instruction, args))
+            })?;
             InstructionV1::CallRoyaltyMethod {
                 address,
                 method_name,
-                args,
+                args: args_inner,
             }
         }
         ast::Instruction::CallMetadataMethod {
@@ -512,14 +536,14 @@ where
             let address =
                 generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
             let method_name = generate_string(method_name)?;
-            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
-            id_validator
-                .process_call_data(&args)
-                .map_err(GeneratorError::IdValidationError)?;
+            let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
+            id_validator.process_call_data(&args_inner).map_err(|err| {
+                GeneratorError::IdValidationError(err, get_span!(instruction, args))
+            })?;
             InstructionV1::CallMetadataMethod {
                 address,
                 method_name,
-                args,
+                args: args_inner,
             }
         }
         ast::Instruction::CallRoleAssignmentMethod {
@@ -530,14 +554,14 @@ where
             let address =
                 generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
             let method_name = generate_string(method_name)?;
-            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
-            id_validator
-                .process_call_data(&args)
-                .map_err(GeneratorError::IdValidationError)?;
+            let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
+            id_validator.process_call_data(&args_inner).map_err(|err| {
+                GeneratorError::IdValidationError(err, get_span!(instruction, args))
+            })?;
             InstructionV1::CallRoleAssignmentMethod {
                 address,
                 method_name,
-                args,
+                args: args_inner,
             }
         }
         ast::Instruction::CallDirectVaultMethod {
@@ -561,14 +585,14 @@ where
         ast::Instruction::DropNamedProofs => {
             id_validator
                 .drop_all_named_proofs()
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
             InstructionV1::DropNamedProofs
         }
 
         ast::Instruction::DropAllProofs => {
             id_validator
                 .drop_all_named_proofs()
-                .map_err(GeneratorError::IdValidationError)?;
+                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
             InstructionV1::DropAllProofs
         }
 
@@ -800,10 +824,11 @@ where
 
 #[macro_export]
 macro_rules! invalid_type {
-    ( $v:expr, $($exp:expr),+ ) => {
+    ( $span:expr, $v:expr, $($exp:expr),+ ) => {
         Err(GeneratorError::InvalidAstValue {
             expected_type: vec!($($exp),+),
             actual: $v.clone(),
+            span: $span,
         })
     };
 }
@@ -834,19 +859,18 @@ where
 fn generate_string(value: &ast::ValueWithSpan) -> Result<String, GeneratorError> {
     match &value.value {
         ast::Value::String(s) => Ok(s.into()),
-        v => invalid_type!(v, ast::ValueKind::String),
+        v => invalid_type!(value.span, v, ast::ValueKind::String),
     }
 }
 
 fn generate_decimal(value: &ast::ValueWithSpan) -> Result<Decimal, GeneratorError> {
     match &value.value {
         ast::Value::Decimal(inner) => match &inner.value {
-            ast::Value::String(s) => {
-                Decimal::from_str(&s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
-            }
-            v => invalid_type!(v, ast::ValueKind::String),
+            ast::Value::String(s) => Decimal::from_str(&s)
+                .map_err(|_| GeneratorError::InvalidDecimal(s.into(), value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::Decimal),
+        v => invalid_type!(value.span, v, ast::ValueKind::Decimal),
     }
 }
 
@@ -854,11 +878,11 @@ fn generate_precise_decimal(value: &ast::ValueWithSpan) -> Result<PreciseDecimal
     match &value.value {
         ast::Value::PreciseDecimal(inner) => match &inner.value {
             ast::Value::String(s) => PreciseDecimal::from_str(s)
-                .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into())),
+                .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into(), value.span)),
 
-            v => invalid_type!(v, ast::ValueKind::String),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::Decimal),
+        v => invalid_type!(value.span, v, ast::ValueKind::Decimal),
     }
 }
 
@@ -874,11 +898,11 @@ fn generate_package_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+                return Err(GeneratorError::InvalidGlobalAddress(s.into(), value.span));
             }
-            v => invalid_type!(v, ast::ValueKind::String),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::PackageAddress),
+        v => invalid_type!(value.span, v, ast::ValueKind::PackageAddress),
     }
 }
 
@@ -894,11 +918,11 @@ fn generate_resource_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+                return Err(GeneratorError::InvalidGlobalAddress(s.into(), value.span));
             }
-            v => invalid_type!(v, ast::ValueKind::String),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::ResourceAddress),
+        v => invalid_type!(value.span, v, ast::ValueKind::ResourceAddress),
     }
 }
 
@@ -915,19 +939,20 @@ fn generate_dynamic_global_address(
                         return Ok(DynamicGlobalAddress::Static(address));
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+                return Err(GeneratorError::InvalidGlobalAddress(s.into(), value.span));
             }
-            v => return invalid_type!(v, ast::ValueKind::String),
+            v => return invalid_type!(value.span, v, ast::ValueKind::String),
         },
         ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(*n)),
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
                 .map(Into::into)
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(
+            value.span,
             v,
             ast::ValueKind::Address,
             ast::ValueKind::PackageAddress,
@@ -971,19 +996,20 @@ fn generate_dynamic_package_address(
                         return Ok(DynamicPackageAddress::Static(address));
                     }
                 }
-                return Err(GeneratorError::InvalidPackageAddress(s.into()));
+                return Err(GeneratorError::InvalidPackageAddress(s.into(), value.span));
             }
-            v => return invalid_type!(v, ast::ValueKind::String),
+            v => return invalid_type!(value.span, v, ast::ValueKind::String),
         },
         ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(*n)),
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
                 .map(Into::into)
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(
+            value.span,
             v,
             ast::ValueKind::PackageAddress,
             ast::ValueKind::NamedAddress
@@ -1003,11 +1029,12 @@ fn generate_local_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidInternalAddress(s.into()));
+                return Err(GeneratorError::InvalidInternalAddress(s.into(), value.span));
             }
-            v => return invalid_type!(v, ast::ValueKind::String),
+            v => return invalid_type!(value.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(
+            value.span,
             v,
             ast::ValueKind::Address,
             ast::ValueKind::PackageAddress,
@@ -1026,10 +1053,10 @@ fn declare_bucket(
         ast::Value::Bucket(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_bucket(name.to_string(), bucket_id)
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::Bucket),
+        v => invalid_type!(value.span, v, ast::ValueKind::Bucket),
     }
 }
 
@@ -1042,10 +1069,10 @@ fn generate_bucket(
             ast::Value::U32(n) => Ok(ManifestBucket(*n)),
             ast::Value::String(s) => resolver
                 .resolve_bucket(&s)
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::Bucket),
+        v => invalid_type!(value.span, v, ast::ValueKind::Bucket),
     }
 }
 
@@ -1058,10 +1085,10 @@ fn declare_proof(
         ast::Value::Proof(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_proof(name.to_string(), proof_id)
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::Proof),
+        v => invalid_type!(value.span, v, ast::ValueKind::Proof),
     }
 }
 
@@ -1074,10 +1101,10 @@ fn declare_address_reservation(
         ast::Value::AddressReservation(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_address_reservation(name.to_string(), address_reservation_id)
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::AddressReservation),
+        v => invalid_type!(value.span, v, ast::ValueKind::AddressReservation),
     }
 }
 
@@ -1090,10 +1117,10 @@ fn declare_named_address(
         ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_named_address(name.to_string(), address_id)
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::NamedAddress),
+        v => invalid_type!(value.span, v, ast::ValueKind::NamedAddress),
     }
 }
 
@@ -1106,10 +1133,10 @@ fn generate_proof(
             ast::Value::U32(n) => Ok(ManifestProof(*n)),
             ast::Value::String(s) => resolver
                 .resolve_proof(&s)
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::Proof),
+        v => invalid_type!(value.span, v, ast::ValueKind::Proof),
     }
 }
 
@@ -1122,10 +1149,10 @@ fn generate_address_reservation(
             ast::Value::U32(n) => Ok(ManifestAddressReservation(*n)),
             ast::Value::String(s) => resolver
                 .resolve_address_reservation(&s)
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::AddressReservation),
+        v => invalid_type!(value.span, v, ast::ValueKind::AddressReservation),
     }
 }
 
@@ -1145,11 +1172,12 @@ fn generate_static_address(
                         )));
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
+                return Err(GeneratorError::InvalidGlobalAddress(s.into(), value.span));
             }
-            v => return invalid_type!(v, ast::ValueKind::String),
+            v => return invalid_type!(value.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(
+            value.span,
             v,
             ast::ValueKind::Address,
             ast::ValueKind::PackageAddress,
@@ -1169,10 +1197,10 @@ fn generate_named_address(
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
                 .map(|x| ManifestAddress::Named(x))
-                .map_err(GeneratorError::NameResolverError),
-            v => invalid_type!(v, ast::ValueKind::U32, ast::ValueKind::String),
+                .map_err(|err| GeneratorError::NameResolverError(err, value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::NamedAddress),
+        v => invalid_type!(value.span, v, ast::ValueKind::NamedAddress),
     }
 }
 
@@ -1182,10 +1210,10 @@ fn generate_non_fungible_local_id(
     match &value.value {
         ast::Value::NonFungibleLocalId(inner) => match &inner.value {
             ast::Value::String(s) => NonFungibleLocalId::from_str(s)
-                .map_err(|_| GeneratorError::InvalidNonFungibleLocalId(s.clone())),
-            v => invalid_type!(v, ast::ValueKind::String)?,
+                .map_err(|_| GeneratorError::InvalidNonFungibleLocalId(s.into(), value.span)),
+            v => invalid_type!(value.span, v, ast::ValueKind::String)?,
         },
-        v => invalid_type!(v, ast::ValueKind::NonFungibleLocalId),
+        v => invalid_type!(value.span, v, ast::ValueKind::NonFungibleLocalId),
     }
 }
 
@@ -1195,11 +1223,11 @@ fn generate_expression(value: &ast::ValueWithSpan) -> Result<ManifestExpression,
             ast::Value::String(s) => match s.as_str() {
                 "ENTIRE_WORKTOP" => Ok(ManifestExpression::EntireWorktop),
                 "ENTIRE_AUTH_ZONE" => Ok(ManifestExpression::EntireAuthZone),
-                _ => Err(GeneratorError::InvalidExpression(s.into())),
+                _ => Err(GeneratorError::InvalidExpression(s.into(), value.span)),
             },
-            v => invalid_type!(v, ast::ValueKind::String),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::Expression),
+        v => invalid_type!(value.span, v, ast::ValueKind::Expression),
     }
 }
 
@@ -1214,15 +1242,15 @@ where
         ast::Value::Blob(inner) => match &inner.value {
             ast::Value::String(s) => {
                 let hash = Hash::from_str(s)
-                    .map_err(|_| GeneratorError::InvalidBlobHash(s.to_string()))?;
+                    .map_err(|_| GeneratorError::InvalidBlobHash(s.to_string(), value.span))?;
                 blobs
                     .get_blob(&hash)
-                    .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
+                    .ok_or(GeneratorError::BlobNotFound(s.clone(), value.span))?;
                 Ok(ManifestBlobRef(hash.0))
             }
-            v => invalid_type!(v, ast::ValueKind::String),
+            v => invalid_type!(value.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::Blob),
+        v => invalid_type!(value.span, v, ast::ValueKind::Blob),
     }
 }
 
@@ -1235,6 +1263,7 @@ fn generate_non_fungible_local_ids(
                 return Err(GeneratorError::InvalidAstType {
                     expected_type: ast::ValueKind::String,
                     actual: kind.value_kind.clone(),
+                    span: value.span,
                 });
             }
 
@@ -1243,16 +1272,15 @@ fn generate_non_fungible_local_ids(
                 .map(|v| generate_non_fungible_local_id(v))
                 .collect()
         }
-        v => invalid_type!(v, ast::ValueKind::Array),
+        v => invalid_type!(value.span, v, ast::ValueKind::Array),
     }
 }
 
 fn generate_byte_vec_from_hex(value: &ast::ValueWithSpan) -> Result<Vec<u8>, GeneratorError> {
     let bytes = match &value.value {
-        ast::Value::String(s) => {
-            hex::decode(s).map_err(|_| GeneratorError::InvalidBytesHex(s.to_owned()))?
-        }
-        v => invalid_type!(v, ast::ValueKind::String)?,
+        ast::Value::String(s) => hex::decode(s)
+            .map_err(|_| GeneratorError::InvalidBytesHex(s.to_string(), value.span))?,
+        v => invalid_type!(value.span, v, ast::ValueKind::String)?,
     };
     Ok(bytes)
 }
@@ -1272,6 +1300,7 @@ where
             return Err(GeneratorError::UnexpectedValue {
                 expected_type: ty,
                 actual: value_with_span.value.clone(),
+                span: value_with_span.span,
             });
         }
     }
@@ -1380,8 +1409,8 @@ where
                     address_bech32_decoder,
                     s.as_str(),
                 )
-                .map_err(|_| GeneratorError::InvalidNonFungibleGlobalId),
-                v => invalid_type!(v, ast::ValueKind::String)?,
+                .map_err(|_| GeneratorError::InvalidNonFungibleGlobalId(value.span)),
+                v => invalid_type!(value.span, v, ast::ValueKind::String)?,
             }?;
             Ok(Value::Tuple {
                 fields: vec![
@@ -1664,15 +1693,22 @@ mod tests {
             GeneratorError::InvalidAstValue {
                 expected_type: vec![ast::ValueKind::String],
                 actual: ast::Value::U32(100),
+                span: span!(start = (8, 1, 8), end = (14, 1, 14)),
             }
         );
         generate_value_error!(
             r#"Address("invalid_package_address")"#,
-            GeneratorError::InvalidGlobalAddress("invalid_package_address".into())
+            GeneratorError::InvalidGlobalAddress(
+                "invalid_package_address".into(),
+                span!(start = (8, 1, 8), end = (10, 1, 10))
+            )
         );
         generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
-            GeneratorError::InvalidDecimal("invalid_decimal".into())
+            GeneratorError::InvalidDecimal(
+                "invalid_decimal".into(),
+                span!(start = (8, 1, 8), end = (10, 1, 10))
+            )
         );
     }
 
