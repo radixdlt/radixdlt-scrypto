@@ -121,7 +121,9 @@ pub struct ScryptoCompiler {
     /// otherwise it is generated.
     target_directory: PathBuf,
     /// Path to target binary WASM file.
-    target_binary_path: PathBuf,
+    target_binary_wasm_path: PathBuf,
+    /// Path to target binary RPD file.
+    target_binary_rpd_path: PathBuf,
 }
 
 impl ScryptoCompiler {
@@ -136,14 +138,15 @@ impl ScryptoCompiler {
         // Firstly validate input parameters
         ScryptoCompiler::validate_input_parameters(input_params)?;
         // Secondly prepare internally used path basing on input parameters
-        let (manifest_path, target_directory, target_binary_path) =
+        let (manifest_path, target_directory, target_binary_wasm_path, target_binary_rpd_path) =
             ScryptoCompiler::prepare_paths(input_params)?;
         // Lastly create ScryptoCompiler object
         Ok(Self {
             input_params: input_params.to_owned(),
             manifest_path,
             target_directory,
-            target_binary_path,
+            target_binary_wasm_path,
+            target_binary_rpd_path,
         })
     }
 
@@ -230,10 +233,10 @@ impl ScryptoCompiler {
         }
     }
 
-    fn get_target_binary_path(
+    fn get_target_binary_name(
         manifest_path: &Path,
-        binary_target_directory: &Path,
-    ) -> Result<PathBuf, ScryptoCompilerError> {
+        //binary_target_directory: &Path,
+    ) -> Result<String, ScryptoCompilerError> {
         // Find the binary name
         let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
@@ -253,21 +256,21 @@ impl ScryptoCompiler {
             }
         }
         // Merge the name with binary target directory
-        let mut bin_path: PathBuf = binary_target_directory.into();
-        bin_path.push(
-            wasm_name.ok_or(ScryptoCompilerError::CargoManifestLoadFailure(
-                manifest_path.display().to_string(),
-            ))?,
-        );
-        bin_path.set_extension("wasm");
+        // let mut bin_path: PathBuf = binary_target_directory.into();
+        // bin_path.push(
+        //     wasm_name.ok_or(ScryptoCompilerError::CargoManifestLoadFailure(
+        //         manifest_path.display().to_string(),
+        //     ))?,
+        // );
+        // bin_path.set_extension("wasm");
 
-        Ok(bin_path)
+        Ok(wasm_name.unwrap()) //todo
     }
 
-    // Returns manifest path, target directory, target binary path
+    // Returns manifest path, target directory, target binary WASM path and target binary PRD path
     fn prepare_paths(
         input_params: &ScryptoCompilerInputParams,
-    ) -> Result<(PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
+    ) -> Result<(PathBuf, PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
         // Generate manifest path (manifest directory + "/Cargo.toml")
         let manifest_path = Self::get_manifest_path(input_params)?;
 
@@ -281,20 +284,32 @@ impl ScryptoCompiler {
             PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
         };
 
-        let mut target_binary_directory = target_directory.clone();
-        target_binary_directory.push(BUILD_TARGET);
-        target_binary_directory.push(input_params.profile.as_directory_name());
+        let target_binary_name = Self::get_target_binary_name(&manifest_path)?;
 
-        let target_binary_path =
-            Self::get_target_binary_path(&manifest_path, &target_binary_directory)?;
+        let mut target_binary_wasm_path = target_directory.clone();
+        target_binary_wasm_path.push(BUILD_TARGET);
+        target_binary_wasm_path.push(input_params.profile.as_directory_name());
+        target_binary_wasm_path.push(target_binary_name.clone());
+        target_binary_wasm_path.set_extension("wasm");
 
-        Ok((manifest_path, target_directory, target_binary_path))
+        let mut target_binary_rpd_path = target_directory.clone();
+        target_binary_rpd_path.push(BUILD_TARGET);
+        target_binary_rpd_path.push(Profile::Release.as_directory_name());
+        target_binary_rpd_path.push(target_binary_name);
+        target_binary_rpd_path.set_extension("rpd");
+
+        Ok((
+            manifest_path,
+            target_directory,
+            target_binary_wasm_path,
+            target_binary_rpd_path,
+        ))
     }
 
     fn prepare_command(
         &mut self,
         command: &mut Command,
-        no_schema: bool,
+        for_package_extract: bool,
     ) -> Result<(), ScryptoCompilerError> {
         let mut features: Vec<[&str; 2]> = self
             .input_params
@@ -306,10 +321,10 @@ impl ScryptoCompiler {
             .iter()
             .position(|[_tag, value]| *value == SCRYPTO_NO_SCHEMA)
         {
-            if !no_schema {
+            if !for_package_extract {
                 features.remove(idx);
             }
-        } else if no_schema {
+        } else if for_package_extract {
             features.push(["--features", SCRYPTO_NO_SCHEMA]);
         }
         let features: Vec<&str> = features.into_iter().flatten().collect();
@@ -328,7 +343,6 @@ impl ScryptoCompiler {
             .arg("build")
             .arg("--target")
             .arg(BUILD_TARGET)
-            .args(self.input_params.profile.as_command_args())
             .arg("--target-dir")
             .arg(&self.target_directory)
             .arg("--manifest-path")
@@ -336,6 +350,12 @@ impl ScryptoCompiler {
             .args(package)
             .args(features)
             .env("CARGO_ENCODED_RUSTFLAGS", rustflags);
+
+        if for_package_extract {
+            command.arg("--release");
+        } else {
+            command.args(self.input_params.profile.as_command_args());
+        }
 
         if self.input_params.no_default_features {
             command.arg("--no-default-features");
@@ -375,6 +395,8 @@ impl ScryptoCompiler {
         stdout: Option<T>,
         stderr: Option<T>,
     ) -> Result<BuildArtifacts, ScryptoCompilerError> {
+        let package_definition = self.compile_internal_phase_1()?;
+
         let mut command = Command::new("cargo");
         if let Some(s) = stdin {
             command.stdin(s);
@@ -385,82 +407,75 @@ impl ScryptoCompiler {
         if let Some(s) = stderr {
             command.stderr(s);
         }
-        self.compile_internal(&mut command)
-    }
-
-    pub fn compile(&mut self) -> Result<BuildArtifacts, ScryptoCompilerError> {
-        let mut command = Command::new("cargo");
-        self.compile_internal(&mut command)
-    }
-
-    // Implements two phase compilation:
-    // 1st: compile with schema and extract schema to .rpd file
-    // 2nd: compile without schema and with optional wasm optimisations - this is the final .wasm file
-    fn compile_internal(
-        &mut self,
-        command: &mut Command,
-    ) -> Result<BuildArtifacts, ScryptoCompilerError> {
-        // 1st phase
-        self.prepare_command(command, false)?; // build with schema
-        let target_binary_1st_phase = self.cargo_command_call(command)?;
-
-        let code_1s_phase = std::fs::read(&target_binary_1st_phase)
-            .map_err(|e| ScryptoCompilerError::IOError(e))?;
-        let package_definition = extract_definition(&code_1s_phase)
-            .map_err(|e| ScryptoCompilerError::ExtractSchema(e))?;
-        let package_definition_path = target_binary_1st_phase.with_extension("rpd");
-
-        // // 2nd phase
-        command.args(["--features", SCRYPTO_NO_SCHEMA]); // build without schema
-        let target_binary_2nd_phase = self.cargo_command_call(command)?;
-
-        self.wasm_optimize(&target_binary_2nd_phase)?;
-
-        let code_2nd_phase = std::fs::read(&target_binary_2nd_phase)
-            .map_err(|e| ScryptoCompilerError::IOError(e))?;
+        let wasm = self.compile_internal_phase_2(&mut command)?;
 
         Ok(BuildArtifacts {
-            wasm: BuildArtifact {
-                path: target_binary_2nd_phase,
-                content: code_2nd_phase,
-            },
-            package_definition: BuildArtifact {
-                path: package_definition_path,
-                content: package_definition,
-            },
+            wasm,
+            package_definition,
         })
     }
 
-    fn cargo_command_call(
+    pub fn compile(&mut self) -> Result<BuildArtifacts, ScryptoCompilerError> {
+        let package_definition = self.compile_internal_phase_1()?;
+
+        let mut command = Command::new("cargo");
+        let wasm = self.compile_internal_phase_2(&mut command)?;
+
+        Ok(BuildArtifacts {
+            wasm,
+            package_definition,
+        })
+    }
+
+    // 1st compilation phase: compile with schema and extract schema to .rpd file
+    fn compile_internal_phase_1(
+        &mut self,
+    ) -> Result<BuildArtifact<PackageDefinition>, ScryptoCompilerError> {
+        let mut command = Command::new("cargo");
+
+        self.prepare_command(&mut command, true)?; // build with schema and release profile
+        self.cargo_command_call(&mut command)?;
+
+        let code = std::fs::read(&self.target_binary_rpd_path.with_extension("wasm"))
+            .map_err(|e| ScryptoCompilerError::IOError(e))?;
+        let package_definition =
+            extract_definition(&code).map_err(|e| ScryptoCompilerError::ExtractSchema(e))?;
+
+        Ok(BuildArtifact {
+            path: self.target_binary_rpd_path.clone(),
+            content: package_definition,
+        })
+    }
+
+    // 2nd compilation phase: compile without schema and with optional wasm optimisations - this is the final .wasm file
+    fn compile_internal_phase_2(
         &mut self,
         command: &mut Command,
-    ) -> Result<PathBuf, ScryptoCompilerError> {
-        let output = command.output().map_err(ScryptoCompilerError::IOError)?;
+    ) -> Result<BuildArtifact<Vec<u8>>, ScryptoCompilerError> {
+        self.prepare_command(command, false)?; // build without schema and user choosen profile
+        self.cargo_command_call(command)?;
 
-        output
-            .status
+        self.wasm_optimize(&self.target_binary_wasm_path.clone())?;
+
+        let code = std::fs::read(&self.target_binary_wasm_path)
+            .map_err(|e| ScryptoCompilerError::IOError(e))?;
+
+        Ok(BuildArtifact {
+            path: self.target_binary_wasm_path.clone(),
+            content: code,
+        })
+    }
+
+    fn cargo_command_call(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
+        let status = command.status().map_err(ScryptoCompilerError::IOError)?;
+        status
             .success()
             .then_some(())
             .ok_or(ScryptoCompilerError::CargoBuildFailure(
-                String::from_utf8(output.stderr.clone()).unwrap_or(format!("{:?}", output.stderr)),
-                output.status,
-            ))?;
-
-        Ok(self.target_binary_path.clone())
-    }
-
-    pub fn target_binary_path(&self) -> PathBuf {
-        self.target_binary_path.clone()
-    }
-
-    pub fn extract_schema_from_wasm(
-        &self,
-    ) -> Result<(Vec<u8>, PackageDefinition), ScryptoCompilerError> {
-        let code = std::fs::read(&self.target_binary_path)
-            .map_err(|e| ScryptoCompilerError::IOError(e))?;
-        let definition =
-            extract_definition(&code).map_err(|e| ScryptoCompilerError::ExtractSchema(e))?;
-        Ok((code, definition))
+                String::new(),
+                //String::from_utf8(output.stderr.clone()).unwrap_or(format!("{:?}", output.stderr)),
+                status,
+            ))
     }
 }
 
@@ -616,20 +631,7 @@ impl ScryptoCompilerBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use once_cell::sync::Lazy;
-    use std::sync::Mutex;
     use tempdir::TempDir;
-
-    static SERIAL_COMPILE_MUTEX: Lazy<Mutex<()>> = Lazy::new(Mutex::default);
-
-    fn cargo_clean(manifest_path: &str) {
-        Command::new("cargo")
-            .arg("clean")
-            .arg("--manifest-path")
-            .arg(manifest_path.to_owned() + "/Cargo.toml")
-            .output()
-            .unwrap();
-    }
 
     fn prepare() -> (PathBuf, TempDir) {
         let mut test_assets_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -643,8 +645,7 @@ mod tests {
     #[test]
     fn test_compilation_in_path() {
         // Arrange
-        let (mut blueprint_manifest_path, target_directory) = prepare();
-        blueprint_manifest_path.push("blueprint");
+        let (blueprint_manifest_path, target_directory) = prepare();
         println!(
             "{:?}\n{:?}",
             target_directory.path(),
@@ -665,7 +666,9 @@ mod tests {
         // Arrange
         let (blueprint_manifest_path, target_directory) = prepare();
 
-        std::env::set_current_dir(blueprint_manifest_path).unwrap();
+        let mut package_directory = blueprint_manifest_path.clone();
+        package_directory.pop(); // Remove Cargo.toml from path
+        std::env::set_current_dir(package_directory).unwrap();
 
         // Act
         let status = ScryptoCompiler::builder()
@@ -918,7 +921,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let absolute_path = compiler.target_binary_path();
+        let absolute_path = compiler.target_binary_wasm_path;
         let skip_count = absolute_path.iter().count() - output_path.iter().count();
         let relative_path: PathBuf = absolute_path.iter().skip(skip_count).collect();
 
@@ -937,7 +940,7 @@ mod tests {
 
         assert_eq!(
             "./tests/target/wasm32-unknown-unknown/release/test_blueprint.wasm",
-            compiler.target_binary_path().display().to_string()
+            compiler.target_binary_wasm_path.display().to_string()
         );
     }
 }
