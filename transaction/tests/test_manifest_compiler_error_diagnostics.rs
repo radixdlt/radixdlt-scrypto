@@ -103,3 +103,15 @@ fn test_manifest_lexer_error_diagnostics_unexpected_eof() {
     check_manifest!("manifest_lexer_error_unexpected_eof_1");
     check_manifest!("manifest_lexer_error_unexpected_eof_2");
 }
+
+#[test]
+fn test_manifest_generator_error_invalid_ast_value() {
+    // InvalidAstValue
+    check_manifest!("manifest_generator_error_invalid_ast_value_1");
+}
+
+#[test]
+fn test_manifest_generator_error_unexpected_value() {
+    // UnexpectedValue
+    check_manifest!("manifest_generator_error_unexpected_value_1");
+}
