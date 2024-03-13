@@ -57,8 +57,8 @@ impl Compile {
         // Build
         let build_artifacts = compiler.compile().unwrap_or_else(|error| {
             match &error {
-                ScryptoCompilerError::CargoBuildFailure(stderr, _) => {
-                    eprintln!("Package compilation error:\n{}", stderr)
+                ScryptoCompilerError::CargoBuildFailure(exit_code) => {
+                    eprintln!("Package compilation error:\n{:?}", exit_code)
                 }
                 _ => (),
             }
@@ -70,6 +70,9 @@ impl Compile {
             );
         });
 
-        (build_artifacts.wasm.content, build_artifacts.package_definition.content)
+        (
+            build_artifacts.wasm.content,
+            build_artifacts.package_definition.content,
+        )
     }
 }

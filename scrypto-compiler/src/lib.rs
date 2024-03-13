@@ -12,10 +12,10 @@ const SCRYPTO_NO_SCHEMA: &str = "scrypto/no-schema";
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
-    /// Returns IO Error which occurred during compilation
-    IOError(io::Error),
-    /// Returns output from stderr and process exit status
-    CargoBuildFailure(String, ExitStatus),
+    /// Returns IO Error which occurred during compilation and if possible some context information
+    IOError(io::Error, Option<String>),
+    /// Returns process exit status in case of 'cargo build' fail
+    CargoBuildFailure(ExitStatus),
     /// Returns path to Cargo.toml for which cargo metadata command failed and process exit status
     CargoMetadataFailure(String, ExitStatus),
     /// Returns path to Cargo.toml for which results of cargo metadata command is not not valid json or target directory field is missing
@@ -82,12 +82,12 @@ impl Profile {
             },
         ]
     }
-    fn as_directory_name(&self) -> String {
+    fn as_target_directory_name(&self) -> String {
         match self {
             Profile::Release => String::from("release"),
             Profile::Debug => String::from("debug"),
-            Profile::Test => String::from("test"),
-            Profile::Bench => String::from("bench"),
+            Profile::Test => String::from("debug"),
+            Profile::Bench => String::from("release"),
             Profile::Custom(name) => name.clone(),
         }
     }
@@ -169,7 +169,15 @@ impl ScryptoCompiler {
             .arg("1")
             .arg("--no-deps")
             .output()
-            .map_err(ScryptoCompilerError::IOError)?;
+            .map_err(|e| {
+                ScryptoCompilerError::IOError(
+                    e,
+                    Some(format!(
+                        "Cargo metadata for manifest failed: {}",
+                        manifest_path.display().to_string()
+                    )),
+                )
+            })?;
         if output.status.success() {
             let parsed =
                 serde_json::from_slice::<serde_json::Value>(&output.stdout).map_err(|_| {
@@ -218,7 +226,12 @@ impl ScryptoCompiler {
                 path
             }
             None => {
-                let mut path = env::current_dir().map_err(|e| ScryptoCompilerError::IOError(e))?;
+                let mut path = env::current_dir().map_err(|e| {
+                    ScryptoCompilerError::IOError(
+                        e,
+                        Some(String::from("Getting current directory failed")),
+                    )
+                })?;
                 path.push(MANIFEST_FILE);
                 path
             }
@@ -288,13 +301,13 @@ impl ScryptoCompiler {
 
         let mut target_binary_wasm_path = target_directory.clone();
         target_binary_wasm_path.push(BUILD_TARGET);
-        target_binary_wasm_path.push(input_params.profile.as_directory_name());
+        target_binary_wasm_path.push(input_params.profile.as_target_directory_name());
         target_binary_wasm_path.push(target_binary_name.clone());
         target_binary_wasm_path.set_extension("wasm");
 
         let mut target_binary_rpd_path = target_directory.clone();
         target_binary_rpd_path.push(BUILD_TARGET);
-        target_binary_rpd_path.push(Profile::Release.as_directory_name());
+        target_binary_rpd_path.push(Profile::Release.as_target_directory_name());
         target_binary_rpd_path.push(target_binary_name);
         target_binary_rpd_path.set_extension("rpd");
 
@@ -436,8 +449,17 @@ impl ScryptoCompiler {
         self.prepare_command(&mut command, true)?; // build with schema and release profile
         self.cargo_command_call(&mut command)?;
 
-        let code = std::fs::read(&self.target_binary_rpd_path.with_extension("wasm"))
-            .map_err(|e| ScryptoCompilerError::IOError(e))?;
+        let path = self.target_binary_rpd_path.with_extension("wasm");
+        let code = std::fs::read(&path).map_err(|e| {
+            ScryptoCompilerError::IOError(
+                e,
+                Some(format!(
+                    "Read WASM file for RPD extract failed: {}",
+                    path.display().to_string()
+                )),
+            )
+        })?;
+
         let package_definition =
             extract_definition(&code).map_err(|e| ScryptoCompilerError::ExtractSchema(e))?;
 
@@ -457,8 +479,15 @@ impl ScryptoCompiler {
 
         self.wasm_optimize(&self.target_binary_wasm_path.clone())?;
 
-        let code = std::fs::read(&self.target_binary_wasm_path)
-            .map_err(|e| ScryptoCompilerError::IOError(e))?;
+        let code = std::fs::read(&self.target_binary_wasm_path).map_err(|e| {
+            ScryptoCompilerError::IOError(
+                e,
+                Some(format!(
+                    "Read WASM file failed: {}",
+                    self.target_binary_wasm_path.display().to_string()
+                )),
+            )
+        })?;
 
         Ok(BuildArtifact {
             path: self.target_binary_wasm_path.clone(),
@@ -467,15 +496,13 @@ impl ScryptoCompiler {
     }
 
     fn cargo_command_call(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
-        let status = command.status().map_err(ScryptoCompilerError::IOError)?;
+        let status = command.status().map_err(|e| {
+            ScryptoCompilerError::IOError(e, Some(String::from("Cargo build command failed")))
+        })?;
         status
             .success()
             .then_some(())
-            .ok_or(ScryptoCompilerError::CargoBuildFailure(
-                String::new(),
-                //String::from_utf8(output.stderr.clone()).unwrap_or(format!("{:?}", output.stderr)),
-                status,
-            ))
+            .ok_or(ScryptoCompilerError::CargoBuildFailure(status))
     }
 }
 
@@ -643,7 +670,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compilation_in_path() {
+    fn test_compilation() {
         // Arrange
         let (blueprint_manifest_path, target_directory) = prepare();
         println!(
@@ -743,7 +770,7 @@ mod tests {
 
         // Assert
         assert!(match status {
-            Err(ScryptoCompilerError::CargoBuildFailure(_stderr, exit_status)) =>
+            Err(ScryptoCompilerError::CargoBuildFailure(exit_status)) =>
                 exit_status.code().unwrap() == 101,
             _ => false,
         });
