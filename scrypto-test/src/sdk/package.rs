@@ -86,7 +86,7 @@ impl PackageFactory {
             .unwrap_or_else(|err| panic!("Failed to initialize Scrypto Compiler  {:?}", err));
 
         // Build
-        let wasm_path = compiler.compile().unwrap_or_else(|err| {
+        let build_artifacts = compiler.compile().unwrap_or_else(|err| {
             panic!(
                 "Failed to compile package: {:?}, error: {:?}",
                 path.as_ref(),
@@ -94,12 +94,9 @@ impl PackageFactory {
             )
         });
 
-        // Extract schema
-        compiler.extract_schema_from_wasm().unwrap_or_else(|err| {
-            panic!(
-                "Failed to extract schema from WASM from path {:?} - {:?}",
-                &wasm_path, err
-            )
-        })
+        (
+            build_artifacts.wasm.content,
+            build_artifacts.package_definition.content,
+        )
     }
 }

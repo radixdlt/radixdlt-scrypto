@@ -55,7 +55,7 @@ impl Compile {
         };
 
         // Build
-        let wasm_path = compiler.compile().unwrap_or_else(|error| {
+        let build_artifacts = compiler.compile().unwrap_or_else(|error| {
             match &error {
                 ScryptoCompilerError::CargoBuildFailure(stderr, _) => {
                     eprintln!("Package compilation error:\n{}", stderr)
@@ -70,12 +70,6 @@ impl Compile {
             );
         });
 
-        // Extract schema
-        compiler.extract_schema_from_wasm().unwrap_or_else(|err| {
-            panic!(
-                "Failed to extract schema from WASM from path {:?} - {:?}",
-                &wasm_path, err
-            )
-        })
+        (build_artifacts.wasm.content, build_artifacts.package_definition.content)
     }
 }
