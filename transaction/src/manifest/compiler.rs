@@ -11,7 +11,7 @@ pub fn compile_error_diagnostics(s: &str, err: CompileError) -> String {
     match err {
         CompileError::LexerError(err) => lexer::lexer_error_diagnostics(s, err),
         CompileError::ParserError(err) => parser::parser_error_diagnostics(s, err),
-        CompileError::GeneratorError(err) => format!("This is GeneratorError {:?}", err),
+        CompileError::GeneratorError(err) => generator::generator_error_diagnostics(s, err),
     }
 }
 

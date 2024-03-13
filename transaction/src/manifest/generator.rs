@@ -3,6 +3,7 @@ use crate::data::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::manifest::ast;
+use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::token::Span;
 use crate::model::*;
 use crate::validation::*;
@@ -1529,12 +1530,137 @@ where
     Ok(result)
 }
 
+pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
+    // println!("err = {:?}", err);
+    let (span, title, label) = match err {
+        GeneratorError::InvalidAstType {
+            expected_type,
+            actual,
+            span,
+        } => {
+            let title = format!("expected type {:?}, found {:?}", expected_type, actual);
+            (span, title, "unexpected type".to_string())
+        }
+        GeneratorError::InvalidAstValue {
+            expected_type,
+            actual,
+            span,
+        } => {
+            let title = format!(
+                "expected type {:?}, found {:?}",
+                expected_type,
+                actual.value_kind()
+            );
+            (span, title, "value of unexpected type".to_string())
+        }
+        GeneratorError::UnexpectedValue {
+            expected_type,
+            actual,
+            span,
+        } => {
+            let title = format!("expected value {:?}, found {:?}", expected_type, actual);
+            (span, title, "unexpected value".to_string())
+        }
+        GeneratorError::InvalidPackageAddress(string, span) => {
+            let title = format!("invalid package address {}", string);
+            (span, title, "".to_string())
+        }
+        GeneratorError::InvalidDecimal(string, span) => {
+            let title = format!("invalid decimal {}", string);
+            (span, title, "invalid decimal".to_string())
+        }
+        GeneratorError::InvalidPreciseDecimal(string, span) => {
+            let title = format!("invalid precise decimal {}", string);
+            (span, title, "invalid precise decimal".to_string())
+        }
+        GeneratorError::InvalidNonFungibleLocalId(string, span) => {
+            let title = format!("invalid non-fungible local id {}", string);
+            (span, title, "invalid non-fungible local id".to_string())
+        }
+        GeneratorError::InvalidNonFungibleGlobalId(span) => {
+            let title = format!("invalid non-fungible global id");
+            (span, title, "invalid non-fungible global id".to_string())
+        }
+        GeneratorError::InvalidExpression(string, span) => {
+            let title = format!("invalid expression {}", string);
+            (span, title, "invalid expression".to_string())
+        }
+        GeneratorError::InvalidBlobHash(string, span) => {
+            let title = format!("invalid blob hash {}", string);
+            (span, title, "invalid blob hash".to_string())
+        }
+        GeneratorError::BlobNotFound(string, span) => {
+            let title = format!("blob not found {}", string);
+            (span, title, "blob not found".to_string())
+        }
+        GeneratorError::InvalidBytesHex(string, span) => {
+            let title = format!("invalid bytes hex {}", string);
+            (span, title, "invalid bytes hex".to_string())
+        }
+        GeneratorError::NameResolverError(error, span) => match error {
+            NameResolverError::UndefinedBucket(string) => {
+                let title = format!("undefined bucket {}", string);
+                (span, title, "undefined bucket".to_string())
+            }
+            NameResolverError::UndefinedProof(string) => {
+                let title = format!("undefined proof {}", string);
+                (span, title, "undefined proof".to_string())
+            }
+            NameResolverError::UndefinedAddressReservation(string) => {
+                let title = format!("undefined address reservation {}", string);
+                (span, title, "undefined address reservation".to_string())
+            }
+            NameResolverError::UndefinedNamedAddress(string) => {
+                let title = format!("undefined named address {}", string);
+                (span, title, "undefined named address".to_string())
+            }
+            NameResolverError::NamedAlreadyDefined(string) => {
+                let title = format!("name already defined {}", string);
+                (span, title, "name already defined".to_string())
+            }
+        },
+        GeneratorError::IdValidationError(error, span) => match error {
+            ManifestIdValidationError::BucketNotFound(bucket_id) => {
+                let title = format!("bucket id {:?} not found", bucket_id);
+                (span, title, "bucket not found".to_string())
+            }
+            ManifestIdValidationError::ProofNotFound(proof_id) => {
+                let title = format!("proof id {:?} not found", proof_id);
+                (span, title, "proof not found".to_string())
+            }
+            ManifestIdValidationError::BucketLocked(bucket_id) => {
+                let title = format!("bucket id {:?} locked", bucket_id);
+                (span, title, "bucket locked".to_string())
+            }
+            ManifestIdValidationError::AddressReservationNotFound(reservation) => {
+                let title = format!("address reservation {:?} not found", reservation);
+                (span, title, "address reservation not found".to_string())
+            }
+            ManifestIdValidationError::AddressNotFound(address) => {
+                let title = format!("address {:?} not found", address);
+                (span, title, "address not found".to_string())
+            }
+        },
+        GeneratorError::InvalidGlobalAddress(string, span) => {
+            let title = format!("invalid global address {}", string);
+            (span, title, "invalid global address".to_string())
+        }
+        GeneratorError::InvalidInternalAddress(string, span) => {
+            let title = format!("invalid internal address {}", string);
+            (span, title, "invalid internal address".to_string())
+        }
+    };
+
+    create_snippet(s, &span, &title, &label)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
     use crate::manifest::token::{Position, Span};
+    use crate::{position, span};
     use radix_engine_common::address::AddressBech32Decoder;
     use radix_engine_common::constants::CONSENSUS_MANAGER;
     use radix_engine_common::crypto::Secp256k1PrivateKey;
