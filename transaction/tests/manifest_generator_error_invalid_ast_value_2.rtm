@@ -1,0 +1,12 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("500");
+
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "create_proof_of_amount"
+    Address("resource_sim1t5lam43hk5fg9h2x7a8zgpfxsd78539kzm4h0xugldymfexuh2wzru")
+    Expression(
+      Decimal("1")
+    );

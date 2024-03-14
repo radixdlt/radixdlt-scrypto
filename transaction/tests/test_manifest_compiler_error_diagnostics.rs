@@ -111,10 +111,18 @@ fn test_manifest_lexer_error_diagnostics_unexpected_eof() {
 fn test_manifest_generator_error_invalid_ast_value() {
     // InvalidAstValue
     check_manifest!("manifest_generator_error_invalid_ast_value_1");
+    check_manifest!("manifest_generator_error_invalid_ast_value_2");
 }
 
 #[test]
 fn test_manifest_generator_error_unexpected_value() {
     // UnexpectedValue
     check_manifest!("manifest_generator_error_unexpected_value_1");
+    check_manifest!("manifest_generator_error_unexpected_value_2");
+}
+
+#[test]
+fn test_manifest_generator_error_invalid_global_address() {
+    // InvalidGlobalAddress
+    check_manifest!("manifest_generator_error_invalid_global_address_1");
 }
