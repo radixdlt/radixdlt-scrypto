@@ -7,24 +7,30 @@ RUN apt update && apt install -y \
     llvm=1:11.0-51+nmu5
 
 FROM base-image as builder
-ADD simulator /app/simulator
+
+# Copy scrypto and radix-engine library crates
+ADD Cargo.toml /app/Cargo.toml
+ADD assets /app/assets
+ADD blueprint-schema-init /app/blueprint-schema-init
+ADD native-sdk /app/native-sdk
 ADD radix-engine /app/radix-engine
+ADD radix-engine-common /app/radix-engine-common
+ADD radix-engine-common-macros /app/radix-engine-common-macros
+ADD radix-engine-derive /app/radix-engine-derive
 ADD radix-engine-interface /app/radix-engine-interface
+ADD radix-engine-profiling /app/radix-engine-profiling
+ADD radix-engine-profiling-macros /app/radix-engine-profiling-macros
 ADD sbor /app/sbor
 ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common
-ADD utils app/utils
-ADD blueprint-schema-init /app/blueprint-schema-init
-ADD radix-engine-common /app/radix-engine-common
-ADD radix-engine-derive /app/radix-engine-derive
-ADD native-sdk /app/native-sdk
-ADD radix-engine-common-macros /app/radix-engine-common-macros
-ADD radix-engine-profiling /app/radix-engine-profiling
-ADD substate-store-interface /app/substate-store-interface
 ADD substate-store-impls /app/substate-store-impls
-ADD transaction /app/transaction
+ADD substate-store-interface /app/substate-store-interface
 ADD substate-store-queries /app/substate-store-queries
-ADD assets /app/assets
+ADD transaction /app/transaction
+ADD utils app/utils
+
+# Copy simulator binary crate
+ADD simulator /app/simulator
 
 WORKDIR /app
 
