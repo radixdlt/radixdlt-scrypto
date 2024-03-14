@@ -610,7 +610,7 @@ impl FungibleVaultBlueprint {
         let max_locked = locked.amount();
         let cnt = locked
             .amounts
-            .remove(&amount)
+            .swap_remove(&amount)
             .expect("Attempted to unlock an amount that is not locked");
         if cnt > 1 {
             locked.amounts.insert(amount, cnt - 1);

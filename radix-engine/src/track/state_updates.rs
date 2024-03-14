@@ -116,7 +116,7 @@ impl PartitionStateUpdates {
                             new_substate_values.insert(substate_key, new_value);
                         }
                         DatabaseUpdate::Delete => {
-                            let existed = new_substate_values.remove(&substate_key).is_some();
+                            let existed = new_substate_values.swap_remove(&substate_key).is_some();
                             if !existed {
                                 panic!("inconsistent update: delete of substate {:?} not existing in reset partition", substate_key);
                             }

@@ -747,7 +747,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     ) -> Vec<NodeId> {
         SubtreeVaults::new(&self.database)
             .get_all(component_address.as_node_id())
-            .remove(&resource_address)
+            .swap_remove(&resource_address)
             .unwrap_or_else(|| Vec::new())
     }
 

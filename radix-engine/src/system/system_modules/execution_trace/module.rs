@@ -560,7 +560,7 @@ impl ExecutionTraceModule {
     ) {
         let child_traces = self
             .kernel_call_traces_stacks
-            .remove(&(self.current_kernel_call_depth + 1))
+            .swap_remove(&(self.current_kernel_call_depth + 1))
             .unwrap_or(vec![]);
 
         let (traced_input, origin, instruction_index) = self

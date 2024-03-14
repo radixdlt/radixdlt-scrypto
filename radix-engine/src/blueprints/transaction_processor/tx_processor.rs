@@ -506,14 +506,14 @@ impl TransactionProcessor {
     }
 
     fn take_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
-        let real_id = self
-            .proof_mapping
-            .remove(proof_id)
-            .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::TransactionProcessorError(
-                    TransactionProcessorError::ProofNotFound(proof_id.0),
-                ),
-            ))?;
+        let real_id =
+            self.proof_mapping
+                .swap_remove(proof_id)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::ProofNotFound(proof_id.0),
+                    ),
+                ))?;
         Ok(Proof(Own(real_id)))
     }
 

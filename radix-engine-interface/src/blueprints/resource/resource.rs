@@ -133,7 +133,7 @@ impl LiquidNonFungibleResource {
         ids_to_take: &IndexSet<NonFungibleLocalId>,
     ) -> Result<LiquidNonFungibleResource, ResourceError> {
         for id in ids_to_take {
-            if !self.ids.remove(id) {
+            if !self.ids.swap_remove(id) {
                 return Err(ResourceError::MissingNonFungibleLocalId(id.clone()));
             }
         }

@@ -444,13 +444,13 @@ pub fn test_fake_bucket() {
 fn native_blueprints_with_typed_addresses_have_expected_schema() {
     let mut blueprint_definition = AccountNativePackage::definition()
         .blueprints
-        .remove("Account")
+        .swap_remove("Account")
         .unwrap();
     let TypeRef::Static(local_type_index) = blueprint_definition
         .schema
         .functions
         .functions
-        .remove("create_advanced")
+        .swap_remove("create_advanced")
         .unwrap()
         .output
     else {

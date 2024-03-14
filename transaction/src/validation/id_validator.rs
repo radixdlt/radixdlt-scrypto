@@ -135,7 +135,10 @@ impl ManifestValidator {
         &mut self,
         address_reservation_id: &ManifestAddressReservation,
     ) -> Result<(), ManifestIdValidationError> {
-        if self.address_reservation_ids.remove(address_reservation_id) {
+        if self
+            .address_reservation_ids
+            .swap_remove(address_reservation_id)
+        {
             Ok(())
         } else {
             Err(ManifestIdValidationError::AddressReservationNotFound(

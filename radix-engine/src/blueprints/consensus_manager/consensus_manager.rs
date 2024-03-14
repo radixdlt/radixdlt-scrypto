@@ -1521,7 +1521,7 @@ impl ConsensusManagerBlueprint {
         for (index, validator_info) in validator_infos {
             let as_proposer = validator_rewards
                 .proposer_rewards
-                .remove(&index)
+                .swap_remove(&index)
                 .unwrap_or_default();
             let as_member_of_validator_set = validator_info
                 .effective_stake_xrd

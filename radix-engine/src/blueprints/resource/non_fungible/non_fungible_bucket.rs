@@ -221,7 +221,7 @@ impl NonFungibleBucketBlueprint {
         for id in ids {
             let cnt = locked
                 .ids
-                .remove(&id)
+                .swap_remove(&id)
                 .expect("Attempted to unlock non-fungible that was not locked");
             if cnt > 1 {
                 locked.ids.insert(id, cnt - 1);

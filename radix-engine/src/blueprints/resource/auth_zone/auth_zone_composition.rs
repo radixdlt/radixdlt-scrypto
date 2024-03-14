@@ -256,7 +256,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
                 break 'outer;
             }
 
-            if let Some(quota) = per_container.remove(container) {
+            if let Some(quota) = per_container.swap_remove(container) {
                 let amount = Decimal::min(remaining, quota);
                 api.call_method(
                     container.as_node_id(),
@@ -362,7 +362,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
                     scrypto_args!(&ids),
                 )?;
                 for id in &ids {
-                    remaining.remove(id);
+                    remaining.swap_remove(id);
                 }
                 evidence.insert(container.clone(), ids);
             }
