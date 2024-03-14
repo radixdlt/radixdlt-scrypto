@@ -81,8 +81,16 @@ pub enum GeneratorError {
         span: Span,
     },
     InvalidPackageAddress(String, Span),
-    InvalidDecimal(String, Span),
-    InvalidPreciseDecimal(String, Span),
+    InvalidDecimal {
+        actual: String,
+        err: String,
+        span: Span,
+    },
+    InvalidPreciseDecimal {
+        actual: String,
+        err: String,
+        span: Span,
+    },
     InvalidNonFungibleLocalId(String, Span),
     InvalidNonFungibleGlobalId(Span),
     InvalidExpression(String, Span),
@@ -867,8 +875,13 @@ fn generate_string(value: &ast::ValueWithSpan) -> Result<String, GeneratorError>
 fn generate_decimal(value: &ast::ValueWithSpan) -> Result<Decimal, GeneratorError> {
     match &value.value {
         ast::Value::Decimal(inner) => match &inner.value {
-            ast::Value::String(s) => Decimal::from_str(&s)
-                .map_err(|_| GeneratorError::InvalidDecimal(s.into(), inner.span)),
+            ast::Value::String(s) => {
+                Decimal::from_str(&s).map_err(|err| GeneratorError::InvalidDecimal {
+                    actual: s.to_string(),
+                    err: err.to_string(),
+                    span: inner.span,
+                })
+            }
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Decimal),
@@ -878,8 +891,13 @@ fn generate_decimal(value: &ast::ValueWithSpan) -> Result<Decimal, GeneratorErro
 fn generate_precise_decimal(value: &ast::ValueWithSpan) -> Result<PreciseDecimal, GeneratorError> {
     match &value.value {
         ast::Value::PreciseDecimal(inner) => match &inner.value {
-            ast::Value::String(s) => PreciseDecimal::from_str(s)
-                .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into(), inner.span)),
+            ast::Value::String(s) => {
+                PreciseDecimal::from_str(s).map_err(|err| GeneratorError::InvalidPreciseDecimal {
+                    actual: s.to_string(),
+                    err: err.to_string(),
+                    span: inner.span,
+                })
+            }
 
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -894,6 +912,8 @@ fn generate_package_address(
     match &value.value {
         ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
+                // TODO: Consider more precise message by interpreting AddressBech32DecodeError
+                // (applies everywhere where validate_and_decode() is used)
                 if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
@@ -1211,6 +1231,7 @@ fn generate_non_fungible_local_id(
     match &value.value {
         ast::Value::NonFungibleLocalId(inner) => match &inner.value {
             ast::Value::String(s) => NonFungibleLocalId::from_str(s)
+                // TODO: Consider more precise message by interpreting ParseNonFungibleLocalIdError
                 .map_err(|_| GeneratorError::InvalidNonFungibleLocalId(s.into(), inner.span)),
             v => invalid_type!(inner.span, v, ast::ValueKind::String)?,
         },
@@ -1573,7 +1594,7 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
             actual,
             span,
         } => {
-            // NICE TO HAVE: Consider better messages for aliases (eg. Bytes)
+            // TODO: Consider better messages for aliases (eg. Bytes)
             let title = format!(
                 "expected value of type {}, found {}",
                 expected_type,
@@ -1585,12 +1606,12 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
             let title = format!("invalid package address '{}'", string);
             (span, title, "".to_string())
         }
-        GeneratorError::InvalidDecimal(string, span) => {
-            let title = format!("invalid decimal '{}'", string);
+        GeneratorError::InvalidDecimal { actual, err, span } => {
+            let title = format!("invalid decimal '{}' - {}", actual, err);
             (span, title, "invalid decimal".to_string())
         }
-        GeneratorError::InvalidPreciseDecimal(string, span) => {
-            let title = format!("invalid precise decimal '{}'", string);
+        GeneratorError::InvalidPreciseDecimal { actual, err, span } => {
+            let title = format!("invalid precise decimal '{}' - {}", actual, err);
             (span, title, "invalid precise decimal".to_string())
         }
         GeneratorError::InvalidNonFungibleLocalId(string, span) => {
@@ -1851,10 +1872,11 @@ mod tests {
         );
         generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
-            GeneratorError::InvalidDecimal(
-                "invalid_decimal".into(),
-                span!(start = (8, 1, 8), end = (25, 1, 25))
-            )
+            GeneratorError::InvalidDecimal {
+                actual: "invalid_decimal".to_string(),
+                err: "InvalidDigit".to_string(),
+                span: span!(start = (8, 1, 8), end = (25, 1, 25))
+            }
         );
     }
 
