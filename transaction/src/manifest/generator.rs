@@ -933,16 +933,16 @@ fn generate_dynamic_global_address(
     resolver: &mut NameResolver,
 ) -> Result<DynamicGlobalAddress, GeneratorError> {
     match &value.value {
-        ast::Value::Address(value) => match &value.value {
+        ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
                         return Ok(DynamicGlobalAddress::Static(address));
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into(), value.span));
+                return Err(GeneratorError::InvalidGlobalAddress(s.into(), inner.span));
             }
-            v => return invalid_type!(value.span, v, ast::ValueKind::String),
+            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(*n)),
@@ -990,16 +990,16 @@ fn generate_dynamic_package_address(
     resolver: &mut NameResolver,
 ) -> Result<DynamicPackageAddress, GeneratorError> {
     match &value.value {
-        ast::Value::Address(value) => match &value.value {
+        ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
                         return Ok(DynamicPackageAddress::Static(address));
                     }
                 }
-                return Err(GeneratorError::InvalidPackageAddress(s.into(), value.span));
+                return Err(GeneratorError::InvalidPackageAddress(s.into(), inner.span));
             }
-            v => return invalid_type!(value.span, v, ast::ValueKind::String),
+            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(*n)),
@@ -1023,16 +1023,16 @@ fn generate_local_address(
     address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<InternalAddress, GeneratorError> {
     match &value.value {
-        ast::Value::Address(value) => match &value.value {
+        ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = InternalAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidInternalAddress(s.into(), value.span));
+                return Err(GeneratorError::InvalidInternalAddress(s.into(), inner.span));
             }
-            v => return invalid_type!(value.span, v, ast::ValueKind::String),
+            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(
             value.span,
@@ -1055,7 +1055,7 @@ fn declare_bucket(
             ast::Value::String(name) => resolver
                 .insert_bucket(name.to_string(), bucket_id)
                 .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Bucket),
     }
@@ -1071,7 +1071,7 @@ fn generate_bucket(
             ast::Value::String(s) => resolver
                 .resolve_bucket(&s)
                 .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Bucket),
     }
@@ -1087,7 +1087,7 @@ fn declare_proof(
             ast::Value::String(name) => resolver
                 .insert_proof(name.to_string(), proof_id)
                 .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Proof),
     }
@@ -1103,7 +1103,7 @@ fn declare_address_reservation(
             ast::Value::String(name) => resolver
                 .insert_address_reservation(name.to_string(), address_reservation_id)
                 .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::AddressReservation),
     }
@@ -1119,7 +1119,7 @@ fn declare_named_address(
             ast::Value::String(name) => resolver
                 .insert_named_address(name.to_string(), address_id)
                 .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::NamedAddress),
     }
@@ -1135,7 +1135,7 @@ fn generate_proof(
             ast::Value::String(s) => resolver
                 .resolve_proof(&s)
                 .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Proof),
     }
@@ -1151,7 +1151,7 @@ fn generate_address_reservation(
             ast::Value::String(s) => resolver
                 .resolve_address_reservation(&s)
                 .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::AddressReservation),
     }
@@ -1162,7 +1162,7 @@ fn generate_static_address(
     address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<ManifestAddress, GeneratorError> {
     match &value.value {
-        ast::Value::Address(value) => match &value.value {
+        ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
                 // Check bech32 && entity type
                 if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
@@ -1173,9 +1173,9 @@ fn generate_static_address(
                         )));
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into(), value.span));
+                return Err(GeneratorError::InvalidGlobalAddress(s.into(), inner.span));
             }
-            v => return invalid_type!(value.span, v, ast::ValueKind::String),
+            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(
             value.span,
@@ -1199,7 +1199,7 @@ fn generate_named_address(
                 .resolve_named_address(&s)
                 .map(|x| ManifestAddress::Named(x))
                 .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::NamedAddress),
     }
@@ -1212,7 +1212,7 @@ fn generate_non_fungible_local_id(
         ast::Value::NonFungibleLocalId(inner) => match &inner.value {
             ast::Value::String(s) => NonFungibleLocalId::from_str(s)
                 .map_err(|_| GeneratorError::InvalidNonFungibleLocalId(s.into(), inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::String)?,
+            v => invalid_type!(inner.span, v, ast::ValueKind::String)?,
         },
         v => invalid_type!(value.span, v, ast::ValueKind::NonFungibleLocalId),
     }
@@ -1226,7 +1226,7 @@ fn generate_expression(value: &ast::ValueWithSpan) -> Result<ManifestExpression,
                 "ENTIRE_AUTH_ZONE" => Ok(ManifestExpression::EntireAuthZone),
                 _ => Err(GeneratorError::InvalidExpression(s.into(), inner.span)),
             },
-            v => invalid_type!(value.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Expression),
     }
@@ -1249,7 +1249,7 @@ where
                     .ok_or(GeneratorError::BlobNotFound(s.clone(), inner.span))?;
                 Ok(ManifestBlobRef(hash.0))
             }
-            v => invalid_type!(value.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Blob),
     }
@@ -1531,7 +1531,6 @@ where
 }
 
 pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
-    // println!("err = {:?}", err);
     let (span, title, label) = match err {
         GeneratorError::InvalidAstType {
             expected_type,
@@ -1575,6 +1574,7 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
             actual,
             span,
         } => {
+            // NICE TO HAVE: Consider better messages for aliases (eg. Bytes)
             let title = format!(
                 "expected value of type {}, found {}",
                 expected_type,
