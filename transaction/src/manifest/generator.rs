@@ -1649,8 +1649,8 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
             (span, title, "blob not found".to_string())
         }
         GeneratorError::InvalidBytesHex(string, span) => {
-            let title = format!("invalid bytes hex '{}'", string);
-            (span, title, "invalid bytes hex".to_string())
+            let title = format!("invalid hex value '{}'", string);
+            (span, title, "invalid hex value".to_string())
         }
         GeneratorError::NameResolverError(error, span) => match error {
             NameResolverError::UndefinedBucket(string) => {
