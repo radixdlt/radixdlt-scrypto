@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1mexpected an Instruction, found token `;`[0m
+[1m[91merror[0m: [1mexpected an Instruction, found token ';'[0m
 [1m[94m   |[0m
 [1m[94m10 |[0m SET_COMPONENT_ROYALTY
 [1m[94m11 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
