@@ -1,5 +1,6 @@
 use cargo_toml::Manifest;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
+use radix_engine_common::prelude::*;
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
@@ -27,7 +28,9 @@ pub enum ScryptoCompilerError {
     /// Returns WASM Optimization error
     WasmOptimizationError(wasm_opt::OptimizationError),
     /// Returns error occured during schema extraction
-    ExtractSchema(ExtractSchemaError),
+    SchemaExtractionError(ExtractSchemaError),
+    /// Returns error occured during schema encoding
+    SchemaEncodeError(EncodeError),
     /// Specified manifest is a workspace, use 'compile_workspace' function
     CargoManifestIsWorkspace(String),
     /// Specified manifest which is not a workspace
@@ -330,11 +333,9 @@ impl ScryptoCompiler {
             .iter()
             .position(|[_tag, value]| *value == SCRYPTO_NO_SCHEMA)
         {
-            if !for_package_extract {
+            if for_package_extract {
                 features.remove(idx);
             }
-        } else if for_package_extract {
-            features.push(["--features", SCRYPTO_NO_SCHEMA]);
         }
         let features: Vec<&str> = features.into_iter().flatten().collect();
 
@@ -454,7 +455,24 @@ impl ScryptoCompiler {
         })?;
 
         let package_definition =
-            extract_definition(&code).map_err(|e| ScryptoCompilerError::ExtractSchema(e))?;
+            extract_definition(&code).map_err(ScryptoCompilerError::SchemaExtractionError)?;
+
+        std::fs::write(
+            &self.target_binary_rpd_path,
+            manifest_encode(&package_definition)
+                .map_err(ScryptoCompilerError::SchemaEncodeError)?,
+        )
+        .map_err(|err| {
+            ScryptoCompilerError::IOError(
+                err,
+                Some(format!(
+                    "RPD file write failed: {}",
+                    self.target_binary_rpd_path
+                        .display()
+                        .to_string()
+                )),
+            )
+        })?;
 
         Ok(BuildArtifact {
             path: self.target_binary_rpd_path.clone(),
@@ -666,11 +684,7 @@ mod tests {
     fn test_compilation() {
         // Arrange
         let (blueprint_manifest_path, target_directory) = prepare();
-        println!(
-            "{:?}\n{:?}",
-            target_directory.path(),
-            blueprint_manifest_path
-        );
+
         // Act
         let status = ScryptoCompiler::builder()
             .manifest_path(blueprint_manifest_path)
@@ -679,6 +693,31 @@ mod tests {
 
         // Assert
         assert!(status.is_ok(), "{:?}", status);
+
+        let build_artifacts = status.unwrap();
+
+        assert!(build_artifacts.wasm.path.exists());
+        assert!(build_artifacts.package_definition.path.exists());
+
+        assert!(
+            std::fs::metadata(&build_artifacts.wasm.path).unwrap().len() > 0,
+            "Wasm file should not be empty."
+        );
+        assert!(
+            std::fs::metadata(&build_artifacts.package_definition.path)
+                .unwrap()
+                .len()
+                > 7,
+            "Package definition file should not be empty, so should be longer than 7 bytes."
+        ); // 7 bytes is for empty rpd file
+
+        let mut target_path = target_directory.path().to_path_buf();
+        target_path.extend(["wasm32-unknown-unknown", "release", "test_blueprint.wasm"]);
+        assert_eq!(build_artifacts.wasm.path, target_path);
+        assert_eq!(
+            build_artifacts.package_definition.path,
+            target_path.with_extension("rpd")
+        );
     }
 
     #[test]

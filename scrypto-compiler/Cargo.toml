@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
+radix-engine-common = { path = "../radix-engine-common", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false }
 utils = { path = "../utils", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
@@ -20,5 +21,5 @@ bench = false
 
 [features]
 default = ["std"]
-std = ["serde_json/std", "radix-engine-interface/std", "radix-engine/std", "radix-engine/moka", "utils/std"]
-alloc = ["serde_json/alloc", "radix-engine-interface/alloc", "radix-engine/alloc", "radix-engine/lru", "utils/alloc"]
+std = ["serde_json/std", "radix-engine-interface/std", "radix-engine-common/std", "radix-engine/std", "radix-engine/moka", "utils/std"]
+alloc = ["serde_json/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "radix-engine/alloc", "radix-engine/lru", "utils/alloc"]
