@@ -173,6 +173,12 @@ fn test_manifest_generator_error_blob_not_found() {
 }
 
 #[test]
+fn test_manifest_generator_error_invalid_bytes_hex() {
+    // BlobNotFound
+    check_manifest!("manifest_generator_error_invalid_bytes_hex_1");
+}
+
+#[test]
 fn test_manifest_generator_error_invalid_global_address() {
     // InvalidGlobalAddress
     check_manifest!("manifest_generator_error_invalid_global_address_1");
