@@ -114,6 +114,7 @@ pub struct BuildArtifact<T> {
     pub content: T,
 }
 
+#[derive(Debug)]
 struct CompilerManifestDefinition {
     /// Path to Cargo.toml file. If specified in input_params it has the same value, otherwise it is generated.
     manifest_path: PathBuf,
@@ -142,34 +143,57 @@ impl ScryptoCompiler {
     fn from_input_params(
         input_params: &ScryptoCompilerInputParams,
     ) -> Result<Self, ScryptoCompilerError> {
-        // Firstly validate input parameters
-        ScryptoCompiler::validate_input_parameters(input_params)?;
+        let manifest_path = Self::get_manifest_path(&input_params.manifest_path)?;
 
-        // Secondly check if manifest is a workspace
-        let manifest_path = Self::get_manifest_path(input_params)?;
-        if ScryptoCompiler::is_manifest_workspace(&manifest_path).unwrap() {
-            // todo
-            Err(ScryptoCompilerError::CargoManifestIsWorkspace(String::new()))
-        } else {
-            let (manifest_path, target_directory, target_binary_wasm_path, target_binary_rpd_path) =
-                ScryptoCompiler::prepare_paths(input_params)?;
-            // Lastly create ScryptoCompiler object
+        if let Some(workspace_members) =
+            ScryptoCompiler::is_manifest_workspace(&manifest_path).unwrap()
+        {
+            // todo: if --package specified use it
+            let manifests = workspace_members
+                .into_iter()
+                .map(|manifest| {
+                    let mut member_manifest_input_path = manifest_path.clone();
+                    member_manifest_input_path.pop(); // Workspace Cargo.toml file
+                    member_manifest_input_path.push(PathBuf::from(manifest));
+
+                    match ScryptoCompiler::get_manifest_path(&Some(member_manifest_input_path)) {
+                        Ok(member_manifest_path) => ScryptoCompiler::prepare_manifest_def(
+                            input_params,
+                            &member_manifest_path,
+                        ),
+                        Err(x) => Err(x),
+                    }
+                })
+                .collect::<Result<Vec<CompilerManifestDefinition>, ScryptoCompilerError>>()?;
+
             Ok(Self {
                 input_params: input_params.to_owned(),
-                manifests: vec![CompilerManifestDefinition {
-                    manifest_path,
-                    target_directory,
-                    target_binary_wasm_path,
-                    target_binary_rpd_path,
-                }],
+                manifests,
+            })
+        } else {
+            Ok(Self {
+                input_params: input_params.to_owned(),
+                manifests: vec![ScryptoCompiler::prepare_manifest_def(
+                    input_params,
+                    &manifest_path,
+                )?],
             })
         }
     }
 
-    fn validate_input_parameters(
-        _input_params: &ScryptoCompilerInputParams,
-    ) -> Result<(), ScryptoCompilerError> {
-        Ok(())
+    fn prepare_manifest_def(
+        input_params: &ScryptoCompilerInputParams,
+        manifest_path: &Path,
+    ) -> Result<CompilerManifestDefinition, ScryptoCompilerError> {
+        let (target_directory, target_binary_wasm_path, target_binary_rpd_path) =
+            ScryptoCompiler::prepare_paths_for_manifest(input_params, manifest_path)?;
+
+        Ok(CompilerManifestDefinition {
+            manifest_path: manifest_path.to_path_buf(),
+            target_directory,
+            target_binary_wasm_path,
+            target_binary_rpd_path,
+        })
     }
 
     fn get_default_target_directory(manifest_path: &Path) -> Result<String, ScryptoCompilerError> {
@@ -213,24 +237,11 @@ impl ScryptoCompiler {
         }
     }
 
-    // fn get_workspace_members(manifest_path: &Path) -> Result<Vec<String>, ScryptoCompilerError> {
-    //     let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
-    //         ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
-    //     })?;
-    //     if let Some(workspace) = manifest.workspace {
-    //         Ok(workspace.members)
-    //     } else {
-    //         Err(ScryptoCompilerError::CargoManifestNoWorkspace(
-    //             manifest_path.display().to_string(),
-    //         ))
-    //     }
-    // }
-
     // Returns path to Cargo.toml (including the file)
     fn get_manifest_path(
-        input_params: &ScryptoCompilerInputParams,
+        input_manifest_path: &Option<PathBuf>,
     ) -> Result<PathBuf, ScryptoCompilerError> {
-        let manifest_path = match input_params.manifest_path.clone() {
+        let manifest_path = match input_manifest_path.clone() {
             Some(mut path) => {
                 if !path.ends_with(MANIFEST_FILE) {
                     path.push(MANIFEST_FILE);
@@ -258,14 +269,23 @@ impl ScryptoCompiler {
         }
     }
 
-    fn is_manifest_workspace(manifest_path: &Path) -> Result<bool, ScryptoCompilerError> {
+    // If manifest is a workspace this function returns non-empty vector of workspace members
+    fn is_manifest_workspace(
+        manifest_path: &Path,
+    ) -> Result<Option<Vec<String>>, ScryptoCompilerError> {
         let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
         if let Some(workspace) = manifest.workspace {
-            Ok(!workspace.members.is_empty())
+            if workspace.members.is_empty() {
+                Ok(None)
+            } else {
+                let mut x = Vec::new();
+                x.clone_from(&workspace.members);
+                Ok(Some(x))
+            }
         } else {
-            Ok(false)
+            Ok(None)
         }
     }
 
@@ -303,13 +323,11 @@ impl ScryptoCompiler {
         Ok(wasm_name.unwrap()) //todo
     }
 
-    // Returns manifest path, target directory, target binary WASM path and target binary PRD path
-    fn prepare_paths(
+    // Basing on manifest path returns target directory, target binary WASM path and target binary PRD path
+    fn prepare_paths_for_manifest(
         input_params: &ScryptoCompilerInputParams,
-    ) -> Result<(PathBuf, PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
-        // Generate manifest path (manifest directory + "/Cargo.toml")
-        let manifest_path = Self::get_manifest_path(input_params)?;
-
+        manifest_path: &Path,
+    ) -> Result<(PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
         // Generate target directory
         let target_directory = if let Some(directory) = &input_params.target_directory {
             // If target directory is explicitly specified as compiler parameter then use it as is
@@ -335,7 +353,6 @@ impl ScryptoCompiler {
         target_binary_rpd_path.set_extension("rpd");
 
         Ok((
-            manifest_path,
             target_directory,
             target_binary_wasm_path,
             target_binary_rpd_path,
@@ -858,7 +875,7 @@ mod tests {
 
         // Act
         let status = ScryptoCompiler::builder()
-            .target_directory(target_directory.path())
+            .target_directory("/tmp/ws1") //target_directory.path())
             .compile();
 
         // Assert
