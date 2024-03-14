@@ -18,12 +18,12 @@ members = [
     "blueprint-schema-init",
     "monkey-tests",
     "native-sdk",
+    "radix-engine-common-macros",
     "radix-engine-common",
     "radix-engine-derive",
     "radix-engine-interface",
-    "radix-engine-common-macros",
-    "radix-engine-profiling",
     "radix-engine-profiling-macros",
+    "radix-engine-profiling",
     "radix-engine-tests",
     "radix-engine",
     "sbor-derive-common",
@@ -44,23 +44,19 @@ members = [
 
 [workspace.dependencies]
 blueprint-schema-init = { path = "./blueprint-schema-init", default-features = false }
-monkey-tests = { path = "./monkey-tests", default-features = false }
 native-sdk = { path = "./native-sdk", default-features = false }
 radix-engine = { path = "./radix-engine", default-features = false }
 radix-engine-common = { path = "./radix-engine-common", default-features = false }
+radix-engine-common-macros = { path = "./radix-engine-common-macros", default-features = false }
 radix-engine-derive = { path = "./radix-engine-derive", default-features = false }
 radix-engine-interface = { path = "./radix-engine-interface", default-features = false }
-radix-engine-common-macros = { path = "./radix-engine-common-macros", default-features = false }
 radix-engine-profiling = { path = "./radix-engine-profiling", default-features = false }
-radix-engine-tests = { path = "./radix-engine-tests", default-features = false }
 radix-engine-profiling-macros = { path = "./radix-engine-profiling-macros", default-features = false }
 sbor = { path = "./sbor", default-features = false }
 sbor-derive = { path = "./sbor-derive", default-features = false }
 sbor-derive-common = { path = "./sbor-derive-common", default-features = false }
-sbor-tests = { path = "./sbor-tests", default-features = false }
 scrypto = { path = "./scrypto", default-features = false }
 scrypto-derive = { path = "./scrypto-derive", default-features = false }
-scrypto-derive-tests = { path = "./scrypto-derive-tests", default-features = false }
 scrypto-test = { path = "./scrypto-test", default-features = false }
 substate-store-impls = { path = "./substate-store-impls", default-features = false }
 substate-store-interface = { path = "./substate-store-interface", default-features = false }
