@@ -130,13 +130,37 @@ fn test_manifest_generator_error_unexpected_value() {
 }
 
 #[test]
+fn test_manifest_generator_error_invalid_decimal() {
+    // InvalidDecimal
+    check_manifest!("manifest_generator_error_invalid_decimal_1");
+}
+
+#[test]
+fn test_manifest_generator_error_invalid_precise_decimal() {
+    // InvalidPreciseDecimal
+    check_manifest!("manifest_generator_error_invalid_precise_decimal_1");
+}
+
+#[test]
 fn test_manifest_generator_error_invalid_expression() {
     // InvalidExpression
     check_manifest!("manifest_generator_error_invalid_expression_1");
 }
 
 #[test]
+fn test_manifest_generator_error_invalid_non_fungible_local_id() {
+    // InvalidNonFungibleLocalId
+    check_manifest!("manifest_generator_error_invalid_non_fungible_local_id_1");
+}
+
+#[test]
 fn test_manifest_generator_error_invalid_global_address() {
     // InvalidGlobalAddress
     check_manifest!("manifest_generator_error_invalid_global_address_1");
+}
+
+#[test]
+fn test_manifest_generator_error_invalid_package_address() {
+    // InvalidPackageAddress
+    check_manifest!("manifest_generator_error_invalid_package_address_1");
 }
