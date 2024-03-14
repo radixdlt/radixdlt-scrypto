@@ -18,6 +18,7 @@ pub enum TransactionDiscriminator {
     V1RoundUpdate = V1_ROUND_UPDATE_TRANSACTION,
     V1Preview = V1_PREVIEW_TRANSACTION,
     V1Ledger = V1_LEDGER_TRANSACTION,
+    V1Flash = V1_FLASH_TRANSACTION,
 }
 
 const V1_INTENT: u8 = 1;
@@ -27,6 +28,7 @@ const V1_SYSTEM_TRANSACTION: u8 = 4;
 const V1_ROUND_UPDATE_TRANSACTION: u8 = 5;
 const V1_PREVIEW_TRANSACTION: u8 = 6;
 const V1_LEDGER_TRANSACTION: u8 = 7;
+const V1_FLASH_TRANSACTION: u8 = 8;
 
 // TODO - change this to use #[flatten] when REP-84 is out
 /// An enum of a variety of different transaction payload types
@@ -67,7 +69,6 @@ mod tests {
     use super::*;
     use crate::manifest::e2e::tests::print_blob;
     use crate::model::*;
-    use crate::{signing::ed25519::Ed25519PrivateKey, signing::secp256k1::Secp256k1PrivateKey};
 
     fn hash_manifest_encoded_without_prefix_byte<T: ManifestEncode>(value: T) -> Hash {
         hash(&manifest_encode(&value).unwrap()[1..])

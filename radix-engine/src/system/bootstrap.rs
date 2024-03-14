@@ -3,10 +3,10 @@ use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
 use crate::blueprints::package::{
-    create_bootstrap_package_partitions, PackageCollection, PackageNativePackage,
+    create_package_partition_substates, PackageCollection, PackageNativePackage,
     PackageOwnerBadgeData, SystemInstruction,
 };
-use crate::blueprints::pool::PoolNativePackage;
+use crate::blueprints::pool::v1::package::{PoolNativePackage, PoolV1MinorVersion};
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::test_utils::TestUtilsNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
@@ -29,12 +29,11 @@ use crate::transaction::{
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
     TransactionResult,
 };
+use crate::vm::VmVersion;
 use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -577,6 +576,7 @@ pub fn create_system_bootstrap_flash(
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
+                &VmVersion::default(),
             )
             .unwrap_or_else(|err| {
                 panic!(
@@ -585,7 +585,7 @@ pub fn create_system_bootstrap_flash(
                 )
             });
 
-            create_bootstrap_package_partitions(package_structure, metadata_init)
+            create_package_partition_substates(package_structure, metadata_init, None)
         };
 
         for (partition_num, partition_substates) in partitions {
@@ -1065,12 +1065,12 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                definition: PoolNativePackage::definition(),
+                definition: PoolNativePackage::definition(PoolV1MinorVersion::Zero),
                 metadata: metadata_init! {
                     "name" => "Pool Package".to_owned(), locked;
                     "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
                 },
-                native_package_code_id: POOL_CODE_ID,
+                native_package_code_id: POOL_V1_0_CODE_ID,
             }),
         });
     }

@@ -18,6 +18,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// Scrypto component abstraction.
 pub mod component;
+/// Scrypto crypto utilities abstraction.
+pub mod crypto_utils;
 /// Scrypto engine abstraction.
 pub mod engine;
 /// Scrypto module abstraction.
@@ -31,7 +33,6 @@ pub mod runtime;
 
 // Export macros
 mod macros;
-pub use macros::*;
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;

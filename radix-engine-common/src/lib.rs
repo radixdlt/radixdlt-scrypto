@@ -24,7 +24,6 @@ pub mod time;
 pub mod types;
 
 mod macros;
-pub use macros::*;
 
 // Re-export SBOR derive.
 extern crate sbor;
@@ -48,7 +47,7 @@ pub extern crate self as radix_engine_common;
 /// The idea is that we can just include the current crate's prelude and avoid messing around with tons of includes.
 /// This makes refactors easier, and makes integration into the node less painful.
 pub mod prelude {
-    // Exports from upstream libaries
+    // Exports from upstream libraries
     pub use radix_engine_derive::{
         ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
         ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
@@ -62,7 +61,6 @@ pub mod prelude {
     pub use super::crypto::*;
     pub use super::data::manifest::prelude::*;
     pub use super::data::scrypto::prelude::*;
-    pub use super::macros::*;
     pub use super::math::*;
     pub use super::network::*;
     pub use super::time::*;

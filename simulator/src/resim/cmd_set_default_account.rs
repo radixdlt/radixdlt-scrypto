@@ -7,20 +7,27 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct SetDefaultAccount {
     /// The account component address
-    component_address: SimulatorComponentAddress,
+    pub component_address: SimulatorComponentAddress,
 
     /// The private key for accessing the account
-    private_key: String,
+    pub private_key: String,
 
     /// The owner badge.
-    owner_badge: SimulatorNonFungibleGlobalId,
+    pub owner_badge: SimulatorNonFungibleGlobalId,
 }
 
 impl SetDefaultAccount {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut configs = get_configs()?;
+        let private_key = parse_private_key_from_str(&self.private_key).map_err(|e| {
+            if Secp256k1PublicKey::from_str(&self.private_key).is_ok() {
+                Error::GotPublicKeyExpectedPrivateKey
+            } else {
+                e
+            }
+        })?;
         configs.default_account = Some(self.component_address.0);
-        configs.default_private_key = Some(self.private_key.clone());
+        configs.default_private_key = Some(private_key.to_hex());
         configs.default_owner_badge = Some(self.owner_badge.clone().0);
         set_configs(&configs)?;
 

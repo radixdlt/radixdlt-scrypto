@@ -11,6 +11,10 @@ use sbor::*;
 pub struct UnitStruct;
 
 #[derive(Sbor)]
+#[sbor(type_name = "UnitStructRenamed2")]
+pub struct UnitStructRenamed;
+
+#[derive(Sbor)]
 pub struct BasicSample {
     pub a: (),
     pub b: UnitStruct,
@@ -227,5 +231,18 @@ fn create_recursive_schema_works_correctly() {
         .resolve_type_metadata(LocalTypeId::SchemaLocalIndex(0))
         .unwrap();
     assert_eq!(metadata.get_name().unwrap(), "IndirectRecursive1");
+    assert!(schema.v1().validate().is_ok());
+}
+
+#[test]
+fn test_type_name_works_correctly() {
+    // Most of this test is checking that such recursive schemas can: (A) happily compile and (B) don't panic when a schema is generated
+    let (type_id, schema) =
+        generate_full_schema_from_single_type::<UnitStructRenamed, NoCustomSchema>();
+
+    // The original type should be the first type in the schema
+    assert!(matches!(type_id, LocalTypeId::SchemaLocalIndex(0)));
+    let metadata = schema.v1().resolve_type_metadata(type_id).unwrap();
+    assert_eq!(metadata.get_name().unwrap(), "UnitStructRenamed2");
     assert!(schema.v1().validate().is_ok());
 }

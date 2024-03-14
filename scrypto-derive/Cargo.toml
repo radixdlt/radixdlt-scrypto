@@ -1,6 +1,6 @@
 [package]
 name = "scrypto-derive"
-version = "1.0.2-dev"
+version = "1.1.1"
 edition = "2021"
 
 [lib]
@@ -20,7 +20,7 @@ sbor = { path = "../sbor", default-features = false }
 regex = { version = "=1.9.3", default-features = false, features = [] }
 
 [features]
-# Currenlty, dependencies of procedrual macros are imported to host crates. This may accidentally 
+# Currently, dependencies of procedural macros are imported to host crates. This may accidentally 
 # enable unwanted features of host dependencies, i.e. `serde`, `serde_json`, `sbor` and `scrypto-schema`.
 # 
 # To work around with it, we've added features `std` and `alloc` for `scrypto-derive`, even

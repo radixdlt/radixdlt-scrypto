@@ -16,15 +16,15 @@ use crate::resim::*;
 pub struct NewAccount {
     /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
-    network: Option<String>,
+    pub network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
-    manifest: Option<PathBuf>,
+    pub manifest: Option<PathBuf>,
 
     /// Turn on tracing
     #[clap(short, long)]
-    trace: bool,
+    pub trace: bool,
 }
 
 #[derive(ScryptoSbor, ManifestSbor)]
@@ -124,13 +124,13 @@ impl NewAccount {
                 || configs.default_owner_badge.is_none()
             {
                 configs.default_account = Some(account);
-                configs.default_private_key = Some(hex::encode(private_key.to_bytes()));
+                configs.default_private_key = Some(private_key.to_hex());
                 configs.default_owner_badge = Some(owner_badge);
                 set_configs(&configs)?;
 
                 writeln!(
                     out,
-                    "Account configuration in complete. Will use the above account as default."
+                    "Set up as default account since you had none, you can change it using `set-default-account`."
                 )
                 .map_err(Error::IOError)?;
             }

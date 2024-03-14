@@ -23,7 +23,7 @@ jobs:
     name: Check code format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Check format
@@ -33,7 +33,7 @@ jobs:
     name: Run SBOR unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -47,7 +47,7 @@ jobs:
     name: Run SBOR integration tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -61,7 +61,7 @@ jobs:
     name: Run Scrypto unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -77,7 +77,7 @@ jobs:
     name: Run Scrypto integration tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -89,7 +89,7 @@ jobs:
     name: Run Scrypto examples
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Build faucet
@@ -116,7 +116,7 @@ jobs:
     name: Check Scrypto Stubs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Check stubs
@@ -127,9 +127,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores]
+        os: [ubuntu-16-cores-selfhosted]
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Install dependency
@@ -143,9 +143,9 @@ jobs:
 
   radix-engine:
     name: Run Radix Engine tests
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-16-cores-selfhosted
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -165,9 +165,9 @@ jobs:
     # - overflow-checks
     # which are false for release variant
     name: Run Radix Engine tests (release)
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-16-cores-selfhosted
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -182,9 +182,9 @@ jobs:
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-16-cores-selfhosted
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -199,9 +199,9 @@ jobs:
 
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-16-cores-selfhosted
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -218,7 +218,7 @@ jobs:
     name: Run Radix Engine benchmarks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run bench
@@ -229,7 +229,7 @@ jobs:
     name: Run Radix Engine common benchmarks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run bench
@@ -240,7 +240,7 @@ jobs:
     name: Run transaction tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -250,7 +250,7 @@ jobs:
     name: Run transaction scenarios
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
@@ -261,9 +261,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores, windows-latest-16-cores]
+        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted]
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - uses: radixdlt/rust-cache@allow_registry_src_caching
@@ -287,9 +287,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores, windows-latest-16-cores, macos-latest]
+        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted, macos-latest]
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - uses: radixdlt/rust-cache@allow_registry_src_caching
@@ -307,9 +307,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores]
+        os: [ubuntu-16-cores-selfhosted]
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Cargo Check
@@ -320,9 +320,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores]
+        os: [ubuntu-16-cores-selfhosted]
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Cargo Check
@@ -330,9 +330,14 @@ jobs:
 
   determinism-test:
     name: Run determinism test
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-16-cores-selfhosted
     steps:
-      - uses: actions/checkout@v3
+      - uses: RDXWorks-actions/checkout@main
+      - name: Cargo Check
+        run: |
+          sudo apt-get install libclang-dev -y 
+          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+          sudo apt-get install git-lfs -y
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Pull LFS assets

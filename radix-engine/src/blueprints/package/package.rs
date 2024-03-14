@@ -30,7 +30,7 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::system::system_type_checker::SystemMapper;
-use crate::vm::VmPackageValidation;
+use crate::vm::{VmApi, VmPackageValidation};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -674,15 +674,15 @@ fn blueprint_state_schema(
     )
 }
 
-pub fn create_bootstrap_package_partitions(
+pub fn create_package_partition_substates(
     package_structure: PackageStructure,
     metadata: MetadataInit,
+    royalty_vault: Option<Vault>,
 ) -> NodeSubstates {
     let mut node_substates = NodeSubstates::new();
 
     let own_features = PackageFeatureSet {
-        // Bootstrap packages are native packages which don't need royalties
-        package_royalty: false,
+        package_royalty: royalty_vault.is_some(),
     };
 
     //-----------------
@@ -698,7 +698,7 @@ pub fn create_bootstrap_package_partitions(
             indexmap!(PackageCollection::SchemaKeyValue.collection_index() as usize => SCHEMAS_PARTITION),
         );
         let package_system_struct =
-            PackageNativePackage::init_system_struct(None, package_structure);
+            PackageNativePackage::init_system_struct(royalty_vault, package_structure);
         let package_substates = SystemMapper::system_struct_to_node_substates(
             &package_schema,
             package_system_struct,
@@ -926,13 +926,15 @@ impl PackageNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y, V>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
+        vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
+        V: VmApi,
     {
         match export_name {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
@@ -946,6 +948,7 @@ impl PackageNativePackage {
                     input.definition,
                     input.metadata,
                     api,
+                    vm_api,
                 )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -955,7 +958,8 @@ impl PackageNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = Self::publish_wasm(input.code, input.definition, input.metadata, api)?;
+                let rtn =
+                    Self::publish_wasm(input.code, input.definition, input.metadata, api, vm_api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -971,6 +975,7 @@ impl PackageNativePackage {
                     input.metadata,
                     input.owner_role,
                     api,
+                    vm_api,
                 )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -988,7 +993,7 @@ impl PackageNativePackage {
         }
     }
 
-    fn init_system_struct(
+    pub(crate) fn init_system_struct(
         royalty_vault: Option<Vault>,
         package_structure: PackageStructure,
     ) -> (
@@ -1071,9 +1076,9 @@ impl PackageNativePackage {
 
         {
             let mut vm_type_partition = index_map_new();
-            for (hash, code_substate) in package_structure.vm_type {
+            for (hash, vm_type) in package_structure.vm_type {
                 let entry = KVEntry {
-                    value: Some(scrypto_encode(&code_substate).unwrap()),
+                    value: Some(scrypto_encode(&vm_type).unwrap()),
                     locked: true,
                 };
                 vm_type_partition.insert(scrypto_encode(&hash).unwrap(), entry);
@@ -1132,11 +1137,12 @@ impl PackageNativePackage {
         (fields, kv_entries)
     }
 
-    pub fn validate_and_build_package_structure(
+    pub fn validate_and_build_package_structure<V: VmApi>(
         definition: PackageDefinition,
         vm_type: VmType,
         original_code: Vec<u8>,
         system_instructions: BTreeMap<String, Vec<SystemInstruction>>,
+        vm_api: &V,
     ) -> Result<PackageStructure, RuntimeError> {
         // Validate schema
         validate_package_schema(&definition.blueprints)
@@ -1152,7 +1158,7 @@ impl PackageNativePackage {
 
         // Validate VM specific properties
         let instrumented_code =
-            VmPackageValidation::validate(&definition, vm_type, &original_code)?;
+            VmPackageValidation::validate(&definition, vm_type, &original_code, vm_api)?;
 
         // Build Package structure
         let mut definitions = index_map_new();
@@ -1321,15 +1327,17 @@ impl PackageNativePackage {
         Ok(package_structure)
     }
 
-    pub(crate) fn publish_native<Y>(
+    pub(crate) fn publish_native<Y, V>(
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u64,
         definition: PackageDefinition,
         metadata_init: MetadataInit,
         api: &mut Y,
+        vm_api: &V,
     ) -> Result<PackageAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
+        V: VmApi,
     {
         validate_royalties(&definition, api)?;
         let package_structure = Self::validate_and_build_package_structure(
@@ -1337,6 +1345,7 @@ impl PackageNativePackage {
             VmType::Native,
             native_package_code_id.to_be_bytes().to_vec(),
             Default::default(),
+            vm_api,
         )?;
         let role_assignment = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
@@ -1350,21 +1359,25 @@ impl PackageNativePackage {
         )
     }
 
-    pub(crate) fn publish_wasm<Y>(
+    pub(crate) fn publish_wasm<Y, V>(
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata_init: MetadataInit,
         api: &mut Y,
+        vm_api: &V,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
+        V: VmApi,
     {
         validate_royalties(&definition, api)?;
+
         let package_structure = Self::validate_and_build_package_structure(
             definition,
             VmType::ScryptoV1,
             code,
             Default::default(),
+            vm_api,
         )?;
 
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
@@ -1393,16 +1406,18 @@ impl PackageNativePackage {
         Ok((address, bucket))
     }
 
-    pub(crate) fn publish_wasm_advanced<Y>(
+    pub(crate) fn publish_wasm_advanced<Y, V>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata_init: MetadataInit,
         owner_role: OwnerRole,
         api: &mut Y,
+        vm_api: &V,
     ) -> Result<PackageAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
+        V: VmApi,
     {
         validate_royalties(&definition, api)?;
         let package_structure = Self::validate_and_build_package_structure(
@@ -1410,6 +1425,7 @@ impl PackageNativePackage {
             VmType::ScryptoV1,
             code,
             Default::default(),
+            vm_api,
         )?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
         let role_assignment = SecurifiedPackage::create_advanced(owner_role, api)?;

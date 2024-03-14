@@ -29,7 +29,6 @@ pub use cmd_call_function::*;
 pub use cmd_call_method::*;
 pub use cmd_export_package_definition::*;
 pub use cmd_generate_key_pair::*;
-pub use cmd_mint::*;
 pub use cmd_new_account::*;
 pub use cmd_new_badge_fixed::*;
 pub use cmd_new_badge_mutable::*;
@@ -77,7 +76,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_interface::crypto::hash;
+use radix_engine_interface::crypto::{hash, Secp256k1PrivateKey};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::typed_substate_layout::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
@@ -90,7 +89,6 @@ use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
 use transaction::model::{SystemTransactionV1, TransactionPayload};
 use transaction::prelude::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
@@ -170,17 +168,12 @@ pub fn handle_system_transaction<O: std::io::Write>(
     print_receipt: bool,
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
+    let SimulatorEnvironment {
+        mut db,
+        scrypto_vm,
+        native_vm,
+    } = SimulatorEnvironment::new()?;
     let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        vm.clone(),
-        false,
-    )
-    .bootstrap_test_default();
 
     let nonce = get_nonce()?;
     let transaction = SystemTransactionV1 {
@@ -193,7 +186,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     };
 
     let receipt = execute_and_commit_transaction(
-        &mut substate_db,
+        &mut db,
         vm,
         &CostingParameters::default(),
         &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
@@ -209,12 +202,12 @@ pub fn handle_system_transaction<O: std::io::Write>(
         let display_context = TransactionReceiptDisplayContextBuilder::new()
             .encoder(&encoder)
             .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                get_event_schema(&substate_db, event_type_identifier)
+                get_event_schema(&db, event_type_identifier)
             })
             .build();
         writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
     }
-    drop(substate_db);
+    drop(db);
 
     process_receipt(receipt)
 }
@@ -251,17 +244,12 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-            let native_vm = DefaultNativeVm::new();
+            let SimulatorEnvironment {
+                mut db,
+                scrypto_vm,
+                native_vm,
+            } = SimulatorEnvironment::new()?;
             let vm = Vm::new(&scrypto_vm, native_vm);
-            let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(
-                NetworkDefinition::simulator(),
-                &mut substate_db,
-                vm.clone(),
-                false,
-            )
-            .bootstrap_test_default();
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -272,7 +260,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let transaction = TestTransaction::new_from_nonce(manifest, nonce);
 
             let receipt = execute_and_commit_transaction(
-                &mut substate_db,
+                &mut db,
                 vm,
                 &CostingParameters::default(),
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
@@ -287,12 +275,12 @@ pub fn handle_manifest<O: std::io::Write>(
                 let display_context = TransactionReceiptDisplayContextBuilder::new()
                     .encoder(&encoder)
                     .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                        get_event_schema(&substate_db, event_type_identifier)
+                        get_event_schema(&db, event_type_identifier)
                     })
                     .build();
                 writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
             }
-            drop(substate_db);
+            drop(db);
 
             process_receipt(receipt).map(Option::Some)
         }
@@ -318,19 +306,22 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt
     }
 }
 
+pub fn parse_private_key_from_bytes(slice: &[u8]) -> Result<Secp256k1PrivateKey, Error> {
+    Secp256k1PrivateKey::from_bytes(slice).map_err(|_| Error::InvalidPrivateKey)
+}
+
+pub fn parse_private_key_from_str(key: &str) -> Result<Secp256k1PrivateKey, Error> {
+    hex::decode(key)
+        .map_err(|_| Error::InvalidPrivateKey)
+        .and_then(|bytes| parse_private_key_from_bytes(&bytes))
+}
+
 pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<Secp256k1PrivateKey>, Error> {
     let private_keys = if let Some(keys) = signing_keys {
         keys.split(",")
             .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .map(|key| {
-                hex::decode(key)
-                    .map_err(|_| Error::InvalidPrivateKey)
-                    .and_then(|bytes| {
-                        Secp256k1PrivateKey::from_bytes(&bytes)
-                            .map_err(|_| Error::InvalidPrivateKey)
-                    })
-            })
+            .filter(|s: &&str| !s.is_empty())
+            .map(parse_private_key_from_str)
             .collect::<Result<Vec<Secp256k1PrivateKey>, Error>>()?
     } else {
         vec![get_default_private_key()?]
@@ -342,27 +333,17 @@ pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<Secp256k1Pr
 pub fn export_package_schema(
     package_address: PackageAddress,
 ) -> Result<BTreeMap<BlueprintVersionKey, BlueprintDefinition>, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
-    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let system_reader = SystemDatabaseReader::new(&db);
     let package_definition = system_reader.get_package_definition(package_address);
     Ok(package_definition)
 }
 
 pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectInfo, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
-    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let system_reader = SystemDatabaseReader::new(&db);
     system_reader
         .get_object_info(component_address)
         .map_err(|_| Error::ComponentNotFound(component_address))
@@ -372,14 +353,9 @@ pub fn export_schema(
     node_id: &NodeId,
     schema_hash: SchemaHash,
 ) -> Result<VersionedScryptoSchema, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
-    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let system_reader = SystemDatabaseReader::new(&db);
     let schema = system_reader
         .get_schema(node_id, &schema_hash)
         .map_err(|_| Error::SchemaNotFound(*node_id, schema_hash))?;
@@ -403,14 +379,9 @@ pub fn export_blueprint_interface(
 }
 
 pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
-    let system_reader = SystemDatabaseReader::new(&substate_db);
+    let system_reader = SystemDatabaseReader::new(&db);
     let object_info = system_reader
         .get_object_info(component_address)
         .expect("Unexpected");
@@ -418,10 +389,10 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
 }
 
 pub fn get_event_schema<S: SubstateDatabase>(
-    substate_db: &S,
+    db: &S,
     event_type_identifier: &EventTypeIdentifier,
 ) -> Option<(LocalTypeId, VersionedScryptoSchema)> {
-    let system_reader = SystemDatabaseReader::new(substate_db);
+    let system_reader = SystemDatabaseReader::new(db);
 
     let (blueprint_id, event_name) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
@@ -475,14 +446,9 @@ pub fn db_upsert_timestamps(
     milli_timestamp: ProposerMilliTimestampSubstate,
     minute_timestamp: ProposerMinuteTimestampSubstate,
 ) -> Result<(), Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { mut db, .. } = SimulatorEnvironment::new()?;
 
-    let mut writer = SystemDatabaseWriter::new(&mut substate_db);
+    let mut writer = SystemDatabaseWriter::new(&mut db);
 
     writer
         .write_typed_object_field(
@@ -510,14 +476,9 @@ pub fn db_upsert_timestamps(
 }
 
 pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
-    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default();
+    let SimulatorEnvironment { mut db, .. } = SimulatorEnvironment::new()?;
 
-    let reader = SystemDatabaseReader::new(&substate_db);
+    let reader = SystemDatabaseReader::new(&db);
 
     let mut consensus_mgr_state = reader
         .read_typed_object_field::<ConsensusManagerStateFieldPayload>(
@@ -539,7 +500,7 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
 
     consensus_mgr_state.epoch = epoch;
 
-    let mut writer = SystemDatabaseWriter::new(&mut substate_db);
+    let mut writer = SystemDatabaseWriter::new(&mut db);
 
     writer
         .write_typed_object_field(
@@ -551,4 +512,76 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
         .unwrap();
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_no_value() {
+        let mut out = std::io::stdout();
+        let rtn = Reset {}.run(&mut out);
+        assert!(rtn.is_ok(), "Reset failed with: {:?}", rtn);
+        let new_account = NewAccount {
+            network: None,
+            manifest: None,
+            trace: false,
+        };
+        assert!(new_account.run(&mut out).is_ok());
+        let cmd = Show { address: None };
+        assert!(cmd.run(&mut out).is_ok());
+    }
+
+    fn test_pre_process_manifest() {
+        temp_env::with_vars(
+            vec![
+                (
+                    "faucet",
+                    Some("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx"),
+                ),
+                (
+                    "xrd",
+                    Some("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"),
+                ),
+            ],
+            || {
+                let manifest = r#"CALL_METHOD ComponentAddress("${  faucet  }") "free";\nTAKE_ALL_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("bucket1");\n"#;
+                let after = r#"CALL_METHOD ComponentAddress("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx") "free";\nTAKE_ALL_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");\n"#;
+                assert_eq!(Run::pre_process_manifest(manifest), after);
+            },
+        );
+    }
+
+    fn test_set_default_account_validation() {
+        let mut out = std::io::stdout();
+        let private_key = Secp256k1PrivateKey::from_hex(
+            "6847c11e2d602548dbf38789e0a1f4543c1e7719e4f591d4aa6e5684f5c13d9c",
+        )
+        .unwrap();
+        let public_key = private_key.public_key().to_string();
+
+        let make_cmd = |key_string: String| {
+            return SetDefaultAccount {
+                component_address: SimulatorComponentAddress::from_str(
+                    "account_sim1c9yeaya6pehau0fn7vgavuggeev64gahsh05dauae2uu25njk224xz",
+                )
+                .unwrap(),
+                private_key: key_string,
+                owner_badge: SimulatorNonFungibleGlobalId::from_str(
+                    "resource_sim1ngvrads4uj3rgq2v9s78fzhvry05dw95wzf3p9r8skhqusf44dlvmr:#1#",
+                )
+                .unwrap(),
+            };
+        };
+
+        assert!(make_cmd(private_key.to_hex()).run(&mut out).is_ok());
+        assert!(make_cmd(public_key.to_string()).run(&mut out).is_err());
+    }
+
+    #[test]
+    fn serial_resim_command_tests() {
+        test_no_value();
+        test_pre_process_manifest();
+        test_set_default_account_validation();
+    }
 }

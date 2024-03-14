@@ -14,7 +14,7 @@ pub struct RoleAssignmentDatabaseChecker {
     initial_roles_keys: Option<Vec<ModuleRoleKey>>,
 
     /// The id of the node to check the role-assignment module of. If provided then all fields and
-    /// collection entires belonging to other nodes are ignored.
+    /// collection entries belonging to other nodes are ignored.
     node_id: Option<NodeId>,
 
     /// A vector of all of the errors encountered when going through the RoleAssignment substates.
@@ -93,7 +93,7 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
             })
         };
 
-        // Ignore all collection entires that do not belong to the role-assignment module.
+        // Ignore all collection entries that do not belong to the role-assignment module.
         if module_id != ModuleId::RoleAssignment {
             return;
         }

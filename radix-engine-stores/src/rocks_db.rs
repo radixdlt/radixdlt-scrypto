@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use radix_engine_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_engine_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
 use rocksdb::{
@@ -14,8 +15,8 @@ pub struct RocksdbSubstateStore {
 }
 
 impl RocksdbSubstateStore {
-    // Techincally we don't need CFs here at all; however, delete range API is only available for CF
-    const THE_ONLY_CF: &str = "the_only";
+    // Technically we don't need CFs here at all; however, delete range API is only available for CF
+    const THE_ONLY_CF: &'static str = "the_only";
 
     pub fn standard(root: PathBuf) -> Self {
         Self::with_options(&Options::default(), root)
@@ -108,7 +109,10 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
                             .delete_range_cf(
                                 self.cf(),
                                 encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![])),
-                                encode_to_rocksdb_bytes(&partition_key.next(), &DbSortKey(vec![])),
+                                encode_to_rocksdb_bytes(
+                                    &partition_key,
+                                    &DbSortKey(vec![u8::MAX; 2 * MAX_SUBSTATE_KEY_SIZE]),
+                                ),
                             )
                             .expect("IO error");
                         for (sort_key, value_bytes) in new_substate_values {
@@ -164,4 +168,60 @@ pub fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
     };
     let sort_key = DbSortKey(buffer[partition_byte_offset + 1..].to_vec());
     (partition_key, sort_key)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use radix_engine_store_interface::interface::{
+        CommittableSubstateDatabase, DatabaseUpdates, DbSortKey, NodeDatabaseUpdates,
+        PartitionDatabaseUpdates,
+    };
+
+    #[cfg(not(feature = "alloc"))]
+    #[test]
+    fn test_partition_deletion() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let mut db = RocksdbSubstateStore::standard(temp_dir.into_path());
+
+        let node_updates = NodeDatabaseUpdates {
+            partition_updates: indexmap! {
+                0 => PartitionDatabaseUpdates::Reset {
+                    new_substate_values: indexmap! {
+                        DbSortKey(vec![5]) => vec![6]
+                    }
+                },
+                1 => PartitionDatabaseUpdates::Reset {
+                    new_substate_values: indexmap! {
+                        DbSortKey(vec![7]) => vec![8]
+                    }
+                },
+                255 => PartitionDatabaseUpdates::Reset {
+                    new_substate_values: indexmap! {
+                        DbSortKey(vec![9]) => vec![10]
+                    }
+                }
+            },
+        };
+        let updates = DatabaseUpdates {
+            node_updates: indexmap! {
+                vec![0] => node_updates.clone(),
+                vec![1] => node_updates.clone(),
+                vec![255] => node_updates.clone(),
+            },
+        };
+        db.commit(&updates);
+
+        assert_eq!(db.list_partition_keys().count(), 9);
+        db.commit(&DatabaseUpdates {
+            node_updates: indexmap! {
+                vec![0] => NodeDatabaseUpdates {
+                    partition_updates: indexmap!{
+                        255 => PartitionDatabaseUpdates::Reset { new_substate_values: indexmap!{} }
+                    }
+                }
+            },
+        });
+        assert_eq!(db.list_partition_keys().count(), 8);
+    }
 }

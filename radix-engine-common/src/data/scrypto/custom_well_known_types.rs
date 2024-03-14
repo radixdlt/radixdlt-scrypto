@@ -92,7 +92,7 @@ fn bytes_fixed_length_type_data<L: SchemaTypeLink>(length: usize) -> ScryptoType
 const REFERENCES_START: u8 = 0x80;
 const OWNED_ENTITIES_START: u8 = 0xa0;
 const MISC_TYPES_START: u8 = 0xc0;
-const KEY_TYPES_START: u8 = 0xd0;
+const CRYPTO_TYPES_START: u8 = 0xd0;
 const ROLE_ASSIGNMENT_TYPES_START: u8 = 0xe0;
 const OTHER_MODULE_TYPES_START: u8 = 0xf0;
 
@@ -105,7 +105,7 @@ const OTHER_MODULE_TYPES_START: u8 = 0xf0;
 // There are a number of reasons for doing this:
 // 1. It is an optimization: Shared types mean smaller schemas.
 // 2. Having well known types for these so that these types are all the "same type" across all scrypto schemas.
-//    This means that semantic information can be intepreted for these values outside of the ledger - for example,
+//    This means that semantic information can be interpreted for these values outside of the ledger - for example,
 //    it can be used to (eg display URL / Instants in certain ways in the dashboard or wallet).
 // 3. In future, if/when we allow attaching extra data such as translations or docs against global types,
 //    these types will be defined in a place where we can attach this data across everyones' schemas, instead of
@@ -379,10 +379,10 @@ create_well_known_lookup!(
             MISC_TYPES_START + 7,
             named_transparent("Origin", string_type_data(),)
         ),
-        // Public key-related types from KEY_TYPES_START
+        // Crypto-related types from CRYPTO_TYPES_START
         (
             PUBLIC_KEY,
-            KEY_TYPES_START + 0,
+            CRYPTO_TYPES_START + 0,
             named_enum(
                 "PublicKey",
                 [
@@ -393,7 +393,7 @@ create_well_known_lookup!(
         ),
         (
             SECP256K1_PUBLIC_KEY,
-            KEY_TYPES_START + 1,
+            CRYPTO_TYPES_START + 1,
             named_transparent(
                 "Secp256k1PublicKey",
                 bytes_fixed_length_type_data(Secp256k1PublicKey::LENGTH),
@@ -401,7 +401,7 @@ create_well_known_lookup!(
         ),
         (
             ED25519_PUBLIC_KEY,
-            KEY_TYPES_START + 2,
+            CRYPTO_TYPES_START + 2,
             named_transparent(
                 "Ed25519PublicKey",
                 bytes_fixed_length_type_data(Ed25519PublicKey::LENGTH),
@@ -409,7 +409,7 @@ create_well_known_lookup!(
         ),
         (
             PUBLIC_KEY_HASH,
-            KEY_TYPES_START + 8,
+            CRYPTO_TYPES_START + 8,
             named_enum(
                 "PublicKeyHash",
                 [
@@ -423,7 +423,7 @@ create_well_known_lookup!(
         ),
         (
             SECP256K1_PUBLIC_KEY_HASH,
-            KEY_TYPES_START + 9,
+            CRYPTO_TYPES_START + 9,
             named_transparent(
                 "Secp256k1PublicKeyHash",
                 bytes_fixed_length_type_data(Secp256k1PublicKeyHash::LENGTH),
@@ -431,7 +431,7 @@ create_well_known_lookup!(
         ),
         (
             ED25519_PUBLIC_KEY_HASH,
-            KEY_TYPES_START + 10,
+            CRYPTO_TYPES_START + 10,
             named_transparent(
                 "Ed25519PublicKeyHash",
                 bytes_fixed_length_type_data(Ed25519PublicKeyHash::LENGTH),
@@ -603,7 +603,7 @@ mod tests {
         // URL - tested in interface crate
         // Origin - tested in interface crate
 
-        // KEY-RELATED
+        // CRYPTO-RELATED
         test_equivalence(
             PUBLIC_KEY_TYPE,
             PublicKey::Ed25519(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),

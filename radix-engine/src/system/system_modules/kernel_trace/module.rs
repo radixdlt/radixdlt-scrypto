@@ -5,7 +5,7 @@ use crate::kernel::kernel_callback_api::{
     WriteSubstateEvent,
 };
 use crate::system::actor::Actor;
-use crate::system::module::SystemModule;
+use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
@@ -25,13 +25,15 @@ macro_rules! log {
     };
 }
 
-#[allow(unused_variables)] // for no_std
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
+impl InitSystemModule for KernelTraceModule {
     #[cfg(feature = "resource_tracker")]
-    fn on_init<Y: KernelApi<SystemConfig<V>>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init(&mut self) -> Result<(), RuntimeError> {
         panic!("KernelTraceModule should be disabled for feature resource_tracker!")
     }
+}
 
+#[allow(unused_variables)] // for no_std
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,

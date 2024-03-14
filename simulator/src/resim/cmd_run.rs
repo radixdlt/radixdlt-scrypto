@@ -74,29 +74,3 @@ impl Run {
         .map(|_| ())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_pre_process_manifest() {
-        temp_env::with_vars(
-            vec![
-                (
-                    "faucet",
-                    Some("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx"),
-                ),
-                (
-                    "xrd",
-                    Some("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"),
-                ),
-            ],
-            || {
-                let manifest = r#"CALL_METHOD ComponentAddress("${  faucet  }") "free";\nTAKE_ALL_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("bucket1");\n"#;
-                let after = r#"CALL_METHOD ComponentAddress("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx") "free";\nTAKE_ALL_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");\n"#;
-                assert_eq!(Run::pre_process_manifest(manifest), after);
-            },
-        );
-    }
-}

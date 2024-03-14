@@ -1,0 +1,15 @@
+[package]
+name = "royalty-auth"
+version = "1.1.1"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../../../../sbor" }
+scrypto = { path = "../../../../scrypto" }
+
+[dev-dependencies]
+radix-engine = { path = "../../../../radix-engine" }
+
+[lib]
+doctest = false
+crate-type = ["cdylib", "lib"]

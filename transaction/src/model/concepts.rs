@@ -33,3 +33,10 @@ define_wrapped_hash!(SystemTransactionHash);
 pub trait HasSystemTransactionHash {
     fn system_transaction_hash(&self) -> SystemTransactionHash;
 }
+
+define_raw_transaction_payload!(RawFlashTransaction);
+define_wrapped_hash!(FlashTransactionHash);
+
+pub trait HasFlashTransactionHash {
+    fn flash_transaction_hash(&self) -> FlashTransactionHash;
+}

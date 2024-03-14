@@ -1,6 +1,6 @@
 [package]
 name = "scrypto-test"
-version = "1.0.2-dev"
+version = "1.1.1"
 edition = "2021"
 
 [dependencies]
@@ -24,11 +24,15 @@ paste = { version = "1.0.14" }
 # Used for the JSON serialization and deserialization involved in the package compilation
 serde_json = { version = "1.0.105" }
 
+[dev-dependencies]
+scrypto = { path = "../scrypto", default-features = false }
+tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], default-features = false }
+
 [features]
 default = ["std", "moka"]
 
-std = ["sbor/std", "native-sdk/std", "transaction/std", "radix-engine/std", "radix-engine-stores/std", "radix-engine-common/std", "radix-engine-interface/std", "radix-engine-store-interface/std"]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-stores/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc"]
+std = ["sbor/std", "native-sdk/std", "transaction/std", "radix-engine/std", "radix-engine-stores/std", "radix-engine-common/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "tuple-return/std"]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-stores/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "tuple-return/alloc"]
 
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]

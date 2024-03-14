@@ -284,7 +284,7 @@ impl NodeVisibility {
         return false;
     }
 
-    // TODO: Should we return Vec<ReferenceOrigin> and not supercede global with direct access reference
+    // TODO: Should we return Vec<ReferenceOrigin> and not supersede global with direct access reference
     pub fn reference_origin(&self, node_id: NodeId) -> Option<ReferenceOrigin> {
         let mut found_direct_access = false;
         for v in &self.0 {
