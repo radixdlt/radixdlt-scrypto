@@ -1549,24 +1549,23 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
             actual,
             span,
         } => {
-            let title = if expected_type.len() == 1 {
-                format!(
-                    "expected value of type {}, found {}",
-                    expected_type.get(0).unwrap().value_kind(),
-                    actual.value_kind()
-                )
-            } else {
-                let types: Vec<String> = expected_type
-                    .iter()
-                    .map(|ty| ty.value_kind().to_string())
-                    .collect();
-                let types = types.join(", ");
-                format!(
-                    "expected values of types {}, found {}",
-                    types,
-                    actual.value_kind()
-                )
-            };
+            let mut types: Vec<String> = vec![];
+
+            // Remove potential duplicates.
+            // Duplicates might occure due to aliases,
+            // eg. PackageAddress, ComponentAddress are both Address
+            for ty in expected_type.iter() {
+                let ty = ty.value_kind().to_string();
+                if !types.contains(&ty) {
+                    types.push(ty)
+                }
+            }
+            let title = format!(
+                "expected value of type {}, found {}",
+                types.join(" or "),
+                actual.value_kind()
+            );
+
             (span, title, "value of unexpected type".to_string())
         }
         GeneratorError::UnexpectedValue {
