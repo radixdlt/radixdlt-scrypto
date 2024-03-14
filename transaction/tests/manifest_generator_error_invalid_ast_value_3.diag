@@ -1,0 +1,15 @@
+[1m[91merror[0m: [1mexpected value of type Address, found String[0m
+[1m[94m   |[0m
+[1m[94m 8 |[0m     "create_proof_of_amount"
+[1m[94m 9 |[0m     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+[1m[94m10 |[0m     Decimal("1");
+[1m[94m11 |[0m 
+[1m[94m12 |[0m MINT_FUNGIBLE
+[1m[94m13 |[0m     "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh"
+[1m[94m   |[0m[1m[91m     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mvalue of unexpected type[0m
+[1m[94m14 |[0m     Decimal("20");
+[1m[94m15 |[0m 
+[1m[94m16 |[0m CALL_METHOD
+[1m[94m17 |[0m     Address("${account_address}")
+[1m[94m18 |[0m     "deposit_batch"
+[1m[94m   |[0m

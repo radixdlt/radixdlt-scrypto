@@ -112,6 +112,14 @@ fn test_manifest_generator_error_invalid_ast_value() {
     // InvalidAstValue
     check_manifest!("manifest_generator_error_invalid_ast_value_1");
     check_manifest!("manifest_generator_error_invalid_ast_value_2");
+    check_manifest!("manifest_generator_error_invalid_ast_value_3");
+    check_manifest!("manifest_generator_error_invalid_ast_value_4");
+}
+
+#[test]
+fn test_manifest_generator_error_invalid_ast_type() {
+    // InvalidAstType
+    check_manifest!("manifest_generator_error_invalid_ast_type_1");
 }
 
 #[test]
@@ -119,6 +127,12 @@ fn test_manifest_generator_error_unexpected_value() {
     // UnexpectedValue
     check_manifest!("manifest_generator_error_unexpected_value_1");
     check_manifest!("manifest_generator_error_unexpected_value_2");
+}
+
+#[test]
+fn test_manifest_generator_error_invalid_expression() {
+    // InvalidExpression
+    check_manifest!("manifest_generator_error_invalid_expression_1");
 }
 
 #[test]

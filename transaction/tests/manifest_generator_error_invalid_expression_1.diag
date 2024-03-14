@@ -1,0 +1,10 @@
+[1m[91merror[0m: [1minvalid expression 'FULL_WORKTOP'[0m
+[1m[94m   |[0m
+[1m[94m14 |[0m     Decimal("20");
+[1m[94m15 |[0m 
+[1m[94m16 |[0m CALL_METHOD
+[1m[94m17 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+[1m[94m18 |[0m     "deposit_batch"
+[1m[94m19 |[0m     Expression("FULL_WORKTOP");
+[1m[94m   |[0m[1m[91m                ^^^^^^^^^^^^^^[0m [1m[91minvalid expression[0m
+[1m[94m   |[0m
