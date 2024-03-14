@@ -76,7 +76,7 @@ blst = { version = "0.3.11", default-features = false, optional = false }
 bnum = { version = "0.7.0", default-features = false, features = ["numtraits"] }
 cargo_toml = { version = "0.15.3" }
 colored = { version = "2.0.0", default-features = false }
-const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+const-sha1 = { version = "0.3.0", default-features = false }
 criterion = { version = "0.3", features = ["html_reports"] }
 crossbeam = { version = "0.8.2" }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
@@ -84,7 +84,7 @@ ethnum = {version = "1.3.2", default-features = false }
 fixedstr = { version = "0.2.9" }
 hashbrown = { version = "0.13.2" }
 hex = { version = "0.4.3", default-features = false }
-indexmap = { version = "2.0.0-pre", git = "https://github.com/bluss/indexmap", rev = "eedabaca9f84e520eab01325b305c08f3773e66c", default-features = false }
+indexmap = { version = "2.2.5", default-features = false }
 itertools = { version = "0.10.3" }
 lazy_static = { version = "1.4.0" }
 linreg = { version = "0.2.0" }
@@ -119,7 +119,7 @@ walkdir = { version = "2.3.3", default-features = false }
 wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "radix-master", default-features = false,  features = ["ignore_custom_section"]}
 wasmer = { version = "2.2.1" }
 wasmer-compiler-singlepass = { version = "2.2.1" }
-wasmi = {  git = "https://github.com/radixdlt/wasmi.git", branch = "v0.23.0_store_clone"  }
+wasmi = {  git = "https://github.com/radixdlt/wasmi", branch = "v0.23.0_store_clone"  }
 wasmparser = { version = "0.107.0", default-features = false }
 
 # Both the release and test profiles use `panic = "unwind"` to allow certain parts of the Radix
