@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1mexpected type [String], found U32[0m
+[1m[91merror[0m: [1mexpected value of type String, found U32[0m
 [1m[94m  |[0m
 [1m[94m1 |[0m CALL_METHOD
 [1m[94m2 |[0m     Address(100u32)
