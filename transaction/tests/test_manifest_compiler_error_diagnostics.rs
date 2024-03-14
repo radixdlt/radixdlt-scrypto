@@ -33,12 +33,15 @@ fn test_manifest_parser_error_diagnostics_unexpected_token() {
     // UnexpectedToken
     check_manifest!("manifest_parser_error_unexpected_token_1");
     check_manifest!("manifest_parser_error_unexpected_token_2");
+    check_manifest!("manifest_parser_error_unexpected_token_3");
+    check_manifest!("manifest_parser_error_unexpected_token_4");
 }
 
 #[test]
 fn test_manifest_parser_error_diagnostics_unexpected_token_or_missing_semicolon() {
     // UnexpectedTokenOrMissingSemicolon
     check_manifest!("manifest_parser_error_unexpected_token_or_missing_semicolon_1");
+    check_manifest!("manifest_parser_error_unexpected_token_or_missing_semicolon_2");
 }
 
 #[test]
