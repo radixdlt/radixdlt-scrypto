@@ -1262,9 +1262,9 @@ fn generate_non_fungible_local_ids(
         ast::Value::Array(kind, values) => {
             if kind.value_kind != ast::ValueKind::NonFungibleLocalId {
                 return Err(GeneratorError::InvalidAstType {
-                    expected_type: ast::ValueKind::String,
+                    expected_type: ast::ValueKind::NonFungibleLocalId,
                     actual: kind.value_kind.clone(),
-                    span: value.span,
+                    span: kind.span,
                 });
             }
 
