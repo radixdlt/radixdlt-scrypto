@@ -1147,7 +1147,7 @@ dependencies = [
  "serde_json",
  "strum",
  "substate-store-interface",
- "syn 1.0.93",
+ "syn 1.0.109",
  "transaction",
  "utils",
  "wasm-instrument",
@@ -1186,7 +1186,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "radix-engine-common",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1196,7 +1196,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "sbor-derive-common",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1233,7 +1233,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "radix-engine-profiling",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1453,7 +1453,7 @@ dependencies = [
  "itertools",
  "proc-macro2",
  "quote",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]

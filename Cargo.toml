@@ -112,7 +112,7 @@ serde_json = { version = "1.0.105" }
 sha3 = { version = "0.10.8", default-features = false, optional = false }
 shared_memory = { version = "0.12.4" }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
-syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
+syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 trybuild = { version = "1.0.85" }
 wabt = { version = "0.10.0" }
 walkdir = { version = "2.3.3", default-features = false }
