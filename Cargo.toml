@@ -15,38 +15,121 @@ resolver = "1"
 #   to avoid falling back to the root workspace.
 
 members = [
-    "sbor",
-    "sbor-derive-common",
-    "sbor-derive",
-    "sbor-tests",
-    "scrypto",
-    "scrypto-derive",
-    "scrypto-test",
-    "scrypto-derive-tests",
-    "native-sdk",
     "blueprint-schema-init",
-    "transaction",
-    "transaction-scenarios",
-    "radix-engine",
-    "radix-engine-macros",
+    "monkey-tests",
+    "native-sdk",
     "radix-engine-common",
-    "radix-engine-interface",
     "radix-engine-derive",
+    "radix-engine-interface",
+    "radix-engine-macros",
     "radix-engine-profiling",
     "radix-engine-profiling/resources-tracker-macro",
     "radix-engine-tests",
-    "monkey-tests",
-    "substate-store-interface",
+    "radix-engine",
+    "sbor-derive-common",
+    "sbor-derive",
+    "sbor-tests",
+    "sbor",
+    "scrypto-derive-tests",
+    "scrypto-derive",
+    "scrypto-test",
+    "scrypto",
     "substate-store-impls",
+    "substate-store-interface",
     "substate-store-queries",
+    "transaction-scenarios",
+    "transaction",
     "utils",
 ]
+
+[workspace.dependencies]
+blueprint-schema-init = { path = "./blueprint-schema-init", default-features = false }
+monkey-tests = { path = "./monkey-tests", default-features = false }
+native-sdk = { path = "./native-sdk", default-features = false }
+radix-engine = { path = "./radix-engine", default-features = false }
+radix-engine-common = { path = "./radix-engine-common", default-features = false }
+radix-engine-derive = { path = "./radix-engine-derive", default-features = false }
+radix-engine-interface = { path = "./radix-engine-interface", default-features = false }
+radix-engine-macros = { path = "./radix-engine-macros", default-features = false }
+radix-engine-profiling = { path = "./radix-engine-profiling", default-features = false }
+radix-engine-tests = { path = "./radix-engine-tests", default-features = false }
+resources-tracker-macro = { path = "./radix-engine-profiling/resources-tracker-macro", default-features = false }
+sbor = { path = "./sbor", default-features = false }
+sbor-derive = { path = "./sbor-derive", default-features = false }
+sbor-derive-common = { path = "./sbor-derive-common", default-features = false }
+sbor-tests = { path = "./sbor-tests", default-features = false }
+scrypto = { path = "./scrypto", default-features = false }
+scrypto-derive = { path = "./scrypto-derive", default-features = false }
+scrypto-derive-tests = { path = "./scrypto-derive-tests", default-features = false }
+scrypto-test = { path = "./scrypto-test", default-features = false }
+substate-store-impls = { path = "./substate-store-impls", default-features = false }
+substate-store-interface = { path = "./substate-store-interface", default-features = false }
+substate-store-queries = { path = "./substate-store-queries", default-features = false }
+transaction = { path = "./transaction", default-features = false }
+transaction-scenarios = { path = "./transaction-scenarios", default-features = false }
+utils = { path = "./utils", default-features = false }
+
+arbitrary = { version = "1.3.0", features = ["derive"] }
+automod = { version = "1.0.13" }
+bech32 = { version = "0.9.0", default-features = false }
+bencher = { version = "0.1.5" }
+bincode = { version = "2.0.0-rc.1", default-features = false, features = ["derive"] }
+bitflags = { version = "1.3" }
+blake2 = { version = "0.10.6", default-features = false }
+blst = { version = "0.3.11", default-features = false, optional = false }
+bnum = { version = "0.7.0", default-features = false, features = ["numtraits"] }
+cargo_toml = { version = "0.15.3" }
+colored = { version = "2.0.0", default-features = false }
+const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+criterion = { version = "0.3", features = ["html_reports"] }
+crossbeam = { version = "0.8.2" }
+ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
+ethnum = {version = "1.3.2", default-features = false }
+fixedstr = { version = "0.2.9" }
+hashbrown = { version = "0.13.2" }
+hex = { version = "0.4.3", default-features = false }
+indexmap = { version = "2.0.0-pre", git = "https://github.com/bluss/indexmap", rev = "eedabaca9f84e520eab01325b305c08f3773e66c", default-features = false }
+itertools = { version = "0.10.3" }
+lazy_static = { version = "1.4.0" }
+linreg = { version = "0.2.0" }
+lru = { version = "0.8.1", default-features = false }
+minicov = { version = "0.3" }
+moka = { version = "0.9.9", features = ["sync"], default-features = false }
+num-bigint = { version = "0.4.3", default-features = false }
+num-integer = { version = "0.1.45", default-features = false }
+num-traits = { version = "0.2.15", default-features = false }
+ouroboros = { version = "0.17.2" }
+paste = { version = "1.0.13" }
+perfcnt = { version = "0.8.0" }
+plotters = { version = "0.3.4" }
+proc-macro2 = { version = "1.0.38" }
+quote = { version = "1.0.18" }
+rand = { version = "0.8.5" }
+rand_chacha = { version = "0.3.1" }
+rayon =  { version = "1.5.3" }
+regex = { version = "=1.9.3", default-features = false, features = [] }
+rocksdb = { version = "0.21.0" }
+rug = { version = "1.18" }
+secp256k1 = { version = "0.24.0", default-features = false, features = ["recovery"] }
+serde = { version = "1.0.144", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0.105" }
+sha3 = { version = "0.10.8", default-features = false, optional = false }
+shared_memory = { version = "0.12.4" }
+strum = { version = "0.24", default-features = false, features = ["derive"] }
+syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
+trybuild = { version = "1.0.85" }
+wabt = { version = "0.10.0" }
+walkdir = { version = "2.3.3", default-features = false }
+wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "radix-master", default-features = false,  features = ["ignore_custom_section"]}
+wasmer = { version = "2.2.1" }
+wasmer-compiler-singlepass = { version = "2.2.1" }
+wasmi = {  git = "https://github.com/radixdlt/wasmi.git", branch = "v0.23.0_store_clone"  }
+wasmparser = { version = "0.107.0", default-features = false }
 
 # Both the release and test profiles use `panic = "unwind"` to allow certain parts of the Radix
 # Engine to be able to catch panics. As an example, the native-vm has a `catch_unwind` to catch
 # all panics that may occur in the native blueprints and convert them to `Result`s instead of
 # crashing the engine.
-
 [profile.release]
 panic = "unwind"
 

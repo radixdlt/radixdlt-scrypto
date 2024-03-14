@@ -4,16 +4,15 @@ version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../sbor", default-features = false }
-utils = { path = "../utils", default-features = false }
-radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-radix-engine-common = { path = "../radix-engine-common", default-features = false, features = ["secp256k1_sign_and_validate"]}
-
-hex = { version = "0.4.3", default-features = false }
-serde = { version = "1.0.144", default-features = false, optional = true }
-lazy_static = "1.4.0"
-strum = { version = "0.24", default-features = false, features = ["derive"] }
-bech32 = { version = "0.9.0", default-features = false }
+sbor = { workspace = true }
+utils = { workspace = true }
+radix-engine-interface = { workspace = true }
+radix-engine-common = { workspace = true, features = ["secp256k1_sign_and_validate"]}
+hex = { workspace = true }
+serde = { workspace = true, optional = true }
+lazy_static = { workspace = true }
+strum = { workspace = true }
+bech32 = { workspace = true }
 
 [dev-dependencies]
 scrypto = { path = "../scrypto" }

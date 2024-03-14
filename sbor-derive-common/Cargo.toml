@@ -4,11 +4,11 @@ version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
-proc-macro2 = { version = "1.0.38" }
-syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
-quote = { version = "1.0.18" }
-const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
-itertools = { version = "0.10.3" }
+proc-macro2 = { workspace = true }
+syn = { workspace = true, features = ["full", "extra-traits"] }
+quote = { workspace = true }
+const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
+itertools = { workspace = true }
 
 [features]
 trace = []

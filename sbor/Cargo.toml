@@ -4,17 +4,17 @@ version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
-utils = { path = "../utils", default-features = false }
-hex = { version = "0.4.3", default-features = false }
-sbor-derive = { path = "../sbor-derive" }
-serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
-const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
-lazy_static = "1.4.0"
-paste = { version = "1.0.13" }
-arbitrary = { version = "1.3.0", features = ["derive"], optional = true }
+utils = { workspace = true }
+hex = { workspace = true }
+sbor-derive = { workspace = true }
+serde = { workspace = true, optional = true, features=["derive"] }
+const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
+lazy_static = { workspace = true }
+paste = { workspace = true }
+arbitrary = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
-serde_json = { version = "1.0.81", default-features = false }
+serde_json = { workspace = true }
 
 [features]
 # You should enable either `std` or `alloc`

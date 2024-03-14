@@ -5,26 +5,19 @@ edition = "2021"
 
 [dependencies]
 # The Radix Engine Stack
-sbor = { path = "../sbor", default-features = false }
-native-sdk = { path = "../native-sdk", default-features = false }
-transaction = { path = "../transaction", default-features = false }
-radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests", "db_checker"] }
-substate-store-impls = { path = "../substate-store-impls", default-features = false }
-radix-engine-common = { path = "../radix-engine-common", default-features = false }
-radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-substate-store-interface = { path = "../substate-store-interface", default-features = false }
-substate-store-queries = { path = "../substate-store-queries", default-features = false }
-wabt = { version = "0.10.0" }
-
-# A library used to allow for self-referencing structs in Rust. This is used in the TestRuntime's 
-# internal implementation to have do self-referencing.
-ouroboros = { version = "0.17.2" }
-
-# A library used for more powerful declarative macros.
-paste = { version = "1.0.14" }
-
-# Used for the JSON serialization and deserialization involved in the package compilation
-serde_json = { version = "1.0.105" }
+sbor = { workspace = true }
+native-sdk = { workspace = true }
+transaction = { workspace = true }
+radix-engine = { workspace = true, features = ["radix_engine_tests", "db_checker"] }
+substate-store-impls = { workspace = true }
+radix-engine-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+substate-store-interface = { workspace = true }
+substate-store-queries = { workspace = true }
+wabt = { workspace = true }
+ouroboros = { workspace = true }
+paste = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], default-features = false }

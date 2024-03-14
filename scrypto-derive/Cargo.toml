@@ -9,15 +9,15 @@ proc-macro = true
 bench = false
 
 [dependencies]
-proc-macro2 = { version = "1.0.38" }
-radix-engine-common = { path = "../radix-engine-common", default-features = false }
-syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
-quote = { version = "1.0.18" }
-serde = { version = "1.0.137", default-features = false }
-serde_json = { version = "1.0.81", default-features = false }
-blueprint-schema-init = { path = "../blueprint-schema-init", default-features = false }
-sbor = { path = "../sbor", default-features = false }
-regex = { version = "=1.9.3", default-features = false, features = [] }
+blueprint-schema-init = { workspace = true }
+sbor = { workspace = true }
+radix-engine-common = { workspace = true }
+proc-macro2 = { workspace = true }
+syn = { workspace = true, features = ["full", "extra-traits"] }
+quote = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex = { workspace = true, features = [] }
 
 [features]
 # Currently, dependencies of procedural macros are imported to host crates. This may accidentally 

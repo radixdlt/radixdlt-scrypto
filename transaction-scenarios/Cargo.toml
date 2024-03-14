@@ -4,19 +4,18 @@ version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../sbor", default-features = false }
-radix-engine = { path = "../radix-engine", default-features = false }
-substate-store-impls = { path = "../substate-store-impls", default-features = false }
-substate-store-interface = { path = "../substate-store-interface", default-features = false }
-radix-engine-common = { path = "../radix-engine-common", default-features = false }
-radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-blueprint-schema-init = { path = "../blueprint-schema-init", default-features = false }
-transaction = { path = "../transaction", default-features = false }
-utils = { path = "../utils", default-features = false }
-
-itertools = { version = "0.10.3", default-features = false }
-hex = { version = "0.4.3", default-features = false }
-walkdir = "2.3.3"
+sbor = { workspace = true }
+radix-engine = { workspace = true }
+substate-store-impls = { workspace = true }
+substate-store-interface = { workspace = true }
+radix-engine-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+blueprint-schema-init = { workspace = true }
+transaction = { workspace = true }
+utils = { workspace = true }
+itertools = { workspace = true }
+hex = { workspace = true }
+walkdir = { workspace = true }
 
 [features]
 # You should enable either `std` or `alloc`

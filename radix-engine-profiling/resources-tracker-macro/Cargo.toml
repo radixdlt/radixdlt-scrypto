@@ -9,10 +9,10 @@ proc-macro = true
 bench = false
 
 [dependencies]
-proc-macro2 = "1.0"
-syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
-quote = "1.0"
-radix-engine-profiling = { path = "../../radix-engine-profiling" }
+proc-macro2 = { workspace = true }
+syn = { workspace = true, features = ["full", "extra-traits"] }
+quote = { workspace = true }
+radix-engine-profiling = { workspace = true }
 
 [features]
 default = []

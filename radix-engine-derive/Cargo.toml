@@ -10,10 +10,10 @@ proc-macro = true
 bench = false
 
 [dependencies]
-proc-macro2 = { version = "1.0.38" }
-syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
-quote = { version = "1.0.18" }
-sbor-derive-common = { path = "../sbor-derive-common" }
+proc-macro2 = { workspace = true }
+syn = { workspace = true }
+quote = { workspace = true }
+sbor-derive-common = { workspace = true }
 
 [features]
 # Currently, dependencies of procedural macros are imported to host crates. This may accidentally 
