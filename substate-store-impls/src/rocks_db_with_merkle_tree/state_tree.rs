@@ -41,7 +41,7 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         state_tree_leaf_key: &StoredTreeNodeKey,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
-        substate_value: &DbSubstateValue,
+        substate_value: AssociatedSubstateValue,
     ) {
         // intentionally empty
     }

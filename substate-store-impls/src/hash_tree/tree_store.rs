@@ -8,7 +8,9 @@ use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
-use substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateKey, DbSubstateValue};
+use substate_store_interface::interface::{
+    DbPartitionKey, DbSortKey, DbSubstateKey, DbSubstateValue,
+};
 use utils::rust::collections::VecDeque;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
@@ -146,7 +148,7 @@ pub trait WriteableTreeStore {
     /// Inserts the node under a new, unique key (i.e. never an update).
     fn insert_node(&self, global_key: StoredTreeNodeKey, node: TreeNode);
 
-    /// Associates the actually upserted Substate entry with the given tree leaf key.
+    /// Associates an inserted Substate-Tier tree leaf with the Substate it represents.
     ///
     /// This method will be called after the [`Self::insert_node()`] of Substate-Tier leaf nodes,
     /// and allows the storage to keep correlated historical values, if required. The correlation
@@ -157,12 +159,26 @@ pub trait WriteableTreeStore {
         state_tree_leaf_key: &StoredTreeNodeKey,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
-        substate_value: &DbSubstateValue,
+        substate_value: AssociatedSubstateValue,
     );
 
     /// Marks the given tree part for a (potential) future removal by an arbitrary external pruning
     /// process.
     fn record_stale_tree_part(&self, global_tree_part: StaleTreePart);
+}
+
+/// A Substate value associated with a tree leaf (see [`WriteableTreeStore#associate_substate()`]).
+///
+/// Implementation note: _("why can't we simply pass `&DbSubstateValue` there?")_
+/// In JMT, a new leaf node may be inserted *not* only due to Substate upsert, but also as a result
+/// of a "tree restructuring" (an internal JMT behavior, needed e.g. when a previously-only-child
+/// gains a sibling). In such cases, the associated Substate itself is actually untouched, and we
+/// would have to load it from the [`SubstateDatabase`] (only to pass its value). We choose to
+/// avoid this potential performance implication by having an explicit way of associating an
+/// "unchanged" Substate with its new tree leaf.
+pub enum AssociatedSubstateValue<'v> {
+    Upserted(&'v DbSubstateValue),
+    Unchanged,
 }
 
 /// A complete tree node storage SPI.
@@ -174,7 +190,8 @@ impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
 pub struct TypedInMemoryTreeStore {
     pub tree_nodes: RefCell<HashMap<StoredTreeNodeKey, TreeNode>>,
     pub stale_part_buffer: RefCell<Vec<StaleTreePart>>,
-    pub associated_substates: RefCell<HashMap<StoredTreeNodeKey, (DbSubstateKey, DbSubstateValue)>>,
+    pub associated_substates:
+        RefCell<HashMap<StoredTreeNodeKey, (DbSubstateKey, Option<DbSubstateValue>)>>,
     pub pruning_enabled: bool,
     pub store_associated_substates: bool,
 }
@@ -235,12 +252,17 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
         state_tree_leaf_key: &StoredTreeNodeKey,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
-        substate_value: &DbSubstateValue,
+        substate_value: AssociatedSubstateValue,
     ) {
         if self.store_associated_substates {
-            self.associated_substates
-                .borrow_mut()
-                .insert(state_tree_leaf_key.clone(), ((partition_key.clone(), sort_key.clone()), substate_value.clone()));
+            let substate_value = match substate_value {
+                AssociatedSubstateValue::Upserted(value) => Some(value.clone()),
+                AssociatedSubstateValue::Unchanged => None,
+            };
+            self.associated_substates.borrow_mut().insert(
+                state_tree_leaf_key.clone(),
+                ((partition_key.clone(), sort_key.clone()), substate_value),
+            );
         }
     }
 
@@ -320,7 +342,7 @@ impl WriteableTreeStore for SerializedInMemoryTreeStore {
         _state_tree_leaf_key: &StoredTreeNodeKey,
         _partition_key: &DbPartitionKey,
         _sort_key: &DbSortKey,
-        _substate_value: &DbSubstateValue,
+        _substate_value: AssociatedSubstateValue,
     ) {
         // intentionally empty
     }
