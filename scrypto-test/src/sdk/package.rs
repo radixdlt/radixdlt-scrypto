@@ -86,7 +86,7 @@ impl PackageFactory {
             .unwrap_or_else(|err| panic!("Failed to initialize Scrypto Compiler  {:?}", err));
 
         // Build
-        let build_artifacts = compiler.compile().unwrap_or_else(|err| {
+        let mut build_artifacts = compiler.compile().unwrap_or_else(|err| {
             panic!(
                 "Failed to compile package: {:?}, error: {:?}",
                 path.as_ref(),
@@ -94,9 +94,14 @@ impl PackageFactory {
             )
         });
 
-        (
-            build_artifacts.wasm.content,
-            build_artifacts.package_definition.content,
-        )
+        if !build_artifacts.is_empty() {
+            let build_artifact = build_artifacts.remove(0);
+            (
+                build_artifact.wasm.content,
+                build_artifact.package_definition.content,
+            )
+        } else {
+            panic!("Build artifacts list is empty: {:?}", path.as_ref(),);
+        }
     }
 }

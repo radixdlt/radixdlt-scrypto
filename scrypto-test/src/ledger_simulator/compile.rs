@@ -55,7 +55,7 @@ impl Compile {
         };
 
         // Build
-        let build_artifacts = compiler.compile().unwrap_or_else(|error| {
+        let mut build_artifacts = compiler.compile().unwrap_or_else(|error| {
             match &error {
                 ScryptoCompilerError::CargoBuildFailure(exit_code) => {
                     eprintln!("Package compilation error:\n{:?}", exit_code)
@@ -70,9 +70,14 @@ impl Compile {
             );
         });
 
-        (
-            build_artifacts.wasm.content,
-            build_artifacts.package_definition.content,
-        )
+        if !build_artifacts.is_empty() {
+            let build_artifact = build_artifacts.remove(0);
+            (
+                build_artifact.wasm.content,
+                build_artifact.package_definition.content,
+            )
+        } else {
+            panic!("Build artifacts list is empty: {:?}", package_dir.as_ref(),);
+        }
     }
 }
