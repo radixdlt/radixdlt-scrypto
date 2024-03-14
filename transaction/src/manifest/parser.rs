@@ -58,6 +58,7 @@ pub enum InstructionIdent {
     CallRoyaltyMethod,
     CallMetadataMethod,
     CallRoleAssignmentMethod,
+    CallDirectVaultMethod,
     DropNamedProofs,
     DropAllProofs,
     AllocateGlobalAddress,
@@ -152,6 +153,7 @@ impl InstructionIdent {
             "CALL_ROYALTY_METHOD" => InstructionIdent::CallRoyaltyMethod,
             "CALL_METADATA_METHOD" => InstructionIdent::CallMetadataMethod,
             "CALL_ROLE_ASSIGNMENT_METHOD" => InstructionIdent::CallRoleAssignmentMethod,
+            "CALL_DIRECT_VAULT_METHOD" => InstructionIdent::CallDirectVaultMethod,
 
             "DROP_NAMED_PROOFS" => InstructionIdent::DropNamedProofs,
             "DROP_ALL_PROOFS" => InstructionIdent::DropAllProofs,
@@ -601,6 +603,11 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::CallRoleAssignmentMethod => Instruction::CallRoleAssignmentMethod {
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::CallDirectVaultMethod => Instruction::CallDirectVaultMethod {
                 address: self.parse_value()?,
                 method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,

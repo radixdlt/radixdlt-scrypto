@@ -563,6 +563,23 @@ where
                 args,
             }
         }
+        ast::Instruction::CallDirectVaultMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            let address = generate_internal_address(address, address_bech32_decoder)?;
+            let method_name = generate_string(&method_name)?;
+            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
+            id_validator
+                .process_call_data(&args)
+                .map_err(GeneratorError::IdValidationError)?;
+            InstructionV1::CallDirectVaultMethod {
+                address,
+                method_name,
+                args,
+            }
+        }
 
         ast::Instruction::DropNamedProofs => {
             id_validator
@@ -941,6 +958,26 @@ fn generate_dynamic_global_address(
             ast::ValueKind::ComponentAddress,
             ast::ValueKind::NamedAddress
         ),
+    }
+}
+
+fn generate_internal_address(
+    value: &ast::Value,
+    address_bech32_decoder: &AddressBech32Decoder,
+) -> Result<InternalAddress, GeneratorError> {
+    match value {
+        ast::Value::Address(value) => match value.borrow() {
+            ast::Value::String(s) => {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
+                    if let Ok(address) = InternalAddress::try_from(full_data.as_ref()) {
+                        return Ok(address);
+                    }
+                }
+                return Err(GeneratorError::InvalidInternalAddress(s.into()));
+            }
+            v => return invalid_type!(v, ast::ValueKind::String),
+        },
+        v => invalid_type!(v, ast::ValueKind::Address),
     }
 }
 
