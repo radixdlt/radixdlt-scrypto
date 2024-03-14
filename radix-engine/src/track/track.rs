@@ -4,7 +4,6 @@ use crate::track::interface::{
     CommitableSubstateStore, IOAccess, NodeSubstates, TrackedSubstateInfo,
 };
 use crate::track::state_updates::*;
-use crate::track::utils::OverlayingResultIterator;
 use crate::track::BootStore;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::btree_map::Entry;

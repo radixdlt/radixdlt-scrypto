@@ -71,6 +71,10 @@ impl EnabledModules {
     pub fn for_preview() -> Self {
         Self::for_notarized_transaction() | Self::EXECUTION_TRACE
     }
+
+    pub fn for_preview_no_auth() -> Self {
+        Self::for_preview() - Self::AUTH
+    }
 }
 
 #[allow(dead_code)]

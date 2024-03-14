@@ -8,7 +8,7 @@ pub use radix_engine::blueprints::identity::*;
 pub use radix_engine::blueprints::models::*;
 pub use radix_engine::blueprints::native_schema::*;
 pub use radix_engine::blueprints::package::*;
-pub use radix_engine::blueprints::pool::*;
+pub use radix_engine::blueprints::pool::v1 as pool;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_processor::*;
 pub use radix_engine::blueprints::transaction_tracker::*;

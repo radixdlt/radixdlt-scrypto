@@ -1,10 +1,10 @@
 use crate::hash_tree::put_at_next_version;
-use crate::hash_tree::tree_store::{
-    NodeKey, ReadableTreeStore, StaleTreePart, TreeNode, WriteableTreeStore,
-};
+use crate::hash_tree::tree_store::*;
 use radix_engine_common::prelude::Hash;
 use std::cell::RefCell;
-use substate_store_interface::interface::DatabaseUpdates;
+use substate_store_interface::interface::{
+    DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
+};
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
@@ -25,14 +25,25 @@ impl<'s, S: ReadableTreeStore> CollectingTreeStore<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.readable_delegate.get_node(key)
     }
 }
 
 impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
-    fn insert_node(&self, key: NodeKey, node: TreeNode) {
+    fn insert_node(&self, key: StoredTreeNodeKey, node: TreeNode) {
         self.diff.new_nodes.borrow_mut().push((key, node));
+    }
+
+    #[allow(unused_variables)]
+    fn associate_substate(
+        &self,
+        state_tree_leaf_key: &StoredTreeNodeKey,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+        substate_value: &DbSubstateValue,
+    ) {
+        // intentionally empty
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {
@@ -42,7 +53,7 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
 
 #[derive(Clone)]
 pub struct StateHashTreeDiff {
-    pub new_nodes: RefCell<Vec<(NodeKey, TreeNode)>>,
+    pub new_nodes: RefCell<Vec<(StoredTreeNodeKey, TreeNode)>>,
     pub stale_tree_parts: RefCell<Vec<StaleTreePart>>,
 }
 

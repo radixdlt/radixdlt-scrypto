@@ -872,6 +872,20 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         reader.read_typed_kv_entry(kv_store_id.as_node_id(), key)
     }
 
+    pub fn get_fungible_resource_total_supply(&self, resource: ResourceAddress) -> Decimal {
+        let total_supply = self
+            .substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
+                &resource.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &FungibleResourceManagerField::TotalSupply.into(),
+            )
+            .unwrap()
+            .into_payload()
+            .into_latest();
+        total_supply
+    }
+
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -1173,6 +1187,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         package_address
     }
 
+    /// Publishes a package at a specified address.
+    ///
+    /// This is for testing only. On real networks, this operation is not allowed to users.
     pub fn publish_package_at_address<P: Into<PackagePublishingSource>>(
         &mut self,
         source: P,

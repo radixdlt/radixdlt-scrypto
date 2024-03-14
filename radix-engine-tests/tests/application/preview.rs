@@ -21,6 +21,7 @@ fn test_transaction_preview_cost_estimate() {
         use_free_credit: true,
         assume_all_signature_proofs: false,
         skip_epoch_check: false,
+        disable_auth: false,
     };
     let (notarized_transaction, preview_intent) = prepare_matching_test_tx_and_preview_intent(
         &mut ledger,
@@ -86,6 +87,7 @@ fn test_transaction_preview_without_locking_fee() {
         use_free_credit: true,
         assume_all_signature_proofs: false,
         skip_epoch_check: false,
+        disable_auth: false,
     };
     let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(
         &mut ledger,
@@ -120,6 +122,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
         use_free_credit: true,
         assume_all_signature_proofs: true,
         skip_epoch_check: false,
+        disable_auth: false,
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone
@@ -141,6 +144,63 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 
     // Assert
     result.unwrap().expect_commit_success();
+}
+
+#[test]
+fn test_preview_no_auth() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new()
+        .with_custom_genesis(CustomGenesis::default(
+            Epoch::of(1),
+            CustomGenesis::default_consensus_manager_config(),
+        ))
+        .build();
+    let network = NetworkDefinition::simulator();
+
+    let preview_flags = PreviewFlags {
+        use_free_credit: true,
+        assume_all_signature_proofs: false,
+        skip_epoch_check: false,
+        disable_auth: true,
+    };
+
+    // Everything is possible without auth, even ConsensusManager calls!
+    let next_round = 99;
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            CONSENSUS_MANAGER,
+            CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            ConsensusManagerNextRoundInput {
+                round: Round::of(next_round),
+                proposer_timestamp_ms: 100,
+                leader_proposal_history: LeaderProposalHistory {
+                    gap_round_leaders: (1..next_round)
+                        .map(|_| 0)
+                        .collect(),
+                    current_leader: 0,
+                    is_fallback: false,
+                },
+            }
+        )
+        .build();
+
+    let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(
+        &mut ledger,
+        &network,
+        manifest,
+        &preview_flags,
+    );
+
+    // Act
+    let result = ledger.preview(preview_intent, &network);
+
+    // Assert
+    result
+        .unwrap()
+        .expect_commit_success()
+        .state_updates
+        .by_node
+        .contains_key(CONSENSUS_MANAGER.as_node_id());
 }
 
 fn prepare_matching_test_tx_and_preview_intent(

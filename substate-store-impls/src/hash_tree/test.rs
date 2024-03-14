@@ -1,21 +1,21 @@
-use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
-use crate::hash_tree::jellyfish::JellyfishMerkleTree;
-use crate::hash_tree::tree_store::{
-    SerializedInMemoryTreeStore, StaleTreePart, TreeChildEntry, TreeInternalNode, TreeLeafNode,
-    TreeNode, TreeStore, TypedInMemoryTreeStore,
-};
-use crate::hash_tree::types::{LeafKey, NodeKey};
-use crate::hash_tree::{put_at_next_version, NestedTreeStore};
+use super::jellyfish::JellyfishMerkleTree;
+use super::tier_framework::{StateTreeTier, TIER_SEPARATOR};
+use super::tree_store::*;
+use super::types::*;
+use crate::hash_tree::entity_tier::EntityTier;
+use crate::hash_tree::substate_tier::SubstateSummary;
 use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::prelude::indexmap::indexmap;
-use substate_store_interface::interface::{
-    DatabaseUpdate, DatabaseUpdates, DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
-    DbSubstateKey, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
-};
-use utils::prelude::{index_map_new, IndexMap};
-use utils::rust::collections::{hashmap, hashset, HashMap, HashSet};
+use std::cell::RefCell;
+use std::ops::Deref;
+use substate_store_interface::interface::*;
+use utils::prelude::*;
+
+// Note: in some tests, we assert on the low-level DB key encoding, so we need this detail, and
+// we alias it for brevity.
+const TSEP: u8 = TIER_SEPARATOR;
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
@@ -200,13 +200,13 @@ fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
         partition_tier_leaf_keys,
         hashset!(
             LeafKey {
-                bytes: vec![1, 3, 3, 7, TIER_SEP, 99]
+                bytes: vec![1, 3, 3, 7, TSEP, 99]
             },
             LeafKey {
-                bytes: vec![123, 12, 1, 0, TIER_SEP, 66]
+                bytes: vec![123, 12, 1, 0, TSEP, 66]
             },
             LeafKey {
-                bytes: vec![123, 12, 1, 0, TIER_SEP, 88]
+                bytes: vec![123, 12, 1, 0, TSEP, 88]
             },
         )
     );
@@ -216,11 +216,44 @@ fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
     assert_eq!(
         substate_tier_leaves,
         hashmap!(
-            LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEP, 99, TIER_SEP, 253] } => hash([1]),
-            LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEP, 99, TIER_SEP, 66] } => hash([2]),
-            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEP, 88, TIER_SEP, 6, 6, 6] } => hash([3]),
-            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEP, 88, TIER_SEP, 6, 6, 7] } => hash([4]),
-            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEP, 66, TIER_SEP, 1, 2, 3] } => hash([5]),
+            LeafKey { bytes: vec![1, 3, 3, 7, TSEP, 99, TSEP, 253] } => hash([1]),
+            LeafKey { bytes: vec![1, 3, 3, 7, TSEP, 99, TSEP, 66] } => hash([2]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TSEP, 88, TSEP, 6, 6, 6] } => hash([3]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TSEP, 88, TSEP, 6, 6, 7] } => hash([4]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TSEP, 66, TSEP, 1, 2, 3] } => hash([5]),
+        )
+    );
+}
+
+#[test]
+fn substate_values_get_associated_with_substate_tier_leaves() {
+    let mut tester = HashTreeTester::new(SubstateValueAssociationStore::default());
+    tester.put_substate_changes(vec![
+        change_exact(vec![123, 12, 1], 8, vec![6, 6, 1], Some(vec![4])),
+        change_exact(vec![123, 12, 1], 8, vec![6, 6, 2], Some(vec![])),
+        change_exact(vec![123, 12, 1], 8, vec![6, 7, 5, 9], Some(vec![1, 2])),
+        change_exact(vec![220, 3], 99, vec![253], Some(vec![7; 66])),
+    ]);
+
+    let associated_substates = tester.tree_store.associated_substates.borrow();
+    assert_eq!(
+        associated_substates.deref(),
+        &hashmap!(
+            // 2 incidentally-complete node keys: (they differ only at their last byte)
+            StoredTreeNodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 6, 1])) => (
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 6, 1])), vec![4]
+            ),
+            StoredTreeNodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 6, 2])) => (
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 6, 2])), vec![]
+            ),
+            // A slightly-incomplete node key: (cut short at the first byte it differs)
+            StoredTreeNodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 7])) => (
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 7, 5, 9])), vec![1, 2]
+            ),
+            // A very incomplete node key, representing Substate-Tier root: (since it is the only Substate within its partition)
+            StoredTreeNodeKey::new(1, NibblePath::new_even(vec![220, 3, TSEP, 99, TSEP])) => (
+                (partition_key(vec![220, 3], 99), DbSortKey(vec![253])), vec![7; 66]
+            ),
         )
     );
 }
@@ -244,11 +277,11 @@ fn deletes_node_tier_leaf_when_all_its_entries_deleted() {
 fn supports_empty_state() {
     let mut tester = HashTreeTester::new_empty();
     let hash_v1 = tester.put_substate_changes(vec![]);
-    assert_eq!(hash_v1, SPARSE_MERKLE_PLACEHOLDER_HASH);
+    assert_eq!(hash_v1, None);
     let hash_v2 = tester.put_substate_changes(vec![change(1, 6, 2, Some(30))]);
-    assert_ne!(hash_v2, SPARSE_MERKLE_PLACEHOLDER_HASH);
+    assert_ne!(hash_v2, None);
     let hash_v3 = tester.put_substate_changes(vec![change(1, 6, 2, None)]);
-    assert_eq!(hash_v3, SPARSE_MERKLE_PLACEHOLDER_HASH);
+    assert_eq!(hash_v3, None);
 }
 
 #[test]
@@ -335,16 +368,16 @@ fn records_stale_subtree_root_key_when_partition_removed() {
         tester.tree_store.stale_part_buffer.borrow().to_vec(),
         vec![
             // The entire subtree starting at the root of substate-tier JMT of partition `4:7`:
-            StaleTreePart::Subtree(NodeKey::new(
+            StaleTreePart::Subtree(StoredTreeNodeKey::new(
                 1,
-                NibblePath::new_even([from_seed(4), vec![TIER_SEP, 7, TIER_SEP]].concat())
+                NibblePath::new_even([from_seed(4), vec![TSEP, 7, TSEP]].concat())
             )),
             // Regular single-node stale nodes up to the root, caused by hash update:
-            StaleTreePart::Node(NodeKey::new(
+            StaleTreePart::Node(StoredTreeNodeKey::new(
                 1,
-                NibblePath::new_even([from_seed(4), vec![TIER_SEP]].concat())
+                NibblePath::new_even([from_seed(4), vec![TSEP]].concat())
             )),
-            StaleTreePart::Node(NodeKey::new(1, NibblePath::new_even(vec![]))),
+            StaleTreePart::Node(StoredTreeNodeKey::new(1, NibblePath::new_even(vec![]))),
             // Importantly: individual 3x deletes of substate-tier nodes are not recorded
         ]
     );
@@ -399,7 +432,7 @@ fn sbor_decodes_what_was_encoded() {
 
 #[test]
 fn serialized_keys_are_strictly_increasing() {
-    let mut tester = HashTreeTester::new(SerializedInMemoryTreeStore::new(), None);
+    let mut tester = HashTreeTester::new(SerializedInMemoryTreeStore::new());
     tester.put_substate_changes(vec![change(3, 6, 4, Some(90))]);
     let previous_keys = tester
         .tree_store
@@ -416,6 +449,339 @@ fn serialized_keys_are_strictly_increasing() {
         .unwrap();
     let max_previous_key = previous_keys.iter().max().unwrap();
     assert!(min_next_key > max_previous_key);
+}
+
+#[test]
+fn returns_partition_tier_for_entity_id() {
+    let mut tester = HashTreeTester::new_empty();
+    tester.put_substate_changes(vec![
+        change(1, 9, 6, Some(196)),
+        change(2, 3, 4, Some(234)),
+        change(2, 3, 5, Some(235)),
+        change(2, 4, 7, Some(237)),
+    ]);
+
+    let existent_partition_tier = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(1));
+    assert!(existent_partition_tier.root_version().is_some());
+
+    let non_existent_partition_tier = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3));
+    assert!(non_existent_partition_tier.root_version().is_none());
+}
+
+#[test]
+fn lists_partition_tiers() {
+    let mut tester = HashTreeTester::new_empty();
+    tester.put_substate_changes(vec![
+        change(2, 9, 6, Some(196)),
+        change(4, 3, 4, Some(234)),
+        change(4, 3, 5, Some(235)),
+        change(9, 4, 7, Some(237)),
+    ]);
+
+    let all_partition_tiers = tester
+        .create_subject()
+        .iter_entity_partition_tiers_from(None)
+        .map(|tier| tier.entity_key().clone())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        all_partition_tiers,
+        vec![from_seed(2), from_seed(4), from_seed(9)]
+    );
+
+    let from_existent = tester
+        .create_subject()
+        .iter_entity_partition_tiers_from(Some(&from_seed(4)))
+        .map(|tier| tier.entity_key().clone())
+        .collect::<Vec<_>>();
+    assert_eq!(from_existent, vec![from_seed(4), from_seed(9)]);
+
+    let from_non_existent = tester
+        .create_subject()
+        .iter_entity_partition_tiers_from(Some(&from_seed(3)))
+        .map(|tier| tier.entity_key().clone())
+        .collect::<Vec<_>>();
+    assert_eq!(from_non_existent, vec![from_seed(4), from_seed(9)]);
+
+    let from_lt_min = tester
+        .create_subject()
+        .iter_entity_partition_tiers_from(Some(&from_seed(1)))
+        .map(|tier| tier.entity_key().clone())
+        .collect::<Vec<_>>();
+    assert_eq!(from_lt_min, vec![from_seed(2), from_seed(4), from_seed(9)]);
+
+    let from_gt_max = tester
+        .create_subject()
+        .iter_entity_partition_tiers_from(Some(&from_seed(14)))
+        .map(|tier| tier.entity_key().clone())
+        .collect::<Vec<_>>();
+    assert!(from_gt_max.is_empty());
+}
+
+#[test]
+fn returns_substate_tier_for_partition_num() {
+    let mut tester = HashTreeTester::new_empty();
+    tester.put_substate_changes(vec![
+        change(1, 9, 6, Some(196)),
+        change(2, 3, 4, Some(234)),
+        change(2, 3, 5, Some(235)),
+        change(2, 4, 7, Some(237)),
+    ]);
+
+    let existent_substate_tier = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(2))
+        .get_partition_substate_tier(3);
+    assert!(existent_substate_tier.root_version().is_some());
+
+    let non_existent_from_entity = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .get_partition_substate_tier(3);
+    assert!(non_existent_from_entity.root_version().is_none());
+
+    let non_existent_from_partition = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(2))
+        .get_partition_substate_tier(5);
+    assert!(non_existent_from_partition.root_version().is_none());
+}
+
+#[test]
+fn lists_substate_tiers() {
+    let mut tester = HashTreeTester::new_empty();
+    tester.put_substate_changes(vec![
+        change(1, 9, 6, Some(196)),
+        change(3, 2, 4, Some(234)),
+        change(3, 6, 5, Some(235)),
+        change(3, 7, 4, Some(234)),
+        change(9, 4, 7, Some(237)),
+    ]);
+
+    let all_substate_tiers = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .iter_partition_substate_tiers_from(None)
+        .map(|tier| tier.partition_key().partition_num)
+        .collect::<Vec<_>>();
+    assert_eq!(all_substate_tiers, vec![2, 6, 7]);
+
+    let from_existent = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .iter_partition_substate_tiers_from(Some(6))
+        .map(|tier| tier.partition_key().partition_num)
+        .collect::<Vec<_>>();
+    assert_eq!(from_existent, vec![6, 7]);
+
+    let from_non_existent = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .iter_partition_substate_tiers_from(Some(4))
+        .map(|tier| tier.partition_key().partition_num)
+        .collect::<Vec<_>>();
+    assert_eq!(from_non_existent, vec![6, 7]);
+
+    let from_lt_min = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .iter_partition_substate_tiers_from(Some(1))
+        .map(|tier| tier.partition_key().partition_num)
+        .collect::<Vec<_>>();
+    assert_eq!(from_lt_min, vec![2, 6, 7]);
+
+    let from_gt_max = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .iter_partition_substate_tiers_from(Some(9))
+        .map(|tier| tier.partition_key().partition_num)
+        .collect::<Vec<_>>();
+    assert_eq!(from_gt_max, vec![]);
+}
+
+#[test]
+fn returns_substate_summary_by_sort_key() {
+    let mut tester = HashTreeTester::new_empty();
+    tester.put_substate_changes(vec![
+        change(1, 9, 6, Some(196)),
+        change(2, 3, 4, Some(234)),
+        change(2, 3, 5, Some(235)),
+        change(2, 4, 7, Some(237)),
+    ]);
+
+    let existent_substate = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(2))
+        .get_partition_substate_tier(3)
+        .get_substate_summary(&DbSortKey(from_seed(5)));
+    assert_eq!(
+        existent_substate,
+        Some(SubstateSummary {
+            sort_key: DbSortKey(from_seed(5)),
+            upsert_version: 1,
+            value_hash: hash(from_seed(235)),
+            state_tree_leaf_key: stored_node_key(1, vec![2, 2, TSEP, 3, TSEP, 5]),
+        })
+    );
+
+    let non_existent_from_entity = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .get_partition_substate_tier(3)
+        .get_substate_summary(&DbSortKey(from_seed(5)));
+    assert_eq!(non_existent_from_entity, None);
+
+    let non_existent_from_partition = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(2))
+        .get_partition_substate_tier(5)
+        .get_substate_summary(&DbSortKey(from_seed(5)));
+    assert_eq!(non_existent_from_partition, None);
+
+    let non_existent_from_sort_key = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(2))
+        .get_partition_substate_tier(3)
+        .get_substate_summary(&DbSortKey(from_seed(6)));
+    assert_eq!(non_existent_from_sort_key, None);
+}
+
+#[test]
+fn lists_substate_summaries() {
+    let mut tester = HashTreeTester::new_empty();
+    // This use-case is the most important one; we want to test multiple versions/upserts/deletes:
+    tester.put_substate_changes(vec![
+        change(1, 9, 1, Some(196)), // irrelevant node
+        change(3, 2, 6, Some(16)),  // Note: this one will be overwritten!
+    ]);
+    tester.put_substate_changes(vec![
+        change(3, 2, 4, Some(24)),
+        change(3, 2, 7, Some(27)), // Note: this one will be deleted!
+    ]);
+    tester.put_substate_changes(vec![
+        change(3, 2, 6, Some(36)), // (the overwrite)
+        change(3, 2, 7, None),     // (the delete)
+        change(3, 2, 8, Some(38)),
+        change(3, 4, 7, Some(237)), // irrelevant partition
+    ]);
+
+    // Handcrafted expected substates of Entity=3, Partition=2, at current version=3:
+    let known_substate_summaries = vec![
+        SubstateSummary {
+            sort_key: DbSortKey(from_seed(4)),
+            upsert_version: 2,
+            value_hash: hash(from_seed(24)),
+            state_tree_leaf_key: stored_node_key(2, vec![3, 3, 3, TSEP, 2, TSEP, 4]),
+        },
+        SubstateSummary {
+            sort_key: DbSortKey(from_seed(6)),
+            upsert_version: 3,
+            value_hash: hash(from_seed(36)),
+            state_tree_leaf_key: stored_node_key(3, vec![3, 3, 3, TSEP, 2, TSEP, 6]),
+        },
+        SubstateSummary {
+            sort_key: DbSortKey(from_seed(8)),
+            upsert_version: 3,
+            value_hash: hash(from_seed(38)),
+            state_tree_leaf_key: stored_node_key(3, vec![3, 3, 3, TSEP, 2, TSEP, 8]),
+        },
+    ];
+
+    let all_substate_summaries = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .get_partition_substate_tier(2)
+        .iter_substate_summaries_from(None)
+        .collect::<Vec<_>>();
+    assert_eq!(all_substate_summaries, known_substate_summaries);
+
+    let from_existent = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .get_partition_substate_tier(2)
+        .iter_substate_summaries_from(Some(&DbSortKey(from_seed(6))))
+        .collect::<Vec<_>>();
+    assert_eq!(from_existent, known_substate_summaries[1..]);
+
+    let from_non_existent = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .get_partition_substate_tier(2)
+        .iter_substate_summaries_from(Some(&DbSortKey(from_seed(5))))
+        .collect::<Vec<_>>();
+    assert_eq!(from_non_existent, known_substate_summaries[1..]);
+
+    let from_lt_min = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .get_partition_substate_tier(2)
+        .iter_substate_summaries_from(Some(&DbSortKey(from_seed(1))))
+        .collect::<Vec<_>>();
+    assert_eq!(from_lt_min, known_substate_summaries);
+
+    let from_gt_max = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .get_partition_substate_tier(2)
+        .iter_substate_summaries_from(Some(&DbSortKey(from_seed(9))))
+        .collect::<Vec<_>>();
+    assert_eq!(from_gt_max, vec![]);
+
+    // We do not use this in practice, but the tree is capable of starting listing from prefix too:
+    let from_prefix = tester
+        .create_subject()
+        .get_entity_partition_tier(from_seed(3))
+        .get_partition_substate_tier(2)
+        .iter_substate_summaries_from(Some(&DbSortKey(from_seed(8)[..3].to_vec())))
+        .collect::<Vec<_>>();
+    assert_eq!(from_prefix, known_substate_summaries[2..]); // we get the last element, `from_seed(8)`
+}
+
+#[test]
+fn lists_historical_substate_summaries() {
+    let mut tester = HashTreeTester::new_empty();
+    // We use the same set-up as in `lists_substate_summaries()`:
+    tester.put_substate_changes(vec![
+        change(1, 9, 1, Some(196)), // irrelevant node
+        change(3, 2, 6, Some(16)),  // Note: this one will be overwritten!
+    ]);
+    tester.put_substate_changes(vec![
+        change(3, 2, 4, Some(24)),
+        change(3, 2, 7, Some(27)), // Note: this one will be deleted!
+    ]);
+    tester.put_substate_changes(vec![
+        change(3, 2, 6, Some(36)), // (the overwrite)
+        change(3, 2, 7, None),     // (the delete)
+        change(3, 2, 8, Some(38)),
+        change(3, 4, 7, Some(237)), // irrelevant partition
+    ]);
+
+    let historical_substates = EntityTier::new(&tester.tree_store, Some(2))
+        .get_entity_partition_tier(from_seed(3))
+        .get_partition_substate_tier(2)
+        .iter_substate_summaries_from(Some(&DbSortKey(from_seed(5))))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        historical_substates,
+        vec![
+            SubstateSummary {
+                sort_key: DbSortKey(from_seed(6)),
+                upsert_version: 1,
+                value_hash: hash(from_seed(16)), // the value before update
+                state_tree_leaf_key: stored_node_key(2, vec![3, 3, 3, TSEP, 2, TSEP, 6]),
+            },
+            SubstateSummary {
+                sort_key: DbSortKey(from_seed(7)), // this one gets later deleted
+                upsert_version: 2,
+                value_hash: hash(from_seed(27)),
+                state_tree_leaf_key: stored_node_key(2, vec![3, 3, 3, TSEP, 2, TSEP, 7]),
+            },
+            // substate `from_seed(8)` gets created later
+        ]
+    );
 }
 
 type SingleSubstateChange = (DbSubstateKey, DatabaseUpdate);
@@ -441,21 +807,26 @@ pub fn change_exact(
     value: Option<Vec<u8>>,
 ) -> SingleSubstateChange {
     (
-        (
-            DbPartitionKey {
-                node_key,
-                partition_num,
-            },
-            DbSortKey(sort_key),
-        ),
+        (partition_key(node_key, partition_num), DbSortKey(sort_key)),
         value
             .map(|value| DatabaseUpdate::Set(value))
             .unwrap_or(DatabaseUpdate::Delete),
     )
 }
 
-fn from_seed(node_key_seed: u8) -> Vec<u8> {
-    vec![node_key_seed; node_key_seed as usize]
+fn partition_key(node_key: Vec<u8>, partition_num: u8) -> DbPartitionKey {
+    DbPartitionKey {
+        node_key,
+        partition_num,
+    }
+}
+
+fn from_seed(seed: u8) -> Vec<u8> {
+    vec![seed; seed as usize]
+}
+
+fn stored_node_key(version: Version, bytes: Vec<u8>) -> StoredTreeNodeKey {
+    StoredTreeNodeKey::new(version, NibblePath::new_even(bytes))
 }
 
 fn nibbles(hex_string: &str) -> NibblePath {
@@ -472,26 +843,23 @@ pub enum Tier {
     Substate,
 }
 
-// Note: in some tests, we assert on the low-level DB key encoding, so we need this detail
-const TIER_SEP: u8 = NestedTreeStore::<()>::TIER_SEPARATOR;
-
 pub struct HashTreeTester<S> {
     pub tree_store: S,
     pub current_version: Option<Version>,
 }
 
 impl<S: TreeStore> HashTreeTester<S> {
-    pub fn new(tree_store: S, current_version: Option<Version>) -> Self {
+    pub fn new(tree_store: S) -> Self {
         Self {
             tree_store,
-            current_version,
+            current_version: None,
         }
     }
 
     pub fn put_substate_changes(
         &mut self,
         changes: impl IntoIterator<Item = SingleSubstateChange>,
-    ) -> Hash {
+    ) -> Option<Hash> {
         self.apply_database_updates(&DatabaseUpdates::from_delta_maps(
             Self::index_to_delta_maps(changes),
         ))
@@ -502,7 +870,7 @@ impl<S: TreeStore> HashTreeTester<S> {
         node_key: DbNodeKey,
         partition_num: DbPartitionNum,
         values: impl IntoIterator<Item = (DbSortKey, DbSubstateValue)>,
-    ) -> Hash {
+    ) -> Option<Hash> {
         self.apply_database_updates(&DatabaseUpdates {
             node_updates: indexmap!(
                 node_key => NodeDatabaseUpdates {
@@ -516,10 +884,15 @@ impl<S: TreeStore> HashTreeTester<S> {
         })
     }
 
-    fn apply_database_updates(&mut self, database_updates: &DatabaseUpdates) -> Hash {
-        let next_version = self.current_version.unwrap_or(0) + 1;
-        let current_version = self.current_version.replace(next_version);
-        put_at_next_version(&mut self.tree_store, current_version, database_updates)
+    pub fn create_subject(&self) -> EntityTier<S> {
+        EntityTier::new(&self.tree_store, self.current_version)
+    }
+
+    fn apply_database_updates(&mut self, database_updates: &DatabaseUpdates) -> Option<Hash> {
+        let mut entity_tier = self.create_subject();
+        let new_root_hash = entity_tier.put_next_version_entity_updates(database_updates);
+        self.current_version = entity_tier.root_version();
+        new_root_hash
     }
 
     fn index_to_delta_maps(
@@ -539,7 +912,7 @@ impl<S: TreeStore> HashTreeTester<S> {
 
 impl HashTreeTester<TypedInMemoryTreeStore> {
     pub fn new_empty() -> Self {
-        Self::new(TypedInMemoryTreeStore::new(), None)
+        Self::new(TypedInMemoryTreeStore::new())
     }
 
     pub fn get_leafs_of_tier(&mut self, tier: Tier) -> HashMap<LeafKey, Hash> {
@@ -549,8 +922,14 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
             .flat_map(|stale_part| match stale_part {
                 StaleTreePart::Node(key) => vec![key],
                 StaleTreePart::Subtree(key) => JellyfishMerkleTree::new(&mut self.tree_store)
-                    .get_all_nodes_referenced(key)
-                    .unwrap(),
+                    .get_all_nodes_referenced(TreeNodeKey::new(
+                        key.version(),
+                        key.nibble_path().clone(),
+                    ))
+                    .unwrap()
+                    .into_iter()
+                    .map(|key| StoredTreeNodeKey::unprefixed(key))
+                    .collect(),
             })
             .collect::<HashSet<_>>();
         let expected_separator_count = tier as usize;
@@ -563,7 +942,7 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
                     .nibble_path()
                     .bytes()
                     .iter()
-                    .filter(|byte| **byte == TIER_SEP)
+                    .filter(|byte| **byte == TSEP)
                     .count();
                 separator_count == expected_separator_count
             })
@@ -578,7 +957,7 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
             .collect()
     }
 
-    fn leaf_key(node_key: &NodeKey, suffix_from_leaf: &NibblePath) -> LeafKey {
+    fn leaf_key(node_key: &StoredTreeNodeKey, suffix_from_leaf: &NibblePath) -> LeafKey {
         LeafKey::new(
             NibblePath::from_iter(
                 node_key
@@ -588,5 +967,43 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
             )
             .bytes(),
         )
+    }
+}
+
+/// A degenerate, test [`TreeStore`] which only stores associated Substate values.
+#[derive(Debug, Default)]
+struct SubstateValueAssociationStore {
+    associated_substates: RefCell<HashMap<StoredTreeNodeKey, (DbSubstateKey, DbSubstateValue)>>,
+}
+
+impl ReadableTreeStore for SubstateValueAssociationStore {
+    fn get_node(&self, _key: &StoredTreeNodeKey) -> Option<TreeNode> {
+        None
+    }
+}
+
+impl WriteableTreeStore for SubstateValueAssociationStore {
+    fn insert_node(&self, _key: StoredTreeNodeKey, _node: TreeNode) {
+        // deliberately empty
+    }
+
+    fn associate_substate(
+        &self,
+        state_tree_leaf_key: &StoredTreeNodeKey,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+        substate_value: &DbSubstateValue,
+    ) {
+        self.associated_substates.borrow_mut().insert(
+            state_tree_leaf_key.clone(),
+            (
+                (partition_key.clone(), sort_key.clone()),
+                substate_value.clone(),
+            ),
+        );
+    }
+
+    fn record_stale_tree_part(&self, _part: StaleTreePart) {
+        // deliberately empty
     }
 }

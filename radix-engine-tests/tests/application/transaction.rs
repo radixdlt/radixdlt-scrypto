@@ -307,6 +307,7 @@ fn test_create_proof_from_bucket_of_amount() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 
@@ -370,6 +371,7 @@ fn test_create_proof_from_bucket_of_non_fungibles() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 
@@ -426,6 +428,7 @@ fn test_drop_auth_zone_regular_proofs() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 

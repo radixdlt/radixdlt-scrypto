@@ -1,11 +1,14 @@
+use super::tier_framework::StoredNode;
 // Re-exports
-pub use super::types::{Nibble, NibblePath, NodeKey, Version};
+pub use super::types::{Nibble, NibblePath, TreeNodeKey, Version};
+use super::{Node, StorageError, TreeReader};
 
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
+use substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateValue};
 use utils::rust::collections::VecDeque;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
@@ -61,25 +64,105 @@ pub struct TreeLeafNode {
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 pub enum StaleTreePart {
     /// A single node to be removed.
-    Node(NodeKey),
+    Node(StoredTreeNodeKey),
     /// An entire subtree of descendants of a specific node (including itself).
-    Subtree(NodeKey),
+    Subtree(StoredTreeNodeKey),
+}
+
+/// A global tree node key, made collision-free from other layers
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd, Sbor)]
+pub struct StoredTreeNodeKey {
+    // The version at which the node is created.
+    version: Version,
+    // The nibble path this node represents in the tree.
+    nibble_path: NibblePath,
+}
+
+impl StoredTreeNodeKey {
+    pub fn new(version: Version, nibble_path: NibblePath) -> Self {
+        Self {
+            version,
+            nibble_path,
+        }
+    }
+
+    pub fn unprefixed(local_node_key: TreeNodeKey) -> Self {
+        let (version, nibble_path) = local_node_key.into();
+        Self {
+            version,
+            nibble_path,
+        }
+    }
+
+    pub fn prefixed(prefix_bytes: &[u8], local_node_key: &TreeNodeKey) -> Self {
+        Self {
+            version: local_node_key.version(),
+            nibble_path: local_node_key.nibble_path().prefix_with(prefix_bytes),
+        }
+    }
+
+    /// Gets the version.
+    pub fn version(&self) -> Version {
+        self.version
+    }
+
+    /// Gets the nibble path.
+    pub fn nibble_path(&self) -> &NibblePath {
+        &self.nibble_path
+    }
+
+    /// Generates a child node key based on this node key.
+    pub fn gen_child_node_key(&self, version: Version, n: Nibble) -> Self {
+        let mut node_nibble_path = self.nibble_path().clone();
+        node_nibble_path.push(n);
+        Self::new(version, node_nibble_path)
+    }
+
+    /// Generates parent node key at the same version based on this node key.
+    pub fn gen_parent_node_key(&self) -> Self {
+        let mut node_nibble_path = self.nibble_path().clone();
+        assert!(
+            node_nibble_path.pop().is_some(),
+            "Current node key is root.",
+        );
+        Self::new(self.version, node_nibble_path)
+    }
+}
+
+impl From<StoredTreeNodeKey> for (Version, NibblePath) {
+    fn from(value: StoredTreeNodeKey) -> Self {
+        (value.version, value.nibble_path)
+    }
 }
 
 /// The "read" part of a physical tree node storage SPI.
 pub trait ReadableTreeStore {
     /// Gets node by key, if it exists.
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode>;
+    fn get_node(&self, global_key: &StoredTreeNodeKey) -> Option<TreeNode>;
 }
 
 /// The "write" part of a physical tree node storage SPI.
 pub trait WriteableTreeStore {
     /// Inserts the node under a new, unique key (i.e. never an update).
-    fn insert_node(&self, key: NodeKey, node: TreeNode);
+    fn insert_node(&self, global_key: StoredTreeNodeKey, node: TreeNode);
+
+    /// Associates the actually upserted Substate entry with the given tree leaf key.
+    ///
+    /// This method will be called after the [`Self::insert_node()`] of Substate-Tier leaf nodes,
+    /// and allows the storage to keep correlated historical values, if required. The correlation
+    /// may be implemented either directly (i.e. to the given `substate_value`) or via the given
+    /// `partition_key` + `sort_key` (if it makes sense e.g. for performance reasons).
+    fn associate_substate(
+        &self,
+        state_tree_leaf_key: &StoredTreeNodeKey,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+        substate_value: &DbSubstateValue,
+    );
 
     /// Marks the given tree part for a (potential) future removal by an arbitrary external pruning
     /// process.
-    fn record_stale_tree_part(&self, part: StaleTreePart);
+    fn record_stale_tree_part(&self, global_tree_part: StaleTreePart);
 }
 
 /// A complete tree node storage SPI.
@@ -89,39 +172,76 @@ impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TypedInMemoryTreeStore {
-    pub tree_nodes: RefCell<HashMap<NodeKey, TreeNode>>,
+    pub tree_nodes: RefCell<HashMap<StoredTreeNodeKey, TreeNode>>,
     pub stale_part_buffer: RefCell<Vec<StaleTreePart>>,
+    pub associated_substate_values: RefCell<HashMap<StoredTreeNodeKey, DbSubstateValue>>,
     pub pruning_enabled: bool,
+    pub store_substate_values: bool,
 }
 
 impl TypedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
-    pub fn new() -> TypedInMemoryTreeStore {
-        TypedInMemoryTreeStore {
+    pub fn new() -> Self {
+        Self {
             tree_nodes: RefCell::new(hash_map_new()),
             stale_part_buffer: RefCell::new(Vec::new()),
+            associated_substate_values: RefCell::new(hash_map_new()),
             pruning_enabled: false,
+            store_substate_values: false,
         }
     }
 
-    pub fn with_pruning() -> TypedInMemoryTreeStore {
-        TypedInMemoryTreeStore {
-            tree_nodes: RefCell::new(hash_map_new()),
-            stale_part_buffer: RefCell::new(Vec::new()),
+    pub fn with_pruning_enabled(self) -> Self {
+        Self {
             pruning_enabled: true,
+            ..self
+        }
+    }
+
+    pub fn storing_substate_values(self) -> Self {
+        Self {
+            store_substate_values: true,
+            ..self
         }
     }
 }
 
+// This implementation allows interpreting the TypedInMemoryTreeStore as a single store
+impl TreeReader<Version> for TypedInMemoryTreeStore {
+    fn get_node_option(
+        &self,
+        node_key: &TreeNodeKey,
+    ) -> Result<Option<Node<Version>>, StorageError> {
+        Ok(
+            ReadableTreeStore::get_node(self, &StoredTreeNodeKey::unprefixed(node_key.clone()))
+                .map(|tree_node| tree_node.into_jmt_node(&node_key)),
+        )
+    }
+}
+
 impl ReadableTreeStore for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.tree_nodes.borrow().get(key).cloned()
     }
 }
 
 impl WriteableTreeStore for TypedInMemoryTreeStore {
-    fn insert_node(&self, key: NodeKey, node: TreeNode) {
+    fn insert_node(&self, key: StoredTreeNodeKey, node: TreeNode) {
         self.tree_nodes.borrow_mut().insert(key, node);
+    }
+
+    fn associate_substate(
+        &self,
+        state_tree_leaf_key: &StoredTreeNodeKey,
+        _partition_key: &DbPartitionKey,
+        _sort_key: &DbSortKey,
+        substate_value: &DbSubstateValue,
+    ) {
+        if self.store_substate_values {
+            self.associated_substate_values
+                .borrow_mut()
+                .insert(state_tree_leaf_key.clone(), substate_value.clone());
+        }
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {
@@ -180,7 +300,7 @@ impl SerializedInMemoryTreeStore {
 }
 
 impl ReadableTreeStore for SerializedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.memory
             .borrow()
             .get(&encode_key(key))
@@ -189,10 +309,20 @@ impl ReadableTreeStore for SerializedInMemoryTreeStore {
 }
 
 impl WriteableTreeStore for SerializedInMemoryTreeStore {
-    fn insert_node(&self, key: NodeKey, node: TreeNode) {
+    fn insert_node(&self, key: StoredTreeNodeKey, node: TreeNode) {
         self.memory
             .borrow_mut()
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
+    }
+
+    fn associate_substate(
+        &self,
+        _state_tree_leaf_key: &StoredTreeNodeKey,
+        _partition_key: &DbPartitionKey,
+        _sort_key: &DbSortKey,
+        _substate_value: &DbSubstateValue,
+    ) {
+        // intentionally empty
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {
@@ -204,7 +334,7 @@ impl WriteableTreeStore for SerializedInMemoryTreeStore {
 
 /// Encodes the given node key in a format friendly to Level-like databases (i.e. strictly ordered
 /// by numeric version).
-pub fn encode_key(key: &NodeKey) -> Vec<u8> {
+pub fn encode_key(key: &StoredTreeNodeKey) -> Vec<u8> {
     let version_bytes = &key.version().to_be_bytes();
     let nibble_path_bytes = key.nibble_path().bytes();
     let parity_byte = &[(key.nibble_path().num_nibbles() % 2) as u8; 1];

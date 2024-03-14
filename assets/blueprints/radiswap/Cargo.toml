@@ -8,15 +8,10 @@ sbor = { path = "../../../sbor" }
 scrypto = { path = "../../../scrypto" }
 
 [dev-dependencies]
-radiswap = { path = ".", features = ["test"] }
-native-sdk = { path = "../../../native-sdk" }
-transaction = { path = "../../../transaction" }
-radix-engine = { path = "../../../radix-engine" }
 scrypto-test = { path = "../../../scrypto-test" }
 
 [features]
 default = []
-test = []
 
 [lib]
 doctest = false

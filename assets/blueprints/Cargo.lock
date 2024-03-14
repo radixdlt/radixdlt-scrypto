@@ -834,13 +834,9 @@ dependencies = [
 name = "radiswap"
 version = "1.2.0-dev"
 dependencies = [
- "native-sdk",
- "radiswap",
- "radix-engine",
  "sbor",
  "scrypto",
  "scrypto-test",
- "transaction",
 ]
 
 [[package]]

@@ -131,6 +131,12 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
+    CallDirectVaultMethod {
+        address: Value,
+        method_name: Value,
+        args: Vec<Value>,
+    },
+
     DropNamedProofs,
 
     DropAllProofs,
