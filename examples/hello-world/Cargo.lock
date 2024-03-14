@@ -177,8 +177,9 @@ dependencies = [
 
 [[package]]
 name = "const-sha1"
-version = "0.2.0"
-source = "git+https://github.com/radixdlt/const-sha1#5e9ae2a99e9c76e85aa67f42e4b62e7f7ce8dad4"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d8a42181e0652c2997ae4d217f25b63c5337a52fd2279736e97b832fa0a3cff"
 
 [[package]]
 name = "cpufeatures"
@@ -399,15 +400,9 @@ checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
 name = "hashbrown"
-version = "0.13.2"
+version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
-
-[[package]]
-name = "hashbrown"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c6201b9ff9fd90a5a3bac2e56a830d0caa509576f0e503818ee82c181b3437a"
+checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
 
 [[package]]
 name = "heck"
@@ -453,21 +448,13 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.0.0-pre"
-source = "git+https://github.com/bluss/indexmap?rev=eedabaca9f84e520eab01325b305c08f3773e66c#eedabaca9f84e520eab01325b305c08f3773e66c"
-dependencies = [
- "hashbrown 0.13.2",
- "serde",
-]
-
-[[package]]
-name = "indexmap"
-version = "2.0.0"
+version = "2.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5477fe2230a79769d8dc68e0eabf5437907c0457a5614a9e8dddb67f65eb65d"
+checksum = "7b0b929d511467233429c45a44ac1dcaa21ba0f5ba11e4879e6ed28ddb4f9df4"
 dependencies = [
  "equivalent",
- "hashbrown 0.14.0",
+ "hashbrown 0.14.3",
+ "serde",
 ]
 
 [[package]]
@@ -777,14 +764,14 @@ dependencies = [
  "num-traits",
  "paste",
  "radix-engine-common",
- "radix-engine-interface",
  "radix-engine-common-macros",
+ "radix-engine-interface",
  "radix-engine-profiling-macros",
  "sbor",
  "serde_json",
  "strum",
  "substate-store-interface",
- "syn 1.0.93",
+ "syn 1.0.109",
  "transaction",
  "utils",
  "wasm-instrument",
@@ -817,13 +804,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "radix-engine-common-macros"
+version = "1.2.0-dev"
+dependencies = [
+ "paste",
+ "proc-macro2",
+ "quote",
+ "radix-engine-common",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "radix-engine-derive"
 version = "1.2.0-dev"
 dependencies = [
  "proc-macro2",
  "quote",
  "sbor-derive-common",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -847,21 +845,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-common-macros"
-version = "1.2.0-dev"
-dependencies = [
- "paste",
- "proc-macro2",
- "quote",
- "radix-engine-common",
- "syn 1.0.93",
-]
-
-[[package]]
 name = "radix-engine-profiling"
 version = "1.2.0-dev"
 dependencies = [
  "fixedstr",
+]
+
+[[package]]
+name = "radix-engine-profiling-macros"
+version = "1.2.0-dev"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "radix-engine-profiling",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -940,16 +937,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbb5fb1acd8a1a18b3dd5be62d25485eb770e05afb408a9627d14d451bae12da"
 
 [[package]]
-name = "radix-engine-profiling-macros"
-version = "1.2.0-dev"
-dependencies = [
- "proc-macro2",
- "quote",
- "radix-engine-profiling",
- "syn 1.0.93",
-]
-
-[[package]]
 name = "rustc_version"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1021,7 +1008,7 @@ dependencies = [
  "itertools",
  "proc-macro2",
  "quote",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1070,7 +1057,7 @@ dependencies = [
  "sbor",
  "serde",
  "serde_json",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1281,16 +1268,6 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 name = "syn"
-version = "1.0.93"
-source = "git+https://github.com/dtolnay/syn.git?tag=1.0.93#2e505a847174ff8939431c4f5ffb565906590ac2"
-dependencies = [
- "proc-macro2",
- "quote",
- "unicode-xid",
-]
-
-[[package]]
-name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
@@ -1401,16 +1378,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "301abaae475aa91687eb82514b328ab47a211a533026cb25fc3e519b86adfc3c"
 
 [[package]]
-name = "unicode-xid"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
-
-[[package]]
 name = "utils"
 version = "1.2.0-dev"
 dependencies = [
- "indexmap 2.0.0-pre",
+ "indexmap 2.2.5",
  "serde",
 ]
 
@@ -1498,7 +1469,7 @@ dependencies = [
 [[package]]
 name = "wasmi"
 version = "0.23.0"
-source = "git+https://github.com/radixdlt/wasmi.git?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
+source = "git+https://github.com/radixdlt/wasmi?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
 dependencies = [
  "spin",
  "wasmi_arena",
@@ -1509,12 +1480,12 @@ dependencies = [
 [[package]]
 name = "wasmi_arena"
 version = "0.3.0"
-source = "git+https://github.com/radixdlt/wasmi.git?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
+source = "git+https://github.com/radixdlt/wasmi?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
 
 [[package]]
 name = "wasmi_core"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/wasmi.git?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
+source = "git+https://github.com/radixdlt/wasmi?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
 dependencies = [
  "downcast-rs",
  "libm",
@@ -1538,7 +1509,7 @@ version = "0.112.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e986b010f47fcce49cf8ea5d5f9e5d2737832f12b53ae8ae785bbe895d0877bf"
 dependencies = [
- "indexmap 2.0.0",
+ "indexmap 2.2.5",
  "semver",
 ]
 

@@ -2,7 +2,6 @@
 name = "${package_name}"
 version = "1.0.0"
 edition = "2021"
-resolver = "2"
 
 [dependencies]
 sbor = ${sbor}

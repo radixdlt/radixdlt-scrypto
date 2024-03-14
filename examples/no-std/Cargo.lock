@@ -119,8 +119,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "const-sha1"
-version = "0.2.0"
-source = "git+https://github.com/radixdlt/const-sha1#5e9ae2a99e9c76e85aa67f42e4b62e7f7ce8dad4"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d8a42181e0652c2997ae4d217f25b63c5337a52fd2279736e97b832fa0a3cff"
 
 [[package]]
 name = "cpufeatures"
@@ -203,6 +204,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
+name = "equivalent"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -228,6 +235,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.14.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
+
+[[package]]
 name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -250,10 +263,12 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.0.0-pre"
-source = "git+https://github.com/bluss/indexmap?rev=eedabaca9f84e520eab01325b305c08f3773e66c#eedabaca9f84e520eab01325b305c08f3773e66c"
+version = "2.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b0b929d511467233429c45a44ac1dcaa21ba0f5ba11e4879e6ed28ddb4f9df4"
 dependencies = [
- "hashbrown",
+ "equivalent",
+ "hashbrown 0.14.3",
  "serde",
 ]
 
@@ -418,13 +433,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "radix-engine-common-macros"
+version = "1.2.0-dev"
+dependencies = [
+ "paste",
+ "proc-macro2",
+ "quote",
+ "radix-engine-common",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "radix-engine-derive"
 version = "1.2.0-dev"
 dependencies = [
  "proc-macro2",
  "quote",
  "sbor-derive-common",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -445,17 +471,6 @@ dependencies = [
  "serde_json",
  "strum",
  "utils",
-]
-
-[[package]]
-name = "radix-engine-common-macros"
-version = "1.2.0-dev"
-dependencies = [
- "paste",
- "proc-macro2",
- "quote",
- "radix-engine-common",
- "syn 1.0.93",
 ]
 
 [[package]]
@@ -560,7 +575,7 @@ dependencies = [
  "itertools",
  "proc-macro2",
  "quote",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -594,7 +609,7 @@ dependencies = [
  "sbor",
  "serde",
  "serde_json",
- "syn 1.0.93",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -711,16 +726,6 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 name = "syn"
-version = "1.0.93"
-source = "git+https://github.com/dtolnay/syn.git?tag=1.0.93#2e505a847174ff8939431c4f5ffb565906590ac2"
-dependencies = [
- "proc-macro2",
- "quote",
- "unicode-xid",
-]
-
-[[package]]
-name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
@@ -763,16 +768,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "301abaae475aa91687eb82514b328ab47a211a533026cb25fc3e519b86adfc3c"
 
 [[package]]
-name = "unicode-xid"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
-
-[[package]]
 name = "utils"
 version = "1.2.0-dev"
 dependencies = [
- "hashbrown",
+ "hashbrown 0.13.2",
  "indexmap",
  "serde",
 ]
