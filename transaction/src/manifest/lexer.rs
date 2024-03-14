@@ -202,7 +202,7 @@ impl Lexer {
     {
         int.parse::<T>().map(map).map_err(|err| {
             LexerError::InvalidInteger(
-                format!("`{}` {} - {}", int, ty, err.to_string()),
+                format!("'{}{}' - {}", int, ty, err.to_string()),
                 Span {
                     start: self.start,
                     end: self.current,
@@ -367,8 +367,8 @@ pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
         }
         LexerError::InvalidInteger(string, span) => (
             span,
-            format!("invalid integer {}", string),
-            "invalid integer".to_string(),
+            format!("invalid integer value {}", string),
+            "invalid integer value".to_string(),
         ),
         LexerError::InvalidUnicode(value, span) => (
             span,
