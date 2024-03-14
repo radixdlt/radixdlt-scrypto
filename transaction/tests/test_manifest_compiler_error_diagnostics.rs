@@ -3,16 +3,33 @@ use transaction::manifest::blob_provider::*;
 use transaction::manifest::compiler::*;
 
 macro_rules! check_manifest {
-    ( $manifest:expr) => {{
+    ($manifest:expr) => {{
         let manifest = include_str!(concat!($manifest, ".rtm"));
         let diagnostic = include_str!(concat!($manifest, ".diag"));
 
         let err = compile(
             manifest,
             &NetworkDefinition::simulator(),
-            BlobProvider::default(),
+            // Some instructions require valid blob in order to let
+            // manifest compile, eg. PUBLISH_PACKAGE_ADVANCED
+            MockBlobProvider::default(),
         )
         .unwrap_err();
+
+        let x = compile_error_diagnostics(manifest, err);
+
+        if x != diagnostic {
+            std::fs::write(format!("tests/{}.diag.res", $manifest), &x)
+                .expect("Unable to write file");
+        }
+
+        assert_eq!(x, diagnostic);
+    }};
+    ($manifest:expr, $blob_provider:expr) => {{
+        let manifest = include_str!(concat!($manifest, ".rtm"));
+        let diagnostic = include_str!(concat!($manifest, ".diag"));
+
+        let err = compile(manifest, &NetworkDefinition::simulator(), $blob_provider).unwrap_err();
 
         let x = compile_error_diagnostics(manifest, err);
 
@@ -169,12 +186,15 @@ fn test_manifest_generator_error_invalid_blob_hash() {
 #[test]
 fn test_manifest_generator_error_blob_not_found() {
     // BlobNotFound
-    check_manifest!("manifest_generator_error_blob_not_found_1");
+    check_manifest!(
+        "manifest_generator_error_blob_not_found_1",
+        BlobProvider::default()
+    );
 }
 
 #[test]
 fn test_manifest_generator_error_invalid_bytes_hex() {
-    // BlobNotFound
+    // InvalidBytesHex
     check_manifest!("manifest_generator_error_invalid_bytes_hex_1");
 }
 
@@ -188,4 +208,43 @@ fn test_manifest_generator_error_invalid_global_address() {
 fn test_manifest_generator_error_invalid_package_address() {
     // InvalidPackageAddress
     check_manifest!("manifest_generator_error_invalid_package_address_1");
+}
+
+#[test]
+fn test_manifest_generator_error_invalid_internal_address_1() {
+    // InvalidInternalAddress
+    check_manifest!("manifest_generator_error_invalid_internal_address_1");
+}
+
+#[test]
+fn test_manifest_generator_error_undefined_address_reservation() {
+    // NameResolverError(UndefinedAddressReservation)
+    check_manifest!("manifest_generator_error_undefined_address_reservation_1");
+}
+
+#[test]
+fn test_manifest_generator_error_undefined_named_address() {
+    // NameResolverError(UndefinedNamedAddress)
+    check_manifest!("manifest_generator_error_undefined_named_address_1");
+}
+
+#[test]
+fn test_manifest_generator_error_name_already_defined() {
+    // NameResolverError(UndefinedNamedAddress)
+    check_manifest!("manifest_generator_error_name_already_defined_1");
+    check_manifest!("manifest_generator_error_name_already_defined_2");
+    check_manifest!("manifest_generator_error_name_already_defined_3");
+    check_manifest!("manifest_generator_error_name_already_defined_4");
+}
+
+#[test]
+fn test_manifest_generator_error_undefined_bucket() {
+    // NameResolverError(UndefinedBucket)
+    check_manifest!("manifest_generator_error_undefined_bucket_1");
+}
+
+#[test]
+fn test_manifest_generator_error_undefined_proof() {
+    // NameResolverError(UndefinedBucket)
+    check_manifest!("manifest_generator_error_undefined_proof_1");
 }
