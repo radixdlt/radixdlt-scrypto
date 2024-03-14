@@ -778,8 +778,8 @@ dependencies = [
  "paste",
  "radix-engine-common",
  "radix-engine-interface",
- "radix-engine-macros",
- "resources-tracker-macro",
+ "radix-engine-common-macros",
+ "radix-engine-profiling-macros",
  "sbor",
  "serde_json",
  "strum",
@@ -837,7 +837,7 @@ dependencies = [
  "lazy_static",
  "paste",
  "radix-engine-common",
- "radix-engine-macros",
+ "radix-engine-common-macros",
  "regex",
  "sbor",
  "serde",
@@ -847,7 +847,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-macros"
+name = "radix-engine-common-macros"
 version = "1.2.0-dev"
 dependencies = [
  "paste",
@@ -940,7 +940,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbb5fb1acd8a1a18b3dd5be62d25485eb770e05afb408a9627d14d451bae12da"
 
 [[package]]
-name = "resources-tracker-macro"
+name = "radix-engine-profiling-macros"
 version = "1.2.0-dev"
 dependencies = [
  "proc-macro2",

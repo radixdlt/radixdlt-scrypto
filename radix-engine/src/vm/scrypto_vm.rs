@@ -6,7 +6,7 @@ use crate::vm::wasm_runtime::ScryptoRuntime;
 use crate::vm::VmApi;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::CodeHash;
-use resources_tracker_macro::trace_resources;
+use radix_engine_profiling_macros::trace_resources;
 
 pub struct ScryptoVm<W: WasmEngine> {
     pub wasm_engine: W,

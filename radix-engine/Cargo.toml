@@ -13,7 +13,7 @@ native-sdk = { workspace = true }
 transaction = { workspace = true }
 utils = { workspace = true }
 radix-engine-profiling = { workspace = true, optional = true }
-resources-tracker-macro = { workspace = true }
+radix-engine-profiling-macros = { workspace = true }
 
 colored = { workspace = true }
 hex = { workspace = true }
@@ -24,7 +24,7 @@ moka = { workspace = true, features = ["sync"], optional = true }
 strum = { workspace = true, features = ["derive"] }
 perfcnt = { workspace = true, optional = true }
 paste = { workspace = true }
-radix-engine-macros = { workspace = true }
+radix-engine-common-macros = { workspace = true }
 const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
 
 # WASM validation
@@ -61,8 +61,8 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "blueprint-schema-init/std", "radix-engine-interface/std", "substate-store-interface/std", "radix-engine-macros/std", "utils/std", "serde_json?/std", "wasm-instrument/std" ]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "radix-engine-macros/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "blueprint-schema-init/std", "radix-engine-interface/std", "substate-store-interface/std", "radix-engine-common-macros/std", "utils/std", "serde_json?/std", "wasm-instrument/std" ]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "radix-engine-common-macros/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
@@ -76,7 +76,7 @@ wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 moka = ["dep:moka"]
 lru = ["dep:lru"]
 
-resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling?/resource_tracker", "resources-tracker-macro/resource_tracker", "radix-engine-common/resource_tracker"]
+resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling?/resource_tracker", "radix-engine-profiling-macros/resource_tracker", "radix-engine-common/resource_tracker"]
 
 # System/Application Database Checker
 db_checker = []

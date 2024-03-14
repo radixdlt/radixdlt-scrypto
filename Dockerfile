@@ -18,7 +18,7 @@ ADD blueprint-schema-init /app/blueprint-schema-init
 ADD radix-engine-common /app/radix-engine-common
 ADD radix-engine-derive /app/radix-engine-derive
 ADD native-sdk /app/native-sdk
-ADD radix-engine-macros /app/radix-engine-macros
+ADD radix-engine-common-macros /app/radix-engine-common-macros
 ADD radix-engine-profiling /app/radix-engine-profiling
 ADD substate-store-interface /app/substate-store-interface
 ADD substate-store-impls /app/substate-store-impls

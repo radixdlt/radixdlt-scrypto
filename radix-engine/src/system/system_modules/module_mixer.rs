@@ -28,7 +28,7 @@ use bitflags::bitflags;
 use paste::paste;
 use radix_engine_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
-use resources_tracker_macro::trace_resources;
+use radix_engine_profiling_macros::trace_resources;
 use transaction::model::AuthZoneParams;
 
 bitflags! {

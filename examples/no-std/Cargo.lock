@@ -438,7 +438,7 @@ dependencies = [
  "lazy_static",
  "paste",
  "radix-engine-common",
- "radix-engine-macros",
+ "radix-engine-common-macros",
  "regex",
  "sbor",
  "serde",
@@ -448,7 +448,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-macros"
+name = "radix-engine-common-macros"
 version = "1.2.0-dev"
 dependencies = [
  "paste",

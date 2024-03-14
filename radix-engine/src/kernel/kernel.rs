@@ -24,7 +24,7 @@ use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, 
 use crate::track::BootStore;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
-use resources_tracker_macro::trace_resources;
+use radix_engine_profiling_macros::trace_resources;
 use sbor::rust::mem;
 use substate_store_interface::db_key_mapper::SubstateKeyContent;
 use transaction::prelude::PreAllocatedAddress;

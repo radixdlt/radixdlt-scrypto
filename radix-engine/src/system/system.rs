@@ -27,6 +27,8 @@ use crate::system::system_type_checker::{
 use crate::system::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::track::interface::NodeSubstates;
 use blueprint_schema_init::{Condition, KeyValueStoreGenericSubstitutions};
+#[cfg(not(feature = "alloc"))]
+use radix_engine_common_macros::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
 use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
@@ -40,9 +42,7 @@ use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-#[cfg(not(feature = "alloc"))]
-use radix_engine_macros::*;
-use resources_tracker_macro::trace_resources;
+use radix_engine_profiling_macros::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use substate_store_interface::db_key_mapper::SubstateKeyContent;

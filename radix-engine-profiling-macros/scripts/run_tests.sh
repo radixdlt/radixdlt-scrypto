@@ -24,4 +24,4 @@ for i in $list; do
 done
 
 # To generete results run command:
-#  ./radix-engine-profiling/resources-tracker-macro/scripts/convert.py /tmp/scrypto-resources-usage
+#  ./radix-engine-profiling-macros/scripts/convert.py /tmp/scrypto-resources-usage

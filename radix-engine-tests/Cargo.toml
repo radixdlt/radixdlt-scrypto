@@ -18,7 +18,7 @@ transaction-scenarios = { workspace = true }
 blueprint-schema-init = { workspace = true }
 utils = { workspace = true }
 radix-engine-profiling = { workspace = true, optional = true, features = ["resource_tracker"]}
-resources-tracker-macro = { workspace = true }
+radix-engine-profiling-macros = { workspace = true }
 scrypto-test = { workspace = true }
 lazy_static = { workspace = true }
 
@@ -82,7 +82,7 @@ alloc = ["sbor/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radi
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
-resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker", "radix-engine-common/resource_tracker", "scrypto-test/resource_tracker"]
+resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling-macros/resource_tracker", "radix-engine/resource_tracker", "radix-engine-common/resource_tracker", "scrypto-test/resource_tracker"]
 dump_manifest_to_file = ["transaction/dump_manifest_to_file"]
 rocksdb = ["scrypto-test/rocksdb"]
 post_run_db_check = ["scrypto-test/post_run_db_check"]
