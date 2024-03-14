@@ -8,7 +8,7 @@ use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
-use substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateValue};
+use substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateKey, DbSubstateValue};
 use utils::rust::collections::VecDeque;
 use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
@@ -174,9 +174,9 @@ impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
 pub struct TypedInMemoryTreeStore {
     pub tree_nodes: RefCell<HashMap<StoredTreeNodeKey, TreeNode>>,
     pub stale_part_buffer: RefCell<Vec<StaleTreePart>>,
-    pub associated_substate_values: RefCell<HashMap<StoredTreeNodeKey, DbSubstateValue>>,
+    pub associated_substates: RefCell<HashMap<StoredTreeNodeKey, (DbSubstateKey, DbSubstateValue)>>,
     pub pruning_enabled: bool,
-    pub store_substate_values: bool,
+    pub store_associated_substates: bool,
 }
 
 impl TypedInMemoryTreeStore {
@@ -185,9 +185,9 @@ impl TypedInMemoryTreeStore {
         Self {
             tree_nodes: RefCell::new(hash_map_new()),
             stale_part_buffer: RefCell::new(Vec::new()),
-            associated_substate_values: RefCell::new(hash_map_new()),
+            associated_substates: RefCell::new(hash_map_new()),
             pruning_enabled: false,
-            store_substate_values: false,
+            store_associated_substates: false,
         }
     }
 
@@ -198,9 +198,9 @@ impl TypedInMemoryTreeStore {
         }
     }
 
-    pub fn storing_substate_values(self) -> Self {
+    pub fn storing_associated_substates(self) -> Self {
         Self {
-            store_substate_values: true,
+            store_associated_substates: true,
             ..self
         }
     }
@@ -233,14 +233,14 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
     fn associate_substate(
         &self,
         state_tree_leaf_key: &StoredTreeNodeKey,
-        _partition_key: &DbPartitionKey,
-        _sort_key: &DbSortKey,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
         substate_value: &DbSubstateValue,
     ) {
-        if self.store_substate_values {
-            self.associated_substate_values
+        if self.store_associated_substates {
+            self.associated_substates
                 .borrow_mut()
-                .insert(state_tree_leaf_key.clone(), substate_value.clone());
+                .insert(state_tree_leaf_key.clone(), ((partition_key.clone(), sort_key.clone()), substate_value.clone()));
         }
     }
 
