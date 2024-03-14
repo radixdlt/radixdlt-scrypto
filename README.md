@@ -105,9 +105,9 @@ scrypto test
 | Publish a package                  | `resim publish <path_to_package_dir>`                                      |
 | Call a function                    | `resim call-function <package_address> <blueprint_name> <function> <args>` |
 | Call a method                      | `resim call-method <component_address> <method> <args>`                    |
-| Export the definition of a package | ` resim export-package-definition <package_address> <output>`              |
+| Export the definition of a package | `resim export-package-definition <package_address> <output>`               |
 | Show info about an entity          | `resim show <id>`                                                          |
-| Show info about default account    | ` resim show`                                                              |
+| Show info about default account    | `resim show`                                                               |
 | List all entities in simulator     | `resim show-ledger `                                                       |
 | Reset simulator state              | `resim reset`                                                              |
 
@@ -153,8 +153,8 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
 - `blueprint-schema-init`: Blueprint schema initialization structures, used by Radix Package Definition (RPD).
 - `native-sdk`: Library to assist native blueprint development.
 - `radix-engine-common`: Common libraries used by Radix Engine and Scrypto.
-- `radix-engine-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
 - `radix-engine-common-macros`: Macros for defining `Decimal` and `PreciseDecimal`.
+- `radix-engine-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
 - `radix-engine`: The Radix Engine implementation.
 - `transaction`: Radix transaction manifest compiler, transaction models, signing and validating logic.
 - `transaction-scenarios`: Defines various transaction scenarios, for testing.
