@@ -94,7 +94,11 @@ pub enum GeneratorError {
     InvalidNonFungibleLocalId(String, Span),
     InvalidNonFungibleGlobalId(Span),
     InvalidExpression(String, Span),
-    InvalidBlobHash(String, Span),
+    InvalidBlobHash {
+        actual: String,
+        err: String,
+        span: Span,
+    },
     BlobNotFound(String, Span),
     InvalidBytesHex(String, Span),
     NameResolverError(NameResolverError, Span),
@@ -1253,6 +1257,13 @@ fn generate_expression(value: &ast::ValueWithSpan) -> Result<ManifestExpression,
     }
 }
 
+fn translate_parse_hash_error(err: ParseHashError) -> String {
+    match err {
+        ParseHashError::InvalidHex(_) => "invalid hex value".to_string(),
+        ParseHashError::InvalidLength(len) => format!("invalid hash length '{}'", len),
+    }
+}
+
 fn generate_blob<B>(
     value: &ast::ValueWithSpan,
     blobs: &B,
@@ -1263,8 +1274,11 @@ where
     match &value.value {
         ast::Value::Blob(inner) => match &inner.value {
             ast::Value::String(s) => {
-                let hash = Hash::from_str(s)
-                    .map_err(|_| GeneratorError::InvalidBlobHash(s.to_string(), inner.span))?;
+                let hash = Hash::from_str(s).map_err(|err| GeneratorError::InvalidBlobHash {
+                    actual: s.to_string(),
+                    err: translate_parse_hash_error(err),
+                    span: inner.span,
+                })?;
                 blobs
                     .get_blob(&hash)
                     .ok_or(GeneratorError::BlobNotFound(s.clone(), inner.span))?;
@@ -1626,12 +1640,12 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
             let title = format!("invalid expression '{}'", string);
             (span, title, "invalid expression".to_string())
         }
-        GeneratorError::InvalidBlobHash(string, span) => {
-            let title = format!("invalid blob hash '{}'", string);
+        GeneratorError::InvalidBlobHash { actual, err, span } => {
+            let title = format!("invalid blob hash '{}' - {}", actual, err);
             (span, title, "invalid blob hash".to_string())
         }
         GeneratorError::BlobNotFound(string, span) => {
-            let title = format!("blob not found '{}'", string);
+            let title = format!("blob with hash '{}' not found", string);
             (span, title, "blob not found".to_string())
         }
         GeneratorError::InvalidBytesHex(string, span) => {
