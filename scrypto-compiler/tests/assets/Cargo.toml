@@ -4,6 +4,7 @@ resolver = "1"
 members = [
     "blueprint",
     "blueprint_2",
+    "dir/blueprint_3"
 ]
 
 [profile.custom]

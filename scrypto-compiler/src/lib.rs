@@ -27,6 +27,8 @@ pub enum ScryptoCompilerError {
     CargoManifestLoadFailure(String),
     /// Returns path to Cargo.toml which cannot be found
     CargoManifestFileNotFound(String),
+    /// Provided package ID is not a member of the workspace
+    CargoWrongPackageId(String),
     /// Returns WASM Optimization error
     WasmOptimizationError(wasm_opt::OptimizationError),
     /// Returns error occured during schema extraction
@@ -150,20 +152,45 @@ impl ScryptoCompiler {
         if let Some(workspace_members) =
             ScryptoCompiler::is_manifest_workspace(&manifest_path).unwrap()
         {
-            // todo: if --package specified use it
+            // verify if provided package names belongs to this workspace
+            if !input_params.package.is_empty() {
+                let wrong_packages: Vec<_> = input_params
+                    .package
+                    .iter()
+                    .filter(|package| {
+                        workspace_members
+                            .iter()
+                            .find(|(_, member_package_name)| &member_package_name == package)
+                            .is_none()
+                    })
+                    .collect();
+                if let Some(package) = wrong_packages.first() {
+                    return Err(ScryptoCompilerError::CargoWrongPackageId(
+                        package.to_string(),
+                    ));
+                }
+            }
+
             let manifests = workspace_members
                 .into_iter()
-                .map(|manifest| {
-                    let mut member_manifest_input_path = manifest_path.clone();
-                    member_manifest_input_path.pop(); // Workspace Cargo.toml file
-                    member_manifest_input_path.push(PathBuf::from(manifest));
-
-                    match ScryptoCompiler::get_manifest_path(&Some(member_manifest_input_path)) {
-                        Ok(member_manifest_path) => ScryptoCompiler::prepare_manifest_def(
-                            input_params,
-                            &member_manifest_path,
-                        ),
-                        Err(x) => Err(x),
+                .filter_map(|(member_manifest_input_path, package)| {
+                    if input_params.package.is_empty()
+                        || (!input_params.package.is_empty()
+                            && input_params.package.contains(&package))
+                    {
+                        Some(
+                            match ScryptoCompiler::get_manifest_path(&Some(
+                                member_manifest_input_path,
+                            )) {
+                                Ok(member_manifest_path) => ScryptoCompiler::prepare_manifest_def(
+                                    input_params,
+                                    &member_manifest_path,
+                                ),
+                                Err(x) => Err(x),
+                            },
+                        )
+                    } else {
+                        None
                     }
                 })
                 .collect::<Result<Vec<CompilerManifestDefinition>, ScryptoCompilerError>>()?;
@@ -271,10 +298,10 @@ impl ScryptoCompiler {
         }
     }
 
-    // If manifest is a workspace this function returns non-empty vector of workspace members
+    // If manifest is a workspace this function returns non-empty vector of pairs of workspace members (path) and package name
     fn is_manifest_workspace(
         manifest_path: &Path,
-    ) -> Result<Option<Vec<String>>, ScryptoCompilerError> {
+    ) -> Result<Option<Vec<(PathBuf, String)>>, ScryptoCompilerError> {
         let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
@@ -282,9 +309,28 @@ impl ScryptoCompiler {
             if workspace.members.is_empty() {
                 Ok(None)
             } else {
-                let mut x = Vec::new();
-                x.clone_from(&workspace.members);
-                Ok(Some(x))
+                Ok(Some(
+                    workspace
+                        .members
+                        .iter()
+                        .map(|i| {
+                            let mut member_manifest_input_path = manifest_path.to_path_buf();
+                            member_manifest_input_path.pop(); // Workspace Cargo.toml file
+                            member_manifest_input_path.push(PathBuf::from(i));
+                            member_manifest_input_path.push("Cargo.toml"); // Manifest Cargo.toml file
+
+                            match Manifest::from_path(&member_manifest_input_path) {
+                                Ok(manifest) => Ok((
+                                    member_manifest_input_path,
+                                    manifest.package().name().to_string(),
+                                )),
+                                Err(_) => Err(ScryptoCompilerError::CargoManifestLoadFailure(
+                                    member_manifest_input_path.display().to_string(),
+                                )),
+                            }
+                        })
+                        .collect::<Result<Vec<_>, ScryptoCompilerError>>()?,
+                ))
             }
         } else {
             Ok(None)
@@ -905,10 +951,14 @@ mod tests {
 
         let build_artifacts = status.unwrap();
 
-        assert_eq!(build_artifacts.len(), 2);
+        assert_eq!(build_artifacts.len(), 3);
 
-        let names = ["test_blueprint.wasm", "test_blueprint_2.wasm"];
-        for i in 0..=1 {
+        let names = [
+            "test_blueprint.wasm",
+            "test_blueprint_2.wasm",
+            "test_blueprint_3.wasm",
+        ];
+        for i in 0..names.len() {
             assert!(build_artifacts[i].wasm.path.exists());
             assert!(build_artifacts[i].package_definition.path.exists());
 
@@ -956,7 +1006,66 @@ mod tests {
         assert!(status.is_ok(), "{:?}", status);
 
         let build_artifacts = status.unwrap();
+        assert_eq!(build_artifacts.len(), 3);
+    }
+
+    #[test]
+    fn test_compilation_workspace_with_package() {
+        // Arrange
+        let (blueprint_manifest_path, target_directory) = prepare();
+
+        let mut workspace_directory = blueprint_manifest_path.clone();
+        workspace_directory.pop(); // Remove Cargo.toml from path
+        workspace_directory.pop(); // Remove blueprint folder
+        workspace_directory.push("Cargo.toml"); // Put workspace Cargo.toml file
+
+        // Act
+        let status = ScryptoCompiler::builder()
+            .manifest_path(workspace_directory)
+            .target_directory(target_directory.path())
+            .package("test_blueprint_2")
+            .package("test_blueprint_3")
+            .compile();
+
+        // Assert
+        assert!(status.is_ok(), "{:?}", status);
+
+        let build_artifacts = status.unwrap();
+
         assert_eq!(build_artifacts.len(), 2);
+
+        let names = ["test_blueprint_2.wasm", "test_blueprint_3.wasm"];
+        for i in 0..names.len() {
+            assert!(build_artifacts[i].wasm.path.exists());
+            assert!(build_artifacts[i].package_definition.path.exists());
+        }
+    }
+
+    #[test]
+    fn test_compilation_workspace_with_non_existing_package() {
+        // Arrange
+        let (blueprint_manifest_path, target_directory) = prepare();
+
+        let mut workspace_directory = blueprint_manifest_path.clone();
+        workspace_directory.pop(); // Remove Cargo.toml from path
+        workspace_directory.pop(); // Remove blueprint folder
+        workspace_directory.push("Cargo.toml"); // Put workspace Cargo.toml file
+
+        // Act
+        let status = ScryptoCompiler::builder()
+            .manifest_path(workspace_directory)
+            .target_directory(target_directory.path())
+            .package("test_blueprint_2")
+            .package("non_existing_package")
+            .package("test_blueprint_3")
+            .compile();
+        println!("{:?}", status);
+        // Assert
+        assert!(match status {
+            Err(ScryptoCompilerError::CargoWrongPackageId(package)) =>
+                package == "non_existing_package",
+            _ => false,
+        });
     }
 
     #[test]
