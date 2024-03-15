@@ -125,7 +125,7 @@ jobs:
         run: ./check_stubs.sh
 
   radix-engine-build:
-    name: Run Radix Engine build (RocksDB)
+    name: Run Radix Engine build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -136,14 +136,10 @@ jobs:
         uses: ./.github/actions/setup-env
       - name: Install dependency
         run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
-      - name: Build with resource tracking
-        run: cargo build --features resource_tracker
-      - name: Build with rocksdb
-        run: cargo test -p radix-engine-profiling -p radix-substate-store-impls --features rocksdb --release --no-run -- --nocapture
-      - name: Build bench with rocksdb
-        run: cargo bench --features rocksdb --no-run
+      - name: Build with additional features
+        run: cargo build -p radix-engine -p radix-substate-store-impls --features radix-engine/resource_tracker,radix-engine/cpu_ram_metrics,radix-substate-store-impls/rocksdb
 
-  radix-engine:
+  radix-engine-test:
     name: Run Radix Engine tests
     runs-on: ubuntu-16-cores-selfhosted
     steps:
@@ -238,7 +234,7 @@ jobs:
         run: cargo bench
         working-directory: radix-common
 
-  transaction:
+  radix-transactions:
     name: Run transaction tests
     runs-on: ubuntu-latest
     steps:
@@ -246,7 +242,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p transaction
+        run: cargo nextest run -p radix-transactions
 
   radix-transaction-scenarios:
     name: Run transaction scenarios
@@ -284,7 +280,7 @@ jobs:
         run: bash ./tests/manifest.sh
         working-directory: radix-clis
 
-  cli-scrypto:
+  radix-clis-scrypto:
     name: Run CLI tests (scrypto)
     runs-on: ${{ matrix.os }}
     strategy:

@@ -10,7 +10,7 @@ pub fn recover_secp256k1(
     if let Ok(id) = ::secp256k1::ecdsa::RecoveryId::from_i32(recovery_id.into()) {
         if let Ok(sig) = ::secp256k1::ecdsa::RecoverableSignature::from_compact(signature_data, id)
         {
-            let msg = ::secp256k1::Message::from_slice(&signed_hash.0)
+            let msg = ::secp256k1::Message::from_digest_slice(&signed_hash.0)
                 .expect("Hash is always a valid message");
 
             if let Ok(pk) = SECP256K1_CTX.recover_ecdsa(&msg, &sig) {
@@ -32,7 +32,7 @@ pub fn verify_secp256k1(
     if ::secp256k1::ecdsa::RecoveryId::from_i32(recovery_id.into()).is_ok() {
         if let Ok(sig) = ::secp256k1::ecdsa::Signature::from_compact(signature_data) {
             if let Ok(pk) = ::secp256k1::PublicKey::from_slice(&public_key.0) {
-                let msg = ::secp256k1::Message::from_slice(&signed_hash.0)
+                let msg = ::secp256k1::Message::from_digest_slice(&signed_hash.0)
                     .expect("Hash is always a valid message");
                 return SECP256K1_CTX.verify_ecdsa(&msg, &sig, &pk).is_ok();
             }

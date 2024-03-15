@@ -17,7 +17,8 @@ impl Secp256k1PrivateKey {
     }
 
     pub fn sign(&self, msg_hash: &impl IsHash) -> Secp256k1Signature {
-        let m = Message::from_slice(msg_hash.as_ref()).expect("Hash is always a valid message");
+        let m =
+            Message::from_digest_slice(msg_hash.as_ref()).expect("Hash is always a valid message");
         let signature = SECP256K1_CTX.sign_ecdsa_recoverable(&m, &self.0);
         let (recovery_id, signature_data) = signature.serialize_compact();
 

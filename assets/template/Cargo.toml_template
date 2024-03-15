@@ -9,10 +9,6 @@ scrypto = ${scrypto}
 
 [dev-dependencies]
 scrypto-test = ${scrypto-test}
-transaction = ${transaction}
-radix-engine = ${radix-engine}
-radix-engine-interface = ${radix-engine-interface}
-${package_name} = { path = ".", features = ["test"] }
 
 [profile.release]
 opt-level = 'z'        # Optimize for size.
@@ -24,7 +20,6 @@ overflow-checks = true # Panic in the case of an overflow.
 
 [features]
 default = []
-test = []
 
 [lib]
 crate-type = ["cdylib", "lib"]
