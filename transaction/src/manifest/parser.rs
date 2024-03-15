@@ -1007,8 +1007,10 @@ impl Parser {
     }
 
     fn parse_generics(&mut self, n: usize) -> Result<Vec<ValueKindWithSpan>, ParserError> {
+        let mut span_start = self.peek()?.span.start;
         advance_match!(self, TokenKind::LessThan);
         let mut types = Vec::new();
+
         while self.peek()?.kind != TokenKind::GreaterThan {
             let token_value_kind = self.parse_type()?;
             types.push(token_value_kind);
@@ -1016,15 +1018,22 @@ impl Parser {
                 advance_match!(self, TokenKind::Comma);
             }
         }
+
+        let mut span_end = self.peek()?.span.end;
         advance_match!(self, TokenKind::GreaterThan);
+
+        if types.len() != 0 {
+            span_start = types[0].span.start;
+            span_end = types[types.len() - 1].span.end;
+        }
 
         if types.len() != n {
             Err(ParserError::InvalidNumberOfTypes {
                 expected: n,
                 actual: types.len(),
                 span: Span {
-                    start: types[0].span.start,
-                    end: types[types.len() - 1].span.end,
+                    start: span_start,
+                    end: span_end,
                 },
             })
         } else {

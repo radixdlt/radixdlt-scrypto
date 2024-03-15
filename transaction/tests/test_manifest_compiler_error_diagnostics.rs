@@ -49,6 +49,8 @@ fn test_manifest_parser_error_diagnostics_invalid_number_of_types() {
     // InvalidNumberOfTypes
     check_manifest!("manifest_parser_error_invalid_number_of_types_1");
     check_manifest!("manifest_parser_error_invalid_number_of_types_2");
+    check_manifest!("manifest_parser_error_invalid_number_of_types_3");
+    check_manifest!("manifest_parser_error_invalid_number_of_types_4");
 }
 
 #[test]
