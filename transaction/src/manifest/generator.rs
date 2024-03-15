@@ -940,7 +940,7 @@ fn generate_decimal(value: &ast::ValueWithSpan) -> Result<Decimal, GeneratorErro
             ast::Value::String(s) => {
                 Decimal::from_str(&s).map_err(|err| GeneratorError::InvalidDecimal {
                     actual: s.to_string(),
-                    err: err.to_string(),
+                    err: format!("{:?}", err),
                     span: inner.span,
                 })
             }
@@ -956,7 +956,7 @@ fn generate_precise_decimal(value: &ast::ValueWithSpan) -> Result<PreciseDecimal
             ast::Value::String(s) => {
                 PreciseDecimal::from_str(s).map_err(|err| GeneratorError::InvalidPreciseDecimal {
                     actual: s.to_string(),
-                    err: err.to_string(),
+                    err: format!("{:?}", err),
                     span: inner.span,
                 })
             }
