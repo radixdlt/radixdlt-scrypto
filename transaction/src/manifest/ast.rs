@@ -133,9 +133,9 @@ pub enum Instruction {
     },
 
     CallDirectVaultMethod {
-        address: Value,
-        method_name: Value,
-        args: Vec<Value>,
+        address: ValueWithSpan,
+        method_name: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
     },
 
     DropNamedProofs,

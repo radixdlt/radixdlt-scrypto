@@ -641,15 +641,15 @@ where
             args,
         } => {
             let address = generate_internal_address(address, address_bech32_decoder)?;
-            let method_name = generate_string(&method_name)?;
-            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
-            id_validator
-                .process_call_data(&args)
-                .map_err(GeneratorError::IdValidationError)?;
+            let method_name = generate_string(method_name)?;
+            let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
+            id_validator.process_call_data(&args_inner).map_err(|err| {
+                generate_id_validation_error(resolver, err, get_span!(instruction, args))
+            })?;
             InstructionV1::CallDirectVaultMethod {
                 address,
                 method_name,
-                args,
+                args: args_inner,
             }
         }
 
@@ -1047,22 +1047,22 @@ fn generate_dynamic_global_address(
 }
 
 fn generate_internal_address(
-    value: &ast::Value,
+    value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<InternalAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(value) => match value.borrow() {
+    match &value.value {
+        ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = InternalAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidInternalAddress(s.into()));
+                return Err(GeneratorError::InvalidInternalAddress(s.into(), inner.span));
             }
-            v => return invalid_type!(v, ast::ValueKind::String),
+            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(v, ast::ValueKind::Address),
+        v => invalid_type!(value.span, v, ast::ValueKind::Address),
     }
 }
 
