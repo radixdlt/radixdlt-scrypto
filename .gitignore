@@ -28,8 +28,7 @@ assets/**/Cargo.lock
 # TYPE 4:
 # - Various test scrypto packages. We don't care too much about either way - but we do want CI to run without a lock, so let's git ignore these.
 #   Also make sure to blanket ignore all the old Cargo.locks before they moved to blueprints, to avoid developer git issues
-radix-engine/tests/**/Cargo.lock
-radix-engine/tests/blueprints/Cargo.lock
+radix-engine-tests/**/Cargo.lock
 radix-clis/tests/blueprints/Cargo.lock
 
 # TYPE 5:
@@ -39,16 +38,16 @@ radix-clis/tests/blueprints/Cargo.lock
 # TYPE 6:
 # - Old cargo locks of crates now part of central workspace. These will be ignored by cargo now.
 #   Keep these git'ignored so that they don't cause confusion on developers' computers
+radix-blueprint-schema-init/Cargo.lock
 radix-engine/Cargo.lock
 radix-substate-store-impls/Cargo.lock
-scrypto/Cargo.lock
-scrypto-derive/Cargo.lock
-radix-blueprint-schema-init/Cargo.lock
-scrypto-derive-tests/Cargo.lock
-transaction/Cargo.lock
-sbor/Cargo.lock
+radix-transactions/Cargo.lock
 sbor-derive/Cargo.lock
 sbor-tests/Cargo.lock
+sbor/Cargo.lock
+scrypto-derive-tests/Cargo.lock
+scrypto-derive/Cargo.lock
+scrypto/Cargo.lock
 
 # FURTHER DETAILS:
 # Our CI tests ensure that libraries can build and have their tests run with an empty lock file (ie, with the latest semver
