@@ -35,13 +35,12 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         self.diff.new_nodes.borrow_mut().push((key, node));
     }
 
-    #[allow(unused_variables)]
     fn associate_substate(
         &self,
-        state_tree_leaf_key: &StoredTreeNodeKey,
-        partition_key: &DbPartitionKey,
-        sort_key: &DbSortKey,
-        substate_value: AssociatedSubstateValue,
+        _state_tree_leaf_key: &StoredTreeNodeKey,
+        _partition_key: &DbPartitionKey,
+        _sort_key: &DbSortKey,
+        _substate_value: AssociatedSubstateValue,
     ) {
         // intentionally empty
     }

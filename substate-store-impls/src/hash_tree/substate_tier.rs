@@ -212,33 +212,25 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
     ) {
         for (key, node) in tree_update_batch.node_batch.iter().flatten() {
             // We promised to associate Substate values; but not all newly-created nodes are leaves:
-            if let Node::Leaf(leaf_node) = &node {
-                let sort_key = Self::to_typed_key(leaf_node.leaf_key().clone());
-                let substate_value = match substate_updates {
-                    PartitionDatabaseUpdates::Delta { substate_updates } => substate_updates
-                        .get(&sort_key)
-                        .map(|update| match update {
-                            DatabaseUpdate::Set(value) => AssociatedSubstateValue::Upserted(value),
-                            DatabaseUpdate::Delete => {
-                                panic!("a new tree leaf must represent a Substate upsert")
-                            }
-                        })
-                        .unwrap_or(AssociatedSubstateValue::Unchanged),
-                    PartitionDatabaseUpdates::Reset {
-                        new_substate_values,
-                    } => AssociatedSubstateValue::Upserted(
-                        new_substate_values.get(&sort_key).expect(
-                            "a new tree leaf after partition reset must represent a new Substate",
-                        ),
-                    ),
-                };
-                self.base_store.associate_substate(
-                    &self.stored_node_key(&key),
-                    &self.partition_key,
-                    &sort_key,
-                    substate_value,
-                );
-            }
+            let Node::Leaf(leaf_node) = &node else {
+                continue;
+            };
+            let sort_key = Self::to_typed_key(leaf_node.leaf_key().clone());
+            let substate_value = substate_updates
+                .get_substate_change(&sort_key)
+                .map(|change| match change {
+                    SubstateChange::Upsert(value) => AssociatedSubstateValue::Upserted(value),
+                    SubstateChange::Delete => {
+                        panic!("deletes are not represented by new tree leafs")
+                    }
+                })
+                .unwrap_or_else(|| AssociatedSubstateValue::Unchanged);
+            self.base_store.associate_substate(
+                &self.stored_node_key(&key),
+                &self.partition_key,
+                &sort_key,
+                substate_value,
+            );
         }
     }
 }
