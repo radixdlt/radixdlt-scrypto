@@ -16,7 +16,7 @@ radix-transactions = { workspace = true }
 radix-transaction-scenarios = { workspace = true }
 radix-rust = { workspace = true }
 radix-engine-profiling = { workspace = true, optional = true, features = ["resource_tracker"]}
-radix-engine-profiling-macros = { workspace = true }
+radix-engine-profiling-derive = { workspace = true }
 scrypto-test = { workspace = true }
 
 wabt = { workspace = true }
@@ -36,7 +36,7 @@ std = ["sbor/std", "radix-transactions/std", "radix-transaction-scenarios/std", 
 alloc = ["sbor/alloc", "radix-transactions/alloc", "radix-transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-substate-store-impls/alloc", "radix-substate-store-interface/alloc", "radix-substate-store-queries/alloc", "radix-rust/alloc", "scrypto-test/alloc"]
 rocksdb = ["scrypto-test/rocksdb"]
 post_run_db_check = ["scrypto-test/post_run_db_check"]
-resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling-macros/resource_tracker", "radix-engine/resource_tracker", "radix-common/resource_tracker", "scrypto-test/resource_tracker"]
+resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling-derive/resource_tracker", "radix-engine/resource_tracker", "radix-common/resource_tracker", "scrypto-test/resource_tracker"]
 
 [lib]
 doctest = false

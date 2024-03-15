@@ -147,7 +147,7 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/radix-clis
 
 - `radix-blueprint-schema-init`: Blueprint schema initialization structures, used by Radix Package Definition (RPD).
 - `radix-clis`: Various CLI tools, like `resim`, `scrypto`, `rtmc` and `rtmd`.
-- `radix-common-macros`: Macros for defining `Decimal` and `PreciseDecimal`.
+- `radix-common-derive`: Macros for defining `Decimal` and `PreciseDecimal`.
 - `radix-common`: Common libraries used by Radix Engine and Scrypto.
 - `radix-engine`: The Radix Engine implementation.
 - `radix-native-sdk`: Library to assist native blueprint development.

@@ -1,5 +1,5 @@
 [package]
-name = "radix-engine-profiling-macros"
+name = "radix-engine-profiling-derive"
 version = "1.2.0-dev"
 edition = "2021"
 

@@ -13,11 +13,11 @@ ADD assets /app/assets
 ADD Cargo.toml /app/Cargo.toml
 ADD radix-blueprint-schema-init /app/radix-blueprint-schema-init
 ADD radix-common /app/radix-common
-ADD radix-common-macros /app/radix-common-macros
+ADD radix-common-derive /app/radix-common-derive
 ADD radix-engine /app/radix-engine
 ADD radix-engine-interface /app/radix-engine-interface
 ADD radix-engine-profiling /app/radix-engine-profiling
-ADD radix-engine-profiling-macros /app/radix-engine-profiling-macros
+ADD radix-engine-profiling-derive /app/radix-engine-profiling-derive
 ADD radix-native-sdk /app/radix-native-sdk
 ADD radix-rust app/radix-rust
 ADD radix-sbor-derive /app/radix-sbor-derive

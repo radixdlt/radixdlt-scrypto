@@ -16,11 +16,11 @@ resolver = "2"
 
 members = [
     "radix-blueprint-schema-init",
-    "radix-common-macros",
+    "radix-common-derive",
     "radix-common",
     "radix-engine-interface",
     "radix-engine-monkey-tests",
-    "radix-engine-profiling-macros",
+    "radix-engine-profiling-derive",
     "radix-engine-profiling",
     "radix-engine-tests",
     "radix-engine",
@@ -45,11 +45,11 @@ members = [
 [workspace.dependencies]
 radix-blueprint-schema-init = { version = "1.2.0-dev", path = "./radix-blueprint-schema-init", default-features = false }
 radix-common = { version = "1.2.0-dev", path = "./radix-common", default-features = false }
-radix-common-macros = { version = "1.2.0-dev", path = "./radix-common-macros", default-features = false }
+radix-common-derive = { version = "1.2.0-dev", path = "./radix-common-derive", default-features = false }
 radix-engine = { version = "1.2.0-dev", path = "./radix-engine", default-features = false }
 radix-engine-interface = { version = "1.2.0-dev", path = "./radix-engine-interface", default-features = false }
 radix-engine-profiling = { version = "1.2.0-dev", path = "./radix-engine-profiling", default-features = false }
-radix-engine-profiling-macros = { version = "1.2.0-dev", path = "./radix-engine-profiling-macros", default-features = false }
+radix-engine-profiling-derive = { version = "1.2.0-dev", path = "./radix-engine-profiling-derive", default-features = false }
 radix-native-sdk = { version = "1.2.0-dev", path = "./radix-native-sdk", default-features = false }
 radix-rust = { version = "1.2.0-dev", path = "./radix-rust", default-features = false }
 radix-sbor-derive = { version = "1.2.0-dev", path = "./radix-sbor-derive", default-features = false }

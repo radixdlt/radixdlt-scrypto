@@ -141,7 +141,7 @@ jobs:
           fail-on-cache-miss: true
       - name: Update paths in scripts
         run: |
-             cd radix-engine-profiling-macros/scripts
+             cd radix-engine-profiling-derive/scripts
              sed -i 's/^qemu_app.*/qemu_app=\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/build\/qemu-x86_64/' ./run_tests.sh
              sed -i 's/^qemu_plugin.*/qemu_plugin=\/home\/runner\/work\/radixdlt-scrypto\/radixdlt-scrypto\/radix-engine-profiling\/qemu-plugin\/build\/libscrypto-qemu-plugin.so/' ./run_tests.sh
       - name: Read cache build results
@@ -154,7 +154,7 @@ jobs:
         run: |
              mkdir /tmp/scrypto-resources-usage
              cd radix-engine-tests
-             bash ../radix-engine-profiling-macros/scripts/run_tests.sh ${{ format('../target/release/deps_{0}', matrix.bin-cache) }}
+             bash ../radix-engine-profiling-derive/scripts/run_tests.sh ${{ format('../target/release/deps_{0}', matrix.bin-cache) }}
       - name: Cache QEMU run results
         uses: RDXWorks-actions/cache/save@main
         with:
@@ -199,7 +199,7 @@ jobs:
           name: QEMU generated XML files
           path: /tmp/scrypto-resources-usage
       - name: Generate results
-        run: python3 ./radix-engine-profiling-macros/scripts/convert.py /tmp/scrypto-resources-usage
+        run: python3 ./radix-engine-profiling-derive/scripts/convert.py /tmp/scrypto-resources-usage
       - name: Upload results
         uses: RDXWorks-actions/upload-artifact@main
         with:

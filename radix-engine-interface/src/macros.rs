@@ -115,6 +115,6 @@ macro_rules! roles2 {
     })
 }
 
-extern crate radix_common_macros;
-pub use radix_common_macros::dec;
-pub use radix_common_macros::pdec;
+extern crate radix_common_derive;
+pub use radix_common_derive::dec;
+pub use radix_common_derive::pdec;

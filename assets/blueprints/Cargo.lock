@@ -781,7 +781,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-common-macros"
+name = "radix-common-derive"
 version = "1.2.0-dev"
 dependencies = [
  "paste",
@@ -805,9 +805,9 @@ dependencies = [
  "paste",
  "radix-blueprint-schema-init",
  "radix-common",
- "radix-common-macros",
+ "radix-common-derive",
  "radix-engine-interface",
- "radix-engine-profiling-macros",
+ "radix-engine-profiling-derive",
  "radix-native-sdk",
  "radix-rust",
  "radix-substate-store-interface",
@@ -832,7 +832,7 @@ dependencies = [
  "paste",
  "radix-blueprint-schema-init",
  "radix-common",
- "radix-common-macros",
+ "radix-common-derive",
  "radix-rust",
  "regex",
  "sbor",
@@ -849,7 +849,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-profiling-macros"
+name = "radix-engine-profiling-derive"
 version = "1.2.0-dev"
 dependencies = [
  "proc-macro2",

@@ -430,7 +430,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-common-macros"
+name = "radix-common-derive"
 version = "1.2.0-dev"
 dependencies = [
  "paste",
@@ -451,7 +451,7 @@ dependencies = [
  "paste",
  "radix-blueprint-schema-init",
  "radix-common",
- "radix-common-macros",
+ "radix-common-derive",
  "radix-rust",
  "regex",
  "sbor",
