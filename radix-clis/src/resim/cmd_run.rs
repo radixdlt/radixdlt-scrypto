@@ -52,7 +52,7 @@ impl Run {
                 blobs.push(std::fs::read(path).map_err(Error::IOError)?);
             }
         }
-        let compiled_manifest =  compile(
+        let compiled_manifest = compile(
             &pre_processed_manifest,
             &network,
             BlobProvider::new_with_blobs(blobs),

@@ -49,11 +49,11 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
    ```bash
    rustup target add wasm32-unknown-unknown
    ```
-4. Install simulator
+4. Install `radix-clis`
    ```bash
    git clone https://github.com/radixdlt/radixdlt-scrypto.git
    cd radixdlt-scrypto
-   cargo install --path ./simulator
+   cargo install --path ./radix-clis
    ```
 5. (Optional) Open Scrypto documentation for later use
    ```bash
@@ -108,12 +108,12 @@ scrypto test
 | Export the definition of a package | `resim export-package-definition <package_address> <output>`               |
 | Show info about an entity          | `resim show <id>`                                                          |
 | Show info about default account    | `resim show`                                                               |
-| List all entities in simulator     | `resim show-ledger `                                                       |
-| Reset simulator state              | `resim reset`                                                              |
+| List all entities                  | `resim show-ledger `                                                       |
+| Reset ledger state                 | `resim reset`                                                              |
 
 **Note:** The commands use the default account as transaction sender.
 
-## Compile blueprints with dockerized simulator
+## Compile blueprints with dockerized `radix-clis`
 
 Follow this guide to build reproducible WASM and RDP files for your Scrypto blueprints.
 
@@ -124,13 +124,13 @@ The Dockerfile in the root of the repo should be work to build a docker image wh
 Build the docker image like. From the repo root
 
 ```bash
-docker build -t radixdlt/simulator .
+docker build -t radixdlt/radix-clis .
 ```
 
 Then build your package by just running
 
 ```bash
-docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
+docker run -v <path-to-your-scrypto-crate>:/src radixdlt/radix-clis
 ```
 
 ### Using published docker image
@@ -140,7 +140,7 @@ If you would like to avoid building the docker image, you can skip the build ste
 Build your blueprints directly with
 
 ```bash
-docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
+docker run -v <path-to-your-scrypto-crate>:/src radixdlt/radix-clis
 ```
 
 ## Project Layout
@@ -156,12 +156,12 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
 - `radix-engine-common-macros`: Macros for defining `Decimal` and `PreciseDecimal`.
 - `radix-engine-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
 - `radix-engine`: The Radix Engine implementation.
-- `transaction`: Radix transaction manifest compiler, transaction models, signing and validating logic.
+- `radix-transactions`: Radix transaction manifest compiler, transaction models, signing and validating logic.
 - `radix-transaction-scenarios`: Defines various transaction scenarios, for testing.
 - `radix-substate-store-interface`: The interface of any substate store.
 - `radix-substate-store-impls`: Various substate store implementations.
 - `radix-substate-store-queries`: Interprets data in substate data by injecting high-level knowledge.
-- `simulator`: A ledger simulator that runs transactions on file system, primarily for local development.
+- `radix-clis`: Various CLI tools, like `resim`, `scrypto`, `rtmc` and `rtmd`.
 
 ## LFS
 

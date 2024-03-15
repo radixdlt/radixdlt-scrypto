@@ -60,9 +60,9 @@ pub enum Error {
 
     LedgerDumpError(EntityDumpError),
 
-    CompileError( CompileError),
+    CompileError(CompileError),
 
-    DecompileError( DecompileError),
+    DecompileError(DecompileError),
 
     InvalidId(String),
 

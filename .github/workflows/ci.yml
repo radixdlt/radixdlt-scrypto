@@ -258,8 +258,8 @@ jobs:
       - name: Run tests
         run: cargo nextest run -p radix-transaction-scenarios
 
-  cli-resim-rtmc-rtmd:
-    name: Run CLI tests (resim & rtmc & rtmd)
+  radix-clis:
+    name: Run CLI tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -271,18 +271,18 @@ jobs:
       - uses: radixdlt/rust-cache@allow_registry_src_caching
         with:
           prefix-key: ""
-          shared-key: simulator-debug-${{ runner.os }}
+          shared-key: radix-clis-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-          workspaces: simulator
+          workspaces: radix-clis
       - name: Run Unit tests
         run: cargo nextest run
-        working-directory: simulator
+        working-directory: radix-clis
       - name: Run tests
         run: bash ./tests/resim.sh
-        working-directory: simulator
+        working-directory: radix-clis
       - name: Run tests
         run: bash ./tests/manifest.sh
-        working-directory: simulator
+        working-directory: radix-clis
 
   cli-scrypto:
     name: Run CLI tests (scrypto)
@@ -297,12 +297,12 @@ jobs:
       - uses: radixdlt/rust-cache@allow_registry_src_caching
         with:
           prefix-key: ""
-          shared-key: simulator-debug-${{ runner.os }}
+          shared-key: radix-clis-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-          workspaces: simulator
+          workspaces: radix-clis
       - name: Run tests
         run: bash ./tests/scrypto.sh
-        working-directory: simulator
+        working-directory: radix-clis
 
   cargo-check:
     name: Run cargo check
@@ -350,4 +350,4 @@ jobs:
             execute-in-memory ../assets-lfs/babylon-mainnet-transactions-2023-10-11.tar.gz \
             --max-version 50000 \
             --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
-        working-directory: simulator
+        working-directory: radix-clis

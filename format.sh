@@ -7,8 +7,8 @@ cd "$(dirname "$0")"
 # Format all main package crates
 (set -x; cargo fmt)
 
-# Format the simulator crate
-(set -x; cd simulator; cargo fmt)
+# Format the radix-clis crate
+(set -x; cd radix-clis; cargo fmt)
 
 (
     find "assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
@@ -23,7 +23,7 @@ cd "$(dirname "$0")"
     | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
 )
 (
-    find "simulator/tests" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "radix-clis/tests" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
 )
 

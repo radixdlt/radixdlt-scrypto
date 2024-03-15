@@ -29,15 +29,15 @@ ADD sbor /app/sbor
 ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common
 
-# Copy simulator binary crate
-ADD simulator /app/simulator
+# Copy radix-clis binary crate
+ADD radix-clis /app/radix-clis
 
 WORKDIR /app
 
-RUN cargo install --path ./simulator
+RUN cargo install --path ./radix-clis
 
 FROM base-image
-COPY --from=builder /app/simulator/target/release/scrypto /usr/local/bin/scrypto
+COPY --from=builder /app/radix-clis/target/release/scrypto /usr/local/bin/scrypto
 RUN rustup target add wasm32-unknown-unknown
 WORKDIR /src
 

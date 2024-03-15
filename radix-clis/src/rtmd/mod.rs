@@ -33,7 +33,7 @@ pub struct Args {
 pub enum Error {
     IoError(std::io::Error),
     DecodeError(sbor::DecodeError),
-    DecompileError( DecompileError),
+    DecompileError(DecompileError),
     ParseNetworkError(ParseNetworkError),
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }

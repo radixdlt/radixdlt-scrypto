@@ -1,12 +1,12 @@
 [workspace]
-resolver = "1"
+resolver = "2"
 
 # NOTES:
 # This workspace is intended to be used for the primary scrypto/radix engine library crates.
 #
 # In particular:
-# * We purposefully don't include simulator - as it's an application, not a library
-#   The simulator receives its own separate Cargo.lock, that we source control.
+# * We purposefully don't include radix-clis - as it's an application, not a library
+#   The radix-clis receives its own separate Cargo.lock, that we source control.
 #   We don't source control the Cargo.lock for this workspace, because it's a workspace of libraries:
 #   https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries
 #
