@@ -1,0 +1,17 @@
+CALL_METHOD
+  Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+  "withdraw"
+  Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+  Decimal("5.0");
+
+TAKE_ALL_FROM_WORKTOP
+  Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+  Bucket("some_xrd");
+
+CREATE_PROOF_FROM_BUCKET_OF_AMOUNT
+  Bucket(1u32)
+  Decimal("1")
+  Proof("proof");
+
+DROP_PROOF
+  Proof("proof");

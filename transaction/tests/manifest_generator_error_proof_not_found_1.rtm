@@ -1,0 +1,25 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000");
+
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "withdraw"
+    Address("resource_sim1t50jq0fq4rk0y652x43pp0taveyka8clts2q6um52vm2qws64ava35")
+    Decimal("10");
+
+TAKE_FROM_WORKTOP
+    Address("resource_sim1t50jq0fq4rk0y652x43pp0taveyka8clts2q6um52vm2qws64ava35")
+    Decimal("5")
+    Bucket("some_bucket");
+
+CREATE_PROOF_FROM_BUCKET_OF_AMOUNT
+  Bucket("some_bucket")
+  Decimal("1")
+  Proof("proof");
+
+CLONE_PROOF
+  Proof(1u32)
+  Proof("cloned_proof")
+;

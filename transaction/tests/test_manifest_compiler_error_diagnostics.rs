@@ -248,3 +248,23 @@ fn test_manifest_generator_error_undefined_proof() {
     // NameResolverError(UndefinedBucket)
     check_manifest!("manifest_generator_error_undefined_proof_1");
 }
+
+#[test]
+fn test_manifest_generator_error_bucket_not_found() {
+    // IdValidationError(BucketNotFound)
+    check_manifest!("manifest_generator_error_bucket_not_found_1");
+    check_manifest!("manifest_generator_error_bucket_not_found_2");
+}
+
+#[test]
+fn test_manifest_generator_error_bucket_locked() {
+    // IdValidationError(BucketLocked)
+    check_manifest!("manifest_generator_error_bucket_locked_1");
+}
+
+#[test]
+fn test_manifest_generator_error_proof_not_found() {
+    // IdValidationError(BucketNotFound)
+    check_manifest!("manifest_generator_error_proof_not_found_1");
+    check_manifest!("manifest_generator_error_proof_not_found_2");
+}
