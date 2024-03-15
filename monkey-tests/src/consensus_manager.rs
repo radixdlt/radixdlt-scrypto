@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerCreateValidatorManifestInput, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
 };
 use radix_engine_interface::types::FromRepr;
-use transaction::builder::ManifestBuilder;
+use radix_transactions::builder::ManifestBuilder;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]

@@ -55,8 +55,7 @@ fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
 fn calling_transaction_processor_from_scrypto_should_not_panic() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("tx_processor_access"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("tx_processor_access"));
 
     // Act
     let manifest_encoded_instructions: Vec<u8> = vec![0u8];
@@ -82,8 +81,7 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pub_key, _, account0) = ledger.new_account(true);
     let (_, _, account1) = ledger.new_account(true);
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("tx_processor_access"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("tx_processor_access"));
     let initial_balance = ledger.get_component_balance(account0, XRD);
     let instructions = ManifestBuilder::new()
         .withdraw_from_account(account0, XRD, 10)

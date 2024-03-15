@@ -54,11 +54,11 @@ use radix_substate_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},
 };
-use transaction::model::{
+use radix_transactions::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
 };
-use transaction::prelude::{BlobV1, PreAllocatedAddress};
-use transaction::validation::ManifestIdAllocator;
+use radix_transactions::prelude::{BlobV1, PreAllocatedAddress};
+use radix_transactions::validation::ManifestIdAllocator;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");

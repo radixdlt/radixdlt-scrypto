@@ -63,8 +63,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     // Arrange 1
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let token_address =
-        ledger.create_everything_allowed_non_fungible_resource(OwnerRole::None);
+    let token_address = ledger.create_everything_allowed_non_fungible_resource(OwnerRole::None);
     let admin_auth = ledger.create_non_fungible_resource(account);
 
     // Act 1 - Show that updating both the action_role_key and updater_role_key is initially possible

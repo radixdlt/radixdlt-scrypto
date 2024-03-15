@@ -9,9 +9,10 @@ use radix_engine_common::network::ParseNetworkError;
 use radix_engine_common::prelude::{ComponentAddress, NodeId, PackageAddress};
 use radix_engine_interface::types::ParseNonFungibleGlobalIdError;
 use radix_engine_interface::types::SchemaHash;
+use radix_transactions::errors::*;
+use radix_transactions::manifest::{CompileError, DecompileError};
+use radix_transactions::model::PrepareError as TransactionPrepareError;
 use sbor::*;
-use transaction::errors::*;
-use transaction::model::PrepareError as TransactionPrepareError;
 
 use crate::resim::EntityDumpError;
 use crate::utils::*;
@@ -59,9 +60,9 @@ pub enum Error {
 
     LedgerDumpError(EntityDumpError),
 
-    CompileError(transaction::manifest::CompileError),
+    CompileError( CompileError),
 
-    DecompileError(transaction::manifest::DecompileError),
+    DecompileError( DecompileError),
 
     InvalidId(String),
 

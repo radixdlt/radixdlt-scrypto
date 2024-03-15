@@ -30,6 +30,7 @@ use radix_engine_interface::blueprints::pool::{
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_transactions::builder::ManifestBuilder;
 use rand::distributions::uniform::{SampleRange, SampleUniform};
 use rand::Rng;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
@@ -38,7 +39,6 @@ use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::{CustomGenesis, LedgerSimulator, LedgerSimulatorBuilder};
-use transaction::builder::ManifestBuilder;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,

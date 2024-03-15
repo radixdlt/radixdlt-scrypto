@@ -41,7 +41,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use transaction::model::PreAllocatedAddress;
+use radix_transactions::model::PreAllocatedAddress;
 
 #[derive(Clone)]
 pub enum SystemLockData {

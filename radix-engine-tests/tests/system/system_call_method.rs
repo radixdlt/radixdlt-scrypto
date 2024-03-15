@@ -6,8 +6,8 @@ use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
-use transaction::builder::ManifestBuilder;
 
 #[test]
 fn call_method_with_owned_actor_should_fail() {

@@ -7,9 +7,11 @@ use radix_engine::{
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_substate_store_queries::typed_substate_layout::{
+    AccountNativePackage, BlueprintPayloadDef,
+};
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;
-use radix_substate_store_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
 
 #[test]
 fn check_native_function_base_costs() {

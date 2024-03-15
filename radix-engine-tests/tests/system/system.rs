@@ -1,8 +1,8 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::{RoleAssignmentError, PACKAGE_BLUEPRINT};
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_handle_mismatch() {

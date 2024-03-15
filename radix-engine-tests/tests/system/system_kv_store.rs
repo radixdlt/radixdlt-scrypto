@@ -7,8 +7,8 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
-use transaction::builder::ManifestBuilder;
 
 const BLUEPRINT_NAME: &str = "MyBlueprint";
 const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;

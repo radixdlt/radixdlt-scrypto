@@ -5,8 +5,8 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::rule;
 use scrypto_test::prelude::*;
 
-use transaction::validation::NotarizedTransactionValidator;
-use transaction::validation::{TransactionValidator, ValidationConfig};
+use radix_transactions::validation::NotarizedTransactionValidator;
+use radix_transactions::validation::{TransactionValidator, ValidationConfig};
 
 #[test]
 fn test_transaction_preview_cost_estimate() {
@@ -174,13 +174,11 @@ fn test_preview_no_auth() {
                 round: Round::of(next_round),
                 proposer_timestamp_ms: 100,
                 leader_proposal_history: LeaderProposalHistory {
-                    gap_round_leaders: (1..next_round)
-                        .map(|_| 0)
-                        .collect(),
+                    gap_round_leaders: (1..next_round).map(|_| 0).collect(),
                     current_leader: 0,
                     is_fallback: false,
                 },
-            }
+            },
         )
         .build();
 

@@ -31,7 +31,7 @@ pub use radix_engine::system::type_info::*;
 use radix_engine::vm::VmBoot;
 use radix_engine_common::prelude::*;
 pub use radix_engine_interface::object_modules::royalty::*;
-use transaction::prelude::IntentHash;
+use radix_transactions::prelude::IntentHash;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!

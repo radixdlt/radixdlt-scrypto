@@ -9,8 +9,8 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::rule;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use transaction::model::TestTransaction;
-use transaction::prelude::*;
+use radix_transactions::model::TestTransaction;
+use radix_transactions::prelude::*;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.

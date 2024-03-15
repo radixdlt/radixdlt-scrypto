@@ -16,7 +16,7 @@ radix-engine-common = { path = "../radix-engine-common" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
 radix-blueprint-schema-init = { path = "../radix-blueprint-schema-init" }
-transaction = { path = "../transaction" }
+radix-transactions = { path = "../radix-transactions" }
 
 flate2 = { version = "1.0.27" }
 tar = { version = "0.4.40" }

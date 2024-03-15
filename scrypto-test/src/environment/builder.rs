@@ -24,7 +24,7 @@ use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
-use transaction::model::*;
+use radix_transactions::model::*;
 
 use crate::sdk::PackageFactory;
 

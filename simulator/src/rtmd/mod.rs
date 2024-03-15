@@ -3,10 +3,10 @@ use radix_engine::utils::validate_call_arguments_to_native_components;
 use radix_engine_common::crypto::hash;
 use radix_engine_common::data::manifest::manifest_decode;
 use radix_engine_common::prelude::*;
+use radix_transactions::manifest::{decompile, DecompileError};
+use radix_transactions::prelude::*;
 use std::path::PathBuf;
 use std::str::FromStr;
-use transaction::manifest::decompile;
-use transaction::prelude::*;
 
 /// Radix transaction manifest decompiler
 #[derive(Parser, Debug)]
@@ -33,7 +33,7 @@ pub struct Args {
 pub enum Error {
     IoError(std::io::Error),
     DecodeError(sbor::DecodeError),
-    DecompileError(transaction::manifest::DecompileError),
+    DecompileError( DecompileError),
     ParseNetworkError(ParseNetworkError),
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }

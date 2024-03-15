@@ -4,10 +4,10 @@ use radix_engine::utils::{
 };
 use radix_engine_common::prelude::NetworkDefinition;
 use radix_engine_tests::common::*;
+use radix_transactions::manifest::e2e::apply_address_replacements;
+use radix_transactions::manifest::{compile, MockBlobProvider};
+use radix_transactions::prelude::*;
 use scrypto::prelude::*;
-use transaction::manifest::e2e::apply_address_replacements;
-use transaction::manifest::{compile, MockBlobProvider};
-use transaction::prelude::*;
 use walkdir::WalkDir;
 
 #[test]

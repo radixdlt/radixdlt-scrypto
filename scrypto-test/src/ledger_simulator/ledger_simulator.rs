@@ -41,10 +41,10 @@ use radix_substate_store_interface::interface::{
 use radix_substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_substate_store_queries::typed_native_events::to_typed_native_event;
 use radix_substate_store_queries::typed_substate_layout::*;
-use std::path::{Path, PathBuf};
-use transaction::validation::{
+use radix_transactions::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
+use std::path::{Path, PathBuf};
 
 use super::Compile;
 

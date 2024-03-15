@@ -9,8 +9,8 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
-use transaction::builder::ManifestBuilder;
-use transaction::model::TestTransaction;
+use radix_transactions::builder::ManifestBuilder;
+use radix_transactions::model::TestTransaction;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 struct Bytes(usize);

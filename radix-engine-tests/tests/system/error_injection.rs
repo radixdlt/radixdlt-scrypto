@@ -2,8 +2,8 @@ use radix_engine::vm::NoExtension;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::prelude::{FromPublicKey, NonFungibleGlobalId};
+use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::{InjectSystemCostingError, LedgerSimulatorBuilder};
-use transaction::builder::ManifestBuilder;
 
 #[test]
 fn lock_fee_from_faucet_error_injection() {

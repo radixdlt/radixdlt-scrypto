@@ -11,7 +11,7 @@ use radix_engine_common::constants::AuthAddresses;
 use radix_engine_common::prelude::NetworkDefinition;
 use radix_engine_common::prelude::*;
 use radix_substate_store_interface::interface::SubstateDatabase;
-use transaction::validation::{
+use radix_transactions::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
 

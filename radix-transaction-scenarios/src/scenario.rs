@@ -1,7 +1,7 @@
 use radix_engine::errors::RuntimeError;
-use transaction::errors::TransactionValidationError;
-use transaction::manifest::decompiler::ManifestObjectNames;
-use transaction::validation::{NotarizedTransactionValidator, TransactionValidator};
+use radix_transactions::errors::TransactionValidationError;
+use radix_transactions::manifest::decompiler::ManifestObjectNames;
+use radix_transactions::validation::{NotarizedTransactionValidator, TransactionValidator};
 
 use crate::internal_prelude::*;
 
@@ -49,7 +49,7 @@ impl NextTransaction {
         dump_directory: &Option<std::path::PathBuf>,
         network: &NetworkDefinition,
     ) {
-        use transaction::manifest::dumper::dump_manifest_to_file_system;
+        use radix_transactions::manifest::dumper::dump_manifest_to_file_system;
 
         let Some(directory_path) = dump_directory else {
             return;

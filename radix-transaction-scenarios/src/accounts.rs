@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use transaction::prelude::*;
+use radix_transactions::prelude::*;
 
 use crate::internal_prelude::ScenarioCore;
 

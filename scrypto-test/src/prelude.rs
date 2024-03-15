@@ -84,7 +84,7 @@ pub use sbor::*;
 /* Types */
 pub use radix_engine_common::prelude::*;
 pub use radix_engine_interface::prelude::*;
-pub use transaction::prelude::*;
+pub use radix_transactions::prelude::*;
 
 /* This Crate */
 pub use crate::environment::*;

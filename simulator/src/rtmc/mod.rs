@@ -4,9 +4,9 @@ use radix_engine_common::{
     data::manifest::manifest_encode,
     network::{NetworkDefinition, ParseNetworkError},
 };
+use radix_transactions::manifest::{compile, BlobProvider, CompileError};
 use std::path::PathBuf;
 use std::str::FromStr;
-use transaction::manifest::{compile, BlobProvider};
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]
@@ -33,7 +33,7 @@ pub struct Args {
 pub enum Error {
     IoError(std::io::Error),
     EncodeError(sbor::EncodeError),
-    CompileError(transaction::manifest::CompileError),
+    CompileError( CompileError),
     ParseNetworkError(ParseNetworkError),
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }

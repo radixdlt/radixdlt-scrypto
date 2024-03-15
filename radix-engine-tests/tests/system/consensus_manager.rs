@@ -11,6 +11,9 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
+use radix_substate_store_queries::typed_substate_layout::{
+    ConsensusManagerError, ValidatorRewardAppliedEvent,
+};
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand_chacha;
@@ -19,9 +22,6 @@ use rand_chacha::ChaCha8Rng;
 use scrypto::object_modules::*;
 use scrypto_test::prelude::AuthError;
 use scrypto_test::prelude::*;
-use radix_substate_store_queries::typed_substate_layout::{
-    ConsensusManagerError, ValidatorRewardAppliedEvent,
-};
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -130,8 +130,7 @@ fn genesis_epoch_has_correct_initial_validators() {
 fn get_epoch_should_succeed() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("consensus_manager"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("consensus_manager"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -154,8 +153,7 @@ fn get_epoch_should_succeed() {
 fn next_round_without_supervisor_auth_fails() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("consensus_manager"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("consensus_manager"));
 
     // Act
     let round = Round::of(9876);
@@ -421,8 +419,7 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
         .build();
 
     // Act
-    let receipt =
-        ledger.advance_to_round_at_timestamp(Round::of(1), epoch_duration_millis as i64);
+    let receipt = ledger.advance_to_round_at_timestamp(Round::of(1), epoch_duration_millis as i64);
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -968,9 +965,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         // Note - emissions are output in the order of the active validator set, so b is first as it has higher stake
         vec![
             (
-                ledger
-                    .get_active_validator_with_key(&b_key)
-                    .into_node_id(),
+                ledger.get_active_validator_with_key(&b_key).into_node_id(),
                 ValidatorEmissionAppliedEvent {
                     epoch: initial_epoch,
                     starting_stake_pool_xrd: b_initial_stake,
@@ -982,9 +977,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
                 }
             ),
             (
-                ledger
-                    .get_active_validator_with_key(&a_key)
-                    .into_node_id(),
+                ledger.get_active_validator_with_key(&a_key).into_node_id(),
                 ValidatorEmissionAppliedEvent {
                     epoch: initial_epoch,
                     starting_stake_pool_xrd: a_initial_stake,
@@ -1431,9 +1424,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
 
     // Assert: no change yet (the default `fee_factor = 1.0` was effective during all these epochs)
     let num_epochs_with_default_fee = increase_effective_at_epoch.number() - initial_epoch.number();
-    let starting_stake_pool = ledger
-        .inspect_vault_balance(stake_xrd_vault_id)
-        .unwrap();
+    let starting_stake_pool = ledger.inspect_vault_balance(stake_xrd_vault_id).unwrap();
     assert_close_to!(
         starting_stake_pool,
         initial_stake_amount
@@ -2147,8 +2138,7 @@ fn owner_can_lock_stake_units() {
         Some(stake_units_to_lock_amount)
     );
     assert_eq!(
-        ledger
-            .get_component_balance(validator_account, validator_substate.stake_unit_resource),
+        ledger.get_component_balance(validator_account, validator_substate.stake_unit_resource),
         total_stake_amount
             .checked_sub(stake_units_to_lock_amount)
             .unwrap()
@@ -3642,8 +3632,5 @@ fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
             .unwrap()
     );
     let vault_id = ledger.get_component_vaults(CONSENSUS_MANAGER, XRD)[0];
-    assert_close_to!(
-        ledger.inspect_vault_balance(vault_id).unwrap(),
-        dec!(0)
-    );
+    assert_close_to!(ledger.inspect_vault_balance(vault_id).unwrap(), dec!(0));
 }

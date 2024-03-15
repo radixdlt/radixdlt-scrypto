@@ -1,6 +1,6 @@
 use clap::Parser;
 use radix_engine_common::prelude::*;
-use transaction::builder::ManifestBuilder;
+use radix_transactions::builder::ManifestBuilder;
 
 use crate::resim::*;
 use crate::utils::*;

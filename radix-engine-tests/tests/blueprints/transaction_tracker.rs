@@ -3,10 +3,10 @@ use radix_engine::track::{BatchPartitionStateUpdate, NodeStateUpdates, Partition
 use radix_engine::transaction::{CostingParameters, ExecutionConfig};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
+use radix_transactions::errors::TransactionValidationError;
 use scrypto_test::prelude::*;
-use transaction::errors::TransactionValidationError;
 
-use transaction::validation::*;
+use radix_transactions::validation::*;
 
 #[test]
 fn test_transaction_replay_protection() {

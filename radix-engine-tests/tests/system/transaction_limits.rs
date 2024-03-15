@@ -170,8 +170,7 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
 fn test_default_substate_size_limit() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -227,8 +226,7 @@ fn test_default_invoke_payload_size_limit() {
 
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -268,8 +266,7 @@ fn test_default_invoke_payload_size_limit() {
 #[test]
 fn verify_log_size_limit() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -295,8 +292,7 @@ fn verify_log_size_limit() {
 #[test]
 fn verify_event_size_limit() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -322,8 +318,7 @@ fn verify_event_size_limit() {
 #[test]
 fn verify_panic_size_limit() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("transaction_limits"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()

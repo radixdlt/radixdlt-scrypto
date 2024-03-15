@@ -1,8 +1,8 @@
 use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_transactions::define_raw_transaction_payload;
+use radix_transactions::prelude::*;
 use sbor::FixedEnumVariant;
-use transaction::define_raw_transaction_payload;
-use transaction::prelude::*;
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct RoundUpdateTransactionV1 {

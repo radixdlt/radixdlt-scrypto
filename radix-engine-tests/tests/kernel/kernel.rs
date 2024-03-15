@@ -20,7 +20,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use transaction::model::PreAllocatedAddress;
+use radix_transactions::model::PreAllocatedAddress;
 
 struct TestCallFrameData;
 

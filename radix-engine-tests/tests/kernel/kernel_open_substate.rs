@@ -19,7 +19,7 @@ use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
 };
-use transaction::prelude::*;
+use radix_transactions::prelude::*;
 
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {

@@ -75,7 +75,7 @@ pub mod path_macros {
         ($name: expr) => {
             concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/../transaction/examples/",
+                "/../radix-transactions/examples/",
                 $name
             )
         };

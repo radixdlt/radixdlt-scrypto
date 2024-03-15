@@ -145,9 +145,7 @@ fn test_package_royalty() {
         dec!(1).checked_add(dec!("2")).unwrap()
     );
     let account_post_balance = ledger.get_component_balance(account, XRD);
-    let package_royalty = ledger
-        .inspect_package_royalty(package_address)
-        .unwrap();
+    let package_royalty = ledger.inspect_package_royalty(package_address).unwrap();
     let component_royalty = ledger.inspect_component_royalty(component_address);
     assert_eq!(
         account_pre_balance
@@ -183,10 +181,7 @@ fn test_royalty_accumulation_when_success() {
         ledger.inspect_package_royalty(package_address),
         Some(dec!("2"))
     );
-    assert_eq!(
-        ledger.inspect_component_royalty(component_address),
-        dec!(1)
-    );
+    assert_eq!(ledger.inspect_component_royalty(component_address), dec!(1));
 }
 
 #[test]
@@ -221,14 +216,8 @@ fn test_royalty_accumulation_when_failure() {
 
 #[test]
 fn test_claim_royalty() {
-    let (
-        mut ledger,
-        account,
-        public_key,
-        package_address,
-        component_address,
-        owner_badge_resource,
-    ) = set_up_package_and_component();
+    let (mut ledger, account, public_key, package_address, component_address, owner_badge_resource) =
+        set_up_package_and_component();
 
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
@@ -243,10 +232,7 @@ fn test_claim_royalty() {
         ledger.inspect_package_royalty(package_address),
         Some(dec!("2"))
     );
-    assert_eq!(
-        ledger.inspect_component_royalty(component_address),
-        dec!(1)
-    );
+    assert_eq!(ledger.inspect_component_royalty(component_address), dec!(1));
 
     // Claim package royalty
     let receipt = ledger.execute_manifest(

@@ -248,9 +248,7 @@ fn virtual_account_has_expected_owner_key() {
     let (_, _, account) = ledger.new_account(true);
 
     // Act
-    let metadata = ledger
-        .get_metadata(account.into(), "owner_badge")
-        .unwrap();
+    let metadata = ledger.get_metadata(account.into(), "owner_badge").unwrap();
 
     // Assert
     assert_eq!(

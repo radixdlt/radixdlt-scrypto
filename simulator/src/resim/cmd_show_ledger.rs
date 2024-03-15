@@ -9,7 +9,7 @@ use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::ListableSubstateDatabase,
 };
-use transaction::model::InstructionV1;
+use radix_transactions::model::InstructionV1;
 
 use crate::resim::*;
 

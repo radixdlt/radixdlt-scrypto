@@ -1,5 +1,5 @@
 [package]
-name = "transaction"
+name = "radix-transactions"
 version = "1.2.0-dev"
 edition = "2021"
 

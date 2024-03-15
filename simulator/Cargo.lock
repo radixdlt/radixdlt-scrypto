@@ -1122,11 +1122,11 @@ dependencies = [
  "radix-native-sdk",
  "radix-rust",
  "radix-substate-store-interface",
+ "radix-transactions",
  "sbor",
  "serde_json",
  "strum",
  "syn 1.0.109",
- "transaction",
  "wasm-instrument",
  "wasmi",
  "wasmparser 0.107.0",
@@ -1266,8 +1266,22 @@ dependencies = [
  "radix-engine-interface",
  "radix-rust",
  "radix-substate-store-interface",
+ "radix-transactions",
  "sbor",
- "transaction",
+]
+
+[[package]]
+name = "radix-transactions"
+version = "1.2.0-dev"
+dependencies = [
+ "bech32",
+ "hex",
+ "lazy_static",
+ "radix-engine-common",
+ "radix-engine-interface",
+ "radix-rust",
+ "sbor",
+ "strum",
 ]
 
 [[package]]
@@ -1627,6 +1641,7 @@ dependencies = [
  "radix-substate-store-impls",
  "radix-substate-store-interface",
  "radix-substate-store-queries",
+ "radix-transactions",
  "rand 0.8.5",
  "regex",
  "rocksdb",
@@ -1637,7 +1652,6 @@ dependencies = [
  "tar",
  "temp-env",
  "tempfile",
- "transaction",
  "walkdir",
  "wasm-opt",
 ]
@@ -1828,20 +1842,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4f7f0dd8d50a853a531c426359045b1998f04219d88799810762cd4ad314234"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "transaction"
-version = "1.2.0-dev"
-dependencies = [
- "bech32",
- "hex",
- "lazy_static",
- "radix-engine-common",
- "radix-engine-interface",
- "radix-rust",
- "sbor",
- "strum",
 ]
 
 [[package]]

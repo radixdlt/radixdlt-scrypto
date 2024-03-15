@@ -3,10 +3,10 @@ use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use radix_engine_common::network::NetworkDefinition;
 use radix_substate_store_interface::interface::*;
-use transaction::errors::TransactionValidationError;
-use transaction::model::PreviewIntentV1;
-use transaction::validation::NotarizedTransactionValidator;
-use transaction::validation::ValidationConfig;
+use radix_transactions::errors::TransactionValidationError;
+use radix_transactions::model::PreviewIntentV1;
+use radix_transactions::validation::NotarizedTransactionValidator;
+use radix_transactions::validation::ValidationConfig;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreviewError {

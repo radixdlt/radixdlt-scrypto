@@ -1,7 +1,7 @@
 #![allow(unused_must_use)]
 use crate::utils::*;
-use radix_blueprint_schema_init::BlueprintFeature;
 use colored::*;
+use radix_blueprint_schema_init::BlueprintFeature;
 use radix_engine::blueprints::resource::*;
 use radix_engine::object_modules::metadata::{MetadataCollection, MetadataEntryEntryPayload};
 use radix_engine::system::system_db_reader::SystemDatabaseReader;

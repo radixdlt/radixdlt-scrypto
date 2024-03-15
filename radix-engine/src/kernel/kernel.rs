@@ -26,8 +26,8 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_macros::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_transactions::prelude::PreAllocatedAddress;
 use sbor::rust::mem;
-use transaction::prelude::PreAllocatedAddress;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct BootLoader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> {

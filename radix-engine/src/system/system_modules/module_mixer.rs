@@ -29,7 +29,7 @@ use paste::paste;
 use radix_engine_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_profiling_macros::trace_resources;
-use transaction::model::AuthZoneParams;
+use radix_transactions::model::AuthZoneParams;
 
 bitflags! {
     pub struct EnabledModules: u32 {

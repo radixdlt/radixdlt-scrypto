@@ -5,11 +5,11 @@ use radix_engine::transaction::{CostingParameters, ExecutionConfig};
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_common::prelude::*;
-use scrypto_test::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use transaction::errors::TransactionValidationError;
+use radix_transactions::errors::TransactionValidationError;
+use scrypto_test::prelude::*;
 
-use transaction::validation::*;
+use radix_transactions::validation::*;
 
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {

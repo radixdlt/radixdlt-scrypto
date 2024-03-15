@@ -17,10 +17,10 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
-use scrypto_test::prelude::LedgerSimulatorBuilder;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_interface::db_key_mapper::*;
-use transaction::prelude::*;
+use radix_transactions::prelude::*;
+use scrypto_test::prelude::LedgerSimulatorBuilder;
 
 #[test]
 fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {

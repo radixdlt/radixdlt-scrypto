@@ -1,7 +1,7 @@
 use radix_engine::vm::wasm::{InvalidMemory, PrepareError, ScryptoV1WasmValidator};
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::PackageDefinition;
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_large_data() {

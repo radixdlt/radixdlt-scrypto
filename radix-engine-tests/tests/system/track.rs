@@ -2,8 +2,8 @@ use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
-use scrypto_test::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::VaultError;
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_lock_fee_and_then_withdraw_failure() {

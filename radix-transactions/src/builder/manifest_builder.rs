@@ -21,7 +21,7 @@ use radix_engine_interface::object_modules::ModuleConfig;
 ///
 /// Simple use case:
 /// ```
-/// # use transaction::prelude::*;
+/// # use radix_transactions::prelude::*;
 /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
 /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
 /// # );
@@ -38,7 +38,7 @@ use radix_engine_interface::object_modules::ModuleConfig;
 ///
 /// Intermediate use case, where we need to pass a bucket into a component:
 /// ```
-/// # use transaction::prelude::*;
+/// # use radix_transactions::prelude::*;
 /// # let package_address = RESOURCE_PACKAGE; // Just some address to get it to compile
 /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
 /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
@@ -63,7 +63,7 @@ use radix_engine_interface::object_modules::ModuleConfig;
 ///
 /// Advanced use case, where we need to generate a collision-free bucket name:
 /// ```
-/// # use transaction::prelude::*;
+/// # use radix_transactions::prelude::*;
 /// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
 /// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
 /// # );
@@ -184,7 +184,7 @@ impl ManifestBuilder {
 
     /// Example usage:
     /// ```
-    /// # use transaction::prelude::*;
+    /// # use radix_transactions::prelude::*;
     /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
     /// # );
@@ -866,7 +866,7 @@ impl ManifestBuilder {
     ///
     /// Example:
     /// ```
-    /// # use transaction::prelude::*;
+    /// # use radix_transactions::prelude::*;
     /// # let package_address = RESOURCE_PACKAGE; // Just some address to get it to compile
     /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
@@ -1097,7 +1097,7 @@ impl ManifestBuilder {
     ///
     /// Example:
     /// ```
-    /// # use transaction::prelude::*;
+    /// # use radix_transactions::prelude::*;
     /// # let component_address = GENESIS_HELPER; // Just some address to get it to compile
     /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])

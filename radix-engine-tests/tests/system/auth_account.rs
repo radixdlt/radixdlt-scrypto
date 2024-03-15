@@ -22,8 +22,7 @@ fn test_auth_rule(
         .withdraw_from_account(account, XRD, 1)
         .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, AuthAddresses::signer_set(signer_public_keys));
+    let receipt = ledger.execute_manifest(manifest, AuthAddresses::signer_set(signer_public_keys));
 
     // Assert
     if should_succeed {
@@ -104,12 +103,7 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     let (pk1, _, auth1) = ledger.new_key_pair_with_auth_address();
     let (pk2, _, auth2) = ledger.new_key_pair_with_auth_address();
     let auth_2_of_3 = rule!(require_n_of(2, vec![auth0, auth1, auth2]));
-    test_auth_rule(
-        &mut ledger,
-        &auth_2_of_3,
-        &[pk1.into(), pk2.into()],
-        true,
-    );
+    test_auth_rule(&mut ledger, &auth_2_of_3, &[pk1.into(), pk2.into()], true);
 }
 
 #[test]

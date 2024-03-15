@@ -1,6 +1,6 @@
 use radix_engine_common::prelude::*;
-use scrypto_test::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_stake_reconciliation() {

@@ -12,8 +12,8 @@ use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_substate_store_interface::interface::DatabaseUpdate;
+use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::representations::*;
-use transaction::prelude::TransactionCostingParameters;
 
 define_single_versioned! {
     /// We define a versioned transaction receipt for encoding in the preview API.

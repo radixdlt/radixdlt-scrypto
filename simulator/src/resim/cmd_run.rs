@@ -1,9 +1,9 @@
 use clap::Parser;
 use radix_engine::utils::validate_call_arguments_to_native_components;
+use radix_transactions::manifest::{compile, BlobProvider};
 use regex::{Captures, Regex};
 use std::env;
 use std::path::PathBuf;
-use transaction::manifest::BlobProvider;
 
 use crate::resim::*;
 
@@ -52,7 +52,7 @@ impl Run {
                 blobs.push(std::fs::read(path).map_err(Error::IOError)?);
             }
         }
-        let compiled_manifest = transaction::manifest::compile(
+        let compiled_manifest =  compile(
             &pre_processed_manifest,
             &network,
             BlobProvider::new_with_blobs(blobs),

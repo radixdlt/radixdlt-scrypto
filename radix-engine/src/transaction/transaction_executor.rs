@@ -33,7 +33,7 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
-use transaction::model::*;
+use radix_transactions::model::*;
 
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]

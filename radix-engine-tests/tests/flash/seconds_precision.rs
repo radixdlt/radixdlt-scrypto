@@ -10,10 +10,10 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_tests::common::PackageLoader;
-use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::CommittableSubstateDatabase;
-use transaction::builder::ManifestBuilder;
+use radix_transactions::builder::ManifestBuilder;
+use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
 
 #[test]
 fn get_current_time_rounded_to_seconds_without_state_flash_should_fail() {

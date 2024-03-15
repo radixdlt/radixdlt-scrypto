@@ -11,7 +11,7 @@ use radix_engine::{
 use radix_substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::interface::*;
-use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
+use radix_transactions::validation::{NotarizedTransactionValidator, ValidationConfig};
 
 pub struct RunnerContext {
     #[cfg(feature = "std")]
@@ -163,7 +163,7 @@ where
 #[cfg(test)]
 #[cfg(feature = "std")]
 mod test {
-    use transaction::manifest::{compile, MockBlobProvider};
+    use radix_transactions::manifest::{compile, MockBlobProvider};
 
     use super::*;
 

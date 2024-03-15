@@ -4,9 +4,9 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::prelude::*;
-use scrypto_test::prelude::{DefaultLedgerSimulator, LedgerSimulatorBuilder};
 use radix_substate_store_queries::typed_substate_layout::AccountError;
-use transaction::prelude::*;
+use radix_transactions::prelude::*;
+use scrypto_test::prelude::{DefaultLedgerSimulator, LedgerSimulatorBuilder};
 
 #[test]
 fn account_deposit_method_is_callable_with_owner_signature() {
@@ -29,8 +29,7 @@ fn account_deposit_batch_method_is_callable_with_owner_signature() {
         let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
-        let receipt =
-            ledger.free_tokens_from_faucet_to_account(DepositMethod::DepositBatch, true);
+        let receipt = ledger.free_tokens_from_faucet_to_account(DepositMethod::DepositBatch, true);
 
         // Assert
         receipt.expect_commit_success();
@@ -58,8 +57,7 @@ fn account_deposit_batch_method_is_not_callable_with_out_owner_signature() {
         let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
-        let receipt =
-            ledger.free_tokens_from_faucet_to_account(DepositMethod::DepositBatch, false);
+        let receipt = ledger.free_tokens_from_faucet_to_account(DepositMethod::DepositBatch, false);
 
         // Assert
         receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -73,8 +71,7 @@ fn account_try_deposit_method_is_callable_with_out_owner_signature() {
         let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
-        let receipt =
-            ledger.free_tokens_from_faucet_to_account(DepositMethod::TryDeposit, false);
+        let receipt = ledger.free_tokens_from_faucet_to_account(DepositMethod::TryDeposit, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -143,8 +140,8 @@ fn account_try_deposit_batch_or_abort_method_is_callable_without_owner_signature
         let mut ledger = AccountDepositModesLedgerSimulator::new(is_virtual);
 
         // Act
-        let receipt = ledger
-            .free_tokens_from_faucet_to_account(DepositMethod::TryDepositBatchOrAbort, false);
+        let receipt =
+            ledger.free_tokens_from_faucet_to_account(DepositMethod::TryDepositBatchOrAbort, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -268,9 +265,7 @@ fn allow_existing_disallows_deposit_of_resources_on_deny_list() {
         ledger
             .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
-        ledger
-            .add_to_deny_list(XRD, true)
-            .expect_commit_success();
+        ledger.add_to_deny_list(XRD, true).expect_commit_success();
 
         // Act
         let receipt =

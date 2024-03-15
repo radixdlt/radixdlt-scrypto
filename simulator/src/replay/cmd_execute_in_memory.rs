@@ -8,14 +8,14 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
 use radix_engine_common::prelude::NetworkDefinition;
 use radix_engine_common::prelude::*;
-use std::fs::File;
-use std::path::PathBuf;
-use std::thread;
-use std::time::Duration;
 use radix_substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::CommittableSubstateDatabase;
+use std::fs::File;
+use std::path::PathBuf;
+use std::thread;
+use std::time::Duration;
 use tar::Archive;
 
 /// Run transactions in archive, using in-memory database

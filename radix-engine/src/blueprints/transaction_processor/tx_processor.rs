@@ -15,11 +15,11 @@ use radix_native_sdk::resource::NativeFungibleBucket;
 use radix_native_sdk::resource::NativeNonFungibleBucket;
 use radix_native_sdk::resource::{NativeBucket, NativeProof, Worktop};
 use radix_native_sdk::runtime::LocalAuthZone;
+use radix_transactions::data::transform;
+use radix_transactions::data::TransformHandler;
+use radix_transactions::model::*;
+use radix_transactions::validation::*;
 use sbor::rust::prelude::*;
-use transaction::data::transform;
-use transaction::data::TransformHandler;
-use transaction::model::*;
-use transaction::validation::*;
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorRunInput {

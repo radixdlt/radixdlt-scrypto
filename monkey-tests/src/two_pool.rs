@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::pool::{
     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT, TWO_RESOURCE_POOL_REDEEM_IDENT,
 };
 use radix_engine_interface::prelude::*;
-use transaction::builder::ManifestBuilder;
+use radix_transactions::builder::ManifestBuilder;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]

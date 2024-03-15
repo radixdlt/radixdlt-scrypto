@@ -9,14 +9,14 @@ use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
 use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
-use scrypto::prelude::ComponentAddress;
-use scrypto::NonFungibleData;
-use transaction::manifest::{compile, decompile, BlobProvider};
-use transaction::model::{
+use radix_transactions::manifest::{compile, decompile, BlobProvider};
+use radix_transactions::model::{
     PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
     TransactionPayloadPreparable,
 };
-use transaction::prelude::*;
+use radix_transactions::prelude::*;
+use scrypto::prelude::ComponentAddress;
+use scrypto::NonFungibleData;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     let compiled_transaction = compiled_notarized_transaction();

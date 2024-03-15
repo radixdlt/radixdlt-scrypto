@@ -1,8 +1,8 @@
 use radix_engine::errors::*;
 use radix_engine::transaction::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::*;
+use scrypto_test::prelude::*;
 
 const DECIMAL_MIN: Decimal = Decimal::MIN;
 const DECIMAL_MAX: Decimal = Decimal::MAX;

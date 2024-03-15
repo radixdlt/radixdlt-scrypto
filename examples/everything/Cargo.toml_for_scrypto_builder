@@ -8,10 +8,7 @@ sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-i
 scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
 
 [dev-dependencies]
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
 scrypto-test = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
-radix-native-sdk = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
 
 [profile.release]
 opt-level = 'z'        # Optimize for size.

@@ -7,9 +7,9 @@ use radix_engine_interface::object_modules::role_assignment::{
 };
 use radix_engine_interface::rule;
 use radix_engine_tests::common::*;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::*;
-use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 
 pub struct AuthScenariosEnv {
     acco: ComponentAddress,
@@ -80,8 +80,7 @@ impl AuthScenariosEnv {
             vec![],
         );
 
-        let package_address =
-            ledger.publish_package_simple(PackageLoader::get("auth_scenarios"));
+        let package_address = ledger.publish_package_simple(PackageLoader::get("auth_scenarios"));
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()

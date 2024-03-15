@@ -8,7 +8,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::CodeHash;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use transaction::model::TransactionCostingParameters;
+use radix_transactions::model::TransactionCostingParameters;
 use wabt::wat2wasm;
 
 const KB: u64 = 1024;

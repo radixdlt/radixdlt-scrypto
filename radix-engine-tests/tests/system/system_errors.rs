@@ -1,5 +1,3 @@
-use radix_native_sdk::modules::metadata::Metadata;
-use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
@@ -8,8 +6,10 @@ use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
-use transaction::builder::ManifestBuilder;
 
 const BLUEPRINT_NAME: &str = "MyBlueprint";
 const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;

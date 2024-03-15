@@ -3,8 +3,8 @@ use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use radix_engine_tests::common::*;
+use radix_transactions::model::InstructionV1;
 use scrypto_test::prelude::*;
-use transaction::model::InstructionV1;
 
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack
@@ -21,8 +21,7 @@ const PACKAGE_ADDRESS_PLACE_HOLDER: [u8; NodeId::LENGTH] = [
 fn test_static_package_address() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address1 =
-        ledger.publish_package_simple(PackageLoader::get("static_dependencies"));
+    let package_address1 = ledger.publish_package_simple(PackageLoader::get("static_dependencies"));
 
     let (mut code, mut definition) = PackageLoader::get("static_dependencies");
     let place_holder: GlobalAddress =
@@ -59,8 +58,7 @@ fn test_static_package_address() {
 fn test_static_component_address() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("static_dependencies"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("static_dependencies"));
     let (key, _priv, account) = ledger.new_account(false);
 
     // Act
@@ -93,8 +91,7 @@ fn static_component_should_be_callable() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE);
-    ledger
-        .publish_package_at_address(PackageLoader::get("static_dependencies"), package_address);
+    ledger.publish_package_at_address(PackageLoader::get("static_dependencies"), package_address);
     let receipt = ledger.execute_system_transaction(
         vec![InstructionV1::CallFunction {
             package_address: package_address.into(),

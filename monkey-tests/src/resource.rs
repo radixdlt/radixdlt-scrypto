@@ -25,7 +25,7 @@ use radix_native_sdk::modules::metadata::Metadata;
 use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_native_sdk::resource::{NativeBucket, NativeVault};
 use radix_rust::indexmap;
-use transaction::builder::ManifestBuilder;
+use radix_transactions::builder::ManifestBuilder;
 
 pub const BLUEPRINT_NAME: &str = "MyBlueprint";
 pub const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;

@@ -8,8 +8,8 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltiesInput, PackageDefinition, PACKAGE_CLAIM_ROYALTIES_IDENT,
 };
+use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
-use transaction::builder::ManifestBuilder;
 
 #[test]
 fn claiming_royalties_on_native_packages_should_be_unauthorized() {

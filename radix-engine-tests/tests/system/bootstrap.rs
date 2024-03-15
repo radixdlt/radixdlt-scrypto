@@ -13,12 +13,14 @@ use radix_engine::vm::*;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::prelude::*;
-use scrypto_test::prelude::KeyValueEntrySubstate;
-use scrypto_test::prelude::{CustomGenesis, SubtreeVaults, LedgerSimulatorBuilder};
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_substate_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_substate_store_interface::db_key_mapper::{
+    MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
 use radix_substate_store_queries::typed_substate_layout::*;
-use transaction::prelude::*;
+use radix_transactions::prelude::*;
+use scrypto_test::prelude::KeyValueEntrySubstate;
+use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder, SubtreeVaults};
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {

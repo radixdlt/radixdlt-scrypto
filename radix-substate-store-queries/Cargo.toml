@@ -9,7 +9,7 @@ radix-engine = { workspace = true }
 radix-substate-store-interface = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
-transaction = { workspace = true }
+radix-transactions = { workspace = true }
 radix-rust = { workspace = true }
 itertools = { workspace = true }
 hex = { workspace = true }
@@ -18,8 +18,8 @@ paste = { workspace = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["radix-engine/std", "hex/std", "sbor/std", "transaction/std", "radix-engine-interface/std", "radix-engine-common/std", "radix-substate-store-interface/std", "radix-rust/std"]
-alloc = ["radix-engine/alloc", "hex/alloc", "sbor/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "radix-substate-store-interface/alloc", "radix-rust/alloc"]
+std = ["radix-engine/std", "hex/std", "sbor/std", "radix-transactions/std", "radix-engine-interface/std", "radix-engine-common/std", "radix-substate-store-interface/std", "radix-rust/std"]
+alloc = ["radix-engine/alloc", "hex/alloc", "sbor/alloc", "radix-transactions/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "radix-substate-store-interface/alloc", "radix-rust/alloc"]
 
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]

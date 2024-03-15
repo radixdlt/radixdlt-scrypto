@@ -2,9 +2,9 @@ use radix_engine::transaction::TransactionReceiptV1;
 use radix_engine::vm::NoExtension;
 use radix_engine_common::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use transaction::builder::ManifestBuilder;
+use radix_transactions::builder::ManifestBuilder;
+use scrypto_test::prelude::*;
 
 macro_rules! get_output {
     ($func:ident($($args:tt)*)) => {
@@ -540,8 +540,7 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate_costing() {
         let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(&msg)).collect();
 
         // Act
-        let _ =
-            crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, sigs);
+        let _ = crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, sigs);
     }
 }
 

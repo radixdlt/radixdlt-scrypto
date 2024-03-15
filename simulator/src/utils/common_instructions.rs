@@ -5,8 +5,8 @@
 
 use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
-use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
-use transaction::prelude::*;
+use radix_transactions::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
+use radix_transactions::prelude::*;
 
 use super::{parse_resource_specifier, ResourceSpecifier};
 
@@ -391,7 +391,7 @@ fn build_call_argument<'a>(
 mod test {
     use super::*;
     use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-    use transaction::model::InstructionV1;
+    use radix_transactions::model::InstructionV1;
 
     #[test]
     pub fn parsing_of_u8_succeeds() {

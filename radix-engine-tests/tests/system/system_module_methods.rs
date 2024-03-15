@@ -1,5 +1,3 @@
-use radix_native_sdk::modules::metadata::Metadata;
-use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
@@ -12,8 +10,10 @@ use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::object_modules::royalty::{
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
-use transaction::builder::ManifestBuilder;
 
 fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     // Arrange

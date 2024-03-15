@@ -1,6 +1,3 @@
-use radix_native_sdk::modules::metadata::Metadata;
-use radix_native_sdk::modules::role_assignment::RoleAssignment;
-use radix_native_sdk::resource::{NativeFungibleVault, ResourceManager};
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -9,8 +6,11 @@ use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_native_sdk::resource::{NativeFungibleVault, ResourceManager};
+use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
-use transaction::builder::ManifestBuilder;
 
 #[test]
 fn cannot_lock_fee_on_new_global_vault() {
