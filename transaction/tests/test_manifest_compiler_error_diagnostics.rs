@@ -3,31 +3,9 @@ use transaction::manifest::blob_provider::*;
 use transaction::manifest::compiler::*;
 
 macro_rules! check_manifest {
-    ($manifest:expr) => {{
-        let manifest = include_str!(concat!($manifest, ".rtm"));
-        let diagnostic = include_str!(concat!($manifest, ".diag"));
-
-        let err = compile(
-            manifest,
-            &NetworkDefinition::simulator(),
-            // Some instructions require valid blob in order to let
-            // manifest compile, eg. PUBLISH_PACKAGE_ADVANCED
-            MockBlobProvider::default(),
-        )
-        .unwrap_err();
-
-        let x = compile_error_diagnostics(manifest, err);
-
-        if x != diagnostic {
-            std::fs::write(format!("tests/{}.diag.res", $manifest), &x)
-                .expect("Unable to write file");
-        }
-
-        assert_eq!(x, diagnostic);
-    }};
     ($manifest:expr, $blob_provider:expr) => {{
-        let manifest = include_str!(concat!($manifest, ".rtm"));
-        let diagnostic = include_str!(concat!($manifest, ".diag"));
+        let manifest = include_str!(concat!("assets/", $manifest, ".rtm"));
+        let diagnostic = include_str!(concat!("assets/", $manifest, ".diag"));
 
         let err = compile(manifest, &NetworkDefinition::simulator(), $blob_provider).unwrap_err();
 
@@ -39,6 +17,11 @@ macro_rules! check_manifest {
         }
 
         assert_eq!(x, diagnostic);
+    }};
+    ($manifest:expr) => {{
+        // Some instructions require valid blob in order to let
+        // manifest compile, eg. PUBLISH_PACKAGE_ADVANCED
+        check_manifest!($manifest, MockBlobProvider::default())
     }};
 }
 
