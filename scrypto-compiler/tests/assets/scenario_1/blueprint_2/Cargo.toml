@@ -1,11 +1,11 @@
 [package]
-name = "test_blueprint"
+name = "test_blueprint_2"
 version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../../../../sbor" }
-scrypto = { path = "../../../../scrypto" }
+sbor = { path = "../../../../../sbor" }
+scrypto = { path = "../../../../../scrypto" }
 
 [lib]
 doctest = false

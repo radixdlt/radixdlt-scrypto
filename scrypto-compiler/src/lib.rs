@@ -20,8 +20,9 @@ pub enum ScryptoCompilerError {
     IOErrorWithPath(io::Error, PathBuf, Option<String>),
     /// Returns process exit status in case of 'cargo build' fail.
     CargoBuildFailure(ExitStatus),
-    /// Returns path to Cargo.toml for which cargo metadata command failed and process exit status.
-    CargoMetadataFailure(String, ExitStatus),
+    /// Returns `cargo metadata` command stderr output, path to Cargo.toml for which cargo metadata
+    /// command failed and process exit status.
+    CargoMetadataFailure(String, PathBuf, ExitStatus),
     /// Returns path to Cargo.toml for which results of cargo metadata command is not not valid json
     /// or target directory field is missing.
     CargoTargetDirectoryResolutionError(String),
@@ -39,6 +40,8 @@ pub enum ScryptoCompilerError {
     SchemaExtractionError(ExtractSchemaError),
     /// Returns error occured during schema encoding.
     SchemaEncodeError(EncodeError),
+    /// Returned when trying to compile workspace without any scrypto packages.
+    NothingToCompile,
 }
 
 #[derive(Clone, Default)]
@@ -158,12 +161,14 @@ impl ScryptoCompiler {
 
     // Internal constructor
     fn from_input_params(
-        input_params: &ScryptoCompilerInputParams,
+        input_params: &mut ScryptoCompilerInputParams,
     ) -> Result<Self, ScryptoCompilerError> {
         let manifest_path = Self::get_manifest_path(&input_params.manifest_path)?;
 
+        // If compiling workspace use only packages which defines [package.metadata.scrypto]
+        // or only specified packages with --package parameter
         if let Some(workspace_members) = ScryptoCompiler::is_manifest_workspace(&manifest_path)? {
-            // verify if provided package names belongs to this workspace
+            // Verify if provided package names belongs to this workspace
             if !input_params.package.is_empty() {
                 let wrong_packages: Vec<_> = input_params
                     .package
@@ -180,17 +185,26 @@ impl ScryptoCompiler {
                         package.to_string(),
                     ));
                 }
+            } else {
+                input_params.package = workspace_members
+                    .iter()
+                    .filter_map(|(_, package, scrypto_metadata)| {
+                        if scrypto_metadata.is_some() {
+                            Some(package.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                if input_params.package.is_empty() {
+                    return Err(ScryptoCompilerError::NothingToCompile);
+                }
             }
 
             let manifests = workspace_members
                 .into_iter()
-                .filter_map(|(member_manifest_input_path, package, scrypto_metadata)| {
-                    // If compiling workspace use only packages which defines [package.metadata.scrypto]
-                    // or only specified packages with --package parameter
-                    if (input_params.package.is_empty() && scrypto_metadata.is_some())
-                        || (!input_params.package.is_empty()
-                            && input_params.package.contains(&package))
-                    {
+                .filter_map(|(member_manifest_input_path, package, _)| {
+                    if input_params.package.contains(&package) {
                         Some(
                             match ScryptoCompiler::get_manifest_path(&Some(
                                 member_manifest_input_path,
@@ -271,7 +285,8 @@ impl ScryptoCompiler {
             Ok(target_directory.to_owned())
         } else {
             Err(ScryptoCompilerError::CargoMetadataFailure(
-                manifest_path.display().to_string(),
+                String::from_utf8_lossy(&output.stderr).to_string(),
+                manifest_path.to_path_buf(),
                 output.status,
             ))
         }
@@ -779,7 +794,7 @@ impl ScryptoCompilerBuilder {
     }
 
     pub fn build(&mut self) -> Result<ScryptoCompiler, ScryptoCompilerError> {
-        ScryptoCompiler::from_input_params(&self.input_params)
+        ScryptoCompiler::from_input_params(&mut self.input_params)
     }
 
     pub fn compile(&mut self) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
@@ -803,7 +818,7 @@ mod tests {
 
     fn prepare() -> (PathBuf, TempDir) {
         let mut test_assets_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        test_assets_path.extend(["tests", "assets", "blueprint", "Cargo.toml"]);
+        test_assets_path.extend(["tests", "assets", "scenario_1", "blueprint", "Cargo.toml"]);
         (
             test_assets_path,
             TempDir::new("scrypto-compiler-test").unwrap(),
@@ -1002,6 +1017,13 @@ mod tests {
                 target_path.with_extension("rpd")
             );
         }
+
+        // test_blueprint_4 package should not be compiled because it doesn't define [profile.metadata.scrypto] metadata.
+        assert!(!build_artifacts[0]
+            .wasm
+            .path
+            .with_file_name("test_blueprint_4.wasm")
+            .exists());
     }
 
     #[test]
@@ -1063,6 +1085,13 @@ mod tests {
             assert!(build_artifacts[i].wasm.path.exists());
             assert!(build_artifacts[i].package_definition.path.exists());
         }
+
+        // test_blueprint_1 package should not be compiled
+        assert!(!build_artifacts[0]
+            .wasm
+            .path
+            .with_file_name("test_blueprint_1.wasm")
+            .exists());
     }
 
     #[test]
@@ -1090,6 +1119,37 @@ mod tests {
                 package == "non_existing_package",
             _ => false,
         });
+    }
+
+    #[test]
+    fn test_compilation_workspace_without_scrypto_package() {
+        // Arrange
+        let mut blueprint_manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        blueprint_manifest_path.extend([
+            "tests",
+            "assets",
+            "scenario_2",
+            "some_project",
+            "Cargo.toml",
+        ]);
+        let target_directory = TempDir::new("scrypto-compiler-test").unwrap();
+
+        let mut workspace_directory = blueprint_manifest_path.clone();
+        workspace_directory.pop(); // Remove Cargo.toml from path
+        workspace_directory.pop(); // Remove project folder
+        workspace_directory.push("Cargo.toml"); // Put workspace Cargo.toml file
+
+        // Act
+        let status = ScryptoCompiler::builder()
+            .manifest_path(workspace_directory)
+            .target_directory(target_directory.path())
+            .compile();
+
+        // Assert
+        assert!(matches!(
+            status,
+            Err(ScryptoCompilerError::NothingToCompile)
+        ));
     }
 
     #[test]
@@ -1210,11 +1270,14 @@ mod tests {
 
     #[test]
     fn test_target_binary_path() {
-        let output_path =
-            PathBuf::from("tests/assets/target/wasm32-unknown-unknown/release/test_blueprint.wasm");
-        let output_rpd_path =
-            PathBuf::from("tests/assets/target/wasm32-unknown-unknown/release/test_blueprint.rpd");
-        let package_dir = "./tests/assets/blueprint";
+        let output_path = PathBuf::from(
+            "tests/assets/scenario_1/target/wasm32-unknown-unknown/release/test_blueprint.wasm",
+        );
+        let output_rpd_path = PathBuf::from(
+            "tests/assets/scenario_1/target/wasm32-unknown-unknown/release/test_blueprint.rpd",
+        );
+        let package_dir = "./tests/assets/scenario_1/blueprint";
+
         let compiler = ScryptoCompiler::builder()
             .manifest_path(package_dir)
             .build()
@@ -1237,7 +1300,7 @@ mod tests {
     fn test_target_binary_path_target() {
         let target_dir = "./tests/target";
         let compiler = ScryptoCompiler::builder()
-            .manifest_path("./tests/assets/blueprint")
+            .manifest_path("./tests/assets/scenario_1/blueprint")
             .target_directory(target_dir)
             .custom_options(&["-j", "1"])
             .build()
