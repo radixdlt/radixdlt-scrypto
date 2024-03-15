@@ -222,7 +222,7 @@ pub mod collections {
 
     /// This is a stub implementation for Hasher (used by `IndexMap`, `IndexSet`) to get rid of non-deterministic output (caused by random seeding the hashes).
     /// This is useful when fuzz testing, where exactly the same output is expected for the same input data across different runs.
-    #[cfg(feature = "radix_engine_fuzzing")]
+    #[cfg(feature = "fuzzing")]
     pub mod stub_hasher {
         use core::hash::{BuildHasher, Hasher};
 
@@ -261,11 +261,11 @@ pub mod collections {
     }
 
     pub mod hash_map {
-        #[cfg(feature = "radix_engine_fuzzing")]
+        #[cfg(feature = "fuzzing")]
         pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         #[cfg(feature = "alloc")]
@@ -314,11 +314,11 @@ pub mod collections {
     }
 
     pub mod hash_set {
-        #[cfg(feature = "radix_engine_fuzzing")]
+        #[cfg(feature = "fuzzing")]
         pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         #[cfg(feature = "alloc")]
@@ -389,11 +389,11 @@ pub mod collections {
     /// let index_map = indexmap!(1u32 => "entry_one", 5u32 => "entry_two");
     /// ```
     pub mod index_map {
-        #[cfg(feature = "radix_engine_fuzzing")]
+        #[cfg(feature = "fuzzing")]
         pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         // See https://github.com/bluss/indexmap/pull/207
@@ -451,11 +451,11 @@ pub mod collections {
     /// let index_set = indexset!(1u32, 2u32);
     /// ```
     pub mod index_set {
-        #[cfg(feature = "radix_engine_fuzzing")]
+        #[cfg(feature = "fuzzing")]
         pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         // See https://github.com/bluss/indexmap/pull/207
@@ -511,11 +511,11 @@ pub mod collections {
         #[cfg(not(feature = "alloc"))]
         use std::borrow::Borrow;
 
-        #[cfg(feature = "radix_engine_fuzzing")]
+        #[cfg(feature = "fuzzing")]
         pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "alloc"))]
+        #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "alloc")))]
+        #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         /// A thin wrapper around a `HashMap`, which guarantees that a `HashMap` usage will not

@@ -8,7 +8,7 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::rust::prelude::*;
@@ -94,7 +94,7 @@ impl ComponentAddress {
     }
 }
 
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 // Implementing arbitrary by hand to make sure that global component address is generated.
 impl<'a> Arbitrary<'a> for ComponentAddress {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {

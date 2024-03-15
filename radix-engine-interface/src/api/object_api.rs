@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 use crate::object_modules::metadata::METADATA_BLUEPRINT;
 use crate::object_modules::role_assignment::ROLE_ASSIGNMENT_BLUEPRINT;
 use crate::types::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_common::constants::{
     METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
@@ -19,7 +19,7 @@ use sbor::rust::vec::Vec;
 
 #[repr(u8)]
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -110,7 +110,7 @@ impl ModuleId {
 
 #[repr(u8)]
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -171,7 +171,7 @@ impl Into<ModuleId> for AttachedModuleId {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub struct FieldValue {
     pub value: Vec<u8>,

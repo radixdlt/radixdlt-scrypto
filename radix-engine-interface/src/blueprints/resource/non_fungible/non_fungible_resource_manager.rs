@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::internal_prelude::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_common::data::manifest::model::ManifestAddressReservation;
 use radix_common::data::manifest::ManifestValue;
@@ -18,7 +18,7 @@ use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceRoles {
     pub mint_roles: Option<MintRoles<RoleDefinition>>,
@@ -67,7 +67,7 @@ impl NonFungibleResourceRoles {
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateInput {
     pub owner_role: OwnerRole,
@@ -79,7 +79,7 @@ pub struct NonFungibleResourceManagerCreateInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateManifestInput {
     pub owner_role: OwnerRole,
@@ -91,7 +91,7 @@ pub struct NonFungibleResourceManagerCreateManifestInput {
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateGenericInput<S> {
     pub owner_role: OwnerRole,
@@ -108,7 +108,7 @@ pub type NonFungibleResourceManagerCreateOutput = ResourceAddress;
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub owner_role: OwnerRole,
@@ -122,7 +122,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub owner_role: OwnerRole,
@@ -153,7 +153,7 @@ pub type NonFungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddr
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_ruid_non_fungible_with_initial_supply";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub owner_role: OwnerRole,
@@ -166,7 +166,7 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
     pub owner_role: OwnerRole,
@@ -179,7 +179,7 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
 }
 
 /// For typed value, to skip any codec
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput<S, T> {
     pub owner_role: OwnerRole,
@@ -203,7 +203,7 @@ pub struct NonFungibleResourceManagerUpdateDataInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerUpdateDataManifestInput {
     pub id: NonFungibleLocalId,
@@ -247,7 +247,7 @@ pub struct NonFungibleResourceManagerMintInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintManifestInput {
     pub entries: IndexMap<NonFungibleLocalId, (ManifestValue,)>,
@@ -269,7 +269,7 @@ pub struct NonFungibleResourceManagerMintRuidInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintRuidManifestInput {
     pub entries: Vec<(ManifestValue,)>,
@@ -387,7 +387,7 @@ impl NonFungibleDataSchema {
     }
 }
 
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
     // At the moment I see no smart method to derive Arbitrary for type Schema, which is part of
     // ScryptoSchema, therefore implementing arbitrary by hand.

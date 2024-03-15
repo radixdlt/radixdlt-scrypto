@@ -83,12 +83,12 @@ db_checker = []
 
 # This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi/wasmer
 # to prevent non-determinism when fuzzing
-radix_engine_fuzzing = [
-    "radix-common/radix_engine_fuzzing",
-    "radix-engine-interface/radix_engine_fuzzing",
-    "sbor/radix_engine_fuzzing",
-    "radix-transactions/radix_engine_fuzzing",
-    "radix-rust/radix_engine_fuzzing",
+fuzzing = [
+    "radix-common/fuzzing",
+    "radix-engine-interface/fuzzing",
+    "sbor/fuzzing",
+    "radix-transactions/fuzzing",
+    "radix-rust/fuzzing",
 ]
 
 # This flag enables code parts used only for testing. Using "test" config option is not enough in cases,

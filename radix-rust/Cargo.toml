@@ -15,7 +15,7 @@ alloc = ["hashbrown"]
 serde = ["serde/derive", "indexmap/serde"]
 # This flag is set by fuzz-tests framework and it enables StubHasher (instead of RandomHasher) for
 # Map and Set structs to prevent non-determinism when fuzzing.
-radix_engine_fuzzing = ["indexmap/arbitrary"]
+fuzzing = ["indexmap/arbitrary"]
 
 [lib]
 doctest = false

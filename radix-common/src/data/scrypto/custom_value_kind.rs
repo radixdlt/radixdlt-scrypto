@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 
 pub const VALUE_KIND_REFERENCE: u8 = 0x80;
@@ -8,7 +8,7 @@ pub const VALUE_KIND_DECIMAL: u8 = 0xa0;
 pub const VALUE_KIND_PRECISE_DECIMAL: u8 = 0xb0;
 pub const VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0xc0;
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),

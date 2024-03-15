@@ -30,7 +30,7 @@ trace = ["sbor-derive/trace"]
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
-radix_engine_fuzzing = ["arbitrary", "radix-rust/radix_engine_fuzzing"]
+fuzzing = ["arbitrary", "radix-rust/fuzzing"]
 
 [lib]
 doctest = false

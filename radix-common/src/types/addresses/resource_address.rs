@@ -7,7 +7,7 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::rust::prelude::*;
@@ -15,10 +15,7 @@ use sbor::*;
 
 /// Address to a global resource
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "fuzzing", derive(serde::Serialize, serde::Deserialize))]
 pub struct ResourceAddress(NodeId); // private to ensure entity type check
 
 impl ResourceAddress {
@@ -67,7 +64,7 @@ impl ResourceAddress {
     }
 }
 
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 // Implementing arbitrary by hand to make sure that resource entity type marker is present.
 // Otherwise 'InvalidCustomValue' error is returned
 impl<'a> Arbitrary<'a> for ResourceAddress {

@@ -1,4 +1,4 @@
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_rust::copy_u8_array;
 use sbor::rust::convert::TryFrom;
@@ -13,7 +13,7 @@ use crate::*;
 
 pub const PRECISE_DECIMAL_SIZE: usize = PreciseDecimal::BITS / 8;
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestPreciseDecimal(pub [u8; PRECISE_DECIMAL_SIZE]);
 

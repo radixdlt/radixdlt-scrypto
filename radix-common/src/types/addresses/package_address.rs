@@ -7,7 +7,7 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::rust::prelude::*;
@@ -75,7 +75,7 @@ impl PackageAddress {
     }
 }
 
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 // Implementing arbitrary by hand to make sure that EntityType::GlobalPackage marker is present.
 // Otherwise 'InvalidCustomValue' error is returned
 impl<'a> Arbitrary<'a> for PackageAddress {

@@ -1,4 +1,4 @@
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use sbor::rust::convert::TryFrom;
 #[cfg(not(feature = "alloc"))]
@@ -9,7 +9,7 @@ use sbor::*;
 use crate::data::manifest::*;
 use crate::*;
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[must_use]
 pub struct ManifestBucket(pub u32);

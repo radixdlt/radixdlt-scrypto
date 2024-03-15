@@ -53,7 +53,7 @@ secp256k1_sign_and_validate = ["secp256k1"]
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
-radix_engine_fuzzing = ["arbitrary", "serde", "bnum/arbitrary", "bnum/serde", "sbor/radix_engine_fuzzing", "radix-rust/radix_engine_fuzzing"]
+fuzzing = ["arbitrary", "serde", "bnum/arbitrary", "bnum/serde", "sbor/fuzzing", "radix-rust/fuzzing"]
 
 resource_tracker=[]
 full_math_benches = [ "dep:rug", "dep:ethnum"]

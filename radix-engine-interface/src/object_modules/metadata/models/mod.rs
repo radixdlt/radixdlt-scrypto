@@ -8,7 +8,7 @@ pub use origin::*;
 
 use crate::internal_prelude::*;
 use crate::types::KeyValueStoreInit;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_common::crypto::PublicKey;
 use radix_common::crypto::PublicKeyHash;
@@ -20,7 +20,7 @@ use radix_common::types::GlobalAddress;
 use radix_common::types::NonFungibleGlobalId;
 use sbor::SborEnum;
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum GenericMetadataValue<U, O> {
     #[sbor(discriminator(METADATA_VALUE_STRING_DISCRIMINATOR))]

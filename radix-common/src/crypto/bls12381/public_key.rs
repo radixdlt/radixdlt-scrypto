@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use blst::{
     min_pk::{AggregatePublicKey, PublicKey},
@@ -7,7 +7,7 @@ use blst::{
 };
 
 /// Represents a BLS12-381 G1 public key.
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]

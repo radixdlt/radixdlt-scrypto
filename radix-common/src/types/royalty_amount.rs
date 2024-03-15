@@ -1,9 +1,9 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(

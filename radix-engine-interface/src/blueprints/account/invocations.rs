@@ -1,6 +1,6 @@
 use crate::blueprints::component::*;
 use crate::blueprints::resource::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_common::math::Decimal;
 use radix_common::prelude::*;
@@ -39,14 +39,14 @@ define_type_info_marker!(Some(ACCOUNT_PACKAGE), Account);
 
 pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountCreateAdvancedInput {
     pub owner_role: OwnerRole,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct AccountCreateAdvancedManifestInput {
     pub owner_role: OwnerRole,
@@ -61,7 +61,7 @@ pub type AccountCreateAdvancedOutput = Global<AccountObjectTypeInfo>;
 
 pub const ACCOUNT_CREATE_IDENT: &str = "create";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateInput {}
 

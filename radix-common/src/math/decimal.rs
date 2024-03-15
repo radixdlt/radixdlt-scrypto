@@ -1,4 +1,4 @@
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use core::cmp::Ordering;
 use num_bigint::BigInt;
@@ -9,7 +9,7 @@ use sbor::rust::format;
 use sbor::rust::ops::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use serde::{Deserialize, Serialize};
 
 use crate::data::manifest::ManifestCustomValueKind;
@@ -34,10 +34,7 @@ use super::CheckedTruncate;
 /// Min            : -3138550867693340381917894711603833208051.177722232017256448
 ///
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(Arbitrary, Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary, Serialize, Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal(pub I192);
 

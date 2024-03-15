@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
 use crate::object_modules::role_assignment::ToRoleEntry;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 
 use super::AccessRule;
@@ -8,7 +8,7 @@ use super::AccessRule;
 pub const SELF_ROLE: &'static str = "_self_";
 pub const OWNER_ROLE: &'static str = "_owner_";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct MethodKey {
@@ -29,7 +29,7 @@ impl From<&str> for MethodKey {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum MethodAccessibility {
     /// Method is accessible to all
@@ -61,7 +61,7 @@ impl From<RoleList> for MethodAccessibility {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct ModuleRoleKey {
     pub module: ModuleId,
@@ -78,7 +78,7 @@ impl ModuleRoleKey {
 }
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -127,7 +127,7 @@ impl RoleKey {
 }
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
@@ -142,7 +142,7 @@ pub enum OwnerRoleUpdater {
 }
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
@@ -160,7 +160,7 @@ impl OwnerRoleEntry {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor, Default,
 )]
@@ -208,7 +208,7 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 }
 
 /// Front end data structure for specifying owner role
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
 )]
@@ -247,7 +247,7 @@ impl Into<OwnerRoleEntry> for OwnerRole {
 }
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

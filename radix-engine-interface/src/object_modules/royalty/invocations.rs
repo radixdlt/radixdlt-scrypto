@@ -19,7 +19,7 @@ pub const COMPONENT_ROYALTY_BLUEPRINT: &str = "ComponentRoyalty";
 pub const COMPONENT_ROYALTY_CREATE_IDENT: &str = "create";
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -34,7 +34,7 @@ pub type ComponentRoyaltyCreateOutput = Own;
 pub const COMPONENT_ROYALTY_SET_ROYALTY_IDENT: &str = "set_royalty";
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -50,7 +50,7 @@ pub type ComponentRoyaltySetOutput = ();
 pub const COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT: &str = "lock_royalty";
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -65,7 +65,7 @@ pub type ComponentRoyaltyLockOutput = ();
 pub const COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT: &str = "claim_royalties";
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(

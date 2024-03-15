@@ -1,7 +1,7 @@
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::types::NodeId;
 use crate::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_rust::copy_u8_array;
 #[cfg(not(feature = "alloc"))]
@@ -9,7 +9,7 @@ use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 use sbor::*;
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Own(pub NodeId);
 

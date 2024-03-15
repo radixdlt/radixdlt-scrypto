@@ -1,4 +1,4 @@
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::copy_u8_array;
 use sbor::rust::prelude::*;
@@ -61,7 +61,7 @@ impl ManifestNonFungibleLocalId {
     }
 }
 
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 impl<'a> Arbitrary<'a> for ManifestNonFungibleLocalId {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
         let val = match u.int_in_range(0..=3).unwrap() {

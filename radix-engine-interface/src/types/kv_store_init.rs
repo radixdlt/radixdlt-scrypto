@@ -1,10 +1,10 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use core::hash::Hash;
 use sbor::rust::prelude::*;
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct KeyValueStoreInit<K: Hash + Eq + PartialEq, V> {
@@ -60,7 +60,7 @@ impl<K: Hash + Eq + PartialEq, V> KeyValueStoreInit<K, V> {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreInitEntry<V> {
     pub value: Option<V>,

@@ -1,6 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::internal_prelude::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use bitflags::bitflags;
 use radix_common::data::scrypto::model::*;
@@ -54,7 +54,7 @@ pub struct VaultRecallInput {
 pub type VaultRecallOutput = Bucket;
 
 bitflags! {
-    #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+    #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
     #[derive(Sbor)]
     pub struct VaultFreezeFlags: u32 {
         const WITHDRAW = 0b00000001;
@@ -65,7 +65,7 @@ bitflags! {
 
 pub const VAULT_FREEZE_IDENT: &str = "freeze";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct VaultFreezeInput {
     pub to_freeze: VaultFreezeFlags,
@@ -75,7 +75,7 @@ pub type VaultFreezeOutput = ();
 
 pub const VAULT_UNFREEZE_IDENT: &str = "unfreeze";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct VaultUnfreezeInput {
     pub to_unfreeze: VaultFreezeFlags,

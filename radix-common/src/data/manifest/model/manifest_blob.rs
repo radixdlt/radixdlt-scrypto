@@ -1,4 +1,4 @@
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_rust::copy_u8_array;
 use sbor::rust::convert::TryFrom;
@@ -10,7 +10,7 @@ use sbor::*;
 use crate::data::manifest::*;
 use crate::*;
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestBlobRef(pub [u8; 32]);
 

@@ -7,17 +7,14 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::rust::prelude::*;
 use sbor::*;
 
 /// Address to a global entity
-#[cfg_attr(
-    feature = "radix_engine_fuzzing",
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "fuzzing", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct GlobalAddress(NodeId); // private to ensure entity type check
 
@@ -63,7 +60,7 @@ impl GlobalAddress {
     }
 }
 
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 // Implementing arbitrary by hand to make sure that EntityType::Global.. marker is present.
 // Otherwise 'InvalidCustomValue' error is returned
 impl<'a> Arbitrary<'a> for GlobalAddress {

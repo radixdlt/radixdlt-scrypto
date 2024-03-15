@@ -29,7 +29,7 @@ alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "radix-blueprint-schema-
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
-radix_engine_fuzzing = ["arbitrary", "sbor/radix_engine_fuzzing", "radix-common/radix_engine_fuzzing", "radix-rust/radix_engine_fuzzing", "dep:serde"]
+fuzzing = ["arbitrary", "sbor/fuzzing", "radix-common/fuzzing", "radix-rust/fuzzing", "dep:serde"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

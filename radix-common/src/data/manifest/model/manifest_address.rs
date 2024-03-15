@@ -2,7 +2,7 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::types::EntityType;
 use crate::types::NodeId;
 use crate::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use sbor::rust::fmt;
 use sbor::*;
@@ -10,7 +10,7 @@ use sbor::*;
 /// Any address supported by manifest, both global and local.
 ///
 /// Must start with a supported entity type byte.
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[must_use]
 pub enum ManifestAddress {
