@@ -149,9 +149,7 @@ impl ScryptoCompiler {
     ) -> Result<Self, ScryptoCompilerError> {
         let manifest_path = Self::get_manifest_path(&input_params.manifest_path)?;
 
-        if let Some(workspace_members) =
-            ScryptoCompiler::is_manifest_workspace(&manifest_path).unwrap()
-        {
+        if let Some(workspace_members) = ScryptoCompiler::is_manifest_workspace(&manifest_path)? {
             // verify if provided package names belongs to this workspace
             if !input_params.package.is_empty() {
                 let wrong_packages: Vec<_> = input_params
@@ -344,9 +342,11 @@ impl ScryptoCompiler {
         let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
-        if manifest.workspace.is_some() && !manifest.workspace.unwrap().members.is_empty() {
-            // For workspace compilation there is no binary file for the main manifest
-            return Ok(None);
+        if let Some(w) = manifest.workspace {
+            if !w.members.is_empty() {
+                // For workspace compilation there is no binary file for the main manifest
+                return Ok(None);
+            }
         }
         let mut wasm_name = None;
         if let Some(lib) = manifest.lib {
