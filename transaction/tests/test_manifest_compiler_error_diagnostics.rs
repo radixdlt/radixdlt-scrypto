@@ -12,11 +12,17 @@ macro_rules! check_manifest {
         let x = compile_error_diagnostics(manifest, err);
 
         if x != diagnostic {
-            std::fs::write(format!("tests/{}.diag.res", $manifest), &x)
-                .expect("Unable to write file");
-        }
+            let path = format!("tests/assets/{}.diag.res", $manifest);
 
-        assert_eq!(x, diagnostic);
+            std::fs::write(&path, &x).expect("Unable to write file");
+
+            eprintln!("expected diagnostic report:\n{}", &diagnostic);
+            eprintln!(
+                "current diagnostic report (also available in {}):\n{}",
+                path, &x
+            );
+            panic!("diagnostic reports differ");
+        }
     }};
     ($manifest:expr) => {{
         // Some instructions require valid blob in order to let
