@@ -390,6 +390,11 @@ CALL_ROLE_ASSIGNMENT_METHOD
     Enum<0u8>()
     "hello"
 ;
+CALL_DIRECT_VAULT_METHOD
+    Address("${vault_address}")
+    "unknown"
+    123u8
+;
 "##,
             ),
         );
