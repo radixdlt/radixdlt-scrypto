@@ -16,6 +16,9 @@ pub struct CallMethod {
     pub method_name: String,
 
     /// The call arguments, such as "5", "hello", "<resource_address>:<amount>" and "<resource_address>:<nf_local_id1>,<nf_local_id2>"
+    /// Tuple argument shall be put within round brackets and delimited with ',' eg. "(<resource_address>,<nf_local_id>)"
+    /// Array argument values shall be put within square brackets and delimited with ',' eg. "[<nf_local_id1>,<nf_local_id2>]"
+    #[clap(verbatim_doc_comment)]
     pub arguments: Vec<String>,
 
     /// The proofs to add to the auth zone, in form of "<resource_address>:<amount>" or "<resource_address>:<nf_local_id1>,<nf_local_id2>"

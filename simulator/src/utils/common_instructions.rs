@@ -116,6 +116,7 @@ pub fn build_call_arguments<'a>(
                 let (returned_builder, value) = build_call_argument(
                     builder,
                     address_bech32_decoder,
+                    schema,
                     schema
                         .v1()
                         .resolve_type_kind(*f)
@@ -171,9 +172,237 @@ macro_rules! matches_bucket {
     };
 }
 
+fn transform_scrypto_type_kind(
+    type_kind: &ScryptoTypeKind<LocalTypeId>,
+    type_validation: &TypeValidation<ScryptoCustomTypeValidation>,
+) -> Result<ManifestValueKind, BuildCallArgumentError> {
+    match type_kind {
+        ScryptoTypeKind::Bool => Ok(ManifestValueKind::Bool),
+        ScryptoTypeKind::I8 => Ok(ManifestValueKind::I8),
+        ScryptoTypeKind::I16 => Ok(ManifestValueKind::I16),
+        ScryptoTypeKind::I32 => Ok(ManifestValueKind::I32),
+        ScryptoTypeKind::I64 => Ok(ManifestValueKind::I64),
+        ScryptoTypeKind::I128 => Ok(ManifestValueKind::I128),
+        ScryptoTypeKind::U8 => Ok(ManifestValueKind::U8),
+        ScryptoTypeKind::U16 => Ok(ManifestValueKind::U16),
+        ScryptoTypeKind::U32 => Ok(ManifestValueKind::U32),
+        ScryptoTypeKind::U64 => Ok(ManifestValueKind::U64),
+        ScryptoTypeKind::U128 => Ok(ManifestValueKind::U128),
+        ScryptoTypeKind::String => Ok(ManifestValueKind::String),
+        ScryptoTypeKind::Array { .. } => Ok(ManifestValueKind::Array),
+        ScryptoTypeKind::Tuple { .. } => Ok(ManifestValueKind::Tuple),
+        ScryptoTypeKind::Enum { .. } => Ok(ManifestValueKind::Enum),
+        ScryptoTypeKind::Map { .. } => Ok(ManifestValueKind::Map),
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Decimal) => {
+            Ok(ManifestValueKind::Custom(ManifestCustomValueKind::Decimal))
+        }
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::PreciseDecimal) => Ok(
+            ManifestValueKind::Custom(ManifestCustomValueKind::PreciseDecimal),
+        ),
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::NonFungibleLocalId) => Ok(
+            ManifestValueKind::Custom(ManifestCustomValueKind::NonFungibleLocalId),
+        ),
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference) => {
+            Ok(ManifestValueKind::Custom(ManifestCustomValueKind::Address))
+        }
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own)
+            if matches_bucket!(type_validation)
+                || matches_bucket!(type_validation, FUNGIBLE_BUCKET_BLUEPRINT)
+                || matches_bucket!(type_validation, NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
+        {
+            Ok(ManifestValueKind::Custom(ManifestCustomValueKind::Bucket))
+        }
+
+        ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own)
+            if matches!(
+                type_validation,
+                TypeValidation::Custom(ScryptoCustomTypeValidation::Own(OwnValidation::IsProof))
+            ) =>
+        {
+            Ok(ManifestValueKind::Custom(ManifestCustomValueKind::Proof))
+        }
+        _ => Err(BuildCallArgumentError::UnsupportedType(type_kind.clone())),
+    }
+}
+
+// Splits argument tuple or array elements delimited with "," into vector of elements.
+// Elements with brackets (round or square) are taken as is (even if they may include ",")
+fn split_argument_tuple_or_array(argument: &str) -> Result<Vec<String>, BuildCallArgumentError> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+    let mut round_brackets_level = 0;
+    let mut square_brackets_level = 0;
+    let mut prev_c: Option<char> = None;
+
+    let mut chars = argument.chars();
+
+    while let Some(c) = chars.next() {
+        if c.is_whitespace() {
+            continue;
+        }
+        match c {
+            ',' if round_brackets_level == 0 && square_brackets_level == 0 => {
+                result.push(current.clone());
+                current.clear();
+            }
+            '(' => {
+                current.push(c);
+                round_brackets_level += 1;
+            }
+            ')' => {
+                current.push(c);
+                if round_brackets_level > 0 {
+                    round_brackets_level -= 1;
+                } else {
+                    // Non matching closing bracket
+                    return Err(BuildCallArgumentError::FailedToParse(format!(
+                        "Non-matching closing bracket ')' : {}",
+                        argument
+                    )));
+                }
+            }
+            '[' => {
+                current.push(c);
+                square_brackets_level += 1;
+            }
+            ']' => {
+                current.push(c);
+                if square_brackets_level > 0 {
+                    square_brackets_level -= 1;
+                } else {
+                    // Non matching closing bracket
+                    return Err(BuildCallArgumentError::FailedToParse(format!(
+                        "Non-matching closing bracket ']' : {}",
+                        argument
+                    )));
+                }
+            }
+            _ => match prev_c {
+                Some(prev_c) if prev_c == ']' || prev_c == ')' => {
+                    return Err(BuildCallArgumentError::FailedToParse(format!(
+                        "Invalid argument after closing bracket {:?}: {}",
+                        prev_c, argument
+                    )))
+                }
+                _ => current.push(c),
+            },
+        }
+        prev_c = Some(c);
+    }
+    if round_brackets_level != 0 || square_brackets_level != 0 {
+        Err(BuildCallArgumentError::FailedToParse(format!(
+            "Non matching brackets found : {}",
+            argument
+        )))
+    } else {
+        if !current.is_empty() {
+            result.push(current);
+        }
+
+        Ok(result)
+    }
+}
+
+fn parse_tuple(
+    mut builder: ManifestBuilder,
+    address_bech32_decoder: &AddressBech32Decoder,
+    schema: &VersionedScryptoSchema,
+    field_types: &[LocalTypeId],
+    argument: String,
+    account: Option<ComponentAddress>,
+) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentError> {
+    let mut manifests_vec: Vec<ManifestValue> = vec![];
+    if !argument.starts_with("(") || !argument.ends_with(")") {
+        return Err(BuildCallArgumentError::FailedToParse(format!(
+            "Tuple argument not within round brackets: {}",
+            argument
+        )));
+    }
+    let args_parts = split_argument_tuple_or_array(&argument[1..argument.len() - 1])?;
+
+    for (f, arg) in field_types.iter().zip(args_parts) {
+        let (b, mv) = build_call_argument(
+            builder,
+            address_bech32_decoder,
+            schema,
+            &schema
+                .v1()
+                .resolve_type_kind(*f)
+                .expect("Inconsistent schema"),
+            &schema
+                .v1()
+                .resolve_type_validation(*f)
+                .expect("Inconsistent schema"),
+            arg.to_owned(),
+            account,
+        )?;
+        builder = b;
+        manifests_vec.push(mv);
+    }
+    Ok((
+        builder,
+        ManifestValue::Tuple {
+            fields: manifests_vec,
+        },
+    ))
+}
+
+fn parse_array(
+    mut builder: ManifestBuilder,
+    address_bech32_decoder: &AddressBech32Decoder,
+    schema: &VersionedScryptoSchema,
+    element_type: &LocalTypeId,
+    argument: String,
+    account: Option<ComponentAddress>,
+) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentError> {
+    let mut elements: Vec<ManifestValue> = vec![];
+    if !argument.starts_with("[") || !argument.ends_with("]") {
+        return Err(BuildCallArgumentError::FailedToParse(format!(
+            "Array argument not within square brackets: {}",
+            argument
+        )));
+    }
+    let args_parts = split_argument_tuple_or_array(&argument[1..argument.len() - 1])?;
+
+    let element_type_kind = schema
+        .v1()
+        .resolve_type_kind(*element_type)
+        .expect("Inconsistent schema");
+    let element_type_validation = schema
+        .v1()
+        .resolve_type_validation(*element_type)
+        .expect("Inconsistent schema");
+
+    for arg in args_parts {
+        let (b, mv) = build_call_argument(
+            builder,
+            address_bech32_decoder,
+            schema,
+            &element_type_kind,
+            &element_type_validation,
+            arg.to_owned(),
+            account,
+        )?;
+        builder = b;
+        elements.push(mv);
+    }
+
+    Ok((
+        builder,
+        ManifestValue::Array {
+            element_value_kind: transform_scrypto_type_kind(
+                element_type_kind,
+                element_type_validation,
+            )?,
+            elements,
+        },
+    ))
+}
+
 fn build_call_argument<'a>(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
+    schema: &VersionedScryptoSchema,
     type_kind: &ScryptoTypeKind<LocalTypeId>,
     type_validation: &TypeValidation<ScryptoCustomTypeValidation>,
     argument: String,
@@ -192,6 +421,22 @@ fn build_call_argument<'a>(
         ScryptoTypeKind::U64 => parse_basic_type!(builder, argument, U64),
         ScryptoTypeKind::U128 => parse_basic_type!(builder, argument, U128),
         ScryptoTypeKind::String => Ok((builder, ManifestValue::String { value: argument })),
+        ScryptoTypeKind::Tuple { field_types } => parse_tuple(
+            builder,
+            address_bech32_decoder,
+            schema,
+            field_types,
+            argument,
+            account,
+        ),
+        ScryptoTypeKind::Array { element_type } => parse_array(
+            builder,
+            address_bech32_decoder,
+            schema,
+            element_type,
+            argument,
+            account,
+        ),
         ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Decimal) => Ok((
             builder,
             ManifestValue::Custom {
@@ -400,7 +645,7 @@ mod test {
         let type_kind = ScryptoTypeKind::U8;
 
         // Act
-        let parsed_arg: u8 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: u8 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -414,7 +659,7 @@ mod test {
         let type_kind = ScryptoTypeKind::U16;
 
         // Act
-        let parsed_arg: u16 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: u16 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -428,7 +673,7 @@ mod test {
         let type_kind = ScryptoTypeKind::U32;
 
         // Act
-        let parsed_arg: u32 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: u32 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -442,7 +687,7 @@ mod test {
         let type_kind = ScryptoTypeKind::U64;
 
         // Act
-        let parsed_arg: u64 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: u64 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -456,7 +701,7 @@ mod test {
         let type_kind = ScryptoTypeKind::U128;
 
         // Act
-        let parsed_arg: u128 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: u128 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -470,7 +715,7 @@ mod test {
         let type_kind = ScryptoTypeKind::I8;
 
         // Act
-        let parsed_arg: i8 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: i8 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -484,7 +729,7 @@ mod test {
         let type_kind = ScryptoTypeKind::I16;
 
         // Act
-        let parsed_arg: i16 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: i16 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -498,7 +743,7 @@ mod test {
         let type_kind = ScryptoTypeKind::I32;
 
         // Act
-        let parsed_arg: i32 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: i32 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -512,7 +757,7 @@ mod test {
         let type_kind = ScryptoTypeKind::I64;
 
         // Act
-        let parsed_arg: i64 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: i64 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -526,7 +771,7 @@ mod test {
         let type_kind = ScryptoTypeKind::I128;
 
         // Act
-        let parsed_arg: i128 = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: i128 = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -540,7 +785,7 @@ mod test {
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Decimal);
 
         // Act
-        let parsed_arg: Decimal = build_and_decode_arg(arg, type_kind, TypeValidation::None)
+        let parsed_arg: Decimal = build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
             .expect("Failed to parse arg");
 
         // Assert
@@ -562,7 +807,8 @@ mod test {
 
         // Act
         let parsed_arg: ComponentAddress =
-            build_and_decode_arg(arg, type_kind, type_validation).expect("Failed to parse arg");
+            build_and_decode_arg(arg, None, type_kind, type_validation)
+                .expect("Failed to parse arg");
 
         // Assert
         assert_eq!(parsed_arg, component_address)
@@ -583,8 +829,8 @@ mod test {
         ));
 
         // Act
-        let parsed_arg: GlobalAddress =
-            build_and_decode_arg(arg, type_kind, type_validation).expect("Failed to parse arg");
+        let parsed_arg: GlobalAddress = build_and_decode_arg(arg, None, type_kind, type_validation)
+            .expect("Failed to parse arg");
 
         // Assert
         assert_eq!(parsed_arg, global_address)
@@ -609,8 +855,8 @@ mod test {
         ));
 
         // Act
-        let parsed_arg: GlobalAddress =
-            build_and_decode_arg(arg, type_kind, type_validation).expect("Failed to parse arg");
+        let parsed_arg: GlobalAddress = build_and_decode_arg(arg, None, type_kind, type_validation)
+            .expect("Failed to parse arg");
 
         // Assert
         assert_eq!(parsed_arg, global_address)
@@ -631,7 +877,8 @@ mod test {
 
         // Act
         let parsed_arg: PackageAddress =
-            build_and_decode_arg(arg, type_kind, type_validation).expect("Failed to parse arg");
+            build_and_decode_arg(arg, None, type_kind, type_validation)
+                .expect("Failed to parse arg");
 
         // Assert
         assert_eq!(parsed_arg, package_address)
@@ -652,7 +899,8 @@ mod test {
 
         // Act
         let parsed_arg: ResourceAddress =
-            build_and_decode_arg(arg, type_kind, type_validation).expect("Failed to parse arg");
+            build_and_decode_arg(arg, None, type_kind, type_validation)
+                .expect("Failed to parse arg");
 
         // Assert
         assert_eq!(parsed_arg, resource_address)
@@ -665,8 +913,9 @@ mod test {
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::PreciseDecimal);
 
         // Act
-        let parsed_arg: PreciseDecimal = build_and_decode_arg(arg, type_kind, TypeValidation::None)
-            .expect("Failed to parse arg");
+        let parsed_arg: PreciseDecimal =
+            build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
+                .expect("Failed to parse arg");
 
         // Assert
         assert_eq!(parsed_arg, PreciseDecimal::from_str("12").unwrap())
@@ -680,7 +929,7 @@ mod test {
 
         // Act
         let parsed_arg: NonFungibleLocalId =
-            build_and_decode_arg(arg, type_kind, TypeValidation::None)
+            build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
                 .expect("Failed to parse arg");
 
         // Assert
@@ -698,7 +947,7 @@ mod test {
 
         // Act
         let parsed_arg: NonFungibleLocalId =
-            build_and_decode_arg(arg, type_kind, TypeValidation::None)
+            build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
                 .expect("Failed to parse arg");
 
         // Assert
@@ -720,7 +969,7 @@ mod test {
 
         // Act
         let parsed_arg: NonFungibleLocalId =
-            build_and_decode_arg(arg, type_kind, TypeValidation::None)
+            build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
                 .expect("Failed to parse arg");
 
         // Assert
@@ -735,7 +984,7 @@ mod test {
 
         // Act
         let parsed_arg: NonFungibleLocalId =
-            build_and_decode_arg(arg, type_kind, TypeValidation::None)
+            build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
                 .expect("Failed to parse arg");
 
         // Assert
@@ -774,7 +1023,7 @@ mod test {
         for type_validation in type_validations {
             // Act
             let (builder, parsed_arg): (ManifestBuilder, ManifestBucket) =
-                build_and_decode(&arg, type_kind.clone(), type_validation)
+                build_and_decode(&arg, None, type_kind.clone(), type_validation)
                     .expect("Failed to parse arg");
             let instructions = builder.build().instructions;
 
@@ -820,7 +1069,7 @@ mod test {
         for type_validation in type_validations {
             // Act
             let (builder, parsed_arg): (ManifestBuilder, ManifestBucket) =
-                build_and_decode(&arg, type_kind.clone(), type_validation)
+                build_and_decode(&arg, None, type_kind.clone(), type_validation)
                     .expect("Failed to parse arg");
             let instructions = builder.build().instructions;
             let ids = local_ids
@@ -839,15 +1088,106 @@ mod test {
         }
     }
 
-    pub fn build_and_decode<S: AsRef<str>, T: ManifestDecode>(
+    #[test]
+    pub fn parsing_of_decimal_array_succeeds() {
+        // Arrange
+        let arg = "[12,13,14]";
+        let element_type = LocalTypeId::WellKnown(well_known_scrypto_custom_types::DECIMAL_TYPE);
+        let type_kind = ScryptoTypeKind::Array { element_type };
+
+        // Act
+        let parsed_arg: Vec<Decimal> =
+            build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
+                .expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, vec![dec!("12"), dec!("13"), dec!("14")]);
+    }
+
+    #[test]
+    pub fn parsing_of_tuple_succeeds() {
+        // Arrange
+        let arg = "(12,13,-14)";
+        let field_types = vec![
+            LocalTypeId::WellKnown(well_known_scrypto_custom_types::DECIMAL_TYPE),
+            LocalTypeId::WellKnown(basic_well_known_types::U8_TYPE),
+            LocalTypeId::WellKnown(basic_well_known_types::I8_TYPE),
+        ];
+        let type_kind = ScryptoTypeKind::Tuple { field_types };
+
+        // Act
+        let parsed_arg: (Decimal, u8, i8) =
+            build_and_decode_arg(arg, None, type_kind, TypeValidation::None)
+                .expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, (dec!("12"), 13u8, -14i8));
+    }
+
+    #[test]
+    pub fn parsing_of_nested_tuple_succeeds() {
+        // Arrange
+        let arg = "(12,(true, #12#),[1,2])";
+        let field_types = vec![
+            LocalTypeId::WellKnown(basic_well_known_types::BOOL_TYPE),
+            LocalTypeId::WellKnown(well_known_scrypto_custom_types::NON_FUNGIBLE_LOCAL_ID_TYPE),
+        ];
+        let element_type = LocalTypeId::WellKnown(well_known_scrypto_custom_types::DECIMAL_TYPE);
+
+        let schema = VersionedScryptoSchema::V1(SchemaV1 {
+            type_kinds: vec![
+                ScryptoTypeKind::Array { element_type },
+                ScryptoTypeKind::Tuple { field_types },
+            ],
+            type_metadata: vec![],
+            type_validations: vec![TypeValidation::None, TypeValidation::None],
+        });
+
+        let field_types = vec![
+            LocalTypeId::WellKnown(well_known_scrypto_custom_types::DECIMAL_TYPE),
+            LocalTypeId::SchemaLocalIndex(1),
+            LocalTypeId::SchemaLocalIndex(0),
+        ];
+        let type_kind = ScryptoTypeKind::Tuple { field_types };
+
+        // Act
+        let parsed_arg: (Decimal, (bool, NonFungibleLocalId), Vec<Decimal>) =
+            build_and_decode_arg(arg, Some(schema), type_kind, TypeValidation::None)
+                .expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(
+            parsed_arg,
+            (
+                dec!("12"),
+                (true, NonFungibleLocalId::integer(12),),
+                vec![dec!("1"), dec!("2")]
+            )
+        );
+    }
+
+    #[cfg(test)]
+    fn build_and_decode<S: AsRef<str>, T: ManifestDecode>(
         arg: S,
+        schema: Option<VersionedScryptoSchema>,
         type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
     ) -> Result<(ManifestBuilder, T), BuildAndDecodeArgError> {
+        let schema = if let Some(schema) = schema {
+            schema
+        } else {
+            VersionedScryptoSchema::V1(SchemaV1 {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
+            })
+        };
+
         let builder = ManifestBuilder::new();
         let (builder, built_arg) = build_call_argument(
             builder,
             &AddressBech32Decoder::for_simulator(),
+            &schema,
             &type_kind,
             &type_validation,
             arg.as_ref().to_owned(),
@@ -863,18 +1203,67 @@ mod test {
         ))
     }
 
-    pub fn build_and_decode_arg<S: AsRef<str>, T: ManifestDecode>(
+    #[cfg(test)]
+    fn build_and_decode_arg<S: AsRef<str>, T: ManifestDecode>(
         arg: S,
+        schema: Option<VersionedScryptoSchema>,
         type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
     ) -> Result<T, BuildAndDecodeArgError> {
-        build_and_decode(arg, type_kind, type_validation).map(|(_, arg)| arg)
+        build_and_decode(arg, schema, type_kind, type_validation).map(|(_, arg)| arg)
     }
 
     #[derive(Debug, Clone)]
-    pub enum BuildAndDecodeArgError {
+    #[cfg(test)]
+    enum BuildAndDecodeArgError {
         BuildCallArgumentError(BuildCallArgumentError),
         EncodeError(EncodeError),
         DecodeError(DecodeError),
+    }
+
+    #[test]
+    fn parsing_argument_split() {
+        let input = "aaa,(bbb,(abc,(def,ghi),ccc";
+        let error = split_argument_tuple_or_array(input).unwrap_err();
+        assert!(matches!(error, BuildCallArgumentError::FailedToParse(..)));
+
+        let input = "aaa,(bbb,(abc,(def,ghi),)ccc";
+        let error = split_argument_tuple_or_array(input).unwrap_err();
+        assert!(matches!(error, BuildCallArgumentError::FailedToParse(..)));
+
+        let input = "aaa,(bbb,(abc,(def,ghi),)ccc";
+        let error = split_argument_tuple_or_array(input).unwrap_err();
+        assert!(matches!(error, BuildCallArgumentError::FailedToParse(..)));
+
+        let input = "aaa,(bbb,(abc,[def,ghi])),ccc";
+        assert_eq!(
+            split_argument_tuple_or_array(input).unwrap(),
+            vec![
+                "aaa".to_string(),
+                "(bbb,(abc,[def,ghi]))".to_string(),
+                "ccc".to_string()
+            ]
+        );
+
+        let input = "aaa,bbb,(abc,[def,ghi]),ccc";
+        assert_eq!(
+            split_argument_tuple_or_array(input).unwrap(),
+            vec![
+                "aaa".to_string(),
+                "bbb".to_string(),
+                "(abc,[def,ghi])".to_string(),
+                "ccc".to_string()
+            ]
+        );
+
+        let input = "aaa,bbb,(abc,[def,ghi]), ";
+        assert_eq!(
+            split_argument_tuple_or_array(input).unwrap(),
+            vec![
+                "aaa".to_string(),
+                "bbb".to_string(),
+                "(abc,[def,ghi])".to_string(),
+            ]
+        );
     }
 }
