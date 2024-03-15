@@ -3,7 +3,7 @@ use radix_engine::utils::validate_call_arguments_to_native_components;
 use regex::{Captures, Regex};
 use std::env;
 use std::path::PathBuf;
-use transaction::manifest::BlobProvider;
+use transaction::manifest::{compile, compiler::compile_error_diagnostics, BlobProvider};
 
 use crate::resim::*;
 
@@ -52,12 +52,18 @@ impl Run {
                 blobs.push(std::fs::read(path).map_err(Error::IOError)?);
             }
         }
-        let compiled_manifest = transaction::manifest::compile(
+        let compiled_manifest = compile(
             &pre_processed_manifest,
             &network,
             BlobProvider::new_with_blobs(blobs),
         )
-        .map_err(Error::CompileError)?;
+        .map_err(|err| {
+            eprintln!(
+                "{}",
+                compile_error_diagnostics(&pre_processed_manifest, err)
+            );
+            std::process::exit(1);
+        })?;
 
         validate_call_arguments_to_native_components(&compiled_manifest.instructions)
             .map_err(Error::InstructionSchemaValidationError)?;
