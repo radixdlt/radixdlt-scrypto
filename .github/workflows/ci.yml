@@ -154,7 +154,7 @@ jobs:
         run: |
           cargo nextest run \
             -p radix-engine-common \
-            -p radix-engine-derive \
+            -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
             -p radix-engine-tests
@@ -177,7 +177,7 @@ jobs:
           cargo nextest run \
             --release \
             -p radix-engine-common \
-            -p radix-engine-derive \
+            -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
             -p radix-engine-tests
@@ -194,7 +194,7 @@ jobs:
           cargo nextest run \
             --no-default-features --features alloc \
             -p radix-engine-common \
-            -p radix-engine-derive \
+            -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
             -p radix-engine-tests
@@ -211,7 +211,7 @@ jobs:
           cargo nextest run \
             --features wasmer \
             -p radix-engine-common \
-            -p radix-engine-derive \
+            -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
             -p radix-engine-tests

@@ -420,8 +420,8 @@ dependencies = [
  "num-integer",
  "num-traits",
  "paste",
- "radix-engine-derive",
  "radix-rust",
+ "radix-sbor-derive",
  "sbor",
  "secp256k1",
  "serde",
@@ -437,16 +437,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "radix-engine-common",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "radix-engine-derive"
-version = "1.2.0-dev"
-dependencies = [
- "proc-macro2",
- "quote",
- "sbor-derive-common",
  "syn 1.0.109",
 ]
 
@@ -477,6 +467,16 @@ dependencies = [
  "hashbrown 0.13.2",
  "indexmap",
  "serde",
+]
+
+[[package]]
+name = "radix-sbor-derive"
+version = "1.2.0-dev"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "sbor-derive-common",
+ "syn 1.0.109",
 ]
 
 [[package]]

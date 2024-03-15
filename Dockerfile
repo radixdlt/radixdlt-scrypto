@@ -8,19 +8,19 @@ RUN apt update && apt install -y \
 
 FROM base-image as builder
 
-# Copy scrypto and radix-engine library crates
+# Copy library crates
 ADD assets /app/assets
 ADD Cargo.toml /app/Cargo.toml
 ADD radix-blueprint-schema-init /app/radix-blueprint-schema-init
 ADD radix-engine /app/radix-engine
 ADD radix-engine-common /app/radix-engine-common
 ADD radix-engine-common-macros /app/radix-engine-common-macros
-ADD radix-engine-derive /app/radix-engine-derive
 ADD radix-engine-interface /app/radix-engine-interface
 ADD radix-engine-profiling /app/radix-engine-profiling
 ADD radix-engine-profiling-macros /app/radix-engine-profiling-macros
 ADD radix-native-sdk /app/radix-native-sdk
 ADD radix-rust app/radix-rust
+ADD radix-sbor-derive /app/radix-sbor-derive
 ADD radix-substate-store-impls /app/radix-substate-store-impls
 ADD radix-substate-store-interface /app/radix-substate-store-interface
 ADD radix-substate-store-queries /app/radix-substate-store-queries
@@ -29,7 +29,7 @@ ADD sbor /app/sbor
 ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common
 
-# Copy radix-clis binary crate
+# Copy radix-clis crate
 ADD radix-clis /app/radix-clis
 
 WORKDIR /app

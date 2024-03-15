@@ -32,8 +32,8 @@ extern crate sbor;
 pub use sbor::{Categorize, Decode, Encode, Sbor};
 
 // Re-export radix engine derive.
-extern crate radix_engine_derive;
-pub use radix_engine_derive::{
+extern crate radix_sbor_derive;
+pub use radix_sbor_derive::{
     ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
     ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
 };
@@ -50,7 +50,7 @@ pub extern crate self as radix_engine_common;
 /// This makes refactors easier, and makes integration into the node less painful.
 pub mod prelude {
     // Exports from upstream libraries
-    pub use radix_engine_derive::{
+    pub use radix_sbor_derive::{
         ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
         ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
     };

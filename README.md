@@ -154,7 +154,7 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/radix-clis
 - `radix-native-sdk`: Library to assist native blueprint development.
 - `radix-engine-common`: Common libraries used by Radix Engine and Scrypto.
 - `radix-engine-common-macros`: Macros for defining `Decimal` and `PreciseDecimal`.
-- `radix-engine-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
+- `radix-sbor-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
 - `radix-engine`: The Radix Engine implementation.
 - `radix-transactions`: Radix transaction manifest compiler, transaction models, signing and validating logic.
 - `radix-transaction-scenarios`: Defines various transaction scenarios, for testing.

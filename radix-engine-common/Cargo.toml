@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { workspace = true }
 radix-rust = { workspace = true }
-radix-engine-derive = { workspace = true }
+radix-sbor-derive = { workspace = true }
 serde = { workspace = true, optional = true, features=["derive"] }
 hex = { workspace = true }
 num-traits = { workspace = true }
@@ -44,8 +44,8 @@ harness = false
 # You should enable either `std` or `alloc`
 default = ["std"]
 serde = ["dep:serde", "radix-rust/serde", "sbor/serde", "hex/serde"]
-std = ["hex/std", "sbor/std", "radix-rust/std", "radix-engine-derive/std", "serde_json/std", "ed25519-dalek/std", "secp256k1?/std", "blake2/std", "sha3/std" ]
-alloc = ["hex/alloc", "sbor/alloc", "radix-rust/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "ed25519-dalek/alloc", "secp256k1?/alloc", "lazy_static/spin_no_std", "blst/no-threads" ]
+std = ["hex/std", "sbor/std", "radix-rust/std", "radix-sbor-derive/std", "serde_json/std", "ed25519-dalek/std", "secp256k1?/std", "blake2/std", "sha3/std" ]
+alloc = ["hex/alloc", "sbor/alloc", "radix-rust/alloc", "radix-sbor-derive/alloc", "serde_json/alloc", "ed25519-dalek/alloc", "secp256k1?/alloc", "lazy_static/spin_no_std", "blst/no-threads" ]
 
 # By default, secp256k1 signing and validation is not enabled to mimimize code size
 # If your project requires these functionalities, enable this feature 
