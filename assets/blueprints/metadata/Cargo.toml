@@ -11,7 +11,7 @@ scrypto = { path = "../../../scrypto" }
 transaction = { path = "../../../transaction" }
 radix-engine = { path = "../../../radix-engine" }
 scrypto-test = { path = "../../../scrypto-test" }
-native-sdk = { path = "../../../native-sdk" }
+radix-native-sdk = { path = "../../../radix-native-sdk" }
 
 [lib]
 doctest = false

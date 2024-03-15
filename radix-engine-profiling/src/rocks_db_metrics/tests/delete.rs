@@ -1,12 +1,12 @@
 use super::super::*;
 use super::common::*;
 use linreg::linear_regression_of;
-use rand::{seq::SliceRandom, Rng};
-use std::{io::Write, path::PathBuf};
 use radix_substate_store_interface::{
     db_key_mapper::*,
     interface::{CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase},
 };
+use rand::{seq::SliceRandom, Rng};
+use std::{io::Write, path::PathBuf};
 
 /// Range start of the measuremnts
 const MIN_SIZE: usize = 1;

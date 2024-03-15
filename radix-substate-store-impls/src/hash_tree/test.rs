@@ -8,10 +8,10 @@ use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_rust::prelude::*;
+use radix_substate_store_interface::interface::*;
 use sbor::prelude::indexmap::indexmap;
 use std::cell::RefCell;
 use std::ops::Deref;
-use radix_substate_store_interface::interface::*;
 
 // Note: in some tests, we assert on the low-level DB key encoding, so we need this detail, and
 // we alias it for brevity.

@@ -1,7 +1,4 @@
 use crate::{ResourceComponentMeta, SystemTestFuzzer};
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::{NativeBucket, NativeVault};
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
@@ -24,6 +21,9 @@ use radix_engine_interface::prelude::{
     VAULT_TAKE_IDENT,
 };
 use radix_engine_interface::types::IndexedScryptoValue;
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_native_sdk::resource::{NativeBucket, NativeVault};
 use radix_rust::indexmap;
 use transaction::builder::ManifestBuilder;
 

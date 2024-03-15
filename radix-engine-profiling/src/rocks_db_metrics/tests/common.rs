@@ -1,9 +1,6 @@
 use super::super::*;
 use linreg::linear_regression_of;
 use plotters::prelude::*;
-use rand::{rngs::ThreadRng, Rng};
-#[allow(unused_imports)]
-use std::{io::Write, path::PathBuf};
 use radix_substate_store_interface::{
     db_key_mapper::*,
     interface::{
@@ -11,6 +8,9 @@ use radix_substate_store_interface::{
         SubstateDatabase,
     },
 };
+use rand::{rngs::ThreadRng, Rng};
+#[allow(unused_imports)]
+use std::{io::Write, path::PathBuf};
 
 pub const SUBSTATE_KEY_LENGTH: usize = 30;
 

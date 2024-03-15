@@ -4,10 +4,10 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_substates::FieldSubstate;
-use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManager};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
+use radix_native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManager};
 
 #[derive(Debug, ScryptoSbor)]
 pub struct WorktopSubstate {

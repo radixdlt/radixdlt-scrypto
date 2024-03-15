@@ -1,5 +1,5 @@
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;

@@ -17,7 +17,7 @@ resolver = "1"
 members = [
     "blueprint-schema-init",
     "monkey-tests",
-    "native-sdk",
+    "radix-native-sdk",
     "radix-engine-common-macros",
     "radix-engine-common",
     "radix-engine-derive",
@@ -44,7 +44,7 @@ members = [
 
 [workspace.dependencies]
 blueprint-schema-init = { version = "1.2.0-dev", path = "./blueprint-schema-init", default-features = false }
-native-sdk = { version = "1.2.0-dev", path = "./native-sdk", default-features = false }
+radix-native-sdk = { version = "1.2.0-dev", path = "./radix-native-sdk", default-features = false }
 radix-engine = { version = "1.2.0-dev", path = "./radix-engine", default-features = false }
 radix-engine-common = { version = "1.2.0-dev", path = "./radix-engine-common", default-features = false }
 radix-engine-common-macros = { version = "1.2.0-dev", path = "./radix-engine-common-macros", default-features = false }

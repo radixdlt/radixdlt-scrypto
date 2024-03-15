@@ -5,7 +5,7 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
-native-sdk = { workspace = true }
+radix-native-sdk = { workspace = true }
 sbor = { workspace = true }
 radix-engine = { workspace = true, features = ["radix_engine_tests"] }
 radix-engine-interface = { workspace = true }

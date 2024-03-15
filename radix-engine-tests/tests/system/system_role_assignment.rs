@@ -1,4 +1,4 @@
-use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
+use radix_native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};

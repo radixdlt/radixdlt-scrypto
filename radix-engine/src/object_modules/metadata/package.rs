@@ -3,7 +3,6 @@ use crate::{errors::*, event_schema, roles_template};
 use blueprint_schema_init::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
 };
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::{
@@ -11,6 +10,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::object_modules::metadata::*;
+use radix_native_sdk::runtime::Runtime;
 
 use super::{RemoveMetadataEvent, SetMetadataEvent};
 

@@ -8,10 +8,10 @@ use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_rust::rust::collections::VecDeque;
 use radix_rust::rust::collections::{hash_map_new, HashMap};
 use radix_rust::rust::vec::Vec;
+use radix_substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateValue};
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
-use radix_substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateValue};
 
 define_single_versioned! {
     #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]

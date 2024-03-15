@@ -13,7 +13,6 @@ use crate::{errors::*, event_schema};
 use blueprint_schema_init::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
 };
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, GenericArgs, KVEntry, ModuleId, ACTOR_STATE_SELF,
@@ -25,6 +24,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::types::*;
+use radix_native_sdk::runtime::Runtime;
 
 use super::*;
 

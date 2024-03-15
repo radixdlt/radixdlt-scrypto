@@ -17,9 +17,9 @@ use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use sbor::rust::iter;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
-use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use transaction::prelude::TransactionCostingParameters;
 use wabt::wat2wasm;
 

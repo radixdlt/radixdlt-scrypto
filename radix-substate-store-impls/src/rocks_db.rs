@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use radix_engine_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_rust::copy_u8_array;
+use radix_substate_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Direction, IteratorMode,
@@ -8,7 +9,6 @@ use rocksdb::{
 };
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
-use radix_substate_store_interface::interface::*;
 
 pub struct RocksdbSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,

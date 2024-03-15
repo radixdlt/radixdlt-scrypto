@@ -1,6 +1,6 @@
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::{NativeFungibleVault, ResourceManager};
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_native_sdk::resource::{NativeFungibleVault, ResourceManager};
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};

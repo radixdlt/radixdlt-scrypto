@@ -576,7 +576,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "native-sdk"
+name = "radix-native-sdk"
 version = "1.2.0-dev"
 dependencies = [
  "radix-engine-common",
@@ -760,7 +760,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "moka",
- "native-sdk",
+ "radix-native-sdk",
  "num-traits",
  "paste",
  "radix-engine-common",
@@ -1064,7 +1064,7 @@ dependencies = [
 name = "scrypto-test"
 version = "1.2.0-dev"
 dependencies = [
- "native-sdk",
+ "radix-native-sdk",
  "ouroboros",
  "paste",
  "radix-engine",

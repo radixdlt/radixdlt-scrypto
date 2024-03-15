@@ -29,8 +29,8 @@ pub mod package_loader {
 #[allow(unused)]
 pub mod package_loader {
     use radix_engine_common::prelude::*;
-    use std::path::PathBuf;
     use radix_substate_store_queries::typed_substate_layout::*;
+    use std::path::PathBuf;
 
     pub struct PackageLoader;
     impl PackageLoader {

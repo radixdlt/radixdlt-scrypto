@@ -1,6 +1,5 @@
 use crate::internal_prelude::*;
 use crate::track::LegacyStateUpdates;
-use sbor::rust::{cmp::*, iter::*, mem};
 use radix_substate_store_interface::interface::{
     DatabaseUpdates, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
 };
@@ -8,6 +7,7 @@ use radix_substate_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DatabaseUpdate, DbSortKey},
 };
+use sbor::rust::{cmp::*, iter::*, mem};
 
 /// A tree-like description of all updates that happened to a stored state, to be included as a part
 /// of a transaction receipt.

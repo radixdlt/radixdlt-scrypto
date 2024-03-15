@@ -1,5 +1,5 @@
 [package]
-name = "native-sdk"
+name = "radix-native-sdk"
 version = "1.2.0-dev"
 edition = "2021"
 

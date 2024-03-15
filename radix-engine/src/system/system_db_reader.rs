@@ -7,17 +7,19 @@ use radix_engine_interface::api::{AttachedModuleId, CollectionIndex, ModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::prelude::*;
-use sbor::LocalTypeId;
-use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
 use radix_substate_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, SubstateKeyContent,
 };
-use radix_substate_store_interface::interface::{CommittableSubstateDatabase, ListableSubstateDatabase};
+use radix_substate_store_interface::interface::{
+    CommittableSubstateDatabase, ListableSubstateDatabase,
+};
 use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
 };
+use sbor::rust::prelude::*;
+use sbor::LocalTypeId;
+use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};

@@ -9,7 +9,7 @@ radix-engine-interface = { workspace = true }
 radix-engine-common = { workspace = true, features = ["secp256k1_sign_and_validate"]}
 radix-substate-store-interface = { workspace = true }
 blueprint-schema-init = { workspace = true }
-native-sdk = { workspace = true }
+radix-native-sdk = { workspace = true }
 transaction = { workspace = true }
 radix-rust = { workspace = true }
 radix-engine-profiling = { workspace = true, optional = true }
@@ -61,8 +61,8 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "blueprint-schema-init/std", "radix-engine-interface/std", "radix-substate-store-interface/std", "radix-engine-common-macros/std", "radix-rust/std", "serde_json?/std", "wasm-instrument/std" ]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc", "radix-engine-common-macros/alloc", "radix-rust/alloc", "lru?/hashbrown", "serde_json?/alloc"]
+std = ["sbor/std", "radix-native-sdk/std", "wasmi/std", "transaction/std", "blueprint-schema-init/std", "radix-engine-interface/std", "radix-substate-store-interface/std", "radix-engine-common-macros/std", "radix-rust/std", "serde_json?/std", "wasm-instrument/std" ]
+alloc = ["sbor/alloc", "radix-native-sdk/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc", "radix-engine-common-macros/alloc", "radix-rust/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
