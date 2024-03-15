@@ -102,7 +102,11 @@ pub enum GeneratorError {
     BlobNotFound(String, Span),
     InvalidBytesHex(String, Span),
     NameResolverError(NameResolverError, Span),
-    IdValidationError(ManifestIdValidationError, Span),
+    IdValidationError {
+        err: ManifestIdValidationError,
+        name: Option<String>,
+        span: Span,
+    },
     InvalidGlobalAddress(String, Span),
     InvalidInternalAddress(String, Span),
 }
@@ -212,6 +216,45 @@ impl NameResolver {
             None => Err(NameResolverError::UndefinedNamedAddress(name.into())),
         }
     }
+
+    pub fn resolve_bucket_name(&self, bucket: ManifestBucket) -> Option<String> {
+        for (name, id) in self.named_buckets.iter() {
+            if id.eq(&bucket) {
+                return Some(name.to_string());
+            }
+        }
+        return None;
+    }
+
+    pub fn resove_proof_name(&self, proof: ManifestProof) -> Option<String> {
+        for (name, id) in self.named_proofs.iter() {
+            if id.eq(&proof) {
+                return Some(name.to_string());
+            }
+        }
+        return None;
+    }
+
+    pub fn resolve_address_reservation_name(
+        &self,
+        reservation: ManifestAddressReservation,
+    ) -> Option<String> {
+        for (name, id) in self.named_address_reservations.iter() {
+            if id.eq(&reservation) {
+                return Some(name.to_string());
+            }
+        }
+        return None;
+    }
+
+    pub fn resolve_named_address_name(&self, address: u32) -> Option<String> {
+        for (name, id) in self.named_addresses.iter() {
+            if id.eq(&address) {
+                return Some(name.to_string());
+            }
+        }
+        return None;
+    }
 }
 
 pub fn generate_manifest<B>(
@@ -252,6 +295,28 @@ macro_rules! get_span {
             Span { start, end }
         }
     };
+}
+
+fn generate_id_validation_error(
+    resolver: &NameResolver,
+    err: ManifestIdValidationError,
+    span: Span,
+) -> GeneratorError {
+    let name = match err {
+        ManifestIdValidationError::BucketLocked(bucket) => resolver.resolve_bucket_name(bucket),
+
+        ManifestIdValidationError::BucketNotFound(bucket) => resolver.resolve_bucket_name(bucket),
+
+        ManifestIdValidationError::ProofNotFound(proof) => resolver.resove_proof_name(proof),
+        ManifestIdValidationError::AddressNotFound(address) => {
+            resolver.resolve_named_address_name(address)
+        }
+        ManifestIdValidationError::AddressReservationNotFound(reservation) => {
+            resolver.resolve_address_reservation_name(reservation)
+        }
+    };
+
+    GeneratorError::IdValidationError { err, name, span }
 }
 
 pub fn generate_instruction<B>(
@@ -312,10 +377,10 @@ where
             }
         }
         ast::Instruction::ReturnToWorktop { bucket } => {
-            let bucket_id = generate_bucket(bucket, resolver)?;
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
             id_validator
                 .drop_bucket(&bucket_id)
-                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             InstructionV1::ReturnToWorktop { bucket_id }
         }
         ast::Instruction::AssertWorktopContains {
@@ -343,16 +408,16 @@ where
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::PopFromAuthZone
         }
         ast::Instruction::PushToAuthZone { proof } => {
-            let proof_id = generate_proof(proof, resolver)?;
+            let (proof_id, span) = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(&proof_id)
-                .map_err(|err| GeneratorError::IdValidationError(err, proof.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             InstructionV1::PushToAuthZone { proof_id }
         }
         ast::Instruction::DropAuthZoneProofs => InstructionV1::DropAuthZoneProofs,
@@ -369,7 +434,7 @@ where
             let amount = generate_decimal(amount)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromAuthZoneOfAmount {
@@ -387,7 +452,7 @@ where
             let ids = generate_non_fungible_local_ids(ids)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
@@ -403,17 +468,17 @@ where
                 generate_resource_address(resource_address, address_bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromAuthZoneOfAll { resource_address }
         }
 
         ast::Instruction::BurnResource { bucket } => {
-            let bucket_id = generate_bucket(bucket, resolver)?;
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
             id_validator
                 .drop_bucket(&bucket_id)
-                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             InstructionV1::BurnResource { bucket_id }
         }
 
@@ -422,11 +487,11 @@ where
             amount,
             new_proof,
         } => {
-            let bucket_id = generate_bucket(bucket, resolver)?;
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
             let amount = generate_decimal(amount)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount }
@@ -436,39 +501,39 @@ where
             ids,
             new_proof,
         } => {
-            let bucket_id = generate_bucket(bucket, resolver)?;
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
             let ids = generate_non_fungible_local_ids(ids)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids }
         }
         ast::Instruction::CreateProofFromBucketOfAll { bucket, new_proof } => {
-            let bucket_id = generate_bucket(bucket, resolver)?;
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(|err| GeneratorError::IdValidationError(err, bucket.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromBucketOfAll { bucket_id }
         }
 
         ast::Instruction::CloneProof { proof, new_proof } => {
-            let proof_id = generate_proof(proof, resolver)?;
+            let (proof_id, span) = generate_proof(proof, resolver)?;
             let proof_id2 = id_validator
                 .clone_proof(&proof_id)
-                .map_err(|err| GeneratorError::IdValidationError(err, proof.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id2)?;
 
             InstructionV1::CloneProof { proof_id }
         }
         ast::Instruction::DropProof { proof } => {
-            let proof_id = generate_proof(proof, resolver)?;
+            let (proof_id, span) = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(&proof_id)
-                .map_err(|err| GeneratorError::IdValidationError(err, proof.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             InstructionV1::DropProof { proof_id }
         }
 
@@ -488,14 +553,7 @@ where
             let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
 
             id_validator.process_call_data(&args_inner).map_err(|err| {
-                let span = if args.is_empty() {
-                    instruction.span
-                } else {
-                    let start = args.get(0).unwrap().span.start;
-                    let end = args.get(args.len() - 1).unwrap().span.end;
-                    Span { start, end }
-                };
-                GeneratorError::IdValidationError(err, span)
+                generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
 
             InstructionV1::CallFunction {
@@ -515,7 +573,7 @@ where
             let method_name = generate_string(method_name)?;
             let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator.process_call_data(&args_inner).map_err(|err| {
-                GeneratorError::IdValidationError(err, get_span!(instruction, args))
+                generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
             InstructionV1::CallMethod {
                 address,
@@ -533,7 +591,7 @@ where
             let method_name = generate_string(method_name)?;
             let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator.process_call_data(&args_inner).map_err(|err| {
-                GeneratorError::IdValidationError(err, get_span!(instruction, args))
+                generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
             InstructionV1::CallRoyaltyMethod {
                 address,
@@ -551,7 +609,7 @@ where
             let method_name = generate_string(method_name)?;
             let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator.process_call_data(&args_inner).map_err(|err| {
-                GeneratorError::IdValidationError(err, get_span!(instruction, args))
+                generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
             InstructionV1::CallMetadataMethod {
                 address,
@@ -569,7 +627,7 @@ where
             let method_name = generate_string(method_name)?;
             let args_inner = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator.process_call_data(&args_inner).map_err(|err| {
-                GeneratorError::IdValidationError(err, get_span!(instruction, args))
+                generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
             InstructionV1::CallRoleAssignmentMethod {
                 address,
@@ -598,14 +656,14 @@ where
         ast::Instruction::DropNamedProofs => {
             id_validator
                 .drop_all_named_proofs()
-                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             InstructionV1::DropNamedProofs
         }
 
         ast::Instruction::DropAllProofs => {
             id_validator
                 .drop_all_named_proofs()
-                .map_err(|err| GeneratorError::IdValidationError(err, instruction.span))?;
+                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             InstructionV1::DropAllProofs
         }
 
@@ -1088,15 +1146,18 @@ fn declare_bucket(
 fn generate_bucket(
     value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
-) -> Result<ManifestBucket, GeneratorError> {
+) -> Result<(ManifestBucket, Span), GeneratorError> {
     match &value.value {
-        ast::Value::Bucket(inner) => match &inner.value {
-            ast::Value::U32(n) => Ok(ManifestBucket(*n)),
-            ast::Value::String(s) => resolver
-                .resolve_bucket(&s)
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
-        },
+        ast::Value::Bucket(inner) => {
+            let bucket = match &inner.value {
+                ast::Value::U32(n) => Ok(ManifestBucket(*n)),
+                ast::Value::String(s) => resolver
+                    .resolve_bucket(&s)
+                    .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
+                v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+            }?;
+            Ok((bucket, inner.span))
+        }
         v => invalid_type!(value.span, v, ast::ValueKind::Bucket),
     }
 }
@@ -1152,15 +1213,18 @@ fn declare_named_address(
 fn generate_proof(
     value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
-) -> Result<ManifestProof, GeneratorError> {
+) -> Result<(ManifestProof, Span), GeneratorError> {
     match &value.value {
-        ast::Value::Proof(inner) => match &inner.value {
-            ast::Value::U32(n) => Ok(ManifestProof(*n)),
-            ast::Value::String(s) => resolver
-                .resolve_proof(&s)
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
-        },
+        ast::Value::Proof(inner) => {
+            let proof = match &inner.value {
+                ast::Value::U32(n) => Ok(ManifestProof(*n)),
+                ast::Value::String(s) => resolver
+                    .resolve_proof(&s)
+                    .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
+                v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+            }?;
+            Ok((proof, inner.span))
+        }
         v => invalid_type!(value.span, v, ast::ValueKind::Proof),
     }
 }
@@ -1476,13 +1540,15 @@ where
             })
         }
         ast::Value::Bucket(_) => {
-            generate_bucket(value_with_span, resolver).map(|v| Value::Custom {
+            generate_bucket(value_with_span, resolver).map(|(v, _span)| Value::Custom {
                 value: ManifestCustomValue::Bucket(v),
             })
         }
-        ast::Value::Proof(_) => generate_proof(value_with_span, resolver).map(|v| Value::Custom {
-            value: ManifestCustomValue::Proof(v),
-        }),
+        ast::Value::Proof(_) => {
+            generate_proof(value_with_span, resolver).map(|(v, _span)| Value::Custom {
+                value: ManifestCustomValue::Proof(v),
+            })
+        }
         ast::Value::Expression(_) => generate_expression(value_with_span).map(|v| Value::Custom {
             value: ManifestCustomValue::Expression(v),
         }),
@@ -1674,25 +1740,45 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
                 (span, title, "name already defined".to_string())
             }
         },
-        GeneratorError::IdValidationError(error, span) => match error {
+        GeneratorError::IdValidationError { err, name, span } => match err {
             ManifestIdValidationError::BucketNotFound(bucket_id) => {
-                let title = format!("bucket id '{:?}' not found", bucket_id);
+                let title = if let Some(name) = name {
+                    format!("bucket '{}' not found", name)
+                } else {
+                    format!("bucket id '{:?}' not found", bucket_id)
+                };
                 (span, title, "bucket not found".to_string())
             }
             ManifestIdValidationError::ProofNotFound(proof_id) => {
-                let title = format!("proof id '{:?}' not found", proof_id);
+                let title = if let Some(name) = name {
+                    format!("proof '{}' not found", name)
+                } else {
+                    format!("proof id '{:?}' not found", proof_id)
+                };
                 (span, title, "proof not found".to_string())
             }
             ManifestIdValidationError::BucketLocked(bucket_id) => {
-                let title = format!("bucket id '{:?}' locked", bucket_id);
+                let title = if let Some(name) = name {
+                    format!("bucket '{}' locked", name)
+                } else {
+                    format!("bucket id '{:?}' locked", bucket_id)
+                };
                 (span, title, "bucket locked".to_string())
             }
             ManifestIdValidationError::AddressReservationNotFound(reservation) => {
-                let title = format!("address reservation '{:?}' not found", reservation);
+                let title = if let Some(name) = name {
+                    format!("address reservation '{}' not found", name)
+                } else {
+                    format!("address reservation id '{:?}' not found", reservation)
+                };
                 (span, title, "address reservation not found".to_string())
             }
             ManifestIdValidationError::AddressNotFound(address) => {
-                let title = format!("address '{}' not found", address);
+                let title = if let Some(name) = name {
+                    format!("address '{}' not found", name)
+                } else {
+                    format!("address id '{:?}' not found", address)
+                };
                 (span, title, "address not found".to_string())
             }
         },
