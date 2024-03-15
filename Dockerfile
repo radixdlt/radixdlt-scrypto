@@ -10,7 +10,7 @@ FROM base-image as builder
 
 # Copy scrypto and radix-engine library crates
 ADD assets /app/assets
-ADD blueprint-schema-init /app/blueprint-schema-init
+ADD radix-blueprint-schema-init /app/radix-blueprint-schema-init
 ADD Cargo.toml /app/Cargo.toml
 ADD radix-native-sdk /app/radix-native-sdk
 ADD radix-engine /app/radix-engine

@@ -26,7 +26,7 @@ use crate::system::system_type_checker::{
 };
 use crate::system::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::track::interface::NodeSubstates;
-use blueprint_schema_init::{Condition, KeyValueStoreGenericSubstitutions};
+use radix_blueprint_schema_init::{Condition, KeyValueStoreGenericSubstitutions};
 #[cfg(not(feature = "alloc"))]
 use radix_engine_common_macros::*;
 use radix_engine_interface::api::actor_api::EventFlags;

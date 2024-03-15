@@ -15,7 +15,7 @@ radix-substate-store-queries = { path = "../radix-substate-store-queries" }
 radix-engine-common = { path = "../radix-engine-common" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
-blueprint-schema-init = { path = "../blueprint-schema-init" }
+radix-blueprint-schema-init = { path = "../radix-blueprint-schema-init" }
 transaction = { path = "../transaction" }
 
 flate2 = { version = "1.0.27" }

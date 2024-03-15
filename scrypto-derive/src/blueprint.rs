@@ -796,7 +796,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
-                use ::scrypto::blueprint_schema_init::*;
+                use ::scrypto::radix_blueprint_schema_init::*;
                 use ::sbor::rust::prelude::*;
                 use ::sbor::schema::*;
                 use ::sbor::*;
@@ -1573,11 +1573,11 @@ fn generate_schema(
 
                                 if r.mutability.is_some() {
                                     receiver = Some(
-                                        quote! { ::scrypto::blueprint_schema_init::ReceiverInfo::normal_ref_mut() },
+                                        quote! { ::scrypto::radix_blueprint_schema_init::ReceiverInfo::normal_ref_mut() },
                                     );
                                 } else {
                                     receiver = Some(
-                                        quote! { ::scrypto::blueprint_schema_init::ReceiverInfo::normal_ref() },
+                                        quote! { ::scrypto::radix_blueprint_schema_init::ReceiverInfo::normal_ref() },
                                     );
                                 }
                             }
@@ -2006,7 +2006,7 @@ mod tests {
 
                     #[no_mangle]
                     pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
-                        use ::scrypto::blueprint_schema_init::*;
+                        use ::scrypto::radix_blueprint_schema_init::*;
                         use ::sbor::rust::prelude::*;
                         use ::sbor::schema::*;
                         use ::sbor::*;
@@ -2027,7 +2027,7 @@ mod tests {
                                 functions.insert(
                                     "x".to_string(),
                                     FunctionSchemaInit {
-                                        receiver: Option::Some(::scrypto::blueprint_schema_init::ReceiverInfo::normal_ref()),
+                                        receiver: Option::Some(::scrypto::radix_blueprint_schema_init::ReceiverInfo::normal_ref()),
                                         input: TypeRef::Static(aggregator.add_child_type_and_descendents::<Test_x_Input>()),
                                         output: TypeRef::Static(aggregator.add_child_type_and_descendents::<u32>()),
                                         export: "Test_x".to_string(),

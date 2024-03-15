@@ -71,7 +71,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "blueprint-schema-init"
+name = "radix-blueprint-schema-init"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags",
@@ -458,7 +458,7 @@ name = "radix-engine-interface"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags",
- "blueprint-schema-init",
+ "radix-blueprint-schema-init",
  "const-sha1",
  "hex",
  "lazy_static",
@@ -583,7 +583,7 @@ name = "scrypto"
 version = "1.2.0-dev"
 dependencies = [
  "bech32",
- "blueprint-schema-init",
+ "radix-blueprint-schema-init",
  "const-sha1",
  "hex",
  "num-bigint",
@@ -601,7 +601,7 @@ dependencies = [
 name = "scrypto-derive"
 version = "1.2.0-dev"
 dependencies = [
- "blueprint-schema-init",
+ "radix-blueprint-schema-init",
  "proc-macro2",
  "quote",
  "radix-engine-common",

@@ -1272,7 +1272,7 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use blueprint_schema_init::{
+    use radix_blueprint_schema_init::{
         BlueprintFunctionsSchemaInit, BlueprintHooksInit, BlueprintSchemaInit,
         BlueprintStateSchemaInit, BlueprintTypeSchemaInit, FieldSchema, FunctionSchemaInit,
     };
@@ -1618,8 +1618,8 @@ mod tests {
                         functions: indexmap!(
                             "f".to_string() => FunctionSchemaInit {
                                 receiver: Option::None,
-                                input: blueprint_schema_init::TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
-                                output: blueprint_schema_init::TypeRef::Static(LocalTypeId::WellKnown(UNIT_TYPE)),
+                                input: radix_blueprint_schema_init::TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                                output: radix_blueprint_schema_init::TypeRef::Static(LocalTypeId::WellKnown(UNIT_TYPE)),
                                 export: "Test_f".to_string(),
                             }
                         ),

@@ -150,7 +150,7 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
 - `scrypto`: Scrypto language abstraction.
 - `scrypto-derive`: Macros for defining blueprints.
 - `scrypto-test`: Library for testing Scrypto blueprints.
-- `blueprint-schema-init`: Blueprint schema initialization structures, used by Radix Package Definition (RPD).
+- `radix-blueprint-schema-init`: Blueprint schema initialization structures, used by Radix Package Definition (RPD).
 - `radix-native-sdk`: Library to assist native blueprint development.
 - `radix-engine-common`: Common libraries used by Radix Engine and Scrypto.
 - `radix-engine-common-macros`: Macros for defining `Decimal` and `PreciseDecimal`.

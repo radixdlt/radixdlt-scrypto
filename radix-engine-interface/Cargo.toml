@@ -7,7 +7,7 @@ edition = "2021"
 sbor = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-common-macros = { workspace = true }
-blueprint-schema-init = { workspace = true }
+radix-blueprint-schema-init = { workspace = true }
 radix-rust = { workspace = true }
 
 hex = { workspace = true }
@@ -24,8 +24,8 @@ regex = { workspace = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "serde_json/std", "sbor/std", "blueprint-schema-init/std", "radix-engine-common/std", "radix-engine-common-macros/std", "strum/std", "radix-rust/std", "serde?/std"]
-alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "radix-engine-common/alloc", "radix-engine-common-macros/alloc", "radix-rust/alloc", "serde?/alloc"]
+std = ["hex/std", "serde_json/std", "sbor/std", "radix-blueprint-schema-init/std", "radix-engine-common/std", "radix-engine-common-macros/std", "strum/std", "radix-rust/std", "serde?/std"]
+alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "radix-blueprint-schema-init/alloc", "radix-engine-common/alloc", "radix-engine-common-macros/alloc", "radix-rust/alloc", "serde?/alloc"]
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work

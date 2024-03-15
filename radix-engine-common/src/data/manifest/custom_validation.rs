@@ -271,7 +271,7 @@ mod tests {
     type Any = ScryptoValue;
 
     #[test]
-    fn valid_manifest_composite_value_passes_validation_against_blueprint_schema_init() {
+    fn valid_manifest_composite_value_passes_validation_against_radix_blueprint_schema_init() {
         let payload = manifest_encode(&(
             ManifestValue::Custom {
                 value: ManifestCustomValue::Address(ManifestAddress::Static(
@@ -324,7 +324,7 @@ mod tests {
     }
 
     #[test]
-    fn manifest_address_fails_validation_against_mismatching_blueprint_schema_init() {
+    fn manifest_address_fails_validation_against_mismatching_radix_blueprint_schema_init() {
         let payload = manifest_encode(&ManifestValue::Custom {
             value: ManifestCustomValue::Address(ManifestAddress::Static(XRD.as_node_id().clone())),
         })
@@ -338,7 +338,7 @@ mod tests {
     }
 
     #[test]
-    fn manifest_blob_fails_validation_against_mismatching_blueprint_schema_init() {
+    fn manifest_blob_fails_validation_against_mismatching_radix_blueprint_schema_init() {
         let payload = manifest_encode(&ManifestValue::Custom {
             value: ManifestCustomValue::Blob(ManifestBlobRef([0; 32])),
         })
@@ -353,7 +353,7 @@ mod tests {
     }
 
     #[test]
-    fn manifest_entire_worktop_expression_fails_validation_against_mismatching_blueprint_schema_init(
+    fn manifest_entire_worktop_expression_fails_validation_against_mismatching_radix_blueprint_schema_init(
     ) {
         let payload = manifest_encode(&ManifestValue::Custom {
             value: ManifestCustomValue::Expression(ManifestExpression::EntireWorktop),
@@ -369,7 +369,7 @@ mod tests {
     }
 
     #[test]
-    fn manifest_entire_auth_zone_expression_fails_validation_against_mismatching_blueprint_schema_init(
+    fn manifest_entire_auth_zone_expression_fails_validation_against_mismatching_radix_blueprint_schema_init(
     ) {
         let payload = manifest_encode(&ManifestValue::Custom {
             value: ManifestCustomValue::Expression(ManifestExpression::EntireAuthZone),

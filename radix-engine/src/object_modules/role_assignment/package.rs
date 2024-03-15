@@ -10,7 +10,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::system::system_substates::FieldSubstate;
 use crate::{errors::*, event_schema};
-use blueprint_schema_init::{
+use radix_blueprint_schema_init::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
 };
 use radix_engine_interface::api::field_api::LockFlags;

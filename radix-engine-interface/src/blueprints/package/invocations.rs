@@ -1,12 +1,12 @@
 use crate::blueprints::resource::*;
 use crate::internal_prelude::*;
 use crate::types::*;
-use blueprint_schema_init::TypeRef;
-use blueprint_schema_init::{
+use radix_blueprint_schema_init::TypeRef;
+use radix_blueprint_schema_init::{
     BlueprintCollectionSchema, BlueprintKeyValueSchema, FunctionSchemaInit,
 };
-use blueprint_schema_init::{BlueprintFunctionsSchemaInit, ReceiverInfo};
-use blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
+use radix_blueprint_schema_init::{BlueprintFunctionsSchemaInit, ReceiverInfo};
+use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
 use radix_engine_interface::object_modules::metadata::MetadataInit;

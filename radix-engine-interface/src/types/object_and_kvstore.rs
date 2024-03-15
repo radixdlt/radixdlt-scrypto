@@ -1,6 +1,6 @@
 use crate::blueprints::package::BlueprintVersion;
 use crate::internal_prelude::*;
-use blueprint_schema_init::KeyValueStoreGenericSubstitutions;
+use radix_blueprint_schema_init::KeyValueStoreGenericSubstitutions;
 use radix_engine_common::types::BlueprintId;
 use radix_engine_common::types::{GenericSubstitution, GlobalAddress};
 use radix_engine_interface::api::AttachedModuleId;

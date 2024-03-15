@@ -2,11 +2,11 @@ use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignm
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
 use crate::roles_template;
-use blueprint_schema_init::{
+use radix_blueprint_schema_init::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
     TypeRef,
 };
-use blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
+use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use radix_engine_interface::api::{AttachedModuleId, ClientApi};
 use radix_engine_interface::blueprints::hooks::{OnVirtualizeInput, OnVirtualizeOutput};
 use radix_engine_interface::blueprints::identity::*;

@@ -15,7 +15,7 @@ resolver = "1"
 #   to avoid falling back to the root workspace.
 
 members = [
-    "blueprint-schema-init",
+    "radix-blueprint-schema-init",
     "monkey-tests",
     "radix-native-sdk",
     "radix-engine-common-macros",
@@ -43,7 +43,7 @@ members = [
 ]
 
 [workspace.dependencies]
-blueprint-schema-init = { version = "1.2.0-dev", path = "./blueprint-schema-init", default-features = false }
+radix-blueprint-schema-init = { version = "1.2.0-dev", path = "./radix-blueprint-schema-init", default-features = false }
 radix-native-sdk = { version = "1.2.0-dev", path = "./radix-native-sdk", default-features = false }
 radix-engine = { version = "1.2.0-dev", path = "./radix-engine", default-features = false }
 radix-engine-common = { version = "1.2.0-dev", path = "./radix-engine-common", default-features = false }

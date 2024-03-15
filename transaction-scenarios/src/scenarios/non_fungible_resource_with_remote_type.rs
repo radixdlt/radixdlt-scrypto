@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use blueprint_schema_init::*;
+use radix_blueprint_schema_init::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;

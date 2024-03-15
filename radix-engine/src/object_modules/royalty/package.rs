@@ -1,7 +1,7 @@
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
-use blueprint_schema_init::{
+use radix_blueprint_schema_init::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     FunctionSchemaInit, TypeRef,
 };

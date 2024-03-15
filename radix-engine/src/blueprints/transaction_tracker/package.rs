@@ -1,10 +1,10 @@
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
-use blueprint_schema_init::{
+use radix_blueprint_schema_init::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FieldSchema,
     FunctionSchemaInit, TypeRef,
 };
-use blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
+use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use radix_engine_common::constants::AuthAddresses;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldValue};
 use radix_engine_interface::blueprints::package::{

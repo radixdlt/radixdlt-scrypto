@@ -1501,7 +1501,7 @@ mod tests {
     use radix_engine_interface::object_modules::ModuleConfig;
     use radix_engine_interface::types::PackageRoyaltyConfig;
     use radix_rust::prelude::IndexMap;
-    use scrypto::blueprint_schema_init::BlueprintStateSchemaInit;
+    use scrypto::radix_blueprint_schema_init::BlueprintStateSchemaInit;
 
     #[macro_export]
     macro_rules! generate_value_ok {

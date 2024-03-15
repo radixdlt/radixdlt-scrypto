@@ -688,7 +688,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         addresses
     }
 
-    pub fn get_package_blueprint_schema_inits(
+    pub fn get_package_radix_blueprint_schema_inits(
         &self,
         package_address: &PackageAddress,
     ) -> IndexMap<SchemaHash, VersionedScryptoSchema> {

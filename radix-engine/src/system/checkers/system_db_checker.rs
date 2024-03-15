@@ -4,7 +4,7 @@ use crate::system::system_db_reader::{
 };
 use crate::system::system_substates::FieldSubstate;
 use crate::system::type_info::TypeInfoSubstate;
-use blueprint_schema_init::Condition;
+use radix_blueprint_schema_init::Condition;
 use radix_engine_common::prelude::{
     scrypto_decode, scrypto_encode, Hash, ScryptoValue, VersionedScryptoSchema,
 };

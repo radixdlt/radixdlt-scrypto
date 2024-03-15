@@ -54,7 +54,7 @@ pub mod types {
 }
 
 // Re-export blueprint schema init, for use in `#[blueprint]` macro
-pub use blueprint_schema_init;
+pub use radix_blueprint_schema_init;
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

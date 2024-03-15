@@ -15,7 +15,7 @@ radix-substate-store-impls = { workspace = true }
 radix-substate-store-queries = { workspace = true }
 transaction = { workspace = true }
 transaction-scenarios = { workspace = true }
-blueprint-schema-init = { workspace = true }
+radix-blueprint-schema-init = { workspace = true }
 radix-rust = { workspace = true }
 radix-engine-profiling = { workspace = true, optional = true, features = ["resource_tracker"]}
 radix-engine-profiling-macros = { workspace = true }
@@ -77,8 +77,8 @@ test = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "transaction/std", "blueprint-schema-init/std", "radix-engine-common/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-interface/std", "radix-substate-store-impls/std", "radix-substate-store-interface/std", "radix-substate-store-queries/std", "radix-rust/std", "scrypto/std", "scrypto-test/std", "scrypto-test/std", "scrypto-test/moka"]
-alloc = ["sbor/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radix-engine-common/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-substate-store-impls/alloc", "radix-substate-store-interface/alloc", "radix-substate-store-queries/alloc", "radix-rust/alloc", "scrypto/alloc", "scrypto-test/alloc", "scrypto-test/alloc", "scrypto-test/lru"]
+std = ["sbor/std", "transaction/std", "radix-blueprint-schema-init/std", "radix-engine-common/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-interface/std", "radix-substate-store-impls/std", "radix-substate-store-interface/std", "radix-substate-store-queries/std", "radix-rust/std", "scrypto/std", "scrypto-test/std", "scrypto-test/std", "scrypto-test/moka"]
+alloc = ["sbor/alloc", "transaction/alloc", "radix-blueprint-schema-init/alloc", "radix-engine-common/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-substate-store-impls/alloc", "radix-substate-store-interface/alloc", "radix-substate-store-queries/alloc", "radix-rust/alloc", "scrypto/alloc", "scrypto-test/alloc", "scrypto-test/alloc", "scrypto-test/lru"]
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []

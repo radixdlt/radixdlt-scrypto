@@ -69,7 +69,7 @@ jobs:
       - name: Run tests (no_std)
         run: cargo nextest run -p scrypto --no-default-features --features alloc
       - name: Run abi tests
-        run: cargo nextest run -p blueprint-schema-init
+        run: cargo nextest run -p radix-blueprint-schema-init
       - name: Run derive tests
         run: cargo nextest run -p scrypto-derive
 

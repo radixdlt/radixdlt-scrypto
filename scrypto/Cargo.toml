@@ -7,7 +7,7 @@ edition = "2021"
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 sbor = { workspace = true }
-blueprint-schema-init = { workspace = true }
+radix-blueprint-schema-init = { workspace = true }
 scrypto-derive = { workspace = true }
 radix-rust = { workspace = true }
 hex = { workspace = true }
@@ -23,8 +23,8 @@ minicov = { workspace = true, optional = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "blueprint-schema-init/std", "scrypto-derive/std", "strum/std", "radix-engine-common/std", "radix-engine-interface/std", "radix-rust/std"]
-alloc = ["hex/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "scrypto-derive/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "radix-rust/alloc"]
+std = ["hex/std", "sbor/std", "radix-blueprint-schema-init/std", "scrypto-derive/std", "strum/std", "radix-engine-common/std", "radix-engine-interface/std", "radix-rust/std"]
+alloc = ["hex/alloc", "sbor/alloc", "radix-blueprint-schema-init/alloc", "scrypto-derive/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "radix-rust/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]
