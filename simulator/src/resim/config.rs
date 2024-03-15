@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use radix_engine::utils::*;
 use radix_engine::vm::ScryptoVmVersion;
 use radix_engine_common::prelude::*;
-use substate_store_interface::db_key_mapper::*;
-use substate_store_interface::interface::*;
+use radix_substate_store_interface::db_key_mapper::*;
+use radix_substate_store_interface::interface::*;
 
 use crate::resim::*;
 use std::env;

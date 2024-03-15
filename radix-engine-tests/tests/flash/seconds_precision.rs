@@ -11,8 +11,8 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_tests::common::PackageLoader;
 use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use substate_store_interface::interface::CommittableSubstateDatabase;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::CommittableSubstateDatabase;
 use transaction::builder::ManifestBuilder;
 
 #[test]

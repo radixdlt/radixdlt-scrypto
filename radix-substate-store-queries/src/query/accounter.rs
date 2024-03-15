@@ -1,7 +1,7 @@
 use super::{StateTreeTraverser, StateTreeVisitor};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
-use substate_store_interface::interface::SubstateDatabase;
+use radix_substate_store_interface::interface::SubstateDatabase;
 
 pub struct ResourceAccounter<'s, S: SubstateDatabase> {
     substate_db: &'s S,

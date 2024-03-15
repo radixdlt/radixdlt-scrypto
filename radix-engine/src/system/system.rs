@@ -45,7 +45,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_macros::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {

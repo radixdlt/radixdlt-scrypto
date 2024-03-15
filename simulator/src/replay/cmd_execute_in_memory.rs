@@ -12,10 +12,10 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
-use substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use substate_store_interface::interface::CommittableSubstateDatabase;
+use radix_substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::CommittableSubstateDatabase;
 use tar::Archive;
 
 /// Run transactions in archive, using in-memory database

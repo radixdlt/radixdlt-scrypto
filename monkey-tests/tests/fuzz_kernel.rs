@@ -21,9 +21,9 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use substate_store_interface::interface::CommittableSubstateDatabase;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::CommittableSubstateDatabase;
 use transaction::model::PreAllocatedAddress;
 
 struct TestCallFrameData;

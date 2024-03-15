@@ -8,7 +8,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_test::prelude::*;
-use substate_store_interface::interface::DatabaseUpdate;
+use radix_substate_store_interface::interface::DatabaseUpdate;
 use transaction::builder::ManifestBuilder;
 
 #[test]

@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use radix_engine_interface::types::*;
-use substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallbackError<E, C> {

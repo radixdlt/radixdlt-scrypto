@@ -12,12 +12,12 @@ use radix_engine_interface::blueprints::resource::NON_FUNGIBLE_RESOURCE_MANAGER_
 use radix_engine_interface::types::{BlueprintPartitionOffset, CollectionDescriptor};
 use radix_engine_interface::{prelude::MetadataValue, types::PackagePartitionOffset};
 use radix_rust::ContextualDisplay;
-use substate_store_interface::{
+use radix_substate_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
 };
-use substate_store_queries::query::ResourceAccounter;
-use substate_store_queries::typed_substate_layout::*;
+use radix_substate_store_queries::query::ResourceAccounter;
+use radix_substate_store_queries::typed_substate_layout::*;
 
 /// Represents an error when displaying an entity.
 #[derive(Debug, Clone)]

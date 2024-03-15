@@ -37,7 +37,7 @@ use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::{CustomGenesis, LedgerSimulator, LedgerSimulatorBuilder};
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::builder::ManifestBuilder;
 
 pub struct SystemTestFuzzer {

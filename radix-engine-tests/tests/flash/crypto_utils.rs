@@ -7,8 +7,8 @@ use radix_engine_tests::common::PackageLoader;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use substate_store_interface::interface::CommittableSubstateDatabase;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::CommittableSubstateDatabase;
 
 #[test]
 fn publishing_crypto_utils_without_state_flash_should_fail() {

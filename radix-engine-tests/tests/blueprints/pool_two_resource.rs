@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::*;
-use substate_store_queries::typed_substate_layout::FungibleResourceManagerError;
+use radix_substate_store_queries::typed_substate_layout::FungibleResourceManagerError;
 
 #[test]
 pub fn two_resource_pool_can_be_instantiated() {

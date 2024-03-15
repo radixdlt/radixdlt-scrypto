@@ -10,7 +10,7 @@ use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_common::constants::AuthAddresses;
 use radix_engine_common::prelude::NetworkDefinition;
 use radix_engine_common::prelude::*;
-use substate_store_interface::interface::SubstateDatabase;
+use radix_substate_store_interface::interface::SubstateDatabase;
 use transaction::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };

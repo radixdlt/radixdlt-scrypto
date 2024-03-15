@@ -19,7 +19,7 @@ use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use sbor::rust::iter;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
-use substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
+use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use transaction::prelude::TransactionCostingParameters;
 use wabt::wat2wasm;
 

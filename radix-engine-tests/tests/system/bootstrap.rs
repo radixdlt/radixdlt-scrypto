@@ -15,9 +15,9 @@ use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedU
 use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::KeyValueEntrySubstate;
 use scrypto_test::prelude::{CustomGenesis, SubtreeVaults, LedgerSimulatorBuilder};
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
-use substate_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
-use substate_store_queries::typed_substate_layout::*;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_substate_store_queries::typed_substate_layout::*;
 use transaction::prelude::*;
 
 #[test]

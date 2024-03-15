@@ -8,7 +8,7 @@ use rocksdb::{
 };
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
-use substate_store_interface::interface::*;
+use radix_substate_store_interface::interface::*;
 
 pub struct RocksdbSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,
@@ -173,7 +173,7 @@ pub fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use substate_store_interface::interface::{
+    use radix_substate_store_interface::interface::{
         CommittableSubstateDatabase, DatabaseUpdates, DbSortKey, NodeDatabaseUpdates,
         PartitionDatabaseUpdates,
     };

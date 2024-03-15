@@ -12,9 +12,9 @@ use rocksdb::{Direction, IteratorMode, Options, DB};
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
-use substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use substate_store_interface::interface::CommittableSubstateDatabase;
+use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::CommittableSubstateDatabase;
 use transaction::prelude::{
     IntentHash, NotarizedTransactionHash, SignedIntentHash, SystemTransactionHash,
 };
@@ -85,7 +85,7 @@ impl TxnSync {
                 let new_version = current_version + 1;
                 // TODO: avoid redundant computation?
                 let (_, new_state_root_hash) =
-                    substate_store_impls::rocks_db_with_merkle_tree::compute_state_tree_update(
+                    radix_substate_store_impls::rocks_db_with_merkle_tree::compute_state_tree_update(
                         &database,
                         current_version,
                         &database_updates,

@@ -12,12 +12,12 @@ use radix_rust::ContextualDisplay;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
-use substate_store_interface::interface::DatabaseUpdates;
-use substate_store_interface::{
+use radix_substate_store_interface::interface::DatabaseUpdates;
+use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
 };
-use substate_store_queries::typed_substate_layout::*;
+use radix_substate_store_queries::typed_substate_layout::*;
 
 use crate::resim::*;
 use crate::utils::*;

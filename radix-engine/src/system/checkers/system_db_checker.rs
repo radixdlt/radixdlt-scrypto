@@ -14,8 +14,8 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use substate_store_interface::interface::ListableSubstateDatabase;
-use substate_store_interface::interface::SubstateDatabase;
+use radix_substate_store_interface::interface::ListableSubstateDatabase;
+use radix_substate_store_interface::interface::SubstateDatabase;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SystemNodeCheckerState {

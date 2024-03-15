@@ -8,7 +8,7 @@ use radix_engine_common::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
-use substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase};
+use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase};
 
 #[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct StateUpdateSummary {

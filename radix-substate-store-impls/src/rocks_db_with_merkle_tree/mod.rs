@@ -11,7 +11,7 @@ use rocksdb::{
 };
 use sbor::prelude::*;
 use std::path::PathBuf;
-use substate_store_interface::interface::*;
+use radix_substate_store_interface::interface::*;
 
 mod state_tree;
 use crate::rocks_db::{decode_from_rocksdb_bytes, encode_to_rocksdb_bytes};
@@ -314,7 +314,7 @@ struct Metadata {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use substate_store_interface::interface::{
+    use radix_substate_store_interface::interface::{
         CommittableSubstateDatabase, DatabaseUpdates, DbSortKey, NodeDatabaseUpdates,
         PartitionDatabaseUpdates,
     };

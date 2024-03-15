@@ -19,7 +19,7 @@ use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
-use substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use transaction::prelude::PreAllocatedAddress;
 
 pub type InjectSystemCostingError<'a, E> =

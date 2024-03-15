@@ -9,9 +9,9 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../sbor" }
 radix-engine = { path = "../radix-engine" }
-substate-store-interface = { path = "../substate-store-interface" }
-substate-store-impls = { path = "../substate-store-impls", features = ["rocksdb"] }
-substate-store-queries = { path = "../substate-store-queries" }
+radix-substate-store-interface = { path = "../radix-substate-store-interface" }
+radix-substate-store-impls = { path = "../radix-substate-store-impls", features = ["rocksdb"] }
+radix-substate-store-queries = { path = "../radix-substate-store-queries" }
 radix-engine-common = { path = "../radix-engine-common" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }

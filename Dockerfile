@@ -9,9 +9,9 @@ RUN apt update && apt install -y \
 FROM base-image as builder
 
 # Copy scrypto and radix-engine library crates
-ADD Cargo.toml /app/Cargo.toml
 ADD assets /app/assets
 ADD blueprint-schema-init /app/blueprint-schema-init
+ADD Cargo.toml /app/Cargo.toml
 ADD native-sdk /app/native-sdk
 ADD radix-engine /app/radix-engine
 ADD radix-engine-common /app/radix-engine-common
@@ -21,12 +21,12 @@ ADD radix-engine-interface /app/radix-engine-interface
 ADD radix-engine-profiling /app/radix-engine-profiling
 ADD radix-engine-profiling-macros /app/radix-engine-profiling-macros
 ADD radix-rust app/radix-rust
+ADD radix-substate-store-impls /app/radix-substate-store-impls
+ADD radix-substate-store-interface /app/radix-substate-store-interface
+ADD radix-substate-store-queries /app/radix-substate-store-queries
 ADD sbor /app/sbor
 ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common
-ADD substate-store-impls /app/substate-store-impls
-ADD substate-store-interface /app/substate-store-interface
-ADD substate-store-queries /app/substate-store-queries
 ADD transaction /app/transaction
 
 # Copy simulator binary crate

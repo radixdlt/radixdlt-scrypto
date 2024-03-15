@@ -4,8 +4,8 @@ use colored::*;
 use radix_engine_common::time::Instant;
 use radix_engine_common::time::UtcDateTime;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use substate_store_impls::rocks_db::RocksdbSubstateStore;
-use substate_store_interface::{
+use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
+use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::ListableSubstateDatabase,
 };

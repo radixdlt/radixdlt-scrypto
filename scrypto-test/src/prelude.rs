@@ -39,11 +39,11 @@ pub use radix_engine::vm::wasm::*;
 pub use radix_engine::vm::*;
 
 /* Radix Engine Stores */
-pub use substate_store_impls::memory_db::*;
+pub use radix_substate_store_impls::memory_db::*;
 
 /* Radix Engine Store Interface */
-pub use substate_store_interface::db_key_mapper::*;
-pub use substate_store_interface::interface::*;
+pub use radix_substate_store_interface::db_key_mapper::*;
+pub use radix_substate_store_interface::interface::*;
 
 /* Radix Engine Interface */
 pub extern crate radix_engine_common;

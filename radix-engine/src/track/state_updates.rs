@@ -1,10 +1,10 @@
 use crate::internal_prelude::*;
 use crate::track::LegacyStateUpdates;
 use sbor::rust::{cmp::*, iter::*, mem};
-use substate_store_interface::interface::{
+use radix_substate_store_interface::interface::{
     DatabaseUpdates, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
 };
-use substate_store_interface::{
+use radix_substate_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DatabaseUpdate, DbSortKey},
 };

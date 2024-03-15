@@ -19,7 +19,7 @@ use radix_engine_interface::types::CollectionDescriptor;
 use radix_rust::indexmap;
 use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
-use substate_store_interface::interface::*;
+use radix_substate_store_interface::interface::*;
 
 pub fn generate_vm_boot_scrypto_version_state_updates(version: ScryptoVmVersion) -> StateUpdates {
     let substate = scrypto_encode(&VmBoot::V1 {

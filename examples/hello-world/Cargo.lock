@@ -770,7 +770,7 @@ dependencies = [
  "sbor",
  "serde_json",
  "strum",
- "substate-store-interface",
+ "radix-substate-store-interface",
  "syn 1.0.109",
  "transaction",
  "utils",
@@ -1072,9 +1072,9 @@ dependencies = [
  "radix-engine-interface",
  "sbor",
  "serde_json",
- "substate-store-impls",
- "substate-store-interface",
- "substate-store-queries",
+ "radix-substate-store-impls",
+ "radix-substate-store-interface",
+ "radix-substate-store-queries",
  "transaction",
  "wabt",
 ]
@@ -1222,19 +1222,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "substate-store-impls"
+name = "radix-substate-store-impls"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
  "sbor",
- "substate-store-interface",
+ "radix-substate-store-interface",
  "utils",
 ]
 
 [[package]]
-name = "substate-store-interface"
+name = "radix-substate-store-interface"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
@@ -1245,7 +1245,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "substate-store-queries"
+name = "radix-substate-store-queries"
 version = "1.2.0-dev"
 dependencies = [
  "hex",
@@ -1255,7 +1255,7 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-interface",
  "sbor",
- "substate-store-interface",
+ "radix-substate-store-interface",
  "transaction",
  "utils",
 ]

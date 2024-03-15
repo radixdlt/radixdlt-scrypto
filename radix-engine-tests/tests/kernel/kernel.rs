@@ -18,8 +18,8 @@ use radix_engine::kernel::kernel_callback_api::{
 use radix_engine::track::{BootStore, Track};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use transaction::model::PreAllocatedAddress;
 
 struct TestCallFrameData;

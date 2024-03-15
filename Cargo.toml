@@ -27,6 +27,9 @@ members = [
     "radix-engine-tests",
     "radix-engine",
     "radix-rust",
+    "radix-substate-store-impls",
+    "radix-substate-store-interface",
+    "radix-substate-store-queries",
     "sbor-derive-common",
     "sbor-derive",
     "sbor-tests",
@@ -35,9 +38,6 @@ members = [
     "scrypto-derive",
     "scrypto-test",
     "scrypto",
-    "substate-store-impls",
-    "substate-store-interface",
-    "substate-store-queries",
     "transaction-scenarios",
     "transaction",
 ]
@@ -53,15 +53,15 @@ radix-engine-interface = { version = "1.2.0-dev", path = "./radix-engine-interfa
 radix-engine-profiling = { version = "1.2.0-dev", path = "./radix-engine-profiling", default-features = false }
 radix-engine-profiling-macros = { version = "1.2.0-dev", path = "./radix-engine-profiling-macros", default-features = false }
 radix-rust = { version = "1.2.0-dev", path = "./radix-rust", default-features = false }
+radix-substate-store-impls = { version = "1.2.0-dev", path = "./radix-substate-store-impls", default-features = false }
+radix-substate-store-interface = { version = "1.2.0-dev", path = "./radix-substate-store-interface", default-features = false }
+radix-substate-store-queries = { version = "1.2.0-dev", path = "./radix-substate-store-queries", default-features = false }
 sbor = { version = "1.2.0-dev", path = "./sbor", default-features = false }
 sbor-derive = { version = "1.2.0-dev", path = "./sbor-derive", default-features = false }
 sbor-derive-common = { version = "1.2.0-dev", path = "./sbor-derive-common", default-features = false }
 scrypto = { version = "1.2.0-dev", path = "./scrypto", default-features = false }
 scrypto-derive = { version = "1.2.0-dev", path = "./scrypto-derive", default-features = false }
 scrypto-test = { version = "1.2.0-dev", path = "./scrypto-test", default-features = false }
-substate-store-impls = { version = "1.2.0-dev", path = "./substate-store-impls", default-features = false }
-substate-store-interface = { version = "1.2.0-dev", path = "./substate-store-interface", default-features = false }
-substate-store-queries = { version = "1.2.0-dev", path = "./substate-store-queries", default-features = false }
 transaction = { version = "1.2.0-dev", path = "./transaction", default-features = false }
 transaction-scenarios = { version = "1.2.0-dev", path = "./transaction-scenarios", default-features = false }
 

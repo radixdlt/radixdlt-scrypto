@@ -12,7 +12,7 @@ use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use sbor::representations::*;
-use substate_store_interface::interface::DatabaseUpdate;
+use radix_substate_store_interface::interface::DatabaseUpdate;
 use transaction::prelude::TransactionCostingParameters;
 
 define_single_versioned! {

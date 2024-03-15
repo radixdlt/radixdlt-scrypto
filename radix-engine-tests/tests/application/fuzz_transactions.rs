@@ -11,7 +11,7 @@ use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::model::{NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload};
 use transaction::prelude::*;
 use transaction::validation::{

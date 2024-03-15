@@ -1131,10 +1131,10 @@ dependencies = [
  "radix-engine-interface",
  "radix-engine-profiling-macros",
  "radix-rust",
+ "radix-substate-store-interface",
  "sbor",
  "serde_json",
  "strum",
- "substate-store-interface",
  "syn 1.0.109",
  "transaction",
  "wasm-instrument",
@@ -1228,6 +1228,46 @@ name = "radix-rust"
 version = "1.2.0-dev"
 dependencies = [
  "indexmap 2.2.5",
+]
+
+[[package]]
+name = "radix-substate-store-impls"
+version = "1.2.0-dev"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine-common",
+ "radix-rust",
+ "radix-substate-store-interface",
+ "rocksdb",
+ "sbor",
+]
+
+[[package]]
+name = "radix-substate-store-interface"
+version = "1.2.0-dev"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine-common",
+ "radix-rust",
+ "sbor",
+]
+
+[[package]]
+name = "radix-substate-store-queries"
+version = "1.2.0-dev"
+dependencies = [
+ "hex",
+ "itertools",
+ "paste",
+ "radix-engine",
+ "radix-engine-common",
+ "radix-engine-interface",
+ "radix-rust",
+ "radix-substate-store-interface",
+ "sbor",
+ "transaction",
 ]
 
 [[package]]
@@ -1584,15 +1624,15 @@ dependencies = [
  "radix-engine-interface",
  "radix-engine-profiling",
  "radix-rust",
+ "radix-substate-store-impls",
+ "radix-substate-store-interface",
+ "radix-substate-store-queries",
  "rand 0.8.5",
  "regex",
  "rocksdb",
  "sbor",
  "serde",
  "serde_json",
- "substate-store-impls",
- "substate-store-interface",
- "substate-store-queries",
  "syn 1.0.93",
  "tar",
  "temp-env",
@@ -1658,46 +1698,6 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "substate-store-impls"
-version = "1.2.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "radix-engine-common",
- "radix-rust",
- "rocksdb",
- "sbor",
- "substate-store-interface",
-]
-
-[[package]]
-name = "substate-store-interface"
-version = "1.2.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "radix-engine-common",
- "radix-rust",
- "sbor",
-]
-
-[[package]]
-name = "substate-store-queries"
-version = "1.2.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "paste",
- "radix-engine",
- "radix-engine-common",
- "radix-engine-interface",
- "radix-rust",
- "sbor",
- "substate-store-interface",
- "transaction",
 ]
 
 [[package]]

@@ -7,9 +7,9 @@ use scrypto_test::prelude::{LedgerSimulator, LedgerSimulatorBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
 #[cfg(not(feature = "rocksdb"))]
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 #[cfg(feature = "rocksdb")]
-use substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
+use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use transaction::prelude::*;
 
 /// Number of prefilled accounts in the substate store

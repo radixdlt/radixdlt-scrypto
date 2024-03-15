@@ -8,7 +8,7 @@ mod multi_threaded_test {
     use radix_engine_common::prelude::*;
     use radix_engine_interface::prelude::*;
     use radix_engine_interface::rule;
-    use substate_store_impls::memory_db::InMemorySubstateDatabase;
+    use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
     use transaction::model::TestTransaction;
     use transaction::prelude::*;
     // using crossbeam for its scoped thread feature, which allows non-static lifetimes for data being

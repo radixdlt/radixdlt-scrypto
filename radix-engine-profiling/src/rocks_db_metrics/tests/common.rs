@@ -4,7 +4,7 @@ use plotters::prelude::*;
 use rand::{rngs::ThreadRng, Rng};
 #[allow(unused_imports)]
 use std::{io::Write, path::PathBuf};
-use substate_store_interface::{
+use radix_substate_store_interface::{
     db_key_mapper::*,
     interface::{
         CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,

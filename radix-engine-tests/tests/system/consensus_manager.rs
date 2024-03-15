@@ -19,7 +19,7 @@ use rand_chacha::ChaCha8Rng;
 use scrypto::object_modules::*;
 use scrypto_test::prelude::AuthError;
 use scrypto_test::prelude::*;
-use substate_store_queries::typed_substate_layout::{
+use radix_substate_store_queries::typed_substate_layout::{
     ConsensusManagerError, ValidatorRewardAppliedEvent,
 };
 

@@ -11,7 +11,7 @@ use radix_rust::rust::vec::Vec;
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
-use substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateValue};
+use radix_substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateValue};
 
 define_single_versioned! {
     #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]

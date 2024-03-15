@@ -3,7 +3,7 @@
 use native_sdk::resource::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-use substate_store_queries::typed_substate_layout::two_resource_pool::*;
+use radix_substate_store_queries::typed_substate_layout::two_resource_pool::*;
 
 #[test]
 fn kernel_modules_are_reset_after_calling_a_with_method() {

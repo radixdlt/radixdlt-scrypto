@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::{LedgerSimulator, LedgerSimulatorBuilder};
 use std::iter;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::prelude::*;
 
 #[test]

@@ -4,8 +4,8 @@ use super::tree_store::*;
 use super::types::*;
 use radix_engine_common::crypto::Hash;
 use radix_rust::prelude::*;
-use substate_store_interface::interface::NodeDatabaseUpdates;
-use substate_store_interface::interface::*;
+use radix_substate_store_interface::interface::NodeDatabaseUpdates;
+use radix_substate_store_interface::interface::*;
 
 /// The middle tier of the 3-tier JMT, corresponding to the partition part of a substate key.
 ///

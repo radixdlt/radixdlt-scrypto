@@ -4,7 +4,7 @@ use crate::track::{
 };
 use radix_engine_common::types::{NodeId, PartitionNumber, SubstateKey};
 use radix_rust::prelude::{index_map_new, index_set_new, IndexMap, IndexSet};
-use substate_store_interface::interface::DatabaseUpdate;
+use radix_substate_store_interface::interface::DatabaseUpdate;
 
 /// A legacy format capturing the same information as new [`StateUpdates`].
 /// Note to migrators: this struct will live only temporarily. The new one should be preferred (and

@@ -1,6 +1,6 @@
 use radix_engine_common::prelude::*;
 use radix_rust::prelude::borrow::*;
-use substate_store_interface::interface::*;
+use radix_substate_store_interface::interface::*;
 
 pub type UnmergeableSubstateDatabaseOverlay<'a, S> = SubstateDatabaseOverlay<&'a S, S>;
 pub type MergeableSubstateDatabaseOverlay<'a, S> = SubstateDatabaseOverlay<&'a mut S, S>;

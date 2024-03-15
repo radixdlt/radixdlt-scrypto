@@ -9,9 +9,9 @@ use radix_engine_interface::types::*;
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
-use substate_store_interface::db_key_mapper::SubstateKeyContent;
-use substate_store_interface::interface::DbPartitionKey;
-use substate_store_interface::{
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::interface::DbPartitionKey;
+use radix_substate_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DbSortKey, PartitionEntry, SubstateDatabase},
 };

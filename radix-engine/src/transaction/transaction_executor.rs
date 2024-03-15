@@ -32,7 +32,7 @@ use radix_engine_common::constants::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
+use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
 
 /// Protocol-defined costing parameters

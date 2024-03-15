@@ -11,7 +11,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
-use substate_store_interface::db_key_mapper::*;
+use radix_substate_store_interface::db_key_mapper::*;
 
 #[cfg(feature = "std")]
 #[test]

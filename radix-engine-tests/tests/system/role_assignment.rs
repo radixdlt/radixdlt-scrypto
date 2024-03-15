@@ -11,7 +11,7 @@ use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::InvalidNameError;
 use scrypto_test::prelude::*;
-use substate_store_queries::typed_substate_layout::*;
+use radix_substate_store_queries::typed_substate_layout::*;
 
 #[test]
 fn can_call_public_function() {

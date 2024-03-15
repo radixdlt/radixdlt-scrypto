@@ -6,7 +6,7 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_common::prelude::*;
 use scrypto_test::prelude::*;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use transaction::errors::TransactionValidationError;
 
 use transaction::validation::*;

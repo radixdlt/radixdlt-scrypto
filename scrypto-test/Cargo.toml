@@ -9,11 +9,11 @@ sbor = { workspace = true }
 native-sdk = { workspace = true }
 transaction = { workspace = true }
 radix-engine = { workspace = true, features = ["radix_engine_tests", "db_checker"] }
-substate-store-impls = { workspace = true }
+radix-substate-store-impls = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
-substate-store-interface = { workspace = true }
-substate-store-queries = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+radix-substate-store-queries = { workspace = true }
 wabt = { workspace = true }
 ouroboros = { workspace = true }
 paste = { workspace = true }
@@ -25,15 +25,15 @@ tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], 
 [features]
 default = ["std"]
 
-std = ["moka", "sbor/std", "native-sdk/std", "transaction/std", "radix-engine/std", "substate-store-queries/std", "substate-store-impls/std", "radix-engine-common/std", "radix-engine-interface/std", "substate-store-interface/std", "tuple-return/std"]
-alloc = ["lru", "sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "substate-store-queries/alloc", "substate-store-impls/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "tuple-return/alloc"]
+std = ["moka", "sbor/std", "native-sdk/std", "transaction/std", "radix-engine/std", "radix-substate-store-queries/std", "radix-substate-store-impls/std", "radix-engine-common/std", "radix-engine-interface/std", "radix-substate-store-interface/std", "tuple-return/std"]
+alloc = ["lru", "sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "radix-substate-store-queries/alloc", "radix-substate-store-impls/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc", "tuple-return/alloc"]
 
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]
 
 resource_tracker = []
 
-rocksdb = ["substate-store-impls/rocksdb"]
+rocksdb = ["radix-substate-store-impls/rocksdb"]
 post_run_db_check = []
 
 [lib]

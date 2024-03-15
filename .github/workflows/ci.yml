@@ -139,7 +139,7 @@ jobs:
       - name: Build with resource tracking
         run: cargo build --features resource_tracker
       - name: Build with rocksdb
-        run: cargo test -p radix-engine-profiling -p substate-store-impls --features rocksdb --release --no-run -- --nocapture
+        run: cargo test -p radix-engine-profiling -p radix-substate-store-impls --features rocksdb --release --no-run -- --nocapture
       - name: Build bench with rocksdb
         run: cargo bench --features rocksdb --no-run
 

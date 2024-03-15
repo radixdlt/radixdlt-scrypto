@@ -9,7 +9,7 @@ use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-use substate_store_queries::typed_substate_layout::{FunctionAuth, PackageError};
+use radix_substate_store_queries::typed_substate_layout::{FunctionAuth, PackageError};
 use transaction::builder::ManifestBuilder;
 
 #[test]

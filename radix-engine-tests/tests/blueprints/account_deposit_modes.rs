@@ -5,7 +5,7 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::prelude::*;
 use scrypto_test::prelude::{DefaultLedgerSimulator, LedgerSimulatorBuilder};
-use substate_store_queries::typed_substate_layout::AccountError;
+use radix_substate_store_queries::typed_substate_layout::AccountError;
 use transaction::prelude::*;
 
 #[test]

@@ -10,11 +10,11 @@ use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::LocalTypeId;
 use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
-use substate_store_interface::db_key_mapper::{
+use radix_substate_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, SubstateKeyContent,
 };
-use substate_store_interface::interface::{CommittableSubstateDatabase, ListableSubstateDatabase};
-use substate_store_interface::{
+use radix_substate_store_interface::interface::{CommittableSubstateDatabase, ListableSubstateDatabase};
+use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
 };

@@ -2,7 +2,7 @@
 #[allow(unused)]
 pub mod package_loader {
     use radix_engine_common::prelude::*;
-    use substate_store_queries::typed_substate_layout::*;
+    use radix_substate_store_queries::typed_substate_layout::*;
 
     const PACKAGES_BINARY: &[u8] =
         include_bytes!(concat!(env!("OUT_DIR"), "/compiled_packages.bin"));
@@ -30,7 +30,7 @@ pub mod package_loader {
 pub mod package_loader {
     use radix_engine_common::prelude::*;
     use std::path::PathBuf;
-    use substate_store_queries::typed_substate_layout::*;
+    use radix_substate_store_queries::typed_substate_layout::*;
 
     pub struct PackageLoader;
     impl PackageLoader {

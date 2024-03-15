@@ -4,7 +4,7 @@ use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-use substate_store_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
+use radix_substate_store_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
 
 #[test]
 fn get_global_address_in_local_in_function_should_fail() {

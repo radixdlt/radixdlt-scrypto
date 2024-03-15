@@ -46,11 +46,11 @@ use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
-use substate_store_interface::interface::{
+use radix_substate_store_interface::interface::{
     DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
     PartitionDatabaseUpdates, PartitionEntry,
 };
-use substate_store_interface::{
+use radix_substate_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},
 };

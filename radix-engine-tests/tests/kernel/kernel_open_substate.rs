@@ -14,9 +14,9 @@ use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::prelude::*;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use substate_store_queries::typed_substate_layout::{
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
 };
 use transaction::prelude::*;

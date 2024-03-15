@@ -1,12 +1,12 @@
 [package]
-name = "substate-store-queries"
+name = "radix-substate-store-queries"
 version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
 sbor = { workspace = true }
 radix-engine = { workspace = true }
-substate-store-interface = { workspace = true }
+radix-substate-store-interface = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 transaction = { workspace = true }
@@ -18,8 +18,8 @@ paste = { workspace = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["radix-engine/std", "hex/std", "sbor/std", "transaction/std", "radix-engine-interface/std", "radix-engine-common/std", "substate-store-interface/std", "radix-rust/std"]
-alloc = ["radix-engine/alloc", "hex/alloc", "sbor/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "substate-store-interface/alloc", "radix-rust/alloc"]
+std = ["radix-engine/std", "hex/std", "sbor/std", "transaction/std", "radix-engine-interface/std", "radix-engine-common/std", "radix-substate-store-interface/std", "radix-rust/std"]
+alloc = ["radix-engine/alloc", "hex/alloc", "sbor/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "radix-substate-store-interface/alloc", "radix-rust/alloc"]
 
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]

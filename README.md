@@ -158,9 +158,9 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
 - `radix-engine`: The Radix Engine implementation.
 - `transaction`: Radix transaction manifest compiler, transaction models, signing and validating logic.
 - `transaction-scenarios`: Defines various transaction scenarios, for testing.
-- `substate-store-interface`: The interface of any substate store.
-- `substate-store-impls`: Various substate store implementations.
-- `substate-store-queries`: Interprets data in substate data by injecting high-level knowledge.
+- `radix-substate-store-interface`: The interface of any substate store.
+- `radix-substate-store-impls`: Various substate store implementations.
+- `radix-substate-store-queries`: Interprets data in substate data by injecting high-level knowledge.
 - `simulator`: A ledger simulator that runs transactions on file system, primarily for local development.
 
 ## LFS

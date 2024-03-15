@@ -14,7 +14,7 @@ use radix_rust::{btreeset, indexmap};
 use sbor::rust::ops::AddAssign;
 use sbor::rust::ops::Neg;
 use sbor::rust::vec::Vec;
-use substate_store_interface::interface::SubstateDatabase;
+use radix_substate_store_interface::interface::SubstateDatabase;
 
 pub fn reconcile_resource_state_and_events<'a, S: SubstateDatabase>(
     summary: &StateUpdateSummary,
