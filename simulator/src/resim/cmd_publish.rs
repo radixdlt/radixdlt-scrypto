@@ -62,7 +62,7 @@ impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
         let (code_path, definition_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
-            build_package(
+            let build_artifacts = build_package(
                 &self.path,
                 false,
                 false,
@@ -72,7 +72,15 @@ impl Publish {
                 &vec![],
                 &vec![],
             )
-            .map_err(Error::BuildError)?
+            .map_err(Error::BuildError)?;
+            if build_artifacts.len() > 1 {
+                return Err(Error::BuildError(BuildError::WorkspaceNotSupported));
+            } else {
+                build_artifacts
+                    .first()
+                    .ok_or(Error::BuildError(BuildError::BuildArtifactsEmpty))?
+                    .to_owned()
+            }
         } else {
             let code_path = self.path.clone();
             let schema_path = code_path.with_extension("rpd");

@@ -19,6 +19,10 @@ pub enum BuildError {
     SchemaExtractionError(ExtractSchemaError),
 
     SchemaEncodeError(sbor::EncodeError),
+
+    BuildArtifactsEmpty,
+
+    WorkspaceNotSupported,
 }
 
 #[derive(Debug)]
@@ -51,7 +55,7 @@ pub fn build_package<P: AsRef<Path>>(
     _coverage: bool,
     features: &[String],
     env_variables: &[String],
-) -> Result<(PathBuf, PathBuf), BuildError> {
+) -> Result<Vec<(PathBuf, PathBuf)>, BuildError> {
     let env_variables_decoded: Vec<Vec<&str>> = env_variables
         .iter()
         .map(|env| env.split('=').collect::<Vec<&str>>())
@@ -95,10 +99,15 @@ pub fn build_package<P: AsRef<Path>>(
         .compile()
         .map_err(|e| BuildError::ScryptoCompilerError(e))?;
 
-    Ok((
-        build_results.wasm.path,
-        build_results.package_definition.path,
-    ))
+    Ok(build_results
+        .iter()
+        .map(|item| {
+            (
+                item.wasm.path.to_owned(),
+                item.package_definition.path.to_owned(),
+            )
+        })
+        .collect())
 }
 
 /// Runs tests within a package.
