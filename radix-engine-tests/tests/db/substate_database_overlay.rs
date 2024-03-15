@@ -7,8 +7,8 @@ use radix_substate_store_impls::substate_database_overlay::*;
 use radix_substate_store_interface::db_key_mapper::*;
 use radix_substate_store_interface::interface::*;
 use transaction::builder::*;
-use transaction_scenarios::scenario::*;
-use transaction_scenarios::scenarios::*;
+use radix_transaction_scenarios::scenario::*;
+use radix_transaction_scenarios::scenarios::*;
 
 #[test]
 fn substates_written_to_root_database_can_be_read() {

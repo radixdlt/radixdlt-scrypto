@@ -248,7 +248,7 @@ jobs:
       - name: Run tests
         run: cargo nextest run -p transaction
 
-  transaction-scenarios:
+  radix-transaction-scenarios:
     name: Run transaction scenarios
     runs-on: ubuntu-latest
     steps:
@@ -256,7 +256,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p transaction-scenarios
+        run: cargo nextest run -p radix-transaction-scenarios
 
   cli-resim-rtmc-rtmd:
     name: Run CLI tests (resim & rtmc & rtmd)

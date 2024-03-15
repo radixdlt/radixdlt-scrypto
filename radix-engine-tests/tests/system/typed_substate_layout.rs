@@ -11,8 +11,8 @@ use sbor::rust::ops::Deref;
 use scrypto_test::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_queries::typed_native_events::TypedNativeEvent;
-use transaction_scenarios::scenario::{NextAction, ScenarioCore};
-use transaction_scenarios::scenarios::get_builder_for_every_scenario;
+use radix_transaction_scenarios::scenario::{NextAction, ScenarioCore};
+use radix_transaction_scenarios::scenarios::get_builder_for_every_scenario;
 
 #[test]
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {

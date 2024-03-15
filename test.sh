@@ -22,7 +22,7 @@ test_crates_features \
     radix-engine-interface \
     radix-engine \
     radix-engine-tests \
-    transaction-scenarios \
+    radix-transaction-scenarios \
     transaction" \
     --features=compile-blueprints-at-build-time
 
