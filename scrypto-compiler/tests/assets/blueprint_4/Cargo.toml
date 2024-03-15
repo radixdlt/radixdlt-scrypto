@@ -1,5 +1,5 @@
 [package]
-name = "test_blueprint"
+name = "test_blueprint_4"
 version = "1.2.0-dev"
 edition = "2021"
 
@@ -14,4 +14,3 @@ crate-type = ["cdylib", "lib"]
 [features]
 feature-1 = []
 
-[package.metadata.scrypto]

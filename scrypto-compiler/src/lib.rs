@@ -13,27 +13,31 @@ const SCRYPTO_NO_SCHEMA: &str = "scrypto/no-schema";
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
-    /// Returns IO Error which occurred during compilation and if possible some context information
+    /// Returns IO Error which occurred during compilation and optional context information.
     IOError(io::Error, Option<String>),
-    /// Returns process exit status in case of 'cargo build' fail
+    /// Returns IO Error which occurred during compilation, path of a file related to that fail and
+    /// optional context information.
+    IOErrorWithPath(io::Error, PathBuf, Option<String>),
+    /// Returns process exit status in case of 'cargo build' fail.
     CargoBuildFailure(ExitStatus),
-    /// Returns path to Cargo.toml for which cargo metadata command failed and process exit status
+    /// Returns path to Cargo.toml for which cargo metadata command failed and process exit status.
     CargoMetadataFailure(String, ExitStatus),
-    /// Returns path to Cargo.toml for which results of cargo metadata command is not not valid json or target directory field is missing
+    /// Returns path to Cargo.toml for which results of cargo metadata command is not not valid json
+    /// or target directory field is missing.
     CargoTargetDirectoryResolutionError(String),
-    /// Compiler is unable to generate target binary file name
+    /// Compiler is unable to generate target binary file name.
     CargoTargetBinaryResolutionError,
-    /// Returns path to Cargo.toml which was failed to load
+    /// Returns path to Cargo.toml which was failed to load.
     CargoManifestLoadFailure(String),
-    /// Returns path to Cargo.toml which cannot be found
+    /// Returns path to Cargo.toml which cannot be found.
     CargoManifestFileNotFound(String),
-    /// Provided package ID is not a member of the workspace
+    /// Provided package ID is not a member of the workspace.
     CargoWrongPackageId(String),
-    /// Returns WASM Optimization error
+    /// Returns WASM Optimization error.
     WasmOptimizationError(wasm_opt::OptimizationError),
-    /// Returns error occured during schema extraction
+    /// Returns error occured during schema extraction.
     SchemaExtractionError(ExtractSchemaError),
-    /// Returns error occured during schema encoding
+    /// Returns error occured during schema encoding.
     SchemaEncodeError(EncodeError),
 }
 
@@ -126,7 +130,16 @@ struct CompilerManifestDefinition {
     target_binary_rpd_path: PathBuf,
 }
 
-//#[derive()]
+/// Programmatic implementation of Scrypto compiler which is a wrapper around rust cargo tool.
+/// To create an instance of `ScryptoCompiler` use `builder()` constructor which implements builder pattern,
+/// provide any required parameter @see `ScryptoCompilerInputParams` and finally call `compile()` function.
+/// `ScryptoCompiler` supports worspace compilation by providing workspace manifest as `manifest_path` parameter of
+/// running compiler from directory containg workspace Cargo.toml file. Only packages with defined metadata group:
+/// [package.metadata.scrypto] will be used during workspace compilation (so workspace manifest can contain also non
+/// Scrypto packages). Alternativelly packages for workspace compilation can be provided in `package` input parameter,
+/// metadata is not validated in that case.
+/// Compilation results consists of list of `BuildArtifacts` which contains generated WASM file path and its content
+/// and path to RPD file with package definition and `PackageDefinition` struct.
 pub struct ScryptoCompiler {
     /// Scrypto compiler input parameters.
     input_params: ScryptoCompilerInputParams,
@@ -158,7 +171,7 @@ impl ScryptoCompiler {
                     .filter(|package| {
                         workspace_members
                             .iter()
-                            .find(|(_, member_package_name)| &member_package_name == package)
+                            .find(|(_, member_package_name, _)| &member_package_name == package)
                             .is_none()
                     })
                     .collect();
@@ -171,8 +184,10 @@ impl ScryptoCompiler {
 
             let manifests = workspace_members
                 .into_iter()
-                .filter_map(|(member_manifest_input_path, package)| {
-                    if input_params.package.is_empty()
+                .filter_map(|(member_manifest_input_path, package, scrypto_metadata)| {
+                    // If compiling workspace use only packages which defines [package.metadata.scrypto]
+                    // or only specified packages with --package parameter
+                    if (input_params.package.is_empty() && scrypto_metadata.is_some())
                         || (!input_params.package.is_empty()
                             && input_params.package.contains(&package))
                     {
@@ -233,12 +248,10 @@ impl ScryptoCompiler {
             .arg("--no-deps")
             .output()
             .map_err(|e| {
-                ScryptoCompilerError::IOError(
+                ScryptoCompilerError::IOErrorWithPath(
                     e,
-                    Some(format!(
-                        "Cargo metadata for manifest failed: {}",
-                        manifest_path.display().to_string()
-                    )),
+                    manifest_path.to_path_buf(),
+                    Some(String::from("Cargo metadata for manifest failed.")),
                 )
             })?;
         if output.status.success() {
@@ -279,7 +292,7 @@ impl ScryptoCompiler {
                 let mut path = env::current_dir().map_err(|e| {
                     ScryptoCompilerError::IOError(
                         e,
-                        Some(String::from("Getting current directory failed")),
+                        Some(String::from("Getting current directory failed.")),
                     )
                 })?;
                 path.push(MANIFEST_FILE);
@@ -296,10 +309,12 @@ impl ScryptoCompiler {
         }
     }
 
-    // If manifest is a workspace this function returns non-empty vector of pairs of workspace members (path) and package name
+    // If manifest is a workspace this function returns non-empty vector of tuple with workspace members (path),
+    // package name and package scrypto metadata (content of section from Cargo.toml [package.metadata.scrypto]).
     fn is_manifest_workspace(
         manifest_path: &Path,
-    ) -> Result<Option<Vec<(PathBuf, String)>>, ScryptoCompilerError> {
+    ) -> Result<Option<Vec<(PathBuf, String, Option<cargo_toml::Value>)>>, ScryptoCompilerError>
+    {
         let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
@@ -318,10 +333,19 @@ impl ScryptoCompiler {
                             member_manifest_input_path.push("Cargo.toml"); // Manifest Cargo.toml file
 
                             match Manifest::from_path(&member_manifest_input_path) {
-                                Ok(manifest) => Ok((
-                                    member_manifest_input_path,
-                                    manifest.package().name().to_string(),
-                                )),
+                                Ok(manifest) => {
+                                    let metadata = match &manifest.package().metadata {
+                                        Some(cargo_toml::Value::Table(map)) => {
+                                            map.get("scrypto").cloned()
+                                        }
+                                        _ => None,
+                                    };
+                                    Ok((
+                                        member_manifest_input_path,
+                                        manifest.package().name().to_string(),
+                                        metadata,
+                                    ))
+                                }
                                 Err(_) => Err(ScryptoCompilerError::CargoManifestLoadFailure(
                                     member_manifest_input_path.display().to_string(),
                                 )),
@@ -560,12 +584,10 @@ impl ScryptoCompiler {
     ) -> Result<BuildArtifact<PackageDefinition>, ScryptoCompilerError> {
         let path = manifest_def.target_binary_rpd_path.with_extension("wasm");
         let code = std::fs::read(&path).map_err(|e| {
-            ScryptoCompilerError::IOError(
+            ScryptoCompilerError::IOErrorWithPath(
                 e,
-                Some(format!(
-                    "Read WASM file for RPD extract failed: {}",
-                    path.display().to_string()
-                )),
+                path,
+                Some(String::from("Read WASM file for RPD extract failed.")),
             )
         })?;
 
@@ -578,12 +600,10 @@ impl ScryptoCompiler {
                 .map_err(ScryptoCompilerError::SchemaEncodeError)?,
         )
         .map_err(|err| {
-            ScryptoCompilerError::IOError(
+            ScryptoCompilerError::IOErrorWithPath(
                 err,
-                Some(format!(
-                    "RPD file write failed: {}",
-                    manifest_def.target_binary_rpd_path.display().to_string()
-                )),
+                manifest_def.target_binary_rpd_path.clone(),
+                Some(String::from("RPD file write failed.")),
             )
         })?;
 
@@ -624,12 +644,10 @@ impl ScryptoCompiler {
         self.wasm_optimize(&manifest_def.target_binary_wasm_path.clone())?;
 
         let code = std::fs::read(&manifest_def.target_binary_wasm_path).map_err(|e| {
-            ScryptoCompilerError::IOError(
+            ScryptoCompilerError::IOErrorWithPath(
                 e,
-                Some(format!(
-                    "Read WASM file failed: {}",
-                    manifest_def.target_binary_wasm_path.display().to_string()
-                )),
+                manifest_def.target_binary_wasm_path.clone(),
+                Some(String::from("Read WASM file failed.")),
             )
         })?;
         Ok(BuildArtifact {
@@ -640,7 +658,7 @@ impl ScryptoCompiler {
 
     fn cargo_command_call(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
         let status = command.status().map_err(|e| {
-            ScryptoCompilerError::IOError(e, Some(String::from("Cargo build command failed")))
+            ScryptoCompilerError::IOError(e, Some(String::from("Cargo build command failed.")))
         })?;
         status
             .success()
@@ -764,12 +782,10 @@ impl ScryptoCompilerBuilder {
         ScryptoCompiler::from_input_params(&self.input_params)
     }
 
-    // Returns output wasm file path
     pub fn compile(&mut self) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
         self.build()?.compile()
     }
 
-    // Returns output wasm file path
     pub fn compile_with_stdio<T: Into<Stdio>>(
         &mut self,
         stdin: Option<T>,
@@ -951,6 +967,7 @@ mod tests {
 
         let build_artifacts = status.unwrap();
 
+        // workspace contains only 3 packages with defined scrypto metadata
         assert_eq!(build_artifacts.len(), 3);
 
         let names = [
@@ -1006,6 +1023,8 @@ mod tests {
         assert!(status.is_ok(), "{:?}", status);
 
         let build_artifacts = status.unwrap();
+
+        // workspace contains only 3 packages with defined scrypto metadata
         assert_eq!(build_artifacts.len(), 3);
     }
 
@@ -1025,6 +1044,7 @@ mod tests {
             .target_directory(target_directory.path())
             .package("test_blueprint_2")
             .package("test_blueprint_3")
+            .package("test_blueprint_4") // it is possible to specify explicitly package without scrypto metadata
             .compile();
 
         // Assert
@@ -1032,9 +1052,13 @@ mod tests {
 
         let build_artifacts = status.unwrap();
 
-        assert_eq!(build_artifacts.len(), 2);
+        assert_eq!(build_artifacts.len(), 3);
 
-        let names = ["test_blueprint_2.wasm", "test_blueprint_3.wasm"];
+        let names = [
+            "test_blueprint_2.wasm",
+            "test_blueprint_3.wasm",
+            "test_blueprint_4.wasm",
+        ];
         for i in 0..names.len() {
             assert!(build_artifacts[i].wasm.path.exists());
             assert!(build_artifacts[i].package_definition.path.exists());
@@ -1059,7 +1083,7 @@ mod tests {
             .package("non_existing_package")
             .package("test_blueprint_3")
             .compile();
-        println!("{:?}", status);
+
         // Assert
         assert!(match status {
             Err(ScryptoCompilerError::CargoWrongPackageId(package)) =>
@@ -1142,6 +1166,27 @@ mod tests {
             .manifest_path(blueprint_manifest_path)
             .target_directory(target_directory.path())
             .profile(Profile::Custom(String::from("custom")))
+            .compile();
+
+        // Assert
+        assert!(status.is_ok(), "{:?}", status);
+    }
+
+    #[test]
+    fn test_compilation_with_wasm_optimisations() {
+        // Arrange
+        let (blueprint_manifest_path, target_directory) = prepare();
+
+        // Act
+        let status = ScryptoCompiler::builder()
+            .manifest_path(blueprint_manifest_path)
+            .target_directory(target_directory.path())
+            .optimize_with_wasm_opt(
+                wasm_opt::OptimizationOptions::new_optimize_for_size_aggressively()
+                    .add_pass(wasm_opt::Pass::StripDebug)
+                    .add_pass(wasm_opt::Pass::StripDwarf)
+                    .add_pass(wasm_opt::Pass::StripProducers),
+            )
             .compile();
 
         // Assert

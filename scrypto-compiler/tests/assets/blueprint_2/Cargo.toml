@@ -13,3 +13,5 @@ crate-type = ["cdylib", "lib"]
 
 [features]
 feature-1 = []
+
+[package.metadata.scrypto]
