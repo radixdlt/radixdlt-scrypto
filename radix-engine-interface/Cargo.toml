@@ -8,7 +8,7 @@ sbor = { workspace = true }
 radix-engine-common = { workspace = true }
 radix-engine-common-macros = { workspace = true }
 blueprint-schema-init = { workspace = true }
-utils = { workspace = true }
+radix-rust = { workspace = true }
 
 hex = { workspace = true }
 strum = { workspace = true, features = ["derive"] }
@@ -24,12 +24,12 @@ regex = { workspace = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "serde_json/std", "sbor/std", "blueprint-schema-init/std", "radix-engine-common/std", "radix-engine-common-macros/std", "strum/std", "utils/std", "serde?/std"]
-alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "radix-engine-common/alloc", "radix-engine-common-macros/alloc", "utils/alloc", "serde?/alloc"]
+std = ["hex/std", "serde_json/std", "sbor/std", "blueprint-schema-init/std", "radix-engine-common/std", "radix-engine-common-macros/std", "strum/std", "radix-rust/std", "serde?/std"]
+alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "blueprint-schema-init/alloc", "radix-engine-common/alloc", "radix-engine-common-macros/alloc", "radix-rust/alloc", "serde?/alloc"]
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
-radix_engine_fuzzing = ["arbitrary", "sbor/radix_engine_fuzzing", "radix-engine-common/radix_engine_fuzzing", "utils/radix_engine_fuzzing", "dep:serde"]
+radix_engine_fuzzing = ["arbitrary", "sbor/radix_engine_fuzzing", "radix-engine-common/radix_engine_fuzzing", "radix-rust/radix_engine_fuzzing", "dep:serde"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

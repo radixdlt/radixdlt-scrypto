@@ -7,11 +7,11 @@ use crate::hash_tree::substate_tier::SubstateSummary;
 use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_rust::prelude::*;
 use sbor::prelude::indexmap::indexmap;
 use std::cell::RefCell;
 use std::ops::Deref;
 use substate_store_interface::interface::*;
-use utils::prelude::*;
 
 // Note: in some tests, we assert on the low-level DB key encoding, so we need this detail, and
 // we alias it for brevity.

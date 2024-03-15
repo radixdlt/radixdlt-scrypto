@@ -81,7 +81,7 @@
 
 use super::types::*;
 use radix_engine_common::crypto::Hash;
-use utils::prelude::*;
+use radix_rust::prelude::*;
 
 // INITIAL-MODIFICATION: the original used a known key size (32) as a limit
 const SANITY_NIBBLE_LIMIT: usize = 1000;

@@ -5,8 +5,8 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_interface::{metadata, metadata_init, rule};
+use radix_rust::ContextualDisplay;
 use rand::Rng;
-use utils::ContextualDisplay;
 
 use crate::resim::Error::TransactionFailed;
 use crate::resim::*;

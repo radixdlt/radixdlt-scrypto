@@ -930,8 +930,8 @@ version = "1.2.0-dev"
 dependencies = [
  "radix-engine-common",
  "radix-engine-interface",
+ "radix-rust",
  "sbor",
- "utils",
 ]
 
 [[package]]
@@ -1130,13 +1130,13 @@ dependencies = [
  "radix-engine-common-macros",
  "radix-engine-interface",
  "radix-engine-profiling-macros",
+ "radix-rust",
  "sbor",
  "serde_json",
  "strum",
  "substate-store-interface",
  "syn 1.0.109",
  "transaction",
- "utils",
  "wasm-instrument",
  "wasmi",
  "wasmparser 0.107.0",
@@ -1158,11 +1158,11 @@ dependencies = [
  "num-traits",
  "paste",
  "radix-engine-derive",
+ "radix-rust",
  "sbor",
  "secp256k1",
  "sha3",
  "strum",
- "utils",
 ]
 
 [[package]]
@@ -1198,12 +1198,12 @@ dependencies = [
  "paste",
  "radix-engine-common",
  "radix-engine-common-macros",
+ "radix-rust",
  "regex",
  "sbor",
  "serde",
  "serde_json",
  "strum",
- "utils",
 ]
 
 [[package]]
@@ -1221,6 +1221,13 @@ dependencies = [
  "quote",
  "radix-engine-profiling",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "radix-rust"
+version = "1.2.0-dev"
+dependencies = [
+ "indexmap 2.2.5",
 ]
 
 [[package]]
@@ -1419,9 +1426,9 @@ dependencies = [
  "hex",
  "lazy_static",
  "paste",
+ "radix-rust",
  "sbor-derive",
  "serde",
- "utils",
 ]
 
 [[package]]
@@ -1576,6 +1583,7 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-interface",
  "radix-engine-profiling",
+ "radix-rust",
  "rand 0.8.5",
  "regex",
  "rocksdb",
@@ -1590,7 +1598,6 @@ dependencies = [
  "temp-env",
  "tempfile",
  "transaction",
- "utils",
  "walkdir",
  "wasm-opt",
 ]
@@ -1660,10 +1667,10 @@ dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
+ "radix-rust",
  "rocksdb",
  "sbor",
  "substate-store-interface",
- "utils",
 ]
 
 [[package]]
@@ -1673,8 +1680,8 @@ dependencies = [
  "hex",
  "itertools",
  "radix-engine-common",
+ "radix-rust",
  "sbor",
- "utils",
 ]
 
 [[package]]
@@ -1687,10 +1694,10 @@ dependencies = [
  "radix-engine",
  "radix-engine-common",
  "radix-engine-interface",
+ "radix-rust",
  "sbor",
  "substate-store-interface",
  "transaction",
- "utils",
 ]
 
 [[package]]
@@ -1832,9 +1839,9 @@ dependencies = [
  "lazy_static",
  "radix-engine-common",
  "radix-engine-interface",
+ "radix-rust",
  "sbor",
  "strum",
- "utils",
 ]
 
 [[package]]
@@ -1875,13 +1882,6 @@ name = "unicode-xid"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
-
-[[package]]
-name = "utils"
-version = "1.2.0-dev"
-dependencies = [
- "indexmap 2.2.5",
-]
 
 [[package]]
 name = "uuid"

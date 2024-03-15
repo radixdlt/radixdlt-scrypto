@@ -4,9 +4,9 @@ use crate::data::scrypto::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
+use radix_rust::copy_u8_array;
 use sbor::rust::prelude::*;
 use sbor::*;
-use utils::copy_u8_array;
 
 pub const NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
 

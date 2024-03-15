@@ -26,6 +26,7 @@ members = [
     "radix-engine-profiling",
     "radix-engine-tests",
     "radix-engine",
+    "radix-rust",
     "sbor-derive-common",
     "sbor-derive",
     "sbor-tests",
@@ -39,7 +40,6 @@ members = [
     "substate-store-queries",
     "transaction-scenarios",
     "transaction",
-    "utils",
 ]
 
 [workspace.dependencies]
@@ -52,6 +52,7 @@ radix-engine-derive = { version = "1.2.0-dev", path = "./radix-engine-derive", d
 radix-engine-interface = { version = "1.2.0-dev", path = "./radix-engine-interface", default-features = false }
 radix-engine-profiling = { version = "1.2.0-dev", path = "./radix-engine-profiling", default-features = false }
 radix-engine-profiling-macros = { version = "1.2.0-dev", path = "./radix-engine-profiling-macros", default-features = false }
+radix-rust = { version = "1.2.0-dev", path = "./radix-rust", default-features = false }
 sbor = { version = "1.2.0-dev", path = "./sbor", default-features = false }
 sbor-derive = { version = "1.2.0-dev", path = "./sbor-derive", default-features = false }
 sbor-derive-common = { version = "1.2.0-dev", path = "./sbor-derive-common", default-features = false }
@@ -63,7 +64,6 @@ substate-store-interface = { version = "1.2.0-dev", path = "./substate-store-int
 substate-store-queries = { version = "1.2.0-dev", path = "./substate-store-queries", default-features = false }
 transaction = { version = "1.2.0-dev", path = "./transaction", default-features = false }
 transaction-scenarios = { version = "1.2.0-dev", path = "./transaction-scenarios", default-features = false }
-utils = { version = "1.2.0-dev", path = "./utils", default-features = false }
 
 arbitrary = { version = "1.3.0", features = ["derive"] }
 automod = { version = "1.0.13" }

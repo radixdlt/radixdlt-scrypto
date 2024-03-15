@@ -5,15 +5,15 @@ edition = "2021"
 
 [dependencies]
 sbor = { workspace = true }
-utils = { workspace = true }
+radix-rust = { workspace = true }
 radix-engine-common = { workspace = true }
 itertools = { workspace = true }
 hex = { workspace = true }
 
 [features]
 default = ["std"]
-std = ["hex/std", "utils/std", "sbor/std", "radix-engine-common/std", "itertools/use_std"]
-alloc = ["hex/alloc", "utils/alloc", "sbor/alloc", "radix-engine-common/alloc", "itertools/use_alloc"]
+std = ["hex/std", "radix-rust/std", "sbor/std", "radix-engine-common/std", "itertools/use_std"]
+alloc = ["hex/alloc", "radix-rust/alloc", "sbor/alloc", "radix-engine-common/alloc", "itertools/use_alloc"]
 
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options

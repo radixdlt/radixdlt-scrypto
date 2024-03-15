@@ -79,6 +79,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
+use radix_rust::ContextualDisplay;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -90,7 +91,6 @@ use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
 use transaction::model::{SystemTransactionV1, TransactionPayload};
 use transaction::prelude::*;
-use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]

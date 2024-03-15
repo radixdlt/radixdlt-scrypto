@@ -1,8 +1,8 @@
 use radix_engine_common::Sbor;
-use utils::prelude::index_map_new;
-use utils::rust::boxed::Box;
-use utils::rust::collections::IndexMap;
-use utils::rust::vec::Vec;
+use radix_rust::prelude::index_map_new;
+use radix_rust::rust::boxed::Box;
+use radix_rust::rust::collections::IndexMap;
+use radix_rust::rust::vec::Vec;
 
 pub type DbNodeKey = Vec<u8>;
 

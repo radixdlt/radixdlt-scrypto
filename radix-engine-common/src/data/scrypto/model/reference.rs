@@ -4,10 +4,10 @@ use crate::types::NodeId;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use radix_rust::copy_u8_array;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

@@ -1,5 +1,5 @@
 use radix_engine_common::prelude::{AddressBech32Encoder, PACKAGE_PACKAGE};
-use utils::ContextualDisplay;
+use radix_rust::ContextualDisplay;
 
 #[cfg(test)]
 pub mod tests {

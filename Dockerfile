@@ -20,6 +20,7 @@ ADD radix-engine-derive /app/radix-engine-derive
 ADD radix-engine-interface /app/radix-engine-interface
 ADD radix-engine-profiling /app/radix-engine-profiling
 ADD radix-engine-profiling-macros /app/radix-engine-profiling-macros
+ADD radix-rust app/radix-rust
 ADD sbor /app/sbor
 ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common
@@ -27,7 +28,6 @@ ADD substate-store-impls /app/substate-store-impls
 ADD substate-store-interface /app/substate-store-interface
 ADD substate-store-queries /app/substate-store-queries
 ADD transaction /app/transaction
-ADD utils app/utils
 
 # Copy simulator binary crate
 ADD simulator /app/simulator

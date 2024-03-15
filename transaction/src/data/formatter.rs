@@ -5,10 +5,10 @@ use radix_engine_common::data::manifest::{
 };
 use radix_engine_common::types::NonFungibleGlobalId;
 use radix_engine_interface::types::ResourceAddress;
+use radix_rust::ContextualDisplay;
 use sbor::rust::collections::NonIterMap;
 use sbor::rust::fmt;
 use sbor::*;
-use utils::ContextualDisplay;
 
 #[derive(Clone, Copy, Debug)]
 pub struct MultiLine {

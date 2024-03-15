@@ -5,13 +5,13 @@ use super::{Node, StorageError, TreeReader};
 
 use radix_engine_common::crypto::Hash;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_rust::rust::collections::VecDeque;
+use radix_rust::rust::collections::{hash_map_new, HashMap};
+use radix_rust::rust::vec::Vec;
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
 use sbor::*;
 use substate_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateValue};
-use utils::rust::collections::VecDeque;
-use utils::rust::collections::{hash_map_new, HashMap};
-use utils::rust::vec::Vec;
 
 define_single_versioned! {
     #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]

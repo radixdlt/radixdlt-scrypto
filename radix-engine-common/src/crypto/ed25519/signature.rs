@@ -1,10 +1,10 @@
+use radix_rust::copy_u8_array;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 /// Represents an ED25519 signature.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

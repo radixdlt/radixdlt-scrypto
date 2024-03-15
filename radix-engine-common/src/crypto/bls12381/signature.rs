@@ -3,13 +3,13 @@ use blst::{
     min_pk::{AggregateSignature, Signature},
     BLST_ERROR,
 };
+use radix_rust::copy_u8_array;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 /// BLS12-381 ciphersuite v1
 /// It has following parameters

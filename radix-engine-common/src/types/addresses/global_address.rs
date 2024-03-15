@@ -9,9 +9,9 @@ use crate::well_known_scrypto_custom_type;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
+use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::rust::prelude::*;
 use sbor::*;
-use utils::{copy_u8_array, ContextualDisplay};
 
 /// Address to a global entity
 #[cfg_attr(

@@ -11,13 +11,13 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::types::{BlueprintPartitionOffset, CollectionDescriptor};
 use radix_engine_interface::{prelude::MetadataValue, types::PackagePartitionOffset};
+use radix_rust::ContextualDisplay;
 use substate_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
 };
 use substate_store_queries::query::ResourceAccounter;
 use substate_store_queries::typed_substate_layout::*;
-use utils::ContextualDisplay;
 
 /// Represents an error when displaying an entity.
 #[derive(Debug, Clone)]

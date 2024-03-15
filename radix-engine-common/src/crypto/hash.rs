@@ -1,4 +1,5 @@
 use crate::crypto::blake2b_256_hash;
+use radix_rust::copy_u8_array;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
@@ -6,7 +7,6 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]

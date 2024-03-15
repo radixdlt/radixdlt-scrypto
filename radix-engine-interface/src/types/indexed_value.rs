@@ -1,13 +1,13 @@
 use core::cell::RefCell;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
+use radix_rust::ContextualDisplay;
 use sbor::representations::*;
 use sbor::rust::cell::Ref;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 use sbor::traversal::*;
 use sbor::*;
-use utils::ContextualDisplay;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {

@@ -8,10 +8,10 @@ pub mod tier_framework;
 
 use entity_tier::EntityTier;
 use radix_engine_common::crypto::Hash;
+use radix_rust::prelude::*;
 use substate_store_interface::interface::*;
 use tree_store::*;
 use types::*;
-use utils::prelude::*;
 
 // The sources copied from Aptos (the `jellyfish` and `types` modules) contain support for
 // generating proofs, which we plan to use in near future. Hence, we do not delete that code, but

@@ -11,7 +11,7 @@ substate-store-interface = { workspace = true }
 blueprint-schema-init = { workspace = true }
 native-sdk = { workspace = true }
 transaction = { workspace = true }
-utils = { workspace = true }
+radix-rust = { workspace = true }
 radix-engine-profiling = { workspace = true, optional = true }
 radix-engine-profiling-macros = { workspace = true }
 
@@ -61,8 +61,8 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "blueprint-schema-init/std", "radix-engine-interface/std", "substate-store-interface/std", "radix-engine-common-macros/std", "utils/std", "serde_json?/std", "wasm-instrument/std" ]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "radix-engine-common-macros/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "blueprint-schema-init/std", "radix-engine-interface/std", "substate-store-interface/std", "radix-engine-common-macros/std", "radix-rust/std", "serde_json?/std", "wasm-instrument/std" ]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "blueprint-schema-init/alloc", "radix-engine-interface/alloc", "substate-store-interface/alloc", "radix-engine-common-macros/alloc", "radix-rust/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
@@ -88,7 +88,7 @@ radix_engine_fuzzing = [
     "radix-engine-interface/radix_engine_fuzzing",
     "sbor/radix_engine_fuzzing",
     "transaction/radix_engine_fuzzing",
-    "utils/radix_engine_fuzzing",
+    "radix-rust/radix_engine_fuzzing",
 ]
 
 # This flag enables code parts used only for testing. Using "test" config option is not enough in cases,

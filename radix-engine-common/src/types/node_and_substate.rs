@@ -4,8 +4,8 @@ use crate::types::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use radix_rust::ContextualDisplay;
 use sbor::rust::prelude::*;
-use utils::ContextualDisplay;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!

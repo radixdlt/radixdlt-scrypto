@@ -11,8 +11,8 @@ use radix_engine_interface::blueprints::consensus_manager::{
     VALIDATOR_UPDATE_FEE_IDENT,
 };
 use radix_engine_interface::prelude::*;
+use radix_rust::btreeset;
 use transaction::builder::ManifestBuilder;
-use utils::btreeset;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]

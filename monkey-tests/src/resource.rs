@@ -24,8 +24,8 @@ use radix_engine_interface::prelude::{
     VAULT_TAKE_IDENT,
 };
 use radix_engine_interface::types::IndexedScryptoValue;
+use radix_rust::indexmap;
 use transaction::builder::ManifestBuilder;
-use utils::indexmap;
 
 pub const BLUEPRINT_NAME: &str = "MyBlueprint";
 pub const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;

@@ -77,7 +77,7 @@ impl FormattableCustomExtension for ManifestCustomExtension {
 
 #[cfg(test)]
 mod tests {
-    use utils::ContextualDisplay;
+    use radix_rust::ContextualDisplay;
 
     use super::*;
     use crate::address::test_addresses::*;

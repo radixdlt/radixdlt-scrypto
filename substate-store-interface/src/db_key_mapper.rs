@@ -8,8 +8,8 @@ use radix_engine_common::data::scrypto::{
 };
 use radix_engine_common::types::{FieldKey, MapKey, PartitionNumber, SortedKey};
 use radix_engine_common::types::{NodeId, SubstateKey};
+use radix_rust::copy_u8_array;
 use sbor::rust::prelude::*;
-use utils::copy_u8_array;
 
 /// A mapper between the business ReNode / Partition / Substate IDs and database keys.
 pub trait DatabaseKeyMapper {

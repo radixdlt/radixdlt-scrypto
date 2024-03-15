@@ -10,7 +10,7 @@ use scrypto::NonFungibleData;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
 use transaction::manifest::{compile, BlobProvider};
 use transaction::prelude::*;
-use utils::ContextualDisplay;
+use radix_rust::ContextualDisplay;
 
 macro_rules! replace_variables {
     ($content:expr $(, $a:ident = $b:expr)* ) => {

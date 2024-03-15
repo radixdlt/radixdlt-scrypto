@@ -3,9 +3,9 @@ use crate::internal_prelude::*;
 use crate::types::BlueprintId;
 use radix_engine_common::address::AddressDisplayContext;
 use radix_engine_common::types::NodeId;
+use radix_rust::ContextualDisplay;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
-use utils::ContextualDisplay;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
 ///

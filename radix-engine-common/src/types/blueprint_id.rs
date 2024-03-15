@@ -1,9 +1,9 @@
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::PackageAddress;
 use radix_engine_common::*;
+use radix_rust::ContextualDisplay;
 use sbor::prelude::fmt::Formatter;
 use sbor::rust::prelude::*;
-use utils::ContextualDisplay;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintId {

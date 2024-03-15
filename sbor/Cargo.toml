@@ -4,7 +4,7 @@ version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
-utils = { workspace = true }
+radix-rust = { workspace = true }
 hex = { workspace = true }
 sbor-derive = { workspace = true }
 serde = { workspace = true, optional = true, features=["derive"] }
@@ -19,18 +19,18 @@ serde_json = { workspace = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["utils/std", "serde?/std", "serde_json/std", "serde_json/preserve_order", "hex/std"] # preserve_order requires std
-alloc = ["utils/alloc", "serde?/alloc", "lazy_static/spin_no_std", "serde_json/alloc", "hex/alloc"]
+std = ["radix-rust/std", "serde?/std", "serde_json/std", "serde_json/preserve_order", "hex/std"] # preserve_order requires std
+alloc = ["radix-rust/alloc", "serde?/alloc", "lazy_static/spin_no_std", "serde_json/alloc", "hex/alloc"]
 
 # Enable serde derives for SBOR value and type models
-serde = ["dep:serde", "utils/serde"]
+serde = ["dep:serde", "radix-rust/serde"]
 
 # Enable tracing
 trace = ["sbor-derive/trace"]
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
-radix_engine_fuzzing = ["arbitrary", "utils/radix_engine_fuzzing"]
+radix_engine_fuzzing = ["arbitrary", "radix-rust/radix_engine_fuzzing"]
 
 [lib]
 doctest = false

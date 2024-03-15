@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::package::{
     IndexedStateSchema, PackageExport, VmType, *,
 };
 use radix_engine_interface::prelude::*;
+use radix_rust::ContextualDisplay;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -17,7 +18,6 @@ use substate_store_interface::{
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
 };
 use substate_store_queries::typed_substate_layout::*;
-use utils::ContextualDisplay;
 
 use crate::resim::*;
 use crate::utils::*;

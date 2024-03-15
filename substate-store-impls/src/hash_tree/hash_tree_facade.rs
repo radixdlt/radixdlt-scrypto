@@ -1,7 +1,7 @@
 use super::tier_framework::*;
 use super::tree_store::*;
 use super::types::*;
-use utils::prelude::*;
+use radix_rust::prelude::*;
 
 impl TreeInternalNode {
     fn from(internal_node: &InternalNode) -> Self {
