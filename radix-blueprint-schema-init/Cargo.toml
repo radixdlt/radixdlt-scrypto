@@ -5,18 +5,18 @@ edition = "2021"
 
 [dependencies]
 sbor = { workspace = true }
-radix-engine-common = { workspace = true }
+radix-common = { workspace = true }
 serde = { workspace = true, optional = true }
 bitflags = { workspace = true }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "radix-engine-common/std", "serde?/std"]
-alloc = ["sbor/alloc", "radix-engine-common/alloc", "serde?/alloc"]
+std = ["sbor/std", "radix-common/std", "serde?/std"]
+alloc = ["sbor/alloc", "radix-common/alloc", "serde?/alloc"]
 
 # Enable serde derives
-serde = ["serde/derive", "sbor/serde", "radix-engine-common/serde"]
+serde = ["serde/derive", "sbor/serde", "radix-common/serde"]
 
 [lib]
 doctest = false

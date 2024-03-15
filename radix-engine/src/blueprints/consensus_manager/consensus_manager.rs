@@ -4,7 +4,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
-use radix_engine_common::constants::AuthAddresses;
+use radix_common::constants::AuthAddresses;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{

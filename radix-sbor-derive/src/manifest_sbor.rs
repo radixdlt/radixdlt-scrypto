@@ -10,8 +10,7 @@ macro_rules! trace {
 }
 
 pub fn handle_manifest_sbor(input: TokenStream) -> Result<TokenStream> {
-    let context_custom_value_kind =
-        Some("radix_engine_common::data::manifest::ManifestCustomValueKind");
+    let context_custom_value_kind = Some("radix_common::data::manifest::ManifestCustomValueKind");
 
     trace!("handle_manifest_sbor() starts");
 

@@ -4,7 +4,7 @@ use super::jellyfish::JellyfishMerkleTree;
 use super::jellyfish::TreeUpdateBatch;
 use super::tree_store::*;
 use super::types::*;
-use radix_engine_common::crypto::Hash;
+use radix_common::crypto::Hash;
 use radix_rust::prelude::*;
 use radix_rust::rust::ops::Deref;
 use radix_substate_store_interface::interface::DbNodeKey;

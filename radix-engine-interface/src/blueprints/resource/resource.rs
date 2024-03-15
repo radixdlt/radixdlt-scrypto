@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
-use radix_engine_common::data::scrypto::model::*;
-use radix_engine_common::math::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::*;
 use radix_engine_interface::blueprints::resource::VaultFreezeFlags;
 use sbor::rust::prelude::*;
 

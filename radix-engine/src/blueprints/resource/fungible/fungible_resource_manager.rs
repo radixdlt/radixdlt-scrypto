@@ -5,7 +5,7 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use lazy_static::lazy_static;
 use num_traits::pow::Pow;
-use radix_engine_common::math::Decimal;
+use radix_common::math::Decimal;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;

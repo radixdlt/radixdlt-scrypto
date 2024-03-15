@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use scrypto_test::prelude::*;
 

@@ -1,7 +1,7 @@
-use radix_engine_common::constants::*;
-use radix_engine_common::data::scrypto::model::Own;
-use radix_engine_common::data::scrypto::*;
-use radix_engine_common::types::*;
+use radix_common::constants::*;
+use radix_common::data::scrypto::model::Own;
+use radix_common::data::scrypto::*;
+use radix_common::types::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::object_modules::royalty::*;
 use radix_engine_interface::types::*;

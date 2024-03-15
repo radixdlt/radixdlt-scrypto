@@ -2,8 +2,8 @@ use crate::blueprints::component::*;
 use crate::blueprints::resource::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::math::Decimal;
-use radix_engine_common::prelude::*;
+use radix_common::math::Decimal;
+use radix_common::prelude::*;
 use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 

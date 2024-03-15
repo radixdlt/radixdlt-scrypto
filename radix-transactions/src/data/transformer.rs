@@ -1,13 +1,13 @@
 use crate::data::*;
 use crate::internal_prelude::*;
-use radix_engine_common::data::manifest::model::{
+use radix_common::data::manifest::model::{
     ManifestBlobRef, ManifestBucket, ManifestExpression, ManifestProof,
 };
-use radix_engine_common::data::manifest::{
+use radix_common::data::manifest::{
     ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };
-use radix_engine_common::data::scrypto::model::{Own, Reference};
-use radix_engine_common::data::scrypto::{
+use radix_common::data::scrypto::model::{Own, Reference};
+use radix_common::data::scrypto::{
     ScryptoCustomValue, ScryptoCustomValueKind, ScryptoValue, ScryptoValueKind,
 };
 use sbor::rust::vec::Vec;

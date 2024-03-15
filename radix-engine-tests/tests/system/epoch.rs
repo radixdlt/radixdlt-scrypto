@@ -1,4 +1,4 @@
-use radix_engine_common::types::Epoch;
+use radix_common::types::Epoch;
 use scrypto_test::prelude::*;
 
 #[test]

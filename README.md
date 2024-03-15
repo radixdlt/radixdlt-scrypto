@@ -145,23 +145,23 @@ docker run -v <path-to-your-scrypto-crate>:/src radixdlt/radix-clis
 
 ## Project Layout
 
-- `sbor`: A generic binary data format, upon which Scrypto SBOR and Manifest SBOR are built.
+- `radix-blueprint-schema-init`: Blueprint schema initialization structures, used by Radix Package Definition (RPD).
+- `radix-clis`: Various CLI tools, like `resim`, `scrypto`, `rtmc` and `rtmd`.
+- `radix-common-macros`: Macros for defining `Decimal` and `PreciseDecimal`.
+- `radix-common`: Common libraries used by Radix Engine and Scrypto.
+- `radix-engine`: The Radix Engine implementation.
+- `radix-native-sdk`: Library to assist native blueprint development.
+- `radix-sbor-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
+- `radix-substate-store-impls`: Various substate store implementations.
+- `radix-substate-store-interface`: The interface of any substate store.
+- `radix-substate-store-queries`: Interprets data in substate data by injecting high-level knowledge.
+- `radix-transaction-scenarios`: Defines various transaction scenarios, for testing.
+- `radix-transactions`: Radix transaction manifest compiler, transaction models, signing and validating logic.
 - `sbor-derive`: Macros for encoding and decoding SBOR data.
-- `scrypto`: Scrypto language abstraction.
+- `sbor`: A generic binary data format, upon which Scrypto SBOR and Manifest SBOR are built.
 - `scrypto-derive`: Macros for defining blueprints.
 - `scrypto-test`: Library for testing Scrypto blueprints.
-- `radix-blueprint-schema-init`: Blueprint schema initialization structures, used by Radix Package Definition (RPD).
-- `radix-native-sdk`: Library to assist native blueprint development.
-- `radix-engine-common`: Common libraries used by Radix Engine and Scrypto.
-- `radix-engine-common-macros`: Macros for defining `Decimal` and `PreciseDecimal`.
-- `radix-sbor-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
-- `radix-engine`: The Radix Engine implementation.
-- `radix-transactions`: Radix transaction manifest compiler, transaction models, signing and validating logic.
-- `radix-transaction-scenarios`: Defines various transaction scenarios, for testing.
-- `radix-substate-store-interface`: The interface of any substate store.
-- `radix-substate-store-impls`: Various substate store implementations.
-- `radix-substate-store-queries`: Interprets data in substate data by injecting high-level knowledge.
-- `radix-clis`: Various CLI tools, like `resim`, `scrypto`, `rtmc` and `rtmd`.
+- `scrypto`: Scrypto language abstraction.
 
 ## LFS
 

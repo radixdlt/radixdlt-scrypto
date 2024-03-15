@@ -1,7 +1,7 @@
 #![allow(unused_must_use)]
 
 use clap::Parser;
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 
 use crate::resim::*;
 use crate::utils::*;

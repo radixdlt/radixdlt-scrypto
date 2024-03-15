@@ -16,7 +16,7 @@ pub use versioned::*;
 mod tests {
     use super::*;
     use crate::internal_prelude::*;
-    use radix_engine_common::prelude::*;
+    use radix_common::prelude::*;
     use sbor::representations::*;
 
     fn hash_manifest_sbor_excluding_prefix<T: ManifestEncode>(value: T) -> Hash {

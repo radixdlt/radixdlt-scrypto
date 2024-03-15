@@ -1,3 +1,5 @@
+use radix_common::constants::AuthAddresses;
+use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
@@ -7,8 +9,6 @@ use radix_engine::blueprints::{account, resource::*};
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::object_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine_common::constants::AuthAddresses;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ResourcePreference;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;

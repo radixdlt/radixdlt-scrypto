@@ -1,6 +1,6 @@
 use crate::resim::*;
 use clap::Parser;
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 
 /// Show an entity in the ledger state
 #[derive(Parser, Debug)]

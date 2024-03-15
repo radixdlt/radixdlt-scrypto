@@ -1,5 +1,5 @@
-use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::{
+use radix_common::data::scrypto::ScryptoDecode;
+use radix_common::prelude::{
     scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoEncode, ScryptoValue,
     VersionedScryptoSchema,
 };

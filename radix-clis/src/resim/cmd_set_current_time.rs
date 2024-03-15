@@ -1,9 +1,9 @@
 use clap::Parser;
+use radix_common::prelude::*;
+use radix_common::time::UtcDateTime;
 use radix_engine::blueprints::consensus_manager::{
     ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
-use radix_engine_common::prelude::*;
-use radix_engine_common::time::UtcDateTime;
 
 use crate::resim::*;
 

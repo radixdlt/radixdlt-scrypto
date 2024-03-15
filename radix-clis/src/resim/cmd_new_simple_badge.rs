@@ -1,6 +1,6 @@
 use clap::Parser;
 use colored::Colorize;
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_engine_interface::object_modules::metadata::{MetadataInit, MetadataValue, UncheckedUrl};
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::*;

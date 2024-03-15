@@ -2,7 +2,7 @@ use super::jellyfish::TreeUpdateBatch;
 use super::tier_framework::*;
 use super::tree_store::*;
 use super::types::*;
-use radix_engine_common::crypto::{hash, Hash};
+use radix_common::crypto::{hash, Hash};
 use radix_rust::prelude::*;
 use radix_substate_store_interface::interface::*;
 

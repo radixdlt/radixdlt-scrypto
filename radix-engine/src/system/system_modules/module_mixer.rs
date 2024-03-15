@@ -26,7 +26,7 @@ use crate::system::system_modules::transaction_runtime::{Event, TransactionRunti
 use crate::transaction::ExecutionConfig;
 use bitflags::bitflags;
 use paste::paste;
-use radix_engine_common::crypto::Hash;
+use radix_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_profiling_macros::trace_resources;
 use radix_transactions::model::AuthZoneParams;

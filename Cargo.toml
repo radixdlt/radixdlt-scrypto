@@ -15,11 +15,11 @@ resolver = "2"
 #   to avoid falling back to the root workspace.
 
 members = [
-    "monkey-tests",
     "radix-blueprint-schema-init",
-    "radix-engine-common-macros",
-    "radix-engine-common",
+    "radix-common-macros",
+    "radix-common",
     "radix-engine-interface",
+    "radix-engine-monkey-tests",
     "radix-engine-profiling-macros",
     "radix-engine-profiling",
     "radix-engine-tests",
@@ -44,9 +44,9 @@ members = [
 
 [workspace.dependencies]
 radix-blueprint-schema-init = { version = "1.2.0-dev", path = "./radix-blueprint-schema-init", default-features = false }
+radix-common = { version = "1.2.0-dev", path = "./radix-common", default-features = false }
+radix-common-macros = { version = "1.2.0-dev", path = "./radix-common-macros", default-features = false }
 radix-engine = { version = "1.2.0-dev", path = "./radix-engine", default-features = false }
-radix-engine-common = { version = "1.2.0-dev", path = "./radix-engine-common", default-features = false }
-radix-engine-common-macros = { version = "1.2.0-dev", path = "./radix-engine-common-macros", default-features = false }
 radix-engine-interface = { version = "1.2.0-dev", path = "./radix-engine-interface", default-features = false }
 radix-engine-profiling = { version = "1.2.0-dev", path = "./radix-engine-profiling", default-features = false }
 radix-engine-profiling-macros = { version = "1.2.0-dev", path = "./radix-engine-profiling-macros", default-features = false }

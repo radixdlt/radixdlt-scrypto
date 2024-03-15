@@ -1,5 +1,5 @@
 use super::{StateTreeTraverser, StateTreeVisitor};
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::interface::SubstateDatabase;
 

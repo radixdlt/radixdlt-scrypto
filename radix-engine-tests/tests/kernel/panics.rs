@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::call_frame::*;
 use radix_engine::kernel::kernel_api::*;
@@ -9,7 +10,6 @@ use radix_engine::system::system_modules::execution_trace::*;
 use radix_engine::track::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::*;
 

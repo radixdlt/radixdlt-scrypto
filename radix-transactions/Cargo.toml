@@ -7,7 +7,7 @@ edition = "2021"
 sbor = { workspace = true }
 radix-rust = { workspace = true }
 radix-engine-interface = { workspace = true }
-radix-engine-common = { workspace = true, features = ["secp256k1_sign_and_validate"]}
+radix-common = { workspace = true, features = ["secp256k1_sign_and_validate"]}
 hex = { workspace = true }
 serde = { workspace = true, optional = true }
 lazy_static = { workspace = true }
@@ -21,8 +21,8 @@ scrypto-derive = { path = "../scrypto-derive" }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "radix-rust/std", "radix-engine-interface/std", "radix-engine-common/std", "hex/std"]
-alloc = ["sbor/alloc", "radix-rust/alloc", "radix-engine-interface/alloc", "radix-engine-common/alloc", "hex/alloc", "lazy_static/spin_no_std"]
+std = ["sbor/std", "radix-rust/std", "radix-engine-interface/std", "radix-common/std", "hex/std"]
+alloc = ["sbor/alloc", "radix-rust/alloc", "radix-engine-interface/alloc", "radix-common/alloc", "hex/alloc", "lazy_static/spin_no_std"]
 serde = ["serde/derive"]
 
 dump_manifest_to_file = []
@@ -32,7 +32,7 @@ radix_engine_fuzzing = [
     "sbor/radix_engine_fuzzing",
     "radix-rust/radix_engine_fuzzing",
     "radix-engine-interface/radix_engine_fuzzing",
-    "radix-engine-common/radix_engine_fuzzing",
+    "radix-common/radix_engine_fuzzing",
 ]
 
 [lib]

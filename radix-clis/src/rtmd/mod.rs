@@ -1,8 +1,8 @@
 use clap::Parser;
+use radix_common::crypto::hash;
+use radix_common::data::manifest::manifest_decode;
+use radix_common::prelude::*;
 use radix_engine::utils::validate_call_arguments_to_native_components;
-use radix_engine_common::crypto::hash;
-use radix_engine_common::data::manifest::manifest_decode;
-use radix_engine_common::prelude::*;
 use radix_transactions::manifest::{decompile, DecompileError};
 use radix_transactions::prelude::*;
 use std::path::PathBuf;

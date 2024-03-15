@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use radix_engine_common::prelude::*;
-use radix_engine_common::prelude::{NetworkDefinition, NonFungibleIdType, NonFungibleLocalId};
-use radix_engine_common::types::Epoch;
-use radix_engine_common::ManifestSbor;
+use radix_common::prelude::*;
+use radix_common::prelude::{NetworkDefinition, NonFungibleIdType, NonFungibleLocalId};
+use radix_common::types::Epoch;
+use radix_common::ManifestSbor;
 use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
 use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
 use radix_engine_interface::object_modules::ModuleConfig;

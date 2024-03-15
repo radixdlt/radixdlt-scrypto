@@ -4,7 +4,7 @@ use syn::Result;
 pub fn handle_scrypto_categorize(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::categorize::handle_categorize(
         input,
-        Some("radix_engine_common::data::scrypto::ScryptoCustomValueKind"),
+        Some("radix_common::data::scrypto::ScryptoCustomValueKind"),
     )
 }
 
@@ -27,14 +27,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Categorize<radix_engine_common::data::scrypto::ScryptoCustomValueKind> for MyStruct {
+                impl ::sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind> for MyStruct {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<radix_engine_common::data::scrypto::ScryptoCustomValueKind> {
+                    fn value_kind() -> ::sbor::ValueKind<radix_common::data::scrypto::ScryptoCustomValueKind> {
                         ::sbor::ValueKind::Tuple
                     }
                 }
 
-                impl ::sbor::SborTuple<radix_engine_common::data::scrypto::ScryptoCustomValueKind> for MyStruct {
+                impl ::sbor::SborTuple<radix_common::data::scrypto::ScryptoCustomValueKind> for MyStruct {
                     fn get_length(&self) -> usize {
                         0usize
                     }
@@ -52,16 +52,16 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<T: Bound> ::sbor::Categorize<radix_engine_common::data::scrypto::ScryptoCustomValueKind>
+                impl<T: Bound> ::sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind>
                     for MyEnum<T>
                 {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<radix_engine_common::data::scrypto::ScryptoCustomValueKind> {
+                    fn value_kind() -> ::sbor::ValueKind<radix_common::data::scrypto::ScryptoCustomValueKind> {
                         ::sbor::ValueKind::Enum
                     }
                 }
 
-                impl<T: Bound> ::sbor::SborEnum<radix_engine_common::data::scrypto::ScryptoCustomValueKind> for MyEnum<T> {
+                impl<T: Bound> ::sbor::SborEnum<radix_common::data::scrypto::ScryptoCustomValueKind> for MyEnum<T> {
                     fn get_discriminator(&self) -> u8 {
                         match self {
                             Self::A { .. } => 0u8,

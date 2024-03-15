@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { workspace = true }
 radix-rust = { workspace = true }
-radix-engine-common = { workspace = true }
+radix-common = { workspace = true }
 radix-substate-store-interface = { workspace = true }
 rocksdb = { workspace = true, optional = true }
 itertools = { workspace = true }
@@ -17,8 +17,8 @@ tempfile = "3.8.0"
 
 [features]
 default = ["std"]
-std = ["hex/std", "sbor/std", "radix-rust/std", "radix-engine-common/std", "radix-substate-store-interface/std", "itertools/use_std"]
-alloc = ["hex/alloc", "sbor/alloc", "radix-rust/alloc", "radix-engine-common/alloc", "radix-substate-store-interface/alloc", "itertools/use_alloc"]
+std = ["hex/std", "sbor/std", "radix-rust/std", "radix-common/std", "radix-substate-store-interface/std", "itertools/use_std"]
+alloc = ["hex/alloc", "sbor/alloc", "radix-rust/alloc", "radix-common/alloc", "radix-substate-store-interface/alloc", "itertools/use_alloc"]
 
 rocksdb = ["dep:rocksdb"]
 

@@ -4,7 +4,7 @@ use syn::Result;
 pub fn handle_scrypto_decode(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::decode::handle_decode(
         input,
-        Some("radix_engine_common::data::scrypto::ScryptoCustomValueKind"),
+        Some("radix_common::data::scrypto::ScryptoCustomValueKind"),
     )
 }
 
@@ -27,13 +27,13 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<D: ::sbor::Decoder<radix_engine_common::data::scrypto::ScryptoCustomValueKind> >
-                    ::sbor::Decode<radix_engine_common::data::scrypto::ScryptoCustomValueKind, D> for MyStruct
+                impl<D: ::sbor::Decoder<radix_common::data::scrypto::ScryptoCustomValueKind> >
+                    ::sbor::Decode<radix_common::data::scrypto::ScryptoCustomValueKind, D> for MyStruct
                 {
                     #[inline]
                     fn decode_body_with_value_kind(
                         decoder: &mut D,
-                        value_kind: ::sbor::ValueKind<radix_engine_common::data::scrypto::ScryptoCustomValueKind>
+                        value_kind: ::sbor::ValueKind<radix_common::data::scrypto::ScryptoCustomValueKind>
                     ) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
@@ -56,16 +56,16 @@ mod tests {
             quote! {
                 impl<
                         T: Bound,
-                        D: ::sbor::Decoder<radix_engine_common::data::scrypto::ScryptoCustomValueKind>
-                    > ::sbor::Decode<radix_engine_common::data::scrypto::ScryptoCustomValueKind, D> for MyEnum<T>
+                        D: ::sbor::Decoder<radix_common::data::scrypto::ScryptoCustomValueKind>
+                    > ::sbor::Decode<radix_common::data::scrypto::ScryptoCustomValueKind, D> for MyEnum<T>
                 where
-                    T: ::sbor::Decode<radix_engine_common::data::scrypto::ScryptoCustomValueKind, D>,
-                    T: ::sbor::Categorize<radix_engine_common::data::scrypto::ScryptoCustomValueKind>
+                    T: ::sbor::Decode<radix_common::data::scrypto::ScryptoCustomValueKind, D>,
+                    T: ::sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind>
                 {
                     #[inline]
                     fn decode_body_with_value_kind(
                         decoder: &mut D,
-                        value_kind: ::sbor::ValueKind<radix_engine_common::data::scrypto::ScryptoCustomValueKind>
+                        value_kind: ::sbor::ValueKind<radix_common::data::scrypto::ScryptoCustomValueKind>
                     ) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;

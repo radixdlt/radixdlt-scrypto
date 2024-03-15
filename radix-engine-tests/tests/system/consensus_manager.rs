@@ -1,3 +1,5 @@
+use radix_common::constants::AuthAddresses;
+use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::UnstakeData;
 use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
@@ -6,8 +8,6 @@ use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::CostingParameters;
-use radix_engine_common::constants::AuthAddresses;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;

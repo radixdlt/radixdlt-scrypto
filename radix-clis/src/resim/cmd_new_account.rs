@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
-use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::prelude::*;
+use radix_common::network::NetworkDefinition;
+use radix_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_interface::{metadata, metadata_init, rule};

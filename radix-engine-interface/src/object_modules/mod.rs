@@ -1,6 +1,6 @@
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::{ManifestSbor, ScryptoSbor};
+use radix_common::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
 
 pub mod metadata;

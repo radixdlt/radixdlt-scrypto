@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::object_modules::metadata::*;
 use radix_engine::system::bootstrap::*;
@@ -10,7 +11,6 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;

@@ -1,8 +1,8 @@
+use radix_common::prelude::*;
 use radix_engine::{
     errors::{ApplicationError, RuntimeError, SystemError},
     object_modules::metadata::{MetadataError, MetadataValidationError},
 };
-use radix_engine_common::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

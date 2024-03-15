@@ -46,7 +46,7 @@ pub use radix_substate_store_interface::db_key_mapper::*;
 pub use radix_substate_store_interface::interface::*;
 
 /* Radix Engine Interface */
-pub extern crate radix_engine_common;
+pub extern crate radix_common;
 pub use radix_engine_interface::api::actor_api::*;
 pub use radix_engine_interface::api::actor_index_api::*;
 pub use radix_engine_interface::api::actor_key_value_entry_api::*;
@@ -82,7 +82,7 @@ pub use sbor::prelude::*;
 pub use sbor::*;
 
 /* Types */
-pub use radix_engine_common::prelude::*;
+pub use radix_common::prelude::*;
 pub use radix_engine_interface::prelude::*;
 pub use radix_transactions::prelude::*;
 

@@ -44,12 +44,12 @@ extern crate radix_engine_interface;
 pub use radix_engine_interface::{api, blueprints, object_modules};
 
 // Re-export Radix Engine Common modules.
-extern crate radix_engine_common;
-pub use radix_engine_common::{address, constants, crypto, data, math, network, time};
+extern crate radix_common;
+pub use radix_common::{address, constants, crypto, data, math, network, time};
 
 pub mod types {
     // for backward compatibility
-    pub use radix_engine_common::types::*;
+    pub use radix_common::types::*;
     pub use radix_engine_interface::types::*;
 }
 

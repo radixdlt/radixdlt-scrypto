@@ -1,8 +1,8 @@
 use clap::Parser;
 use colored::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::models::*;
 use radix_engine::vm::ScryptoVmVersion;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, BlueprintPayloadDef, FunctionSchema,
     IndexedStateSchema, PackageExport, VmType, *,

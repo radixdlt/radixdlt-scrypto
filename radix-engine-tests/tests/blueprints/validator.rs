@@ -1,7 +1,7 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::ValidatorError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ValidatorAcceptsDelegatedStakeInput, VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
     VALIDATOR_GET_REDEMPTION_VALUE_IDENT,

@@ -1,9 +1,9 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::resource::ProofError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
 use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine_common::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

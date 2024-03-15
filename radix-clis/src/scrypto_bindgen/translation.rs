@@ -4,7 +4,7 @@
 use super::{ast, schema};
 use crate::{ident, token_stream_from_str};
 use radix_blueprint_schema_init::*;
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 
 pub fn package_schema_interface_to_ast_interface<S>(
     schema_interface: schema::PackageInterface,

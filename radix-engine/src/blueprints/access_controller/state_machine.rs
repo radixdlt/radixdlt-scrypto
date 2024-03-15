@@ -1,6 +1,6 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use radix_engine_common::time::TimeComparisonOperator;
+use radix_common::time::TimeComparisonOperator;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::consensus_manager::TimePrecision;

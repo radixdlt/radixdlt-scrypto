@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use radix_common::prelude::*;
 use radix_engine::vm::NoExtension;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 #[cfg(not(feature = "rocksdb"))]

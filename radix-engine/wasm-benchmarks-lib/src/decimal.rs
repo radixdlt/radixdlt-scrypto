@@ -1,4 +1,4 @@
-use radix_engine_common::math::*;
+use radix_common::math::*;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {

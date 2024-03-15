@@ -1,7 +1,7 @@
 use crate::manifest::ast::{Instruction, Value, ValueKind};
 use crate::manifest::lexer::{Token, TokenKind};
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
-use radix_engine_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
+use radix_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
 
 // For values greater than below it is not possible to encode compiled manifest due to
 //   EncodeError::MaxDepthExceeded(MANIFEST_SBOR_V1_MAX_DEPTH)

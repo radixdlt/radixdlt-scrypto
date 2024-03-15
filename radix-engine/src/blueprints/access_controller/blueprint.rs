@@ -6,7 +6,7 @@ use crate::{event_schema, roles_template};
 use radix_blueprint_schema_init::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
-use radix_engine_common::time::Instant;
+use radix_common::time::Instant;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;

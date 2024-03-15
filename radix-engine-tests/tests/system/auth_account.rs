@@ -1,6 +1,6 @@
+use radix_common::constants::AuthAddresses;
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemError};
-use radix_engine_common::constants::AuthAddresses;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::rule;
 use radix_engine_tests::common::*;

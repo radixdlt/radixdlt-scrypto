@@ -1,5 +1,5 @@
-use radix_engine_common::math::*;
-use radix_engine_common::prelude::*;
+use radix_common::math::*;
+use radix_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;

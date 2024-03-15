@@ -3,7 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use core::ops::Neg;
-use radix_engine_common::math::Decimal;
+use radix_common::math::Decimal;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_REF_GLOBAL, ACTOR_STATE_SELF,

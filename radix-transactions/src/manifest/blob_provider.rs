@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::{hash, Hash};
+use radix_common::prelude::{hash, Hash};
 use sbor::prelude::*;
 
 type Blob = Vec<u8>;

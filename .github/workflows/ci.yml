@@ -153,7 +153,7 @@ jobs:
       - name: Run tests
         run: |
           cargo nextest run \
-            -p radix-engine-common \
+            -p radix-common \
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
@@ -176,7 +176,7 @@ jobs:
         run: |
           cargo nextest run \
             --release \
-            -p radix-engine-common \
+            -p radix-common \
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
@@ -193,7 +193,7 @@ jobs:
         run: |
           cargo nextest run \
             --no-default-features --features alloc \
-            -p radix-engine-common \
+            -p radix-common \
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
@@ -210,7 +210,7 @@ jobs:
         run: |
           cargo nextest run \
             --features wasmer \
-            -p radix-engine-common \
+            -p radix-common \
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
@@ -227,7 +227,7 @@ jobs:
         run: cargo bench
         working-directory: radix-engine-tests
 
-  radix-engine-common-bench:
+  radix-common-bench:
     name: Run Radix Engine common benchmarks
     runs-on: ubuntu-latest
     steps:
@@ -236,7 +236,7 @@ jobs:
         uses: ./.github/actions/setup-env
       - name: Run bench
         run: cargo bench
-        working-directory: radix-engine-common
+        working-directory: radix-common
 
   transaction:
     name: Run transaction tests

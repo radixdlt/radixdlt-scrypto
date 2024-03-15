@@ -1,11 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use radix_common::prelude::*;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
-use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::rule;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;

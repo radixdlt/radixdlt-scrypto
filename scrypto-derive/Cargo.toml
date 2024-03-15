@@ -11,7 +11,7 @@ bench = false
 [dependencies]
 radix-blueprint-schema-init = { workspace = true }
 sbor = { workspace = true }
-radix-engine-common = { workspace = true }
+radix-common = { workspace = true }
 proc-macro2 = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits"] }
 quote = { workspace = true }
@@ -31,8 +31,8 @@ regex = { workspace = true, features = [] }
 # - https://github.com/rust-lang/cargo/issues/7915
 #
 default = ["std"]
-std = ["serde/std", "serde_json/std", "radix-blueprint-schema-init/std", "radix-engine-common/std", "radix-blueprint-schema-init/serde", "sbor/std"]
-alloc = ["serde/alloc", "serde_json/alloc", "radix-blueprint-schema-init/alloc", "radix-engine-common/alloc", "radix-blueprint-schema-init/serde", "sbor/alloc"]
+std = ["serde/std", "serde_json/std", "radix-blueprint-schema-init/std", "radix-common/std", "radix-blueprint-schema-init/serde", "sbor/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "radix-blueprint-schema-init/alloc", "radix-common/alloc", "radix-blueprint-schema-init/serde", "sbor/alloc"]
 
 # Enable trace
 trace = []

@@ -3,9 +3,9 @@ use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use bitflags::bitflags;
-use radix_engine_common::data::scrypto::model::*;
-use radix_engine_common::data::scrypto::ScryptoCustomTypeKind;
-use radix_engine_common::data::scrypto::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::data::scrypto::ScryptoCustomTypeKind;
+use radix_common::data::scrypto::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 

@@ -2,8 +2,8 @@ use crate::blueprints::resource::*;
 use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::data::manifest::model::ManifestAddressReservation;
-use radix_engine_common::types::*;
+use radix_common::data::manifest::model::ManifestAddressReservation;
+use radix_common::types::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
 

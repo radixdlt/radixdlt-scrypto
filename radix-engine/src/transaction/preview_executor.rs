@@ -1,7 +1,7 @@
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
-use radix_engine_common::network::NetworkDefinition;
+use radix_common::network::NetworkDefinition;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::errors::TransactionValidationError;
 use radix_transactions::model::PreviewIntentV1;

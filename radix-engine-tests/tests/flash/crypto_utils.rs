@@ -1,8 +1,8 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::utils::generate_vm_boot_scrypto_version_state_updates;
-use radix_engine_common::prelude::*;
 use radix_engine_tests::common::PackageLoader;
 use radix_engine_tests::common::*;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;

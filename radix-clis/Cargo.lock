@@ -1067,43 +1067,13 @@ name = "radix-blueprint-schema-init"
 version = "1.2.0-dev"
 dependencies = [
  "bitflags 1.3.2",
- "radix-engine-common",
+ "radix-common",
  "sbor",
  "serde",
 ]
 
 [[package]]
-name = "radix-engine"
-version = "1.2.0-dev"
-dependencies = [
- "bitflags 1.3.2",
- "colored",
- "const-sha1",
- "hex",
- "lazy_static",
- "moka",
- "num-traits",
- "paste",
- "radix-blueprint-schema-init",
- "radix-engine-common",
- "radix-engine-common-macros",
- "radix-engine-interface",
- "radix-engine-profiling-macros",
- "radix-native-sdk",
- "radix-rust",
- "radix-substate-store-interface",
- "radix-transactions",
- "sbor",
- "serde_json",
- "strum",
- "syn 1.0.109",
- "wasm-instrument",
- "wasmi",
- "wasmparser 0.107.0",
-]
-
-[[package]]
-name = "radix-engine-common"
+name = "radix-common"
 version = "1.2.0-dev"
 dependencies = [
  "bech32",
@@ -1126,14 +1096,44 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-common-macros"
+name = "radix-common-macros"
 version = "1.2.0-dev"
 dependencies = [
  "paste",
  "proc-macro2",
  "quote",
- "radix-engine-common",
+ "radix-common",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "radix-engine"
+version = "1.2.0-dev"
+dependencies = [
+ "bitflags 1.3.2",
+ "colored",
+ "const-sha1",
+ "hex",
+ "lazy_static",
+ "moka",
+ "num-traits",
+ "paste",
+ "radix-blueprint-schema-init",
+ "radix-common",
+ "radix-common-macros",
+ "radix-engine-interface",
+ "radix-engine-profiling-macros",
+ "radix-native-sdk",
+ "radix-rust",
+ "radix-substate-store-interface",
+ "radix-transactions",
+ "sbor",
+ "serde_json",
+ "strum",
+ "syn 1.0.109",
+ "wasm-instrument",
+ "wasmi",
+ "wasmparser 0.107.0",
 ]
 
 [[package]]
@@ -1146,8 +1146,8 @@ dependencies = [
  "lazy_static",
  "paste",
  "radix-blueprint-schema-init",
- "radix-engine-common",
- "radix-engine-common-macros",
+ "radix-common",
+ "radix-common-macros",
  "radix-rust",
  "regex",
  "sbor",
@@ -1177,7 +1177,7 @@ dependencies = [
 name = "radix-native-sdk"
 version = "1.2.0-dev"
 dependencies = [
- "radix-engine-common",
+ "radix-common",
  "radix-engine-interface",
  "radix-rust",
  "sbor",
@@ -1206,7 +1206,7 @@ version = "1.2.0-dev"
 dependencies = [
  "hex",
  "itertools",
- "radix-engine-common",
+ "radix-common",
  "radix-rust",
  "radix-substate-store-interface",
  "rocksdb",
@@ -1219,7 +1219,7 @@ version = "1.2.0-dev"
 dependencies = [
  "hex",
  "itertools",
- "radix-engine-common",
+ "radix-common",
  "radix-rust",
  "sbor",
 ]
@@ -1231,8 +1231,8 @@ dependencies = [
  "hex",
  "itertools",
  "paste",
+ "radix-common",
  "radix-engine",
- "radix-engine-common",
  "radix-engine-interface",
  "radix-rust",
  "radix-substate-store-interface",
@@ -1247,7 +1247,7 @@ dependencies = [
  "bech32",
  "hex",
  "lazy_static",
- "radix-engine-common",
+ "radix-common",
  "radix-engine-interface",
  "radix-rust",
  "sbor",
@@ -1594,8 +1594,8 @@ dependencies = [
  "proc-macro2",
  "quote",
  "radix-blueprint-schema-init",
+ "radix-common",
  "radix-engine",
- "radix-engine-common",
  "radix-engine-interface",
  "radix-engine-profiling",
  "radix-rust",

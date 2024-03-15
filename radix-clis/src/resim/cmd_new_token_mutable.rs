@@ -1,6 +1,6 @@
 use crate::resim::*;
 use clap::Parser;
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::*;

@@ -1,8 +1,8 @@
-use radix_engine_common::data::scrypto::model::*;
-use radix_engine_common::data::scrypto::{
+use radix_common::data::scrypto::model::*;
+use radix_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
-use radix_engine_common::math::Decimal;
+use radix_common::math::Decimal;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;

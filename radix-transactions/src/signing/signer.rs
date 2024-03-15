@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use radix_engine_common::prelude::IsHash;
+use radix_common::prelude::IsHash;
 
 pub enum PrivateKey {
     Secp256k1(Secp256k1PrivateKey),

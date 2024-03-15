@@ -42,7 +42,7 @@ pub struct TransactionLimitsConfig {
 
 /// Tracks and verifies transaction limits during transaction execution,
 /// if exceeded breaks execution with appropriate error.
-/// Default limits values are defined in radix-engine-common/constants.
+/// Default limits values are defined in radix-common/constants.
 /// Stores boundary values of the limits and returns them in transaction receipt.
 pub struct LimitsModule {
     config: TransactionLimitsConfig,

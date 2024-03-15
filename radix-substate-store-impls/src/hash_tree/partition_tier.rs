@@ -2,7 +2,7 @@ use super::substate_tier::*;
 use super::tier_framework::*;
 use super::tree_store::*;
 use super::types::*;
-use radix_engine_common::crypto::Hash;
+use radix_common::crypto::Hash;
 use radix_rust::prelude::*;
 use radix_substate_store_interface::interface::NodeDatabaseUpdates;
 use radix_substate_store_interface::interface::*;

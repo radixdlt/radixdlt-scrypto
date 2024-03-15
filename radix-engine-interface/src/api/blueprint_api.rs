@@ -1,5 +1,5 @@
-use radix_engine_common::prelude::VersionedScryptoSchema;
-use radix_engine_common::types::*;
+use radix_common::prelude::VersionedScryptoSchema;
+use radix_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 

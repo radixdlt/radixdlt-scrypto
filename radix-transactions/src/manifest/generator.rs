@@ -5,20 +5,20 @@ use crate::internal_prelude::*;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_common::address::AddressBech32Decoder;
-use radix_engine_common::constants::PACKAGE_PACKAGE;
-use radix_engine_common::constants::{
+use radix_common::address::AddressBech32Decoder;
+use radix_common::constants::PACKAGE_PACKAGE;
+use radix_common::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
-use radix_engine_common::crypto::Hash;
-use radix_engine_common::data::manifest::model::*;
-use radix_engine_common::data::manifest::*;
-use radix_engine_common::data::scrypto::model::*;
-use radix_engine_common::math::{Decimal, PreciseDecimal};
-use radix_engine_common::prelude::CONSENSUS_MANAGER;
-use radix_engine_common::types::NodeId;
-use radix_engine_common::types::NonFungibleGlobalId;
-use radix_engine_common::types::PackageAddress;
+use radix_common::crypto::Hash;
+use radix_common::data::manifest::model::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::{Decimal, PreciseDecimal};
+use radix_common::prelude::CONSENSUS_MANAGER;
+use radix_common::types::NodeId;
+use radix_common::types::NonFungibleGlobalId;
+use radix_common::types::PackageAddress;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
 };
@@ -1485,13 +1485,13 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
-    use radix_engine_common::address::AddressBech32Decoder;
-    use radix_engine_common::constants::CONSENSUS_MANAGER;
-    use radix_engine_common::crypto::Secp256k1PrivateKey;
-    use radix_engine_common::manifest_args;
-    use radix_engine_common::network::NetworkDefinition;
-    use radix_engine_common::traits::NonFungibleData;
-    use radix_engine_common::types::{ComponentAddress, PackageAddress};
+    use radix_common::address::AddressBech32Decoder;
+    use radix_common::constants::CONSENSUS_MANAGER;
+    use radix_common::crypto::Secp256k1PrivateKey;
+    use radix_common::manifest_args;
+    use radix_common::network::NetworkDefinition;
+    use radix_common::traits::NonFungibleData;
+    use radix_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
         NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,

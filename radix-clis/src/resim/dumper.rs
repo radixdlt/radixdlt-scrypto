@@ -2,11 +2,11 @@
 use crate::utils::*;
 use colored::*;
 use radix_blueprint_schema_init::BlueprintFeature;
+use radix_common::network::NetworkDefinition;
+use radix_common::prelude::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::object_modules::metadata::{MetadataCollection, MetadataEntryEntryPayload};
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
-use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::types::{BlueprintPartitionOffset, CollectionDescriptor};

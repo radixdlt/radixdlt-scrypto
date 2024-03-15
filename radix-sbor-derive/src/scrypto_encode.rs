@@ -4,7 +4,7 @@ use syn::Result;
 pub fn handle_scrypto_encode(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::encode::handle_encode(
         input,
-        Some("radix_engine_common::data::scrypto::ScryptoCustomValueKind"),
+        Some("radix_common::data::scrypto::ScryptoCustomValueKind"),
     )
 }
 
@@ -27,8 +27,8 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<E: ::sbor::Encoder<radix_engine_common::data::scrypto::ScryptoCustomValueKind> >
-                    ::sbor::Encode<radix_engine_common::data::scrypto::ScryptoCustomValueKind, E> for MyStruct
+                impl<E: ::sbor::Encoder<radix_common::data::scrypto::ScryptoCustomValueKind> >
+                    ::sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E> for MyStruct
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
@@ -56,11 +56,11 @@ mod tests {
             quote! {
                 impl<
                         T: Bound,
-                        E: ::sbor::Encoder<radix_engine_common::data::scrypto::ScryptoCustomValueKind>
-                    > ::sbor::Encode<radix_engine_common::data::scrypto::ScryptoCustomValueKind, E> for MyEnum<T>
+                        E: ::sbor::Encoder<radix_common::data::scrypto::ScryptoCustomValueKind>
+                    > ::sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E> for MyEnum<T>
                 where
-                    T: ::sbor::Encode<radix_engine_common::data::scrypto::ScryptoCustomValueKind, E>,
-                    T: ::sbor::Categorize<radix_engine_common::data::scrypto::ScryptoCustomValueKind>
+                    T: ::sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E>,
+                    T: ::sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind>
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {

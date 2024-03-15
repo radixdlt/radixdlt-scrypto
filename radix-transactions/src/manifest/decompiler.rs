@@ -2,15 +2,15 @@ use crate::data::*;
 use crate::internal_prelude::*;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_common::address::AddressBech32Encoder;
-use radix_engine_common::constants::PACKAGE_PACKAGE;
-use radix_engine_common::constants::{
+use radix_common::address::AddressBech32Encoder;
+use radix_common::constants::PACKAGE_PACKAGE;
+use radix_common::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
-use radix_engine_common::data::manifest::model::*;
-use radix_engine_common::data::manifest::*;
-use radix_engine_common::network::NetworkDefinition;
-use radix_engine_common::prelude::CONSENSUS_MANAGER;
+use radix_common::data::manifest::model::*;
+use radix_common::data::manifest::*;
+use radix_common::network::NetworkDefinition;
+use radix_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
 };

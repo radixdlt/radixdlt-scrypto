@@ -1,4 +1,4 @@
-use radix_engine_common::Sbor;
+use radix_common::Sbor;
 use radix_rust::prelude::index_map_new;
 use radix_rust::rust::boxed::Box;
 use radix_rust::rust::collections::IndexMap;

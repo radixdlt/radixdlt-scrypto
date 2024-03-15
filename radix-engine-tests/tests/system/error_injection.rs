@@ -1,5 +1,5 @@
+use radix_common::prelude::*;
 use radix_engine::vm::NoExtension;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::prelude::{FromPublicKey, NonFungibleGlobalId};
 use radix_transactions::builder::ManifestBuilder;

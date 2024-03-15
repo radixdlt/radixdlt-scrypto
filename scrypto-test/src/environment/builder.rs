@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::kernel::call_frame::*;
 use radix_engine::kernel::heap::*;
 use radix_engine::kernel::id_allocator::*;
@@ -17,7 +18,6 @@ use radix_engine::transaction::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::*;

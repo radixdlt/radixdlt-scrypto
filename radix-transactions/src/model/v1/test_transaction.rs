@@ -1,8 +1,8 @@
 use crate::internal_prelude::*;
 use crate::model::*;
-use radix_engine_common::crypto::hash;
-use radix_engine_common::data::manifest::*;
-use radix_engine_common::types::NonFungibleGlobalId;
+use radix_common::crypto::hash;
+use radix_common::data::manifest::*;
+use radix_common::types::NonFungibleGlobalId;
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
 

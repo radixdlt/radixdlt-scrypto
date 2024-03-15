@@ -1,6 +1,6 @@
 use core::cell::RefCell;
-use radix_engine_common::data::scrypto::*;
-use radix_engine_common::types::*;
+use radix_common::data::scrypto::*;
+use radix_common::types::*;
 use radix_rust::ContextualDisplay;
 use sbor::representations::*;
 use sbor::rust::cell::Ref;

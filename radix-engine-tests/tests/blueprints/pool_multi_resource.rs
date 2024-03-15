@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::blueprints::pool::v1::errors::multi_resource_pool::Error as MultiResourcePoolError;
 use radix_engine::blueprints::pool::v1::events::multi_resource_pool::*;
@@ -6,7 +7,6 @@ use radix_engine::{
     errors::{ApplicationError, RuntimeError},
     transaction::{BalanceChange, TransactionReceipt},
 };
-use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;

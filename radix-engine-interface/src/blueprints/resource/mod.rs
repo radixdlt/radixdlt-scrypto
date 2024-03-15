@@ -28,8 +28,8 @@ pub use worktop::*;
 
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::math::*;
-use radix_engine_common::{ManifestSbor, ScryptoSbor};
+use radix_common::math::*;
+use radix_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {

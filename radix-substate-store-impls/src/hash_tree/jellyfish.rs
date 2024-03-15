@@ -80,7 +80,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::*;
-use radix_engine_common::crypto::Hash;
+use radix_common::crypto::Hash;
 use radix_rust::prelude::*;
 
 // INITIAL-MODIFICATION: the original used a known key size (32) as a limit

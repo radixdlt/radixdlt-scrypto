@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use scrypto_test::prelude::*;
 

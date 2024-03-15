@@ -5,15 +5,15 @@ edition = "2021"
 
 [dependencies]
 sbor = { workspace = true }
-radix-engine-common = { workspace = true }
+radix-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-rust = { workspace = true }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "radix-engine-interface/std", "radix-rust/std", "radix-engine-common/std"]
-alloc = ["sbor/alloc", "radix-engine-interface/alloc", "radix-rust/alloc", "radix-engine-common/alloc"]
+std = ["sbor/std", "radix-engine-interface/std", "radix-rust/std", "radix-common/std"]
+alloc = ["sbor/alloc", "radix-engine-interface/alloc", "radix-rust/alloc", "radix-common/alloc"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

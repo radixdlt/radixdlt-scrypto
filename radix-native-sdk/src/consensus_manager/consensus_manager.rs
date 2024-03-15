@@ -1,6 +1,6 @@
-use radix_engine_common::crypto::Secp256k1PublicKey;
-use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
-use radix_engine_common::math::Decimal;
+use radix_common::crypto::Secp256k1PublicKey;
+use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
+use radix_common::math::Decimal;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerCreateValidatorInput, ConsensusManagerStartInput,

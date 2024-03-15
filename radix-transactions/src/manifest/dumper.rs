@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use radix_engine_common::network::NetworkDefinition;
+use radix_common::network::NetworkDefinition;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 

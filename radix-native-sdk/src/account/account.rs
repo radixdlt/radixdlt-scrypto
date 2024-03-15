@@ -1,4 +1,4 @@
-use radix_engine_common::data::scrypto::{scrypto_encode, ScryptoDecode};
+use radix_common::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::resource::Bucket;

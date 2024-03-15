@@ -3,8 +3,8 @@ use crate::internal_prelude::*;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
-use radix_engine_common::data::scrypto::model::*;
-use radix_engine_common::math::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_substate_store_interface::{

@@ -1,6 +1,6 @@
 use crate::hash_tree::put_at_next_version;
 use crate::hash_tree::tree_store::*;
-use radix_engine_common::prelude::Hash;
+use radix_common::prelude::Hash;
 use radix_substate_store_interface::interface::{
     DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
 };

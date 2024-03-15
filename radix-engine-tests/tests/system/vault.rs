@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
@@ -6,7 +7,6 @@ use radix_engine::kernel::call_frame::{
     CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError,
 };
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::KeyOrValue;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};

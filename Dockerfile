@@ -12,9 +12,9 @@ FROM base-image as builder
 ADD assets /app/assets
 ADD Cargo.toml /app/Cargo.toml
 ADD radix-blueprint-schema-init /app/radix-blueprint-schema-init
+ADD radix-common /app/radix-common
+ADD radix-common-macros /app/radix-common-macros
 ADD radix-engine /app/radix-engine
-ADD radix-engine-common /app/radix-engine-common
-ADD radix-engine-common-macros /app/radix-engine-common-macros
 ADD radix-engine-interface /app/radix-engine-interface
 ADD radix-engine-profiling /app/radix-engine-profiling
 ADD radix-engine-profiling-macros /app/radix-engine-profiling-macros

@@ -3,16 +3,16 @@ use crate::modules::{Attachable, HasMetadata, RoleAssignment, Royalty};
 use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_common::data::scrypto::{
+use radix_common::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_common::prelude::well_known_scrypto_custom_types::{
+use radix_common::prelude::well_known_scrypto_custom_types::{
     component_address_type_data, own_type_data, COMPONENT_ADDRESS_TYPE, OWN_TYPE,
 };
-use radix_engine_common::prelude::{
+use radix_common::prelude::{
     scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
-use radix_engine_common::ScryptoSbor;
+use radix_common::ScryptoSbor;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{AttachedModuleId, FieldValue};
 use radix_engine_interface::blueprints::resource::{

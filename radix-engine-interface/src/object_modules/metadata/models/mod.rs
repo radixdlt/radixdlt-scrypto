@@ -10,14 +10,14 @@ use crate::internal_prelude::*;
 use crate::types::KeyValueStoreInit;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::crypto::PublicKey;
-use radix_engine_common::crypto::PublicKeyHash;
-use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_common::data::scrypto::*;
-use radix_engine_common::math::Decimal;
-use radix_engine_common::time::Instant;
-use radix_engine_common::types::GlobalAddress;
-use radix_engine_common::types::NonFungibleGlobalId;
+use radix_common::crypto::PublicKey;
+use radix_common::crypto::PublicKeyHash;
+use radix_common::data::scrypto::model::NonFungibleLocalId;
+use radix_common::data::scrypto::*;
+use radix_common::math::Decimal;
+use radix_common::time::Instant;
+use radix_common::types::GlobalAddress;
+use radix_common::types::NonFungibleGlobalId;
 use sbor::SborEnum;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -454,7 +454,7 @@ macro_rules! metadata {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_common::prelude::*;
+    use radix_common::prelude::*;
 
     use super::*;
 

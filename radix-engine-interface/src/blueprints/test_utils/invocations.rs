@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 
 pub const TEST_UTILS_BLUEPRINT: &str = "TestUtils";
 

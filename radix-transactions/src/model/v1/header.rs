@@ -1,5 +1,5 @@
-use radix_engine_common::types::Epoch;
-use radix_engine_common::{crypto::PublicKey, ManifestSbor};
+use radix_common::types::Epoch;
+use radix_common::{crypto::PublicKey, ManifestSbor};
 
 use crate::model::SummarizedRawFullBody;
 

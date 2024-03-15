@@ -5,6 +5,7 @@ use radix_engine::object_modules::metadata::MetadataEntryEntryPayload;
 use radix_engine_interface::prelude::*;
 
 // Import and re-export these types so they are available easily with a single import
+use radix_common::prelude::*;
 pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::{AccountBlueprint, AccountError, AccountNativePackage};
 use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSubstateValue};
@@ -29,7 +30,6 @@ use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
 use radix_engine::vm::VmBoot;
-use radix_engine_common::prelude::*;
 pub use radix_engine_interface::object_modules::royalty::*;
 use radix_transactions::prelude::IntentHash;
 

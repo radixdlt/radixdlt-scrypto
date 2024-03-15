@@ -7,8 +7,8 @@ use radix_blueprint_schema_init::{
 };
 use radix_blueprint_schema_init::{BlueprintFunctionsSchemaInit, ReceiverInfo};
 use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
-use radix_engine_common::data::manifest::model::ManifestAddressReservation;
-use radix_engine_common::data::manifest::model::ManifestBlobRef;
+use radix_common::data::manifest::model::ManifestAddressReservation;
+use radix_common::data::manifest::model::ManifestBlobRef;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use sbor::basic_well_known_types::ANY_TYPE;
 use sbor::rust::prelude::*;

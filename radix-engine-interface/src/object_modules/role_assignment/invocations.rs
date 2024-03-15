@@ -2,7 +2,7 @@ use crate::api::ModuleId;
 use crate::blueprints::resource::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use sbor::rust::fmt::Debug;
 
 pub const ROLE_ASSIGNMENT_BLUEPRINT: &str = "RoleAssignment";

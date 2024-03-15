@@ -31,10 +31,10 @@ use crate::transaction::{
 };
 use crate::vm::VmVersion;
 use lazy_static::lazy_static;
-use radix_engine_common::constants::AuthAddresses;
-use radix_engine_common::crypto::Secp256k1PublicKey;
-use radix_engine_common::math::traits::*;
-use radix_engine_common::types::ComponentAddress;
+use radix_common::constants::AuthAddresses;
+use radix_common::crypto::Secp256k1PublicKey;
+use radix_common::math::traits::*;
+use radix_common::types::ComponentAddress;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
     CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,

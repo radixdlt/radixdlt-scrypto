@@ -12,7 +12,7 @@ radix-engine = { path = "../radix-engine" }
 radix-substate-store-interface = { path = "../radix-substate-store-interface" }
 radix-substate-store-impls = { path = "../radix-substate-store-impls", features = ["rocksdb"] }
 radix-substate-store-queries = { path = "../radix-substate-store-queries" }
-radix-engine-common = { path = "../radix-engine-common" }
+radix-common = { path = "../radix-common" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
 radix-blueprint-schema-init = { path = "../radix-blueprint-schema-init" }

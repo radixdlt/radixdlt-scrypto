@@ -28,7 +28,7 @@ use crate::system::system_substates::{FieldSubstate, LockStatus};
 use crate::track::interface::CommitableSubstateStore;
 use crate::track::{to_state_updates, Track, TrackFinalizeError};
 use crate::transaction::*;
-use radix_engine_common::constants::*;
+use radix_common::constants::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;

@@ -4,7 +4,7 @@ use syn::Result;
 pub fn handle_manifest_encode(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::encode::handle_encode(
         input,
-        Some("radix_engine_common::data::manifest::ManifestCustomValueKind"),
+        Some("radix_common::data::manifest::ManifestCustomValueKind"),
     )
 }
 
@@ -27,8 +27,8 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<E: ::sbor::Encoder<radix_engine_common::data::manifest::ManifestCustomValueKind> >
-                    ::sbor::Encode<radix_engine_common::data::manifest::ManifestCustomValueKind, E> for MyStruct
+                impl<E: ::sbor::Encoder<radix_common::data::manifest::ManifestCustomValueKind> >
+                    ::sbor::Encode<radix_common::data::manifest::ManifestCustomValueKind, E> for MyStruct
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
@@ -56,11 +56,11 @@ mod tests {
             quote! {
                 impl<
                         T: Bound,
-                        E: ::sbor::Encoder<radix_engine_common::data::manifest::ManifestCustomValueKind>
-                    > ::sbor::Encode<radix_engine_common::data::manifest::ManifestCustomValueKind, E> for MyEnum<T>
+                        E: ::sbor::Encoder<radix_common::data::manifest::ManifestCustomValueKind>
+                    > ::sbor::Encode<radix_common::data::manifest::ManifestCustomValueKind, E> for MyEnum<T>
                 where
-                    T: ::sbor::Encode<radix_engine_common::data::manifest::ManifestCustomValueKind, E>,
-                    T: ::sbor::Categorize<radix_engine_common::data::manifest::ManifestCustomValueKind>
+                    T: ::sbor::Encode<radix_common::data::manifest::ManifestCustomValueKind, E>,
+                    T: ::sbor::Categorize<radix_common::data::manifest::ManifestCustomValueKind>
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {

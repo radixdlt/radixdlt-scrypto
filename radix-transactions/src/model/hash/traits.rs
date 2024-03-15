@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 
 pub trait HashHasHrp
 where

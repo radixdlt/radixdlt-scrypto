@@ -436,7 +436,7 @@ impl NotarizedTransactionValidator {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_common::network::NetworkDefinition;
+    use radix_common::network::NetworkDefinition;
 
     use super::*;
     use crate::{builder::ManifestBuilder, builder::TransactionBuilder};

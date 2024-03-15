@@ -1,8 +1,8 @@
 use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
-use radix_engine_common::prelude::*;
+use radix_common::crypto::{recover_secp256k1, verify_secp256k1};
+use radix_common::prelude::*;
 use radix_transactions::prelude::*;
 use radix_transactions::validation::*;
 

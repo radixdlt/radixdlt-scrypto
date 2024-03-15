@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use crate::types::*;
 use core::fmt::Formatter;
-use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
+use radix_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_rust::ContextualDisplay;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
