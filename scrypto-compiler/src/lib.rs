@@ -44,7 +44,7 @@ pub enum ScryptoCompilerError {
     NothingToCompile,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct ScryptoCompilerInputParams {
     /// Path to Cargo.toml file, if not specified current directory will be used.
     pub manifest_path: Option<PathBuf>,
@@ -62,11 +62,62 @@ pub struct ScryptoCompilerInputParams {
     pub all_features: bool,
     /// List of packages to compile, used for 'cargo build --package'. Optional field.
     pub package: IndexSet<String>,
-    /// If optimizations are specified they will by applied after compilation.
-    pub wasm_optimization: Option<wasm_opt::OptimizationOptions>,
     /// List of custom options, passed as 'cargo build' arguments without any modifications. Optional field.
     /// Add each option as separate entry (for instance: '-j 1' must be added as two entires: '-j' and '1' one by one).
     pub custom_options: IndexSet<String>,
+    /// If specified optimizes the built wasm using Binaryen's wasm-opt tool.
+    /// Default configuration is equivalent to running the following commands in the CLI:
+    /// wasm-opt -0z --strip-debug --strip-dwarf --strip-procedures $some_path $some_path
+    pub wasm_optimization: Option<wasm_opt::OptimizationOptions>,
+}
+impl Default for ScryptoCompilerInputParams {
+    /// Definition of default `ScryptoCompiler` configuration.
+    fn default() -> Self {
+        let wasm_optimization = Some(
+            wasm_opt::OptimizationOptions::new_optimize_for_size_aggressively()
+                .add_pass(wasm_opt::Pass::StripDebug)
+                .add_pass(wasm_opt::Pass::StripDwarf)
+                .add_pass(wasm_opt::Pass::StripProducers)
+                .to_owned(),
+        );
+        let mut ret = Self {
+            manifest_path: None,
+            target_directory: None,
+            profile: Profile::Release,
+            environment_variables: IndexMap::new(),
+            features: IndexSet::new(),
+            no_default_features: false,
+            all_features: false,
+            package: IndexSet::new(),
+            custom_options: IndexSet::new(),
+            wasm_optimization,
+        };
+        // Apply default log level features
+        ret.features
+            .extend(Self::log_level_to_scrypto_features(Level::default()).into_iter());
+        ret
+    }
+}
+impl ScryptoCompilerInputParams {
+    pub fn log_level_to_scrypto_features(log_level: Level) -> Vec<String> {
+        let mut ret = Vec::new();
+        if Level::Error <= log_level {
+            ret.push(String::from("scrypto/log-error"));
+        }
+        if Level::Warn <= log_level {
+            ret.push(String::from("scrypto/log-warn"));
+        }
+        if Level::Info <= log_level {
+            ret.push(String::from("scrypto/log-info"));
+        }
+        if Level::Debug <= log_level {
+            ret.push(String::from("scrypto/log-debug"));
+        }
+        if Level::Trace <= log_level {
+            ret.push(String::from("scrypto/log-trace"));
+        }
+        ret
+    }
 }
 
 #[derive(Default, Clone)]
@@ -751,6 +802,13 @@ impl ScryptoCompilerBuilder {
     }
 
     pub fn log_level(&mut self, log_level: Level) -> &mut Self {
+        // Firstly clear any log level previously set
+        let all_features = ScryptoCompilerInputParams::log_level_to_scrypto_features(Level::Trace);
+        all_features.iter().for_each(|log_level| {
+            self.input_params.features.remove(log_level);
+        });
+
+        // Now set log level provided by the user
         if Level::Error <= log_level {
             self.input_params
                 .features
@@ -880,9 +938,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -909,9 +967,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -937,9 +995,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -977,6 +1035,35 @@ mod tests {
     }
 
     #[test]
+    fn test_command_output_lower_log_level_than_default() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut default_target_path = manifest_path.clone();
+        manifest_path.push("Cargo.toml");
+        default_target_path.pop(); // ScryptoCompiler dir
+        default_target_path.push("target");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .log_level(Level::Error)
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .log_level(Level::Error)
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --release", default_target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+    }
+    #[test]
     fn test_command_output_workspace() {
         // Arrange
         let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -1000,9 +1087,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1033,9 +1120,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1063,9 +1150,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile dev", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile dev", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1094,8 +1181,8 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 }

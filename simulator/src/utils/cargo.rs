@@ -86,16 +86,8 @@ pub fn build_package<P: AsRef<Path>>(
         }
     });
 
-    // Optimizes the built wasm using Binaryen's wasm-opt tool. The code that follows is equivalent
-    // to running the following commands in the CLI:
-    // wasm-opt -0z --strip-debug --strip-dwarf --strip-procedures $some_path $some_path
-    if !disable_wasm_opt {
-        compiler_builder.optimize_with_wasm_opt(
-            wasm_opt::OptimizationOptions::new_optimize_for_size_aggressively()
-                .add_pass(wasm_opt::Pass::StripDebug)
-                .add_pass(wasm_opt::Pass::StripDwarf)
-                .add_pass(wasm_opt::Pass::StripProducers),
-        );
+    if disable_wasm_opt {
+        compiler_builder.optimize_with_wasm_opt(None);
     }
 
     let build_results = compiler_builder

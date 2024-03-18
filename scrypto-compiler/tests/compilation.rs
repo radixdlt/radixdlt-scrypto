@@ -424,7 +424,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compilation_with_wasm_optimisations() {
+    fn test_compilation_without_wasm_optimisations() {
         // Arrange
         let (blueprint_manifest_path, target_directory) = prepare();
 
@@ -432,13 +432,7 @@ mod tests {
         let status = ScryptoCompiler::builder()
             .manifest_path(blueprint_manifest_path)
             .target_directory(target_directory.path())
-            .optimize_with_wasm_opt(Some(
-                wasm_opt::OptimizationOptions::new_optimize_for_size_aggressively()
-                    .add_pass(wasm_opt::Pass::StripDebug)
-                    .add_pass(wasm_opt::Pass::StripDwarf)
-                    .add_pass(wasm_opt::Pass::StripProducers)
-                    .to_owned(),
-            ))
+            .optimize_with_wasm_opt(None)
             .compile();
 
         // Assert
