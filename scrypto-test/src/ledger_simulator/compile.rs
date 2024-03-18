@@ -15,6 +15,7 @@ impl Compile {
                 "CARGO_ENCODED_RUSTFLAGS",
                 EnvironmentVariableAction::Set("".into()),
             )
+            .optimize_with_wasm_opt(None)
             .log_level(Level::Trace); // all logs from error to trace
 
         #[cfg(feature = "coverage")]
@@ -71,7 +72,7 @@ impl Compile {
         });
 
         if !build_artifacts.is_empty() {
-            let build_artifact = build_artifacts.remove(0);
+            let build_artifact = build_artifacts.remove(0); // take first element
             (
                 build_artifact.wasm.content,
                 build_artifact.package_definition.content,

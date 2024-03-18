@@ -82,6 +82,7 @@ impl PackageFactory {
         // Initialize compiler
         let mut compiler = ScryptoCompiler::builder()
             .manifest_path(path.as_ref())
+            .optimize_with_wasm_opt(None)
             .build()
             .unwrap_or_else(|err| panic!("Failed to initialize Scrypto Compiler  {:?}", err));
 
@@ -95,7 +96,7 @@ impl PackageFactory {
         });
 
         if !build_artifacts.is_empty() {
-            let build_artifact = build_artifacts.remove(0);
+            let build_artifact = build_artifacts.remove(0); // take first element
             (
                 build_artifact.wasm.content,
                 build_artifact.package_definition.content,
