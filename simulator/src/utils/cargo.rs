@@ -23,6 +23,8 @@ pub enum BuildError {
     BuildArtifactsEmpty,
 
     WorkspaceNotSupported,
+
+    ProfileNameError,
 }
 
 #[derive(Debug)]

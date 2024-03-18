@@ -2,6 +2,7 @@ use cargo_toml::Manifest;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
 use radix_engine_common::prelude::*;
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
+use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use std::{env, io};
@@ -120,7 +121,7 @@ impl ScryptoCompilerInputParams {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub enum Profile {
     #[default]
     Release,
@@ -129,7 +130,6 @@ pub enum Profile {
     Bench,
     Custom(String),
 }
-
 impl Profile {
     fn as_command_args(&self) -> Vec<String> {
         vec![
@@ -150,6 +150,34 @@ impl Profile {
             Profile::Test => String::from("debug"),
             Profile::Bench => String::from("release"),
             Profile::Custom(name) => name.clone(),
+        }
+    }
+}
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseProfileError;
+impl fmt::Display for ParseProfileError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{}", self))
+    }
+}
+impl Error for ParseProfileError {}
+
+impl FromStr for Profile {
+    type Err = ParseProfileError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "release" => Ok(Profile::Release),
+            "debug" => Ok(Profile::Debug),
+            "test" => Ok(Profile::Test),
+            "bench" => Ok(Profile::Bench),
+            other => {
+                if other.contains(' ') {
+                    Err(ParseProfileError)
+                } else {
+                    Ok(Profile::Custom(other.to_string()))
+                }
+            }
         }
     }
 }
