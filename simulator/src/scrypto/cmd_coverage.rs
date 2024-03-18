@@ -115,6 +115,7 @@ impl Coverage {
             true,
             &vec![],
             &vec![],
+            &vec![],
         )
         .map_err(Error::BuildError)?;
         if build_artifacts.len() > 1 {

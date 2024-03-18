@@ -55,13 +55,13 @@ pub fn build_package<P: AsRef<Path>>(
     _coverage: bool,
     features: &[String],
     env_variables: &[String],
+    packages: &[String],
 ) -> Result<Vec<(PathBuf, PathBuf)>, BuildError> {
     let env_variables_decoded: Vec<Vec<&str>> = env_variables
         .iter()
         .map(|env| env.split('=').collect::<Vec<&str>>())
         .collect();
 
-    // Build with schema
     let mut compiler_builder = ScryptoCompiler::builder();
     compiler_builder
         .manifest_path(base_path.as_ref())
@@ -74,6 +74,9 @@ pub fn build_package<P: AsRef<Path>>(
     }
     features.iter().for_each(|f| {
         compiler_builder.feature(f);
+    });
+    packages.iter().for_each(|p| {
+        compiler_builder.package(p);
     });
     env_variables_decoded.iter().for_each(|v| {
         if v.len() == 1 {
@@ -124,6 +127,7 @@ where
             false,
             Level::Trace,
             false,
+            &vec![],
             &vec![],
             &vec![],
         )

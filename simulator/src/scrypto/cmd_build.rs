@@ -33,6 +33,10 @@ pub struct Build {
     /// Specify as NAME=VALUE or NAME
     #[clap(short, long)]
     env: Option<Vec<String>>,
+
+    /// If provided for workspace compilation only these packages will be compiled. 
+    #[clap(short, long)]
+    package: Option<Vec<String>>,
 }
 
 impl Build {
@@ -46,6 +50,7 @@ impl Build {
             false,
             &self.features.clone().unwrap_or(vec![]),
             &self.env.clone().unwrap_or(vec![]),
+            &self.package.clone().unwrap_or(vec![]),
         )
         .map(|_| ())
         .map_err(Error::BuildError)
