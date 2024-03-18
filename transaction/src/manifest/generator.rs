@@ -1875,7 +1875,7 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
 mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
-    use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
+    use crate::manifest::parser::{Parser, ParserError, ParserErrorKind, PARSER_MAX_DEPTH};
     use crate::manifest::token::{Position, Span};
     use crate::{position, span};
     use radix_engine_common::address::AddressBech32Decoder;
@@ -2571,9 +2571,11 @@ mod tests {
             &NetworkDefinition::simulator(),
             BlobProvider::default(),
         );
-        let expected = CompileError::ParserError(ParserError::MaxDepthExceeded {
-            actual: 21,
-            max: 20,
+        let expected = CompileError::ParserError(ParserError {
+            error_kind: ParserErrorKind::MaxDepthExceeded {
+                actual: 21,
+                max: 20,
+            },
             span: span!(start = (231, 1, 231), end = (236, 1, 236)),
         });
 

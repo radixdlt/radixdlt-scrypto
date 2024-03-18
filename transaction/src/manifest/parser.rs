@@ -13,37 +13,37 @@ use super::ast::InstructionWithSpan;
 pub const PARSER_MAX_DEPTH: usize = MANIFEST_SBOR_V1_MAX_DEPTH - 4;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParserError {
+pub enum ParserErrorKind {
     UnexpectedEof,
     UnexpectedToken {
         expected: TokenType,
         actual: TokenKind,
-        span: Span,
     },
     UnexpectedTokenOrMissingSemicolon {
         expected: TokenType,
         actual: TokenKind,
-        span: Span,
     },
     InvalidNumberOfValues {
         expected: usize,
         actual: usize,
-        span: Span,
     },
     InvalidNumberOfTypes {
         expected: usize,
         actual: usize,
-        span: Span,
     },
     UnknownEnumDiscriminator {
         actual: String,
-        span: Span,
     },
     MaxDepthExceeded {
         actual: usize,
         max: usize,
-        span: Span,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParserError {
+    pub error_kind: ParserErrorKind,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -424,6 +424,7 @@ impl SborValueKindIdent {
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
+    previous: usize,
     max_depth: usize,
     stack_depth: usize,
 }
@@ -441,9 +442,11 @@ macro_rules! advance_match {
     ( $self:expr, $expected:expr ) => {{
         let token = $self.advance()?;
         if token.kind != $expected {
-            return Err(ParserError::UnexpectedToken {
-                expected: TokenType::Exact($expected),
-                actual: token.kind,
+            return Err(ParserError {
+                error_kind: ParserErrorKind::UnexpectedToken {
+                    expected: TokenType::Exact($expected),
+                    actual: token.kind,
+                },
                 span: token.span,
             });
         }
@@ -455,6 +458,7 @@ impl Parser {
         Self {
             tokens,
             current: 0,
+            previous: 0,
             max_depth,
             stack_depth: 0,
         }
@@ -466,9 +470,11 @@ impl Parser {
         if self.stack_depth > self.max_depth {
             let token = self.peek()?;
 
-            return Err(ParserError::MaxDepthExceeded {
-                actual: self.stack_depth,
-                max: self.max_depth,
+            return Err(ParserError {
+                error_kind: ParserErrorKind::MaxDepthExceeded {
+                    actual: self.stack_depth,
+                    max: self.max_depth,
+                },
                 span: token.span,
             });
         }
@@ -486,14 +492,25 @@ impl Parser {
     }
 
     pub fn peek(&mut self) -> Result<Token, ParserError> {
-        self.tokens
-            .get(self.current)
-            .cloned()
-            .ok_or(ParserError::UnexpectedEof)
+        self.tokens.get(self.current).cloned().ok_or(ParserError {
+            error_kind: ParserErrorKind::UnexpectedEof,
+            span: match self.tokens.get(self.previous) {
+                Some(token) => Span {
+                    start: token.span.end,
+                    end: Position {
+                        full_index: token.span.end.full_index + 1,
+                        line_number: token.span.end.line_number,
+                        line_char_index: token.span.end.line_char_index,
+                    },
+                },
+                None => span!(start = (0, 0, 0), end = (0, 0, 0)),
+            },
+        })
     }
 
     pub fn advance(&mut self) -> Result<Token, ParserError> {
         let token = self.peek()?;
+        self.previous = self.current;
         self.current += 1;
         Ok(token)
     }
@@ -515,21 +532,22 @@ impl Parser {
             let result = self.parse_value();
             match result {
                 Ok(value) => values.push(value),
-                Err(err) => match err {
+                Err(err) => match err.error_kind {
                     // parse_value() is recursive so we need to check the stack depth to determine
                     // if semicolon might be missing
-                    ParserError::UnexpectedToken {
-                        expected,
-                        actual,
-                        span,
-                    } if expected == TokenType::Value && (stack_depth + 1 == self.stack_depth) => {
-                        return Err(ParserError::UnexpectedTokenOrMissingSemicolon {
-                            expected,
-                            actual,
-                            span,
+                    ParserErrorKind::UnexpectedToken { expected, actual }
+                        if expected == TokenType::Value
+                            && (stack_depth + 1 == self.stack_depth) =>
+                    {
+                        return Err(ParserError {
+                            error_kind: ParserErrorKind::UnexpectedTokenOrMissingSemicolon {
+                                expected,
+                                actual,
+                            },
+                            span: err.span,
                         })
                     }
-                    err => return Err(err),
+                    _ => return Err(err),
                 },
             }
         }
@@ -540,16 +558,20 @@ impl Parser {
         let token = self.advance()?;
         let instruction_ident = match &token.kind {
             TokenKind::Ident(ident_str) => {
-                InstructionIdent::from_ident(ident_str).ok_or(ParserError::UnexpectedToken {
-                    expected: TokenType::Instruction,
-                    actual: token.kind,
+                InstructionIdent::from_ident(ident_str).ok_or(ParserError {
+                    error_kind: ParserErrorKind::UnexpectedToken {
+                        expected: TokenType::Instruction,
+                        actual: token.kind,
+                    },
                     span: token.span,
                 })?
             }
             _ => {
-                return Err(ParserError::UnexpectedToken {
-                    expected: TokenType::Instruction,
-                    actual: token.kind,
+                return Err(ParserError {
+                    error_kind: ParserErrorKind::UnexpectedToken {
+                        expected: TokenType::Instruction,
+                        actual: token.kind,
+                    },
                     span: token.span,
                 });
             }
@@ -843,12 +865,13 @@ impl Parser {
             TokenKind::I128Literal(value) => Value::I128(*value),
             TokenKind::StringLiteral(value) => Value::String(value.clone()),
             TokenKind::Ident(ident_str) => {
-                let value_ident =
-                    SborValueIdent::from_ident(ident_str).ok_or(ParserError::UnexpectedToken {
+                let value_ident = SborValueIdent::from_ident(ident_str).ok_or(ParserError {
+                    error_kind: ParserErrorKind::UnexpectedToken {
                         expected: TokenType::Value,
                         actual: token.kind.clone(),
-                        span: token.span,
-                    })?;
+                    },
+                    span: token.span,
+                })?;
                 match value_ident {
                     SborValueIdent::Enum => self.parse_enum_content()?,
                     SborValueIdent::Array => self.parse_array_content()?,
@@ -893,9 +916,11 @@ impl Parser {
                 }
             }
             _ => {
-                return Err(ParserError::UnexpectedToken {
-                    expected: TokenType::Value,
-                    actual: token.kind,
+                return Err(ParserError {
+                    error_kind: ParserErrorKind::UnexpectedToken {
+                        expected: TokenType::Value,
+                        actual: token.kind,
+                    },
                     span: token.span,
                 });
             }
@@ -915,14 +940,18 @@ impl Parser {
             TokenKind::Ident(discriminator) => KNOWN_ENUM_DISCRIMINATORS
                 .get(discriminator.as_str())
                 .cloned()
-                .ok_or(ParserError::UnknownEnumDiscriminator {
-                    actual: discriminator.clone(),
+                .ok_or(ParserError {
+                    error_kind: ParserErrorKind::UnknownEnumDiscriminator {
+                        actual: discriminator.clone(),
+                    },
                     span: discriminator_token.span,
                 })?,
             _ => {
-                return Err(ParserError::UnexpectedToken {
-                    expected: TokenType::EnumDiscriminator,
-                    actual: discriminator_token.kind,
+                return Err(ParserError {
+                    error_kind: ParserErrorKind::UnexpectedToken {
+                        expected: TokenType::EnumDiscriminator,
+                        actual: discriminator_token.kind,
+                    },
                     span: discriminator_token.span,
                 })
             }
@@ -993,9 +1022,11 @@ impl Parser {
         let values =
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
         if values.len() != 1 {
-            Err(ParserError::InvalidNumberOfValues {
-                actual: values.len(),
-                expected: 1,
+            Err(ParserError {
+                error_kind: ParserErrorKind::InvalidNumberOfValues {
+                    actual: values.len(),
+                    expected: 1,
+                },
                 span: Span {
                     start: values[0].span.start,
                     end: values[values.len() - 1].span.end,
@@ -1028,9 +1059,11 @@ impl Parser {
         }
 
         if types.len() != n {
-            Err(ParserError::InvalidNumberOfTypes {
-                expected: n,
-                actual: types.len(),
+            Err(ParserError {
+                error_kind: ParserErrorKind::InvalidNumberOfTypes {
+                    expected: n,
+                    actual: types.len(),
+                },
                 span: Span {
                     start: span_start,
                     end: span_end,
@@ -1045,13 +1078,14 @@ impl Parser {
         let token = self.advance()?;
         let value_kind = match &token.kind {
             TokenKind::Ident(ident_str) => {
-                let value_kind_ident = SborValueKindIdent::from_ident(&ident_str).ok_or(
-                    ParserError::UnexpectedToken {
-                        expected: TokenType::ValueKind,
-                        actual: token.kind.clone(),
+                let value_kind_ident =
+                    SborValueKindIdent::from_ident(&ident_str).ok_or(ParserError {
+                        error_kind: ParserErrorKind::UnexpectedToken {
+                            expected: TokenType::ValueKind,
+                            actual: token.kind.clone(),
+                        },
                         span: token.span,
-                    },
-                )?;
+                    })?;
                 match value_kind_ident {
                     // ==============
                     // Simple basic value kinds
@@ -1099,9 +1133,11 @@ impl Parser {
                 }
             }
             _ => {
-                return Err(ParserError::UnexpectedToken {
-                    expected: TokenType::ValueKind,
-                    actual: token.kind,
+                return Err(ParserError {
+                    error_kind: ParserErrorKind::UnexpectedToken {
+                        expected: TokenType::ValueKind,
+                        actual: token.kind,
+                    },
                     span: token.span,
                 });
             }
@@ -1114,60 +1150,38 @@ impl Parser {
 }
 
 pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
-    let lines_cnt = s.lines().count();
-    // println!("err = {:?}", err);
-    let (span, title, label) = match err {
-        ParserError::UnexpectedEof => (
-            span!(
-                start = (s.len() - 1, lines_cnt, 0),
-                end = (s.len(), lines_cnt, 0)
-            ),
+    let (title, label) = match err.error_kind {
+        ParserErrorKind::UnexpectedEof => (
             "unexpected end of file".to_string(),
             "end of file".to_string(),
         ),
-        ParserError::UnexpectedToken {
-            expected,
-            actual,
-            span,
-        } => {
+        ParserErrorKind::UnexpectedToken { expected, actual } => {
             let title = format!("expected {}, found {}", expected, actual);
-            (span, title, "unexpected token".to_string())
+            (title, "unexpected token".to_string())
         }
-        ParserError::UnexpectedTokenOrMissingSemicolon {
-            expected,
-            actual,
-            span,
-        } => {
+        ParserErrorKind::UnexpectedTokenOrMissingSemicolon { expected, actual } => {
             let title = format!("expected `;` or {}, found {}", expected, actual);
-            (span, title, "unexpected token".to_string())
+            (title, "unexpected token".to_string())
         }
-        ParserError::InvalidNumberOfValues {
-            expected,
-            actual,
-            span,
-        } => {
+        ParserErrorKind::InvalidNumberOfValues { expected, actual } => {
             let title = format!("expected {} number of values, found {}", expected, actual);
-            (span, title, "invalid number of values".to_string())
+            (title, "invalid number of values".to_string())
         }
-        ParserError::InvalidNumberOfTypes {
-            expected,
-            actual,
-            span,
-        } => {
+        ParserErrorKind::InvalidNumberOfTypes { expected, actual } => {
             let title = format!("expected {} number of types, found {}", expected, actual);
-            (span, title, "invalid number of types".to_string())
+            (title, "invalid number of types".to_string())
         }
-        ParserError::MaxDepthExceeded { span, actual, max } => {
+        ParserErrorKind::MaxDepthExceeded { actual, max } => {
             let title = format!("manifest actual depth {} exceeded max {}", actual, max);
-            (span, title, "max depth exceeded".to_string())
+            (title, "max depth exceeded".to_string())
         }
-        ParserError::UnknownEnumDiscriminator { actual, span } => {
+        ParserErrorKind::UnknownEnumDiscriminator { actual } => {
             let title = format!("unknown enum discriminator found `{}`", actual);
-            (span, title, "unknown enum discriminator".to_string())
+            (title, "unknown enum discriminator".to_string())
         }
     };
 
-    create_snippet(s, &span, &title, &label)
+    create_snippet(s, &err.span, &title, &label)
 }
 
 #[cfg(test)]
@@ -1468,20 +1482,30 @@ mod tests {
 
     #[test]
     fn test_failures() {
-        parse_value_error!(r#"Enum<0u8"#, ParserError::UnexpectedEof);
+        parse_value_error!(
+            r#"Enum<0u8"#,
+            ParserError {
+                error_kind: ParserErrorKind::UnexpectedEof,
+                span: span!(start = (8, 1, 8), end = (9, 1, 8))
+            }
+        );
         parse_value_error!(
             r#"Enum<0u8)"#,
-            ParserError::UnexpectedToken {
-                expected: TokenType::Exact(TokenKind::GreaterThan),
-                actual: TokenKind::CloseParenthesis,
-                span: span!(start = (8, 1, 8), end = (9, 1, 9)),
+            ParserError {
+                error_kind: ParserErrorKind::UnexpectedToken {
+                    expected: TokenType::Exact(TokenKind::GreaterThan),
+                    actual: TokenKind::CloseParenthesis,
+                },
+                span: span!(start = (8, 1, 8), end = (9, 1, 9))
             }
         );
         parse_value_error!(
             r#"Address("abc", "def")"#,
-            ParserError::InvalidNumberOfValues {
-                actual: 2,
-                expected: 1,
+            ParserError {
+                error_kind: ParserErrorKind::InvalidNumberOfValues {
+                    actual: 2,
+                    expected: 1,
+                },
                 span: span!(start = (8, 1, 8), end = (20, 1, 20)),
             }
         );
@@ -1502,10 +1526,12 @@ mod tests {
         // Should actually be an error not a panic
         parse_value_error!(
             &value_string,
-            ParserError::MaxDepthExceeded {
-                actual: 21,
-                max: 20,
-                span: span!(start = (120, 1, 120), end = (125, 1, 125)),
+            ParserError {
+                error_kind: ParserErrorKind::MaxDepthExceeded {
+                    actual: 21,
+                    max: 20,
+                },
+                span: span!(start = (120, 1, 120), end = (125, 1, 125))
             }
         );
     }
