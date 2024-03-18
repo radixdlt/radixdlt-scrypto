@@ -10,7 +10,7 @@ use std::path::PathBuf;
 pub struct Build {
     /// The package directory. If not specified current directory will be used.
     #[clap(long)]
-    manifest_path: Option<PathBuf>,
+    path: Option<PathBuf>,
 
     /// The terget directory. If not specified default target directory for project will be used.
     #[clap(long)]
@@ -68,7 +68,7 @@ impl Build {
     pub fn run(&self) -> Result<(), Error> {
         let mut compiler_builder = ScryptoCompiler::builder();
 
-        if let Some(manifest_path) = &self.manifest_path {
+        if let Some(manifest_path) = &self.path {
             compiler_builder.manifest_path(manifest_path);
         }
         if let Some(target_dir) = &self.target_dir {
