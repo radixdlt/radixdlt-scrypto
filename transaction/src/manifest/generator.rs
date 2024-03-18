@@ -64,51 +64,50 @@ use sbor::rust::vec;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GeneratorError {
+pub enum GeneratorErrorKind {
     InvalidAstType {
         expected_type: ast::ValueKind,
         actual: ast::ValueKind,
-        span: Span,
     },
     InvalidAstValue {
         expected_type: Vec<ast::ValueKind>,
         actual: ast::Value,
-        span: Span,
     },
     UnexpectedValue {
         expected_type: ManifestValueKind,
         actual: ast::Value,
-        span: Span,
     },
-    InvalidPackageAddress(String, Span),
+    InvalidPackageAddress(String),
     InvalidDecimal {
         actual: String,
         err: String,
-        span: Span,
     },
     InvalidPreciseDecimal {
         actual: String,
         err: String,
-        span: Span,
     },
-    InvalidNonFungibleLocalId(String, Span),
-    InvalidNonFungibleGlobalId(Span),
-    InvalidExpression(String, Span),
+    InvalidNonFungibleLocalId(String),
+    InvalidNonFungibleGlobalId,
+    InvalidExpression(String),
     InvalidBlobHash {
         actual: String,
         err: String,
-        span: Span,
     },
-    BlobNotFound(String, Span),
-    InvalidBytesHex(String, Span),
-    NameResolverError(NameResolverError, Span),
+    BlobNotFound(String),
+    InvalidBytesHex(String),
+    NameResolverError(NameResolverError),
     IdValidationError {
         err: ManifestIdValidationError,
         name: Option<String>,
-        span: Span,
     },
-    InvalidGlobalAddress(String, Span),
-    InvalidInternalAddress(String, Span),
+    InvalidGlobalAddress(String),
+    InvalidInternalAddress(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GeneratorError {
+    pub error_kind: GeneratorErrorKind,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -316,7 +315,10 @@ fn generate_id_validation_error(
         }
     };
 
-    GeneratorError::IdValidationError { err, name, span }
+    GeneratorError {
+        error_kind: GeneratorErrorKind::IdValidationError { err, name },
+        span,
+    }
 }
 
 pub fn generate_instruction<B>(
@@ -896,9 +898,11 @@ where
 #[macro_export]
 macro_rules! invalid_type {
     ( $span:expr, $v:expr, $($exp:expr),+ ) => {
-        Err(GeneratorError::InvalidAstValue {
-            expected_type: vec!($($exp),+),
-            actual: $v.clone(),
+        Err(GeneratorError {
+            error_kind: GeneratorErrorKind::InvalidAstValue {
+                expected_type: vec!($($exp),+),
+                actual: $v.clone(),
+            },
             span: $span,
         })
     };
@@ -921,7 +925,7 @@ where
             resolver,
             address_bech32_decoder,
             blobs,
-        )?);
+        )?)
     }
 
     Ok(ManifestValue::Tuple { fields })
@@ -937,13 +941,13 @@ fn generate_string(value: &ast::ValueWithSpan) -> Result<String, GeneratorError>
 fn generate_decimal(value: &ast::ValueWithSpan) -> Result<Decimal, GeneratorError> {
     match &value.value {
         ast::Value::Decimal(inner) => match &inner.value {
-            ast::Value::String(s) => {
-                Decimal::from_str(&s).map_err(|err| GeneratorError::InvalidDecimal {
+            ast::Value::String(s) => Decimal::from_str(&s).map_err(|err| GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidDecimal {
                     actual: s.to_string(),
                     err: format!("{:?}", err),
-                    span: inner.span,
-                })
-            }
+                },
+                span: inner.span,
+            }),
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Decimal),
@@ -953,13 +957,13 @@ fn generate_decimal(value: &ast::ValueWithSpan) -> Result<Decimal, GeneratorErro
 fn generate_precise_decimal(value: &ast::ValueWithSpan) -> Result<PreciseDecimal, GeneratorError> {
     match &value.value {
         ast::Value::PreciseDecimal(inner) => match &inner.value {
-            ast::Value::String(s) => {
-                PreciseDecimal::from_str(s).map_err(|err| GeneratorError::InvalidPreciseDecimal {
+            ast::Value::String(s) => PreciseDecimal::from_str(s).map_err(|err| GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidPreciseDecimal {
                     actual: s.to_string(),
                     err: format!("{:?}", err),
-                    span: inner.span,
-                })
-            }
+                },
+                span: inner.span,
+            }),
 
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -981,7 +985,10 @@ fn generate_package_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into(), inner.span));
+                return Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
+                    span: inner.span,
+                });
             }
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -1001,7 +1008,10 @@ fn generate_resource_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into(), inner.span));
+                return Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
+                    span: inner.span,
+                });
             }
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -1022,18 +1032,26 @@ fn generate_dynamic_global_address(
                         return Ok(DynamicGlobalAddress::Static(address));
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into(), inner.span));
+                return Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
+                    span: inner.span,
+                });
             }
             v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
-        ast::Value::NamedAddress(inner) => match &inner.value {
-            ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(*n)),
-            ast::Value::String(s) => resolver
-                .resolve_named_address(&s)
-                .map(Into::into)
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
-        },
+        ast::Value::NamedAddress(inner) => {
+            match &inner.value {
+                ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(*n)),
+                ast::Value::String(s) => resolver
+                    .resolve_named_address(&s)
+                    .map(Into::into)
+                    .map_err(|err| GeneratorError {
+                        error_kind: GeneratorErrorKind::NameResolverError(err),
+                        span: inner.span,
+                    }),
+                v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+            }
+        }
         v => invalid_type!(
             value.span,
             v,
@@ -1058,7 +1076,10 @@ fn generate_internal_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidInternalAddress(s.into(), inner.span));
+                return Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidInternalAddress(s.into()),
+                    span: inner.span,
+                });
             }
             v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -1079,18 +1100,26 @@ fn generate_dynamic_package_address(
                         return Ok(DynamicPackageAddress::Static(address));
                     }
                 }
-                return Err(GeneratorError::InvalidPackageAddress(s.into(), inner.span));
+                return Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidPackageAddress(s.into()),
+                    span: inner.span,
+                });
             }
             v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
-        ast::Value::NamedAddress(inner) => match &inner.value {
-            ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(*n)),
-            ast::Value::String(s) => resolver
-                .resolve_named_address(&s)
-                .map(Into::into)
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
-        },
+        ast::Value::NamedAddress(inner) => {
+            match &inner.value {
+                ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(*n)),
+                ast::Value::String(s) => resolver
+                    .resolve_named_address(&s)
+                    .map(Into::into)
+                    .map_err(|err| GeneratorError {
+                        error_kind: GeneratorErrorKind::NameResolverError(err),
+                        span: inner.span,
+                    }),
+                v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+            }
+        }
         v => invalid_type!(
             value.span,
             v,
@@ -1112,7 +1141,10 @@ fn generate_local_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidInternalAddress(s.into(), inner.span));
+                return Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidInternalAddress(s.into()),
+                    span: inner.span,
+                });
             }
             v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -1136,7 +1168,10 @@ fn declare_bucket(
         ast::Value::Bucket(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_bucket(name.to_string(), bucket_id)
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
+                .map_err(|err| GeneratorError {
+                    error_kind: GeneratorErrorKind::NameResolverError(err),
+                    span: inner.span,
+                }),
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Bucket),
@@ -1151,9 +1186,12 @@ fn generate_bucket(
         ast::Value::Bucket(inner) => {
             let bucket = match &inner.value {
                 ast::Value::U32(n) => Ok(ManifestBucket(*n)),
-                ast::Value::String(s) => resolver
-                    .resolve_bucket(&s)
-                    .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
+                ast::Value::String(s) => {
+                    resolver.resolve_bucket(&s).map_err(|err| GeneratorError {
+                        error_kind: GeneratorErrorKind::NameResolverError(err),
+                        span: inner.span,
+                    })
+                }
                 v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
             }?;
             Ok((bucket, inner.span))
@@ -1168,12 +1206,17 @@ fn declare_proof(
     proof_id: ManifestProof,
 ) -> Result<(), GeneratorError> {
     match &value.value {
-        ast::Value::Proof(inner) => match &inner.value {
-            ast::Value::String(name) => resolver
-                .insert_proof(name.to_string(), proof_id)
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
-            v => invalid_type!(inner.span, v, ast::ValueKind::String),
-        },
+        ast::Value::Proof(inner) => {
+            match &inner.value {
+                ast::Value::String(name) => resolver
+                    .insert_proof(name.to_string(), proof_id)
+                    .map_err(|err| GeneratorError {
+                        error_kind: GeneratorErrorKind::NameResolverError(err),
+                        span: inner.span,
+                    }),
+                v => invalid_type!(inner.span, v, ast::ValueKind::String),
+            }
+        }
         v => invalid_type!(value.span, v, ast::ValueKind::Proof),
     }
 }
@@ -1187,7 +1230,10 @@ fn declare_address_reservation(
         ast::Value::AddressReservation(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_address_reservation(name.to_string(), address_reservation_id)
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
+                .map_err(|err| GeneratorError {
+                    error_kind: GeneratorErrorKind::NameResolverError(err),
+                    span: inner.span,
+                }),
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::AddressReservation),
@@ -1203,7 +1249,10 @@ fn declare_named_address(
         ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::String(name) => resolver
                 .insert_named_address(name.to_string(), address_id)
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
+                .map_err(|err| GeneratorError {
+                    error_kind: GeneratorErrorKind::NameResolverError(err),
+                    span: inner.span,
+                }),
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::NamedAddress),
@@ -1218,9 +1267,10 @@ fn generate_proof(
         ast::Value::Proof(inner) => {
             let proof = match &inner.value {
                 ast::Value::U32(n) => Ok(ManifestProof(*n)),
-                ast::Value::String(s) => resolver
-                    .resolve_proof(&s)
-                    .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
+                ast::Value::String(s) => resolver.resolve_proof(&s).map_err(|err| GeneratorError {
+                    error_kind: GeneratorErrorKind::NameResolverError(err),
+                    span: inner.span,
+                }),
                 v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
             }?;
             Ok((proof, inner.span))
@@ -1236,9 +1286,14 @@ fn generate_address_reservation(
     match &value.value {
         ast::Value::AddressReservation(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(ManifestAddressReservation(*n)),
-            ast::Value::String(s) => resolver
-                .resolve_address_reservation(&s)
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
+            ast::Value::String(s) => {
+                resolver
+                    .resolve_address_reservation(&s)
+                    .map_err(|err| GeneratorError {
+                        error_kind: GeneratorErrorKind::NameResolverError(err),
+                        span: inner.span,
+                    })
+            }
             v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::AddressReservation),
@@ -1261,7 +1316,10 @@ fn generate_static_address(
                         )));
                     }
                 }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into(), inner.span));
+                return Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
+                    span: inner.span,
+                });
             }
             v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -1286,7 +1344,10 @@ fn generate_named_address(
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
                 .map(|x| ManifestAddress::Named(x))
-                .map_err(|err| GeneratorError::NameResolverError(err, inner.span)),
+                .map_err(|err| GeneratorError {
+                    error_kind: GeneratorErrorKind::NameResolverError(err),
+                    span: inner.span,
+                }),
             v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::NamedAddress),
@@ -1300,7 +1361,10 @@ fn generate_non_fungible_local_id(
         ast::Value::NonFungibleLocalId(inner) => match &inner.value {
             ast::Value::String(s) => NonFungibleLocalId::from_str(s)
                 // TODO: Consider more precise message by interpreting ParseNonFungibleLocalIdError
-                .map_err(|_| GeneratorError::InvalidNonFungibleLocalId(s.into(), inner.span)),
+                .map_err(|_| GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidNonFungibleLocalId(s.into()),
+                    span: inner.span,
+                }),
             v => invalid_type!(inner.span, v, ast::ValueKind::String)?,
         },
         v => invalid_type!(value.span, v, ast::ValueKind::NonFungibleLocalId),
@@ -1312,8 +1376,11 @@ fn generate_expression(value: &ast::ValueWithSpan) -> Result<ManifestExpression,
         ast::Value::Expression(inner) => match &inner.value {
             ast::Value::String(s) => match s.as_str() {
                 "ENTIRE_WORKTOP" => Ok(ManifestExpression::EntireWorktop),
-                "ENTIRE_AUTH_ZONE" => Ok(ManifestExpression::EntireAuthZone),
-                _ => Err(GeneratorError::InvalidExpression(s.into(), inner.span)),
+                "ENTIRE_AUT" => Ok(ManifestExpression::EntireAuthZone),
+                _ => Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidExpression(s.into()),
+                    span: inner.span,
+                }),
             },
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -1338,14 +1405,17 @@ where
     match &value.value {
         ast::Value::Blob(inner) => match &inner.value {
             ast::Value::String(s) => {
-                let hash = Hash::from_str(s).map_err(|err| GeneratorError::InvalidBlobHash {
-                    actual: s.to_string(),
-                    err: translate_parse_hash_error(err),
+                let hash = Hash::from_str(s).map_err(|err| GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidBlobHash {
+                        actual: s.to_string(),
+                        err: translate_parse_hash_error(err),
+                    },
                     span: inner.span,
                 })?;
-                blobs
-                    .get_blob(&hash)
-                    .ok_or(GeneratorError::BlobNotFound(s.clone(), inner.span))?;
+                blobs.get_blob(&hash).ok_or(GeneratorError {
+                    error_kind: GeneratorErrorKind::BlobNotFound(s.clone()),
+                    span: inner.span,
+                })?;
                 Ok(ManifestBlobRef(hash.0))
             }
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
@@ -1360,9 +1430,11 @@ fn generate_non_fungible_local_ids(
     match &value.value {
         ast::Value::Array(kind, values) => {
             if kind.value_kind != ast::ValueKind::NonFungibleLocalId {
-                return Err(GeneratorError::InvalidAstType {
-                    expected_type: ast::ValueKind::NonFungibleLocalId,
-                    actual: kind.value_kind.clone(),
+                return Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidAstType {
+                        expected_type: ast::ValueKind::NonFungibleLocalId,
+                        actual: kind.value_kind.clone(),
+                    },
                     span: kind.span,
                 });
             }
@@ -1378,8 +1450,10 @@ fn generate_non_fungible_local_ids(
 
 fn generate_byte_vec_from_hex(value: &ast::ValueWithSpan) -> Result<Vec<u8>, GeneratorError> {
     let bytes = match &value.value {
-        ast::Value::String(s) => hex::decode(s)
-            .map_err(|_| GeneratorError::InvalidBytesHex(s.to_string(), value.span))?,
+        ast::Value::String(s) => hex::decode(s).map_err(|_| GeneratorError {
+            error_kind: GeneratorErrorKind::InvalidBytesHex(s.to_string()),
+            span: value.span,
+        })?,
         v => invalid_type!(value.span, v, ast::ValueKind::String)?,
     };
     Ok(bytes)
@@ -1397,10 +1471,12 @@ where
 {
     if let Some(ty) = expected_type {
         if ty != value_with_span.value.value_kind() {
-            return Err(GeneratorError::UnexpectedValue {
-                expected_type: ty,
-                actual: value_with_span.value.clone(),
+            return Err(GeneratorError {
                 span: value_with_span.span,
+                error_kind: GeneratorErrorKind::UnexpectedValue {
+                    expected_type: ty,
+                    actual: value_with_span.value.clone(),
+                },
             });
         }
     }
@@ -1509,7 +1585,10 @@ where
                     address_bech32_decoder,
                     s.as_str(),
                 )
-                .map_err(|_| GeneratorError::InvalidNonFungibleGlobalId(value.span)),
+                .map_err(|_| GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidNonFungibleGlobalId,
+                    span: value.span,
+                }),
                 v => invalid_type!(value.span, v, ast::ValueKind::String)?,
             }?;
             Ok(Value::Tuple {
@@ -1632,23 +1711,21 @@ where
 }
 
 pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
-    let (span, title, label) = match err {
-        GeneratorError::InvalidAstType {
+    let (title, label) = match err.error_kind {
+        GeneratorErrorKind::InvalidAstType {
             expected_type,
             actual,
-            span,
         } => {
             let title = format!(
                 "expected value of type {}, found {}",
                 expected_type.value_kind(),
                 actual.value_kind()
             );
-            (span, title, "value of unexpected type".to_string())
+            (title, "value of unexpected type".to_string())
         }
-        GeneratorError::InvalidAstValue {
+        GeneratorErrorKind::InvalidAstValue {
             expected_type,
             actual,
-            span,
         } => {
             let mut types: Vec<String> = vec![];
 
@@ -1667,12 +1744,11 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
                 actual.value_kind()
             );
 
-            (span, title, "value of unexpected type".to_string())
+            (title, "value of unexpected type".to_string())
         }
-        GeneratorError::UnexpectedValue {
+        GeneratorErrorKind::UnexpectedValue {
             expected_type,
             actual,
-            span,
         } => {
             // TODO: Consider better messages for aliases (eg. Bytes)
             let title = format!(
@@ -1680,74 +1756,74 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
                 expected_type,
                 actual.value_kind()
             );
-            (span, title, "value of unexpected type".to_string())
+            (title, "value of unexpected type".to_string())
         }
-        GeneratorError::InvalidPackageAddress(string, span) => {
+        GeneratorErrorKind::InvalidPackageAddress(string) => {
             let title = format!("invalid package address '{}'", string);
-            (span, title, "".to_string())
+            (title, "".to_string())
         }
-        GeneratorError::InvalidDecimal { actual, err, span } => {
+        GeneratorErrorKind::InvalidDecimal { actual, err } => {
             let title = format!("invalid decimal '{}' - {}", actual, err);
-            (span, title, "invalid decimal".to_string())
+            (title, "invalid decimal".to_string())
         }
-        GeneratorError::InvalidPreciseDecimal { actual, err, span } => {
+        GeneratorErrorKind::InvalidPreciseDecimal { actual, err } => {
             let title = format!("invalid precise decimal '{}' - {}", actual, err);
-            (span, title, "invalid precise decimal".to_string())
+            (title, "invalid precise decimal".to_string())
         }
-        GeneratorError::InvalidNonFungibleLocalId(string, span) => {
+        GeneratorErrorKind::InvalidNonFungibleLocalId(string) => {
             let title = format!("invalid non-fungible local id '{}'", string);
-            (span, title, "invalid non-fungible local id".to_string())
+            (title, "invalid non-fungible local id".to_string())
         }
-        GeneratorError::InvalidNonFungibleGlobalId(span) => {
+        GeneratorErrorKind::InvalidNonFungibleGlobalId => {
             let title = format!("invalid non-fungible global id");
-            (span, title, "invalid non-fungible global id".to_string())
+            (title, "invalid non-fungible global id".to_string())
         }
-        GeneratorError::InvalidExpression(string, span) => {
+        GeneratorErrorKind::InvalidExpression(string) => {
             let title = format!("invalid expression '{}'", string);
-            (span, title, "invalid expression".to_string())
+            (title, "invalid expression".to_string())
         }
-        GeneratorError::InvalidBlobHash { actual, err, span } => {
+        GeneratorErrorKind::InvalidBlobHash { actual, err } => {
             let title = format!("invalid blob hash '{}' - {}", actual, err);
-            (span, title, "invalid blob hash".to_string())
+            (title, "invalid blob hash".to_string())
         }
-        GeneratorError::BlobNotFound(string, span) => {
+        GeneratorErrorKind::BlobNotFound(string) => {
             let title = format!("blob with hash '{}' not found", string);
-            (span, title, "blob not found".to_string())
+            (title, "blob not found".to_string())
         }
-        GeneratorError::InvalidBytesHex(string, span) => {
+        GeneratorErrorKind::InvalidBytesHex(string) => {
             let title = format!("invalid hex value '{}'", string);
-            (span, title, "invalid hex value".to_string())
+            (title, "invalid hex value".to_string())
         }
-        GeneratorError::NameResolverError(error, span) => match error {
+        GeneratorErrorKind::NameResolverError(error) => match error {
             NameResolverError::UndefinedBucket(string) => {
                 let title = format!("undefined bucket '{}'", string);
-                (span, title, "undefined bucket".to_string())
+                (title, "undefined bucket".to_string())
             }
             NameResolverError::UndefinedProof(string) => {
                 let title = format!("undefined proof '{}'", string);
-                (span, title, "undefined proof".to_string())
+                (title, "undefined proof".to_string())
             }
             NameResolverError::UndefinedAddressReservation(string) => {
                 let title = format!("undefined address reservation '{}'", string);
-                (span, title, "undefined address reservation".to_string())
+                (title, "undefined address reservation".to_string())
             }
             NameResolverError::UndefinedNamedAddress(string) => {
                 let title = format!("undefined named address '{}'", string);
-                (span, title, "undefined named address".to_string())
+                (title, "undefined named address".to_string())
             }
             NameResolverError::NamedAlreadyDefined(string) => {
                 let title = format!("name already defined '{}'", string);
-                (span, title, "name already defined".to_string())
+                (title, "name already defined".to_string())
             }
         },
-        GeneratorError::IdValidationError { err, name, span } => match err {
+        GeneratorErrorKind::IdValidationError { err, name } => match err {
             ManifestIdValidationError::BucketNotFound(bucket_id) => {
                 let title = if let Some(name) = name {
                     format!("bucket '{}' not found", name)
                 } else {
                     format!("bucket id '{:?}' not found", bucket_id)
                 };
-                (span, title, "bucket not found".to_string())
+                (title, "bucket not found".to_string())
             }
             ManifestIdValidationError::ProofNotFound(proof_id) => {
                 let title = if let Some(name) = name {
@@ -1755,7 +1831,7 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
                 } else {
                     format!("proof id '{:?}' not found", proof_id)
                 };
-                (span, title, "proof not found".to_string())
+                (title, "proof not found".to_string())
             }
             ManifestIdValidationError::BucketLocked(bucket_id) => {
                 let title = if let Some(name) = name {
@@ -1763,7 +1839,7 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
                 } else {
                     format!("bucket id '{:?}' locked", bucket_id)
                 };
-                (span, title, "bucket locked".to_string())
+                (title, "bucket locked".to_string())
             }
             ManifestIdValidationError::AddressReservationNotFound(reservation) => {
                 let title = if let Some(name) = name {
@@ -1771,7 +1847,7 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
                 } else {
                     format!("address reservation id '{:?}' not found", reservation)
                 };
-                (span, title, "address reservation not found".to_string())
+                (title, "address reservation not found".to_string())
             }
             ManifestIdValidationError::AddressNotFound(address) => {
                 let title = if let Some(name) = name {
@@ -1779,20 +1855,20 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
                 } else {
                     format!("address id '{:?}' not found", address)
                 };
-                (span, title, "address not found".to_string())
+                (title, "address not found".to_string())
             }
         },
-        GeneratorError::InvalidGlobalAddress(string, span) => {
+        GeneratorErrorKind::InvalidGlobalAddress(string) => {
             let title = format!("invalid global address '{}'", string);
-            (span, title, "invalid global address".to_string())
+            (title, "invalid global address".to_string())
         }
-        GeneratorError::InvalidInternalAddress(string, span) => {
+        GeneratorErrorKind::InvalidInternalAddress(string) => {
             let title = format!("invalid internal address '{}'", string);
-            (span, title, "invalid internal address".to_string())
+            (title, "invalid internal address".to_string())
         }
     };
 
-    create_snippet(s, &span, &title, &label)
+    create_snippet(s, &err.span, &title, &label)
 }
 
 #[cfg(test)]
@@ -1957,24 +2033,30 @@ mod tests {
     fn test_failures() {
         generate_value_error!(
             r#"Address(100u32)"#,
-            GeneratorError::InvalidAstValue {
-                expected_type: vec![ast::ValueKind::String],
-                actual: ast::Value::U32(100),
+            GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidAstValue {
+                    expected_type: vec![ast::ValueKind::String],
+                    actual: ast::Value::U32(100),
+                },
                 span: span!(start = (8, 1, 8), end = (14, 1, 14)),
             }
         );
         generate_value_error!(
             r#"Address("invalid_package_address")"#,
-            GeneratorError::InvalidGlobalAddress(
-                "invalid_package_address".into(),
-                span!(start = (8, 1, 8), end = (33, 1, 33))
-            )
+            GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidGlobalAddress(
+                    "invalid_package_address".into(),
+                ),
+                span: span!(start = (8, 1, 8), end = (33, 1, 33))
+            }
         );
         generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
-            GeneratorError::InvalidDecimal {
-                actual: "invalid_decimal".to_string(),
-                err: "InvalidDigit".to_string(),
+            GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidDecimal {
+                    actual: "invalid_decimal".to_string(),
+                    err: "InvalidDigit".to_string(),
+                },
                 span: span!(start = (8, 1, 8), end = (25, 1, 25))
             }
         );
