@@ -212,18 +212,25 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
     ) {
         for (key, node) in tree_update_batch.node_batch.iter().flatten() {
             // We promised to associate Substate values; but not all newly-created nodes are leaves:
-            if let Node::Leaf(leaf_node) = &node {
-                // And not every newly-created leaf comes from a value change: (sometimes it is just a tree re-structuring!)
-                let sort_key = Self::to_typed_key(leaf_node.leaf_key().clone());
-                if let Some(substate_value) = substate_updates.get_upserted_value(&sort_key) {
-                    self.base_store.associate_substate(
-                        &self.stored_node_key(&key),
-                        &self.partition_key,
-                        &sort_key,
-                        substate_value,
-                    );
-                }
-            }
+            let Node::Leaf(leaf_node) = &node else {
+                continue;
+            };
+            let sort_key = Self::to_typed_key(leaf_node.leaf_key().clone());
+            let substate_value = substate_updates
+                .get_substate_change(&sort_key)
+                .map(|change| match change {
+                    SubstateChange::Upsert(value) => AssociatedSubstateValue::Upserted(value),
+                    SubstateChange::Delete => {
+                        panic!("deletes are not represented by new tree leafs")
+                    }
+                })
+                .unwrap_or_else(|| AssociatedSubstateValue::Unchanged);
+            self.base_store.associate_substate(
+                &self.stored_node_key(&key),
+                &self.partition_key,
+                &sort_key,
+                substate_value,
+            );
         }
     }
 }
