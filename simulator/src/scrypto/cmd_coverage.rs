@@ -108,14 +108,14 @@ impl Coverage {
         let path = self.path.clone().unwrap_or(current_dir().unwrap());
         let build_artifacts = build_package(
             &path,
-            false,
-            false,
             true,
             Level::Trace,
             true,
-            &vec![],
-            &vec![],
-            &vec![],
+            &[(
+                "CARGO_ENCODED_RUSTFLAGS".to_owned(),
+                "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir"
+                    .to_owned(),
+            )],
         )
         .map_err(Error::BuildError)?;
         if build_artifacts.len() > 1 {

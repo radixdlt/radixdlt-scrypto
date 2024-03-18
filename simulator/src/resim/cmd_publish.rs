@@ -64,14 +64,10 @@ impl Publish {
         let (code_path, definition_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
             let build_artifacts = build_package(
                 &self.path,
-                false,
-                false,
                 self.disable_wasm_opt,
                 self.log_level.unwrap_or(Level::default()),
                 false,
-                &vec![],
-                &vec![],
-                &vec![],
+                &[],
             )
             .map_err(Error::BuildError)?;
             if build_artifacts.len() > 1 {
