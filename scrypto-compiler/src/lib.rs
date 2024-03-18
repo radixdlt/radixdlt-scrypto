@@ -458,6 +458,8 @@ impl ScryptoCompiler {
             if for_package_extract {
                 features.remove(idx);
             }
+        } else if !for_package_extract {
+            features.push(["--features", SCRYPTO_NO_SCHEMA]);
         }
         let features: Vec<&str> = features.into_iter().flatten().collect();
 
