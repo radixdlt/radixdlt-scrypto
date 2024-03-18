@@ -1,17 +1,23 @@
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::token::{Position, Span, Token, TokenKind};
-use crate::{position, span};
+use crate::position;
 // use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::str::FromStr;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum LexerError {
+pub enum LexerErrorKind {
     UnexpectedEof,
-    UnexpectedChar(char, Position),
-    InvalidInteger(String, Span),
-    InvalidUnicode(u32, Span),
+    UnexpectedChar(char),
+    InvalidInteger(String),
+    InvalidUnicode(u32),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LexerError {
+    pub error_kind: LexerErrorKind,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone)]
@@ -57,7 +63,17 @@ impl Lexer {
         self.text
             .get(self.current.full_index)
             .cloned()
-            .ok_or(LexerError::UnexpectedEof)
+            .ok_or(LexerError {
+                error_kind: LexerErrorKind::UnexpectedEof,
+                span: Span {
+                    start: self.current,
+                    end: Position {
+                        full_index: self.current.full_index + 1,
+                        line_number: self.current.line_number,
+                        line_char_index: self.current.line_char_index,
+                    },
+                },
+            })
     }
 
     fn advance(&mut self) -> Result<char, LexerError> {
@@ -109,10 +125,17 @@ impl Lexer {
             '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' | '=' => {
                 self.tokenize_punctuation()
             }
-            _ => Err(LexerError::UnexpectedChar(
-                self.text[self.current.full_index],
-                self.current,
-            )),
+            _ => Err(LexerError {
+                error_kind: LexerErrorKind::UnexpectedChar(self.text[self.current.full_index]),
+                span: Span {
+                    start: self.current,
+                    end: Position {
+                        full_index: self.current.full_index + 1,
+                        line_number: self.current.line_number,
+                        line_char_index: self.current.line_char_index,
+                    },
+                },
+            }),
         }
         .map(Option::from)
     }
@@ -200,14 +223,17 @@ impl Lexer {
         T: FromStr,
         <T as FromStr>::Err: Display,
     {
-        int.parse::<T>().map(map).map_err(|err| {
-            LexerError::InvalidInteger(
-                format!("'{}{}' - {}", int, ty, err.to_string()),
-                Span {
-                    start: self.start,
-                    end: self.current,
-                },
-            )
+        int.parse::<T>().map(map).map_err(|err| LexerError {
+            error_kind: LexerErrorKind::InvalidInteger(format!(
+                "'{}{}' - {}",
+                int,
+                ty,
+                err.to_string()
+            )),
+            span: Span {
+                start: self.start,
+                end: self.current,
+            },
         })
     }
 
@@ -245,13 +271,13 @@ impl Lexer {
                                 return Err(self.unexpected_char());
                             }
                         }
-                        s.push(char::from_u32(unicode).ok_or(LexerError::InvalidUnicode(
-                            unicode,
-                            Span {
+                        s.push(char::from_u32(unicode).ok_or(LexerError {
+                            error_kind: LexerErrorKind::InvalidUnicode(unicode),
+                            span: Span {
                                 start: self.start,
                                 end: self.current,
                             },
-                        ))?);
+                        })?);
                     }
                     _ => {
                         return Err(self.unexpected_char());
@@ -333,55 +359,59 @@ impl Lexer {
     }
 
     fn unexpected_char(&self) -> LexerError {
-        LexerError::UnexpectedChar(self.text[self.current.full_index - 1], self.current)
+        let mut end = self.previous;
+        end.full_index += 1;
+
+        LexerError {
+            error_kind: LexerErrorKind::UnexpectedChar(self.text[self.current.full_index - 1]),
+            span: Span {
+                start: self.current,
+                end,
+            },
+        }
     }
 
     fn unexpected_char_previous(&self) -> LexerError {
         // If advance() is used, we want to get the position of previous token not the current one
-        LexerError::UnexpectedChar(self.text[self.previous.full_index], self.previous)
+        let mut end = self.previous;
+        end.full_index += 1;
+
+        LexerError {
+            error_kind: LexerErrorKind::UnexpectedChar(self.text[self.previous.full_index]),
+            span: Span {
+                start: self.previous,
+                end,
+            },
+        }
     }
 }
 
 pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
-    let lines_cnt = s.lines().count();
-    let (span, title, label) = match err {
-        LexerError::UnexpectedEof => (
-            span!(
-                start = (s.len() - 1, lines_cnt, 0),
-                end = (s.len() - 1, lines_cnt, 0)
-            ),
+    let (title, label) = match err.error_kind {
+        LexerErrorKind::UnexpectedEof => (
             "unexpected end of file".to_string(),
             "end of file".to_string(),
         ),
-        LexerError::UnexpectedChar(c, position) => {
-            let mut end = position;
-            end.full_index += 1;
-            (
-                Span {
-                    start: position,
-                    end,
-                },
-                format!("unexpected character {:?}", c),
-                "unexpected character".to_string(),
-            )
-        }
-        LexerError::InvalidInteger(string, span) => (
-            span,
+        LexerErrorKind::UnexpectedChar(c) => (
+            format!("unexpected character {:?}", c),
+            "unexpected character".to_string(),
+        ),
+        LexerErrorKind::InvalidInteger(string) => (
             format!("invalid integer value {}", string),
             "invalid integer value".to_string(),
         ),
-        LexerError::InvalidUnicode(value, span) => (
-            span,
+        LexerErrorKind::InvalidUnicode(value) => (
             format!("invalid unicode value {}", value),
             "invalid unicode".to_string(),
         ),
     };
-    create_snippet(s, &span, &title, &label)
+    create_snippet(s, &err.span, &title, &label)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::span;
 
     #[macro_export]
     macro_rules! lex_ok {
@@ -445,7 +475,13 @@ mod tests {
             "1u8 2u32",
             vec![TokenKind::U8Literal(1), TokenKind::U32Literal(2)]
         );
-        lex_error!("123", LexerError::UnexpectedEof);
+        lex_error!(
+            "123",
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedEof,
+                span: span!(start = (3, 1, 3), end = (4, 1, 3))
+            }
+        );
     }
 
     #[test]
@@ -468,7 +504,13 @@ mod tests {
                 TokenKind::StringLiteral("abc\r\n\"def🌍".into()),
             ]
         );
-        lex_error!("\"", LexerError::UnexpectedEof);
+        lex_error!(
+            "\"",
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedEof,
+                span: span!(start = (1, 1, 1), end = (2, 1, 1))
+            }
+        );
     }
 
     #[test]
@@ -545,15 +587,33 @@ mod tests {
     fn test_unexpected_char() {
         lex_error!(
             "1u8 +2u32",
-            LexerError::UnexpectedChar('+', position!(4, 1, 4))
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedChar('+'),
+                span: span!(start = (4, 1, 4), end = (5, 1, 4))
+            }
         );
 
-        lex_error!("x=7", LexerError::UnexpectedChar('7', position!(2, 1, 2)));
+        lex_error!(
+            "x=7",
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedChar('7'),
+                span: span!(start = (2, 1, 2), end = (3, 1, 2))
+            }
+        );
         lex_error!(
             "1i128\n 1u64 \n 1i37",
-            LexerError::UnexpectedChar('7', position!(17, 3, 4))
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedChar('7'),
+                span: span!(start = (17, 3, 4), end = (18, 3, 4))
+            }
         );
-        lex_error!("3_0i8", LexerError::UnexpectedChar('_', position!(1, 1, 1)));
+        lex_error!(
+            "3_0i8",
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedChar('_'),
+                span: span!(start = (1, 1, 1), end = (2, 1, 1))
+            }
+        );
     }
 
     #[test]
@@ -572,7 +632,10 @@ mod tests {
         );
         lex_error!(
             r#""\uDCAC\u1234""#,
-            LexerError::InvalidUnicode(1238580, span!(start = (2, 1, 2), end = (13, 1, 13)))
+            LexerError {
+                error_kind: LexerErrorKind::InvalidUnicode(1238580),
+                span: span!(start = (2, 1, 2), end = (13, 1, 13))
+            }
         );
     }
 }
