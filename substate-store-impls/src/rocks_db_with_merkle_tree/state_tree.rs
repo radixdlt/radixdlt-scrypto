@@ -2,9 +2,7 @@ use crate::hash_tree::put_at_next_version;
 use crate::hash_tree::tree_store::*;
 use radix_engine_common::prelude::Hash;
 use std::cell::RefCell;
-use substate_store_interface::interface::{
-    DatabaseUpdates, DbPartitionKey, DbSortKey,
-};
+use substate_store_interface::interface::{DatabaseUpdates, DbPartitionKey, DbSortKey};
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
