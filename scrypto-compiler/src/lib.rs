@@ -84,12 +84,12 @@ impl Default for ScryptoCompilerInputParams {
             manifest_path: None,
             target_directory: None,
             profile: Profile::Release,
-            environment_variables: IndexMap::new(),
-            features: IndexSet::new(),
+            environment_variables: indexmap!(),
+            features: indexset!(),
             no_default_features: false,
             all_features: false,
-            package: IndexSet::new(),
-            custom_options: IndexSet::new(),
+            package: indexset!(),
+            custom_options: indexset!(),
             wasm_optimization,
         };
         // Apply default log level features
