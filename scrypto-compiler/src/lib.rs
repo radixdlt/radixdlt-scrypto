@@ -576,7 +576,7 @@ impl ScryptoCompiler {
         &mut self,
         command: &mut Command,
     ) -> Result<Vec<BuildArtifact<PackageDefinition>>, ScryptoCompilerError> {
-        self.prepare_command(command, true); // build with schema and release profile
+        self.prepare_command_phase_1(command);
         self.cargo_command_call(command)?;
 
         // compilation post-processing for all manifests
@@ -593,6 +593,11 @@ impl ScryptoCompiler {
                 .map(|manifest| self.compile_internal_phase_1_postprocess(&manifest))
                 .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
         }
+    }
+
+    // used for unit tests
+    fn prepare_command_phase_1(&mut self, command: &mut Command) {
+        self.prepare_command(command, true); // build with schema and release profile
     }
 
     fn compile_internal_phase_1_postprocess(
@@ -635,7 +640,7 @@ impl ScryptoCompiler {
         &mut self,
         command: &mut Command,
     ) -> Result<Vec<BuildArtifact<Vec<u8>>>, ScryptoCompilerError> {
-        self.prepare_command(command, false); // build without schema and with userchoosen profile
+        self.prepare_command_phase_2(command);
         self.cargo_command_call(command)?;
 
         // compilation post-processing for all manifests
@@ -652,6 +657,11 @@ impl ScryptoCompiler {
                 .map(|manifest| self.compile_internal_phase_2_postprocess(&manifest))
                 .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
         }
+    }
+
+    // used for unit tests
+    fn prepare_command_phase_2(&mut self, command: &mut Command) {
+        self.prepare_command(command, false); // build without schema and with userchoosen profile
     }
 
     fn compile_internal_phase_2_postprocess(
@@ -769,13 +779,6 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn no_schema(&mut self) -> &mut Self {
-        self.input_params
-            .features
-            .insert(String::from(SCRYPTO_NO_SCHEMA));
-        self
-    }
-
     pub fn coverage(&mut self) -> &mut Self {
         self.input_params
             .features
@@ -783,8 +786,11 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn optimize_with_wasm_opt(&mut self, options: &wasm_opt::OptimizationOptions) -> &mut Self {
-        self.input_params.wasm_optimization = Some(options.to_owned());
+    pub fn optimize_with_wasm_opt(
+        &mut self,
+        options: Option<wasm_opt::OptimizationOptions>,
+    ) -> &mut Self {
+        self.input_params.wasm_optimization = options;
         self
     }
 
@@ -818,6 +824,7 @@ mod tests {
     use super::*;
     use tempdir::TempDir;
 
+    // helper function
     fn prepare() -> (PathBuf, TempDir) {
         let mut test_assets_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         test_assets_path.extend(["tests", "assets", "scenario_1", "blueprint", "Cargo.toml"]);
@@ -825,6 +832,20 @@ mod tests {
             test_assets_path,
             TempDir::new("scrypto-compiler-test").unwrap(),
         )
+    }
+
+    // helper function
+    fn cmd_to_string(cmd: &Command) -> String {
+        let args = cmd
+            .get_args()
+            .into_iter()
+            .map(|arg| arg.to_str().unwrap())
+            .collect::<Vec<_>>()
+            .join(" ");
+        let mut ret = cmd.get_program().to_str().unwrap().to_string();
+        ret.push(' ');
+        ret.push_str(&args);
+        ret
     }
 
     #[test]
@@ -1243,12 +1264,13 @@ mod tests {
         let status = ScryptoCompiler::builder()
             .manifest_path(blueprint_manifest_path)
             .target_directory(target_directory.path())
-            .optimize_with_wasm_opt(
+            .optimize_with_wasm_opt(Some(
                 wasm_opt::OptimizationOptions::new_optimize_for_size_aggressively()
                     .add_pass(wasm_opt::Pass::StripDebug)
                     .add_pass(wasm_opt::Pass::StripDwarf)
-                    .add_pass(wasm_opt::Pass::StripProducers),
-            )
+                    .add_pass(wasm_opt::Pass::StripProducers)
+                    .to_owned(),
+            ))
             .compile();
 
         // Assert
@@ -1316,5 +1338,247 @@ mod tests {
                 .display()
                 .to_string()
         );
+    }
+
+    #[test]
+    fn test_command_output_default() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut default_target_path = manifest_path.clone();
+        manifest_path.push("Cargo.toml");
+        default_target_path.pop(); // ScryptoCompiler dir
+        default_target_path.push("target");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", default_target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_command_output_with_manifest_path() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut default_target_path = manifest_path.clone();
+        manifest_path.push("tests/assets/scenario_1/blueprint/Cargo.toml");
+        default_target_path.push("tests/assets/scenario_1/target");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .manifest_path(&manifest_path)
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .manifest_path(&manifest_path)
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", default_target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_command_output_target_directory() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        manifest_path.push("Cargo.toml");
+        let target_path = PathBuf::from("/tmp/build");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .target_directory(&target_path)
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .target_directory(&target_path)
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_command_output_features() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut default_target_path = manifest_path.clone();
+        manifest_path.push("Cargo.toml");
+        default_target_path.pop(); // ScryptoCompiler dir
+        default_target_path.push("target");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .log_level(Level::Trace)
+            .feature("feature_1")
+            .no_default_features()
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .log_level(Level::Trace)
+            .feature("feature_1")
+            .no_default_features()
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --release --no-default-features", default_target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --features scrypto/no-schema --profile release --no-default-features", default_target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_command_output_workspace() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut default_target_path = manifest_path.clone();
+        manifest_path.push("tests/assets/scenario_1/Cargo.toml");
+        default_target_path.push("tests/assets/scenario_1/target");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .manifest_path(&manifest_path)
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .manifest_path(&manifest_path)
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --release", default_target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_command_output_workspace_with_packages() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut default_target_path = manifest_path.clone();
+        manifest_path.push("tests/assets/scenario_1/Cargo.toml");
+        default_target_path.push("tests/assets/scenario_1/target");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .manifest_path(&manifest_path)
+            .package("test_blueprint")
+            .package("test_blueprint_3")
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .manifest_path(&manifest_path)
+            .package("test_blueprint")
+            .package("test_blueprint_3")
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --release", default_target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_command_output_profiles() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut default_target_path = manifest_path.clone();
+        manifest_path.push("Cargo.toml");
+        default_target_path.pop(); // ScryptoCompiler dir
+        default_target_path.push("target");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .profile(Profile::Debug)
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .profile(Profile::Debug)
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", default_target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile dev", default_target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_command_output_no_schema_check() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut default_target_path = manifest_path.clone();
+        manifest_path.push("Cargo.toml");
+        default_target_path.pop(); // ScryptoCompiler dir
+        default_target_path.push("target");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        // Ensure that no-schema is properly used across both phase compilation, even if specified explicitly by the user.
+        ScryptoCompiler::builder()
+            .feature(SCRYPTO_NO_SCHEMA)
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .feature(SCRYPTO_NO_SCHEMA)
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --release", default_target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 }
