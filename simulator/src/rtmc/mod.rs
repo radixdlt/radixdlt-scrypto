@@ -33,8 +33,6 @@ pub struct Args {
 pub enum Error {
     IoError(std::io::Error),
     EncodeError(sbor::EncodeError),
-    // CompileError(transaction::manifest::CompileError),
-    CompileError(String),
     ParseNetworkError(ParseNetworkError),
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
@@ -53,11 +51,20 @@ pub fn run() -> Result<(), Error> {
             blobs.push(std::fs::read(path).map_err(Error::IoError)?);
         }
     }
-    let transaction =
-        compile(&content, &network, BlobProvider::new_with_blobs(blobs)).map_err(|err| {
+
+    let transaction = match compile(&content, &network, BlobProvider::new_with_blobs(blobs)) {
+        Ok(transaction) => transaction,
+        Err(err) => {
             eprintln!("{}", compile_error_diagnostics(&content, err));
+            // If the CompileError was returned here, then:
+            // - the program exit code would be 1
+            //   This is fine
+            // - the error would be printed to stderr
+            //   We don't want this, above diagnostics are just fine.
             std::process::exit(1);
-        })?;
+        }
+    };
+
     validate_call_arguments_to_native_components(&transaction.instructions)
         .map_err(Error::InstructionSchemaValidationError)?;
     std::fs::write(

@@ -52,18 +52,26 @@ impl Run {
                 blobs.push(std::fs::read(path).map_err(Error::IOError)?);
             }
         }
-        let compiled_manifest = compile(
+        let compiled_manifest = match compile(
             &pre_processed_manifest,
             &network,
             BlobProvider::new_with_blobs(blobs),
-        )
-        .map_err(|err| {
-            eprintln!(
-                "{}",
-                compile_error_diagnostics(&pre_processed_manifest, err)
-            );
-            std::process::exit(1);
-        })?;
+        ) {
+            Ok(transaction) => transaction,
+            Err(err) => {
+                eprintln!(
+                    "{}",
+                    compile_error_diagnostics(&pre_processed_manifest, err)
+                );
+
+                // If the CompileError was returned here, then:
+                // - the program exit code would be 1
+                //   This is fine
+                // - the error would be printed to stderr
+                //   We don't want this, above diagnostics are just fine.
+                std::process::exit(1);
+            }
+        };
 
         validate_call_arguments_to_native_components(&compiled_manifest.instructions)
             .map_err(Error::InstructionSchemaValidationError)?;

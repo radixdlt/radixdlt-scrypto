@@ -59,8 +59,6 @@ pub enum Error {
 
     LedgerDumpError(EntityDumpError),
 
-    CompileError(transaction::manifest::CompileError),
-
     DecompileError(transaction::manifest::DecompileError),
 
     InvalidId(String),
