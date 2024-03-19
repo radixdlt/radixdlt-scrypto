@@ -2,6 +2,7 @@
 name = "radix-rust"
 version = "1.2.0-dev"
 edition = "2021"
+license = "Radix License 1.0"
 
 [dependencies]
 serde = { workspace = true, optional = true }
