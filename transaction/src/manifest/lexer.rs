@@ -27,8 +27,6 @@ pub struct Lexer {
     text: Vec<char>,
     /// The current position in the text
     current: Position,
-    /// The previous position in the text
-    previous: Position,
 }
 
 pub fn tokenize(s: &str) -> Result<Vec<Token>, LexerError> {
@@ -49,8 +47,6 @@ impl Lexer {
         Self {
             text: text.chars().collect(),
             current: position!(0, 1, 0),
-            previous: position!(0, 1, 0),
-            // start: position!(0, 1, 0),
         }
     }
 
@@ -77,7 +73,6 @@ impl Lexer {
 
     fn advance(&mut self) -> Result<char, LexerError> {
         let c = self.peek()?;
-        self.previous = self.current;
         self.current.full_index += 1;
         if c == '\n' {
             self.current.line_number += 1;
@@ -274,6 +269,7 @@ impl Lexer {
                         // Check unicode surrogate pair
                         // (see https://unicodebook.readthedocs.io/unicode_encodings.html#surrogates)
                         if (0xD800..=0xDFFF).contains(&unicode) {
+                            let position = self.current;
                             if self.advance()? == '\\' && self.advance()? == 'u' {
                                 unicode = 0x10000
                                     + ((unicode - 0xD800) << 10)
@@ -284,7 +280,7 @@ impl Lexer {
                                     error_kind: LexerErrorKind::MissingUnicodeSurrogate(unicode),
                                     span: Span {
                                         start: token_start,
-                                        end: self.previous,
+                                        end: position,
                                     },
                                 });
                             }
@@ -298,7 +294,7 @@ impl Lexer {
                         })?);
                     }
                     _ => {
-                        return Err(self.unexpected_char_previous());
+                        return Err(self.unexpected_char(token_start));
                     }
                 }
             } else {
@@ -314,11 +310,12 @@ impl Lexer {
         let mut code: u32 = 0;
 
         for _ in 0..4 {
+            let position = self.current;
             let c = self.advance()?;
             if c.is_ascii_hexdigit() {
                 code = code * 16 + c.to_digit(16).unwrap();
             } else {
-                return Err(self.unexpected_char_previous());
+                return Err(self.unexpected_char(position));
             }
         }
 
@@ -357,12 +354,15 @@ impl Lexer {
             '>' => TokenKind::GreaterThan,
             ',' => TokenKind::Comma,
             ';' => TokenKind::Semicolon,
-            '=' => match self.advance()? {
-                '>' => TokenKind::FatArrow,
-                _ => return Err(self.unexpected_char_previous()),
-            },
+            '=' => {
+                let position = self.current;
+                match self.advance()? {
+                    '>' => TokenKind::FatArrow,
+                    _ => return Err(self.unexpected_char(position)),
+                }
+            }
             _ => {
-                return Err(self.unexpected_char_previous());
+                return Err(self.unexpected_char(start));
             }
         };
 
@@ -376,15 +376,14 @@ impl Lexer {
         }
     }
 
-    fn unexpected_char_previous(&self) -> LexerError {
-        // If advance() is used, we want to get the position of previous token not the current one
-        let mut end = self.previous;
+    fn unexpected_char(&self, position: Position) -> LexerError {
+        let mut end = position;
         end.full_index += 1;
 
         LexerError {
-            error_kind: LexerErrorKind::UnexpectedChar(self.text[self.previous.full_index]),
+            error_kind: LexerErrorKind::UnexpectedChar(self.text[position.full_index]),
             span: Span {
-                start: self.previous,
+                start: position,
                 end,
             },
         }
