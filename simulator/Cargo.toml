@@ -17,6 +17,7 @@ radix-engine-interface = { path = "../radix-engine-interface" }
 radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
 blueprint-schema-init = { path = "../blueprint-schema-init" }
 transaction = { path = "../transaction" }
+scrypto-compiler = { path = "../scrypto-compiler" }
 
 flate2 = { version = "1.0.27" }
 tar = { version = "0.4.40" }
@@ -28,7 +29,6 @@ clap = { version = "3.1.17", features = ["derive", "cargo"] }
 dirs = { version = "4.0.0" }
 colored = { version = "2.0.0" }
 hex = { version = "0.4.3" }
-cargo_toml = { version = "0.11.5" }
 rand = { version = "0.8.5" }
 regex = { version = "1.5.5" }
 temp-env = { version = "0.2.0" }

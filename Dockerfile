@@ -24,6 +24,7 @@ ADD substate-store-interface /app/substate-store-interface
 ADD substate-store-impls /app/substate-store-impls
 ADD transaction /app/transaction
 ADD substate-store-queries /app/substate-store-queries
+ADD scrypto-compiler /app/scrypto-compiler
 ADD assets /app/assets
 
 WORKDIR /app
