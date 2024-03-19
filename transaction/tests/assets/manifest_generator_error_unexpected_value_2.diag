@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1mexpected value of type String, found Array[0m
+[1m[91merror[0m: [1mexpected value kind String, found Array[0m
 [1m[94m   |[0m
 [1m[94m 7 |[0m     "some_method"
 [1m[94m 8 |[0m     Array<String>(
@@ -6,7 +6,7 @@
 [1m[94m10 |[0m       # Bytes is an alias of Array so the below error is expected
 [1m[94m11 |[0m       # error: expected value of type String, found Array
 [1m[94m12 |[0m       Bytes(1u32),
-[1m[94m   |[0m[1m[91m       ^^^^^[0m [1m[91mvalue of unexpected type[0m
+[1m[94m   |[0m[1m[91m       ^^^^^[0m [1m[91mexpected String, found Array[0m
 [1m[94m13 |[0m       "three"
 [1m[94m14 |[0m     )
 [1m[94m15 |[0m ;
