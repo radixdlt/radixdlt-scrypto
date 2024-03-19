@@ -1,4 +1,4 @@
-use crate::hash_tree::tree_store::*;
+use crate::state_tree::tree_store::*;
 use itertools::Itertools;
 use radix_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -201,9 +201,9 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         }
 
         // derive and put new JMT nodes (also record references to stale parts, for later amortized background GC [not implemented here!])
-        let (state_hash_tree_update, new_root_hash) =
+        let (state_tree_diff, new_root_hash) =
             compute_state_tree_update(self, parent_state_version, database_updates);
-        for (key, node) in state_hash_tree_update.new_nodes.take() {
+        for (key, node) in state_tree_diff.new_nodes.take() {
             batch.put_cf(
                 self.cf(MERKLE_NODES_CF),
                 encode_key(&key),
@@ -215,7 +215,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             batch.put_cf(
                 self.cf(STALE_MERKLE_TREE_PARTS_CF),
                 next_state_version.to_be_bytes(),
-                scrypto_encode(&state_hash_tree_update.stale_tree_parts).unwrap(),
+                scrypto_encode(&state_tree_diff.stale_tree_parts).unwrap(),
             );
         }
 
@@ -234,7 +234,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         self.db.write(batch).unwrap();
 
         if self.pruning_enabled {
-            for part in state_hash_tree_update.stale_tree_parts.take() {
+            for part in state_tree_diff.stale_tree_parts.take() {
                 match part {
                     StaleTreePart::Node(node_key) => {
                         self.db

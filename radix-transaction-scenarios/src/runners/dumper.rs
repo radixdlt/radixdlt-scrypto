@@ -8,8 +8,8 @@ use radix_engine::{
         ScryptoVm,
     },
 };
-use radix_substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::validation::{NotarizedTransactionValidator, ValidationConfig};
 
@@ -25,7 +25,7 @@ pub fn run_all_in_memory_and_dump_examples(
     root_path: std::path::PathBuf,
 ) -> Result<(), FullScenarioError> {
     let mut event_hasher = HashAccumulator::new();
-    let mut substate_db = HashTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
+    let mut substate_db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
     let vm = Vm {

@@ -8,8 +8,8 @@ use radix_common::prelude::NetworkDefinition;
 use radix_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
-use radix_substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::CommittableSubstateDatabase;
 use std::fs::File;
@@ -84,7 +84,7 @@ impl TxnExecuteInMemory {
 
         // txn executor
         let substate_database = InMemorySubstateDatabase::standard();
-        let mut database = HashTreeUpdatingDatabase::new(substate_database);
+        let mut database = StateTreeUpdatingDatabase::new(substate_database);
         let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();

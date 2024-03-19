@@ -11,7 +11,8 @@ use radix_rust::rust::vec::Vec;
 use radix_substate_store_interface::interface::{
     DbPartitionKey, DbSortKey, DbSubstateKey, DbSubstateValue,
 };
-use sbor::rust::prelude::*;
+use sbor::rust::cell::Ref;
+use sbor::rust::cell::RefCell;
 use sbor::*;
 
 define_single_versioned! {

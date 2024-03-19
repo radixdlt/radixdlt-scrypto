@@ -1,4 +1,4 @@
-pub mod hash_tree_facade;
+pub mod state_tree_facade;
 pub mod tree_store;
 
 pub mod entity_tier;

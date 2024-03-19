@@ -2,8 +2,8 @@ use super::jellyfish::JellyfishMerkleTree;
 use super::tier_framework::{StateTreeTier, TIER_SEPARATOR};
 use super::tree_store::*;
 use super::types::*;
-use crate::hash_tree::entity_tier::EntityTier;
-use crate::hash_tree::substate_tier::SubstateSummary;
+use crate::state_tree::entity_tier::EntityTier;
+use crate::state_tree::substate_tier::SubstateSummary;
 use itertools::Itertools;
 use radix_common::crypto::{hash, Hash};
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -18,7 +18,7 @@ const TSEP: u8 = TIER_SEPARATOR;
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     let hash_v1 = tester.put_substate_changes(vec![change(1, 6, 2, Some(30))]);
     let hash_v2 = tester.put_substate_changes(vec![change(1, 6, 2, Some(70))]);
     assert_ne!(hash_v1, hash_v2);
@@ -26,7 +26,7 @@ fn hash_of_next_version_differs_when_value_changed() {
 
 #[test]
 fn hash_of_next_version_same_when_write_repeated() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     let hash_v1 =
         tester.put_substate_changes(vec![change(4, 1, 6, Some(30)), change(3, 2, 9, Some(40))]);
     let hash_v2 = tester.put_substate_changes(vec![change(4, 1, 6, Some(30))]);
@@ -35,7 +35,7 @@ fn hash_of_next_version_same_when_write_repeated() {
 
 #[test]
 fn hash_of_next_version_same_when_write_empty() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     let hash_v1 =
         tester.put_substate_changes(vec![change(1, 6, 2, Some(30)), change(3, 7, 1, Some(40))]);
     let hash_v2 = tester.put_substate_changes(vec![]);
@@ -44,7 +44,7 @@ fn hash_of_next_version_same_when_write_empty() {
 
 #[test]
 fn hash_of_next_version_differs_when_entry_added() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     let hash_v1 = tester.put_substate_changes(vec![change(1, 6, 2, Some(30))]);
     let hash_v2 = tester.put_substate_changes(vec![change(1, 6, 8, Some(30))]);
     assert_ne!(hash_v1, hash_v2);
@@ -52,7 +52,7 @@ fn hash_of_next_version_differs_when_entry_added() {
 
 #[test]
 fn hash_of_next_version_differs_when_entry_removed() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     let hash_v1 =
         tester.put_substate_changes(vec![change(1, 6, 2, Some(30)), change(4, 7, 3, Some(20))]);
     let hash_v2 = tester.put_substate_changes(vec![change(1, 6, 2, None)]);
@@ -61,7 +61,7 @@ fn hash_of_next_version_differs_when_entry_removed() {
 
 #[test]
 fn hash_returns_to_same_when_previous_state_restored() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     let hash_v1 =
         tester.put_substate_changes(vec![change(1, 6, 2, Some(30)), change(3, 7, 1, Some(40))]);
     tester.put_substate_changes(vec![
@@ -80,12 +80,12 @@ fn hash_returns_to_same_when_previous_state_restored() {
 #[test]
 fn hash_computed_consistently_after_higher_tier_leafs_deleted() {
     // Compute a "reference" hash of state containing simply [2:3:4, 2:3:5].
-    let mut reference_tester = HashTreeTester::new_empty();
+    let mut reference_tester = StateTreeTester::new_empty();
     let reference_root = reference_tester
         .put_substate_changes(vec![change(2, 3, 4, Some(234)), change(2, 3, 5, Some(235))]);
 
     // Compute a hash of the same state, at which we arrive after deleting some unrelated NodeId.
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change(1, 6, 2, Some(162)),
         change(1, 6, 3, Some(163)),
@@ -101,7 +101,7 @@ fn hash_computed_consistently_after_higher_tier_leafs_deleted() {
 #[test]
 fn hash_computed_consistently_after_adding_higher_tier_sibling() {
     // Compute a "reference" hash of state containing simply [1:9:6, 2:3:4, 2:3:5].
-    let mut reference_tester = HashTreeTester::new_empty();
+    let mut reference_tester = StateTreeTester::new_empty();
     let reference_root = reference_tester.put_substate_changes(vec![
         change(1, 9, 6, Some(196)),
         change(2, 3, 4, Some(234)),
@@ -109,7 +109,7 @@ fn hash_computed_consistently_after_adding_higher_tier_sibling() {
     ]);
 
     // Compute a hash of the same state, at which we arrive after adding some sibling NodeId.
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![change(2, 3, 4, Some(234))]);
     tester.put_substate_changes(vec![change(1, 9, 6, Some(196))]);
     let root_after_adding_sibling = tester.put_substate_changes(vec![change(2, 3, 5, Some(235))]);
@@ -120,34 +120,34 @@ fn hash_computed_consistently_after_adding_higher_tier_sibling() {
 
 #[test]
 fn hash_differs_when_states_only_differ_by_node_key() {
-    let mut tester_1 = HashTreeTester::new_empty();
+    let mut tester_1 = StateTreeTester::new_empty();
     let hash_1 = tester_1.put_substate_changes(vec![change(1, 6, 3, Some(30))]);
-    let mut tester_2 = HashTreeTester::new_empty();
+    let mut tester_2 = StateTreeTester::new_empty();
     let hash_2 = tester_2.put_substate_changes(vec![change(2, 6, 3, Some(30))]);
     assert_ne!(hash_1, hash_2);
 }
 
 #[test]
 fn hash_differs_when_states_only_differ_by_partition_num() {
-    let mut tester_1 = HashTreeTester::new_empty();
+    let mut tester_1 = StateTreeTester::new_empty();
     let hash_1 = tester_1.put_substate_changes(vec![change(1, 6, 3, Some(30))]);
-    let mut tester_2 = HashTreeTester::new_empty();
+    let mut tester_2 = StateTreeTester::new_empty();
     let hash_2 = tester_2.put_substate_changes(vec![change(1, 7, 3, Some(30))]);
     assert_ne!(hash_1, hash_2);
 }
 
 #[test]
 fn hash_differs_when_states_only_differ_by_sort_key() {
-    let mut tester_1 = HashTreeTester::new_empty();
+    let mut tester_1 = StateTreeTester::new_empty();
     let hash_1 = tester_1.put_substate_changes(vec![change(1, 6, 2, Some(30))]);
-    let mut tester_2 = HashTreeTester::new_empty();
+    let mut tester_2 = StateTreeTester::new_empty();
     let hash_2 = tester_2.put_substate_changes(vec![change(1, 6, 3, Some(30))]);
     assert_ne!(hash_1, hash_2);
 }
 
 #[test]
 fn hash_of_different_re_nodes_is_same_when_contained_entries_are_same() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change(1, 6, 2, Some(30)),
         change(1, 7, 9, Some(40)),
@@ -164,7 +164,7 @@ fn hash_of_different_re_nodes_is_same_when_contained_entries_are_same() {
 
 #[test]
 fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change_exact(vec![1, 3, 3, 7], 99, vec![253], Some(vec![1])),
         change_exact(vec![1, 3, 3, 7], 99, vec![66], Some(vec![2])),
@@ -227,7 +227,7 @@ fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
 #[test]
 fn substate_values_get_associated_with_substate_tier_leaves() {
     let mut tester =
-        HashTreeTester::new(TypedInMemoryTreeStore::new().storing_associated_substates());
+        StateTreeTester::new(TypedInMemoryTreeStore::new().storing_associated_substates());
     tester.put_substate_changes(vec![
         change_exact(vec![123, 12, 1], 8, vec![6, 6, 1], Some(vec![4])),
         change_exact(vec![123, 12, 1], 8, vec![6, 6, 2], Some(vec![])),
@@ -261,7 +261,7 @@ fn substate_values_get_associated_with_substate_tier_leaves() {
 #[test]
 fn substate_values_get_re_associated_after_tree_restructuring() {
     let mut tester =
-        HashTreeTester::new(TypedInMemoryTreeStore::new().storing_associated_substates());
+        StateTreeTester::new(TypedInMemoryTreeStore::new().storing_associated_substates());
     // Let's start with the same set-up as in the base `substate_values_get_associated_with_substate_tier_leaves` test:
     tester.put_substate_changes(vec![
         change_exact(vec![123, 12, 1], 8, vec![6, 6, 1], Some(vec![4])),
@@ -300,7 +300,7 @@ fn substate_values_get_re_associated_after_tree_restructuring() {
 #[test]
 fn substate_values_get_re_associated_on_partition_reset() {
     let mut tester =
-        HashTreeTester::new(TypedInMemoryTreeStore::new().storing_associated_substates());
+        StateTreeTester::new(TypedInMemoryTreeStore::new().storing_associated_substates());
     // Let's start with the same set-up as in the base `substate_values_get_associated_with_substate_tier_leaves` test:
     tester.put_substate_changes(vec![
         change_exact(vec![123, 12, 1], 8, vec![6, 6, 1], Some(vec![4])),
@@ -340,7 +340,7 @@ fn substate_values_get_re_associated_on_partition_reset() {
 
 #[test]
 fn deletes_node_tier_leaf_when_all_its_entries_deleted() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change(1, 6, 2, Some(30)),
         change(1, 6, 9, Some(40)),
@@ -355,7 +355,7 @@ fn deletes_node_tier_leaf_when_all_its_entries_deleted() {
 
 #[test]
 fn supports_empty_state() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     let hash_v1 = tester.put_substate_changes(vec![]);
     assert_eq!(hash_v1, None);
     let hash_v2 = tester.put_substate_changes(vec![change(1, 6, 2, Some(30))]);
@@ -366,7 +366,7 @@ fn supports_empty_state() {
 
 #[test]
 fn records_stale_tree_node_keys() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![change(4, 1, 6, Some(30))]);
     tester.put_substate_changes(vec![change(3, 2, 9, Some(70))]);
     tester.put_substate_changes(vec![change(3, 2, 9, Some(80))]);
@@ -390,12 +390,12 @@ fn records_stale_tree_node_keys() {
 #[test]
 fn hash_computed_consistently_after_different_deletes() {
     // Reference: simply put [2:1:3, 2:3:4]
-    let mut reference_tester = HashTreeTester::new_empty();
+    let mut reference_tester = StateTreeTester::new_empty();
     let reference_root = reference_tester
         .put_substate_changes(vec![change(2, 1, 3, Some(213)), change(2, 3, 4, Some(234))]);
 
     // Delete 2 individual substates to arrive at the same state:
-    let mut single_deletes_tester = HashTreeTester::new_empty();
+    let mut single_deletes_tester = StateTreeTester::new_empty();
     single_deletes_tester.put_substate_changes(vec![
         change(2, 1, 3, Some(213)),
         change(2, 3, 4, Some(234)),
@@ -407,7 +407,7 @@ fn hash_computed_consistently_after_different_deletes() {
     assert_eq!(single_deletes_root, reference_root);
 
     // Delete entire partition 2:3, and then add back 2:3:4 in next version:
-    let mut delete_and_put_tester = HashTreeTester::new_empty();
+    let mut delete_and_put_tester = StateTreeTester::new_empty();
     delete_and_put_tester.put_substate_changes(vec![
         change(2, 1, 3, Some(213)),
         change(2, 3, 4, Some(234)),
@@ -420,7 +420,7 @@ fn hash_computed_consistently_after_different_deletes() {
     assert_eq!(delete_and_put_root, reference_root);
 
     // Reset entire partition 2:3 to only contain 2:3:4:
-    let mut reset_tester = HashTreeTester::new_empty();
+    let mut reset_tester = StateTreeTester::new_empty();
     reset_tester.put_substate_changes(vec![
         change(2, 1, 3, Some(213)),
         change(2, 3, 4, Some(234)),
@@ -437,7 +437,7 @@ fn hash_computed_consistently_after_different_deletes() {
 
 #[test]
 fn records_stale_subtree_root_key_when_partition_removed() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change(4, 7, 6, Some(36)),
         change(4, 7, 7, Some(37)),
@@ -512,7 +512,7 @@ fn sbor_decodes_what_was_encoded() {
 
 #[test]
 fn serialized_keys_are_strictly_increasing() {
-    let mut tester = HashTreeTester::new(SerializedInMemoryTreeStore::new());
+    let mut tester = StateTreeTester::new(SerializedInMemoryTreeStore::new());
     tester.put_substate_changes(vec![change(3, 6, 4, Some(90))]);
     let previous_keys = tester
         .tree_store
@@ -533,7 +533,7 @@ fn serialized_keys_are_strictly_increasing() {
 
 #[test]
 fn returns_partition_tier_for_entity_id() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change(1, 9, 6, Some(196)),
         change(2, 3, 4, Some(234)),
@@ -554,7 +554,7 @@ fn returns_partition_tier_for_entity_id() {
 
 #[test]
 fn lists_partition_tiers() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change(2, 9, 6, Some(196)),
         change(4, 3, 4, Some(234)),
@@ -603,7 +603,7 @@ fn lists_partition_tiers() {
 
 #[test]
 fn returns_substate_tier_for_partition_num() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change(1, 9, 6, Some(196)),
         change(2, 3, 4, Some(234)),
@@ -632,7 +632,7 @@ fn returns_substate_tier_for_partition_num() {
 
 #[test]
 fn lists_substate_tiers() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change(1, 9, 6, Some(196)),
         change(3, 2, 4, Some(234)),
@@ -684,7 +684,7 @@ fn lists_substate_tiers() {
 
 #[test]
 fn returns_substate_summary_by_sort_key() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     tester.put_substate_changes(vec![
         change(1, 9, 6, Some(196)),
         change(2, 3, 4, Some(234)),
@@ -731,7 +731,7 @@ fn returns_substate_summary_by_sort_key() {
 
 #[test]
 fn lists_substate_summaries() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     // This use-case is the most important one; we want to test multiple versions/upserts/deletes:
     tester.put_substate_changes(vec![
         change(1, 9, 1, Some(196)), // irrelevant node
@@ -822,7 +822,7 @@ fn lists_substate_summaries() {
 
 #[test]
 fn lists_historical_substate_summaries() {
-    let mut tester = HashTreeTester::new_empty();
+    let mut tester = StateTreeTester::new_empty();
     // We use the same set-up as in `lists_substate_summaries()`:
     tester.put_substate_changes(vec![
         change(1, 9, 1, Some(196)), // irrelevant node
@@ -923,12 +923,12 @@ pub enum Tier {
     Substate,
 }
 
-pub struct HashTreeTester<S> {
+pub struct StateTreeTester<S> {
     pub tree_store: S,
     pub current_version: Option<Version>,
 }
 
-impl<S: TreeStore> HashTreeTester<S> {
+impl<S: TreeStore> StateTreeTester<S> {
     pub fn new(tree_store: S) -> Self {
         Self {
             tree_store,
@@ -990,7 +990,7 @@ impl<S: TreeStore> HashTreeTester<S> {
     }
 }
 
-impl HashTreeTester<TypedInMemoryTreeStore> {
+impl StateTreeTester<TypedInMemoryTreeStore> {
     pub fn new_empty() -> Self {
         Self::new(TypedInMemoryTreeStore::new())
     }
