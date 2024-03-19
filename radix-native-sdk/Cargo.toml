@@ -3,6 +3,7 @@ name = "radix-native-sdk"
 version = "1.2.0-dev"
 edition = "2021"
 license = "Radix License 1.0"
+description = "A library for developing native blueprints."
 
 [dependencies]
 sbor = { workspace = true }

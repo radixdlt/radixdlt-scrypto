@@ -2,10 +2,11 @@
 # It's its own workspace - hide it from the root workspace
 
 [package]
-name = "simulator"
+name = "radix-cli"
 version = "1.2.0-dev"
 edition = "2021"
 license = "Radix License 1.0"
+description = "A collection of CLIs for developing, building and testing Scrypto code."
 
 [dependencies]
 sbor = { path = "../sbor" }

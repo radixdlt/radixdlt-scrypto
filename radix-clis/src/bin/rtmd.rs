@@ -1,6 +1,6 @@
 #[cfg(windows)]
 use colored::*;
-use simulator::rtmd;
+use radix_cli::rtmd;
 
 pub fn main() -> Result<(), rtmd::Error> {
     #[cfg(windows)]

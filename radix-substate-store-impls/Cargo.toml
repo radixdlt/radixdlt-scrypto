@@ -3,6 +3,7 @@ name = "radix-substate-store-impls"
 version = "1.2.0-dev"
 edition = "2021"
 license = "Radix License 1.0"
+description = "Includes various substate store implementations."
 
 [dependencies]
 sbor = { workspace = true }

@@ -1,6 +1,6 @@
 #[cfg(windows)]
 use colored::*;
-use simulator::scrypto_bindgen;
+use radix_cli::scrypto_bindgen;
 
 pub fn main() -> Result<(), scrypto_bindgen::Error> {
     #[cfg(windows)]

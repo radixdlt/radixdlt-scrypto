@@ -3,6 +3,7 @@ name = "radix-substate-store-queries"
 version = "1.2.0-dev"
 edition = "2021"
 license = "Radix License 1.0"
+description = "A library for interpreting raw substates with knowledge of higher layers"
 
 [dependencies]
 sbor = { workspace = true }

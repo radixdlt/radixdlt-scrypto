@@ -34,9 +34,9 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bitflags"
-version = "2.4.2"
+version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed570934406eb16438a4e976b1b4500774099c13b8cb96eec99f620f05090ddf"
+checksum = "cf4b9d6a944f767f8e5e0db018570623c85f3d925ac718db4e06d0187adb21c1"
 
 [[package]]
 name = "blake2"
@@ -646,7 +646,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 2.0.52",
+ "syn 2.0.53",
 ]
 
 [[package]]
@@ -723,7 +723,7 @@ version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57206b407293d2bcd3af849ce869d52068623f19e1b5ff8e8778e3309439682b"
 dependencies = [
- "bitflags 2.4.2",
+ "bitflags 2.5.0",
  "memchr",
  "unicase",
 ]
@@ -812,12 +812,12 @@ dependencies = [
  "radix-rust",
  "radix-substate-store-interface",
  "radix-transactions",
+ "radix-wasm-instrument",
+ "radix-wasmi",
  "sbor",
  "serde_json",
  "strum",
  "syn 1.0.109",
- "wasm-instrument",
- "wasmi",
  "wasmparser 0.107.0",
 ]
 
@@ -940,6 +940,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "radix-wasm-instrument"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b5e1305200330d3dd5c9b16ca43eba268993036ba19a2b2cadadee1b9166ab4"
+dependencies = [
+ "anyhow",
+ "paste",
+ "wasm-encoder",
+ "wasmparser 0.107.0",
+ "wasmprinter",
+]
+
+[[package]]
+name = "radix-wasmi"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59bf4a0498ed223122e726f9360e9889c2bb6eb6898069f4b6f9960b067a742d"
+dependencies = [
+ "radix-wasmi-arena",
+ "spin",
+ "wasmi_core",
+ "wasmparser-nostd",
+]
+
+[[package]]
+name = "radix-wasmi-arena"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a03d7e7816ade40c6ecedff7515198906d644527771bd8fb5a335094353a15a"
+
+[[package]]
 name = "rand"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1038,7 +1069,7 @@ version = "0.38.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ea3e1a662af26cd7a3ba09c0297a31af215563ecf42817c98df621387f4e949"
 dependencies = [
- "bitflags 2.4.2",
+ "bitflags 2.5.0",
  "errno",
  "libc",
  "linux-raw-sys",
@@ -1210,7 +1241,7 @@ checksum = "7eb0b34b42edc17f6b7cac84a52a1c5f0e1bb2227e997ca9011ea3dd34e8610b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.52",
+ "syn 2.0.53",
 ]
 
 [[package]]
@@ -1327,9 +1358,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.52"
+version = "2.0.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b699d15b36d1f02c3e7c69f8ffef53de37aefae075d8488d4ba1a7788d574a07"
+checksum = "7383cd0e49fff4b6b90ca5670bfd3e9d6a733b3f90c686605aa7eec8c4996032"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1380,7 +1411,7 @@ checksum = "c61f3ba182994efc43764a46c018c347bc492c79f024e705f46567b418f6d4f7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.52",
+ "syn 2.0.53",
 ]
 
 [[package]]
@@ -1421,9 +1452,9 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "uuid"
-version = "1.7.0"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f00cc9702ca12d3c81455259621e676d0f7251cec66a21e98fe2e9a37db93b2a"
+checksum = "a183cf7feeba97b4dd1c0d46788634f6221d87fa961b305bed08c851829efcc0"
 dependencies = [
  "getrandom 0.2.12",
 ]
@@ -1489,37 +1520,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasm-instrument"
-version = "0.4.0"
-source = "git+https://github.com/radixdlt/wasm-instrument?branch=radix-master#fe2390722be31ace255bca1887b48f43ec1e2622"
-dependencies = [
- "anyhow",
- "paste",
- "wasm-encoder",
- "wasmparser 0.107.0",
- "wasmprinter",
-]
-
-[[package]]
-name = "wasmi"
-version = "0.23.0"
-source = "git+https://github.com/radixdlt/wasmi?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
-dependencies = [
- "spin",
- "wasmi_arena",
- "wasmi_core",
- "wasmparser-nostd",
-]
-
-[[package]]
-name = "wasmi_arena"
-version = "0.3.0"
-source = "git+https://github.com/radixdlt/wasmi?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
-
-[[package]]
 name = "wasmi_core"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/wasmi?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d21fc8d8dafc2df566ebcba7d48a2df7b37386d6afa64237cdf9415c8d7d98ec"
 dependencies = [
  "downcast-rs",
  "libm",
@@ -1543,7 +1547,7 @@ version = "0.121.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9dbe55c8f9d0dbd25d9447a5a889ff90c0cc3feaa7395310d3d826b2c703eaab"
 dependencies = [
- "bitflags 2.4.2",
+ "bitflags 2.5.0",
  "indexmap 2.2.5",
  "semver",
 ]
@@ -1747,5 +1751,5 @@ checksum = "ce36e65b0d2999d2aafac989fb249189a141aee1f53c612c1f37d72631959f69"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.52",
+ "syn 2.0.53",
 ]

@@ -1,9 +1,9 @@
 [package]
 name = "radix-sbor-derive"
-description = "Implementation of ScryptoSBOR and ManifestSBOR procedural macros. Clients should use `radix-common` for dependency."
 version = "1.2.0-dev"
 edition = "2021"
 license = "Radix License 1.0"
+description = "A library of macros for deriving Scrypto SBOR and Manifest SBOR implementation."
 
 [lib]
 doctest = false
