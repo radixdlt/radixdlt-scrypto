@@ -1,0 +1,27 @@
+[package]
+name = "scrypto-compiler"
+version = "1.2.0-dev"
+edition = "2021"
+description = "A library for compiling Scrypto code."
+readme = "README.md"
+
+[dependencies]
+radix-engine-interface = { workspace = true }
+radix-common = { workspace = true }
+radix-engine = { workspace = true }
+radix-rust = { workspace = true }
+serde_json = { workspace = true }
+wasm-opt = { workspace = true }
+cargo_toml = { workspace = true }
+
+[dev-dependencies]
+tempdir = "0.3.7"
+
+[lib]
+doctest = false
+bench = false
+
+[features]
+default = ["std"]
+std = ["serde_json/std", "radix-engine-interface/std", "radix-common/std", "radix-engine/std", "radix-engine/moka", "radix-rust/std"]
+alloc = ["serde_json/alloc", "radix-engine-interface/alloc", "radix-common/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-rust/alloc"]

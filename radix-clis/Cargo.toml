@@ -11,6 +11,7 @@ readme = "README.md"
 
 [dependencies]
 sbor = { path = "../sbor" }
+scrypto-compiler = { path = "../scrypto-compiler" }
 radix-engine = { path = "../radix-engine" }
 radix-substate-store-interface = { path = "../radix-substate-store-interface" }
 radix-substate-store-impls = { path = "../radix-substate-store-impls", features = ["rocksdb"] }
@@ -31,12 +32,11 @@ clap = { version = "3.1.17", features = ["derive", "cargo"] }
 dirs = { version = "4.0.0" }
 colored = { version = "2.0.0" }
 hex = { version = "0.4.3" }
-cargo_toml = { version = "0.11.5" }
 rand = { version = "0.8.5" }
 regex = { version = "1.5.5" }
 temp-env = { version = "0.2.0" }
 wasm-opt = { version = "0.114.1" }
-syn = { git = "https://github.com/dtolnay/syn.git", tag = "1.0.93", features = ["full", "extra-traits"] }
+syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 quote = { version = "1.0.18" }
 proc-macro2 = { version = "1.0.38" }
 heck = "0.4.1"

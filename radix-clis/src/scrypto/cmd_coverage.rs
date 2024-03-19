@@ -106,8 +106,26 @@ impl Coverage {
 
         // Build package
         let path = self.path.clone().unwrap_or(current_dir().unwrap());
-        let (wasm_path, _) = build_package(&path, false, false, true, Level::Trace, true)
-            .map_err(Error::BuildError)?;
+        let build_artifacts = build_package(
+            &path,
+            true,
+            Level::Trace,
+            true,
+            &[(
+                "CARGO_ENCODED_RUSTFLAGS".to_owned(),
+                "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir"
+                    .to_owned(),
+            )],
+        )
+        .map_err(Error::BuildError)?;
+        if build_artifacts.len() > 1 {
+            return Err(Error::BuildError(BuildError::WorkspaceNotSupported));
+        }
+        let (wasm_path, _) = build_artifacts
+            .first()
+            .ok_or(Error::BuildError(BuildError::BuildArtifactsEmpty))?
+            .to_owned();
+
         assert!(wasm_path.is_file());
 
         if unset_rustup_toolchain {

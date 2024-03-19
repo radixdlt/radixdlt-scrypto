@@ -475,7 +475,7 @@ fn well_known_types_in_schema_are_validated() {
         .schema
         .functions
         .functions
-        .get_mut("some_method".into())
+        .get_mut(&String::from("some_method"))
         .unwrap();
 
     // Invalid well known type

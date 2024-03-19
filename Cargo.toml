@@ -36,6 +36,7 @@ members = [
     "sbor-derive",
     "sbor-tests",
     "sbor",
+    "scrypto-compiler",
     "scrypto-derive-tests",
     "scrypto-derive",
     "scrypto-test",
@@ -62,6 +63,7 @@ sbor = { version = "1.2.0-dev", path = "./sbor", default-features = false }
 sbor-derive = { version = "1.2.0-dev", path = "./sbor-derive", default-features = false }
 sbor-derive-common = { version = "1.2.0-dev", path = "./sbor-derive-common", default-features = false }
 scrypto = { version = "1.2.0-dev", path = "./scrypto", default-features = false }
+scrypto-compiler = { version = "1.2.0-dev", path = "./scrypto-compiler", default-features = false }
 scrypto-derive = { version = "1.2.0-dev", path = "./scrypto-derive", default-features = false }
 scrypto-test = { version = "1.2.0-dev", path = "./scrypto-test", default-features = false }
 
@@ -118,6 +120,7 @@ syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 trybuild = { version = "1.0.85" }
 wabt = { version = "0.10.0" }
 walkdir = { version = "2.3.3", default-features = false }
+wasm-opt = { version = "0.114.1" }
 wasmer = { version = "2.2.1" }
 wasmer-compiler-singlepass = { version = "2.2.1" }
 wasmparser = { version = "0.107.0", default-features = false }
