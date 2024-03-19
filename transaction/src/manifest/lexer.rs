@@ -8,6 +8,8 @@ use sbor::prelude::*;
 pub enum LexerErrorKind {
     UnexpectedEof,
     UnexpectedChar(char),
+    InvalidIntegerLiteral(String),
+    InvalidIntegerType(String),
     InvalidInteger(String),
     InvalidUnicode(u32),
 }
@@ -26,8 +28,6 @@ pub struct Lexer {
     current: Position,
     /// The previous position in the text
     previous: Position,
-    /// The start position of token being lexed
-    start: Position,
 }
 
 pub fn tokenize(s: &str) -> Result<Vec<Token>, LexerError> {
@@ -49,7 +49,7 @@ impl Lexer {
             text: text.chars().collect(),
             current: position!(0, 1, 0),
             previous: position!(0, 1, 0),
-            start: position!(0, 1, 0),
+            // start: position!(0, 1, 0),
         }
     }
 
@@ -84,6 +84,12 @@ impl Lexer {
         } else {
             self.current.line_char_index += 1;
         }
+        Ok(c)
+    }
+
+    fn advance_and_append(&mut self, s: &mut String) -> Result<char, LexerError> {
+        let c = self.advance()?;
+        s.push(c);
         Ok(c)
     }
 
@@ -140,7 +146,7 @@ impl Lexer {
 
     // TODO: consider using DFA
     fn tokenize_number(&mut self) -> Result<Token, LexerError> {
-        self.start = self.current;
+        let literal_start = self.current;
         let mut s = String::new();
 
         // negative sign
@@ -149,66 +155,71 @@ impl Lexer {
         }
 
         // integer
-        match self.advance()? {
-            c @ '0' => {
-                s.push(c);
-            }
-            c @ '1'..='9' => {
-                s.push(c);
+        match self.advance_and_append(&mut s)? {
+            '0' => {}
+            '1'..='9' => {
                 while self.peek()?.is_ascii_digit() {
                     s.push(self.advance()?);
                 }
             }
             _ => {
-                return Err(self.unexpected_char());
+                return Err(LexerError {
+                    error_kind: LexerErrorKind::InvalidIntegerLiteral(s),
+                    span: Span {
+                        start: literal_start,
+                        end: self.current,
+                    },
+                });
             }
         }
 
         // type
-        match self.advance()? {
-            'i' => match self.advance()? {
-                '1' => match self.advance()? {
-                    '2' => match self.advance()? {
-                        '8' => self.parse_int(&s, "i128", TokenKind::I128Literal),
-                        _ => Err(self.unexpected_char_previous()),
+        let type_start = self.current;
+        let mut t = String::new();
+        match self.advance_and_append(&mut t)? {
+            'i' => match self.advance_and_append(&mut t)? {
+                '1' => match self.advance_and_append(&mut t)? {
+                    '2' => match self.advance_and_append(&mut t)? {
+                        '8' => self.parse_int(&s, "i128", TokenKind::I128Literal, literal_start),
+                        _ => Err(self.invalid_integer_type(t, type_start)),
                     },
-                    '6' => self.parse_int(&s, "i16", TokenKind::I16Literal),
-                    _ => Err(self.unexpected_char_previous()),
+                    '6' => self.parse_int(&s, "i16", TokenKind::I16Literal, literal_start),
+                    _ => Err(self.invalid_integer_type(t, type_start)),
                 },
-                '3' => match self.advance()? {
-                    '2' => self.parse_int(&s, "i32", TokenKind::I32Literal),
-                    _ => Err(self.unexpected_char_previous()),
+                '3' => match self.advance_and_append(&mut t)? {
+                    '2' => self.parse_int(&s, "i32", TokenKind::I32Literal, literal_start),
+                    _ => Err(self.invalid_integer_type(t, type_start)),
                 },
-                '6' => match self.advance()? {
-                    '4' => self.parse_int(&s, "i64", TokenKind::I64Literal),
-                    _ => Err(self.unexpected_char_previous()),
+                '6' => match self.advance_and_append(&mut t)? {
+                    '4' => self.parse_int(&s, "i64", TokenKind::I64Literal, literal_start),
+                    _ => Err(self.invalid_integer_type(t, type_start)),
                 },
-                '8' => self.parse_int(&s, "i8", TokenKind::I8Literal),
-                _ => Err(self.unexpected_char_previous()),
+                '8' => self.parse_int(&s, "i8", TokenKind::I8Literal, literal_start),
+                _ => Err(self.invalid_integer_type(t, type_start)),
             },
-            'u' => match self.advance()? {
-                '1' => match self.advance()? {
-                    '2' => match self.advance()? {
-                        '8' => self.parse_int(&s, "u128", TokenKind::U128Literal),
-                        _ => Err(self.unexpected_char_previous()),
+            'u' => match self.advance_and_append(&mut t)? {
+                '1' => match self.advance_and_append(&mut t)? {
+                    '2' => match self.advance_and_append(&mut t)? {
+                        '8' => self.parse_int(&s, "u128", TokenKind::U128Literal, literal_start),
+                        _ => Err(self.invalid_integer_type(t, type_start)),
                     },
-                    '6' => self.parse_int(&s, "u16", TokenKind::U16Literal),
-                    _ => Err(self.unexpected_char_previous()),
+                    '6' => self.parse_int(&s, "u16", TokenKind::U16Literal, literal_start),
+                    _ => Err(self.invalid_integer_type(t, type_start)),
                 },
-                '3' => match self.advance()? {
-                    '2' => self.parse_int(&s, "u32", TokenKind::U32Literal),
-                    _ => Err(self.unexpected_char_previous()),
+                '3' => match self.advance_and_append(&mut t)? {
+                    '2' => self.parse_int(&s, "u32", TokenKind::U32Literal, literal_start),
+                    _ => Err(self.invalid_integer_type(t, type_start)),
                 },
-                '6' => match self.advance()? {
-                    '4' => self.parse_int(&s, "u64", TokenKind::U64Literal),
-                    _ => Err(self.unexpected_char_previous()),
+                '6' => match self.advance_and_append(&mut t)? {
+                    '4' => self.parse_int(&s, "u64", TokenKind::U64Literal, literal_start),
+                    _ => Err(self.invalid_integer_type(t, type_start)),
                 },
-                '8' => self.parse_int(&s, "u8", TokenKind::U8Literal),
-                _ => Err(self.unexpected_char_previous()),
+                '8' => self.parse_int(&s, "u8", TokenKind::U8Literal, literal_start),
+                _ => Err(self.invalid_integer_type(t, type_start)),
             },
-            _ => Err(self.unexpected_char_previous()),
+            _ => Err(self.invalid_integer_type(t, type_start)),
         }
-        .map(|kind| self.new_token(kind, self.start, self.current))
+        .map(|kind| self.new_token(kind, literal_start, self.current))
     }
 
     fn parse_int<T>(
@@ -216,6 +227,7 @@ impl Lexer {
         int: &str,
         ty: &str,
         map: fn(T) -> TokenKind,
+        token_start: Position,
     ) -> Result<TokenKind, LexerError>
     where
         T: FromStr,
@@ -229,7 +241,7 @@ impl Lexer {
                 err.to_string()
             )),
             span: Span {
-                start: self.start,
+                start: token_start,
                 end: self.current,
             },
         })
@@ -243,6 +255,9 @@ impl Lexer {
         while self.peek()? != '"' {
             let c = self.advance()?;
             if c == '\\' {
+                // Remember '\\' position
+                let token_start = self.current;
+
                 // See the JSON string specifications
                 match self.advance()? {
                     '"' => s.push('\"'),
@@ -254,8 +269,6 @@ impl Lexer {
                     'r' => s.push('\r'),
                     't' => s.push('\t'),
                     'u' => {
-                        // Remember '\\' position
-                        self.start = self.previous;
                         let mut unicode = self.read_utf16_unit()?;
                         // Check unicode surrogate pair
                         // (see https://unicodebook.readthedocs.io/unicode_encodings.html#surrogates)
@@ -272,13 +285,13 @@ impl Lexer {
                         s.push(char::from_u32(unicode).ok_or(LexerError {
                             error_kind: LexerErrorKind::InvalidUnicode(unicode),
                             span: Span {
-                                start: self.start,
+                                start: token_start,
                                 end: self.current,
                             },
                         })?);
                     }
                     _ => {
-                        return Err(self.unexpected_char());
+                        return Err(self.unexpected_char_previous());
                     }
                 }
             } else {
@@ -382,6 +395,16 @@ impl Lexer {
             },
         }
     }
+
+    fn invalid_integer_type(&self, ty: String, start: Position) -> LexerError {
+        LexerError {
+            error_kind: LexerErrorKind::InvalidIntegerType(ty),
+            span: Span {
+                start,
+                end: self.current,
+            },
+        }
+    }
 }
 
 pub fn lexer_error_diagnostics(
@@ -397,6 +420,14 @@ pub fn lexer_error_diagnostics(
         LexerErrorKind::UnexpectedChar(c) => (
             format!("unexpected character {:?}", c),
             "unexpected character".to_string(),
+        ),
+        LexerErrorKind::InvalidIntegerLiteral(string) => (
+            format!("invalid integer literal '{}'", string),
+            "invalid integer literal".to_string(),
+        ),
+        LexerErrorKind::InvalidIntegerType(string) => (
+            format!("invalid integer type '{}'", string),
+            "invalid integer type".to_string(),
         ),
         LexerErrorKind::InvalidInteger(string) => (
             format!("invalid integer value {}", string),
@@ -586,6 +617,33 @@ mod tests {
     }
 
     #[test]
+    fn test_invalid_integer() {
+        lex_error!(
+            "-_28u32",
+            LexerError {
+                error_kind: LexerErrorKind::InvalidIntegerLiteral("-_".to_string()),
+                span: span!(start = (0, 1, 0), end = (2, 1, 2))
+            }
+        );
+
+        lex_error!(
+            "1i128\n 1u64 \n 1i37",
+            LexerError {
+                error_kind: LexerErrorKind::InvalidIntegerType("i37".to_string()),
+                span: span!(start = (15, 3, 2), end = (18, 3, 5))
+            }
+        );
+
+        lex_error!(
+            "3_0i8",
+            LexerError {
+                error_kind: LexerErrorKind::InvalidIntegerType("_".to_string()),
+                span: span!(start = (1, 1, 1), end = (2, 1, 2))
+            }
+        );
+    }
+
+    #[test]
     fn test_unexpected_char() {
         lex_error!(
             "1u8 +2u32",
@@ -600,20 +658,6 @@ mod tests {
             LexerError {
                 error_kind: LexerErrorKind::UnexpectedChar('7'),
                 span: span!(start = (2, 1, 2), end = (3, 1, 2))
-            }
-        );
-        lex_error!(
-            "1i128\n 1u64 \n 1i37",
-            LexerError {
-                error_kind: LexerErrorKind::UnexpectedChar('7'),
-                span: span!(start = (17, 3, 4), end = (18, 3, 4))
-            }
-        );
-        lex_error!(
-            "3_0i8",
-            LexerError {
-                error_kind: LexerErrorKind::UnexpectedChar('_'),
-                span: span!(start = (1, 1, 1), end = (2, 1, 1))
             }
         );
     }

@@ -100,6 +100,19 @@ fn test_manifest_lexer_error_unexpected_char() {
 }
 
 #[test]
+fn test_manifest_lexer_error_invalid_integer_literal() {
+    // InvalidIntegerLiteral
+    check_manifest!("manifest_lexer_error_invalid_integer_literal_1");
+}
+
+#[test]
+fn test_manifest_lexer_error_invalid_integer_type() {
+    // InvalidIntegerType
+    check_manifest!("manifest_lexer_error_invalid_integer_type_1");
+    check_manifest!("manifest_lexer_error_invalid_integer_type_2");
+}
+
+#[test]
 fn test_manifest_lexer_error_invalid_integer() {
     // InvalidInteger
     check_manifest!("manifest_lexer_error_invalid_integer_1");
