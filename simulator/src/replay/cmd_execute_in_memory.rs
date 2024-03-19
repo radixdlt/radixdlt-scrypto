@@ -12,8 +12,8 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
-use substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
 use substate_store_impls::memory_db::InMemorySubstateDatabase;
+use substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
 use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use substate_store_interface::interface::CommittableSubstateDatabase;
 use tar::Archive;
@@ -84,7 +84,7 @@ impl TxnExecuteInMemory {
 
         // txn executor
         let substate_database = InMemorySubstateDatabase::standard();
-        let mut database = HashTreeUpdatingDatabase::new(substate_database);
+        let mut database = StateTreeUpdatingDatabase::new(substate_database);
         let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();

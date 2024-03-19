@@ -4,7 +4,7 @@ use transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 
 #[test]
-fn substate_store_matches_hash_tree_after_each_scenario() {
+fn substate_store_matches_state_tree_after_each_scenario() {
     let network = NetworkDefinition::simulator();
     let mut ledger = LedgerSimulatorBuilder::new().with_state_hashing().build();
 
@@ -24,7 +24,7 @@ fn substate_store_matches_hash_tree_after_each_scenario() {
                     // TODO(when figured out): We could run this assert as part of the existing
                     // `post_run_db_check` feature; however, it is tricky to implement (syntactically),
                     // due to the assert only being available for certain `TestDatabase` impl.
-                    ledger.assert_state_hash_tree_matches_substate_store();
+                    ledger.assert_state_tree_matches_substate_store();
                     previous = Some(receipt);
                 }
                 NextAction::Completed(end_state) => {

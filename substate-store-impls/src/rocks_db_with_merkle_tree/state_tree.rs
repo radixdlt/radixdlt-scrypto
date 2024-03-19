@@ -1,25 +1,23 @@
-use crate::hash_tree::put_at_next_version;
-use crate::hash_tree::tree_store::*;
+use crate::state_tree::put_at_next_version;
+use crate::state_tree::tree_store::*;
 use radix_engine_common::prelude::Hash;
 use std::cell::RefCell;
-use substate_store_interface::interface::{
-    DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
-};
+use substate_store_interface::interface::{DatabaseUpdates, DbPartitionKey, DbSortKey};
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
-    diff: StateHashTreeDiff,
+    diff: StateTreeDiff,
 }
 
 impl<'s, S: ReadableTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
-            diff: StateHashTreeDiff::new(),
+            diff: StateTreeDiff::new(),
         }
     }
 
-    pub fn into_diff(self) -> StateHashTreeDiff {
+    pub fn into_diff(self) -> StateTreeDiff {
         self.diff
     }
 }
@@ -51,12 +49,12 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
 }
 
 #[derive(Clone)]
-pub struct StateHashTreeDiff {
+pub struct StateTreeDiff {
     pub new_nodes: RefCell<Vec<(StoredTreeNodeKey, TreeNode)>>,
     pub stale_tree_parts: RefCell<Vec<StaleTreePart>>,
 }
 
-impl StateHashTreeDiff {
+impl StateTreeDiff {
     pub fn new() -> Self {
         Self {
             new_nodes: RefCell::new(Vec::new()),
@@ -69,7 +67,7 @@ pub fn compute_state_tree_update<S: ReadableTreeStore>(
     store: &S,
     parent_state_version: u64,
     database_updates: &DatabaseUpdates,
-) -> (StateHashTreeDiff, Hash) {
+) -> (StateTreeDiff, Hash) {
     let mut collector = CollectingTreeStore::new(store);
     let root_hash = put_at_next_version(
         &mut collector,
