@@ -4,4 +4,5 @@ CALL_METHOD
 ;
 CALL_METHOD
     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
-    "xxx
+    "some_method"
+    Decimal("700"

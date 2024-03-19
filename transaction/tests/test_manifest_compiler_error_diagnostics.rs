@@ -74,6 +74,7 @@ fn test_manifest_parser_error_diagnostics_invalid_number_of_values() {
 fn test_manifest_parser_error_diagnostics_unexpected_eof() {
     // UnexpectedEof
     check_manifest!("manifest_parser_error_unexpected_eof_1");
+    check_manifest!("manifest_parser_error_unexpected_eof_2");
 }
 
 #[test]
