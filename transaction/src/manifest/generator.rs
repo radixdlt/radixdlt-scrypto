@@ -1719,11 +1719,16 @@ pub fn generator_error_diagnostics(
             actual,
         } => {
             let title = format!(
-                "expected value of type {}, found {}",
+                "expected value kind {}, found {}",
                 expected_type.value_kind(),
                 actual.value_kind()
             );
-            (title, "value of unexpected type".to_string())
+            let label = format!(
+                "expected {}, found {}",
+                expected_type.value_kind(),
+                actual.value_kind()
+            );
+            (title, label)
         }
         GeneratorErrorKind::InvalidAstValue {
             expected_type,
@@ -1741,12 +1746,16 @@ pub fn generator_error_diagnostics(
                 }
             }
             let title = format!(
-                "expected value of type {}, found {}",
+                "expected value kind {}, found {}",
                 types.join(" or "),
                 actual.value_kind()
             );
-
-            (title, "value of unexpected type".to_string())
+            let label = format!(
+                "expected {}, found {}",
+                types.join(" or "),
+                actual.value_kind()
+            );
+            (title, label)
         }
         GeneratorErrorKind::UnexpectedValue {
             expected_type,
@@ -1754,11 +1763,12 @@ pub fn generator_error_diagnostics(
         } => {
             // TODO: Consider better messages for aliases (eg. Bytes)
             let title = format!(
-                "expected value of type {}, found {}",
+                "expected value kind {}, found {}",
                 expected_type,
                 actual.value_kind()
             );
-            (title, "value of unexpected type".to_string())
+            let label = format!("expected {}, found {}", expected_type, actual.value_kind());
+            (title, label)
         }
         GeneratorErrorKind::InvalidPackageAddress(string) => {
             let title = format!("invalid package address '{}'", string);
