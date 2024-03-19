@@ -1,5 +1,5 @@
-use crate::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use crate::hash_tree::{list_substate_hashes_at_version, put_at_next_version};
+use crate::state_tree::tree_store::{TypedInMemoryTreeStore, Version};
+use crate::state_tree::{list_substate_hashes_at_version, put_at_next_version};
 use radix_engine_common::prelude::*;
 use substate_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
@@ -7,16 +7,16 @@ use substate_store_interface::interface::{
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct HashTreeUpdatingDatabase<D> {
+pub struct StateTreeUpdatingDatabase<D> {
     underlying: D,
     tree_store: TypedInMemoryTreeStore,
     current_version: Version,
     current_hash: Hash,
 }
 
-impl<D> HashTreeUpdatingDatabase<D> {
+impl<D> StateTreeUpdatingDatabase<D> {
     pub fn new(underlying: D) -> Self {
-        HashTreeUpdatingDatabase {
+        StateTreeUpdatingDatabase {
             underlying,
             tree_store: TypedInMemoryTreeStore::new().with_pruning_enabled(),
             current_version: 0,
@@ -46,7 +46,7 @@ impl<D> HashTreeUpdatingDatabase<D> {
     }
 }
 
-impl<D: SubstateDatabase> SubstateDatabase for HashTreeUpdatingDatabase<D> {
+impl<D: SubstateDatabase> SubstateDatabase for StateTreeUpdatingDatabase<D> {
     fn get_substate(
         &self,
         partition_key: &DbPartitionKey,
@@ -65,13 +65,13 @@ impl<D: SubstateDatabase> SubstateDatabase for HashTreeUpdatingDatabase<D> {
     }
 }
 
-impl<D: ListableSubstateDatabase> ListableSubstateDatabase for HashTreeUpdatingDatabase<D> {
+impl<D: ListableSubstateDatabase> ListableSubstateDatabase for StateTreeUpdatingDatabase<D> {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
         self.underlying.list_partition_keys()
     }
 }
 
-impl<D: CommittableSubstateDatabase> CommittableSubstateDatabase for HashTreeUpdatingDatabase<D> {
+impl<D: CommittableSubstateDatabase> CommittableSubstateDatabase for StateTreeUpdatingDatabase<D> {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
         self.underlying.commit(database_updates);
         self.update_with(database_updates);
