@@ -3,7 +3,8 @@ name = "radix-common"
 version = "1.2.0-dev"
 edition = "2021"
 license = "Radix License 1.0"
-description = "A library of common structures and functions shared by the full Radix stack."
+description = "A library of common types and functions shared by all layers of the Radix stack."
+readme = "README.md"
 
 [dependencies]
 sbor = { workspace = true }

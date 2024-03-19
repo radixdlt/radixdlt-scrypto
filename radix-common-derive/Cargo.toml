@@ -3,7 +3,8 @@ name = "radix-common-derive"
 version = "1.2.0-dev"
 edition = "2021"
 license = "Radix License 1.0"
-description = "A marco for declaring Decimal and PreciseDecimal constants."
+description = "Macros for declaring Decimal and PreciseDecimal constants."
+readme = "README.md"
 
 [dependencies]
 proc-macro2 = { workspace = true }

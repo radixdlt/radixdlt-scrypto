@@ -3,7 +3,8 @@ name = "radix-transaction-scenarios"
 version = "1.2.0-dev"
 edition = "2021"
 license = "Radix License 1.0"
-description = "A set of common transaction scenarios for testing and demostration purpose."
+description = "A set of common transaction scenarios for testing and demonstration purpose."
+readme = "README.md"
 
 [dependencies]
 sbor = { workspace = true }
