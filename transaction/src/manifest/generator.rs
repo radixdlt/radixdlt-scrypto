@@ -59,10 +59,7 @@ use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::ResourceAddress;
 use radix_engine_interface::*;
-use sbor::rust::collections::IndexMap;
-use sbor::rust::str::FromStr;
-use sbor::rust::vec;
-use sbor::*;
+use sbor::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorErrorKind {

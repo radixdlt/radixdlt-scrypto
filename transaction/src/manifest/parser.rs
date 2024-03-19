@@ -5,7 +5,7 @@ use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::token::{Position, Span, Token, TokenKind};
 use crate::{position, span};
 use radix_engine_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
-use sbor::rust::fmt;
+use sbor::prelude::*;
 
 use super::ast::InstructionWithSpan;
 

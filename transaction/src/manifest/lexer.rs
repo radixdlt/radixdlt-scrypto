@@ -2,10 +2,7 @@ use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::token::{Position, Span, Token, TokenKind};
 use crate::position;
-// use sbor::rust::fmt;
-use sbor::rust::fmt::Debug;
-use sbor::rust::str::FromStr;
-use std::fmt::Display;
+use sbor::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LexerErrorKind {
