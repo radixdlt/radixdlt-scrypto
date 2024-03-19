@@ -1,9 +1,7 @@
 use crate::hash_tree::put_at_next_version;
 use crate::hash_tree::tree_store::*;
 use radix_common::prelude::Hash;
-use radix_substate_store_interface::interface::{
-    DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
-};
+use radix_substate_store_interface::interface::{DatabaseUpdates, DbPartitionKey, DbSortKey};
 use std::cell::RefCell;
 
 struct CollectingTreeStore<'s, S> {
@@ -35,13 +33,12 @@ impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
         self.diff.new_nodes.borrow_mut().push((key, node));
     }
 
-    #[allow(unused_variables)]
     fn associate_substate(
         &self,
-        state_tree_leaf_key: &StoredTreeNodeKey,
-        partition_key: &DbPartitionKey,
-        sort_key: &DbSortKey,
-        substate_value: &DbSubstateValue,
+        _state_tree_leaf_key: &StoredTreeNodeKey,
+        _partition_key: &DbPartitionKey,
+        _sort_key: &DbSortKey,
+        _substate_value: AssociatedSubstateValue,
     ) {
         // intentionally empty
     }

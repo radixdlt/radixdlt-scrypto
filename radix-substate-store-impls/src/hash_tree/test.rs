@@ -10,7 +10,6 @@ use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_rust::prelude::*;
 use radix_substate_store_interface::interface::*;
 use sbor::prelude::indexmap::indexmap;
-use std::cell::RefCell;
 use std::ops::Deref;
 
 // Note: in some tests, we assert on the low-level DB key encoding, so we need this detail, and
@@ -227,7 +226,8 @@ fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
 
 #[test]
 fn substate_values_get_associated_with_substate_tier_leaves() {
-    let mut tester = HashTreeTester::new(SubstateValueAssociationStore::default());
+    let mut tester =
+        HashTreeTester::new(TypedInMemoryTreeStore::new().storing_associated_substates());
     tester.put_substate_changes(vec![
         change_exact(vec![123, 12, 1], 8, vec![6, 6, 1], Some(vec![4])),
         change_exact(vec![123, 12, 1], 8, vec![6, 6, 2], Some(vec![])),
@@ -241,18 +241,98 @@ fn substate_values_get_associated_with_substate_tier_leaves() {
         &hashmap!(
             // 2 incidentally-complete node keys: (they differ only at their last byte)
             StoredTreeNodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 6, 1])) => (
-                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 6, 1])), vec![4]
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 6, 1])), Some(vec![4])
             ),
             StoredTreeNodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 6, 2])) => (
-                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 6, 2])), vec![]
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 6, 2])), Some(vec![])
             ),
             // A slightly-incomplete node key: (cut short at the first byte it differs)
             StoredTreeNodeKey::new(1, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 7])) => (
-                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 7, 5, 9])), vec![1, 2]
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 7, 5, 9])), Some(vec![1, 2])
             ),
             // A very incomplete node key, representing Substate-Tier root: (since it is the only Substate within its partition)
             StoredTreeNodeKey::new(1, NibblePath::new_even(vec![220, 3, TSEP, 99, TSEP])) => (
-                (partition_key(vec![220, 3], 99), DbSortKey(vec![253])), vec![7; 66]
+                (partition_key(vec![220, 3], 99), DbSortKey(vec![253])), Some(vec![7; 66])
+            ),
+        )
+    );
+}
+
+#[test]
+fn substate_values_get_re_associated_after_tree_restructuring() {
+    let mut tester =
+        HashTreeTester::new(TypedInMemoryTreeStore::new().storing_associated_substates());
+    // Let's start with the same set-up as in the base `substate_values_get_associated_with_substate_tier_leaves` test:
+    tester.put_substate_changes(vec![
+        change_exact(vec![123, 12, 1], 8, vec![6, 6, 1], Some(vec![4])),
+        change_exact(vec![123, 12, 1], 8, vec![6, 6, 2], Some(vec![])),
+        change_exact(vec![123, 12, 1], 8, vec![6, 7, 5, 9], Some(vec![1, 2])),
+        change_exact(vec![220, 3], 99, vec![253], Some(vec![7; 66])),
+    ]);
+
+    // For clearer assert, let's disregard the substates associated in this step:
+    tester.tree_store.associated_substates.borrow_mut().clear();
+
+    // Now inserting this "sibling" substate forces rewrite of the leaf associated with sort key `vec![6, 7, 5, 9]`:
+    tester.put_substate_changes(vec![change_exact(
+        vec![123, 12, 1],
+        8,
+        vec![6, 7, 5, 4],
+        Some(vec![3]),
+    )]);
+
+    let associated_substates = tester.tree_store.associated_substates.borrow();
+    assert_eq!(
+        associated_substates.deref(),
+        &hashmap!(
+            // The newly-inserted substate:
+            StoredTreeNodeKey::new(2, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 7, 5, 4])) => (
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 7, 5, 4])), Some(vec![3])
+            ),
+            // Its previously-existing sibling, whose tree node had to be re-inserted due to restructuring:
+            StoredTreeNodeKey::new(2, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 7, 5, 9])) => (
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 7, 5, 9])), None // denotes "unchanged value"
+            ),
+        )
+    );
+}
+
+#[test]
+fn substate_values_get_re_associated_on_partition_reset() {
+    let mut tester =
+        HashTreeTester::new(TypedInMemoryTreeStore::new().storing_associated_substates());
+    // Let's start with the same set-up as in the base `substate_values_get_associated_with_substate_tier_leaves` test:
+    tester.put_substate_changes(vec![
+        change_exact(vec![123, 12, 1], 8, vec![6, 6, 1], Some(vec![4])),
+        change_exact(vec![123, 12, 1], 8, vec![6, 6, 2], Some(vec![])),
+        change_exact(vec![123, 12, 1], 8, vec![6, 7, 5, 9], Some(vec![1, 2])),
+        change_exact(vec![220, 3], 99, vec![253], Some(vec![7; 66])),
+    ]);
+
+    // For clearer assert, let's disregard the substates associated in this step:
+    tester.tree_store.associated_substates.borrow_mut().clear();
+
+    // Now we achieve the "add sibling substate", but using a partition reset:
+    tester.reset_partition(
+        vec![123, 12, 1],
+        8,
+        vec![
+            (DbSortKey(vec![6, 7, 5, 9]), vec![1, 2]), // we re-create this one exactly the same
+            (DbSortKey(vec![6, 7, 5, 4]), vec![3]),    // and we give it a sibling
+        ],
+    );
+
+    let associated_substates = tester.tree_store.associated_substates.borrow();
+    assert_eq!(
+        associated_substates.deref(),
+        &hashmap!(
+            // The newly-inserted substate:
+            StoredTreeNodeKey::new(2, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 7, 5, 4])) => (
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 7, 5, 4])), Some(vec![3])
+            ),
+            // Its previously-existing sibling (which was re-created on reset), treated as if it was completely new:
+            StoredTreeNodeKey::new(2, NibblePath::new_even(vec![123, 12, 1, TSEP, 8, TSEP, 6, 7, 5, 9])) => (
+                (partition_key(vec![123, 12, 1], 8), DbSortKey(vec![6, 7, 5, 9])), Some(vec![1, 2])
             ),
         )
     );
@@ -967,43 +1047,5 @@ impl HashTreeTester<TypedInMemoryTreeStore> {
             )
             .bytes(),
         )
-    }
-}
-
-/// A degenerate, test [`TreeStore`] which only stores associated Substate values.
-#[derive(Debug, Default)]
-struct SubstateValueAssociationStore {
-    associated_substates: RefCell<HashMap<StoredTreeNodeKey, (DbSubstateKey, DbSubstateValue)>>,
-}
-
-impl ReadableTreeStore for SubstateValueAssociationStore {
-    fn get_node(&self, _key: &StoredTreeNodeKey) -> Option<TreeNode> {
-        None
-    }
-}
-
-impl WriteableTreeStore for SubstateValueAssociationStore {
-    fn insert_node(&self, _key: StoredTreeNodeKey, _node: TreeNode) {
-        // deliberately empty
-    }
-
-    fn associate_substate(
-        &self,
-        state_tree_leaf_key: &StoredTreeNodeKey,
-        partition_key: &DbPartitionKey,
-        sort_key: &DbSortKey,
-        substate_value: &DbSubstateValue,
-    ) {
-        self.associated_substates.borrow_mut().insert(
-            state_tree_leaf_key.clone(),
-            (
-                (partition_key.clone(), sort_key.clone()),
-                substate_value.clone(),
-            ),
-        );
-    }
-
-    fn record_stale_tree_part(&self, _part: StaleTreePart) {
-        // deliberately empty
     }
 }

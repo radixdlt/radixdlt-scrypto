@@ -66,28 +66,34 @@ pub enum PartitionDatabaseUpdates {
 }
 
 impl PartitionDatabaseUpdates {
-    /// Returns an effective new Substate value *upserted* under the given `sort_key` (i.e. after
-    /// hypothetically applying this Partition update).
-    /// Please note that this method only cares about upserts - i.e. returns [`None`] either if the
-    /// substate was unaffected, or if it was deleted by this update.
+    /// Returns an effective change applied to the given Substate by this Partition update.
+    /// May return [`None`] only if the Substate was unaffected.
     ///
     /// This method is useful for index-updating logic which does not care about the nature of the
     /// Partition update (i.e. delta vs reset).
-    pub fn get_upserted_value(&self, sort_key: &DbSortKey) -> Option<&DbSubstateValue> {
+    pub fn get_substate_change(&self, sort_key: &DbSortKey) -> Option<SubstateChange> {
         match self {
             Self::Delta { substate_updates } => {
-                substate_updates
-                    .get(sort_key)
-                    .and_then(|update| match update {
-                        DatabaseUpdate::Set(value) => Some(value),
-                        DatabaseUpdate::Delete => None,
-                    })
+                substate_updates.get(sort_key).map(|update| match update {
+                    DatabaseUpdate::Set(value) => SubstateChange::Upsert(value),
+                    DatabaseUpdate::Delete => SubstateChange::Delete,
+                })
             }
             Self::Reset {
                 new_substate_values,
-            } => new_substate_values.get(sort_key),
+            } => new_substate_values
+                .get(sort_key)
+                .map(|value| SubstateChange::Upsert(value))
+                .or_else(|| Some(SubstateChange::Delete)),
         }
     }
+}
+
+/// A change applied to a Substate - see [`PartitionDatabaseUpdates::get_substate_change`].
+/// Technically, this is a 1:1 counterpart of [`DatabaseUpdate`], but operating on references.
+pub enum SubstateChange<'v> {
+    Upsert(&'v DbSubstateValue),
+    Delete,
 }
 
 impl Default for PartitionDatabaseUpdates {
