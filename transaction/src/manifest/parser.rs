@@ -1158,7 +1158,7 @@ pub fn parser_error_diagnostics(
     let (title, label) = match err.error_kind {
         ParserErrorKind::UnexpectedEof => (
             "unexpected end of file".to_string(),
-            "end of file".to_string(),
+            "unexpected end of file".to_string(),
         ),
         ParserErrorKind::UnexpectedToken { expected, actual } => {
             let title = format!("expected {}, found {}", expected, actual);

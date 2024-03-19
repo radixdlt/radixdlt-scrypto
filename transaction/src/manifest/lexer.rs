@@ -402,7 +402,7 @@ pub fn lexer_error_diagnostics(
     let (title, label) = match err.error_kind {
         LexerErrorKind::UnexpectedEof => (
             "unexpected end of file".to_string(),
-            "end of file".to_string(),
+            "unexpected end of file".to_string(),
         ),
         LexerErrorKind::UnexpectedChar(c) => (
             format!("unexpected character {:?}", c),
@@ -421,7 +421,7 @@ pub fn lexer_error_diagnostics(
             "invalid integer value".to_string(),
         ),
         LexerErrorKind::InvalidUnicode(value) => (
-            format!("invalid unicode value {}", value),
+            format!("invalid unicode point {}", value),
             "invalid unicode".to_string(),
         ),
         LexerErrorKind::MissingUnicodeSurrogate(value) => (
