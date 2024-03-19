@@ -1,0 +1,12 @@
+error: proof id 'ManifestProof(1)' not found
+   |
+18 |   Bucket("some_bucket")
+19 |   Decimal("1")
+20 |   Proof("proof");
+21 | 
+22 | CLONE_PROOF
+23 |   Proof(1u32)
+   |         ^^^^ proof not found
+24 |   Proof("cloned_proof")
+25 | ;
+   |

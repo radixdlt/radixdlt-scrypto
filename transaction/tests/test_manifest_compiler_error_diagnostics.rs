@@ -3,17 +3,13 @@ use transaction::manifest::blob_provider::*;
 use transaction::manifest::compiler::*;
 
 macro_rules! check_manifest {
-    ($manifest:expr, $blob_provider:expr) => {{
+    ($manifest:expr, $blob_provider:expr, $style:expr) => {{
         let manifest = include_str!(concat!("assets/", $manifest, ".rtm"));
         let diagnostic = include_str!(concat!("assets/", $manifest, ".diag"));
 
         let err = compile(manifest, &NetworkDefinition::simulator(), $blob_provider).unwrap_err();
 
-        let x = compile_error_diagnostics(
-            manifest,
-            err,
-            CompileErrorDiagnosticsStyle::TextTerminalColors,
-        );
+        let x = compile_error_diagnostics(manifest, err, $style);
 
         if x != diagnostic {
             let path = format!("tests/assets/{}.diag.res", $manifest);
@@ -31,7 +27,11 @@ macro_rules! check_manifest {
     ($manifest:expr) => {{
         // Some instructions require valid blob in order to let
         // manifest compile, eg. PUBLISH_PACKAGE_ADVANCED
-        check_manifest!($manifest, MockBlobProvider::default())
+        check_manifest!(
+            $manifest,
+            MockBlobProvider::default(),
+            CompileErrorDiagnosticsStyle::TextTerminalColors
+        )
     }};
 }
 
@@ -183,7 +183,8 @@ fn test_manifest_generator_error_blob_not_found() {
     // BlobNotFound
     check_manifest!(
         "manifest_generator_error_blob_not_found_1",
-        BlobProvider::default()
+        BlobProvider::default(),
+        CompileErrorDiagnosticsStyle::TextTerminalColors
     );
 }
 
@@ -262,4 +263,13 @@ fn test_manifest_generator_error_proof_not_found() {
     // IdValidationError(BucketNotFound)
     check_manifest!("manifest_generator_error_proof_not_found_1");
     check_manifest!("manifest_generator_error_proof_not_found_2");
+}
+
+#[test]
+fn test_manifest_compiler_error_plain_text() {
+    check_manifest!(
+        "manifest_compiler_error_plain_text_1",
+        BlobProvider::default(),
+        CompileErrorDiagnosticsStyle::PlainText
+    );
 }
