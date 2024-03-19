@@ -12,6 +12,7 @@ pub enum LexerErrorKind {
     InvalidIntegerType(String),
     InvalidInteger(String),
     InvalidUnicode(u32),
+    MissingUnicodeSurrogate(u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -279,7 +280,13 @@ impl Lexer {
                                     + self.read_utf16_unit()?
                                     - 0xDC00;
                             } else {
-                                return Err(self.unexpected_char());
+                                return Err(LexerError {
+                                    error_kind: LexerErrorKind::MissingUnicodeSurrogate(unicode),
+                                    span: Span {
+                                        start: token_start,
+                                        end: self.previous,
+                                    },
+                                });
                             }
                         }
                         s.push(char::from_u32(unicode).ok_or(LexerError {
@@ -369,19 +376,6 @@ impl Lexer {
         }
     }
 
-    fn unexpected_char(&self) -> LexerError {
-        let mut end = self.previous;
-        end.full_index += 1;
-
-        LexerError {
-            error_kind: LexerErrorKind::UnexpectedChar(self.text[self.current.full_index - 1]),
-            span: Span {
-                start: self.current,
-                end,
-            },
-        }
-    }
-
     fn unexpected_char_previous(&self) -> LexerError {
         // If advance() is used, we want to get the position of previous token not the current one
         let mut end = self.previous;
@@ -436,6 +430,10 @@ pub fn lexer_error_diagnostics(
         LexerErrorKind::InvalidUnicode(value) => (
             format!("invalid unicode value {}", value),
             "invalid unicode".to_string(),
+        ),
+        LexerErrorKind::MissingUnicodeSurrogate(value) => (
+            format!("missing unicode '{:X}' surrogate pair", value),
+            "missing unicode surrogate pair".to_string(),
         ),
     };
     create_snippet(s, &err.span, &title, &label, style)

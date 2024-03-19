@@ -127,6 +127,12 @@ fn test_manifest_lexer_error_invalid_unicode() {
 }
 
 #[test]
+fn test_manifest_lexer_error_missing_unicode_surrogate() {
+    // MissingUnicodeSurrogate
+    check_manifest!("manifest_lexer_error_missing_unicode_surrogate_1");
+}
+
+#[test]
 fn test_manifest_lexer_error_diagnostics_unexpected_eof() {
     // UnexpectedEof
     check_manifest!("manifest_lexer_error_unexpected_eof_1");
