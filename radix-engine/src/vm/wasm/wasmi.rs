@@ -1,3 +1,5 @@
+extern crate radix_wasmi as wasmi;
+
 use crate::errors::InvokeError;
 use crate::internal_prelude::*;
 #[cfg(feature = "coverage")]

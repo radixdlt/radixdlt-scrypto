@@ -1,3 +1,5 @@
+extern crate radix_wasm_instrument as wasm_instrument;
+
 use crate::internal_prelude::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 use num_traits::CheckedAdd;

@@ -100,6 +100,8 @@ perfcnt = { version = "0.8.0" }
 plotters = { version = "0.3.4" }
 proc-macro2 = { version = "1.0.38" }
 quote = { version = "1.0.18" }
+radix-wasm-instrument = { version = "1.0.0", default-features = false,  features = ["ignore_custom_section"]}
+radix-wasmi = {  version = "1.0.0" }
 rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }
 rayon =  { version = "1.5.3" }
@@ -116,10 +118,8 @@ syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 trybuild = { version = "1.0.85" }
 wabt = { version = "0.10.0" }
 walkdir = { version = "2.3.3", default-features = false }
-wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "radix-master", default-features = false,  features = ["ignore_custom_section"]}
 wasmer = { version = "2.2.1" }
 wasmer-compiler-singlepass = { version = "2.2.1" }
-wasmi = {  git = "https://github.com/radixdlt/wasmi", branch = "v0.23.0_store_clone"  }
 wasmparser = { version = "0.107.0", default-features = false }
 
 # Both the release and test profiles use `panic = "unwind"` to allow certain parts of the Radix

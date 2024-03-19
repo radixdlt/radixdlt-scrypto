@@ -1127,12 +1127,12 @@ dependencies = [
  "radix-rust",
  "radix-substate-store-interface",
  "radix-transactions",
+ "radix-wasm-instrument",
+ "radix-wasmi",
  "sbor",
  "serde_json",
  "strum",
  "syn 1.0.109",
- "wasm-instrument",
- "wasmi",
  "wasmparser 0.107.0",
 ]
 
@@ -1253,6 +1253,37 @@ dependencies = [
  "sbor",
  "strum",
 ]
+
+[[package]]
+name = "radix-wasm-instrument"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b5e1305200330d3dd5c9b16ca43eba268993036ba19a2b2cadadee1b9166ab4"
+dependencies = [
+ "anyhow",
+ "paste",
+ "wasm-encoder",
+ "wasmparser 0.107.0",
+ "wasmprinter",
+]
+
+[[package]]
+name = "radix-wasmi"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59bf4a0498ed223122e726f9360e9889c2bb6eb6898069f4b6f9960b067a742d"
+dependencies = [
+ "radix-wasmi-arena",
+ "spin",
+ "wasmi_core",
+ "wasmparser-nostd",
+]
+
+[[package]]
+name = "radix-wasmi-arena"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a03d7e7816ade40c6ecedff7515198906d644527771bd8fb5a335094353a15a"
 
 [[package]]
 name = "rand"
@@ -1950,18 +1981,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasm-instrument"
-version = "0.4.0"
-source = "git+https://github.com/radixdlt/wasm-instrument?branch=radix-master#fe2390722be31ace255bca1887b48f43ec1e2622"
-dependencies = [
- "anyhow",
- "paste",
- "wasm-encoder",
- "wasmparser 0.107.0",
- "wasmprinter",
-]
-
-[[package]]
 name = "wasm-opt"
 version = "0.114.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2002,25 +2021,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasmi"
-version = "0.23.0"
-source = "git+https://github.com/radixdlt/wasmi?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
-dependencies = [
- "spin",
- "wasmi_arena",
- "wasmi_core",
- "wasmparser-nostd",
-]
-
-[[package]]
-name = "wasmi_arena"
-version = "0.3.0"
-source = "git+https://github.com/radixdlt/wasmi?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
-
-[[package]]
 name = "wasmi_core"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/wasmi?branch=v0.23.0_store_clone#84085f82bd4a18e6ecee530e1cb16675c7334df7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d21fc8d8dafc2df566ebcba7d48a2df7b37386d6afa64237cdf9415c8d7d98ec"
 dependencies = [
  "downcast-rs",
  "libm",
