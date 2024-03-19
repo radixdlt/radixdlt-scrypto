@@ -6,7 +6,10 @@ use radix_engine_common::{
 };
 use std::path::PathBuf;
 use std::str::FromStr;
-use transaction::manifest::{compile, compiler::compile_error_diagnostics, BlobProvider};
+use transaction::manifest::{
+    compile, compiler::compile_error_diagnostics, compiler::CompileErrorDiagnosticsStyle,
+    BlobProvider,
+};
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]
@@ -55,7 +58,14 @@ pub fn run() -> Result<(), Error> {
     let transaction = match compile(&content, &network, BlobProvider::new_with_blobs(blobs)) {
         Ok(transaction) => transaction,
         Err(err) => {
-            eprintln!("{}", compile_error_diagnostics(&content, err));
+            eprintln!(
+                "{}",
+                compile_error_diagnostics(
+                    &content,
+                    err,
+                    CompileErrorDiagnosticsStyle::TextTerminalColors
+                )
+            );
             // If the CompileError was returned here, then:
             // - the program exit code would be 1
             //   This is fine

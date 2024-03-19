@@ -1,8 +1,15 @@
+use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::token::Span;
 use annotate_snippets::{Annotation, AnnotationType, Renderer, Slice, Snippet, SourceAnnotation};
 use sbor::rust::cmp::min;
 
-pub fn create_snippet(s: &str, span: &Span, title: &str, label: &str) -> String {
+pub fn create_snippet(
+    s: &str,
+    span: &Span,
+    title: &str,
+    label: &str,
+    style: CompileErrorDiagnosticsStyle,
+) -> String {
     let lines_cnt = s.lines().count();
     let mut span = span.clone();
 
@@ -51,7 +58,11 @@ pub fn create_snippet(s: &str, span: &Span, title: &str, label: &str) -> String 
         footer: vec![],
     };
 
-    let renderer = Renderer::styled();
+    let renderer = match style {
+        CompileErrorDiagnosticsStyle::PlainText => Renderer::plain(),
+        CompileErrorDiagnosticsStyle::TextTerminalColors => Renderer::styled(),
+    };
+
     let s = renderer.render(snippet).to_string();
     s
 }

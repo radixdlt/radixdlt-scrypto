@@ -1,4 +1,5 @@
 use crate::manifest::ast::{Instruction, Value, ValueKind, ValueKindWithSpan, ValueWithSpan};
+use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::token::{Position, Span, Token, TokenKind};
@@ -1149,7 +1150,11 @@ impl Parser {
     }
 }
 
-pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
+pub fn parser_error_diagnostics(
+    s: &str,
+    err: ParserError,
+    style: CompileErrorDiagnosticsStyle,
+) -> String {
     let (title, label) = match err.error_kind {
         ParserErrorKind::UnexpectedEof => (
             "unexpected end of file".to_string(),
@@ -1181,7 +1186,7 @@ pub fn parser_error_diagnostics(s: &str, err: ParserError) -> String {
         }
     };
 
-    create_snippet(s, &err.span, &title, &label)
+    create_snippet(s, &err.span, &title, &label, style)
 }
 
 #[cfg(test)]

@@ -9,7 +9,11 @@ macro_rules! check_manifest {
 
         let err = compile(manifest, &NetworkDefinition::simulator(), $blob_provider).unwrap_err();
 
-        let x = compile_error_diagnostics(manifest, err);
+        let x = compile_error_diagnostics(
+            manifest,
+            err,
+            CompileErrorDiagnosticsStyle::TextTerminalColors,
+        );
 
         if x != diagnostic {
             let path = format!("tests/assets/{}.diag.res", $manifest);

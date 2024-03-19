@@ -1,3 +1,4 @@
+use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::token::{Position, Span, Token, TokenKind};
 use crate::position;
@@ -386,7 +387,11 @@ impl Lexer {
     }
 }
 
-pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
+pub fn lexer_error_diagnostics(
+    s: &str,
+    err: LexerError,
+    style: CompileErrorDiagnosticsStyle,
+) -> String {
     let (title, label) = match err.error_kind {
         LexerErrorKind::UnexpectedEof => (
             "unexpected end of file".to_string(),
@@ -405,7 +410,7 @@ pub fn lexer_error_diagnostics(s: &str, err: LexerError) -> String {
             "invalid unicode".to_string(),
         ),
     };
-    create_snippet(s, &err.span, &title, &label)
+    create_snippet(s, &err.span, &title, &label, style)
 }
 
 #[cfg(test)]

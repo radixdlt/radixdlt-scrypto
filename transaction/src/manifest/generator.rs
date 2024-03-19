@@ -3,6 +3,7 @@ use crate::data::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::manifest::ast;
+use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::token::Span;
 use crate::model::*;
@@ -1710,7 +1711,11 @@ where
     Ok(result)
 }
 
-pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
+pub fn generator_error_diagnostics(
+    s: &str,
+    err: GeneratorError,
+    style: CompileErrorDiagnosticsStyle,
+) -> String {
     let (title, label) = match err.error_kind {
         GeneratorErrorKind::InvalidAstType {
             expected_type,
@@ -1868,7 +1873,7 @@ pub fn generator_error_diagnostics(s: &str, err: GeneratorError) -> String {
         }
     };
 
-    create_snippet(s, &err.span, &title, &label)
+    create_snippet(s, &err.span, &title, &label, style)
 }
 
 #[cfg(test)]

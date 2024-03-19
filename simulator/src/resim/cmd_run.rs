@@ -3,7 +3,10 @@ use radix_engine::utils::validate_call_arguments_to_native_components;
 use regex::{Captures, Regex};
 use std::env;
 use std::path::PathBuf;
-use transaction::manifest::{compile, compiler::compile_error_diagnostics, BlobProvider};
+use transaction::manifest::{
+    compile, compiler::compile_error_diagnostics, compiler::CompileErrorDiagnosticsStyle,
+    BlobProvider,
+};
 
 use crate::resim::*;
 
@@ -61,7 +64,11 @@ impl Run {
             Err(err) => {
                 eprintln!(
                     "{}",
-                    compile_error_diagnostics(&pre_processed_manifest, err)
+                    compile_error_diagnostics(
+                        &pre_processed_manifest,
+                        err,
+                        CompileErrorDiagnosticsStyle::TextTerminalColors
+                    )
                 );
 
                 // If the CompileError was returned here, then:

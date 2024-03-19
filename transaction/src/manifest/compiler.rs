@@ -7,11 +7,21 @@ pub enum CompileError {
     GeneratorError(generator::GeneratorError),
 }
 
-pub fn compile_error_diagnostics(s: &str, err: CompileError) -> String {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CompileErrorDiagnosticsStyle {
+    PlainText,
+    TextTerminalColors,
+}
+
+pub fn compile_error_diagnostics(
+    s: &str,
+    err: CompileError,
+    style: CompileErrorDiagnosticsStyle,
+) -> String {
     match err {
-        CompileError::LexerError(err) => lexer::lexer_error_diagnostics(s, err),
-        CompileError::ParserError(err) => parser::parser_error_diagnostics(s, err),
-        CompileError::GeneratorError(err) => generator::generator_error_diagnostics(s, err),
+        CompileError::LexerError(err) => lexer::lexer_error_diagnostics(s, err, style),
+        CompileError::ParserError(err) => parser::parser_error_diagnostics(s, err, style),
+        CompileError::GeneratorError(err) => generator::generator_error_diagnostics(s, err, style),
     }
 }
 
