@@ -21,6 +21,18 @@ pub struct Position {
     pub line_char_index: usize,
 }
 
+impl Position {
+    pub fn advance(&mut self, next_char: char) {
+        self.full_index += 1;
+        if next_char == '\n' {
+            self.line_number += 1;
+            self.line_char_index = 0;
+        } else {
+            self.line_char_index += 1;
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! position {
     ($full_index:expr, $line_number:expr, $line_char_index:expr) => {

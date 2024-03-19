@@ -1,7 +1,6 @@
 use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::token::{Position, Span, Token, TokenKind};
-use crate::position;
 use sbor::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,7 +45,11 @@ impl Lexer {
     pub fn new(text: &str) -> Self {
         Self {
             text: text.chars().collect(),
-            current: position!(0, 1, 0),
+            current: Position {
+                full_index: 0,
+                line_number: 1,
+                line_char_index: 0,
+            },
         }
     }
 
@@ -73,13 +76,7 @@ impl Lexer {
 
     fn advance(&mut self) -> Result<char, LexerError> {
         let c = self.peek()?;
-        self.current.full_index += 1;
-        if c == '\n' {
-            self.current.line_number += 1;
-            self.current.line_char_index = 0;
-        } else {
-            self.current.line_char_index += 1;
-        }
+        self.current.advance(c);
         Ok(c)
     }
 
@@ -125,14 +122,14 @@ impl Lexer {
             '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' | '=' => {
                 self.tokenize_punctuation()
             }
-            _ => Err(LexerError {
+            c => Err(LexerError {
                 error_kind: LexerErrorKind::UnexpectedChar(self.text[self.current.full_index]),
                 span: Span {
                     start: self.current,
-                    end: Position {
-                        full_index: self.current.full_index + 1,
-                        line_number: self.current.line_number,
-                        line_char_index: self.current.line_char_index,
+                    end: {
+                        let mut end = self.current;
+                        end.advance(c);
+                        end
                     },
                 },
             }),
@@ -377,14 +374,11 @@ impl Lexer {
     }
 
     fn unexpected_char(&self, position: Position) -> LexerError {
-        let mut end = position;
-        end.full_index += 1;
-
         LexerError {
             error_kind: LexerErrorKind::UnexpectedChar(self.text[position.full_index]),
             span: Span {
                 start: position,
-                end,
+                end: self.current,
             },
         }
     }
@@ -441,7 +435,7 @@ pub fn lexer_error_diagnostics(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::span;
+    use crate::{position, span};
 
     #[macro_export]
     macro_rules! lex_ok {
@@ -646,7 +640,7 @@ mod tests {
             "1u8 +2u32",
             LexerError {
                 error_kind: LexerErrorKind::UnexpectedChar('+'),
-                span: span!(start = (4, 1, 4), end = (5, 1, 4))
+                span: span!(start = (4, 1, 4), end = (5, 1, 5))
             }
         );
 
@@ -654,7 +648,7 @@ mod tests {
             "x=7",
             LexerError {
                 error_kind: LexerErrorKind::UnexpectedChar('7'),
-                span: span!(start = (2, 1, 2), end = (3, 1, 2))
+                span: span!(start = (2, 1, 2), end = (3, 1, 3))
             }
         );
     }
