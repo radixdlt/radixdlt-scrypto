@@ -22,7 +22,7 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn advance(&mut self, next_char: char) {
+    pub fn advance(mut self, next_char: char) -> Self {
         self.full_index += 1;
         if next_char == '\n' {
             self.line_number += 1;
@@ -30,6 +30,7 @@ impl Position {
         } else {
             self.line_char_index += 1;
         }
+        self
     }
 }
 

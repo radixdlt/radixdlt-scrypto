@@ -4,9 +4,17 @@ use crate::manifest::token::{Position, Span, Token, TokenKind};
 use sbor::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExpectedChar {
+    Exact(char),
+    OneOf(Vec<char>),
+    HexDigit,
+    DigitLetterQuotePunctuation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LexerErrorKind {
     UnexpectedEof,
-    UnexpectedChar(char),
+    UnexpectedChar(char, ExpectedChar),
     InvalidIntegerLiteral(String),
     InvalidIntegerType(String),
     InvalidInteger(String),
@@ -76,8 +84,26 @@ impl Lexer {
 
     fn advance(&mut self) -> Result<char, LexerError> {
         let c = self.peek()?;
-        self.current.advance(c);
+        self.current = self.current.advance(c);
         Ok(c)
+    }
+
+    fn advance_expected(&mut self, expected: char) -> Result<char, LexerError> {
+        self.advance_matching(|c| c == expected, ExpectedChar::Exact(expected))
+    }
+
+    fn advance_matching(
+        &mut self,
+        matcher: impl Fn(char) -> bool,
+        expected: ExpectedChar,
+    ) -> Result<char, LexerError> {
+        let previous = self.current;
+        let c = self.advance()?;
+        if !matcher(c) {
+            Err(self.unexpected_char(previous, c, expected))
+        } else {
+            Ok(c)
+        }
     }
 
     fn advance_and_append(&mut self, s: &mut String) -> Result<char, LexerError> {
@@ -122,17 +148,11 @@ impl Lexer {
             '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' | '=' => {
                 self.tokenize_punctuation()
             }
-            c => Err(LexerError {
-                error_kind: LexerErrorKind::UnexpectedChar(self.text[self.current.full_index]),
-                span: Span {
-                    start: self.current,
-                    end: {
-                        let mut end = self.current;
-                        end.advance(c);
-                        end
-                    },
-                },
-            }),
+            c => Err(self.unexpected_char(
+                self.current,
+                c,
+                ExpectedChar::DigitLetterQuotePunctuation,
+            )),
         }
         .map(Option::from)
     }
@@ -290,8 +310,12 @@ impl Lexer {
                             },
                         })?);
                     }
-                    _ => {
-                        return Err(self.unexpected_char(token_start));
+                    c => {
+                        return Err(self.unexpected_char(
+                            token_start,
+                            c,
+                            ExpectedChar::OneOf(vec!['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']),
+                        ));
                     }
                 }
             } else {
@@ -307,13 +331,8 @@ impl Lexer {
         let mut code: u32 = 0;
 
         for _ in 0..4 {
-            let position = self.current;
-            let c = self.advance()?;
-            if c.is_ascii_hexdigit() {
-                code = code * 16 + c.to_digit(16).unwrap();
-            } else {
-                return Err(self.unexpected_char(position));
-            }
+            let c = self.advance_matching(|c| c.is_ascii_hexdigit(), ExpectedChar::HexDigit)?;
+            code = code * 16 + c.to_digit(16).unwrap();
         }
 
         Ok(code)
@@ -344,7 +363,11 @@ impl Lexer {
     fn tokenize_punctuation(&mut self) -> Result<Token, LexerError> {
         let start = self.current;
 
-        let token_kind = match self.advance()? {
+        let expected = vec!['(', ')', '<', '>', ',', ';', '='];
+        let token_kind = match self.advance_matching(
+            |c| expected.contains(&c),
+            ExpectedChar::OneOf(expected.clone()),
+        )? {
             '(' => TokenKind::OpenParenthesis,
             ')' => TokenKind::CloseParenthesis,
             '<' => TokenKind::LessThan,
@@ -352,14 +375,11 @@ impl Lexer {
             ',' => TokenKind::Comma,
             ';' => TokenKind::Semicolon,
             '=' => {
-                let position = self.current;
-                match self.advance()? {
-                    '>' => TokenKind::FatArrow,
-                    _ => return Err(self.unexpected_char(position)),
-                }
+                self.advance_expected('>')?;
+                TokenKind::FatArrow
             }
             _ => {
-                return Err(self.unexpected_char(start));
+                unreachable!();
             }
         };
 
@@ -373,12 +393,12 @@ impl Lexer {
         }
     }
 
-    fn unexpected_char(&self, position: Position) -> LexerError {
+    fn unexpected_char(&self, position: Position, c: char, expected: ExpectedChar) -> LexerError {
         LexerError {
-            error_kind: LexerErrorKind::UnexpectedChar(self.text[position.full_index]),
+            error_kind: LexerErrorKind::UnexpectedChar(c, expected),
             span: Span {
                 start: position,
-                end: self.current,
+                end: position.advance(c),
             },
         }
     }
@@ -404,7 +424,7 @@ pub fn lexer_error_diagnostics(
             "unexpected end of file".to_string(),
             "unexpected end of file".to_string(),
         ),
-        LexerErrorKind::UnexpectedChar(c) => (
+        LexerErrorKind::UnexpectedChar(c, _expected) => (
             format!("unexpected character {:?}", c),
             "unexpected character".to_string(),
         ),
@@ -639,7 +659,10 @@ mod tests {
         lex_error!(
             "1u8 +2u32",
             LexerError {
-                error_kind: LexerErrorKind::UnexpectedChar('+'),
+                error_kind: LexerErrorKind::UnexpectedChar(
+                    '+',
+                    ExpectedChar::DigitLetterQuotePunctuation
+                ),
                 span: span!(start = (4, 1, 4), end = (5, 1, 5))
             }
         );
@@ -647,7 +670,7 @@ mod tests {
         lex_error!(
             "x=7",
             LexerError {
-                error_kind: LexerErrorKind::UnexpectedChar('7'),
+                error_kind: LexerErrorKind::UnexpectedChar('7', ExpectedChar::Exact('>')),
                 span: span!(start = (2, 1, 2), end = (3, 1, 3))
             }
         );
