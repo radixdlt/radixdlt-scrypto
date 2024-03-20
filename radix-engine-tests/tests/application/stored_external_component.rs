@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
@@ -7,8 +7,7 @@ use scrypto_test::prelude::*;
 fn stored_component_addresses_in_non_globalized_component_are_invocable() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package =
-        ledger.publish_package_simple(PackageLoader::get("stored_external_component"));
+    let package = ledger.publish_package_simple(PackageLoader::get("stored_external_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -30,8 +29,7 @@ fn stored_component_addresses_are_invocable() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, _) = ledger.new_allocated_account();
-    let package =
-        ledger.publish_package_simple(PackageLoader::get("stored_external_component"));
+    let package = ledger.publish_package_simple(PackageLoader::get("stored_external_component"));
     let manifest1 = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "ExternalComponent", "create", manifest_args!())

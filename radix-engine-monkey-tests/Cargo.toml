@@ -1,0 +1,45 @@
+[package]
+name = "radix-engine-monkey-tests"
+version = "1.2.0-dev"
+edition = "2021"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+radix-native-sdk = { workspace = true }
+sbor = { workspace = true }
+radix-engine = { workspace = true, features = ["radix_engine_tests"] }
+radix-engine-interface = { workspace = true }
+radix-common = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+radix-substate-store-impls = { workspace = true }
+radix-substate-store-queries = { workspace = true }
+radix-transactions = { workspace = true }
+radix-transaction-scenarios = { workspace = true }
+radix-rust = { workspace = true }
+radix-engine-profiling = { workspace = true, optional = true, features = ["resource_tracker"]}
+radix-engine-profiling-derive = { workspace = true }
+scrypto-test = { workspace = true }
+
+wabt = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+rayon = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+crossbeam = { workspace = true }
+walkdir = { workspace = true }
+paste = { workspace = true }
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["sbor/std", "radix-transactions/std", "radix-transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-interface/std", "radix-substate-store-impls/std", "radix-substate-store-interface/std", "radix-substate-store-queries/std", "radix-rust/std", "scrypto-test/std"]
+alloc = ["sbor/alloc", "radix-transactions/alloc", "radix-transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-substate-store-impls/alloc", "radix-substate-store-interface/alloc", "radix-substate-store-queries/alloc", "radix-rust/alloc", "scrypto-test/alloc"]
+rocksdb = ["scrypto-test/rocksdb"]
+post_run_db_check = ["scrypto-test/post_run_db_check"]
+resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling-derive/resource_tracker", "radix-engine/resource_tracker", "radix-common/resource_tracker", "scrypto-test/resource_tracker"]
+
+[lib]
+doctest = false
+bench = false

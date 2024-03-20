@@ -17,13 +17,13 @@ test_crates_features \
     scrypto \
     scrypto-derive \
     scrypto-derive-tests \
-    radix-engine-derive \
-    radix-engine-common \
+    radix-sbor-derive \
+    radix-common \
     radix-engine-interface \
     radix-engine \
     radix-engine-tests \
-    transaction-scenarios \
-    transaction" \
+    radix-transaction-scenarios \
+    radix-transactions" \
     --features=compile-blueprints-at-build-time
 
 echo "Testing scrypto packages..."
@@ -33,7 +33,7 @@ test_packages \
     examples/no-std"
 
 echo "Testing CLIs..."
-(cd simulator; cargo test)
+(cd radix-clis; cargo test)
 test_cli \
     "./tests/resim.sh \
     ./tests/scrypto.sh \

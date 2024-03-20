@@ -1,6 +1,6 @@
 use crate::blueprints::resource::LiquidFungibleResource;
 use crate::types::*;
-use radix_engine_common::math::Decimal;
+use radix_common::math::Decimal;
 
 pub trait ClientCostingApi<E> {
     /// Check if costing is enabled.

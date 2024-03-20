@@ -1,5 +1,5 @@
-use radix_engine_common::time::UtcDateTime;
-use radix_engine_common::types::{Epoch, Round};
+use radix_common::time::UtcDateTime;
+use radix_common::types::{Epoch, Round};
 use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
 use scrypto_test::prelude::*;
 

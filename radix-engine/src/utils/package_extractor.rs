@@ -5,8 +5,8 @@ use crate::vm::wasm_runtime::NoOpWasmRuntime;
 use crate::vm::ScryptoVmVersion;
 use crate::{errors::InvokeError, transaction::CostingParameters};
 use radix_engine_interface::blueprints::package::*;
+use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::rust::iter;
-use transaction::prelude::TransactionCostingParameters;
 
 #[derive(Debug)]
 pub enum ExtractSchemaError {

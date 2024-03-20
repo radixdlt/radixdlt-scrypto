@@ -74,6 +74,7 @@ members = [
     "oracles/oracle_v2",
     "oracles/oracle_v3",
 ]
+resolver = "2"
 
 [profile.release]
 opt-level = 'z'        # Optimize for size.

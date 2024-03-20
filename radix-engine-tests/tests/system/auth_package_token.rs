@@ -1,6 +1,6 @@
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine_common::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 

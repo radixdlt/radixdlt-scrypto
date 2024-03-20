@@ -25,7 +25,7 @@ use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
-use blueprint_schema_init::RefTypes;
+use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::{ClientBlueprintApi, CollectionIndex};
@@ -41,7 +41,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use transaction::model::PreAllocatedAddress;
+use radix_transactions::model::PreAllocatedAddress;
 
 #[derive(Clone)]
 pub enum SystemLockData {

@@ -4,10 +4,10 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_substates::FieldSubstate;
-use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManager};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
+use radix_native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManager};
 
 #[derive(Debug, ScryptoSbor)]
 pub struct WorktopSubstate {
@@ -152,7 +152,7 @@ impl WorktopBlueprint {
                 ))
             } else if existing_amount == amount {
                 // Move
-                worktop.resources.remove(&resource_address);
+                worktop.resources.swap_remove(&resource_address);
                 api.field_write_typed(worktop_handle, &worktop)?;
                 api.field_close(worktop_handle)?;
                 Ok(IndexedScryptoValue::from_typed(&existing_bucket))
@@ -202,7 +202,7 @@ impl WorktopBlueprint {
             } else if existing_non_fungibles.len() == ids.len() {
                 // Move
                 worktop = api.field_read_typed(worktop_handle)?;
-                worktop.resources.remove(&resource_address);
+                worktop.resources.swap_remove(&resource_address);
                 api.field_write_typed(worktop_handle, &worktop)?;
                 api.field_close(worktop_handle)?;
                 Ok(IndexedScryptoValue::from_typed(&existing_bucket))
@@ -231,7 +231,7 @@ impl WorktopBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
-        if let Some(bucket) = worktop.resources.remove(&input.resource_address) {
+        if let Some(bucket) = worktop.resources.swap_remove(&input.resource_address) {
             // Move
             api.field_write_typed(worktop_handle, &worktop)?;
             api.field_close(worktop_handle)?;

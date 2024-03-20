@@ -5,11 +5,11 @@ macro_rules! event_schema {
             let mut event_schema = sbor::rust::collections::index_map_new();
             $(
                 event_schema.insert(
-                    <$event_type as radix_engine_common::traits::ScryptoEvent>::EVENT_NAME.to_string(),
+                    <$event_type as radix_common::traits::ScryptoEvent>::EVENT_NAME.to_string(),
                     TypeRef::Static($aggregator.add_child_type_and_descendents::<$event_type>()),
                 );
             )*
-            blueprint_schema_init::BlueprintEventSchemaInit {
+            radix_blueprint_schema_init::BlueprintEventSchemaInit {
                 event_schema
             }
         }

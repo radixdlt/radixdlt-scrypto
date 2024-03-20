@@ -1,12 +1,12 @@
 [workspace]
-resolver = "1"
+resolver = "2"
 
 # NOTES:
 # This workspace is intended to be used for the primary scrypto/radix engine library crates.
 #
 # In particular:
-# * We purposefully don't include simulator - as it's an application, not a library
-#   The simulator receives its own separate Cargo.lock, that we source control.
+# * We purposefully don't include radix-clis - as it's an application, not a library
+#   The radix-clis receives its own separate Cargo.lock, that we source control.
 #   We don't source control the Cargo.lock for this workspace, because it's a workspace of libraries:
 #   https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries
 #
@@ -15,39 +15,120 @@ resolver = "1"
 #   to avoid falling back to the root workspace.
 
 members = [
-    "sbor",
+    "radix-blueprint-schema-init",
+    "radix-common-derive",
+    "radix-common",
+    "radix-engine-interface",
+    "radix-engine-monkey-tests",
+    "radix-engine-profiling-derive",
+    "radix-engine-profiling",
+    "radix-engine-tests",
+    "radix-engine",
+    "radix-native-sdk",
+    "radix-rust",
+    "radix-sbor-derive",
+    "radix-substate-store-impls",
+    "radix-substate-store-interface",
+    "radix-substate-store-queries",
+    "radix-transaction-scenarios",
+    "radix-transactions",
     "sbor-derive-common",
     "sbor-derive",
     "sbor-tests",
-    "scrypto",
+    "sbor",
     "scrypto-compiler",
+    "scrypto-derive-tests",
     "scrypto-derive",
     "scrypto-test",
-    "scrypto-derive-tests",
-    "native-sdk",
-    "blueprint-schema-init",
-    "transaction",
-    "transaction-scenarios",
-    "radix-engine",
-    "radix-engine-macros",
-    "radix-engine-common",
-    "radix-engine-interface",
-    "radix-engine-derive",
-    "radix-engine-profiling",
-    "radix-engine-profiling/resources-tracker-macro",
-    "radix-engine-tests",
-    "monkey-tests",
-    "substate-store-interface",
-    "substate-store-impls",
-    "substate-store-queries",
-    "utils",
+    "scrypto",
 ]
+
+[workspace.dependencies]
+radix-blueprint-schema-init = { version = "1.2.0-dev", path = "./radix-blueprint-schema-init", default-features = false }
+radix-common = { version = "1.2.0-dev", path = "./radix-common", default-features = false }
+radix-common-derive = { version = "1.2.0-dev", path = "./radix-common-derive", default-features = false }
+radix-engine = { version = "1.2.0-dev", path = "./radix-engine", default-features = false }
+radix-engine-interface = { version = "1.2.0-dev", path = "./radix-engine-interface", default-features = false }
+radix-engine-profiling = { version = "1.2.0-dev", path = "./radix-engine-profiling", default-features = false }
+radix-engine-profiling-derive = { version = "1.2.0-dev", path = "./radix-engine-profiling-derive", default-features = false }
+radix-native-sdk = { version = "1.2.0-dev", path = "./radix-native-sdk", default-features = false }
+radix-rust = { version = "1.2.0-dev", path = "./radix-rust", default-features = false }
+radix-sbor-derive = { version = "1.2.0-dev", path = "./radix-sbor-derive", default-features = false }
+radix-substate-store-impls = { version = "1.2.0-dev", path = "./radix-substate-store-impls", default-features = false }
+radix-substate-store-interface = { version = "1.2.0-dev", path = "./radix-substate-store-interface", default-features = false }
+radix-substate-store-queries = { version = "1.2.0-dev", path = "./radix-substate-store-queries", default-features = false }
+radix-transaction-scenarios = { version = "1.2.0-dev", path = "./radix-transaction-scenarios", default-features = false }
+radix-transactions = { version = "1.2.0-dev", path = "./radix-transactions", default-features = false }
+sbor = { version = "1.2.0-dev", path = "./sbor", default-features = false }
+sbor-derive = { version = "1.2.0-dev", path = "./sbor-derive", default-features = false }
+sbor-derive-common = { version = "1.2.0-dev", path = "./sbor-derive-common", default-features = false }
+scrypto = { version = "1.2.0-dev", path = "./scrypto", default-features = false }
+scrypto-compiler = { version = "1.2.0-dev", path = "./scrypto-compiler", default-features = false }
+scrypto-derive = { version = "1.2.0-dev", path = "./scrypto-derive", default-features = false }
+scrypto-test = { version = "1.2.0-dev", path = "./scrypto-test", default-features = false }
+
+arbitrary = { version = "1.3.0", features = ["derive"] }
+automod = { version = "1.0.13" }
+bech32 = { version = "0.9.0", default-features = false }
+bencher = { version = "0.1.5" }
+bincode = { version = "2.0.0-rc.1", default-features = false, features = ["derive"] }
+bitflags = { version = "1.3" }
+blake2 = { version = "0.10.6", default-features = false }
+blst = { version = "0.3.11", default-features = false, optional = false }
+bnum = { version = "0.7.0", default-features = false, features = ["numtraits"] }
+cargo_toml = { version = "0.15.3" }
+colored = { version = "2.0.0", default-features = false }
+const-sha1 = { version = "0.3.0", default-features = false }
+criterion = { version = "0.3", features = ["html_reports"] }
+crossbeam = { version = "0.8.2" }
+ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
+ethnum = {version = "1.3.2", default-features = false }
+fixedstr = { version = "0.2.9" }
+hashbrown = { version = "0.13.2" }
+hex = { version = "0.4.3", default-features = false }
+indexmap = { version = "2.2.5", default-features = false }
+itertools = { version = "0.10.3" }
+lazy_static = { version = "1.4.0" }
+linreg = { version = "0.2.0" }
+lru = { version = "0.8.1", default-features = false }
+minicov = { version = "0.3" }
+moka = { version = "0.9.9", features = ["sync"], default-features = false }
+num-bigint = { version = "0.4.3", default-features = false }
+num-integer = { version = "0.1.45", default-features = false }
+num-traits = { version = "0.2.15", default-features = false }
+ouroboros = { version = "0.17.2" }
+paste = { version = "1.0.13" }
+perfcnt = { version = "0.8.0" }
+plotters = { version = "0.3.4" }
+proc-macro2 = { version = "1.0.38" }
+quote = { version = "1.0.18" }
+radix-wasm-instrument = { version = "1.0.0", default-features = false,  features = ["ignore_custom_section"]}
+radix-wasmi = {  version = "1.0.0" }
+rand = { version = "0.8.5" }
+rand_chacha = { version = "0.3.1" }
+rayon =  { version = "1.5.3" }
+regex = { version = "=1.9.3", default-features = false, features = [] }
+rocksdb = { version = "0.21.0" }
+rug = { version = "1.18" }
+secp256k1 = { version = "0.28.0", default-features = false, features = ["recovery"] }
+serde = { version = "1.0.144", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0.105" }
+sha3 = { version = "0.10.8", default-features = false, optional = false }
+shared_memory = { version = "0.12.4" }
+strum = { version = "0.24", default-features = false, features = ["derive"] }
+syn = { version = "1.0.93", features = ["full", "extra-traits"] }
+trybuild = { version = "1.0.85" }
+wabt = { version = "0.10.0" }
+walkdir = { version = "2.3.3", default-features = false }
+wasm-opt = { version = "0.114.1" }
+wasmer = { version = "2.2.1" }
+wasmer-compiler-singlepass = { version = "2.2.1" }
+wasmparser = { version = "0.107.0", default-features = false }
 
 # Both the release and test profiles use `panic = "unwind"` to allow certain parts of the Radix
 # Engine to be able to catch panics. As an example, the native-vm has a `catch_unwind` to catch
 # all panics that may occur in the native blueprints and convert them to `Result`s instead of
 # crashing the engine.
-
 [profile.release]
 panic = "unwind"
 

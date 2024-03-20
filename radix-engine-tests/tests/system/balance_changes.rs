@@ -57,8 +57,7 @@ fn test_balance_changes_when_success() {
     let result = receipt.expect_commit_success();
 
     assert_eq!(
-        ledger
-            .sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id()),
+        ledger.sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id()),
         indexmap!(
             XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap())
         )
@@ -142,8 +141,7 @@ fn test_balance_changes_when_failure() {
     let result = receipt.expect_commit_failure();
 
     assert_eq!(
-        ledger
-            .sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id(),),
+        ledger.sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id(),),
         indexmap!(
             XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap() )
         )
@@ -182,8 +180,7 @@ fn test_balance_changes_when_recall() {
     let result = receipt.expect_commit_success();
 
     assert_eq!(
-        ledger
-            .sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id()),
+        ledger.sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id()),
         indexmap!(
             XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap() )
         )
@@ -258,8 +255,8 @@ fn test_balance_changes_when_transferring_non_fungibles() {
     assert_eq!(other_account_added, btreeset!(transferred_non_fungible));
     assert_eq!(other_account_removed, BTreeSet::new());
 
-    let faucet_changes = ledger
-        .sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id());
+    let faucet_changes =
+        ledger.sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id());
     let total_cost_in_xrd = receipt.fee_summary.total_cost();
     assert_eq!(
         faucet_changes,

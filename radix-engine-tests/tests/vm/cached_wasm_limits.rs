@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use scrypto_test::prelude::*;
 
 /// Long running test which verifies that the Wasm cache is properly evicting entries

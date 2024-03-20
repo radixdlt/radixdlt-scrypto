@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::ApplicationError;
@@ -5,11 +6,10 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemModuleError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::prelude::*;
+use radix_transactions::prelude::*;
 use scrypto_test::prelude::{CustomGenesis, DefaultLedgerSimulator, LedgerSimulatorBuilder};
-use transaction::prelude::*;
 
 #[test]
 pub fn creating_an_access_controller_succeeds() {
@@ -423,8 +423,7 @@ pub fn primary_can_cancel_their_badge_withdraw_attempt() {
 
     {
         // Act
-        let receipt =
-            ledger.quick_confirm_badge_withdraw_attempt(Role::Recovery, Role::Primary);
+        let receipt = ledger.quick_confirm_badge_withdraw_attempt(Role::Recovery, Role::Primary);
 
         // Assert
         receipt.expect_specific_failure(is_no_badge_withdraw_attempts_exists_for_proposer_error);

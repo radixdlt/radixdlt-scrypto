@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
@@ -6,8 +6,7 @@ use scrypto_test::prelude::*;
 fn should_be_able_to_get_address_of_an_address_reservation() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("address_reservation"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("address_reservation"));
 
     // Act
     let manifest = ManifestBuilder::new()

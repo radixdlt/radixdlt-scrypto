@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
@@ -6,8 +6,7 @@ use scrypto_test::prelude::*;
 fn test_same_package_remote_generic_arg_for_non_fungible_data() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -25,8 +24,7 @@ fn test_same_package_remote_generic_arg_for_non_fungible_data() {
 fn test_same_package_remote_generic_arg_for_key_value_store() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -44,10 +42,8 @@ fn test_same_package_remote_generic_arg_for_key_value_store() {
 fn test_different_package_remote_generic_arg_for_non_fungible_data() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address1 =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
-    let package_address2 =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address1 = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address2 = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -65,10 +61,8 @@ fn test_different_package_remote_generic_arg_for_non_fungible_data() {
 fn test_different_package_remote_generic_arg_for_key_value_store() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address1 =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
-    let package_address2 =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address1 = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address2 = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -86,10 +80,8 @@ fn test_different_package_remote_generic_arg_for_key_value_store() {
 fn test_invalid_remote_types_for_non_fungible_data() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address1 =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
-    let package_address2 =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address1 = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address2 = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -107,10 +99,8 @@ fn test_invalid_remote_types_for_non_fungible_data() {
 fn test_invalid_remote_types_for_key_value_store() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address1 =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
-    let package_address2 =
-        ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address1 = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
+    let package_address2 = ledger.publish_package_simple(PackageLoader::get("remote_generic_args"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(

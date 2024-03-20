@@ -3,7 +3,7 @@ use crate::representations::*;
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
-use utils::*;
+use radix_rust::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum PrintMode {

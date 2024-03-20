@@ -3,8 +3,8 @@ use crate::rust::cell::RefCell;
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::*;
 use serde::ser::*;
-use utils::*;
 use TypedTraversalEvent::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

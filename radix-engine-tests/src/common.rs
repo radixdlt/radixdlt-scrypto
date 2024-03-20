@@ -1,8 +1,8 @@
 #[cfg(feature = "compile-blueprints-at-build-time")]
 #[allow(unused)]
 pub mod package_loader {
-    use radix_engine_common::prelude::*;
-    use substate_store_queries::typed_substate_layout::*;
+    use radix_common::prelude::*;
+    use radix_substate_store_queries::typed_substate_layout::*;
 
     const PACKAGES_BINARY: &[u8] =
         include_bytes!(concat!(env!("OUT_DIR"), "/compiled_packages.bin"));
@@ -28,9 +28,9 @@ pub mod package_loader {
 #[cfg(not(feature = "compile-blueprints-at-build-time"))]
 #[allow(unused)]
 pub mod package_loader {
-    use radix_engine_common::prelude::*;
+    use radix_common::prelude::*;
+    use radix_substate_store_queries::typed_substate_layout::*;
     use std::path::PathBuf;
-    use substate_store_queries::typed_substate_layout::*;
 
     pub struct PackageLoader;
     impl PackageLoader {
@@ -75,7 +75,7 @@ pub mod path_macros {
         ($name: expr) => {
             concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/../transaction/examples/",
+                "/../radix-transactions/examples/",
                 $name
             )
         };

@@ -87,7 +87,7 @@ pub extern crate paste;
 /// Feel free to add more types to the prelude
 pub mod prelude {
     // Upstream preludes
-    pub use utils::prelude::*;
+    pub use radix_rust::prelude::*;
 
     // Exports from current crate
     pub use crate::encoded_wrappers::{RawPayload as SborRawPayload, RawValue as SborRawValue};

@@ -8,16 +8,16 @@ use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipien
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::NodeSubstates;
 use crate::vm::wasm::PrepareError;
-use blueprint_schema_init::*;
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::NativeVault;
-use native_sdk::resource::ResourceManager;
+use radix_blueprint_schema_init::*;
 use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::role_assignment::ROLE_ASSIGNMENT_BLUEPRINT;
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_native_sdk::resource::NativeVault;
+use radix_native_sdk::resource::ResourceManager;
 use sbor::LocalTypeId;
 
 // Import and re-export substate types
@@ -256,12 +256,12 @@ fn validate_package_schema(
 }
 
 fn validate_package_schema_type_ref(
-    blueprint_schema_init: &BlueprintSchemaInit,
+    radix_blueprint_schema_init: &BlueprintSchemaInit,
     type_ref: TypeRef<LocalTypeId>,
 ) -> Result<(), PackageError> {
     match type_ref {
         TypeRef::Static(local_type_id) => {
-            if blueprint_schema_init
+            if radix_blueprint_schema_init
                 .schema
                 .v1()
                 .resolve_type_kind(local_type_id)
@@ -273,7 +273,7 @@ fn validate_package_schema_type_ref(
             }
         }
         TypeRef::Generic(generic_id) => {
-            if (generic_id as usize) < blueprint_schema_init.generics.len() {
+            if (generic_id as usize) < radix_blueprint_schema_init.generics.len() {
                 Ok(())
             } else {
                 Err(PackageError::InvalidGenericId(generic_id))
@@ -307,12 +307,12 @@ fn validate_event_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
     for blueprint_init in blueprints {
-        let blueprint_schema_init = &blueprint_init.schema;
-        let BlueprintSchemaInit { schema, events, .. } = blueprint_schema_init;
+        let radix_blueprint_schema_init = &blueprint_init.schema;
+        let BlueprintSchemaInit { schema, events, .. } = radix_blueprint_schema_init;
 
         for (expected_event_name, type_ref) in events.event_schema.iter() {
             let local_type_id =
-                extract_package_event_static_type_id(blueprint_schema_init, *type_ref)?;
+                extract_package_event_static_type_id(radix_blueprint_schema_init, *type_ref)?;
 
             // Checking that the event is either a struct or an enum
             let type_kind = schema.v1().resolve_type_kind(local_type_id).map_or(
@@ -349,8 +349,8 @@ fn validate_type_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
     for blueprint_init in blueprints {
-        let blueprint_schema_init = &blueprint_init.schema;
-        let BlueprintSchemaInit { schema, types, .. } = blueprint_schema_init;
+        let radix_blueprint_schema_init = &blueprint_init.schema;
+        let BlueprintSchemaInit { schema, types, .. } = radix_blueprint_schema_init;
 
         for (_, local_type_id) in types.type_schema.iter() {
             if schema.v1().resolve_type_kind(*local_type_id).is_none() {

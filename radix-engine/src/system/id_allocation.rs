@@ -1,6 +1,6 @@
 use crate::blueprints::pool::v1::constants::*;
-use radix_engine_common::types::EntityType;
-use radix_engine_common::{constants::*, ScryptoSbor};
+use radix_common::types::EntityType;
+use radix_common::{constants::*, ScryptoSbor};
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;

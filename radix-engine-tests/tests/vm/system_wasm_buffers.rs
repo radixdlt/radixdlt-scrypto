@@ -1,11 +1,11 @@
+use radix_common::prelude::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
-use radix_engine_common::prelude::*;
 use radix_engine_tests::common::*;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use scrypto_test::prelude::*;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;
@@ -318,8 +318,7 @@ fn test_wasm_buffer_invalid_buffer_id() {
 
     for buffer_id in [0, 1, 3, u32::MAX] {
         // Act
-        let receipt =
-            test_wasm_buffer_consume!(ledger, component_address, buffer_id = buffer_id);
+        let receipt = test_wasm_buffer_consume!(ledger, component_address, buffer_id = buffer_id);
         // Assert
         receipt.expect_specific_failure(|e| {
             matches!(

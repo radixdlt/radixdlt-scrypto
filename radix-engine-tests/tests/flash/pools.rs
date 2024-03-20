@@ -224,18 +224,9 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        ledger.get_component_balance(account, fungible1),
-        dec!(200)
-    );
-    assert_eq!(
-        ledger.get_component_balance(account, fungible2),
-        dec!(0)
-    );
-    assert_eq!(
-        ledger.get_component_balance(account, pool_unit),
-        dec!(200)
-    );
+    assert_eq!(ledger.get_component_balance(account, fungible1), dec!(200));
+    assert_eq!(ledger.get_component_balance(account, fungible2), dec!(0));
+    assert_eq!(ledger.get_component_balance(account, pool_unit), dec!(200));
 }
 
 #[test]
@@ -387,16 +378,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        ledger.get_component_balance(account, fungible1),
-        dec!(200)
-    );
-    assert_eq!(
-        ledger.get_component_balance(account, fungible2),
-        dec!(0)
-    );
-    assert_eq!(
-        ledger.get_component_balance(account, pool_unit),
-        dec!(200)
-    );
+    assert_eq!(ledger.get_component_balance(account, fungible1), dec!(200));
+    assert_eq!(ledger.get_component_balance(account, fungible2), dec!(0));
+    assert_eq!(ledger.get_component_balance(account, pool_unit), dec!(200));
 }

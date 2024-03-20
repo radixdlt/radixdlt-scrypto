@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use radix_engine_common::prelude::*;
+    use radix_common::prelude::*;
     use radix_engine_interface::prelude::*;
     use sbor::validate_payload_against_schema;
 
     #[test]
     fn test_custom_type_values_are_valid() {
         // These tests continue tests from the definition of scrypto's well-known types in `custom_well_known_types.rs`
-        // in the `radix-engine-common` crate.
+        // in the `radix-common` crate.
         // In particular, we only test types here which are only actually fully defined in `radix-engine-interface`.
 
         // MISC

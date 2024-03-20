@@ -1,9 +1,9 @@
 use crate::blueprints::resource::*;
 use crate::internal_prelude::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::data::manifest::model::ManifestAddressReservation;
-use radix_engine_common::types::*;
+use radix_common::data::manifest::model::ManifestAddressReservation;
+use radix_common::types::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
 
@@ -11,7 +11,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
 
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceRoles {
     pub mint_roles: Option<MintRoles<RoleDefinition>>,
@@ -53,7 +53,7 @@ impl FungibleResourceRoles {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleResourceManagerCreateInput {
     pub owner_role: OwnerRole,
@@ -64,7 +64,7 @@ pub struct FungibleResourceManagerCreateInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct FungibleResourceManagerCreateManifestInput {
     pub owner_role: OwnerRole,
@@ -80,7 +80,7 @@ pub type FungibleResourceManagerCreateOutput = ResourceAddress;
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub owner_role: OwnerRole,
@@ -92,7 +92,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub owner_role: OwnerRole,

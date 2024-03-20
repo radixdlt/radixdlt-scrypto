@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use crate::types::BlueprintId;
-use radix_engine_common::types::GlobalAddressReservation;
-use radix_engine_common::types::NodeId;
+use radix_common::types::GlobalAddressReservation;
+use radix_common::types::NodeId;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct OnVirtualizeInput {

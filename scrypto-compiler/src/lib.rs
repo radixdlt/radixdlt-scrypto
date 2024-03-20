@@ -1,12 +1,12 @@
 use cargo_toml::Manifest;
+use radix_common::prelude::*;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
-use radix_engine_common::prelude::*;
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
+use radix_rust::prelude::{IndexMap, IndexSet};
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use std::{env, io};
-use utils::prelude::{IndexMap, IndexSet};
 
 const MANIFEST_FILE: &str = "Cargo.toml";
 const BUILD_TARGET: &str = "wasm32-unknown-unknown";
@@ -833,7 +833,7 @@ impl ScryptoCompilerBuilder {
         // Firstly clear any log level previously set
         let all_features = ScryptoCompilerInputParams::log_level_to_scrypto_features(Level::Trace);
         all_features.iter().for_each(|log_level| {
-            self.input_params.features.remove(log_level);
+            self.input_params.features.swap_remove(log_level);
         });
 
         // Now set log level provided by the user

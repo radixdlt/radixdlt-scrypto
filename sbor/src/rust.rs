@@ -1,2 +1,2 @@
-// TODO: In a follow up PR, replace all references to sbor::rust::* with utils::rust::*
-pub use utils::rust::*;
+// TODO: In a follow up PR, replace all references to sbor::rust::* with radix_rust::rust::*
+pub use radix_rust::rust::*;

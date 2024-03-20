@@ -80,7 +80,7 @@ where
         buffer_id: BufferId,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         self.buffers
-            .remove(&buffer_id)
+            .swap_remove(&buffer_id)
             .ok_or(InvokeError::SelfError(WasmRuntimeError::BufferNotFound(
                 buffer_id,
             )))

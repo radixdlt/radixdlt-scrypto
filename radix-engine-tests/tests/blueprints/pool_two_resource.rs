@@ -1,15 +1,15 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::blueprints::pool::v1::errors::two_resource_pool::Error as TwoResourcePoolError;
 use radix_engine::blueprints::pool::v1::events::two_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
-use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_substate_store_queries::typed_substate_layout::FungibleResourceManagerError;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::*;
-use substate_store_queries::typed_substate_layout::FungibleResourceManagerError;
 
 #[test]
 pub fn two_resource_pool_can_be_instantiated() {
@@ -47,9 +47,7 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
         .lock_fee_from_faucet()
         .set_metadata(global_address, key, MetadataValue::Bool(false))
         .build();
-    let receipt = ledger
-        .ledger
-        .execute_manifest(manifest, initial_proofs);
+    let receipt = ledger.ledger.execute_manifest(manifest, initial_proofs);
 
     // Assert
     result(receipt);
@@ -168,9 +166,7 @@ pub fn contribution_provides_expected_pool_unit_resources1() {
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource1)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource1).cloned(),
         if expected_change1 == 0 {
             None
         } else {
@@ -178,9 +174,7 @@ pub fn contribution_provides_expected_pool_unit_resources1() {
         }
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource2)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource2).cloned(),
         if expected_change2 == 0 {
             None
         } else {
@@ -226,9 +220,7 @@ pub fn contribution_provides_expected_pool_unit_resources2() {
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource1)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource1).cloned(),
         if expected_change1 == 0 {
             None
         } else {
@@ -236,9 +228,7 @@ pub fn contribution_provides_expected_pool_unit_resources2() {
         }
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource2)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource2).cloned(),
         if expected_change2 == 0 {
             None
         } else {
@@ -283,9 +273,7 @@ pub fn contribution_provides_expected_pool_unit_resources3() {
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource1)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource1).cloned(),
         if expected_change1 == 0 {
             None
         } else {
@@ -293,9 +281,7 @@ pub fn contribution_provides_expected_pool_unit_resources3() {
         }
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource2)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource2).cloned(),
         if expected_change2 == 0 {
             None
         } else {
@@ -340,9 +326,7 @@ pub fn contribution_provides_expected_pool_unit_resources4() {
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource1)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource1).cloned(),
         if expected_change1 == 0 {
             None
         } else {
@@ -350,9 +334,7 @@ pub fn contribution_provides_expected_pool_unit_resources4() {
         }
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource2)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource2).cloned(),
         if expected_change2 == Decimal::ZERO {
             None
         } else {
@@ -400,9 +382,7 @@ pub fn contribution_provides_expected_pool_unit_resources5() {
         Some(BalanceChange::Fungible(expected_pool_units.into()))
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource1)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource1).cloned(),
         if expected_change1 == 0 {
             None
         } else {
@@ -410,9 +390,7 @@ pub fn contribution_provides_expected_pool_unit_resources5() {
         }
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource2)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource2).cloned(),
         if expected_change2 == 0 {
             None
         } else {
@@ -490,10 +468,7 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
     let receipt = ledger.get_redemption_value(dec!("1.11111111111111"), true);
 
     // Assert
-    assert_eq!(
-        receipt[&ledger.pool_resource1],
-        dec!("1.11111111111111")
-    );
+    assert_eq!(receipt[&ledger.pool_resource1], dec!("1.11111111111111"));
     assert_eq!(receipt[&ledger.pool_resource2], dec!("1.11")); // rounded due to divisibility == 2
 
     // Act
@@ -506,15 +481,11 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
     );
 
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource1)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource1).cloned(),
         Some(BalanceChange::Fungible(dec!("1.11111111111111")))
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource2)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource2).cloned(),
         Some(BalanceChange::Fungible(dec!("1.11")))
     );
 }
@@ -543,15 +514,11 @@ fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
         ledger.pool_component_address.as_node_id(),
     );
     assert_eq!(
-        pool_balance_changes
-            .get(&ledger.pool_resource1)
-            .cloned(),
+        pool_balance_changes.get(&ledger.pool_resource1).cloned(),
         Some(BalanceChange::Fungible(dec!("1.1111111111111")))
     );
     assert_eq!(
-        pool_balance_changes
-            .get(&ledger.pool_resource2)
-            .cloned(),
+        pool_balance_changes.get(&ledger.pool_resource2).cloned(),
         Some(BalanceChange::Fungible(dec!("1.11")))
     );
 }
@@ -770,15 +737,11 @@ fn redemption_after_protected_deposit_redeems_expected_amount() {
         ledger.account_component_address.as_node_id(),
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource1)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource1).cloned(),
         Some(BalanceChange::Fungible(600.into()))
     );
     assert_eq!(
-        account_balance_changes
-            .get(&ledger.pool_resource2)
-            .cloned(),
+        account_balance_changes.get(&ledger.pool_resource2).cloned(),
         Some(BalanceChange::Fungible(100.into()))
     );
 }
@@ -807,15 +770,11 @@ pub fn test_complete_interactions() {
             Some(BalanceChange::Fungible(dec!(316.2277660168379332)))
         );
         assert_eq!(
-            account_balance_changes
-                .get(&ledger.pool_resource1)
-                .cloned(),
+            account_balance_changes.get(&ledger.pool_resource1).cloned(),
             None
         );
         assert_eq!(
-            account_balance_changes
-                .get(&ledger.pool_resource2)
-                .cloned(),
+            account_balance_changes.get(&ledger.pool_resource2).cloned(),
             None
         );
     }
@@ -840,15 +799,11 @@ pub fn test_complete_interactions() {
             Some(BalanceChange::Fungible(dec!(442.71887242357310648)))
         );
         assert_eq!(
-            account_balance_changes
-                .get(&ledger.pool_resource1)
-                .cloned(),
+            account_balance_changes.get(&ledger.pool_resource1).cloned(),
             None
         );
         assert_eq!(
-            account_balance_changes
-                .get(&ledger.pool_resource2)
-                .cloned(),
+            account_balance_changes.get(&ledger.pool_resource2).cloned(),
             Some(BalanceChange::Fungible(420.into()))
         );
     }
@@ -875,12 +830,8 @@ pub fn protected_withdraw_fails_without_proper_authority_present() {
     ledger
         .protected_deposit(ledger.pool_resource1, 10, true)
         .expect_commit_success();
-    let receipt = ledger.protected_withdraw(
-        ledger.pool_resource1,
-        10,
-        WithdrawStrategy::Exact,
-        false,
-    );
+    let receipt =
+        ledger.protected_withdraw(ledger.pool_resource1, 10, WithdrawStrategy::Exact, false);
 
     // Assert
     receipt.expect_specific_failure(is_auth_error)

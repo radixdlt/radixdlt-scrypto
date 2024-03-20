@@ -1,8 +1,8 @@
 // TODO: Need to deduplicate this code.
 
 use crate::prelude::*;
-use radix_engine_common::math::Decimal;
-use radix_engine_common::traits::NonFungibleData;
+use radix_common::math::Decimal;
+use radix_common::traits::NonFungibleData;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::role_assignment::RoleDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
@@ -939,7 +939,7 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_common::types::NonFungibleGlobalId;
+    use radix_common::types::NonFungibleGlobalId;
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;

@@ -1,8 +1,8 @@
 use crate::resource::*;
 use crate::runtime::Runtime;
 use crate::*;
-use radix_engine_common::prelude::*;
-use radix_engine_common::traits::NonFungibleData;
+use radix_common::prelude::*;
+use radix_common::traits::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
 use runtime::LocalAuthZone;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;

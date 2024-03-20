@@ -2,7 +2,7 @@ use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::prelude::{scrypto_encode, ScryptoEncode, ScryptoSbor};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
+use radix_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 

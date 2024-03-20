@@ -1,17 +1,17 @@
+use radix_common::constants::AuthAddresses;
+use radix_common::prelude::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine_common::constants::AuthAddresses;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::object_modules::role_assignment::FallToOwner;
 use radix_engine_interface::rule;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
+use radix_substate_store_queries::typed_substate_layout::*;
 use scrypto_test::prelude::InvalidNameError;
 use scrypto_test::prelude::*;
-use substate_store_queries::typed_substate_layout::*;
 
 #[test]
 fn can_call_public_function() {
@@ -74,8 +74,7 @@ fn can_call_protected_function_with_auth() {
             manifest_args!(),
         )
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
+    let receipt = ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -859,8 +858,7 @@ impl MutableRolesLedgerSimulator {
         roles: RoleAssignmentInit,
         ledger: &mut DefaultLedgerSimulator,
     ) -> TransactionReceipt {
-        let package_address =
-            ledger.publish_package_simple(PackageLoader::get("role_assignment"));
+        let package_address = ledger.publish_package_simple(PackageLoader::get("role_assignment"));
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -878,8 +876,7 @@ impl MutableRolesLedgerSimulator {
         owner_role: OwnerRole,
         ledger: &mut DefaultLedgerSimulator,
     ) -> TransactionReceipt {
-        let package_address =
-            ledger.publish_package_simple(PackageLoader::get("role_assignment"));
+        let package_address = ledger.publish_package_simple(PackageLoader::get("role_assignment"));
 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -895,10 +892,8 @@ impl MutableRolesLedgerSimulator {
 
     pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
         let mut ledger = LedgerSimulatorBuilder::new().build();
-        let receipt = Self::create_component_with_owner(
-            OwnerRole::Fixed(update_access_rule),
-            &mut ledger,
-        );
+        let receipt =
+            Self::create_component_with_owner(OwnerRole::Fixed(update_access_rule), &mut ledger);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {

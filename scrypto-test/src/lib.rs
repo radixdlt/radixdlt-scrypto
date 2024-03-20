@@ -57,7 +57,7 @@
 //!   which are exposed through the [`ClientApi`].
 //! * Since [`TestEnvironment`] implements the [`ClientApi`] it can be used as a substitute to
 //!   ScryptoEnv from Scrypto and the SystemService from native. This means that the simple
-//!   interface seen in the native_sdk crate can be used within tests.
+//!   interface seen in the radix_native_sdk crate can be used within tests.
 //! * If each test has it’s own [`TestEnvironment`] instance (they instantiate that themselves if
 //!   they need it), then tests have no shared dependencies and are isolated.
 //! * The biggest struggle with the transaction-based model was around dealing with transient nodes.

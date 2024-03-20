@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
@@ -6,13 +7,12 @@ use radix_engine::system::bootstrap::{
 use radix_engine::transaction::TransactionResult;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_common::prelude::*;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_queries::typed_native_events::TypedNativeEvent;
+use radix_transaction_scenarios::scenario::{NextAction, ScenarioCore};
+use radix_transaction_scenarios::scenarios::get_builder_for_every_scenario;
 use sbor::rust::ops::Deref;
 use scrypto_test::prelude::*;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
-use substate_store_queries::typed_native_events::TypedNativeEvent;
-use transaction_scenarios::scenario::{NextAction, ScenarioCore};
-use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 
 #[test]
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {

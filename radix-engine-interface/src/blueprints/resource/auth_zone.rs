@@ -1,7 +1,7 @@
 use crate::blueprints::resource::*;
-use radix_engine_common::data::scrypto::model::*;
-use radix_engine_common::math::Decimal;
-use radix_engine_common::types::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::Decimal;
+use radix_common::types::*;
 use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;

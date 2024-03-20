@@ -1,8 +1,8 @@
 use crate::api::ModuleId;
 use crate::blueprints::resource::*;
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use sbor::rust::fmt::Debug;
 
 pub const ROLE_ASSIGNMENT_BLUEPRINT: &str = "RoleAssignment";
@@ -10,7 +10,7 @@ pub const ROLE_ASSIGNMENT_BLUEPRINT: &str = "RoleAssignment";
 pub const ROLE_ASSIGNMENT_CREATE_IDENT: &str = "create";
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -26,7 +26,7 @@ pub type RoleAssignmentCreateOutput = Own;
 pub const ROLE_ASSIGNMENT_SET_IDENT: &str = "set";
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -43,7 +43,7 @@ pub type RoleAssignmentSetOutput = ();
 pub const ROLE_ASSIGNMENT_SET_OWNER_IDENT: &str = "set_owner";
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -58,7 +58,7 @@ pub type RoleAssignmentSetOwnerOutput = ();
 pub const ROLE_ASSIGNMENT_LOCK_OWNER_IDENT: &str = "lock_owner";
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -71,7 +71,7 @@ pub type RoleAssingmentLockOwnerOutput = ();
 pub const ROLE_ASSIGNMENT_GET_IDENT: &str = "get";
 
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(

@@ -5,7 +5,7 @@ use crate::kernel::kernel_callback_api::*;
 use crate::system::system_modules::execution_trace::*;
 use crate::track::interface::*;
 use radix_engine_interface::api::field_api::*;
-use substate_store_interface::db_key_mapper::*;
+use radix_substate_store_interface::db_key_mapper::*;
 
 pub struct DroppedNode {
     pub substates: NodeSubstates,

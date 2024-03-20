@@ -5,8 +5,8 @@ use crate::{
     transaction::{AbortReason, CostingParameters},
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::rust::cmp::min;
-use transaction::prelude::TransactionCostingParameters;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FeeReserveError {
@@ -384,7 +384,7 @@ impl SystemLoanFeeReserve {
         let types: Vec<StorageType> = self.storage_cost_deferred.keys().cloned().collect();
         for t in types {
             self.consume_storage(t, self.storage_cost_deferred.get(&t).cloned().unwrap())?;
-            self.storage_cost_deferred.remove(&t);
+            self.storage_cost_deferred.swap_remove(&t);
         }
 
         // Repay owed with balance

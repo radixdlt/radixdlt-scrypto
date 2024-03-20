@@ -1,0 +1,32 @@
+[package]
+name = "radix-substate-store-impls"
+version = "1.2.0-dev"
+edition = "2021"
+description = "Includes various substate store implementations."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+sbor = { workspace = true }
+radix-rust = { workspace = true }
+radix-common = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+rocksdb = { workspace = true, optional = true }
+itertools = { workspace = true }
+hex = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.8.0"
+
+[features]
+default = ["std"]
+std = ["hex/std", "sbor/std", "radix-rust/std", "radix-common/std", "radix-substate-store-interface/std", "itertools/use_std"]
+alloc = ["hex/alloc", "sbor/alloc", "radix-rust/alloc", "radix-common/alloc", "radix-substate-store-interface/alloc", "itertools/use_alloc"]
+
+rocksdb = ["dep:rocksdb"]
+
+# Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+[lib]
+doctest = false
+bench = false

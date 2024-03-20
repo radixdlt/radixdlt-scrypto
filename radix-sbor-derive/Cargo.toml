@@ -1,0 +1,37 @@
+[package]
+name = "radix-sbor-derive"
+version = "1.2.0-dev"
+edition = "2021"
+description = "A library of macros for deriving Scrypto SBOR and Manifest SBOR implementation."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[lib]
+doctest = false
+proc-macro = true
+bench = false
+
+[dependencies]
+proc-macro2 = { workspace = true }
+syn = { workspace = true }
+quote = { workspace = true }
+sbor-derive-common = { workspace = true }
+
+[features]
+# Currently, dependencies of procedural macros are imported to host crates. This may accidentally 
+# enable unwanted features of host dependencies, i.e. `serde`, `serde_json`, `sbor` and `scrypto-abi`.
+# 
+# To work around with it, we've added features `std` and `alloc` for `scrypto-derive`, even
+# though it only works under `std` environment.
+#
+# See:
+# - https://github.com/rust-lang/cargo/issues/5730
+# - https://github.com/rust-lang/cargo/issues/7915
+#
+default = ["std"]
+std = []
+alloc = []
+
+# Enable trace
+trace = ["sbor-derive-common/trace"]

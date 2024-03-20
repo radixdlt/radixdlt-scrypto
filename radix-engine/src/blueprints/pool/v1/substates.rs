@@ -1,7 +1,7 @@
 use crate::blueprints::models::*;
 use crate::internal_prelude::*;
-use native_sdk::resource::*;
 use radix_engine_interface::prelude::*;
+use radix_native_sdk::resource::*;
 
 pub mod one_resource_pool {
     use super::*;

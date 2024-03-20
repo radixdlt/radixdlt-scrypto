@@ -1,8 +1,8 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::resource::{NonFungibleResourceManagerError, VaultError};
 use radix_engine::errors::{ApplicationError, RejectionReason, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_engine_interface::types::FromPublicKey;
@@ -248,9 +248,7 @@ fn virtual_account_has_expected_owner_key() {
     let (_, _, account) = ledger.new_account(true);
 
     // Act
-    let metadata = ledger
-        .get_metadata(account.into(), "owner_badge")
-        .unwrap();
+    let metadata = ledger.get_metadata(account.into(), "owner_badge").unwrap();
 
     // Assert
     assert_eq!(

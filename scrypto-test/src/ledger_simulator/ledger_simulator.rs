@@ -31,20 +31,20 @@ use radix_engine_interface::blueprints::pool::{
     OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
 use radix_engine_interface::prelude::{dec, freeze_roles, rule};
-use std::path::{Path, PathBuf};
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
-use substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use substate_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
-use substate_store_interface::interface::{
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
+use radix_substate_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase, SubstateDatabase,
 };
-use substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
-use substate_store_queries::typed_native_events::to_typed_native_event;
-use substate_store_queries::typed_substate_layout::*;
-use transaction::validation::{
+use radix_substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
+use radix_substate_store_queries::typed_native_events::to_typed_native_event;
+use radix_substate_store_queries::typed_substate_layout::*;
+use radix_transactions::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
+use std::path::{Path, PathBuf};
 
 use super::Compile;
 
@@ -688,7 +688,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         addresses
     }
 
-    pub fn get_package_blueprint_schema_inits(
+    pub fn get_package_radix_blueprint_schema_inits(
         &self,
         package_address: &PackageAddress,
     ) -> IndexMap<SchemaHash, VersionedScryptoSchema> {
@@ -747,7 +747,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     ) -> Vec<NodeId> {
         SubtreeVaults::new(&self.database)
             .get_all(component_address.as_node_id())
-            .remove(&resource_address)
+            .swap_remove(&resource_address)
             .unwrap_or_else(|| Vec::new())
     }
 
