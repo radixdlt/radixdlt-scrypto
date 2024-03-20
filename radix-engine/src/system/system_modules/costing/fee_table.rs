@@ -22,7 +22,7 @@ const CPU_INSTRUCTIONS_TO_COST_UNIT: u32 = 34;
 lazy_static! {
     pub static ref NATIVE_FUNCTION_BASE_COSTS: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = {
         let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = index_map_new();
-        include_str!("../../../../../assets/native_function_base_costs.csv")
+        include_str!("../../../../assets/native_function_base_costs.csv")
             .split("\n")
             .filter(|x| x.len() > 0)
             .for_each(|x| {

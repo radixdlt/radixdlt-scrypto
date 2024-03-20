@@ -1170,8 +1170,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Faucet Package
     {
-        let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
-        let faucet_abi = include_bytes!("../../../assets/faucet.rpd").to_vec();
+        let faucet_code = include_bytes!("../../assets/faucet.wasm").to_vec();
+        let faucet_abi = include_bytes!("../../assets/faucet.rpd").to_vec();
         let faucet_code_hash = hash(&faucet_code);
         blobs.push(BlobV1(faucet_code));
         pre_allocated_addresses.push((
@@ -1197,8 +1197,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Genesis helper package
     {
-        let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
-        let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.rpd").to_vec();
+        let genesis_helper_code = include_bytes!("../../assets/genesis_helper.wasm").to_vec();
+        let genesis_helper_abi = include_bytes!("../../assets/genesis_helper.rpd").to_vec();
         let genesis_helper_code_hash = hash(&genesis_helper_code);
         blobs.push(BlobV1(genesis_helper_code));
         pre_allocated_addresses.push((
