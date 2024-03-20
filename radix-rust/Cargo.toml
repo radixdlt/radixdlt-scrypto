@@ -2,9 +2,9 @@
 name = "radix-rust"
 version = "1.2.0-dev"
 edition = "2021"
-license = "Radix License 1.0"
 description = "A very thin abstraction over Rust std library for convenience."
 readme = "README.md"
+license-file = "../LICENSE"
 
 [dependencies]
 serde = { workspace = true, optional = true }

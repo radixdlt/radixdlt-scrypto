@@ -2,9 +2,9 @@
 name = "scrypto-test"
 version = "1.2.0-dev"
 edition = "2021"
-license = "Radix License 1.0"
 description = "A library for testing Scrypto blueprints."
 readme = "README.md"
+license-file = "../LICENSE"
 
 [dependencies]
 # The Radix Engine Stack

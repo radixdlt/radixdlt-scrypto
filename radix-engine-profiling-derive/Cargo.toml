@@ -2,9 +2,9 @@
 name = "radix-engine-profiling-derive"
 version = "1.2.0-dev"
 edition = "2021"
-license = "Radix License 1.0"
 description = "Macros for profiling to any function inside engine implementation."
 readme = "README.md"
+license-file = "../LICENSE"
 
 [lib]
 doctest = false

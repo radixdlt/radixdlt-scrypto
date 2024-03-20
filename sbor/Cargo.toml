@@ -2,9 +2,9 @@
 name = "sbor"
 version = "1.2.0-dev"
 edition = "2021"
-license = "Radix License 1.0"
 description = "Reference implementation of the SBOR binary data format."
 readme = "README.md"
+license-file = "../LICENSE"
 
 [dependencies]
 radix-rust = { workspace = true }

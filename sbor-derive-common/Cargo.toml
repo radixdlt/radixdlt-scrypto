@@ -2,9 +2,9 @@
 name = "sbor-derive-common"
 version = "1.2.0-dev"
 edition = "2021"
-license = "Radix License 1.0"
 description = "A library for implementing SBOR derives."
 readme = "README.md"
+license-file = "../LICENSE"
 
 [dependencies]
 proc-macro2 = { workspace = true }
