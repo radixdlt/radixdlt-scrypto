@@ -76,6 +76,7 @@ fn test_manifest_parser_error_diagnostics_unexpected_eof() {
     // UnexpectedEof
     check_manifest!("manifest_parser_error_unexpected_eof_1");
     check_manifest!("manifest_parser_error_unexpected_eof_2");
+    check_manifest!("manifest_parser_error_unexpected_eof_3");
 }
 
 #[test]
@@ -99,6 +100,7 @@ fn test_manifest_lexer_error_unexpected_char() {
     check_manifest!("manifest_lexer_error_unexpected_char_2");
     check_manifest!("manifest_lexer_error_unexpected_char_3");
     check_manifest!("manifest_lexer_error_unexpected_char_4");
+    check_manifest!("manifest_lexer_error_unexpected_char_5");
 }
 
 #[test]
@@ -148,6 +150,7 @@ fn test_manifest_generator_error_invalid_ast_value() {
     check_manifest!("manifest_generator_error_invalid_ast_value_2");
     check_manifest!("manifest_generator_error_invalid_ast_value_3");
     check_manifest!("manifest_generator_error_invalid_ast_value_4");
+    check_manifest!("manifest_generator_error_invalid_ast_value_5");
 }
 
 #[test]
@@ -167,6 +170,8 @@ fn test_manifest_generator_error_unexpected_value() {
 fn test_manifest_generator_error_invalid_decimal() {
     // InvalidDecimal
     check_manifest!("manifest_generator_error_invalid_decimal_1");
+    check_manifest!("manifest_generator_error_invalid_decimal_2");
+    check_manifest!("manifest_generator_error_invalid_decimal_3");
 }
 
 #[test]

@@ -702,6 +702,7 @@ mod tests {
             r#""\uD83D\uDC69""#,
             vec![TokenKind::StringLiteral("👩".to_string())]
         );
+        lex_ok!(r#""👩""#, vec![TokenKind::StringLiteral("👩".to_string())]);
         lex_error!(
             r#""\uDCAC\u1234""#,
             LexerError {

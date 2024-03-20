@@ -2072,6 +2072,49 @@ mod tests {
                 span: span!(start = (8, 1, 8), end = (25, 1, 25))
             }
         );
+        generate_value_error!(
+            r#"Decimal("i")"#,
+            GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidDecimal {
+                    actual: "i".to_string(),
+                    err: "InvalidDigit".to_string(),
+                },
+                span: span!(start = (8, 1, 8), end = (11, 1, 11))
+            }
+        );
+
+        // Test unicode and spans
+        generate_value_error!(
+            r#"Decimal("🤓")"#,
+            GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidDecimal {
+                    actual: "🤓".to_string(),
+                    err: "InvalidDigit".to_string(),
+                },
+                span: span!(start = (8, 1, 8), end = (11, 1, 11))
+            }
+        );
+
+        generate_value_error!(
+            r#"Decimal("\uD83D\uDC69")"#,
+            GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidDecimal {
+                    actual: "\u{1f469}".to_string(), // this is a value of '👩'
+                    err: "InvalidDigit".to_string(),
+                },
+                span: span!(start = (8, 1, 8), end = (22, 1, 22))
+            }
+        );
+        generate_value_error!(
+            r#"Decimal("👩")"#,
+            GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidDecimal {
+                    actual: "👩".to_string(),
+                    err: "InvalidDigit".to_string(),
+                },
+                span: span!(start = (8, 1, 8), end = (11, 1, 11))
+            }
+        );
     }
 
     #[test]

@@ -55,6 +55,7 @@ pub fn create_snippet(
             annotations: vec![SourceAnnotation {
                 label: label,
                 annotation_type: AnnotationType::Error,
+                // Range require unicode char indices, which matches indices used in Span
                 range: (annotation_start_index, annotation_end_index),
             }],
         }],
