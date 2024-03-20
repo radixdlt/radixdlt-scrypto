@@ -159,10 +159,6 @@ use crate::prelude::*;
 /// You may have a function like `two_resource_environment` seen above which sets up the environment
 /// and then some callback and potentially then executes some teardown code. Another way to do this
 /// would be through simple factory and destructor methods.
-///
-/// ## Full Examples
-/// ```norun
-#[doc = include_str!("../../../assets/blueprints/radiswap/tests/lib.rs")]
 /// ```
 pub struct TestEnvironment<D>(pub(super) EncapsulatedRadixEngine<D>)
 where

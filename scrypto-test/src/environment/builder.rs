@@ -331,9 +331,9 @@ where
 
         // Publishing the test-environment package.
         let test_environment_package = {
-            let code = include_bytes!("../../../assets/test_environment.wasm");
+            let code = include_bytes!("../../assets/test_environment.wasm");
             let package_definition = manifest_decode::<PackageDefinition>(include_bytes!(
-                "../../../assets/test_environment.rpd"
+                "../../assets/test_environment.rpd"
             ))
             .expect("Must succeed");
 
