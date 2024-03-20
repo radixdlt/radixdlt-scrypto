@@ -4,6 +4,7 @@ use radix_engine_common::{
     data::manifest::manifest_encode,
     network::{NetworkDefinition, ParseNetworkError},
 };
+use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::{
@@ -40,7 +41,20 @@ pub enum Error {
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
 
-pub fn run() -> Result<(), Error> {
+impl fmt::Display for Error {
+    // TODO Implement pretty error printing
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<Error> for String {
+    fn from(err: Error) -> String {
+        err.to_string()
+    }
+}
+
+pub fn run() -> Result<(), String> {
     let args = Args::parse();
 
     let content = std::fs::read_to_string(&args.input).map_err(Error::IoError)?;
@@ -55,25 +69,14 @@ pub fn run() -> Result<(), Error> {
         }
     }
 
-    let transaction = match compile(&content, &network, BlobProvider::new_with_blobs(blobs)) {
-        Ok(transaction) => transaction,
-        Err(err) => {
-            eprintln!(
-                "{}",
-                compile_error_diagnostics(
-                    &content,
-                    err,
-                    CompileErrorDiagnosticsStyle::TextTerminalColors
-                )
-            );
-            // If the CompileError was returned here, then:
-            // - the program exit code would be 1
-            //   This is fine
-            // - the error would be printed to stderr
-            //   We don't want this, above diagnostics are just fine.
-            std::process::exit(1);
-        }
-    };
+    let transaction =
+        compile(&content, &network, BlobProvider::new_with_blobs(blobs)).map_err(|err| {
+            compile_error_diagnostics(
+                &content,
+                err,
+                CompileErrorDiagnosticsStyle::TextTerminalColors,
+            )
+        })?;
 
     validate_call_arguments_to_native_components(&transaction.instructions)
         .map_err(Error::InstructionSchemaValidationError)?;

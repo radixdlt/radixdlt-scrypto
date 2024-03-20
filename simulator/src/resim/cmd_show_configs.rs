@@ -9,7 +9,7 @@ use crate::resim::*;
 pub struct ShowConfigs {}
 
 impl ShowConfigs {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let configs = get_configs()?;
         writeln!(
             out,

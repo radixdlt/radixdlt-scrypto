@@ -59,7 +59,7 @@ pub struct Publish {
 }
 
 impl Publish {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         // Load wasm code
         let (code_path, definition_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
             build_package(

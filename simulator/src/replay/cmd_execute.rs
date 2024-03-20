@@ -38,7 +38,7 @@ pub struct TxnExecute {
 }
 
 impl TxnExecute {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), String> {
         let network = match &self.network {
             Some(n) => NetworkDefinition::from_str(n).map_err(Error::ParseNetworkError)?,
             None => NetworkDefinition::mainnet(),
@@ -66,7 +66,7 @@ impl TxnExecute {
         } else if self.source.is_dir() {
             TxnReader::StateManagerDatabaseDir(self.source.clone())
         } else {
-            return Err(Error::InvalidTransactionSource);
+            return Err(Error::InvalidTransactionSource.into());
         };
         let txn_read_thread_handle =
             thread::spawn(move || txn_reader.read(cur_version, to_version, tx));

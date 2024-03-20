@@ -22,13 +22,13 @@ pub struct Fmt {
 }
 
 impl Fmt {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), String> {
         fmt_package(
             self.path.clone().unwrap_or(current_dir().unwrap()),
             self.check,
             self.quiet,
         )
         .map(|_| ())
-        .map_err(Error::FormatError)
+        .map_err(|err| Error::FormatError(err).into())
     }
 }

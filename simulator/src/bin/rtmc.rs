@@ -1,9 +1,13 @@
 #[cfg(windows)]
 use colored::*;
+use simulator::error::exit_with_error;
 use simulator::rtmc;
 
-pub fn main() -> Result<(), rtmc::Error> {
+pub fn main() {
     #[cfg(windows)]
     control::set_virtual_terminal(true).unwrap();
-    rtmc::run()
+    match rtmc::run() {
+        Err(msg) => exit_with_error(msg, 1),
+        _ => {}
+    }
 }

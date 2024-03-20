@@ -18,7 +18,7 @@ use crate::resim::*;
 pub struct ShowLedger {}
 
 impl ShowLedger {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         {
             let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
             Self::list_entries(out, &db)?;

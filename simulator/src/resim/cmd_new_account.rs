@@ -31,7 +31,7 @@ pub struct NewAccount {
 struct EmptyStruct;
 
 impl NewAccount {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
         let private_key = Secp256k1PrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();

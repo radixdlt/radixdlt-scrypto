@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io;
 use std::path::PathBuf;
 
@@ -81,4 +82,17 @@ pub enum Error {
     InvalidResourceSpecifier(String),
 
     RemoteGenericSubstitutionNotSupported,
+}
+
+impl fmt::Display for Error {
+    // TODO Implement pretty error printing
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<Error> for String {
+    fn from(err: Error) -> String {
+        err.to_string()
+    }
 }

@@ -42,7 +42,7 @@ impl Run {
         .into()
     }
 
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
         let network = match &self.network {
@@ -55,30 +55,18 @@ impl Run {
                 blobs.push(std::fs::read(path).map_err(Error::IOError)?);
             }
         }
-        let compiled_manifest = match compile(
+        let compiled_manifest = compile(
             &pre_processed_manifest,
             &network,
             BlobProvider::new_with_blobs(blobs),
-        ) {
-            Ok(transaction) => transaction,
-            Err(err) => {
-                eprintln!(
-                    "{}",
-                    compile_error_diagnostics(
-                        &pre_processed_manifest,
-                        err,
-                        CompileErrorDiagnosticsStyle::TextTerminalColors
-                    )
-                );
-
-                // If the CompileError was returned here, then:
-                // - the program exit code would be 1
-                //   This is fine
-                // - the error would be printed to stderr
-                //   We don't want this, above diagnostics are just fine.
-                std::process::exit(1);
-            }
-        };
+        )
+        .map_err(|err| {
+            compile_error_diagnostics(
+                &pre_processed_manifest,
+                err,
+                CompileErrorDiagnosticsStyle::TextTerminalColors,
+            )
+        })?;
 
         validate_call_arguments_to_native_components(&compiled_manifest.instructions)
             .map_err(Error::InstructionSchemaValidationError)?;
@@ -93,5 +81,6 @@ impl Run {
             out,
         )
         .map(|_| ())
+        .map_err(|err| err.into())
     }
 }

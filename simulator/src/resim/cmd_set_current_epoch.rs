@@ -11,7 +11,7 @@ pub struct SetCurrentEpoch {
 }
 
 impl SetCurrentEpoch {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         db_upsert_epoch(Epoch::of(self.epoch_number))?;
         writeln!(out, "Epoch set successfully").map_err(Error::IOError)?;
         Ok(())

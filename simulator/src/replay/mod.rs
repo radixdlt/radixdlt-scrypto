@@ -38,7 +38,7 @@ pub enum Command {
     AllocDump(TxnAllocDump),
 }
 
-pub fn run() -> Result<(), Error> {
+pub fn run() -> Result<(), String> {
     let cli = ReplayCli::parse();
 
     match cli.command {

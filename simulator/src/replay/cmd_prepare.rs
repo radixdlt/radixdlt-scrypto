@@ -26,7 +26,7 @@ pub struct TxnPrepare {
 const TRANSACTION_COLUMN: &str = "raw_ledger_transactions";
 
 impl TxnPrepare {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), String> {
         let temp_dir = tempfile::tempdir().map_err(Error::IOError)?;
         let db = DB::open_cf_as_secondary(
             &Options::default(),

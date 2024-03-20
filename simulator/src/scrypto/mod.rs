@@ -31,7 +31,7 @@ pub enum Command {
     Test(Test),
 }
 
-pub fn run() -> Result<(), Error> {
+pub fn run() -> Result<(), String> {
     let cli = ScryptoCli::parse();
 
     match cli.command {

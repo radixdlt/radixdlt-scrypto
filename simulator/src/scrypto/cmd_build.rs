@@ -27,7 +27,7 @@ pub struct Build {
 }
 
 impl Build {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), String> {
         build_package(
             self.path.clone().unwrap_or(current_dir().unwrap()),
             self.trace,
@@ -37,6 +37,6 @@ impl Build {
             false,
         )
         .map(|_| ())
-        .map_err(Error::BuildError)
+        .map_err(|err| Error::BuildError(err).into())
     }
 }
