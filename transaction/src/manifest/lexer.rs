@@ -423,10 +423,26 @@ pub fn lexer_error_diagnostics(
             "unexpected end of file".to_string(),
             "unexpected end of file".to_string(),
         ),
-        LexerErrorKind::UnexpectedChar(c, _expected) => (
-            format!("unexpected character {:?}", c),
-            "unexpected character".to_string(),
-        ),
+        LexerErrorKind::UnexpectedChar(c, expected) => {
+            let expected = match expected {
+                ExpectedChar::Exact(exact) => format!("'{}'", exact),
+                ExpectedChar::OneOf(one_of) => {
+                    let v: Vec<String> = one_of.iter().map(|c| format!("'{}'", c)).collect();
+                    if let Some((last, init)) =  v.split_last() {
+                        format!("{} or {}", init.join(", "), last)
+                    }
+                    else {
+                        "unknown".to_string()
+                    }
+                }
+                ExpectedChar::HexDigit => "hex digit".to_string(),
+                ExpectedChar::DigitLetterQuotePunctuation => "digit, letter, quotation mark or one of punctuation characters '(', ')', '<', '>', ',', ';', '='".to_string(),
+            };
+            (
+                format!("unexpected character {:?}, expected {}", c, expected),
+                "unexpected character".to_string(),
+            )
+        }
         LexerErrorKind::InvalidIntegerLiteral(string) => (
             format!("invalid integer literal '{}'", string),
             "invalid integer literal".to_string(),

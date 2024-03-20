@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1munexpected character '%'[0m
+[1m[91merror[0m: [1munexpected character '%', expected digit, letter, quotation mark or one of punctuation characters '(', ')', '<', '>', ',', ';', '='[0m
 [1m[94m  |[0m
 [1m[94m3 |[0m     "lock_fee"
 [1m[94m4 |[0m ;

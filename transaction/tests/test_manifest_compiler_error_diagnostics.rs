@@ -97,6 +97,7 @@ fn test_manifest_lexer_error_unexpected_char() {
     check_manifest!("manifest_lexer_error_unexpected_char_1");
     check_manifest!("manifest_lexer_error_unexpected_char_2");
     check_manifest!("manifest_lexer_error_unexpected_char_3");
+    check_manifest!("manifest_lexer_error_unexpected_char_4");
 }
 
 #[test]

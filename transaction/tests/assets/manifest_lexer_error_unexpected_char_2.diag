@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1munexpected character 'x'[0m
+[1m[91merror[0m: [1munexpected character 'x', expected '"', '\', '/', 'b', 'f', 'n', 'r', 't' or 'u'[0m
 [1m[94m  |[0m
 [1m[94m2 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
 [1m[94m3 |[0m     "lock_fee"
