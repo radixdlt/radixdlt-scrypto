@@ -45,6 +45,7 @@ fn test_manifest_parser_error_diagnostics_unexpected_token() {
     check_manifest!("manifest_parser_error_unexpected_token_2");
     check_manifest!("manifest_parser_error_unexpected_token_3");
     check_manifest!("manifest_parser_error_unexpected_token_4");
+    check_manifest!("manifest_parser_error_unexpected_token_5");
 }
 
 #[test]

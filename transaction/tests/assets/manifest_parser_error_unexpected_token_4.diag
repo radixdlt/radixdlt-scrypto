@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1mexpected an Instruction, found value '"CALL_METHOD"' of String type[0m
+[1m[91merror[0m: [1mexpected an Instruction, found "CALL_METHOD"[0m
 [1m[94m   |[0m
 [1m[94m 5 |[0m SET_COMPONENT_ROYALTY
 [1m[94m 6 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
