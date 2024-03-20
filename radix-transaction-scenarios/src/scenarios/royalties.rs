@@ -28,9 +28,9 @@ impl ScenarioCreator for RoyaltiesScenarioCreator {
         ScenarioBuilder::new(core, metadata, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, state, _| {
-                    let code = include_bytes!("../../../assets/royalties.wasm").to_vec();
+                    let code = include_bytes!("../../assets/royalties.wasm").to_vec();
                     let schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                        "../../../assets/royalties.rpd"
+                        "../../assets/royalties.rpd"
                     ))
                     .unwrap();
 

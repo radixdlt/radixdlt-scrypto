@@ -49,9 +49,9 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                         "non-fungible-resource-with-remote-type-registration",
                         |builder| {
                             // Load code and schema
-                            let code = include_bytes!("../../../assets/radiswap.wasm");
+                            let code = include_bytes!("../../assets/radiswap.wasm");
                             let mut schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                                "../../../assets/radiswap.rpd"
+                                "../../assets/radiswap.rpd"
                             ))
                             .unwrap();
 

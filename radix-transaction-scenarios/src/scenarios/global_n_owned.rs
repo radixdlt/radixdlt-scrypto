@@ -24,9 +24,9 @@ impl ScenarioCreator for GlobalNOwnedScenarioCreator {
         ScenarioBuilder::new(core, metadata, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, state, _| {
-                    let code = include_bytes!("../../../assets/global_n_owned.wasm");
+                    let code = include_bytes!("../../assets/global_n_owned.wasm");
                     let schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                        "../../../assets/global_n_owned.rpd"
+                        "../../assets/global_n_owned.rpd"
                     ))
                     .unwrap();
 

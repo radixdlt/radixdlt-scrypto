@@ -24,9 +24,9 @@ impl ScenarioCreator for MaxTransactionScenarioCreator {
         ScenarioBuilder::new(core, metadata, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, state, _| {
-                    let code = include_bytes!("../../../assets/max_transaction.wasm").to_vec();
+                    let code = include_bytes!("../../assets/max_transaction.wasm").to_vec();
                     let schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                        "../../../assets/max_transaction.rpd"
+                        "../../assets/max_transaction.rpd"
                     ))
                     .unwrap();
 

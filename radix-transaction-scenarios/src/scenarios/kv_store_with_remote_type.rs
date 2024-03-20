@@ -24,9 +24,9 @@ impl ScenarioCreator for KVStoreScenarioCreator {
         ScenarioBuilder::new(core, metadata, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, state, _| {
-                    let code = include_bytes!("../../../assets/kv_store.wasm");
+                    let code = include_bytes!("../../assets/kv_store.wasm");
                     let schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                        "../../../assets/kv_store.rpd"
+                        "../../assets/kv_store.rpd"
                     ))
                     .unwrap();
 
