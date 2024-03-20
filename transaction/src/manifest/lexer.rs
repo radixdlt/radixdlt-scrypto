@@ -28,6 +28,25 @@ pub struct LexerError {
     pub span: Span,
 }
 
+impl LexerError {
+    fn unexpected_char(position: Position, c: char, expected: ExpectedChar) -> Self {
+        Self {
+            error_kind: LexerErrorKind::UnexpectedChar(c, expected),
+            span: Span {
+                start: position,
+                end: position.advance(c),
+            },
+        }
+    }
+
+    fn invalid_integer_type(ty: String, start: Position, end: Position) -> Self {
+        Self {
+            error_kind: LexerErrorKind::InvalidIntegerType(ty),
+            span: Span { start, end },
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Lexer {
     /// The input text chars
@@ -100,7 +119,7 @@ impl Lexer {
         let previous = self.current;
         let c = self.advance()?;
         if !matcher(c) {
-            Err(self.unexpected_char(previous, c, expected))
+            Err(LexerError::unexpected_char(previous, c, expected))
         } else {
             Ok(c)
         }
@@ -148,7 +167,7 @@ impl Lexer {
             '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' | '=' => {
                 self.tokenize_punctuation()
             }
-            c => Err(self.unexpected_char(
+            c => Err(LexerError::unexpected_char(
                 self.current,
                 c,
                 ExpectedChar::DigitLetterQuotePunctuation,
@@ -187,50 +206,50 @@ impl Lexer {
         }
 
         // type
-        let type_start = self.current;
+        let ty_start = self.current;
         let mut t = String::new();
         match self.advance_and_append(&mut t)? {
             'i' => match self.advance_and_append(&mut t)? {
                 '1' => match self.advance_and_append(&mut t)? {
                     '2' => match self.advance_and_append(&mut t)? {
                         '8' => self.parse_int(&s, "i128", TokenKind::I128Literal, literal_start),
-                        _ => Err(self.invalid_integer_type(t, type_start)),
+                        _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                     },
                     '6' => self.parse_int(&s, "i16", TokenKind::I16Literal, literal_start),
-                    _ => Err(self.invalid_integer_type(t, type_start)),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '3' => match self.advance_and_append(&mut t)? {
                     '2' => self.parse_int(&s, "i32", TokenKind::I32Literal, literal_start),
-                    _ => Err(self.invalid_integer_type(t, type_start)),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '6' => match self.advance_and_append(&mut t)? {
                     '4' => self.parse_int(&s, "i64", TokenKind::I64Literal, literal_start),
-                    _ => Err(self.invalid_integer_type(t, type_start)),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '8' => self.parse_int(&s, "i8", TokenKind::I8Literal, literal_start),
-                _ => Err(self.invalid_integer_type(t, type_start)),
+                _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
             },
             'u' => match self.advance_and_append(&mut t)? {
                 '1' => match self.advance_and_append(&mut t)? {
                     '2' => match self.advance_and_append(&mut t)? {
                         '8' => self.parse_int(&s, "u128", TokenKind::U128Literal, literal_start),
-                        _ => Err(self.invalid_integer_type(t, type_start)),
+                        _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                     },
                     '6' => self.parse_int(&s, "u16", TokenKind::U16Literal, literal_start),
-                    _ => Err(self.invalid_integer_type(t, type_start)),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '3' => match self.advance_and_append(&mut t)? {
                     '2' => self.parse_int(&s, "u32", TokenKind::U32Literal, literal_start),
-                    _ => Err(self.invalid_integer_type(t, type_start)),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '6' => match self.advance_and_append(&mut t)? {
                     '4' => self.parse_int(&s, "u64", TokenKind::U64Literal, literal_start),
-                    _ => Err(self.invalid_integer_type(t, type_start)),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '8' => self.parse_int(&s, "u8", TokenKind::U8Literal, literal_start),
-                _ => Err(self.invalid_integer_type(t, type_start)),
+                _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
             },
-            _ => Err(self.invalid_integer_type(t, type_start)),
+            _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
         }
         .map(|kind| self.new_token(kind, literal_start, self.current))
     }
@@ -311,7 +330,7 @@ impl Lexer {
                         })?);
                     }
                     c => {
-                        return Err(self.unexpected_char(
+                        return Err(LexerError::unexpected_char(
                             token_start,
                             c,
                             ExpectedChar::OneOf(vec!['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']),
@@ -390,26 +409,6 @@ impl Lexer {
         Token {
             kind,
             span: Span { start, end },
-        }
-    }
-
-    fn unexpected_char(&self, position: Position, c: char, expected: ExpectedChar) -> LexerError {
-        LexerError {
-            error_kind: LexerErrorKind::UnexpectedChar(c, expected),
-            span: Span {
-                start: position,
-                end: position.advance(c),
-            },
-        }
-    }
-
-    fn invalid_integer_type(&self, ty: String, start: Position) -> LexerError {
-        LexerError {
-            error_kind: LexerErrorKind::InvalidIntegerType(ty),
-            span: Span {
-                start,
-                end: self.current,
-            },
         }
     }
 }
