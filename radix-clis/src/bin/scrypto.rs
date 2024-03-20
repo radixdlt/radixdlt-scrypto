@@ -1,6 +1,6 @@
 #[cfg(windows)]
 use colored::*;
-use radix_cli::scrypto;
+use radix_clis::scrypto;
 
 pub fn main() -> Result<(), scrypto::Error> {
     #[cfg(windows)]

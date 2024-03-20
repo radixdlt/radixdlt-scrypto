@@ -1072,7 +1072,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-cli"
+name = "radix-clis"
 version = "1.2.0-dev"
 dependencies = [
  "clap",

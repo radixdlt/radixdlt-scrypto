@@ -2,7 +2,7 @@
 # It's its own workspace - hide it from the root workspace
 
 [package]
-name = "radix-cli"
+name = "radix-clis"
 version = "1.2.0-dev"
 edition = "2021"
 description = "A collection of CLIs for developing, building and testing Scrypto code."

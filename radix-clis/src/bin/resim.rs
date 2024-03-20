@@ -1,6 +1,6 @@
 #[cfg(windows)]
 use colored::*;
-use radix_cli::resim;
+use radix_clis::resim;
 
 pub fn main() -> Result<(), resim::Error> {
     #[cfg(windows)]

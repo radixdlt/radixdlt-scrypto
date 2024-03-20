@@ -1,6 +1,6 @@
 #[cfg(windows)]
 use colored::*;
-use radix_cli::replay;
+use radix_clis::replay;
 
 pub fn main() -> Result<(), replay::Error> {
     #[cfg(windows)]
